@@ -1,0 +1,21 @@
+{
+    "compilerOptions": {
+        "module": "Node16",
+        "target": "ES2022",
+        "outDir": "out",
+        "lib": ["ES2022"],
+        "sourceMap": true,
+        "rootDir": "./src", // 仅编译src下的业务代码
+        "strict": true /* enable all strict type-checking options */,
+        /* Additional Checks */
+        // "noImplicitReturns": true, /* Report error when not all code paths in function return a value. */
+        // "noFallthroughCasesInSwitch": true, /* Report errors for fallthrough cases in switch statement. */
+        // "noUnusedParameters": true,  /* Report errors on unused parameters. */
+        "allowImportingTsExtensions": false
+    },
+    "include": ["src/**/*"], // 仅包含src下的所有TS文件
+    "exclude": [
+        "node_modules",
+        "eslint.config.ts" // 新增：排除ESLint配置文件，解决rootDir冲突
+    ]
+}
