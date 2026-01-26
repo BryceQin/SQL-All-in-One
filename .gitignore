@@ -1,0 +1,14 @@
+dist
+lib
+node_modules
+.DS_Store
+coverage
+.eslintcache
+src/parser/grammar.ts
+hive-formatter-*.vsix
+vsc-extension-quickstart.md
+
+.vscode-test/**
+
+.yarnrc
+**/*.map
