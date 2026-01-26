@@ -1,0 +1,208 @@
+{
+    "name": "hive-formatter",
+    "displayName": "Hive Formatter",
+    "description": "A Hive/MySQL/SparkSQL formatter tool for VSCode",
+    "version": "0.0.4",
+    "publisher": "bryce-qin",
+    "license": "MIT",
+    "icon": "hive-formatter-icon.png",
+    "engines": {
+        "vscode": "^1.108.1"
+    },
+    "categories": [
+        "Formatters",
+        "Other"
+    ],
+    "activationEvents": [
+        "onStartupFinished",
+        "onLanguage:sql",
+        "onLanguage:hive"
+    ],
+    "main": "./out/extension.js",
+    "browser": "./out/extension.js",
+    "contributes": {
+        "languages": [
+            {
+                "id": "sql",
+                "aliases": [
+                    "SQL",
+                    "sql"
+                ],
+                "extensions": [
+                    ".sql"
+                ]
+            },
+            {
+                "id": "hive",
+                "aliases": [
+                    "Hive",
+                    "hive"
+                ],
+                "extensions": [
+                    ".hql"
+                ]
+            }
+        ],
+        "commands": [
+            {
+                "title": "Format Selection (Hive Formatter)",
+                "shortTitle": "Format Hive",
+                "command": "hive-formatter.format-selection"
+            }
+        ],
+        "configuration": {
+            "title": "Hive Formatter",
+            "properties": {
+                "Hive-Formatter.dialect": {
+                    "type": "string",
+                    "enum": [
+                        "auto-detect",
+                        "hive",
+                        "mysql",
+                        "spark",
+                        "sql"
+                    ],
+                    "enumDescriptions": [
+                        "Rely on VSCode to detect the relevant SQL dialect.",
+                        "Apache Hive",
+                        "MySQL",
+                        "Spark",
+                        "Basic SQL - generally not recommended."
+                    ],
+                    "default": "auto-detect",
+                    "markdownDescription": "The SQL dialect to use.\n\n**It is recommended to explicitly select the SQL dialect you're working with.**\n\nBy default the extension tries to use the SQL language info provided by VSCode. But this only works for some dialects when an extension for that language is installed. If the auto-detection fails, the formatter will default to using 'sql' dialect - which will work for the most basic SQL."
+                },
+                "Hive-Formatter.ignoreTabSettings": {
+                    "type": "boolean",
+                    "default": false,
+                    "markdownDescription": "Ignore user and workplace settings for `tabSize` and `insertSpaces` (uses `#Hive-Formatter.tabSizeOverride#` and `#Hive-Formatter.insertSpacesOverride#`)?"
+                },
+                "Hive-Formatter.tabSizeOverride": {
+                    "type": "number",
+                    "default": 2,
+                    "minimum": 1,
+                    "markdownDescription": "Override for `tabSize` if `#Hive-Formatter.ignoreTabSettings#` is active"
+                },
+                "Hive-Formatter.insertSpacesOverride": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "Override for `insertSpaces` if `#Hive-Formatter.ignoreTabSettings#` is active"
+                },
+                "Hive-Formatter.keywordCase": {
+                    "type": "string",
+                    "enum": [
+                        "preserve",
+                        "upper",
+                        "lower"
+                    ],
+                    "default": "preserve",
+                    "markdownDescription": "Whether to print keywords in ALL CAPS, lowercase, or preserve existing"
+                },
+                "Hive-Formatter.dataTypeCase": {
+                    "type": "string",
+                    "enum": [
+                        "preserve",
+                        "upper",
+                        "lower"
+                    ],
+                    "default": "preserve",
+                    "markdownDescription": "Whether to print data types in ALL CAPS, lowercase, or preserve existing"
+                },
+                "Hive-Formatter.functionCase": {
+                    "type": "string",
+                    "enum": [
+                        "preserve",
+                        "upper",
+                        "lower"
+                    ],
+                    "default": "preserve",
+                    "markdownDescription": "Whether to print function names in ALL CAPS, lowercase, or preserve existing"
+                },
+                "Hive-Formatter.identifierCase": {
+                    "type": "string",
+                    "enum": [
+                        "preserve",
+                        "upper",
+                        "lower"
+                    ],
+                    "default": "preserve",
+                    "markdownDescription": "Whether to print identifiers in ALL CAPS, lowercase, or preserve existing (experimental)"
+                },
+                "Hive-Formatter.indentStyle": {
+                    "type": "string",
+                    "enum": [
+                        "standard",
+                        "tabularLeft",
+                        "tabularRight"
+                    ],
+                    "enumDescriptions": [
+                        "Standard SQL format, with cascading indents",
+                        "Maintain space column between keyword and args, aligning keywords to left",
+                        "Maintain space column between keyword and args, aligning keywords to right"
+                    ],
+                    "default": "standard",
+                    "markdownDescription": "Where to place keywords"
+                },
+                "Hive-Formatter.logicalOperatorNewline": {
+                    "type": "string",
+                    "enum": [
+                        "before",
+                        "after"
+                    ],
+                    "default": "before",
+                    "markdownDescription": "Whether to break before or after AND and OR"
+                },
+                "Hive-Formatter.expressionWidth": {
+                    "type": "integer",
+                    "default": 50,
+                    "minimum": 0,
+                    "markdownDescription": "Maximum number of characters between pair of parenthesis before breaking the expression to multiple lines"
+                },
+                "Hive-Formatter.linesBetweenQueries": {
+                    "type": "integer",
+                    "default": 1,
+                    "minimum": 0,
+                    "markdownDescription": "How many newlines to place between each query / statement"
+                },
+                "Hive-Formatter.denseOperators": {
+                    "type": "boolean",
+                    "default": false,
+                    "markdownDescription": "Strip whitespace around operators such as + or >="
+                },
+                "Hive-Formatter.newlineBeforeSemicolon": {
+                    "type": "boolean",
+                    "default": false,
+                    "markdownDescription": "Whether to place semicolon on its own line or on previous line"
+                },
+                "Hive-Formatter.paramTypes": {
+                    "type": "object",
+                    "markdownDescription": "Specifies parameter placeholders types to support."
+                }
+            }
+        }
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./",
+        "pretest": "npm run compile && npm run lint",
+        "lint": "eslint src",
+        "test": "vscode-test"
+    },
+    "devDependencies": {
+        "@types/mocha": "^10.0.10",
+        "@types/nearley": "^2.11.5",
+        "@types/node": "22.x",
+        "@types/vscode": "^1.108.1",
+        "@vscode/test-cli": "^0.0.12",
+        "@vscode/test-electron": "^2.5.2",
+        "eslint": "^9.39.2",
+        "eslint-plugin-tsdoc": "^0.5.0",
+        "jiti": "^2.6.1",
+        "typescript": "^5.9.3",
+        "typescript-eslint": "^8.52.0"
+    },
+    "dependencies": {
+        "nearley": "^2.20.1"
+    }
+}
