@@ -1,9 +1,19 @@
 # Change Log
 
-All notable changes to the "hive-formatter" extension will be documented in this file.
+### 0.0.1
 
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
+发布测试版
+### 0.0.2
 
-## [Unreleased]
+修复测试问题
+### 0.0.3
 
-- Initial release
+修复测试问题
+### 0.0.4
+
+修复测试问题，鸣谢@TalDu
+
+### 0.0.5
+
+- 补充README
+- 优化配置项说明

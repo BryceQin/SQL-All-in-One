@@ -1,17 +1,35 @@
 {
     "name": "hive-formatter",
     "displayName": "Hive Formatter",
-    "description": "A Hive/MySQL/SparkSQL formatter tool for VSCode",
-    "version": "0.0.4",
+    "description": "一个用于Hive/MySQL/SparkSQL格式化的VSCode插件",
+    "version": "0.0.5",
     "publisher": "bryce-qin",
+    "contributors": [
+        "TalDu"
+    ],
     "license": "MIT",
     "icon": "hive-formatter-icon.png",
     "engines": {
         "vscode": "^1.108.1"
     },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/BryceQin/Hive-Formatter"
+    },
+    "bugs": {
+        "url": "https://github.com/BryceQin/Hive-Formatter/issues"
+    },
     "categories": [
         "Formatters",
         "Other"
+    ],
+    "keywords": [
+        "hive",
+        "formatter",
+        "mysql",
+        "spark",
+        "sparksql",
+        "sql"
     ],
     "activationEvents": [
         "onStartupFinished",
@@ -56,37 +74,35 @@
                 "Hive-Formatter.dialect": {
                     "type": "string",
                     "enum": [
-                        "auto-detect",
                         "hive",
                         "mysql",
                         "spark",
                         "sql"
                     ],
                     "enumDescriptions": [
-                        "Rely on VSCode to detect the relevant SQL dialect.",
                         "Apache Hive",
                         "MySQL",
                         "Spark",
                         "Basic SQL - generally not recommended."
                     ],
-                    "default": "auto-detect",
-                    "markdownDescription": "The SQL dialect to use.\n\n**It is recommended to explicitly select the SQL dialect you're working with.**\n\nBy default the extension tries to use the SQL language info provided by VSCode. But this only works for some dialects when an extension for that language is installed. If the auto-detection fails, the formatter will default to using 'sql' dialect - which will work for the most basic SQL."
+                    "default": "hive",
+                    "markdownDescription": "选择使用的SQL方言。强烈建议选择否则可能出错。"
                 },
                 "Hive-Formatter.ignoreTabSettings": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "Ignore user and workplace settings for `tabSize` and `insertSpaces` (uses `#Hive-Formatter.tabSizeOverride#` and `#Hive-Formatter.insertSpacesOverride#`)?"
+                    "markdownDescription": "是否忽略用户和工作区设置的 `tabSize` 和 `insertSpaces` (使用 `#Hive-Formatter.tabSizeOverride#` 和 `#Hive-Formatter.insertSpacesOverride#`)?"
                 },
                 "Hive-Formatter.tabSizeOverride": {
                     "type": "number",
                     "default": 2,
                     "minimum": 1,
-                    "markdownDescription": "Override for `tabSize` if `#Hive-Formatter.ignoreTabSettings#` is active"
+                    "markdownDescription": "当 `#Hive-Formatter.ignoreTabSettings#`激活时，覆盖 `tabSize` 设置，"
                 },
                 "Hive-Formatter.insertSpacesOverride": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "Override for `insertSpaces` if `#Hive-Formatter.ignoreTabSettings#` is active"
+                    "markdownDescription": "当 `#Hive-Formatter.ignoreTabSettings#`激活时，覆盖 `insertSpaces` 设置"
                 },
                 "Hive-Formatter.keywordCase": {
                     "type": "string",
@@ -96,7 +112,7 @@
                         "lower"
                     ],
                     "default": "preserve",
-                    "markdownDescription": "Whether to print keywords in ALL CAPS, lowercase, or preserve existing"
+                    "markdownDescription": "以大写、小写或保留现状来格式化关键字"
                 },
                 "Hive-Formatter.dataTypeCase": {
                     "type": "string",
@@ -106,7 +122,7 @@
                         "lower"
                     ],
                     "default": "preserve",
-                    "markdownDescription": "Whether to print data types in ALL CAPS, lowercase, or preserve existing"
+                    "markdownDescription": "以大写、小写或保留现状来格式化数据类型"
                 },
                 "Hive-Formatter.functionCase": {
                     "type": "string",
@@ -116,7 +132,7 @@
                         "lower"
                     ],
                     "default": "preserve",
-                    "markdownDescription": "Whether to print function names in ALL CAPS, lowercase, or preserve existing"
+                    "markdownDescription": "以大写、小写或保留现状来格式化函数名"
                 },
                 "Hive-Formatter.identifierCase": {
                     "type": "string",
@@ -126,7 +142,7 @@
                         "lower"
                     ],
                     "default": "preserve",
-                    "markdownDescription": "Whether to print identifiers in ALL CAPS, lowercase, or preserve existing (experimental)"
+                    "markdownDescription": "以大写、小写或保留现状来格式化标识符"
                 },
                 "Hive-Formatter.indentStyle": {
                     "type": "string",
@@ -136,12 +152,12 @@
                         "tabularRight"
                     ],
                     "enumDescriptions": [
-                        "Standard SQL format, with cascading indents",
-                        "Maintain space column between keyword and args, aligning keywords to left",
-                        "Maintain space column between keyword and args, aligning keywords to right"
+                        "标准SQL格式，带有级联缩进",
+                        "在关键字和参数之间保留空格列，使关键字左对齐",
+                        "在关键字和参数之间保留空格列，将关键字向右对齐"
                     ],
                     "default": "standard",
-                    "markdownDescription": "Where to place keywords"
+                    "markdownDescription": "在标准关键词定位与保持中心位置列之间进行切换"
                 },
                 "Hive-Formatter.logicalOperatorNewline": {
                     "type": "string",
@@ -150,33 +166,33 @@
                         "after"
                     ],
                     "default": "before",
-                    "markdownDescription": "Whether to break before or after AND and OR"
+                    "markdownDescription": "是否在 AND 和 OR 之前或之后换行"
                 },
                 "Hive-Formatter.expressionWidth": {
                     "type": "integer",
                     "default": 50,
                     "minimum": 0,
-                    "markdownDescription": "Maximum number of characters between pair of parenthesis before breaking the expression to multiple lines"
+                    "markdownDescription": "一对括号之间的字符数达到多少时，应将表达式拆分为多行"
                 },
                 "Hive-Formatter.linesBetweenQueries": {
                     "type": "integer",
                     "default": 1,
                     "minimum": 0,
-                    "markdownDescription": "How many newlines to place between each query / statement"
+                    "markdownDescription": "每个查询/语句之间应放置多少个换行符"
                 },
                 "Hive-Formatter.denseOperators": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "Strip whitespace around operators such as + or >="
+                    "markdownDescription": "是否去除运算符（如+或>=）周围的空格"
                 },
                 "Hive-Formatter.newlineBeforeSemicolon": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "Whether to place semicolon on its own line or on previous line"
+                    "markdownDescription": "分号应另起一行还是放在上一行"
                 },
                 "Hive-Formatter.paramTypes": {
                     "type": "object",
-                    "markdownDescription": "Specifies parameter placeholders types to support."
+                    "markdownDescription": "指定要支持的参数占位符类型"
                 }
             }
         }
