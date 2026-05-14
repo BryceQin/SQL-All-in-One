@@ -91,9 +91,87 @@ export default class ExpressionFormatter {
         this.layout = layout
     }
 
+    private findCurrentGroupStart(result: AstNode[]): number {
+        for (let i = result.length - 1; i >= 0; i--) {
+            if (result[i].type === NodeType.comma) {
+                if (i + 1 < result.length) {
+                    return i + 1
+                }
+                return -1
+            }
+        }
+        return result.length > 0 ? 0 : -1
+    }
+
+    private reorganizeComments(nodes: AstNode[]): AstNode[] {
+        const result: AstNode[] = []
+        let pendingCommentsForGroup: CommentNode[] = []
+
+        for (let i = 0; i < nodes.length; i++) {
+            const node = nodes[i]
+
+            if (node.type === NodeType.line_comment || node.type === NodeType.block_comment || node.type === NodeType.disable_comment) {
+                const nextNonCommentIdx = this.findNextNonCommentIndexFromOriginal(nodes, i + 1)
+                const isBeforeComma = nextNonCommentIdx !== -1 && nodes[nextNonCommentIdx].type === NodeType.comma
+                const isLastInGroup = nextNonCommentIdx === -1
+                const isAfterCommaInResult = this.isAfterCommaInResult(result) && nextNonCommentIdx !== -1 && nodes[nextNonCommentIdx].type !== NodeType.comma
+
+                if (isBeforeComma || isLastInGroup || isAfterCommaInResult) {
+                    const groupStartIdx = this.findCurrentGroupStart(result)
+                    if (groupStartIdx !== -1) {
+                        const targetNode = result[groupStartIdx]
+                        const existingLeading = targetNode.leadingComments || []
+                        result[groupStartIdx] = { ...targetNode, leadingComments: [...existingLeading, node as CommentNode] }
+                    } else {
+                        pendingCommentsForGroup.push(node as CommentNode)
+                    }
+                } else {
+                    result.push(node)
+                }
+            } else if (node.type === NodeType.comma) {
+                result.push(node)
+            } else {
+                if (pendingCommentsForGroup.length > 0) {
+                    const existingLeading = node.leadingComments || []
+                    result.push({ ...node, leadingComments: [...pendingCommentsForGroup, ...existingLeading] })
+                    pendingCommentsForGroup = []
+                } else {
+                    result.push(node)
+                }
+            }
+        }
+
+        if (pendingCommentsForGroup.length > 0) {
+            result.push(...pendingCommentsForGroup)
+        }
+
+        return result
+    }
+
+    private isAfterCommaInResult(result: AstNode[]): boolean {
+        if (result.length === 0) return false
+        for (let i = result.length - 1; i >= 0; i--) {
+            if (result[i].type === NodeType.comma) return true
+            if (result[i].type !== NodeType.line_comment && result[i].type !== NodeType.block_comment && result[i].type !== NodeType.disable_comment) {
+                return false
+            }
+        }
+        return false
+    }
+
+    private findNextNonCommentIndexFromOriginal(nodes: AstNode[], startIdx: number): number {
+        for (let i = startIdx; i < nodes.length; i++) {
+            const t = nodes[i].type
+            if (t !== NodeType.line_comment && t !== NodeType.block_comment && t !== NodeType.disable_comment) {
+                return i
+            }
+        }
+        return -1
+    }
+
     // 格式化入口，遍历所有 AST 节点并分发到对应格式化逻辑
     public format(nodes: AstNode[]): Layout {
-        this.nodes = nodes
+        this.nodes = this.reorganizeComments(nodes)
 
         for (this.index = 0; this.index < this.nodes.length; this.index++) {
             this.formatNode(this.nodes[this.index])
@@ -103,9 +181,9 @@ export default class ExpressionFormatter {
 
     // 节点格式化的外层逻辑，先处理注释，再格式化节点本身：
     private formatNode(node: AstNode) {
-        this.formatComments(node.leadingComments) // 前置注释
+        this.formatComments(node.leadingComments, true) // 前置注释
         this.formatNodeWithoutComments(node) // 核心节点逻辑（无注释）
-        this.formatComments(node.trailingComments) // 后置注释
+        this.formatComments(node.trailingComments, false) // 后置注释
     }
 
     // 节点类型分发:根据 AST 节点类型（如函数调用、括号、子句、运算符等），分发到专属格式化方法
@@ -384,37 +462,44 @@ export default class ExpressionFormatter {
     private formatComma(_node: CommaNode) {
         void _node
         if (!this.inline) {
-            this.layout.add(WS.NO_SPACE, ",", WS.NEWLINE, WS.INDENT)
+            const nextNode = this.nodes[this.index + 1]
+            const hasNextLeadingComments = nextNode && (nextNode.leadingComments?.length ?? 0) > 0
+            if (hasNextLeadingComments) {
+                this.layout.add(WS.NO_SPACE, ",")
+            } else {
+                this.layout.add(WS.NO_SPACE, ",", WS.NEWLINE, WS.INDENT)
+            }
         } else {
             this.layout.add(WS.NO_SPACE, ",", WS.SPACE)
         }
     }
 
     private withComments(node: AstNode, fn: () => void) {
-        this.formatComments(node.leadingComments)
+        this.formatComments(node.leadingComments, true)
         fn()
-        this.formatComments(node.trailingComments)
+        this.formatComments(node.trailingComments, false)
     }
 
-    private formatComments(comments: CommentNode[] | undefined) {
+    private formatComments(comments: CommentNode[] | undefined, isLeading: boolean = false) {
         if (!comments) {
             return
         }
         comments.forEach((com) => {
             if (com.type === NodeType.line_comment) {
-                this.formatLineComment(com)
+                this.formatLineComment(com, isLeading)
             } else {
                 this.formatBlockComment(com)
             }
         })
     }
 
-    private formatLineComment(node: LineCommentNode) {
-        if (isMultiline(node.precedingWhitespace || "")) {
+    private formatLineComment(node: LineCommentNode, isLeading: boolean = false) {
+        const text = this.normalizeLineComment(node.text)
+        if (isLeading || isMultiline(node.precedingWhitespace || "")) {
             this.layout.add(
                 WS.NEWLINE,
                 WS.INDENT,
-                node.text,
+                text,
                 WS.MANDATORY_NEWLINE,
                 WS.INDENT,
             )
@@ -422,14 +507,18 @@ export default class ExpressionFormatter {
             this.layout.add(
                 WS.NO_NEWLINE,
                 WS.SPACE,
-                node.text,
+                text,
                 WS.MANDATORY_NEWLINE,
                 WS.INDENT,
             )
         } else {
             // comment is the first item in code - no need to add preceding spaces
-            this.layout.add(node.text, WS.MANDATORY_NEWLINE, WS.INDENT)
+            this.layout.add(text, WS.MANDATORY_NEWLINE, WS.INDENT)
         }
+    }
+
+    private normalizeLineComment(text: string): string {
+        return text.replace(/^(--)(\S)/, '$1 $2')
     }
 
     private formatBlockComment(node: BlockCommentNode | DisableCommentNode) {

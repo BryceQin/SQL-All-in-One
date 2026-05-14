@@ -1,66 +1,110 @@
-# hive-formatter README
+# Hive Formatter
 
-Hive Formatter是一个用于对SQL查询进行格式美化的VSCode插件。最初是基于[SQL Formatter](https://github.com/sql-formatter-org/sql-formatter)开发而来，但自那以后已经发生了显著的差异。
+一个强大的 SQL 格式化 VSCode 插件，支持 Hive、MySQL、SparkSQL 等多种 SQL 方言，提供丰富的自定义配置选项。
 
-## Features
+## 特性
 
-区别于市场上多数仅提供单一格式化效果的 SQL 插件，本工具以个性化配置为核心设计理念，内置丰富的可配置项，并计划持续迭代扩展，满足不同开发者、不同团队的格式化偏好。
+区别于市场上多数仅提供单一格式化效果的 SQL 插件，本工具以个性化配置为核心设计理念，内置丰富的可配置项：
 
-> Tip: 如果你有问题或者好的格式化配置建议，可以在此处反馈 [Hive Formatter](https://github.com/BryceQin/Hive-Formatter/issues)。
+- 📝 **多种 SQL 方言支持** - Hive、MySQL、SparkSQL、通用 SQL
+- 🎨 **丰富的格式化选项** - 关键字大小写、缩进风格、换行策略等
+- 📏 **灵活的缩进配置** - 支持标准缩进和表格风格对齐
+- ⚙️ **高度自定义** - 超过 10 项可配置项满足各种团队规范
+- 🔧 **命令支持** - 提供"格式化选择"命令，支持部分格式化
+- ✅ **语法错误检测** - 实时检测常见 SQL 语法错误并提供友好的中文提示
 
+## 快速开始
 
-## Extension Settings
+1. 安装插件后，打开任意 `.sql` 或 `.hql` 文件
+2. 使用快捷键 `Shift+Alt+F`（Windows/Linux）或 `Shift+Option+F`（Mac）格式化文档
+3. 或右键选择"格式化文档"
+4. 或使用命令面板搜索"Format Selection (Hive Formatter)"格式化选中内容
 
-- `dialect`: 选择使用的SQL方言。强烈建议选择否则可能出错。
+## 扩展设置
 
-- `ignoreTabSettings`: 是否忽略用户和工作区设置的 `tabSize` 和 `insertSpaces` ?
+在 VSCode 设置中搜索 "Hive Formatter" 进行配置：
 
-- `tabSizeOverride`: "当 `ignoreTabSettings#`激活时，覆盖 `tabSize` 设置
+| 设置项 | 描述 | 默认值 |
+|--------|------|--------|
+| `dialect` | 选择使用的SQL方言（hive/mysql/spark/sql） | `hive` |
+| `ignoreTabSettings` | 是否忽略编辑器的 tabSize 和 insertSpaces 设置 | `false` |
+| `tabSizeOverride` | 覆盖 tabSize 设置（需要先启用 ignoreTabSettings） | `2` |
+| `insertSpacesOverride` | 覆盖 insertSpaces 设置（需要先启用 ignoreTabSettings） | `true` |
+| `keywordCase` | 关键字大小写（preserve/upper/lower） | `preserve` |
+| `dataTypeCase` | 数据类型大小写（preserve/upper/lower） | `preserve` |
+| `functionCase` | 函数名大小写（preserve/upper/lower） | `preserve` |
+| `identifierCase` | 标识符大小写（preserve/upper/lower） | `preserve` |
+| `indentStyle` | 缩进风格（standard/tabularLeft/tabularRight） | `standard` |
+| `logicalOperatorNewline` | AND/OR 换行位置（before/after） | `before` |
+| `expressionWidth` | 表达式拆分为多行的字符阈值 | `50` |
+| `linesBetweenQueries` | 查询语句之间的空行数 | `1` |
+| `denseOperators` | 是否去除运算符周围的空格 | `false` |
+| `newlineBeforeSemicolon` | 分号是否另起一行 | `false` |
+| `paramTypes` | 指定支持的参数占位符类型 | - |
 
-- `insertSpacesOverride`: 当 `ignoreTabSettings`激活时，覆盖 `insertSpaces` 设置
+### 缩进风格说明
 
-- `keywordCase`: 以大写、小写或保留现状来格式化关键字
+- **standard**: 标准 SQL 格式，带有级联缩进
+- **tabularLeft**: 在关键字和参数之间保留空格列，使关键字左对齐
+- **tabularRight**: 在关键字和参数之间保留空格列，将关键字向右对齐
 
-- `dataTypeCase`: 以大写、小写或保留现状来格式化数据类型
+## 支持的文件类型
 
-- `functionCase`: 以大写、小写或保留现状来格式化函数名
+- `.sql` - SQL 文件
+- `.hql` - HiveQL 文件
 
-- `identifierCase`: 以大写、小写或保留现状来格式化标识符
+## 使用示例
 
-- `indentStyle`: 在标准关键词定位与保持中心位置列之间进行切换
+### 格式化前
+```sql
+select id,name,email from users where age>18 and status='active' order by created_at desc limit 10;
+```
 
-- `logicalOperatorNewline`: 是否在 AND 和 OR 之前或之后换行
+### 格式化后（standard 风格）
+```sql
+SELECT
+    id,
+    name,
+    email
+FROM users
+WHERE
+    age > 18
+    AND status = 'active'
+ORDER BY created_at DESC
+LIMIT 10;
+```
 
-- `expressionWidth`: 一对括号之间的字符数达到多少时，应将表达式拆分为多行
+## 语法错误检测
 
-- `linesBetweenQueries`: 每个查询/语句之间应放置多少个换行符
+插件会实时检测 SQL 语法错误，并在编辑器中用红色波浪线高亮显示，同时在问题面板中提供详细的中文错误信息。
 
-- `denseOperators`: 是否去除运算符（如+或>=）周围的空格
+### 支持检测的错误类型
 
-- `newlineBeforeSemicolon`: 分号应另起一行还是放在上一行
+- 逗号后面缺少列名（如 `select id, from ...`）
+- SELECT 后面缺少列名
+- FROM 后面缺少表名
+- 不匹配的括号
+- 未正确闭合的字符串
+- ORDER BY 后面缺少列名
+- WHERE 后面缺少条件
+- GROUP BY 后面缺少列名
+- 多余的逗号
 
-- `paramTypes`: 指定要支持的参数占位符类型
+错误信息会明确指出问题所在的行号，方便快速定位和修复。
 
-## Release Notes
+## 反馈与贡献
 
+如果你有问题或者好的格式化配置建议，欢迎在 [GitHub Issues](https://github.com/BryceQin/Hive-Formatter/issues) 反馈。
 
-### 0.0.1
+## 鸣谢
 
-发布测试版
+- 基于 [SQL Formatter](https://github.com/sql-formatter-org/sql-formatter) 开发
+- 感谢贡献者 @TalDu
 
-### 0.0.2
+## 更新日志
 
-修复测试问题
+请查看 [CHANGELOG.md](CHANGELOG.md) 文件了解详细的版本更新历史。
 
-### 0.0.3
+## 许可证
 
-修复测试问题
-
-### 0.0.4
-
-修复测试问题，鸣谢@TalDu
-
-### 0.0.5
-
-- 补充README
-- 优化配置项说明
+MIT License

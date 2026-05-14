@@ -25,6 +25,7 @@ export interface Parser {
 export function createParser(tokenizer: Tokenizer): Parser {
     // 闭包变量：共享参数类型配置（Tokenizer 和 parse 方法间）
     let paramTypesOverrides: ParamTypes = {}
+    let currentSql: string = ""
     // 初始化 LexerAdapter：关联自定义分词逻辑
     const lexer = new LexerAdapter((chunk) => [
         // 步骤1：分词 → 步骤2：消歧 → 合并为 Token 数组
@@ -41,28 +42,42 @@ export function createParser(tokenizer: Tokenizer): Parser {
         parse: (sql: string, paramTypes: ParamTypes) => {
             // 1. 共享参数配置：传递给 Tokenizer 的分词逻辑
             paramTypesOverrides = paramTypes
+            currentSql = sql
 
-            // 2. 执行解析：feed 方法传入 SQL 文本，触发 Lexer 分词 + 文法解析
-            const { results } = parser.feed(sql)
+            try {
+                // 2. 执行解析：feed 方法传入 SQL 文本，触发 Lexer 分词 + 文法解析
+                const { results } = parser.feed(sql)
 
-            // 3. 解析结果处理（Nearley 特性：可能返回 0/1/多个结果）
-            if (results.length === 1) {
-                // 正常情况：1 个结果 → 返回 AST 节点数组
-                return results[0]
-            } else if (results.length === 0) {
-                // 异常1：0 个结果 → 无效 SQL
-                // Ideally we would report a line number where the parser failed,
-                // but I haven't found a way to get this info from Nearley :(
-                throw new Error("解析错误: 无效的 SQL 语句。")
-            } else {
-                // 异常2：多个结果 → 文法歧义（同一段 SQL 匹配多种文法规则）
-                throw new Error(
-                    `解析错误: 语法歧义\n${JSON.stringify(
-                        results,
-                        undefined,
-                        2,
-                    )}`,
-                )
+                // 3. 解析结果处理（Nearley 特性：可能返回 0/1/多个结果）
+                if (results.length === 1) {
+                    // 正常情况：1 个结果 → 返回 AST 节点数组
+                    return results[0]
+                } else if (results.length === 0) {
+                    // 异常1：0 个结果 → 无效 SQL
+                    // 尝试获取最后一个 token 的位置作为错误位置
+                    const lastToken = lexer.lastToken
+                    const errorPos = lastToken ? lastToken.start + lastToken.raw.length : sql.length
+                    throw new Error(`解析错误: 无效的 SQL 语句 at position ${errorPos}`)
+                } else {
+                    // 异常2：多个结果 → 文法歧义（同一段 SQL 匹配多种文法规则）
+                    throw new Error(
+                        `解析错误: 语法歧义\n${JSON.stringify(
+                            results,
+                            undefined,
+                            2,
+                        )}`,
+                    )
+                }
+            } catch (error) {
+                if (error instanceof Error) {
+                    // 如果错误还没有位置信息，添加一个
+                    if (!error.message.includes("at position")) {
+                        const lastToken = lexer.lastToken
+                        const errorPos = lastToken ? lastToken.start + lastToken.raw.length : sql.length
+                        throw new Error(`${error.message} at position ${errorPos}`)
+                    }
+                }
+                throw error
             }
         },
     }

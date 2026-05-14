@@ -1,31 +1,73 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode"
 import { SqlFormattingProvider } from "./SqlFormattingProvider"
 import { sqlDialects } from "./sqlDialects"
 import { formatSelection } from "./formatSelection"
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
+import { SqlDiagnosticsProvider } from "./SqlDiagnosticsProvider"
+
+let diagnosticsProvider: SqlDiagnosticsProvider
+
+/**
+ * 插件激活时调用
+ * 注册格式化命令和文档格式化提供者
+ */
 export function activate(context: vscode.ExtensionContext) {
-    // Use the console to output diagnostic information (console.log) and errors (console.error)
-    // This line of code will only be executed once when your extension is activated
     console.log(
         'Congratulations, your extension "hive-formatter" is now active!',
     )
 
-    // The command has been defined in the package.json file
-    // Now provide the implementation of the command with registerCommand
-    // The commandId parameter must match the command field in package.json
+    // 初始化诊断提供者
+    diagnosticsProvider = new SqlDiagnosticsProvider()
+
     context.subscriptions.push(
+        // 注册"格式化选择"命令
         vscode.commands.registerCommand(
             "hive-formatter.format-selection",
             formatSelection,
         ),
-
+        // 为每种SQL方言注册文档格式化提供者
         ...registerFormattingProviderForEachDialect(),
+        // 注册文档变化监听器用于语法诊断
+        vscode.workspace.onDidChangeTextDocument((event) => {
+            const document = event.document
+            if (isSqlDocument(document)) {
+                diagnosticsProvider.provideDiagnostics(document)
+            }
+        }),
+        // 注册文档打开监听器
+        vscode.workspace.onDidOpenTextDocument((document) => {
+            if (isSqlDocument(document)) {
+                diagnosticsProvider.provideDiagnostics(document)
+            }
+        }),
+        // 注册文档保存监听器
+        vscode.workspace.onDidSaveTextDocument((document) => {
+            if (isSqlDocument(document)) {
+                diagnosticsProvider.provideDiagnostics(document)
+            }
+        }),
+        // 诊断提供者的清理
+        diagnosticsProvider,
     )
+
+    // 对已打开的文档进行诊断
+    vscode.workspace.textDocuments.forEach((document) => {
+        if (isSqlDocument(document)) {
+            diagnosticsProvider.provideDiagnostics(document)
+        }
+    })
 }
 
+/**
+ * 判断文档是否为 SQL 文档
+ */
+function isSqlDocument(document: vscode.TextDocument): boolean {
+    const sqlLanguages = Object.keys(sqlDialects)
+    return sqlLanguages.includes(document.languageId)
+}
+
+/**
+ * 为每种支持的SQL方言注册文档格式化提供者
+ */
 function registerFormattingProviderForEachDialect() {
     return Object.entries(sqlDialects).map(([vscodeLang, sqlDialectName]) =>
         vscode.languages.registerDocumentFormattingEditProvider(
@@ -34,7 +76,13 @@ function registerFormattingProviderForEachDialect() {
         ),
     )
 }
-// This method is called when your extension is deactivated
+
+/**
+ * 插件停用时调用
+ * 当前无需要清理的资源
+ */
 export function deactivate() {
-    // 暂无需要清理的资源，保留空函数用于后续扩展
+    if (diagnosticsProvider) {
+        diagnosticsProvider.dispose()
+    }
 }

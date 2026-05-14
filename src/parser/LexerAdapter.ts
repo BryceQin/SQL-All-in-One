@@ -22,6 +22,11 @@ export default class LexerAdapter {
         this.tokenize = tokenize
     }
 
+    // 获取最后一个 token
+    get lastToken(): Token | undefined {
+        return this.tokens[this.index - 1]
+    }
+
     // 初始化 / 重置词法分析器
     reset(chunk: string) {
         // 保存原始输入（用于错误定位）

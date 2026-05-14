@@ -12,3 +12,5 @@ vsc-extension-quickstart.md
 
 .yarnrc
 **/*.map
+out/
+test-*.js

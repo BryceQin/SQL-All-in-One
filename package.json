@@ -2,7 +2,7 @@
     "name": "hive-formatter",
     "displayName": "Hive Formatter",
     "description": "一个用于Hive/MySQL/SparkSQL格式化的VSCode插件",
-    "version": "0.0.5",
+    "version": "0.2.3",
     "publisher": "bryce-qin",
     "contributors": [
         "TalDu"

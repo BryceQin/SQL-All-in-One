@@ -3,6 +3,9 @@ import { createConfig } from "./config"
 import { sqlDialects } from "./sqlDialects"
 import { formatEditorText } from "./formatEditorText"
 
+/**
+ * 格式化编辑器中选中的文本
+ */
 export function formatSelection() {
     const editor = vscode.window.activeTextEditor
     if (!editor) {
@@ -18,6 +21,9 @@ export function formatSelection() {
     }
 }
 
+/**
+ * 替换编辑器中的每个选中内容
+ */
 function replaceEachSelection(
     editor: vscode.TextEditor,
     fn: (code: string) => string,
@@ -29,20 +35,26 @@ function replaceEachSelection(
     })
 }
 
+/**
+ * 为当前编辑器创建格式化配置
+ */
 const createConfigForEditor = (editor: vscode.TextEditor) =>
     createConfig(
-        vscode.workspace.getConfiguration("SQL-Formatter-VSCode"),
+        vscode.workspace.getConfiguration("Hive-Formatter"),
         editorFormattingOptions(editor),
         detectSqlDialect(editor),
     )
 
+/**
+ * 从编辑器语言检测SQL方言
+ */
 const detectSqlDialect = (editor: vscode.TextEditor) =>
     sqlDialects[editor.document.languageId] ?? "sql"
 
+/**
+ * 获取编辑器的格式化选项
+ */
 const editorFormattingOptions = (editor: vscode.TextEditor) => ({
-    // According to types, these editor.options properties can also be strings or undefined,
-    // but according to docs, the string|undefined value is only applicable when setting,
-    // so it should be safe to cast them.
     tabSize: editor.options.tabSize as number,
     insertSpaces: editor.options.insertSpaces as boolean,
 })
