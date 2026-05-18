@@ -1,12 +1,9 @@
 import * as vscode from "vscode"
-import { createConfig } from "./config"
-import { sqlDialects } from "./sqlDialects"
-import { formatEditorText } from "./formatEditorText"
+import { createConfig } from "../core/config"
+import { sqlDialects } from "../core/sqlDialects"
+import { formatEditorText } from "../utils/formatEditorText"
 
-/**
- * 格式化编辑器中选中的文本
- */
-export function formatSelection() {
+export function formatSelectionCommand() {
     const editor = vscode.window.activeTextEditor
     if (!editor) {
         return
@@ -21,9 +18,6 @@ export function formatSelection() {
     }
 }
 
-/**
- * 替换编辑器中的每个选中内容
- */
 function replaceEachSelection(
     editor: vscode.TextEditor,
     fn: (code: string) => string,
@@ -35,9 +29,6 @@ function replaceEachSelection(
     })
 }
 
-/**
- * 为当前编辑器创建格式化配置
- */
 const createConfigForEditor = (editor: vscode.TextEditor) =>
     createConfig(
         vscode.workspace.getConfiguration("Hive-Formatter"),
@@ -45,15 +36,9 @@ const createConfigForEditor = (editor: vscode.TextEditor) =>
         detectSqlDialect(editor),
     )
 
-/**
- * 从编辑器语言检测SQL方言
- */
 const detectSqlDialect = (editor: vscode.TextEditor) =>
     sqlDialects[editor.document.languageId] ?? "sql"
 
-/**
- * 获取编辑器的格式化选项
- */
 const editorFormattingOptions = (editor: vscode.TextEditor) => ({
     tabSize: editor.options.tabSize as number,
     insertSpaces: editor.options.insertSpaces as boolean,

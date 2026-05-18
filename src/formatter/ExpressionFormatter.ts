@@ -480,7 +480,7 @@ export default class ExpressionFormatter {
         this.formatComments(node.trailingComments, false)
     }
 
-    private formatComments(comments: CommentNode[] | undefined, isLeading: boolean = false) {
+    private formatComments(comments: CommentNode[] | undefined, isLeading = false) {
         if (!comments) {
             return
         }
@@ -493,7 +493,7 @@ export default class ExpressionFormatter {
         })
     }
 
-    private formatLineComment(node: LineCommentNode, isLeading: boolean = false) {
+    private formatLineComment(node: LineCommentNode, isLeading = false) {
         const text = this.normalizeLineComment(node.text)
         if (isLeading || isMultiline(node.precedingWhitespace || "")) {
             this.layout.add(

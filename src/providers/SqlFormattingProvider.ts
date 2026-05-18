@@ -1,7 +1,7 @@
 import * as vscode from "vscode"
-import { SqlLanguage } from "./formatter/sqlFormatter"
-import { createConfig } from "./config"
-import { formatEditorText } from "./formatEditorText"
+import { SqlLanguage } from "../formatter/sqlFormatter"
+import { createConfig } from "../core/config"
+import { formatEditorText } from "../utils/formatEditorText"
 
 export class SqlFormattingProvider
     implements vscode.DocumentFormattingEditProvider
@@ -30,7 +30,6 @@ export class SqlFormattingProvider
     }
 
     private getAllText(document: vscode.TextDocument) {
-        // extract all lines from document
         return [...new Array(document.lineCount)]
             .map((_, i) => document.lineAt(i).text)
             .join("\n")

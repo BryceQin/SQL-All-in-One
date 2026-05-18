@@ -1,55 +1,96 @@
 import * as vscode from "vscode"
-import { SqlFormattingProvider } from "./SqlFormattingProvider"
-import { sqlDialects } from "./sqlDialects"
-import { formatSelection } from "./formatSelection"
-import { SqlDiagnosticsProvider } from "./SqlDiagnosticsProvider"
+import { SqlFormattingProvider } from "./providers/SqlFormattingProvider"
+import { sqlDialects } from "./core/sqlDialects"
+import { formatSelectionCommand } from "./commands/formatSelectionCommand"
+import { convertMysqlToHiveCommand, convertHiveToMysqlCommand } from "./commands/converterCommands"
+import { SqlDiagnosticsProvider } from "./providers/SqlDiagnosticsProvider"
+import { openConfigEditorCommand } from "./commands/configEditorCommand"
+import { StatusBarProvider } from "./providers/StatusBarProvider"
+import { SqlCodeActionProvider } from "./providers/SqlCodeActionProvider"
+import { SqlFoldingRangeProvider } from "./providers/SqlFoldingRangeProvider"
+import { SqlOutlineProvider } from "./providers/SqlOutlineProvider"
+import { SqlParameterHighlighter, SqlParameterReplaceCommand } from "./providers/SqlParameterHightlighter"
 
 let diagnosticsProvider: SqlDiagnosticsProvider
+let statusBarProvider: StatusBarProvider
+let parameterHighlighter: SqlParameterHighlighter
 
-/**
- * 插件激活时调用
- * 注册格式化命令和文档格式化提供者
- */
 export function activate(context: vscode.ExtensionContext) {
-    console.log(
-        'Congratulations, your extension "hive-formatter" is now active!',
-    )
+    console.log('Congratulations, your extension "hive-formatter" is now active!')
 
-    // 初始化诊断提供者
     diagnosticsProvider = new SqlDiagnosticsProvider()
+    statusBarProvider = new StatusBarProvider()
+    parameterHighlighter = new SqlParameterHighlighter()
 
     context.subscriptions.push(
-        // 注册"格式化选择"命令
         vscode.commands.registerCommand(
             "hive-formatter.format-selection",
-            formatSelection,
+            formatSelectionCommand,
         ),
-        // 为每种SQL方言注册文档格式化提供者
+        vscode.commands.registerCommand(
+            "hive-formatter.mysql-to-hive",
+            convertMysqlToHiveCommand,
+        ),
+        vscode.commands.registerCommand(
+            "hive-formatter.hive-to-mysql",
+            convertHiveToMysqlCommand,
+        ),
+        vscode.commands.registerCommand(
+            "hive-formatter.open-config-editor",
+            () => openConfigEditorCommand(context.extensionUri),
+        ),
         ...registerFormattingProviderForEachDialect(),
-        // 注册文档变化监听器用于语法诊断
         vscode.workspace.onDidChangeTextDocument((event) => {
             const document = event.document
             if (isSqlDocument(document)) {
                 diagnosticsProvider.provideDiagnostics(document)
             }
         }),
-        // 注册文档打开监听器
         vscode.workspace.onDidOpenTextDocument((document) => {
             if (isSqlDocument(document)) {
                 diagnosticsProvider.provideDiagnostics(document)
             }
         }),
-        // 注册文档保存监听器
         vscode.workspace.onDidSaveTextDocument((document) => {
             if (isSqlDocument(document)) {
                 diagnosticsProvider.provideDiagnostics(document)
             }
         }),
-        // 诊断提供者的清理
+        vscode.languages.registerCodeActionsProvider(
+            { scheme: 'file', language: 'sql' },
+            new SqlCodeActionProvider(),
+            { providedCodeActionKinds: SqlCodeActionProvider.providedCodeActionKinds }
+        ),
+        vscode.languages.registerCodeActionsProvider(
+            { scheme: 'file', language: 'hive' },
+            new SqlCodeActionProvider(),
+            { providedCodeActionKinds: SqlCodeActionProvider.providedCodeActionKinds }
+        ),
+        // 注册代码折叠提供者
+        vscode.languages.registerFoldingRangeProvider(
+            { scheme: 'file', language: 'sql' },
+            new SqlFoldingRangeProvider()
+        ),
+        vscode.languages.registerFoldingRangeProvider(
+            { scheme: 'file', language: 'hive' },
+            new SqlFoldingRangeProvider()
+        ),
+        // 注册大纲视图提供者
+        vscode.languages.registerDocumentSymbolProvider(
+            { scheme: 'file', language: 'sql' },
+            new SqlOutlineProvider()
+        ),
+        vscode.languages.registerDocumentSymbolProvider(
+            { scheme: 'file', language: 'hive' },
+            new SqlOutlineProvider()
+        ),
+        // 注册参数替换命令
+        SqlParameterReplaceCommand.register(context),
         diagnosticsProvider,
+        statusBarProvider,
+        parameterHighlighter,
     )
 
-    // 对已打开的文档进行诊断
     vscode.workspace.textDocuments.forEach((document) => {
         if (isSqlDocument(document)) {
             diagnosticsProvider.provideDiagnostics(document)
@@ -57,17 +98,11 @@ export function activate(context: vscode.ExtensionContext) {
     })
 }
 
-/**
- * 判断文档是否为 SQL 文档
- */
 function isSqlDocument(document: vscode.TextDocument): boolean {
     const sqlLanguages = Object.keys(sqlDialects)
     return sqlLanguages.includes(document.languageId)
 }
 
-/**
- * 为每种支持的SQL方言注册文档格式化提供者
- */
 function registerFormattingProviderForEachDialect() {
     return Object.entries(sqlDialects).map(([vscodeLang, sqlDialectName]) =>
         vscode.languages.registerDocumentFormattingEditProvider(
@@ -77,12 +112,14 @@ function registerFormattingProviderForEachDialect() {
     )
 }
 
-/**
- * 插件停用时调用
- * 当前无需要清理的资源
- */
 export function deactivate() {
     if (diagnosticsProvider) {
         diagnosticsProvider.dispose()
+    }
+    if (statusBarProvider) {
+        statusBarProvider.dispose()
+    }
+    if (parameterHighlighter) {
+        parameterHighlighter.dispose()
     }
 }

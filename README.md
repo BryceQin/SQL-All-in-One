@@ -9,9 +9,18 @@
 - 📝 **多种 SQL 方言支持** - Hive、MySQL、SparkSQL、通用 SQL
 - 🎨 **丰富的格式化选项** - 关键字大小写、缩进风格、换行策略等
 - 📏 **灵活的缩进配置** - 支持标准缩进和表格风格对齐
+- 🖥️ **可视化配置编辑器** - 图形化配置界面，实时预览格式化效果
+- 🔍 **增强的语法检查** - 15+ 项语法和代码质量检查，智能提示
 - ⚙️ **高度自定义** - 超过 10 项可配置项满足各种团队规范
 - 🔧 **命令支持** - 提供"格式化选择"命令，支持部分格式化
 - ✅ **语法错误检测** - 实时检测常见 SQL 语法错误并提供友好的中文提示
+- 🚀 **快速修复** - 配合语法检查提供一键修复功能
+- 💻 **状态栏显示** - 显示当前 SQL 方言和快捷操作入口
+- 📑 **代码片段** - 提供常用 SQL 代码片段，提升编写效率
+- 📁 **代码折叠** - 支持 CTE、子查询、函数块等代码块的折叠
+- 🗺️ **大纲视图** - 提供 SQL 文档的大纲视图，快速导航
+- 🔢 **参数化查询** - 支持变量高亮和批量替换功能
+- 🔍 **SQL Lint** - 内置 13+ 条 Lint 规则，支持自定义配置
 
 ## 快速开始
 
@@ -19,6 +28,92 @@
 2. 使用快捷键 `Shift+Alt+F`（Windows/Linux）或 `Shift+Option+F`（Mac）格式化文档
 3. 或右键选择"格式化文档"
 4. 或使用命令面板搜索"Format Selection (Hive Formatter)"格式化选中内容
+
+## 可视化配置编辑器
+
+使用图形化配置界面轻松调整格式化选项：
+
+1. 按 `Cmd+Shift+P`（Mac）或 `Ctrl+Shift+P`（Windows/Linux）打开命令面板
+2. 搜索并选择 "Hive Formatter Config"
+3. 在左侧配置面板中调整选项
+4. 在右侧预览面板中实时查看格式化效果
+5. 支持快速预设（默认、Hive、MySQL、紧凑）
+6. 点击"保存配置"应用更改
+
+## 增强的语法检查
+
+插件提供 15+ 项增强的语法和代码质量检查功能：
+
+### 语法错误检查
+- HAVING 子句缺少 GROUP BY
+- LIMIT 缺少数字参数
+- JOIN 缺少 ON 子句
+- 错误的 DISTINCT 位置
+- WHERE 子句中使用聚合函数
+- UPDATE 语句中使用 *
+- 不完整的 CASE 语句
+
+### 代码质量建议
+- 重复的表别名
+- 使用保留字作为标识符
+- SELECT 语句缺少 FROM 子句（特定函数除外）
+- INSERT 语句缺少列名
+- 冗余的 DISTINCT 用法
+- 子查询缺少别名
+- 可疑的 NULL 比较（= NULL vs IS NULL）
+
+### 方言提示
+- MySQL 日期函数在 Hive 中的差异提示
+
+### 配置选项
+在设置中可以配置：
+- `enableEnhancedChecks`: 是否启用增强检查
+- `showErrorLevel`: 是否显示错误级别的诊断
+- `showWarningLevel`: 是否显示警告级别的诊断
+- `showInfoLevel`: 是否显示信息级别的提示
+
+## 快速修复功能
+
+插件支持对检测到的问题提供一键快速修复：
+
+- 将 `= NULL` 自动修复为 `IS NULL`
+- 将 `!= NULL` 自动修复为 `IS NOT NULL`
+- 为保留字标识符添加反引号包裹
+- 为子查询添加别名
+- 为 INSERT 语句添加列名占位符
+- 为 HAVING 子句添加 GROUP BY
+
+## 状态栏功能
+
+插件会在 VSCode 状态栏显示当前使用的 SQL 方言，点击可快速打开配置编辑器。
+
+- 只在 SQL 和 Hive 文件中显示
+- 实时更新配置变更
+- 快速访问配置入口
+
+## 代码片段
+
+插件提供丰富的 SQL 代码片段，输入以下前缀即可快速插入：
+
+| 前缀 | 说明 |
+|------|------|
+| `sel` | 基础 SELECT 语句 |
+| `seld` | SELECT DISTINCT |
+| `join` | JOIN 查询 |
+| `leftjoin` | LEFT JOIN 查询 |
+| `groupby` | GROUP BY 带聚合 |
+| `case` | CASE WHEN 语句 |
+| `insert` | INSERT INTO 语句 |
+| `insertsel` | INSERT ... SELECT 语句 |
+| `update` | UPDATE 语句 |
+| `delete` | DELETE 语句 |
+| `ct` | CREATE TABLE 语句 |
+| `ctas` | CREATE TABLE AS SELECT |
+| `with` | WITH 通用表表达式 |
+| `union` | UNION ALL |
+| `hivepart` | Hive 分区插入 |
+| `hiveselpart` | Hive 分区查询 |
+| `comment` | 注释头部 |
 
 ## 扩展设置
 
@@ -47,6 +142,35 @@
 - **standard**: 标准 SQL 格式，带有级联缩进
 - **tabularLeft**: 在关键字和参数之间保留空格列，使关键字左对齐
 - **tabularRight**: 在关键字和参数之间保留空格列，将关键字向右对齐
+
+## SQL Lint 功能
+
+插件提供强大的 SQL Lint 功能，内置 13+ 条规则，支持自定义配置：
+
+### Lint 规则列表
+
+| 规则 ID | 说明 | 默认状态 | 默认级别 |
+|--------|------|--------|--------|
+| `avoid_select_star` | 避免使用 SELECT *，建议明确指定列名 | ✅ 启用 | ⚠️ Warning |
+| `explicit_join_type` | 建议显式指定 JOIN 类型（INNER/LEFT/RIGHT） | ✅ 启用 | ℹ️ Info |
+| `limit_with_order_by` | 使用 LIMIT 时建议同时使用 ORDER BY | ✅ 启用 | ⚠️ Warning |
+| `avoid_column_count_mismatch` | 检查 INSERT 语句列数和值数匹配 | ✅ 启用 | ❌ Error |
+| `missing_primary_key` | CREATE TABLE 建议定义主键 | ✅ 启用 | ⚠️ Warning |
+| `use_current_timestamp` | 建议使用 CURRENT_TIMESTAMP 获得更好兼容性 | ✅ 启用 | ℹ️ Info |
+| `avoid_select_in_insert` | INSERT 语句中建议明确指定列名 | ✅ 启用 | ⚠️ Warning |
+| `duplicate_column_aliases` | 检查重复的列别名 | ✅ 启用 | ⚠️ Warning |
+| `use_coalesce_over_isnull` | 建议使用 COALESCE 而不是 ISNULL/IFNULL | ❌ 禁用 | ℹ️ Info |
+| `avoid_correlated_subqueries` | 相关子查询可能影响性能 | ❌ 禁用 | ⚠️ Warning |
+| `long_query_line` | 建议将长查询多行格式化 | ❌ 禁用 | ℹ️ Info |
+| `explicit_column_aliasing` | 建议使用 AS 关键字明确指定列别名 | ❌ 禁用 | ℹ️ Info |
+| `uppercase_keywords` | 建议 SQL 关键字使用大写 | ❌ 禁用 | ℹ️ Info |
+
+### 配置 Lint 规则
+
+在 VSCode 设置中搜索 "Hive Formatter"，可以：
+1. 通过 `Hive-Formatter.enableLinter` 启用/禁用 Lint 功能
+2. 通过 `Hive-Formatter.lint.<ruleId>` 配置每条规则的启用状态和严重级别
+3. 严重级别支持：`error`、`warning`、`information`、`hint`
 
 ## 支持的文件类型
 

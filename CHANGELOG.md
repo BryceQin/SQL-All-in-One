@@ -1,5 +1,95 @@
 # 更新日志
 
+## 0.11.0
+- 修复配置编辑器中的 lint 错误
+- 移除未使用的导入和变量
+- 优化类型注解，避免使用 any 类型
+- 修复保留字检测问题，正确识别 CREATE TABLE 等语句
+- 改进代码质量，修复所有 lint 错误
+- 优化项目结构
+- 版本号升级到 0.11.0
+
+## 0.10.0
+- 新增 SQL Lint 功能，内置 13+ 条规则
+- 新增代码折叠功能，支持 CTE、子查询、函数块等
+- 新增大纲视图功能，提供 SQL 文档快速导航
+- 新增参数化查询支持，支持变量高亮和批量替换
+- 新增替换参数命令和快捷键
+- 新增可配置的 Lint 规则系统
+- 支持自定义 Lint 规则的启用状态和严重级别
+- 更新 package.json，添加 Lint 配置选项
+- 更新 README，添加 Lint 功能详细说明
+- 版本号升级到 0.10.0
+
+## 0.9.0
+- 新增状态栏显示功能，显示当前 SQL 方言
+- 新增代码片段支持，提供 15+ 常用 SQL 模板
+- 新增快速修复功能，支持一键修复常见问题
+- 支持 null 比较修复（= NULL → IS NULL）
+- 支持保留字标识符修复（添加反引号）
+- 支持子查询别名添加
+- 支持 INSERT 列名添加
+- 支持 HAVING 缺少 GROUP BY 的修复
+- 更新 package.json，添加 snippets 配置
+- 更新 README，添加新功能详细说明
+- 版本号升级到 0.9.0
+
+## 0.8.0
+- 新增增强的语法检查功能
+- 新增 15+ 项语法和代码质量检查
+- 支持配置是否启用增强检查
+- 支持按严重程度过滤诊断信息（错误/警告/信息）
+- 配置变更时自动重新检查
+- 更新文档，添加新功能说明
+- 更新版本号
+
+## 0.7.0
+- 新增可视化配置编辑器功能
+- 命令名从"Open Config Editor"改为"Hive Formatter Config"
+- 提供图形化配置界面，支持实时预览格式化效果
+- 内置快速预设（默认、Hive、MySQL、紧凑）
+- 支持 VSCode 主题适配（深色/浅色/高对比度）
+- 更新 README 文档，添加可视化配置编辑器使用说明
+- 更新版本号
+
+## 0.6.0
+- 新增可视化配置编辑器命令
+- 实现 ConfigEditorPanel 类管理 Webview 生命周期
+- 支持配置保存和读取
+- 集成实时格式化预览功能
+- 更新版本号
+
+## 0.5.0
+- 大规模重构 src 目录结构，按功能模块组织文件
+- 创建 commands 目录，存放所有 VSCode 命令（格式化选择、MySQL转Hive、Hive转MySQL）
+- 创建 providers 目录，存放所有提供者类（SqlFormattingProvider、SqlDiagnosticsProvider）
+- 创建 core 目录，存放核心工具和配置（config、sqlDialects）
+- 创建 utils 目录，存放通用工具函数（formatEditorText）
+- 优化 extension.ts，简化命令注册逻辑
+- 更新所有导入路径，保持代码正常工作
+- 提高项目的可维护性和可读性
+- 更新版本号
+
+## 0.4.0
+- 重构项目代码结构，提高可读性和可维护性
+- 将转换逻辑模块化，分离类型映射、函数映射、SQL解析等功能
+- 创建独立的转换器类（MysqlToHiveConverter、HiveToMysqlConverter）
+- 创建 converter 目录，组织相关文件
+- 简化主转换类（SqlConverter）
+- 优化代码组织，每个功能有明确的职责
+- 更新版本号
+
+## 0.3.0
+- 新增 MySQL 与 HiveSQL 互相转换功能
+- 支持将 MySQL 语法转换为 HiveSQL
+- 支持将 HiveSQL 转换为 MySQL
+- 数据类型自动转换（VARCHAR → STRING, DATETIME → TIMESTAMP 等）
+- 函数自动转换（IFNULL → COALESCE, NOW() → CURRENT_TIMESTAMP 等）
+- 表创建语句自动转换（移除 AUTO_INCREMENT, PRIMARY KEY 等 MySQL 特有语法）
+- 更新插件描述
+- 新增两个转换命令到命令面板
+- 更新版本号
+
 ## 0.2.3
 - 将发布日志从 README 移到 CHANGELOG 文件中
 - 更新版本号
