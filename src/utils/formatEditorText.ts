@@ -1,4 +1,4 @@
-import { FormatOptionsWithLanguage, format } from "./formatter/sqlFormatter"
+import { FormatOptionsWithLanguage, format } from "../formatter/sqlFormatter"
 
 export function formatEditorText(
     text: string,

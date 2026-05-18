@@ -1,22 +1,56 @@
 import * as vscode from "vscode"
-import { createParser } from "./parser/createParser"
-import { sqlDialects } from "./sqlDialects"
-import { createDialect } from "./languages/dialect"
-import * as allDialects from "./languages/allDialects"
-import { lineColFromIndex } from "./lexer/lineColFromIndex"
+import { createParser } from "../parser/createParser"
+import { sqlDialects } from "../core/sqlDialects"
+import { createDialect } from "../languages/dialect"
+import * as allDialects from "../languages/allDialects"
+import { lineColFromIndex } from "../lexer/lineColFromIndex"
+import { EnhancedSqlChecker } from "./EnhancedSqlChecker"
+import { SqlLinter } from "./SqlLinter"
 
 export class SqlDiagnosticsProvider {
     private diagnosticCollection: vscode.DiagnosticCollection
+    private enhancedChecker: EnhancedSqlChecker
+    private linter: SqlLinter
+    private configCache: Record<string, boolean> = {}
 
     constructor() {
         this.diagnosticCollection =
             vscode.languages.createDiagnosticCollection("hive-formatter")
+        this.enhancedChecker = new EnhancedSqlChecker()
+        this.linter = new SqlLinter()
+        this.loadConfig()
+        
+        // 监听配置变化
+        vscode.workspace.onDidChangeConfiguration((e) => {
+            if (e.affectsConfiguration('Hive-Formatter')) {
+                this.loadConfig()
+                this.linter = new SqlLinter() // 重新加载配置
+                // 重新检查所有打开的文档
+                vscode.workspace.textDocuments.forEach((doc) => {
+                    if (this.isSqlDocument(doc)) {
+                        this.provideDiagnostics(doc)
+                    }
+                })
+            }
+        })
     }
 
-    /**
-     * 提供语法诊断
-     * @param document - 要检查的文档
-     */
+    private loadConfig(): void {
+        const config = vscode.workspace.getConfiguration('Hive-Formatter')
+        this.configCache = {
+            enableEnhancedChecks: config.get('enableEnhancedChecks', true),
+            enableLinter: config.get('enableLinter', true),
+            showErrorLevel: config.get('showErrorLevel', true),
+            showWarningLevel: config.get('showWarningLevel', true),
+            showInfoLevel: config.get('showInfoLevel', true),
+        }
+    }
+
+    private isSqlDocument(document: vscode.TextDocument): boolean {
+        const sqlLanguages = Object.keys(sqlDialects)
+        return sqlLanguages.includes(document.languageId)
+    }
+
     public provideDiagnostics(document: vscode.TextDocument): void {
         const diagnostics: vscode.Diagnostic[] = []
         const text = document.getText()
@@ -36,68 +70,63 @@ export class SqlDiagnosticsProvider {
             const parser = createParser(createDialect(dialect).tokenizer)
             parser.parse(text, {})
             
-            // 解析成功，现在做一些额外的语法检查
             const extraDiagnostics = this.checkForCommonErrors(text, document)
             diagnostics.push(...extraDiagnostics)
+            
+            // 添加增强检查
+            if (this.configCache.enableEnhancedChecks) {
+                const enhancedDiagnostics = this.enhancedChecker.checkEnhancedIssues(text, document)
+                const filteredDiagnostics = this.filterBySeverity(enhancedDiagnostics)
+                diagnostics.push(...filteredDiagnostics)
+            }
+
+            // 添加 Lint 检查
+            if (this.configCache.enableLinter) {
+                const lintDiagnostics = this.linter.lint(text, document)
+                const filteredLintDiagnostics = this.filterBySeverity(lintDiagnostics)
+                diagnostics.push(...filteredLintDiagnostics)
+            }
         } catch (error) {
-            const diagnostic = this.createDiagnosticFromError(error, text, document)
-            if (diagnostic) {
-                diagnostics.push(diagnostic)
+            if (this.configCache.showErrorLevel) {
+                const diagnostic = this.createDiagnosticFromError(error, text, document)
+                if (diagnostic) {
+                    diagnostics.push(diagnostic)
+                }
             }
         }
 
         this.diagnosticCollection.set(document.uri, diagnostics)
     }
 
-    /**
-     * 检查常见的 SQL 语法错误
-     */
+    private filterBySeverity(diagnostics: vscode.Diagnostic[]): vscode.Diagnostic[] {
+        return diagnostics.filter(d => {
+            if (d.severity === vscode.DiagnosticSeverity.Error && !this.configCache.showErrorLevel) return false
+            if (d.severity === vscode.DiagnosticSeverity.Warning && !this.configCache.showWarningLevel) return false
+            if (d.severity === vscode.DiagnosticSeverity.Information && !this.configCache.showInfoLevel) return false
+            return true
+        })
+    }
+
     private checkForCommonErrors(text: string, document: vscode.TextDocument): vscode.Diagnostic[] {
         const diagnostics: vscode.Diagnostic[] = []
         
-        // 1. 检查：逗号后面没有列名的情况 (如 "select id, from ...")
         this.checkCommaFollowedByFrom(text, document, diagnostics)
-        
-        // 2. 检查：SELECT 后面没有列名
         this.checkSelectWithNoColumns(text, document, diagnostics)
-        
-        // 3. 检查：FROM 后面没有表名
         this.checkFromWithNoTable(text, document, diagnostics)
-        
-        // 4. 检查：不匹配的括号
         this.checkMismatchedParentheses(text, document, diagnostics)
-        
-        // 5. 检查：字符串没有正确闭合
         this.checkUnclosedStrings(text, document, diagnostics)
-        
-        // 6. 检查：ORDER BY 后面没有列名
         this.checkOrderByWithNoColumn(text, document, diagnostics)
-        
-        // 7. 检查：WHERE 后面没有条件
         this.checkWhereWithNoCondition(text, document, diagnostics)
-        
-        // 8. 检查：GROUP BY 后面没有列名
         this.checkGroupByWithNoColumn(text, document, diagnostics)
-        
-        // 9. 检查：多余的逗号
         this.checkExtraCommas(text, document, diagnostics)
         
         return diagnostics
     }
 
-    /**
-     * 检查逗号后面直接跟 FROM 的情况
-     */
     private checkCommaFollowedByFrom(text: string, document: vscode.TextDocument, diagnostics: vscode.Diagnostic[]): void {
-        // 正则表达式：检查逗号后面紧跟着 FROM（忽略中间的空白和换行）
-        // 但是要确保我们不会误报正常的情况
         const pattern = /,(\s*)\bfrom\b/gi
         let match
         while ((match = pattern.exec(text)) !== null) {
-            // 检查逗号前面是否有列名，避免误报
-            const beforeComma = text.substring(Math.max(0, match.index - 50), match.index)
-            // 如果逗号前面是 SELECT 关键字，这可能是一个正常的单列表查询
-            // 但是等等，我们原来的例子是 select id from，这里没有逗号，所以我们需要仔细分析
             const lineCol = lineColFromIndex(text, match.index)
             const lineNum = lineCol.line
             const diagnostic = new vscode.Diagnostic(
@@ -111,29 +140,20 @@ export class SqlDiagnosticsProvider {
         }
     }
 
-    /**
-     * 检查 SELECT 后面没有列名的情况
-     */
     private checkSelectWithNoColumns(text: string, document: vscode.TextDocument, diagnostics: vscode.Diagnostic[]): void {
-        // 先找到所有的 SELECT 关键字
         const selectPattern = /\bselect\b/gi;
         let selectMatch: RegExpExecArray | null;
         
         while ((selectMatch = selectPattern.exec(text)) !== null) {
             const selectStart = selectMatch.index;
-            const selectEnd = selectStart + 6; // 'select'.length = 6
+            const selectEnd = selectStart + 6;
             
-            // 获取 SELECT 之后的所有内容
             const afterSelect = text.substring(selectEnd);
-            
-            // 寻找接下来的第一个 FROM 关键字
             const fromMatch = /\bfrom\b/i.exec(afterSelect);
             if (fromMatch) {
                 const fromStartRelative = fromMatch.index;
-                // 检查 SELECT 和 FROM 之间的内容
                 const betweenText = afterSelect.substring(0, fromStartRelative).trim();
                 
-                // 如果中间没有任何内容，那就是语法错误
                 if (betweenText === '') {
                     const lineCol = lineColFromIndex(text, selectStart);
                     const lineNum = lineCol.line;
@@ -150,27 +170,19 @@ export class SqlDiagnosticsProvider {
         }
     }
 
-    /**
-     * 检查 FROM 后面没有表名的情况
-     */
     private checkFromWithNoTable(text: string, document: vscode.TextDocument, diagnostics: vscode.Diagnostic[]): void {
-        // 先找到所有的 FROM 关键字
         const fromPattern = /\bfrom\b/gi;
         let fromMatch: RegExpExecArray | null;
         
         while ((fromMatch = fromPattern.exec(text)) !== null) {
             const fromStart = fromMatch.index;
-            const fromEnd = fromStart + 4; // 'from'.length = 4
+            const fromEnd = fromStart + 4;
             
-            // 获取 FROM 之后的所有内容
             const afterFrom = text.substring(fromEnd);
-            
-            // 寻找 FROM 之后接下来的内容，直到遇到分号或结束
             const semicolonMatch = /[;$]/i.exec(afterFrom);
             const endPosition = semicolonMatch ? semicolonMatch.index : afterFrom.length;
             const afterFromText = afterFrom.substring(0, endPosition).trim();
             
-            // 如果后面没有任何内容，那就是语法错误
             if (afterFromText === '') {
                 const lineCol = lineColFromIndex(text, fromStart);
                 const lineNum = lineCol.line;
@@ -186,17 +198,13 @@ export class SqlDiagnosticsProvider {
         }
     }
 
-    /**
-     * 检查不匹配的括号
-     */
     private checkMismatchedParentheses(text: string, document: vscode.TextDocument, diagnostics: vscode.Diagnostic[]): void {
-        let openParens: number[] = []
+        const openParens: number[] = []
         for (let i = 0; i < text.length; i++) {
             if (text[i] === '(') {
                 openParens.push(i)
             } else if (text[i] === ')') {
                 if (openParens.length === 0) {
-                    // 多余的右括号
                     const lineCol = lineColFromIndex(text, i)
                     const lineNum = lineCol.line
                     const diagnostic = new vscode.Diagnostic(
@@ -212,7 +220,6 @@ export class SqlDiagnosticsProvider {
                 }
             }
         }
-        // 检查没有闭合的左括号
         for (const pos of openParens) {
             const lineCol = lineColFromIndex(text, pos)
             const lineNum = lineCol.line
@@ -227,9 +234,6 @@ export class SqlDiagnosticsProvider {
         }
     }
 
-    /**
-     * 检查没有正确闭合的字符串
-     */
     private checkUnclosedStrings(text: string, document: vscode.TextDocument, diagnostics: vscode.Diagnostic[]): void {
         let inString = false
         let stringStartPos = -1
@@ -260,11 +264,7 @@ export class SqlDiagnosticsProvider {
         }
     }
 
-    /**
-     * 检查 ORDER BY 后面没有列名
-     */
     private checkOrderByWithNoColumn(text: string, document: vscode.TextDocument, diagnostics: vscode.Diagnostic[]): void {
-        // 先找到所有的 ORDER BY 关键字
         const orderByPattern = /\border\s+by\b/gi;
         let orderByMatch: RegExpExecArray | null;
         
@@ -272,15 +272,11 @@ export class SqlDiagnosticsProvider {
             const orderByStart = orderByMatch.index;
             const orderByEnd = orderByStart + orderByMatch[0].length;
             
-            // 获取 ORDER BY 之后的所有内容
             const afterOrderBy = text.substring(orderByEnd);
-            
-            // 寻找接下来的可能表示结束的关键字或符号
             const endMatch = /(?:;|$|\bwhere\b|\bgroup\b|\bhaving\b|\blimit\b)/i.exec(afterOrderBy);
             const endPosition = endMatch ? endMatch.index : afterOrderBy.length;
             const afterOrderByText = afterOrderBy.substring(0, endPosition).trim();
             
-            // 如果后面没有任何内容，那就是语法错误
             if (afterOrderByText === '') {
                 const lineCol = lineColFromIndex(text, orderByStart);
                 const lineNum = lineCol.line;
@@ -296,27 +292,19 @@ export class SqlDiagnosticsProvider {
         }
     }
 
-    /**
-     * 检查 WHERE 后面没有条件
-     */
     private checkWhereWithNoCondition(text: string, document: vscode.TextDocument, diagnostics: vscode.Diagnostic[]): void {
-        // 先找到所有的 WHERE 关键字
         const wherePattern = /\bwhere\b/gi;
         let whereMatch: RegExpExecArray | null;
         
         while ((whereMatch = wherePattern.exec(text)) !== null) {
             const whereStart = whereMatch.index;
-            const whereEnd = whereStart + 5; // 'where'.length = 5
+            const whereEnd = whereStart + 5;
             
-            // 获取 WHERE 之后的所有内容
             const afterWhere = text.substring(whereEnd);
-            
-            // 寻找接下来的可能表示结束的关键字或符号
             const endMatch = /(?:;|$|\bgroup\b|\border\b|\blimit\b)/i.exec(afterWhere);
             const endPosition = endMatch ? endMatch.index : afterWhere.length;
             const afterWhereText = afterWhere.substring(0, endPosition).trim();
             
-            // 如果后面没有任何内容，那就是语法错误
             if (afterWhereText === '') {
                 const lineCol = lineColFromIndex(text, whereStart);
                 const lineNum = lineCol.line;
@@ -332,11 +320,7 @@ export class SqlDiagnosticsProvider {
         }
     }
 
-    /**
-     * 检查 GROUP BY 后面没有列名
-     */
     private checkGroupByWithNoColumn(text: string, document: vscode.TextDocument, diagnostics: vscode.Diagnostic[]): void {
-        // 先找到所有的 GROUP BY 关键字
         const groupByPattern = /\bgroup\s+by\b/gi;
         let groupByMatch: RegExpExecArray | null;
         
@@ -344,15 +328,11 @@ export class SqlDiagnosticsProvider {
             const groupByStart = groupByMatch.index;
             const groupByEnd = groupByStart + groupByMatch[0].length;
             
-            // 获取 GROUP BY 之后的所有内容
             const afterGroupBy = text.substring(groupByEnd);
-            
-            // 寻找接下来的可能表示结束的关键字或符号
             const endMatch = /(?:;|$|\bwhere\b|\bhaving\b|\border\b|\blimit\b)/i.exec(afterGroupBy);
             const endPosition = endMatch ? endMatch.index : afterGroupBy.length;
             const afterGroupByText = afterGroupBy.substring(0, endPosition).trim();
             
-            // 如果后面没有任何内容，那就是语法错误
             if (afterGroupByText === '') {
                 const lineCol = lineColFromIndex(text, groupByStart);
                 const lineNum = lineCol.line;
@@ -368,11 +348,7 @@ export class SqlDiagnosticsProvider {
         }
     }
 
-    /**
-     * 检查多余的逗号
-     */
     private checkExtraCommas(text: string, document: vscode.TextDocument, diagnostics: vscode.Diagnostic[]): void {
-        // 检查：逗号后面是右括号
         const pattern1 = /,(\s*)\)/g
         let match
         while ((match = pattern1.exec(text)) !== null) {
@@ -388,7 +364,6 @@ export class SqlDiagnosticsProvider {
             diagnostics.push(diagnostic)
         }
         
-        // 检查：逗号后面是分号
         const pattern2 = /,(\s*);/g
         while ((match = pattern2.exec(text)) !== null) {
             const lineCol = lineColFromIndex(text, match.index)
@@ -404,9 +379,6 @@ export class SqlDiagnosticsProvider {
         }
     }
 
-    /**
-     * 从错误创建诊断信息
-     */
     private createDiagnosticFromError(
         error: unknown,
         text: string,
@@ -447,23 +419,14 @@ export class SqlDiagnosticsProvider {
         return diagnostic
     }
 
-    /**
-     * 格式化错误消息，移除位置信息（因为会单独显示）
-     */
     private formatErrorMessage(message: string): string {
         return message.replace(/\s+at position \d+$/, "")
     }
 
-    /**
-     * 清除指定文档的诊断信息
-     */
     public clearDiagnostics(uri: vscode.Uri): void {
         this.diagnosticCollection.delete(uri)
     }
 
-    /**
-     * 释放资源
-     */
     public dispose(): void {
         this.diagnosticCollection.dispose()
     }

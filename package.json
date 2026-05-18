@@ -1,8 +1,8 @@
 {
     "name": "hive-formatter",
     "displayName": "Hive Formatter",
-    "description": "一个用于Hive/MySQL/SparkSQL格式化的VSCode插件",
-    "version": "0.2.3",
+    "description": "一个用于 Hive、MySQL、SparkSQL 格式化的 VSCode 插件，支持 MySQL 与 HiveSQL 互相转换",
+    "version": "0.11.0",
     "publisher": "bryce-qin",
     "contributors": [
         "TalDu"
@@ -21,6 +21,7 @@
     },
     "categories": [
         "Formatters",
+        "Snippets",
         "Other"
     ],
     "keywords": [
@@ -29,7 +30,8 @@
         "mysql",
         "spark",
         "sparksql",
-        "sql"
+        "sql",
+        "snippets"
     ],
     "activationEvents": [
         "onStartupFinished",
@@ -39,6 +41,16 @@
     "main": "./out/extension.js",
     "browser": "./out/extension.js",
     "contributes": {
+        "snippets": [
+            {
+                "language": "sql",
+                "path": "./snippets/sql.json"
+            },
+            {
+                "language": "hive",
+                "path": "./snippets/sql.json"
+            }
+        ],
         "languages": [
             {
                 "id": "sql",
@@ -66,6 +78,34 @@
                 "title": "Format Selection (Hive Formatter)",
                 "shortTitle": "Format Hive",
                 "command": "hive-formatter.format-selection"
+            },
+            {
+                "title": "MySQL to HiveSQL",
+                "shortTitle": "MySQL to Hive",
+                "command": "hive-formatter.mysql-to-hive"
+            },
+            {
+                "title": "HiveSQL to MySQL",
+                "shortTitle": "Hive to MySQL",
+                "command": "hive-formatter.hive-to-mysql"
+            },
+            {
+                "title": "Hive Formatter Config",
+                "shortTitle": "Config Editor",
+                "command": "hive-formatter.open-config-editor"
+            },
+            {
+                "title": "Replace Parameter",
+                "shortTitle": "Replace Param",
+                "command": "hive-formatter.replaceParameter"
+            }
+        ],
+        "keybindings": [
+            {
+                "command": "hive-formatter.replaceParameter",
+                "key": "ctrl+shift+r",
+                "mac": "cmd+shift+r",
+                "when": "editorLangId =~ /sql|hive/"
             }
         ],
         "configuration": {
@@ -193,6 +233,71 @@
                 "Hive-Formatter.paramTypes": {
                     "type": "object",
                     "markdownDescription": "指定要支持的参数占位符类型"
+                },
+                "Hive-Formatter.enableEnhancedChecks": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "是否启用增强的语法检查功能"
+                },
+                "Hive-Formatter.showErrorLevel": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "是否显示错误级别的诊断信息"
+                },
+                "Hive-Formatter.showWarningLevel": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "是否显示警告级别的诊断信息"
+                },
+                "Hive-Formatter.showInfoLevel": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "是否显示信息级别的诊断提示"
+                },
+                "Hive-Formatter.enableLinter": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "是否启用 SQL Lint 功能"
+                },
+                "Hive-Formatter.lint.avoid_select_star": {
+                    "type": "object",
+                    "default": { "enabled": true, "severity": "warning" },
+                    "markdownDescription": "配置 `avoid_select_star` 规则"
+                },
+                "Hive-Formatter.lint.explicit_join_type": {
+                    "type": "object",
+                    "default": { "enabled": true, "severity": "information" },
+                    "markdownDescription": "配置 `explicit_join_type` 规则"
+                },
+                "Hive-Formatter.lint.limit_with_order_by": {
+                    "type": "object",
+                    "default": { "enabled": true, "severity": "warning" },
+                    "markdownDescription": "配置 `limit_with_order_by` 规则"
+                },
+                "Hive-Formatter.lint.avoid_column_count_mismatch": {
+                    "type": "object",
+                    "default": { "enabled": true, "severity": "error" },
+                    "markdownDescription": "配置 `avoid_column_count_mismatch` 规则"
+                },
+                "Hive-Formatter.lint.missing_primary_key": {
+                    "type": "object",
+                    "default": { "enabled": true, "severity": "warning" },
+                    "markdownDescription": "配置 `missing_primary_key` 规则"
+                },
+                "Hive-Formatter.lint.use_current_timestamp": {
+                    "type": "object",
+                    "default": { "enabled": true, "severity": "information" },
+                    "markdownDescription": "配置 `use_current_timestamp` 规则"
+                },
+                "Hive-Formatter.lint.avoid_select_in_insert": {
+                    "type": "object",
+                    "default": { "enabled": true, "severity": "warning" },
+                    "markdownDescription": "配置 `avoid_select_in_insert` 规则"
+                },
+                "Hive-Formatter.lint.duplicate_column_aliases": {
+                    "type": "object",
+                    "default": { "enabled": true, "severity": "warning" },
+                    "markdownDescription": "配置 `duplicate_column_aliases` 规则"
                 }
             }
         }
@@ -212,6 +317,7 @@
         "@types/vscode": "^1.108.1",
         "@vscode/test-cli": "^0.0.12",
         "@vscode/test-electron": "^2.5.2",
+        "@vscode/vsce": "^3.9.1",
         "eslint": "^9.39.2",
         "eslint-plugin-tsdoc": "^0.5.0",
         "jiti": "^2.6.1",

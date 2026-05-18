@@ -2,7 +2,7 @@ import * as vscode from "vscode"
 import {
     SqlLanguage,
     FormatOptionsWithLanguage,
-} from "./formatter/sqlFormatter"
+} from "../formatter/sqlFormatter"
 import {
     KeywordCase,
     DataTypeCase,
@@ -11,16 +11,10 @@ import {
     IndentStyle,
     LogicalOperatorNewline,
     FormatOptions,
-} from "./formatter/FormatOptions"
+} from "../formatter/FormatOptions"
 
 type ParamTypes = FormatOptions["paramTypes"]
 
-/**
- * 从VSCode配置和格式化选项创建格式化配置
- * @param extensionSettings - 插件配置
- * @param formattingOptions - 编辑器格式化选项
- * @param detectedDialect - 检测到的SQL方言
- */
 export const createConfig = (
     extensionSettings: vscode.WorkspaceConfiguration,
     formattingOptions: vscode.FormattingOptions,
@@ -55,14 +49,10 @@ export const createConfig = (
     }
 }
 
-/**
- * 创建缩进配置
- */
 const createIndentationConfig = (
     extensionSettings: vscode.WorkspaceConfiguration,
     formattingOptions: vscode.FormattingOptions,
 ): FormatOptionsWithLanguage => {
-    // 如果启用了忽略标签设置，使用插件配置
     if (extensionSettings.get<boolean>("ignoreTabSettings")) {
         return {
             tabWidth: extensionSettings.get<number>("tabSizeOverride"),
