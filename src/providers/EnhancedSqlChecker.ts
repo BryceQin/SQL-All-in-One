@@ -249,20 +249,65 @@ export class EnhancedSqlChecker {
 
     // 6. 检查 SELECT 没有 FROM（除了特定函数调用）
     private checkSelectWithoutFrom(text: string, document: vscode.TextDocument, diagnostics: vscode.Diagnostic[]): void {
-        const selectPattern = /\bselect\b(?!.*\bfrom\b)(?!.*\b(now|current_date|current_timestamp|sysdate|uuid)\s*\()/gi
+        const selectPattern = /\bselect\b/gi
         let match
         while ((match = selectPattern.exec(text)) !== null) {
-            const lineCol = lineColFromIndex(text, match.index)
-            const lineNum = lineCol.line
-            const diagnostic = new vscode.Diagnostic(
-                new vscode.Range(lineNum - 1, lineCol.col, lineNum - 1, lineCol.col + 6),
-                `【第 ${lineNum} 行】代码质量建议：SELECT 语句通常需要 FROM 子句`,
-                vscode.DiagnosticSeverity.Warning
-            )
-            diagnostic.source = "Hive Formatter"
-            diagnostic.code = "SELECT_WITHOUT_FROM"
-            diagnostics.push(diagnostic)
+            // 在同一个查询范围内查找是否有 FROM
+            const searchEnd = this.findQueryEnd(text, match.index)
+            const queryText = text.substring(match.index, searchEnd)
+            
+            // 检查是否有 FROM
+            const hasFrom = /\bfrom\b/i.test(queryText)
+            
+            // 检查是否有特定的函数调用（不需要 FROM）
+            const hasNoFromFunctions = /\b(now|current_date|current_timestamp|sysdate|uuid|getdate|current_time)\s*\(/i.test(queryText)
+            
+            // 只有当没有 FROM 且没有特定函数时才显示警告
+            if (!hasFrom && !hasNoFromFunctions) {
+                const lineCol = lineColFromIndex(text, match.index)
+                const lineNum = lineCol.line
+                const diagnostic = new vscode.Diagnostic(
+                    new vscode.Range(lineNum - 1, lineCol.col, lineNum - 1, lineCol.col + 6),
+                    `【第 ${lineNum} 行】代码质量建议：SELECT 语句通常需要 FROM 子句`,
+                    vscode.DiagnosticSeverity.Warning
+                )
+                diagnostic.source = "Hive Formatter"
+                diagnostic.code = "SELECT_WITHOUT_FROM"
+                diagnostics.push(diagnostic)
+            }
         }
+    }
+    
+    // 查找查询语句的结束位置
+    private findQueryEnd(text: string, startIndex: number): number {
+        let openParens = 0
+        let endIndex = startIndex
+        
+        for (let i = startIndex; i < text.length; i++) {
+            const char = text[i]
+            
+            if (char === '(') {
+                openParens++
+            } else if (char === ')') {
+                openParens--
+            } else if (char === ';' && openParens === 0) {
+                endIndex = i + 1
+                break
+            }
+            
+            // 检查是否是新的语句开始
+            if (openParens === 0) {
+                const nextWordMatch = text.substring(i).match(/^\s*(SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|WITH)\b/i)
+                if (nextWordMatch && i > startIndex) {
+                    endIndex = i
+                    break
+                }
+            }
+            
+            endIndex = i + 1
+        }
+        
+        return endIndex
     }
 
     // 7. 检查 DISTINCT 位置错误
