@@ -1,6 +1,6 @@
 import * as vscode from 'vscode'
 import { format, type SqlLanguage } from '../formatter/sqlFormatter'
-import type { KeywordCase, DataTypeCase, FunctionCase, IndentStyle, LogicalOperatorNewline, CommaPosition } from '../formatter/FormatOptions'
+import type { KeywordCase, DataTypeCase, FunctionCase, IndentStyle, LogicalOperatorNewline } from '../formatter/FormatOptions'
 
 export class ConfigEditorPanel {
     public static currentPanel: ConfigEditorPanel | undefined
