@@ -1,6 +1,6 @@
 import * as vscode from 'vscode'
 import { format, type SqlLanguage } from '../formatter/sqlFormatter'
-import type { KeywordCase, DataTypeCase, FunctionCase, IndentStyle, LogicalOperatorNewline } from '../formatter/FormatOptions'
+import type { KeywordCase, DataTypeCase, FunctionCase, IndentStyle, LogicalOperatorNewline, CommaPosition } from '../formatter/FormatOptions'
 
 export class ConfigEditorPanel {
     public static currentPanel: ConfigEditorPanel | undefined
@@ -448,7 +448,78 @@ export class ConfigEditorPanel {
                 </div>
                 
                 <div class="config-group">
+                    <div class="config-group-title">逗号和对齐</div>
+                    
+                    <div class="config-item">
+                        <label class="config-label">逗号位置</label>
+                        <select class="config-select" id="commaPosition">
+                            <option value="after">行尾</option>
+                            <option value="before">行首</option>
+                        </select>
+                    </div>
+                    
+                    <div class="config-item config-checkbox">
+                        <input type="checkbox" id="alignColumnDefinitions">
+                        <label class="config-label">对齐列定义</label>
+                    </div>
+                    
+                    <div class="config-item config-checkbox">
+                        <input type="checkbox" id="tabulateAlias">
+                        <label class="config-label">对齐表别名</label>
+                    </div>
+                </div>
+                
+                <div class="config-group">
+                    <div class="config-group-title">换行设置</div>
+                    
+                    <div class="config-item config-checkbox">
+                        <input type="checkbox" id="newlineAfterSelect">
+                        <label class="config-label">SELECT 后换行</label>
+                    </div>
+                    
+                    <div class="config-item config-checkbox">
+                        <input type="checkbox" id="newlineAfterFrom">
+                        <label class="config-label">FROM 后换行</label>
+                    </div>
+                    
+                    <div class="config-item config-checkbox">
+                        <input type="checkbox" id="newlineBeforeWhere">
+                        <label class="config-label">WHERE 前换行</label>
+                    </div>
+                    
+                    <div class="config-item config-checkbox">
+                        <input type="checkbox" id="newlineAfterWhere">
+                        <label class="config-label">WHERE 后换行</label>
+                    </div>
+                    
+                    <div class="config-item config-checkbox">
+                        <input type="checkbox" id="newlineBeforeOrderBy">
+                        <label class="config-label">ORDER BY 前换行</label>
+                    </div>
+                    
+                    <div class="config-item config-checkbox">
+                        <input type="checkbox" id="newlineBeforeGroupBy">
+                        <label class="config-label">GROUP BY 前换行</label>
+                    </div>
+                    
+                    <div class="config-item config-checkbox">
+                        <input type="checkbox" id="newlineBeforeHaving">
+                        <label class="config-label">HAVING 前换行</label>
+                    </div>
+                    
+                    <div class="config-item config-checkbox">
+                        <input type="checkbox" id="newlineBeforeLimit">
+                        <label class="config-label">LIMIT 前换行</label>
+                    </div>
+                </div>
+                
+                <div class="config-group">
                     <div class="config-group-title">其他选项</div>
+                    
+                    <div class="config-item">
+                        <label class="config-label">最大行长度</label>
+                        <input type="number" class="config-input" id="maxLineLength" min="40" max="500">
+                    </div>
                     
                     <div class="config-item config-checkbox">
                         <input type="checkbox" id="denseOperators">
@@ -497,6 +568,18 @@ export class ConfigEditorPanel {
                 linesBetweenQueries: 1,
                 denseOperators: false,
                 newlineBeforeSemicolon: false,
+                commaPosition: 'after',
+                alignColumnDefinitions: false,
+                newlineAfterSelect: true,
+                newlineAfterFrom: true,
+                newlineBeforeWhere: true,
+                newlineAfterWhere: true,
+                newlineBeforeOrderBy: true,
+                newlineBeforeGroupBy: true,
+                newlineBeforeHaving: true,
+                newlineBeforeLimit: true,
+                maxLineLength: 120,
+                tabulateAlias: false,
                 ignoreTabSettings: false,
                 tabSizeOverride: 2,
                 insertSpacesOverride: true
@@ -513,6 +596,18 @@ export class ConfigEditorPanel {
                 linesBetweenQueries: 2,
                 denseOperators: false,
                 newlineBeforeSemicolon: false,
+                commaPosition: 'after',
+                alignColumnDefinitions: true,
+                newlineAfterSelect: true,
+                newlineAfterFrom: true,
+                newlineBeforeWhere: true,
+                newlineAfterWhere: true,
+                newlineBeforeOrderBy: true,
+                newlineBeforeGroupBy: true,
+                newlineBeforeHaving: true,
+                newlineBeforeLimit: true,
+                maxLineLength: 100,
+                tabulateAlias: true,
                 ignoreTabSettings: false,
                 tabSizeOverride: 2,
                 insertSpacesOverride: true
@@ -529,6 +624,18 @@ export class ConfigEditorPanel {
                 linesBetweenQueries: 1,
                 denseOperators: false,
                 newlineBeforeSemicolon: false,
+                commaPosition: 'after',
+                alignColumnDefinitions: false,
+                newlineAfterSelect: true,
+                newlineAfterFrom: true,
+                newlineBeforeWhere: true,
+                newlineAfterWhere: true,
+                newlineBeforeOrderBy: true,
+                newlineBeforeGroupBy: true,
+                newlineBeforeHaving: true,
+                newlineBeforeLimit: true,
+                maxLineLength: 120,
+                tabulateAlias: false,
                 ignoreTabSettings: false,
                 tabSizeOverride: 4,
                 insertSpacesOverride: true
@@ -545,6 +652,18 @@ export class ConfigEditorPanel {
                 linesBetweenQueries: 0,
                 denseOperators: true,
                 newlineBeforeSemicolon: false,
+                commaPosition: 'after',
+                alignColumnDefinitions: false,
+                newlineAfterSelect: false,
+                newlineAfterFrom: false,
+                newlineBeforeWhere: false,
+                newlineAfterWhere: false,
+                newlineBeforeOrderBy: false,
+                newlineBeforeGroupBy: false,
+                newlineBeforeHaving: false,
+                newlineBeforeLimit: false,
+                maxLineLength: 150,
+                tabulateAlias: false,
                 ignoreTabSettings: false,
                 tabSizeOverride: 2,
                 insertSpacesOverride: true
@@ -593,6 +712,18 @@ export class ConfigEditorPanel {
                 linesBetweenQueries: parseInt(document.getElementById('linesBetweenQueries').value),
                 denseOperators: document.getElementById('denseOperators').checked,
                 newlineBeforeSemicolon: document.getElementById('newlineBeforeSemicolon').checked,
+                commaPosition: document.getElementById('commaPosition').value,
+                alignColumnDefinitions: document.getElementById('alignColumnDefinitions').checked,
+                newlineAfterSelect: document.getElementById('newlineAfterSelect').checked,
+                newlineAfterFrom: document.getElementById('newlineAfterFrom').checked,
+                newlineBeforeWhere: document.getElementById('newlineBeforeWhere').checked,
+                newlineAfterWhere: document.getElementById('newlineAfterWhere').checked,
+                newlineBeforeOrderBy: document.getElementById('newlineBeforeOrderBy').checked,
+                newlineBeforeGroupBy: document.getElementById('newlineBeforeGroupBy').checked,
+                newlineBeforeHaving: document.getElementById('newlineBeforeHaving').checked,
+                newlineBeforeLimit: document.getElementById('newlineBeforeLimit').checked,
+                maxLineLength: parseInt(document.getElementById('maxLineLength').value),
+                tabulateAlias: document.getElementById('tabulateAlias').checked,
                 ignoreTabSettings: document.getElementById('ignoreTabSettings').checked,
                 tabSizeOverride: parseInt(document.getElementById('tabSizeOverride').value),
                 insertSpacesOverride: true
@@ -658,6 +789,18 @@ export class ConfigEditorPanel {
                 linesBetweenQueries: config.get('linesBetweenQueries', 1),
                 denseOperators: config.get('denseOperators', false),
                 newlineBeforeSemicolon: config.get('newlineBeforeSemicolon', false),
+                commaPosition: config.get('commaPosition', 'after'),
+                alignColumnDefinitions: config.get('alignColumnDefinitions', false),
+                newlineAfterSelect: config.get('newlineAfterSelect', true),
+                newlineAfterFrom: config.get('newlineAfterFrom', true),
+                newlineBeforeWhere: config.get('newlineBeforeWhere', true),
+                newlineAfterWhere: config.get('newlineAfterWhere', true),
+                newlineBeforeOrderBy: config.get('newlineBeforeOrderBy', true),
+                newlineBeforeGroupBy: config.get('newlineBeforeGroupBy', true),
+                newlineBeforeHaving: config.get('newlineBeforeHaving', true),
+                newlineBeforeLimit: config.get('newlineBeforeLimit', true),
+                maxLineLength: config.get('maxLineLength', 120),
+                tabulateAlias: config.get('tabulateAlias', false),
                 ignoreTabSettings: config.get('ignoreTabSettings', false),
                 tabSizeOverride: config.get('tabSizeOverride', 2),
                 insertSpacesOverride: config.get('insertSpacesOverride', true)
@@ -678,6 +821,18 @@ export class ConfigEditorPanel {
         await config.update('linesBetweenQueries', data.linesBetweenQueries, vscode.ConfigurationTarget.Global)
         await config.update('denseOperators', data.denseOperators, vscode.ConfigurationTarget.Global)
         await config.update('newlineBeforeSemicolon', data.newlineBeforeSemicolon, vscode.ConfigurationTarget.Global)
+        await config.update('commaPosition', data.commaPosition, vscode.ConfigurationTarget.Global)
+        await config.update('alignColumnDefinitions', data.alignColumnDefinitions, vscode.ConfigurationTarget.Global)
+        await config.update('newlineAfterSelect', data.newlineAfterSelect, vscode.ConfigurationTarget.Global)
+        await config.update('newlineAfterFrom', data.newlineAfterFrom, vscode.ConfigurationTarget.Global)
+        await config.update('newlineBeforeWhere', data.newlineBeforeWhere, vscode.ConfigurationTarget.Global)
+        await config.update('newlineAfterWhere', data.newlineAfterWhere, vscode.ConfigurationTarget.Global)
+        await config.update('newlineBeforeOrderBy', data.newlineBeforeOrderBy, vscode.ConfigurationTarget.Global)
+        await config.update('newlineBeforeGroupBy', data.newlineBeforeGroupBy, vscode.ConfigurationTarget.Global)
+        await config.update('newlineBeforeHaving', data.newlineBeforeHaving, vscode.ConfigurationTarget.Global)
+        await config.update('newlineBeforeLimit', data.newlineBeforeLimit, vscode.ConfigurationTarget.Global)
+        await config.update('maxLineLength', data.maxLineLength, vscode.ConfigurationTarget.Global)
+        await config.update('tabulateAlias', data.tabulateAlias, vscode.ConfigurationTarget.Global)
         await config.update('ignoreTabSettings', data.ignoreTabSettings, vscode.ConfigurationTarget.Global)
         await config.update('tabSizeOverride', data.tabSizeOverride, vscode.ConfigurationTarget.Global)
         await config.update('insertSpacesOverride', data.insertSpacesOverride, vscode.ConfigurationTarget.Global)
@@ -698,6 +853,18 @@ export class ConfigEditorPanel {
             linesBetweenQueries: 1,
             denseOperators: false,
             newlineBeforeSemicolon: false,
+            commaPosition: 'after',
+            alignColumnDefinitions: false,
+            newlineAfterSelect: true,
+            newlineAfterFrom: true,
+            newlineBeforeWhere: true,
+            newlineAfterWhere: true,
+            newlineBeforeOrderBy: true,
+            newlineBeforeGroupBy: true,
+            newlineBeforeHaving: true,
+            newlineBeforeLimit: true,
+            maxLineLength: 120,
+            tabulateAlias: false,
             ignoreTabSettings: false,
             tabSizeOverride: 2,
             insertSpacesOverride: true

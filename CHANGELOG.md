@@ -1,5 +1,27 @@
 # 更新日志
 
+## 0.12.0
+- 新增丰富的格式化配置项，提升用户定制化体验
+- 新增 commaPosition 配置，支持逗号在行首或行尾
+- 新增 alignColumnDefinitions 配置，支持对齐列定义
+- 新增 tabulateAlias 配置，支持对齐表别名
+- 新增 newlineAfterSelect 配置，控制 SELECT 关键字后是否换行
+- 新增 newlineAfterFrom 配置，控制 FROM 关键字后是否换行
+- 新增 newlineBeforeWhere 配置，控制 WHERE 关键字前是否换行
+- 新增 newlineAfterWhere 配置，控制 WHERE 关键字后是否换行
+- 新增 newlineBeforeOrderBy 配置，控制 ORDER BY 关键字前是否换行
+- 新增 newlineBeforeGroupBy 配置，控制 GROUP BY 关键字前是否换行
+- 新增 newlineBeforeHaving 配置，控制 HAVING 关键字前是否换行
+- 新增 newlineBeforeLimit 配置，控制 LIMIT 关键字前是否换行
+- 新增 maxLineLength 配置，设置最大行长度
+- 更新 package.json，添加所有新配置项
+- 更新 configEditorCommand.ts，在可视化配置编辑器中添加新选项
+- 更新 FormatOptions.ts，添加新配置类型
+- 更新 sqlFormatter.ts，更新默认配置
+- 更新 core/config.ts，支持从 VS Code 配置中读取新选项
+- 更新 validateConfig.ts，移除 commaPosition 和 tabulateAlias 的废弃标记
+- 版本号升级到 0.12.0
+
 ## 0.11.3
 - 修复 JOIN ON 子句中的 ON 被误报为保留字标识符的问题
 - 改进保留字识别逻辑，增加扩展范围检查

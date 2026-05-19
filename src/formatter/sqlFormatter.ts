@@ -51,6 +51,18 @@ const defaultOptions: FormatOptions = {
     linesBetweenQueries: 1,
     denseOperators: false,
     newlineBeforeSemicolon: false,
+    commaPosition: "after",
+    alignColumnDefinitions: false,
+    newlineAfterSelect: true,
+    newlineAfterFrom: true,
+    newlineBeforeWhere: true,
+    newlineAfterWhere: true,
+    newlineBeforeOrderBy: true,
+    newlineBeforeGroupBy: true,
+    newlineBeforeHaving: true,
+    newlineBeforeLimit: true,
+    maxLineLength: 120,
+    tabulateAlias: false,
 }
 
 /**

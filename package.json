@@ -2,7 +2,7 @@
     "name": "hive-formatter",
     "displayName": "Hive Formatter",
     "description": "一个用于 Hive、MySQL、SparkSQL 格式化的 VSCode 插件，支持 MySQL 与 HiveSQL 互相转换",
-    "version": "0.11.3",
+    "version": "0.12.0",
     "publisher": "bryce-qin",
     "contributors": [
         "TalDu"
@@ -229,6 +229,72 @@
                     "type": "boolean",
                     "default": false,
                     "markdownDescription": "分号应另起一行还是放在上一行"
+                },
+                "Hive-Formatter.commaPosition": {
+                    "type": "string",
+                    "enum": [
+                        "before",
+                        "after"
+                    ],
+                    "default": "after",
+                    "markdownDescription": "逗号位置：放在行首还是行尾"
+                },
+                "Hive-Formatter.alignColumnDefinitions": {
+                    "type": "boolean",
+                    "default": false,
+                    "markdownDescription": "是否对齐列定义"
+                },
+                "Hive-Formatter.newlineAfterSelect": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "SELECT 关键字后是否换行"
+                },
+                "Hive-Formatter.newlineAfterFrom": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "FROM 关键字后是否换行"
+                },
+                "Hive-Formatter.newlineBeforeWhere": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "WHERE 关键字前是否换行"
+                },
+                "Hive-Formatter.newlineAfterWhere": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "WHERE 关键字后是否换行"
+                },
+                "Hive-Formatter.newlineBeforeOrderBy": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "ORDER BY 关键字前是否换行"
+                },
+                "Hive-Formatter.newlineBeforeGroupBy": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "GROUP BY 关键字前是否换行"
+                },
+                "Hive-Formatter.newlineBeforeHaving": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "HAVING 关键字前是否换行"
+                },
+                "Hive-Formatter.newlineBeforeLimit": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "LIMIT 关键字前是否换行"
+                },
+                "Hive-Formatter.maxLineLength": {
+                    "type": "integer",
+                    "default": 120,
+                    "minimum": 40,
+                    "maximum": 500,
+                    "markdownDescription": "最大行长度"
+                },
+                "Hive-Formatter.tabulateAlias": {
+                    "type": "boolean",
+                    "default": false,
+                    "markdownDescription": "是否对齐表别名"
                 },
                 "Hive-Formatter.paramTypes": {
                     "type": "object",

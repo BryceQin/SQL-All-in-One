@@ -10,6 +10,8 @@ export type FunctionCase = KeywordCase;
 
 export type LogicalOperatorNewline = 'before' | 'after';
 
+export type CommaPosition = 'before' | 'after';
+
 export interface FormatOptions {
     tabWidth: number;
     useTabs: boolean;
@@ -23,6 +25,18 @@ export interface FormatOptions {
     linesBetweenQueries: number;
     denseOperators: boolean;
     newlineBeforeSemicolon: boolean;
+    commaPosition: CommaPosition;
+    alignColumnDefinitions: boolean;
+    newlineAfterSelect: boolean;
+    newlineAfterFrom: boolean;
+    newlineBeforeWhere: boolean;
+    newlineAfterWhere: boolean;
+    newlineBeforeOrderBy: boolean;
+    newlineBeforeGroupBy: boolean;
+    newlineBeforeHaving: boolean;
+    newlineBeforeLimit: boolean;
+    maxLineLength: number;
+    tabulateAlias: boolean;
     params?: ParamItems | string[];
     paramTypes?: ParamTypes;
 }

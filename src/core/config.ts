@@ -11,6 +11,7 @@ import {
     IndentStyle,
     LogicalOperatorNewline,
     FormatOptions,
+    CommaPosition,
 } from "../formatter/FormatOptions"
 
 type ParamTypes = FormatOptions["paramTypes"]
@@ -45,6 +46,18 @@ export const createConfig = (
         newlineBeforeSemicolon: extensionSettings.get<boolean>(
             "newlineBeforeSemicolon",
         ),
+        commaPosition: extensionSettings.get<CommaPosition>("commaPosition"),
+        alignColumnDefinitions: extensionSettings.get<boolean>("alignColumnDefinitions"),
+        newlineAfterSelect: extensionSettings.get<boolean>("newlineAfterSelect"),
+        newlineAfterFrom: extensionSettings.get<boolean>("newlineAfterFrom"),
+        newlineBeforeWhere: extensionSettings.get<boolean>("newlineBeforeWhere"),
+        newlineAfterWhere: extensionSettings.get<boolean>("newlineAfterWhere"),
+        newlineBeforeOrderBy: extensionSettings.get<boolean>("newlineBeforeOrderBy"),
+        newlineBeforeGroupBy: extensionSettings.get<boolean>("newlineBeforeGroupBy"),
+        newlineBeforeHaving: extensionSettings.get<boolean>("newlineBeforeHaving"),
+        newlineBeforeLimit: extensionSettings.get<boolean>("newlineBeforeLimit"),
+        maxLineLength: extensionSettings.get<number>("maxLineLength"),
+        tabulateAlias: extensionSettings.get<boolean>("tabulateAlias"),
         paramTypes: extensionSettings.get<ParamTypes>("paramTypes"),
     }
 }
