@@ -161,11 +161,21 @@ export class EnhancedSqlChecker {
         }
         
         // 特殊处理：JOIN 相关
-        if ((currentWord === 'join' || currentWord === 'inner' || currentWord === 'left' || 
-             currentWord === 'right' || currentWord === 'full' || currentWord === 'outer' ||
-             currentWord === 'on' || currentWord === 'using') && 
-            /(from|join)\s*$/.test(beforeText)) {
-            return true
+        if (currentWord === 'join' || currentWord === 'inner' || currentWord === 'left' || 
+            currentWord === 'right' || currentWord === 'full' || currentWord === 'outer' ||
+            currentWord === 'using') {
+            if (/(from|join)\s*$/.test(beforeText)) {
+                return true
+            }
+        }
+        
+        // 特殊处理：ON 在 JOIN 后面
+        if (currentWord === 'on') {
+            // 检查前面一定范围内是否有 JOIN
+            const beforeTextExtended = text.substring(Math.max(0, index - 100), index).toLowerCase()
+            if (/\bjoin\b/i.test(beforeTextExtended)) {
+                return true
+            }
         }
         
         // 特殊处理：BY 在 GROUP/ORDER 后面
