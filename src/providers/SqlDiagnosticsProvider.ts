@@ -2,6 +2,7 @@ import * as vscode from "vscode"
 import { createParser } from "../parser/createParser"
 import { sqlDialects } from "../core/sqlDialects"
 import { createDialect } from "../languages/dialect"
+import type { DialectOptions } from "../languages/dialect"
 import * as allDialects from "../languages/allDialects"
 import { lineColFromIndex } from "../lexer/lineColFromIndex"
 import { EnhancedSqlChecker } from "./EnhancedSqlChecker"
@@ -65,7 +66,7 @@ export class SqlDiagnosticsProvider {
             const sqlDialectName =
                 sqlDialects[vscodeLang as keyof typeof sqlDialects] || "hive"
             const dialect =
-                allDialects[sqlDialectName as keyof typeof allDialects]
+                allDialects[sqlDialectName as keyof typeof allDialects] as DialectOptions
 
             const parser = createParser(createDialect(dialect).tokenizer)
             parser.parse(text, {})

@@ -8,10 +8,7 @@ import { ConfigError, validateConfig } from "./validateConfig"
 /**
  * 方言名称映射，用于将传入的方言名标准化
  */
-const dialectNameMap: Record<
-    keyof typeof allDialects,
-    keyof typeof allDialects
-> = {
+const dialectNameMap: Record<string, string> = {
     hive: "hive",
     mysql: "mysql",
     spark: "spark",
@@ -100,7 +97,7 @@ export const format = (
     // 调用底层格式化函数，传入完整的方言配置
     return formatDialect(query, {
         ...cfg,
-        dialect: allDialects[canonicalDialectName],
+        dialect: allDialects[canonicalDialectName as keyof typeof allDialects] as DialectOptions,
     })
 }
 
