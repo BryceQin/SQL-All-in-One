@@ -1,3 +1,5 @@
+import type { FunctionSignature } from '../../completion/functionSignatures'
+
 export const functions: string[] = [
     // http://spark.apache.org/docs/latest/sql-ref-functions.html
     //
@@ -327,4 +329,161 @@ export const functions: string[] = [
     // Shorthand functions to use in place of CASE expression
     'COALESCE',
     'NULLIF'
+];
+
+export const functionSignatures: FunctionSignature[] = [
+    // --- MATH (21) ---
+    { name: 'ABS', params: ['numeric a'], returnType: 'numeric', description: '返回绝对值', category: 'math' },
+    { name: 'ACOS', params: ['double a'], returnType: 'double', description: '返回反余弦值', category: 'math' },
+    { name: 'ASIN', params: ['double a'], returnType: 'double', description: '返回反正弦值', category: 'math' },
+    { name: 'ATAN', params: ['double a'], returnType: 'double', description: '返回反正切值', category: 'math' },
+    { name: 'CEIL', params: ['double a'], returnType: 'bigint', description: '向上取整', category: 'math' },
+    { name: 'CEILING', params: ['double a'], returnType: 'bigint', description: 'CEIL 的别名', category: 'math' },
+    { name: 'CONV', params: ['string n', 'int from', 'int to'], returnType: 'string', description: '进制转换', category: 'math' },
+    { name: 'COS', params: ['double a'], returnType: 'double', description: '返回余弦值', category: 'math' },
+    { name: 'COSH', params: ['double a'], returnType: 'double', description: '返回双曲余弦值', category: 'math' },
+    { name: 'COT', params: ['double a'], returnType: 'double', description: '返回余切值', category: 'math' },
+    { name: 'DEGREES', params: ['double a'], returnType: 'double', description: '弧度转角度', category: 'math' },
+    { name: 'EXP', params: ['double a'], returnType: 'double', description: '返回 e 的 a 次幂', category: 'math' },
+    { name: 'FLOOR', params: ['double a'], returnType: 'bigint', description: '向下取整', category: 'math' },
+    { name: 'HEX', params: ['bigint|string a'], returnType: 'string', description: '返回十六进制表示', category: 'math' },
+    { name: 'LN', params: ['double a'], returnType: 'double', description: '返回自然对数', category: 'math' },
+    { name: 'LOG', params: ['double base', 'double a'], returnType: 'double', description: '返回以 base 为底的对数', category: 'math' },
+    { name: 'LOG10', params: ['double a'], returnType: 'double', description: '返回以 10 为底的对数', category: 'math' },
+    { name: 'LOG2', params: ['double a'], returnType: 'double', description: '返回以 2 为底的对数', category: 'math' },
+    { name: 'MOD', params: ['numeric a', 'numeric b'], returnType: 'numeric', description: '返回 a mod b', category: 'math' },
+    { name: 'PI', params: [], returnType: 'double', description: '返回圆周率 π', category: 'math' },
+    { name: 'POW', params: ['double a', 'double b'], returnType: 'double', description: '返回 a 的 b 次幂', category: 'math' },
+    { name: 'POWER', params: ['double a', 'double b'], returnType: 'double', description: 'POW 的别名', category: 'math' },
+    { name: 'RADIANS', params: ['double a'], returnType: 'double', description: '角度转弧度', category: 'math' },
+    { name: 'RAND', params: ['int seed'], returnType: 'double', description: '返回 [0,1) 随机数', category: 'math' },
+    { name: 'ROUND', params: ['double a', 'int d'], returnType: 'double', description: '四舍五入到 d 位', category: 'math' },
+    { name: 'SIGN', params: ['double a'], returnType: 'double', description: '返回符号', category: 'math' },
+    { name: 'SIN', params: ['double a'], returnType: 'double', description: '返回正弦值', category: 'math' },
+    { name: 'SINH', params: ['double a'], returnType: 'double', description: '返回双曲正弦值', category: 'math' },
+    { name: 'SQRT', params: ['double a'], returnType: 'double', description: '返回平方根', category: 'math' },
+    { name: 'TAN', params: ['double a'], returnType: 'double', description: '返回正切值', category: 'math' },
+    { name: 'TANH', params: ['double a'], returnType: 'double', description: '返回双曲正切值', category: 'math' },
+
+    // --- STRING (22) ---
+    { name: 'CONCAT', params: ['string s1', 'string s2', '...'], returnType: 'string', description: '连接字符串', category: 'string' },
+    { name: 'CONCAT_WS', params: ['string sep', 'string s1', 'string s2', '...'], returnType: 'string', description: '用分隔符连接', category: 'string' },
+    { name: 'LENGTH', params: ['string s'], returnType: 'int', description: '返回字符串长度', category: 'string' },
+    { name: 'LOWER', params: ['string s'], returnType: 'string', description: '转小写', category: 'string' },
+    { name: 'UPPER', params: ['string s'], returnType: 'string', description: '转大写', category: 'string' },
+    { name: 'SUBSTR', params: ['string s', 'int start', 'int len'], returnType: 'string', description: '返回子串', category: 'string' },
+    { name: 'SUBSTRING', params: ['string s', 'int start', 'int len'], returnType: 'string', description: 'SUBSTR 别名', category: 'string' },
+    { name: 'TRIM', params: ['string s'], returnType: 'string', description: '去除空白', category: 'string' },
+    { name: 'LTRIM', params: ['string s'], returnType: 'string', description: '去除左侧空白', category: 'string' },
+    { name: 'RTRIM', params: ['string s'], returnType: 'string', description: '去除右侧空白', category: 'string' },
+    { name: 'LPAD', params: ['string s', 'int len', 'string pad'], returnType: 'string', description: '左填充', category: 'string' },
+    { name: 'RPAD', params: ['string s', 'int len', 'string pad'], returnType: 'string', description: '右填充', category: 'string' },
+    { name: 'REPEAT', params: ['string s', 'int n'], returnType: 'string', description: '重复 s n 次', category: 'string' },
+    { name: 'REVERSE', params: ['string s'], returnType: 'string', description: '反转字符串', category: 'string' },
+    { name: 'REPLACE', params: ['string s', 'string from', 'string to'], returnType: 'string', description: '替换子串', category: 'string' },
+    { name: 'INSTR', params: ['string s', 'string substr'], returnType: 'int', description: '返回子串位置', category: 'string' },
+    { name: 'LOCATE', params: ['string substr', 'string s', 'int pos'], returnType: 'int', description: '从 pos 查找子串', category: 'string' },
+    { name: 'ASCII', params: ['string s'], returnType: 'int', description: '返回首字符 ASCII', category: 'string' },
+    { name: 'CHR', params: ['int n'], returnType: 'string', description: 'ASCII 转字符', category: 'string' },
+    { name: 'SPACE', params: ['int n'], returnType: 'string', description: '返回 n 个空格', category: 'string' },
+    { name: 'SPLIT', params: ['string s', 'string pattern'], returnType: 'array<string>', description: '按正则拆分', category: 'string' },
+    { name: 'REGEXP_EXTRACT', params: ['string s', 'string pat', 'int idx'], returnType: 'string', description: '提取正则匹配组', category: 'string' },
+    { name: 'REGEXP_REPLACE', params: ['string s', 'string pat', 'string rep'], returnType: 'string', description: '正则替换', category: 'string' },
+    { name: 'INITCAP', params: ['string s'], returnType: 'string', description: '首字母大写', category: 'string' },
+    { name: 'LEVENSHTEIN', params: ['string s1', 'string s2'], returnType: 'int', description: '编辑距离', category: 'string' },
+
+    // --- DATE (20) ---
+    { name: 'DATE_ADD', params: ['date d', 'int days'], returnType: 'date', description: '日期增加天数', category: 'date' },
+    { name: 'DATE_SUB', params: ['date d', 'int days'], returnType: 'date', description: '日期减少天数', category: 'date' },
+    { name: 'DATE_FORMAT', params: ['date d', 'string fmt'], returnType: 'string', description: '日期格式化', category: 'date' },
+    { name: 'DATEDIFF', params: ['date d1', 'date d2'], returnType: 'int', description: '日期相差天数', category: 'date' },
+    { name: 'ADD_MONTHS', params: ['date d', 'int months'], returnType: 'date', description: '增加月数', category: 'date' },
+    { name: 'MONTHS_BETWEEN', params: ['date d1', 'date d2'], returnType: 'double', description: '两日期相差月数', category: 'date' },
+    { name: 'YEAR', params: ['date d'], returnType: 'int', description: '返回年份', category: 'date' },
+    { name: 'MONTH', params: ['date d'], returnType: 'int', description: '返回月份', category: 'date' },
+    { name: 'DAY', params: ['date d'], returnType: 'int', description: '返回日', category: 'date' },
+    { name: 'HOUR', params: ['timestamp t'], returnType: 'int', description: '返回小时', category: 'date' },
+    { name: 'MINUTE', params: ['timestamp t'], returnType: 'int', description: '返回分钟', category: 'date' },
+    { name: 'SECOND', params: ['timestamp t'], returnType: 'int', description: '返回秒数', category: 'date' },
+    { name: 'QUARTER', params: ['date d'], returnType: 'int', description: '返回季度', category: 'date' },
+    { name: 'CURRENT_DATE', params: [], returnType: 'date', description: '返回当前日期', category: 'date' },
+    { name: 'CURRENT_TIMESTAMP', params: [], returnType: 'timestamp', description: '返回当前时间戳', category: 'date' },
+    { name: 'NOW', params: [], returnType: 'timestamp', description: 'CURRENT_TIMESTAMP 别名', category: 'date' },
+    { name: 'UNIX_TIMESTAMP', params: [], returnType: 'bigint', description: '返回 Unix 时间戳', category: 'date' },
+    { name: 'FROM_UNIXTIME', params: ['bigint ts', 'string fmt'], returnType: 'string', description: 'Unix 时间戳转字符串', category: 'date' },
+    { name: 'TO_DATE', params: ['string s'], returnType: 'date', description: '字符串转日期', category: 'date' },
+    { name: 'TO_TIMESTAMP', params: ['string s', 'string fmt'], returnType: 'timestamp', description: '字符串转时间戳', category: 'date' },
+    { name: 'TRUNC', params: ['string date', 'string unit'], returnType: 'string', description: '日期截断', category: 'date' },
+    { name: 'LAST_DAY', params: ['date d'], returnType: 'date', description: '返回月末日期', category: 'date' },
+    { name: 'NEXT_DAY', params: ['date d', 'string day'], returnType: 'date', description: '返回下周某天', category: 'date' },
+
+    // --- AGGREGATE (10) ---
+    { name: 'COUNT', params: ['*|expr'], returnType: 'bigint', description: '返回行数', category: 'aggregate' },
+    { name: 'SUM', params: ['numeric col'], returnType: 'numeric', description: '返回总和', category: 'aggregate' },
+    { name: 'AVG', params: ['numeric col'], returnType: 'numeric', description: '返回平均值', category: 'aggregate' },
+    { name: 'MAX', params: ['T col'], returnType: 'T', description: '返回最大值', category: 'aggregate' },
+    { name: 'MIN', params: ['T col'], returnType: 'T', description: '返回最小值', category: 'aggregate' },
+    { name: 'STDDEV', params: ['numeric col'], returnType: 'double', description: '返回标准差', category: 'aggregate' },
+    { name: 'STDDEV_POP', params: ['numeric col'], returnType: 'double', description: '返回总体标准差', category: 'aggregate' },
+    { name: 'STDDEV_SAMP', params: ['numeric col'], returnType: 'double', description: '返回样本标准差', category: 'aggregate' },
+    { name: 'COLLECT_LIST', params: ['T col'], returnType: 'array<T>', description: '收集列值为数组', category: 'aggregate' },
+    { name: 'COLLECT_SET', params: ['T col'], returnType: 'array<T>', description: '收集去重列值为数组', category: 'aggregate' },
+    { name: 'APPROX_PERCENTILE', params: ['T col', 'double p'], returnType: 'double', description: '近似百分位数', category: 'aggregate' },
+    { name: 'COUNT_IF', params: ['boolean cond'], returnType: 'bigint', description: '条件计数', category: 'aggregate' },
+
+    // --- WINDOW (12) ---
+    { name: 'ROW_NUMBER', params: [], returnType: 'bigint', description: '行号', category: 'window' },
+    { name: 'RANK', params: [], returnType: 'bigint', description: '排序名次（有间隔）', category: 'window' },
+    { name: 'DENSE_RANK', params: [], returnType: 'bigint', description: '排序名次（无间隔）', category: 'window' },
+    { name: 'PERCENT_RANK', params: [], returnType: 'double', description: '相对排名百分比', category: 'window' },
+    { name: 'CUME_DIST', params: [], returnType: 'double', description: '累积分布值', category: 'window' },
+    { name: 'NTILE', params: ['int n'], returnType: 'bigint', description: '分桶编号', category: 'window' },
+    { name: 'LAG', params: ['T col', 'int offset', 'T default'], returnType: 'T', description: '前 offset 行值', category: 'window' },
+    { name: 'LEAD', params: ['T col', 'int offset', 'T default'], returnType: 'T', description: '后 offset 行值', category: 'window' },
+    { name: 'FIRST_VALUE', params: ['T col'], returnType: 'T', description: '窗口第一行值', category: 'window' },
+    { name: 'LAST_VALUE', params: ['T col'], returnType: 'T', description: '窗口最后一行值', category: 'window' },
+    { name: 'NTH_VALUE', params: ['T col', 'int n'], returnType: 'T', description: '窗口第 n 行值', category: 'window' },
+
+    // --- CONDITIONAL (7) ---
+    { name: 'COALESCE', params: ['T v1', 'T v2', '...'], returnType: 'T', description: '返回第一个非 NULL 值', category: 'conditional' },
+    { name: 'NULLIF', params: ['T a', 'T b'], returnType: 'T', description: '若 a=b 返回 NULL', category: 'conditional' },
+    { name: 'ISNULL', params: ['T a'], returnType: 'boolean', description: '判断是否为 NULL', category: 'conditional' },
+    { name: 'ISNOTNULL', params: ['T a'], returnType: 'boolean', description: '判断是否非 NULL', category: 'conditional' },
+    { name: 'NVL', params: ['T a', 'T default'], returnType: 'T', description: '若 NULL 返回默认值', category: 'conditional' },
+    { name: 'NVL2', params: ['T a', 'T val1', 'T val2'], returnType: 'T', description: '若非 NULL 返回 val1，否则 val2', category: 'conditional' },
+    { name: 'IF', params: ['boolean cond', 'T t', 'T f'], returnType: 'T', description: '条件表达式', category: 'conditional' },
+
+    // --- TYPE CONVERSION (1) ---
+    { name: 'CAST', params: ['T expr', 'TYPE type'], returnType: 'TYPE', description: '类型转换', category: 'type-conversion' },
+
+    // --- ENCRYPTION (7) ---
+    { name: 'MD5', params: ['string s'], returnType: 'string', description: 'MD5 哈希', category: 'encryption' },
+    { name: 'SHA1', params: ['string s'], returnType: 'string', description: 'SHA-1 哈希', category: 'encryption' },
+    { name: 'SHA2', params: ['string s', 'int len'], returnType: 'string', description: 'SHA-2 哈希', category: 'encryption' },
+    { name: 'CRC32', params: ['string s'], returnType: 'bigint', description: 'CRC32 校验值', category: 'encryption' },
+    { name: 'HASH', params: ['T v1', 'T v2', '...'], returnType: 'int', description: '返回哈希值', category: 'encryption' },
+    { name: 'BASE64', params: ['binary b'], returnType: 'string', description: 'Base64 编码', category: 'encryption' },
+    { name: 'UNBASE64', params: ['string s'], returnType: 'binary', description: 'Base64 解码', category: 'encryption' },
+
+    // --- JSON (4) ---
+    { name: 'GET_JSON_OBJECT', params: ['string json', 'string path'], returnType: 'string', description: '从 JSON 提取值', category: 'json' },
+    { name: 'FROM_JSON', params: ['string json', 'string schema'], returnType: 'struct', description: 'JSON 转结构体', category: 'json' },
+    { name: 'TO_JSON', params: ['T col'], returnType: 'string', description: '转为 JSON 字符串', category: 'json' },
+    { name: 'JSON_TUPLE', params: ['string json', 'string k1', '...'], returnType: '多列', description: 'JSON 提取多个字段', category: 'json' },
+
+    // --- COLLECTION (8) ---
+    { name: 'ARRAY_CONTAINS', params: ['array<T> a', 'T v'], returnType: 'boolean', description: '判断数组是否包含值', category: 'collection' },
+    { name: 'SIZE', params: ['array|map a'], returnType: 'int', description: '返回集合大小', category: 'collection' },
+    { name: 'SORT_ARRAY', params: ['array<T> a'], returnType: 'array<T>', description: '数组排序', category: 'collection' },
+    { name: 'ARRAY_DISTINCT', params: ['array<T> a'], returnType: 'array<T>', description: '数组去重', category: 'collection' },
+    { name: 'ARRAY_UNION', params: ['array<T> a', 'array<T> b'], returnType: 'array<T>', description: '数组并集', category: 'collection' },
+    { name: 'MAP_KEYS', params: ['map<K,V> m'], returnType: 'array<K>', description: '返回 map 的键', category: 'collection' },
+    { name: 'MAP_VALUES', params: ['map<K,V> m'], returnType: 'array<V>', description: '返回 map 的值', category: 'collection' },
+
+    // --- TABLE (5) ---
+    { name: 'EXPLODE', params: ['array<T>|map<K,V> a'], returnType: '多行', description: '将数组/map 展开为多行', category: 'table' },
+    { name: 'POSEXPLODE', params: ['array<T>|map<K,V> a'], returnType: '多行含位置', description: '类似 EXPLODE 但含位置', category: 'table' },
+    { name: 'STACK', params: ['int n', 'T v1', 'T v2', '...'], returnType: '多行', description: '将值分割为 n 行', category: 'table' },
+    { name: 'INLINE', params: ['array<struct> a'], returnType: '多行多列', description: '展开结构体数组', category: 'table' },
+    { name: 'NAMED_STRUCT', params: ['string n1', 'T v1', '...'], returnType: 'struct', description: '创建命名结构体', category: 'table' },
 ];

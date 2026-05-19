@@ -56,9 +56,85 @@ class ExpressionFormatter {
         this.params = params;
         this.layout = layout;
     }
+    findCurrentGroupStart(result) {
+        for (let i = result.length - 1; i >= 0; i--) {
+            if (result[i].type === ast_1.NodeType.comma) {
+                if (i + 1 < result.length) {
+                    return i + 1;
+                }
+                return -1;
+            }
+        }
+        return result.length > 0 ? 0 : -1;
+    }
+    reorganizeComments(nodes) {
+        const result = [];
+        let pendingCommentsForGroup = [];
+        for (let i = 0; i < nodes.length; i++) {
+            const node = nodes[i];
+            if (node.type === ast_1.NodeType.line_comment || node.type === ast_1.NodeType.block_comment || node.type === ast_1.NodeType.disable_comment) {
+                const nextNonCommentIdx = this.findNextNonCommentIndexFromOriginal(nodes, i + 1);
+                const isBeforeComma = nextNonCommentIdx !== -1 && nodes[nextNonCommentIdx].type === ast_1.NodeType.comma;
+                const isLastInGroup = nextNonCommentIdx === -1;
+                const isAfterCommaInResult = this.isAfterCommaInResult(result) && nextNonCommentIdx !== -1 && nodes[nextNonCommentIdx].type !== ast_1.NodeType.comma;
+                if (isBeforeComma || isLastInGroup || isAfterCommaInResult) {
+                    const groupStartIdx = this.findCurrentGroupStart(result);
+                    if (groupStartIdx !== -1) {
+                        const targetNode = result[groupStartIdx];
+                        const existingLeading = targetNode.leadingComments || [];
+                        result[groupStartIdx] = { ...targetNode, leadingComments: [...existingLeading, node] };
+                    }
+                    else {
+                        pendingCommentsForGroup.push(node);
+                    }
+                }
+                else {
+                    result.push(node);
+                }
+            }
+            else if (node.type === ast_1.NodeType.comma) {
+                result.push(node);
+            }
+            else {
+                if (pendingCommentsForGroup.length > 0) {
+                    const existingLeading = node.leadingComments || [];
+                    result.push({ ...node, leadingComments: [...pendingCommentsForGroup, ...existingLeading] });
+                    pendingCommentsForGroup = [];
+                }
+                else {
+                    result.push(node);
+                }
+            }
+        }
+        if (pendingCommentsForGroup.length > 0) {
+            result.push(...pendingCommentsForGroup);
+        }
+        return result;
+    }
+    isAfterCommaInResult(result) {
+        if (result.length === 0)
+            return false;
+        for (let i = result.length - 1; i >= 0; i--) {
+            if (result[i].type === ast_1.NodeType.comma)
+                return true;
+            if (result[i].type !== ast_1.NodeType.line_comment && result[i].type !== ast_1.NodeType.block_comment && result[i].type !== ast_1.NodeType.disable_comment) {
+                return false;
+            }
+        }
+        return false;
+    }
+    findNextNonCommentIndexFromOriginal(nodes, startIdx) {
+        for (let i = startIdx; i < nodes.length; i++) {
+            const t = nodes[i].type;
+            if (t !== ast_1.NodeType.line_comment && t !== ast_1.NodeType.block_comment && t !== ast_1.NodeType.disable_comment) {
+                return i;
+            }
+        }
+        return -1;
+    }
     // 格式化入口，遍历所有 AST 节点并分发到对应格式化逻辑
     format(nodes) {
-        this.nodes = nodes;
+        this.nodes = this.reorganizeComments(nodes);
         for (this.index = 0; this.index < this.nodes.length; this.index++) {
             this.formatNode(this.nodes[this.index]);
         }
@@ -66,9 +142,9 @@ class ExpressionFormatter {
     }
     // 节点格式化的外层逻辑，先处理注释，再格式化节点本身：
     formatNode(node) {
-        this.formatComments(node.leadingComments); // 前置注释
+        this.formatComments(node.leadingComments, true); // 前置注释
         this.formatNodeWithoutComments(node); // 核心节点逻辑（无注释）
-        this.formatComments(node.trailingComments); // 后置注释
+        this.formatComments(node.trailingComments, false); // 后置注释
     }
     // 节点类型分发:根据 AST 节点类型（如函数调用、括号、子句、运算符等），分发到专属格式化方法
     formatNodeWithoutComments(node) {
@@ -296,41 +372,52 @@ class ExpressionFormatter {
     formatComma(_node) {
         void _node;
         if (!this.inline) {
-            this.layout.add(Layout_1.WS.NO_SPACE, ",", Layout_1.WS.NEWLINE, Layout_1.WS.INDENT);
+            const nextNode = this.nodes[this.index + 1];
+            const hasNextLeadingComments = nextNode && (nextNode.leadingComments?.length ?? 0) > 0;
+            if (hasNextLeadingComments) {
+                this.layout.add(Layout_1.WS.NO_SPACE, ",");
+            }
+            else {
+                this.layout.add(Layout_1.WS.NO_SPACE, ",", Layout_1.WS.NEWLINE, Layout_1.WS.INDENT);
+            }
         }
         else {
             this.layout.add(Layout_1.WS.NO_SPACE, ",", Layout_1.WS.SPACE);
         }
     }
     withComments(node, fn) {
-        this.formatComments(node.leadingComments);
+        this.formatComments(node.leadingComments, true);
         fn();
-        this.formatComments(node.trailingComments);
+        this.formatComments(node.trailingComments, false);
     }
-    formatComments(comments) {
+    formatComments(comments, isLeading = false) {
         if (!comments) {
             return;
         }
         comments.forEach((com) => {
             if (com.type === ast_1.NodeType.line_comment) {
-                this.formatLineComment(com);
+                this.formatLineComment(com, isLeading);
             }
             else {
                 this.formatBlockComment(com);
             }
         });
     }
-    formatLineComment(node) {
-        if ((0, utils_1.isMultiline)(node.precedingWhitespace || "")) {
-            this.layout.add(Layout_1.WS.NEWLINE, Layout_1.WS.INDENT, node.text, Layout_1.WS.MANDATORY_NEWLINE, Layout_1.WS.INDENT);
+    formatLineComment(node, isLeading = false) {
+        const text = this.normalizeLineComment(node.text);
+        if (isLeading || (0, utils_1.isMultiline)(node.precedingWhitespace || "")) {
+            this.layout.add(Layout_1.WS.NEWLINE, Layout_1.WS.INDENT, text, Layout_1.WS.MANDATORY_NEWLINE, Layout_1.WS.INDENT);
         }
         else if (this.layout.getLayoutItems().length > 0) {
-            this.layout.add(Layout_1.WS.NO_NEWLINE, Layout_1.WS.SPACE, node.text, Layout_1.WS.MANDATORY_NEWLINE, Layout_1.WS.INDENT);
+            this.layout.add(Layout_1.WS.NO_NEWLINE, Layout_1.WS.SPACE, text, Layout_1.WS.MANDATORY_NEWLINE, Layout_1.WS.INDENT);
         }
         else {
             // comment is the first item in code - no need to add preceding spaces
-            this.layout.add(node.text, Layout_1.WS.MANDATORY_NEWLINE, Layout_1.WS.INDENT);
+            this.layout.add(text, Layout_1.WS.MANDATORY_NEWLINE, Layout_1.WS.INDENT);
         }
+    }
+    normalizeLineComment(text) {
+        return text.replace(/^(--)(\S)/, '$1 $2');
     }
     formatBlockComment(node) {
         if (node.type === ast_1.NodeType.block_comment &&

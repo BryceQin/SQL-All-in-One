@@ -13,8 +13,6 @@ function validateConfig(cfg) {
         "newlineBeforeOpenParen",
         "newlineBeforeCloseParen",
         "aliasAs",
-        "commaPosition",
-        "tabulateAlias",
     ];
     // 校验规则 1：检测【废弃配置项】，发现则直接抛错
     for (const optionName of removedOptions) {

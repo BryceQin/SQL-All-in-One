@@ -88,558 +88,699 @@ export class ConfigEditorPanel {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hive Formatter - 配置编辑器</title>
     <style>
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         
         :root {
-            --primary-color: #007acc;
-            --primary-hover: #1a8ad6;
-            --bg-color: var(--vscode-editor-background);
-            --text-color: var(--vscode-editor-foreground);
-            --border-color: var(--vscode-panel-border);
-            --card-bg: var(--vscode-sideBar-background);
-            --input-bg: var(--vscode-input-background);
-            --input-border: var(--vscode-input-border);
-            --button-bg: var(--vscode-button-background);
-            --button-hover: var(--vscode-button-hoverBackground);
+            --accent: #4a9eff;
+            --accent-dim: rgba(74, 158, 255, 0.12);
+            --accent-glow: rgba(74, 158, 255, 0.25);
+            --bg: var(--vscode-editor-background, #1e1e2e);
+            --surface: var(--vscode-sideBar-background, #252536);
+            --surface2: var(--vscode-editorWidget-background, #2a2a3c);
+            --text: var(--vscode-editor-foreground, #cdd6f4);
+            --text-secondary: var(--vscode-descriptionForeground, #7c7f93);
+            --border: var(--vscode-panel-border, rgba(255,255,255,0.08));
+            --input-bg: var(--vscode-input-background, #313145);
+            --input-border: var(--vscode-input-border, rgba(255,255,255,0.1));
+            --btn-bg: var(--vscode-button-background, #4a9eff);
+            --btn-hover: var(--vscode-button-hoverBackground, #5caeff);
+            --btn-secondary-bg: var(--vscode-button-secondaryBackground, rgba(255,255,255,0.08));
+            --btn-secondary-hover: var(--vscode-button-secondaryHoverBackground, rgba(255,255,255,0.12));
+            --error-color: #f44747;
+            --warning-color: #e2b714;
+            --info-color: #4a9eff;
+            --success-color: #4ec9b0;
+            --radius-sm: 6px;
+            --radius: 10px;
+            --radius-lg: 14px;
+            --shadow: 0 2px 12px rgba(0,0,0,0.15);
+            --shadow-lg: 0 8px 32px rgba(0,0,0,0.25);
+            --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
         body {
-            font-family: var(--vscode-font-family);
-            font-size: var(--vscode-font-size);
-            color: var(--text-color);
-            background: var(--bg-color);
-            margin: 0;
-            padding: 20px;
+            font-family: var(--vscode-font-family, -apple-system, sans-serif);
+            font-size: 13px;
+            color: var(--text);
+            background: var(--bg);
             line-height: 1.6;
+            padding: 24px 28px;
+            -webkit-font-smoothing: antialiased;
         }
         
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
+        .container { max-width: 1260px; margin: 0 auto; }
         
+        /* ── Header ── */
         .header {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            margin-bottom: 24px;
-            padding-bottom: 16px;
-            border-bottom: 1px solid var(--border-color);
+            gap: 20px;
+            margin-bottom: 28px;
         }
-        
+        .header-logo {
+            width: 40px; height: 40px;
+            border-radius: var(--radius);
+            background: linear-gradient(135deg, var(--accent), #7c3aed);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px;
+            box-shadow: 0 4px 16px var(--accent-glow);
+            flex-shrink: 0;
+        }
+        .header-info { flex: 1; }
         .header h1 {
-            margin: 0;
-            font-size: 24px;
-            font-weight: 600;
+            font-size: 22px; font-weight: 700;
+            background: linear-gradient(135deg, var(--text), var(--accent));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
+        .header-sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+        .header-actions { display: flex; gap: 10px; flex-shrink: 0; }
         
-        .header-actions {
-            display: flex;
-            gap: 12px;
-        }
-        
+        /* ── Buttons ── */
         .btn {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: background 0.2s;
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 9px 18px; border: none; border-radius: var(--radius-sm);
+            cursor: pointer; font-size: 13px; font-weight: 600;
+            transition: all var(--transition); white-space: nowrap;
+            font-family: inherit;
         }
-        
         .btn-primary {
-            background: var(--button-bg);
-            color: white;
+            background: var(--btn-bg); color: #fff;
+            box-shadow: 0 2px 8px var(--accent-glow);
         }
+        .btn-primary:hover { background: var(--btn-hover); transform: translateY(-1px); box-shadow: 0 4px 16px var(--accent-glow); }
+        .btn-secondary { background: var(--btn-secondary-bg); color: var(--text); }
+        .btn-secondary:hover { background: var(--btn-secondary-hover); }
+        .btn-ghost { background: transparent; color: var(--text-secondary); padding: 8px 14px; }
+        .btn-ghost:hover { background: rgba(255,255,255,0.05); color: var(--text); }
         
-        .btn-primary:hover {
-            background: var(--button-hover);
+        /* ── Presets Row ── */
+        .presets-bar {
+            display: flex; align-items: center; gap: 10px;
+            margin-bottom: 24px; padding: 14px 18px;
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius);
         }
-        
-        .btn-secondary {
-            background: transparent;
-            border: 1px solid var(--border-color);
-            color: var(--text-color);
+        .presets-bar-label { font-size: 12px; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; flex-shrink: 0; }
+        .presets-row { display: flex; gap: 8px; flex-wrap: wrap; }
+        .preset-chip {
+            padding: 6px 16px; border-radius: 20px; border: 1px solid var(--border);
+            background: transparent; color: var(--text-secondary); cursor: pointer;
+            font-size: 12px; font-weight: 500; transition: all var(--transition);
+            font-family: inherit;
         }
+        .preset-chip:hover { border-color: var(--accent); color: var(--text); background: var(--accent-dim); }
+        .preset-chip.active { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); font-weight: 600; }
         
-        .btn-secondary:hover {
-            background: var(--card-bg);
-        }
-        
+        /* ── Main Layout ── */
         .main-content {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr 380px;
             gap: 24px;
+            align-items: start;
         }
         
+        /* ── Config Panel ── */
         .config-section {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 20px;
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius-lg); overflow: hidden;
         }
-        
-        .config-section h2 {
-            margin-top: 0;
-            margin-bottom: 20px;
-            font-size: 18px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid var(--border-color);
+        .section-header {
+            display: flex; align-items: center; gap: 10px;
+            padding: 16px 20px; border-bottom: 1px solid var(--border);
+            background: var(--surface2);
         }
+        .section-header-icon { font-size: 18px; }
+        .section-header h2 { font-size: 15px; font-weight: 700; color: var(--text); }
+        .section-body { padding: 20px; }
         
+        /* ── Collapsible Config Group ── */
         .config-group {
-            margin-bottom: 20px;
-        }
-        
-        .config-group-title {
-            font-weight: 600;
-            margin-bottom: 12px;
-            color: var(--primary-color);
-            font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .config-item {
-            margin-bottom: 16px;
-        }
-        
-        .config-label {
-            display: block;
-            margin-bottom: 6px;
-            font-weight: 500;
-        }
-        
-        .config-description {
-            font-size: 12px;
-            color: var(--vscode-descriptionForeground);
             margin-bottom: 8px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            background: var(--surface2);
         }
+        .config-group:last-child { margin-bottom: 0; }
+        .cg-header {
+            display: flex; align-items: center; gap: 10px;
+            padding: 12px 16px; cursor: pointer;
+            transition: background var(--transition);
+            user-select: none;
+        }
+        .cg-header:hover { background: rgba(255,255,255,0.03); }
+        .cg-arrow {
+            width: 18px; height: 18px; display: flex; align-items: center; justify-content: center;
+            transition: transform var(--transition); font-size: 10px; color: var(--text-secondary);
+        }
+        .cg-arrow.open { transform: rotate(90deg); }
+        .cg-icon { font-size: 15px; flex-shrink: 0; }
+        .cg-title { font-size: 13px; font-weight: 600; color: var(--text); flex: 1; }
+        .cg-badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: var(--accent-dim); color: var(--accent); font-weight: 600; }
+        .cg-body { padding: 0 16px 14px; display: none; }
+        .cg-body.open { display: block; }
         
-        .config-input,
+        /* ── Config Items ── */
+        .config-item { margin-bottom: 14px; }
+        .config-item:last-child { margin-bottom: 0; }
+        .ci-label {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        .ci-label-text { font-size: 12px; font-weight: 600; color: var(--text); }
+        .ci-label-hint { font-size: 11px; color: var(--text-secondary); }
+        
+        /* ── Select & Input ── */
+        .config-select, .config-input {
+            width: 100%; padding: 9px 12px;
+            background: var(--input-bg); border: 1px solid var(--input-border);
+            border-radius: var(--radius-sm); color: var(--text);
+            font-size: 13px; font-family: inherit;
+            transition: border-color var(--transition);
+            -webkit-appearance: none; appearance: none;
+        }
         .config-select {
-            width: 100%;
-            padding: 8px 12px;
-            background: var(--input-bg);
-            border: 1px solid var(--input-border);
-            border-radius: 4px;
-            color: var(--text-color);
-            font-size: 14px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%237c7f93' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 12px center;
+            padding-right: 32px; cursor: pointer;
         }
+        .config-input:focus, .config-select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-dim); }
+        .config-input:hover, .config-select:hover { border-color: rgba(255,255,255,0.2); }
+        .ci-input-row { display: flex; gap: 8px; }
+        .ci-input-row .config-select { flex: 1; }
         
-        .config-input:focus,
-        .config-select:focus {
-            outline: none;
-            border-color: var(--primary-color);
+        /* ── Toggle Switch ── */
+        .toggle-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 9px 0;
         }
-        
-        .config-checkbox {
-            display: flex;
-            align-items: center;
-            gap: 8px;
+        .toggle-label { font-size: 12px; font-weight: 600; }
+        .toggle {
+            position: relative; width: 40px; height: 22px; flex-shrink: 0;
         }
-        
-        .config-checkbox input {
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
+        .toggle input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider {
+            position: absolute; inset: 0; border-radius: 22px;
+            background: rgba(255,255,255,0.12); cursor: pointer;
+            transition: all var(--transition);
         }
-        
-        .preview-section {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 20px;
+        .toggle-slider::before {
+            content: ""; position: absolute; top: 3px; left: 3px;
+            width: 16px; height: 16px; border-radius: 50%;
+            background: #fff; transition: all var(--transition);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
         }
+        .toggle input:checked + .toggle-slider { background: var(--accent); }
+        .toggle input:checked + .toggle-slider::before { transform: translateX(18px); }
+        .toggle input:focus-visible + .toggle-slider { box-shadow: 0 0 0 2px var(--accent-glow); }
         
-        .preview-section h2 {
-            margin-top: 0;
-            margin-bottom: 20px;
-            font-size: 18px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid var(--border-color);
+        /* ── Severity Badge ── */
+        .severity-badge {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 3px 10px; border-radius: 12px; font-size: 10px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.5px;
         }
+        .severity-badge.error { background: rgba(244,71,71,0.15); color: var(--error-color); }
+        .severity-badge.warning { background: rgba(226,183,20,0.15); color: var(--warning-color); }
+        .severity-badge.information { background: rgba(74,158,255,0.15); color: var(--info-color); }
+        .severity-dot { width: 6px; height: 6px; border-radius: 50%; }
+        .severity-dot.error { background: var(--error-color); }
+        .severity-dot.warning { background: var(--warning-color); }
+        .severity-dot.information { background: var(--info-color); }
         
+        /* ── Lint Rule Row ── */
+        .lint-rule {
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.03);
+        }
+        .lint-rule:last-child { border-bottom: none; }
+        .lint-rule-name { font-size: 12px; font-weight: 500; flex: 1; }
+        .lint-rule-severity { width: 100px; flex-shrink: 0; }
+        .lint-rule-toggle { flex-shrink: 0; }
+        
+        /* ── Preview Panel ── */
+        .preview-panel {
+            position: sticky; top: 20px;
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius-lg); overflow: hidden;
+        }
+        .preview-body { padding: 20px; }
         .preview-editor {
-            width: 100%;
-            min-height: 150px;
-            padding: 12px;
-            background: var(--input-bg);
-            border: 1px solid var(--input-border);
-            border-radius: 4px;
-            color: var(--text-color);
-            font-family: var(--vscode-editor-font-family);
-            font-size: var(--vscode-editor-font-size);
-            resize: vertical;
-            margin-bottom: 12px;
+            width: 100%; min-height: 140px; padding: 14px;
+            background: var(--input-bg); border: 1px solid var(--input-border);
+            border-radius: var(--radius); color: var(--text);
+            font-family: var(--vscode-editor-font-family, 'SF Mono', 'Fira Code', monospace);
+            font-size: 13px; line-height: 1.5; resize: vertical;
+            transition: border-color var(--transition);
         }
-        
+        .preview-editor:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-dim); }
+        .preview-actions { display: flex; gap: 8px; margin-top: 12px; }
         .preview-result {
-            background: var(--vscode-editor-background);
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            padding: 12px;
-            min-height: 150px;
-            font-family: var(--vscode-editor-font-family);
-            font-size: var(--vscode-editor-font-size);
-            white-space: pre-wrap;
-            overflow-x: auto;
+            margin-top: 12px; padding: 16px; min-height: 120px;
+            background: var(--bg); border: 1px solid var(--border);
+            border-radius: var(--radius); font-family: var(--vscode-editor-font-family, 'SF Mono', 'Fira Code', monospace);
+            font-size: 12px; line-height: 1.6; white-space: pre-wrap; overflow-x: auto;
+            transition: all var(--transition);
         }
-        
         .preview-result.empty {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--vscode-descriptionForeground);
+            display: flex; align-items: center; justify-content: center;
+            color: var(--text-secondary); font-family: var(--vscode-font-family);
+            font-size: 13px;
         }
+        .preview-result.success { border-color: rgba(78,201,176,0.3); }
         
-        .presets-section {
-            margin-top: 24px;
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 20px;
+        /* ── Toast / Status ── */
+        .toast {
+            position: fixed; top: 20px; right: 20px; z-index: 999;
+            padding: 12px 20px; border-radius: var(--radius);
+            font-size: 13px; font-weight: 600; pointer-events: none;
+            opacity: 0; transform: translateY(-10px); transition: all 0.3s;
+            box-shadow: var(--shadow-lg);
         }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast.success { background: var(--success-color); color: #000; }
         
-        .presets-section h2 {
-            margin-top: 0;
-            margin-bottom: 16px;
-            font-size: 18px;
-        }
+        /* ── Scrollbar ── */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
         
-        .preset-buttons {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-        
-        .preset-btn {
-            padding: 10px 20px;
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            cursor: pointer;
-            color: var(--text-color);
-            transition: all 0.2s;
-        }
-        
-        .preset-btn:hover {
-            border-color: var(--primary-color);
-            background: rgba(0, 122, 204, 0.1);
-        }
-        
-        .preset-btn.active {
-            border-color: var(--primary-color);
-            background: rgba(0, 122, 204, 0.2);
-        }
+        /* ── Empty State ── */
+        .empty-state { text-align: center; padding: 40px 20px; color: var(--text-secondary); }
+        .empty-state-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.5; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎨 Hive Formatter 配置编辑器</h1>
+            <div class="header-logo">⚡</div>
+            <div class="header-info">
+                <h1>Hive Formatter 配置编辑器</h1>
+                <div class="header-sub">可视化调整 SQL 格式化选项，实时预览效果</div>
+            </div>
             <div class="header-actions">
-                <button class="btn btn-secondary" onclick="resetConfig()">🔄 重置默认</button>
-                <button class="btn btn-primary" onclick="saveConfig()">💾 保存配置</button>
+                <button class="btn btn-ghost" onclick="resetConfig()">↺ 重置默认</button>
+                <button class="btn btn-primary" onclick="saveConfig()">✓ 保存配置</button>
             </div>
         </div>
         
-        <div class="presets-section">
-            <h2>快速预设</h2>
-            <div class="preset-buttons">
-                <button class="preset-btn" onclick="applyPreset('default')">默认</button>
-                <button class="preset-btn" onclick="applyPreset('hive')">Hive 风格</button>
-                <button class="preset-btn" onclick="applyPreset('mysql')">MySQL 风格</button>
-                <button class="preset-btn" onclick="applyPreset('compact')">紧凑风格</button>
+        <div class="presets-bar">
+            <span class="presets-bar-label">快速预设</span>
+            <div class="presets-row">
+                <button class="preset-chip active" onclick="applyPreset('default')">默认</button>
+                <button class="preset-chip" onclick="applyPreset('hive')">Hive</button>
+                <button class="preset-chip" onclick="applyPreset('mysql')">MySQL</button>
+                <button class="preset-chip" onclick="applyPreset('compact')">紧凑</button>
             </div>
         </div>
         
         <div class="main-content">
             <div class="config-section">
-                <h2>⚙️ 格式化配置</h2>
-                
-                <div class="config-group">
-                    <div class="config-group-title">基础设置</div>
-                    
-                    <div class="config-item">
-                        <label class="config-label">SQL 方言</label>
-                        <select class="config-select" id="dialect">
-                            <option value="hive">Apache Hive</option>
-                            <option value="mysql">MySQL</option>
-                            <option value="spark">Spark</option>
-                            <option value="sql">通用 SQL</option>
-                        </select>
-                    </div>
+                <div class="section-header">
+                    <span class="section-header-icon">⚙️</span>
+                    <h2>格式化配置</h2>
                 </div>
-                
-                <div class="config-group">
-                    <div class="config-group-title">大小写设置</div>
-                    
-                    <div class="config-item">
-                        <label class="config-label">关键字大小写</label>
-                        <select class="config-select" id="keywordCase">
-                            <option value="preserve">保持原样</option>
-                            <option value="upper">大写</option>
-                            <option value="lower">小写</option>
-                        </select>
+                <div class="section-body">
+                    <!-- 基础设置 -->
+                    <div class="config-group">
+                        <div class="cg-header" onclick="toggleGroup(this)">
+                            <span class="cg-arrow open">▶</span>
+                            <span class="cg-icon">📐</span>
+                            <span class="cg-title">基础设置</span>
+                        </div>
+                        <div class="cg-body open">
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text">SQL 方言</span></div>
+                                <select class="config-select" id="dialect">
+                                    <option value="hive">Apache Hive</option>
+                                    <option value="mysql">MySQL</option>
+                                    <option value="spark">Spark</option>
+                                    <option value="sql">通用 SQL</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
                     
-                    <div class="config-item">
-                        <label class="config-label">数据类型大小写</label>
-                        <select class="config-select" id="dataTypeCase">
-                            <option value="preserve">保持原样</option>
-                            <option value="upper">大写</option>
-                            <option value="lower">小写</option>
-                        </select>
+                    <!-- 功能开关 -->
+                    <div class="config-group">
+                        <div class="cg-header" onclick="toggleGroup(this)">
+                            <span class="cg-arrow open">▶</span>
+                            <span class="cg-icon">🔌</span>
+                            <span class="cg-title">功能开关</span>
+                            <span class="cg-badge">11</span>
+                        </div>
+                        <div class="cg-body open">
+                            <div class="toggle-row"><span class="toggle-label">启用增强语法检查</span><label class="toggle"><input type="checkbox" id="enableEnhancedChecks"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">启用 SQL Lint 功能</span><label class="toggle"><input type="checkbox" id="enableLinter"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">显示错误级别诊断</span><label class="toggle"><input type="checkbox" id="showErrorLevel"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">显示警告级别诊断</span><label class="toggle"><input type="checkbox" id="showWarningLevel"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">显示信息级别提示</span><label class="toggle"><input type="checkbox" id="showInfoLevel"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">启用代码折叠</span><label class="toggle"><input type="checkbox" id="enableCodeFolding"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">启用大纲视图</span><label class="toggle"><input type="checkbox" id="enableOutlineView"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">启用状态栏</span><label class="toggle"><input type="checkbox" id="enableStatusBar"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">启用参数高亮</span><label class="toggle"><input type="checkbox" id="enableParameterHighlight"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">启用代码片段</span><label class="toggle"><input type="checkbox" id="enableSnippets"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">启用快速修复</span><label class="toggle"><input type="checkbox" id="enableQuickFix"><span class="toggle-slider"></span></label></div>
+                        </div>
                     </div>
                     
-                    <div class="config-item">
-                        <label class="config-label">函数名大小写</label>
-                        <select class="config-select" id="functionCase">
-                            <option value="preserve">保持原样</option>
-                            <option value="upper">大写</option>
-                            <option value="lower">小写</option>
-                        </select>
+                    <!-- Lint 规则 -->
+                    <div class="config-group">
+                        <div class="cg-header" onclick="toggleGroup(this)">
+                            <span class="cg-arrow open">▶</span>
+                            <span class="cg-icon">🔍</span>
+                            <span class="cg-title">Lint 规则</span>
+                            <span class="cg-badge">14</span>
+                        </div>
+                        <div class="cg-body open">
+                            <div class="lint-rule">
+                                <span class="lint-rule-name">避免 SELECT *</span>
+                                <select class="config-select lint-rule-severity" id="avoidSelectStarSeverity">
+                                    <option value="error">Error</option>
+                                    <option value="warning">Warning</option>
+                                    <option value="information">Info</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="avoidSelectStarEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name">显式 JOIN 类型</span>
+                                <select class="config-select lint-rule-severity" id="explicitJoinTypeSeverity">
+                                    <option value="error">Error</option>
+                                    <option value="warning">Warning</option>
+                                    <option value="information">Info</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="explicitJoinTypeEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name">LIMIT 配合 ORDER BY</span>
+                                <select class="config-select lint-rule-severity" id="limitWithOrderBySeverity">
+                                    <option value="error">Error</option>
+                                    <option value="warning">Warning</option>
+                                    <option value="information">Info</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="limitWithOrderByEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name">列数不匹配检测</span>
+                                <select class="config-select lint-rule-severity" id="avoidColumnCountMismatchSeverity">
+                                    <option value="error">Error</option>
+                                    <option value="warning">Warning</option>
+                                    <option value="information">Info</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="avoidColumnCountMismatchEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name">缺失主键检测</span>
+                                <select class="config-select lint-rule-severity" id="missingPrimaryKeySeverity">
+                                    <option value="error">Error</option>
+                                    <option value="warning">Warning</option>
+                                    <option value="information">Info</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="missingPrimaryKeyEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name">使用 CURRENT_TIMESTAMP</span>
+                                <select class="config-select lint-rule-severity" id="useCurrentTimestampSeverity">
+                                    <option value="error">Error</option>
+                                    <option value="warning">Warning</option>
+                                    <option value="information">Info</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="useCurrentTimestampEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name">避免 INSERT 中的 SELECT</span>
+                                <select class="config-select lint-rule-severity" id="avoidSelectInInsertSeverity">
+                                    <option value="error">Error</option>
+                                    <option value="warning">Warning</option>
+                                    <option value="information">Info</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="avoidSelectInInsertEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name">重复列别名检测</span>
+                                <select class="config-select lint-rule-severity" id="duplicateColumnAliasesSeverity">
+                                    <option value="error">Error</option>
+                                    <option value="warning">Warning</option>
+                                    <option value="information">Info</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="duplicateColumnAliasesEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name">关键字大写</span>
+                                <select class="config-select lint-rule-severity" id="uppercaseKeywordsSeverity">
+                                    <option value="error">Error</option>
+                                    <option value="warning">Warning</option>
+                                    <option value="information">Info</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="uppercaseKeywordsEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name">一致的别名</span>
+                                <select class="config-select lint-rule-severity" id="consistentAliasingSeverity">
+                                    <option value="error">Error</option>
+                                    <option value="warning">Warning</option>
+                                    <option value="information">Info</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="consistentAliasingEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name">使用 COALESCE 而非 ISNULL</span>
+                                <select class="config-select lint-rule-severity" id="useCoalesceOverIsnullSeverity">
+                                    <option value="error">Error</option>
+                                    <option value="warning">Warning</option>
+                                    <option value="information">Info</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="useCoalesceOverIsnullEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name">显式列别名</span>
+                                <select class="config-select lint-rule-severity" id="explicitColumnAliasingSeverity">
+                                    <option value="error">Error</option>
+                                    <option value="warning">Warning</option>
+                                    <option value="information">Info</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="explicitColumnAliasingEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name">避免关联子查询</span>
+                                <select class="config-select lint-rule-severity" id="avoidCorrelatedSubqueriesSeverity">
+                                    <option value="error">Error</option>
+                                    <option value="warning">Warning</option>
+                                    <option value="information">Info</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="avoidCorrelatedSubqueriesEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name">长查询行检测</span>
+                                <select class="config-select lint-rule-severity" id="longQueryLineSeverity">
+                                    <option value="error">Error</option>
+                                    <option value="warning">Warning</option>
+                                    <option value="information">Info</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="longQueryLineEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                        </div>
                     </div>
                     
-                    <div class="config-item">
-                        <label class="config-label">标识符大小写</label>
-                        <select class="config-select" id="identifierCase">
-                            <option value="preserve">保持原样</option>
-                            <option value="upper">大写</option>
-                            <option value="lower">小写</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="config-group">
-                    <div class="config-group-title">缩进与格式</div>
-                    
-                    <div class="config-item">
-                        <label class="config-label">缩进风格</label>
-                        <select class="config-select" id="indentStyle">
-                            <option value="standard">标准缩进</option>
-                            <option value="tabularLeft">表格左对齐</option>
-                            <option value="tabularRight">表格右对齐</option>
-                        </select>
-                    </div>
-                    
-                    <div class="config-item">
-                        <label class="config-label">逻辑运算符换行</label>
-                        <select class="config-select" id="logicalOperatorNewline">
-                            <option value="before">在 AND/OR 之前换行</option>
-                            <option value="after">在 AND/OR 之后换行</option>
-                        </select>
-                    </div>
-                    
-                    <div class="config-item">
-                        <label class="config-label">表达式宽度</label>
-                        <div class="config-description">表达式字符数达到此值时拆分为多行</div>
-                        <input type="number" class="config-input" id="expressionWidth" min="0" max="200">
-                    </div>
-                    
-                    <div class="config-item">
-                        <label class="config-label">查询间隔行数</label>
-                        <div class="config-description">查询语句之间的空行数</div>
-                        <input type="number" class="config-input" id="linesBetweenQueries" min="0" max="10">
-                    </div>
-                </div>
-                
-                <div class="config-group">
-                    <div class="config-group-title">逗号和对齐</div>
-                    
-                    <div class="config-item">
-                        <label class="config-label">逗号位置</label>
-                        <select class="config-select" id="commaPosition">
-                            <option value="after">行尾</option>
-                            <option value="before">行首</option>
-                        </select>
+                    <!-- 大小写设置 -->
+                    <div class="config-group">
+                        <div class="cg-header" onclick="toggleGroup(this)">
+                            <span class="cg-arrow open">▶</span>
+                            <span class="cg-icon">🔤</span>
+                            <span class="cg-title">大小写设置</span>
+                        </div>
+                        <div class="cg-body open">
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text">关键字大小写</span></div>
+                                <select class="config-select" id="keywordCase">
+                                    <option value="preserve">保持原样</option>
+                                    <option value="upper">大写</option>
+                                    <option value="lower">小写</option>
+                                </select>
+                            </div>
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text">数据类型大小写</span></div>
+                                <select class="config-select" id="dataTypeCase">
+                                    <option value="preserve">保持原样</option>
+                                    <option value="upper">大写</option>
+                                    <option value="lower">小写</option>
+                                </select>
+                            </div>
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text">函数名大小写</span></div>
+                                <select class="config-select" id="functionCase">
+                                    <option value="preserve">保持原样</option>
+                                    <option value="upper">大写</option>
+                                    <option value="lower">小写</option>
+                                </select>
+                            </div>
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text">标识符大小写</span></div>
+                                <select class="config-select" id="identifierCase">
+                                    <option value="preserve">保持原样</option>
+                                    <option value="upper">大写</option>
+                                    <option value="lower">小写</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
                     
-                    <div class="config-item config-checkbox">
-                        <input type="checkbox" id="alignColumnDefinitions">
-                        <label class="config-label">对齐列定义</label>
+                    <!-- 缩进与格式 -->
+                    <div class="config-group">
+                        <div class="cg-header" onclick="toggleGroup(this)">
+                            <span class="cg-arrow open">▶</span>
+                            <span class="cg-icon">↹</span>
+                            <span class="cg-title">缩进与格式</span>
+                        </div>
+                        <div class="cg-body open">
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text">缩进风格</span></div>
+                                <select class="config-select" id="indentStyle">
+                                    <option value="standard">标准缩进</option>
+                                    <option value="tabularLeft">表格左对齐</option>
+                                    <option value="tabularRight">表格右对齐</option>
+                                </select>
+                            </div>
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text">逻辑运算符换行</span></div>
+                                <select class="config-select" id="logicalOperatorNewline">
+                                    <option value="before">AND/OR 之前换行</option>
+                                    <option value="after">AND/OR 之后换行</option>
+                                </select>
+                            </div>
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text">表达式宽度</span><span class="ci-label-hint">多行阈值</span></div>
+                                <input type="number" class="config-input" id="expressionWidth" min="0" max="200">
+                            </div>
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text">查询间隔行数</span><span class="ci-label-hint">空行数</span></div>
+                                <input type="number" class="config-input" id="linesBetweenQueries" min="0" max="10">
+                            </div>
+                        </div>
                     </div>
                     
-                    <div class="config-item config-checkbox">
-                        <input type="checkbox" id="tabulateAlias">
-                        <label class="config-label">对齐表别名</label>
-                    </div>
-                </div>
-                
-                <div class="config-group">
-                    <div class="config-group-title">换行设置</div>
-                    
-                    <div class="config-item config-checkbox">
-                        <input type="checkbox" id="newlineAfterSelect">
-                        <label class="config-label">SELECT 后换行</label>
-                    </div>
-                    
-                    <div class="config-item config-checkbox">
-                        <input type="checkbox" id="newlineAfterFrom">
-                        <label class="config-label">FROM 后换行</label>
-                    </div>
-                    
-                    <div class="config-item config-checkbox">
-                        <input type="checkbox" id="newlineBeforeWhere">
-                        <label class="config-label">WHERE 前换行</label>
+                    <!-- 逗号和对齐 -->
+                    <div class="config-group">
+                        <div class="cg-header" onclick="toggleGroup(this)">
+                            <span class="cg-arrow open">▶</span>
+                            <span class="cg-icon">⫶</span>
+                            <span class="cg-title">逗号和对齐</span>
+                        </div>
+                        <div class="cg-body open">
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text">逗号位置</span></div>
+                                <select class="config-select" id="commaPosition">
+                                    <option value="after">行尾</option>
+                                    <option value="before">行首</option>
+                                </select>
+                            </div>
+                            <div class="toggle-row"><span class="toggle-label">对齐列定义</span><label class="toggle"><input type="checkbox" id="alignColumnDefinitions"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">对齐表别名</span><label class="toggle"><input type="checkbox" id="tabulateAlias"><span class="toggle-slider"></span></label></div>
+                        </div>
                     </div>
                     
-                    <div class="config-item config-checkbox">
-                        <input type="checkbox" id="newlineAfterWhere">
-                        <label class="config-label">WHERE 后换行</label>
+                    <!-- 换行设置 -->
+                    <div class="config-group">
+                        <div class="cg-header" onclick="toggleGroup(this)">
+                            <span class="cg-arrow open">▶</span>
+                            <span class="cg-icon">↵</span>
+                            <span class="cg-title">换行设置</span>
+                        </div>
+                        <div class="cg-body open">
+                            <div class="toggle-row"><span class="toggle-label">SELECT 后换行</span><label class="toggle"><input type="checkbox" id="newlineAfterSelect"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">FROM 后换行</span><label class="toggle"><input type="checkbox" id="newlineAfterFrom"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">WHERE 前换行</span><label class="toggle"><input type="checkbox" id="newlineBeforeWhere"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">WHERE 后换行</span><label class="toggle"><input type="checkbox" id="newlineAfterWhere"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">ORDER BY 前换行</span><label class="toggle"><input type="checkbox" id="newlineBeforeOrderBy"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">GROUP BY 前换行</span><label class="toggle"><input type="checkbox" id="newlineBeforeGroupBy"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">HAVING 前换行</span><label class="toggle"><input type="checkbox" id="newlineBeforeHaving"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">LIMIT 前换行</span><label class="toggle"><input type="checkbox" id="newlineBeforeLimit"><span class="toggle-slider"></span></label></div>
+                        </div>
                     </div>
                     
-                    <div class="config-item config-checkbox">
-                        <input type="checkbox" id="newlineBeforeOrderBy">
-                        <label class="config-label">ORDER BY 前换行</label>
+                    <!-- 高级选项 -->
+                    <div class="config-group">
+                        <div class="cg-header" onclick="toggleGroup(this)">
+                            <span class="cg-arrow">▶</span>
+                            <span class="cg-icon">⚡</span>
+                            <span class="cg-title">高级选项</span>
+                        </div>
+                        <div class="cg-body">
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text">保留关键字大小写</span></div>
+                                <select class="config-select" id="reservedKeywordCase">
+                                    <option value="preserve">保持原样</option>
+                                    <option value="upper">大写</option>
+                                    <option value="lower">小写</option>
+                                </select>
+                            </div>
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text">内置函数大小写</span></div>
+                                <select class="config-select" id="builtinFunctionCase">
+                                    <option value="preserve">保持原样</option>
+                                    <option value="upper">大写</option>
+                                    <option value="lower">小写</option>
+                                </select>
+                            </div>
+                            <div class="toggle-row"><span class="toggle-label">JOIN 前换行</span><label class="toggle"><input type="checkbox" id="newlineBeforeJoin"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">逗号后换行</span><label class="toggle"><input type="checkbox" id="newlineAfterComma"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">每个 SELECT 项后换行</span><label class="toggle"><input type="checkbox" id="breakAfterSelectItem"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">每个 FROM 项后换行</span><label class="toggle"><input type="checkbox" id="breakAfterFromItem"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">对齐 WHERE 子句</span><label class="toggle"><input type="checkbox" id="alignWhereClauses"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">对齐 CASE 语句</span><label class="toggle"><input type="checkbox" id="alignCaseStatements"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">逗号前加空格</span><label class="toggle"><input type="checkbox" id="spaceBeforeComma"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">括号内加空格</span><label class="toggle"><input type="checkbox" id="spaceInsideParentheses"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">修剪尾部空格</span><label class="toggle"><input type="checkbox" id="trimTrailingSpaces"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">语句结尾添加分号</span><label class="toggle"><input type="checkbox" id="semicolonAtEnd"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">紧凑运算符</span><label class="toggle"><input type="checkbox" id="denseOperators"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">分号另起一行</span><label class="toggle"><input type="checkbox" id="newlineBeforeSemicolon"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">忽略编辑器 Tab 设置</span><label class="toggle"><input type="checkbox" id="ignoreTabSettings"><span class="toggle-slider"></span></label></div>
+                            <div class="config-item" id="tabOverrideGroup" style="display:none;">
+                                <div class="ci-label"><span class="ci-label-text">Tab 宽度覆盖</span></div>
+                                <input type="number" class="config-input" id="tabSizeOverride" min="1" max="8">
+                            </div>
+                        </div>
                     </div>
                     
-                    <div class="config-item config-checkbox">
-                        <input type="checkbox" id="newlineBeforeGroupBy">
-                        <label class="config-label">GROUP BY 前换行</label>
-                    </div>
-                    
-                    <div class="config-item config-checkbox">
-                        <input type="checkbox" id="newlineBeforeHaving">
-                        <label class="config-label">HAVING 前换行</label>
-                    </div>
-                    
-                    <div class="config-item config-checkbox">
-                        <input type="checkbox" id="newlineBeforeLimit">
-                        <label class="config-label">LIMIT 前换行</label>
-                    </div>
-                </div>
-                
-                <div class="config-group">
-                    <div class="config-group-title">大小写控制（高级）</div>
-                    
-                    <div class="config-item">
-                        <label class="config-label">保留关键字大小写</label>
-                        <select class="config-select" id="reservedKeywordCase">
-                            <option value="preserve">保持原样</option>
-                            <option value="upper">大写</option>
-                            <option value="lower">小写</option>
-                        </select>
-                    </div>
-                    
-                    <div class="config-item">
-                        <label class="config-label">内置函数大小写</label>
-                        <select class="config-select" id="builtinFunctionCase">
-                            <option value="preserve">保持原样</option>
-                            <option value="upper">大写</option>
-                            <option value="lower">小写</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="config-group">
-                    <div class="config-group-title">换行控制（高级）</div>
-                    
-                    <div class="config-item config-checkbox">
-                        <input type="checkbox" id="newlineBeforeJoin">
-                        <label class="config-label">JOIN 前换行</label>
-                    </div>
-                    
-                    <div class="config-item config-checkbox">
-                        <input type="checkbox" id="newlineAfterComma">
-                        <label class="config-label">逗号后换行</label>
-                    </div>
-                    
-                    <div class="config-item config-checkbox">
-                        <input type="checkbox" id="breakAfterSelectItem">
-                        <label class="config-label">每个 SELECT 项后换行</label>
-                    </div>
-                    
-                    <div class="config-item config-checkbox">
-                        <input type="checkbox" id="breakAfterFromItem">
-                        <label class="config-label">每个 FROM 项后换行</label>
-                    </div>
-                </div>
-                
-                <div class="config-group">
-                    <div class="config-group-title">对齐控制</div>
-                    
-                    <div class="config-item config-checkbox">
-                        <input type="checkbox" id="alignWhereClauses">
-                        <label class="config-label">对齐 WHERE 子句</label>
-                    </div>
-                    
-                    <div class="config-item config-checkbox">
-                        <input type="checkbox" id="alignCaseStatements">
-                        <label class="config-label">对齐 CASE 语句</label>
-                    </div>
-                </div>
-                
-                <div class="config-group">
-                    <div class="config-group-title">空格控制</div>
-                    
-                    <div class="config-item config-checkbox">
-                        <input type="checkbox" id="spaceBeforeComma">
-                        <label class="config-label">逗号前加空格</label>
-                    </div>
-                    
-                    <div class="config-item config-checkbox">
-                        <input type="checkbox" id="spaceInsideParentheses">
-                        <label class="config-label">括号内加空格</label>
-                    </div>
-                    
-                    <div class="config-item config-checkbox">
-                        <input type="checkbox" id="trimTrailingSpaces">
-                        <label class="config-label">修剪尾部空格</label>
-                    </div>
-                </div>
-                
-                <div class="config-group">
-                    <div class="config-group-title">其他选项</div>
-                    
-                    <div class="config-item">
-                        <label class="config-label">最大行长度</label>
-                        <input type="number" class="config-input" id="maxLineLength" min="40" max="500">
-                    </div>
-                    
-                    <div class="config-item">
-                        <label class="config-label">单行查询最大长度</label>
-                        <input type="number" class="config-input" id="singleLineMaxLength" min="40" max="500">
-                    </div>
-                    
-                    <div class="config-item config-checkbox">
-                        <input type="checkbox" id="semicolonAtEnd">
-                        <label class="config-label">语句结尾添加分号</label>
-                    </div>
-                    
-                    <div class="config-item config-checkbox">
-                        <input type="checkbox" id="denseOperators">
-                        <label class="config-label">紧凑运算符（去除运算符周围空格）</label>
-                    </div>
-                    
-                    <div class="config-item config-checkbox">
-                        <input type="checkbox" id="newlineBeforeSemicolon">
-                        <label class="config-label">分号另起一行</label>
-                    </div>
-                    
-                    <div class="config-item config-checkbox">
-                        <input type="checkbox" id="ignoreTabSettings">
-                        <label class="config-label">忽略编辑器 Tab 设置</label>
-                    </div>
-                    
-                    <div class="config-item" id="tabOverrideGroup" style="display: none;">
-                        <label class="config-label">Tab 宽度覆盖</label>
-                        <input type="number" class="config-input" id="tabSizeOverride" min="1" max="8">
+                    <!-- 其他 -->
+                    <div class="config-group">
+                        <div class="cg-header" onclick="toggleGroup(this)">
+                            <span class="cg-arrow">▶</span>
+                            <span class="cg-icon">📏</span>
+                            <span class="cg-title">其他选项</span>
+                        </div>
+                        <div class="cg-body">
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text">最大行长度</span></div>
+                                <input type="number" class="config-input" id="maxLineLength" min="40" max="500">
+                            </div>
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text">单行查询最大长度</span></div>
+                                <input type="number" class="config-input" id="singleLineMaxLength" min="40" max="500">
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
             
-            <div class="preview-section">
-                <h2>👁️ 实时预览</h2>
-                <textarea class="preview-editor" id="previewInput" placeholder="输入 SQL 进行预览...">select id,name,email from users where age>18 and status='active' order by created_at desc limit 10;</textarea>
-                <button class="btn btn-primary" style="width: 100%; margin-bottom: 12px;" onclick="previewFormat()">格式化预览</button>
-                <div class="preview-result empty" id="previewResult">点击"格式化预览"查看效果</div>
+            <div class="preview-panel">
+                <div class="section-header">
+                    <span class="section-header-icon">👁️</span>
+                    <h2>实时预览</h2>
+                </div>
+                <div class="preview-body">
+                    <textarea class="preview-editor" id="previewInput" placeholder="输入 SQL 进行预览...">select id,name,email from users where age>18 and status='active' order by created_at desc limit 10;</textarea>
+                    <div class="preview-actions">
+                        <button class="btn btn-primary" style="flex:1;" onclick="previewFormat()">▶ 格式化预览</button>
+                    </div>
+                    <div class="preview-result empty" id="previewResult">点击「格式化预览」查看效果</div>
+                </div>
             </div>
         </div>
     </div>
+    <div class="toast" id="toast"></div>
     
     <script>
         let currentConfig = {};
@@ -684,7 +825,46 @@ export class ConfigEditorPanel {
                 singleLineMaxLength: 80,
                 ignoreTabSettings: false,
                 tabSizeOverride: 2,
-                insertSpacesOverride: true
+                insertSpacesOverride: true,
+                enableEnhancedChecks: true,
+                enableLinter: true,
+                showErrorLevel: true,
+                showWarningLevel: true,
+                showInfoLevel: true,
+                enableCodeFolding: true,
+                enableOutlineView: true,
+                enableStatusBar: true,
+                enableParameterHighlight: true,
+                enableSnippets: true,
+                enableQuickFix: true,
+                lintAvoidSelectStarEnabled: true,
+                lintAvoidSelectStarSeverity: 'warning',
+                lintExplicitJoinTypeEnabled: true,
+                lintExplicitJoinTypeSeverity: 'information',
+                lintLimitWithOrderByEnabled: true,
+                lintLimitWithOrderBySeverity: 'warning',
+                lintAvoidColumnCountMismatchEnabled: true,
+                lintAvoidColumnCountMismatchSeverity: 'error',
+                lintMissingPrimaryKeyEnabled: true,
+                lintMissingPrimaryKeySeverity: 'warning',
+                lintUseCurrentTimestampEnabled: true,
+                lintUseCurrentTimestampSeverity: 'information',
+                lintAvoidSelectInInsertEnabled: true,
+                lintAvoidSelectInInsertSeverity: 'warning',
+                lintDuplicateColumnAliasesEnabled: true,
+                lintDuplicateColumnAliasesSeverity: 'warning',
+                lintUppercaseKeywordsEnabled: false,
+                lintUppercaseKeywordsSeverity: 'information',
+                lintConsistentAliasingEnabled: false,
+                lintConsistentAliasingSeverity: 'information',
+                lintUseCoalesceOverIsnullEnabled: false,
+                lintUseCoalesceOverIsnullSeverity: 'information',
+                lintExplicitColumnAliasingEnabled: false,
+                lintExplicitColumnAliasingSeverity: 'information',
+                lintAvoidCorrelatedSubqueriesEnabled: false,
+                lintAvoidCorrelatedSubqueriesSeverity: 'warning',
+                lintLongQueryLineEnabled: false,
+                lintLongQueryLineSeverity: 'information'
             },
             hive: {
                 dialect: 'hive',
@@ -725,7 +905,46 @@ export class ConfigEditorPanel {
                 singleLineMaxLength: 80,
                 ignoreTabSettings: false,
                 tabSizeOverride: 2,
-                insertSpacesOverride: true
+                insertSpacesOverride: true,
+                enableEnhancedChecks: true,
+                enableLinter: true,
+                showErrorLevel: true,
+                showWarningLevel: true,
+                showInfoLevel: true,
+                enableCodeFolding: true,
+                enableOutlineView: true,
+                enableStatusBar: true,
+                enableParameterHighlight: true,
+                enableSnippets: true,
+                enableQuickFix: true,
+                lintAvoidSelectStarEnabled: true,
+                lintAvoidSelectStarSeverity: 'warning',
+                lintExplicitJoinTypeEnabled: true,
+                lintExplicitJoinTypeSeverity: 'information',
+                lintLimitWithOrderByEnabled: true,
+                lintLimitWithOrderBySeverity: 'warning',
+                lintAvoidColumnCountMismatchEnabled: true,
+                lintAvoidColumnCountMismatchSeverity: 'error',
+                lintMissingPrimaryKeyEnabled: true,
+                lintMissingPrimaryKeySeverity: 'warning',
+                lintUseCurrentTimestampEnabled: true,
+                lintUseCurrentTimestampSeverity: 'information',
+                lintAvoidSelectInInsertEnabled: true,
+                lintAvoidSelectInInsertSeverity: 'warning',
+                lintDuplicateColumnAliasesEnabled: true,
+                lintDuplicateColumnAliasesSeverity: 'warning',
+                lintUppercaseKeywordsEnabled: true,
+                lintUppercaseKeywordsSeverity: 'information',
+                lintConsistentAliasingEnabled: false,
+                lintConsistentAliasingSeverity: 'information',
+                lintUseCoalesceOverIsnullEnabled: false,
+                lintUseCoalesceOverIsnullSeverity: 'information',
+                lintExplicitColumnAliasingEnabled: false,
+                lintExplicitColumnAliasingSeverity: 'information',
+                lintAvoidCorrelatedSubqueriesEnabled: false,
+                lintAvoidCorrelatedSubqueriesSeverity: 'warning',
+                lintLongQueryLineEnabled: false,
+                lintLongQueryLineSeverity: 'information'
             },
             mysql: {
                 dialect: 'mysql',
@@ -766,7 +985,46 @@ export class ConfigEditorPanel {
                 singleLineMaxLength: 80,
                 ignoreTabSettings: false,
                 tabSizeOverride: 4,
-                insertSpacesOverride: true
+                insertSpacesOverride: true,
+                enableEnhancedChecks: true,
+                enableLinter: true,
+                showErrorLevel: true,
+                showWarningLevel: true,
+                showInfoLevel: true,
+                enableCodeFolding: true,
+                enableOutlineView: true,
+                enableStatusBar: true,
+                enableParameterHighlight: true,
+                enableSnippets: true,
+                enableQuickFix: true,
+                lintAvoidSelectStarEnabled: true,
+                lintAvoidSelectStarSeverity: 'warning',
+                lintExplicitJoinTypeEnabled: true,
+                lintExplicitJoinTypeSeverity: 'information',
+                lintLimitWithOrderByEnabled: true,
+                lintLimitWithOrderBySeverity: 'warning',
+                lintAvoidColumnCountMismatchEnabled: true,
+                lintAvoidColumnCountMismatchSeverity: 'error',
+                lintMissingPrimaryKeyEnabled: true,
+                lintMissingPrimaryKeySeverity: 'warning',
+                lintUseCurrentTimestampEnabled: true,
+                lintUseCurrentTimestampSeverity: 'information',
+                lintAvoidSelectInInsertEnabled: true,
+                lintAvoidSelectInInsertSeverity: 'warning',
+                lintDuplicateColumnAliasesEnabled: true,
+                lintDuplicateColumnAliasesSeverity: 'warning',
+                lintUppercaseKeywordsEnabled: true,
+                lintUppercaseKeywordsSeverity: 'information',
+                lintConsistentAliasingEnabled: false,
+                lintConsistentAliasingSeverity: 'information',
+                lintUseCoalesceOverIsnullEnabled: false,
+                lintUseCoalesceOverIsnullSeverity: 'information',
+                lintExplicitColumnAliasingEnabled: false,
+                lintExplicitColumnAliasingSeverity: 'information',
+                lintAvoidCorrelatedSubqueriesEnabled: false,
+                lintAvoidCorrelatedSubqueriesSeverity: 'warning',
+                lintLongQueryLineEnabled: false,
+                lintLongQueryLineSeverity: 'information'
             },
             compact: {
                 dialect: 'hive',
@@ -807,7 +1065,46 @@ export class ConfigEditorPanel {
                 singleLineMaxLength: 100,
                 ignoreTabSettings: false,
                 tabSizeOverride: 2,
-                insertSpacesOverride: true
+                insertSpacesOverride: true,
+                enableEnhancedChecks: false,
+                enableLinter: false,
+                showErrorLevel: true,
+                showWarningLevel: true,
+                showInfoLevel: true,
+                enableCodeFolding: false,
+                enableOutlineView: false,
+                enableStatusBar: false,
+                enableParameterHighlight: true,
+                enableSnippets: true,
+                enableQuickFix: true,
+                lintAvoidSelectStarEnabled: false,
+                lintAvoidSelectStarSeverity: 'warning',
+                lintExplicitJoinTypeEnabled: false,
+                lintExplicitJoinTypeSeverity: 'information',
+                lintLimitWithOrderByEnabled: false,
+                lintLimitWithOrderBySeverity: 'warning',
+                lintAvoidColumnCountMismatchEnabled: false,
+                lintAvoidColumnCountMismatchSeverity: 'error',
+                lintMissingPrimaryKeyEnabled: false,
+                lintMissingPrimaryKeySeverity: 'warning',
+                lintUseCurrentTimestampEnabled: false,
+                lintUseCurrentTimestampSeverity: 'information',
+                lintAvoidSelectInInsertEnabled: false,
+                lintAvoidSelectInInsertSeverity: 'warning',
+                lintDuplicateColumnAliasesEnabled: false,
+                lintDuplicateColumnAliasesSeverity: 'warning',
+                lintUppercaseKeywordsEnabled: false,
+                lintUppercaseKeywordsSeverity: 'information',
+                lintConsistentAliasingEnabled: false,
+                lintConsistentAliasingSeverity: 'information',
+                lintUseCoalesceOverIsnullEnabled: false,
+                lintUseCoalesceOverIsnullSeverity: 'information',
+                lintExplicitColumnAliasingEnabled: false,
+                lintExplicitColumnAliasingSeverity: 'information',
+                lintAvoidCorrelatedSubqueriesEnabled: false,
+                lintAvoidCorrelatedSubqueriesSeverity: 'warning',
+                lintLongQueryLineEnabled: false,
+                lintLongQueryLineSeverity: 'information'
             }
         };
         
@@ -880,13 +1177,73 @@ export class ConfigEditorPanel {
                 singleLineMaxLength: parseInt(document.getElementById('singleLineMaxLength').value),
                 ignoreTabSettings: document.getElementById('ignoreTabSettings').checked,
                 tabSizeOverride: parseInt(document.getElementById('tabSizeOverride').value),
-                insertSpacesOverride: true
+                insertSpacesOverride: true,
+                enableEnhancedChecks: document.getElementById('enableEnhancedChecks').checked,
+                enableLinter: document.getElementById('enableLinter').checked,
+                showErrorLevel: document.getElementById('showErrorLevel').checked,
+                showWarningLevel: document.getElementById('showWarningLevel').checked,
+                showInfoLevel: document.getElementById('showInfoLevel').checked,
+                enableCodeFolding: document.getElementById('enableCodeFolding').checked,
+                enableOutlineView: document.getElementById('enableOutlineView').checked,
+                enableStatusBar: document.getElementById('enableStatusBar').checked,
+                enableParameterHighlight: document.getElementById('enableParameterHighlight').checked,
+                enableSnippets: document.getElementById('enableSnippets').checked,
+                enableQuickFix: document.getElementById('enableQuickFix').checked,
+                lintAvoidSelectStarEnabled: document.getElementById('avoidSelectStarEnabled').checked,
+                lintAvoidSelectStarSeverity: document.getElementById('avoidSelectStarSeverity').value,
+                lintExplicitJoinTypeEnabled: document.getElementById('explicitJoinTypeEnabled').checked,
+                lintExplicitJoinTypeSeverity: document.getElementById('explicitJoinTypeSeverity').value,
+                lintLimitWithOrderByEnabled: document.getElementById('limitWithOrderByEnabled').checked,
+                lintLimitWithOrderBySeverity: document.getElementById('limitWithOrderBySeverity').value,
+                lintAvoidColumnCountMismatchEnabled: document.getElementById('avoidColumnCountMismatchEnabled').checked,
+                lintAvoidColumnCountMismatchSeverity: document.getElementById('avoidColumnCountMismatchSeverity').value,
+                lintMissingPrimaryKeyEnabled: document.getElementById('missingPrimaryKeyEnabled').checked,
+                lintMissingPrimaryKeySeverity: document.getElementById('missingPrimaryKeySeverity').value,
+                lintUseCurrentTimestampEnabled: document.getElementById('useCurrentTimestampEnabled').checked,
+                lintUseCurrentTimestampSeverity: document.getElementById('useCurrentTimestampSeverity').value,
+                lintAvoidSelectInInsertEnabled: document.getElementById('avoidSelectInInsertEnabled').checked,
+                lintAvoidSelectInInsertSeverity: document.getElementById('avoidSelectInInsertSeverity').value,
+                lintDuplicateColumnAliasesEnabled: document.getElementById('duplicateColumnAliasesEnabled').checked,
+                lintDuplicateColumnAliasesSeverity: document.getElementById('duplicateColumnAliasesSeverity').value,
+                lintUppercaseKeywordsEnabled: document.getElementById('uppercaseKeywordsEnabled').checked,
+                lintUppercaseKeywordsSeverity: document.getElementById('uppercaseKeywordsSeverity').value,
+                lintConsistentAliasingEnabled: document.getElementById('consistentAliasingEnabled').checked,
+                lintConsistentAliasingSeverity: document.getElementById('consistentAliasingSeverity').value,
+                lintUseCoalesceOverIsnullEnabled: document.getElementById('useCoalesceOverIsnullEnabled').checked,
+                lintUseCoalesceOverIsnullSeverity: document.getElementById('useCoalesceOverIsnullSeverity').value,
+                lintExplicitColumnAliasingEnabled: document.getElementById('explicitColumnAliasingEnabled').checked,
+                lintExplicitColumnAliasingSeverity: document.getElementById('explicitColumnAliasingSeverity').value,
+                lintAvoidCorrelatedSubqueriesEnabled: document.getElementById('avoidCorrelatedSubqueriesEnabled').checked,
+                lintAvoidCorrelatedSubqueriesSeverity: document.getElementById('avoidCorrelatedSubqueriesSeverity').value,
+                lintLongQueryLineEnabled: document.getElementById('longQueryLineEnabled').checked,
+                lintLongQueryLineSeverity: document.getElementById('longQueryLineSeverity').value
             };
         }
         
         function saveConfig() {
             const config = collectConfig();
             vscode.postMessage({ command: 'updateConfig', data: config });
+            showToast('配置已保存', 'success');
+        }
+        
+        function showToast(message, type) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast ' + type + ' show';
+            setTimeout(() => { toast.classList.remove('show'); }, 2000);
+        }
+        
+        function toggleGroup(header) {
+            const arrow = header.querySelector('.cg-arrow');
+            const body = header.nextElementSibling;
+            const isOpen = body.classList.contains('open');
+            if (isOpen) {
+                arrow.classList.remove('open');
+                body.classList.remove('open');
+            } else {
+                arrow.classList.add('open');
+                body.classList.add('open');
+            }
         }
         
         function resetConfig() {
@@ -908,7 +1265,9 @@ export class ConfigEditorPanel {
         function showPreviewResult(result) {
             const resultEl = document.getElementById('previewResult');
             resultEl.classList.remove('empty');
+            resultEl.classList.add('success');
             resultEl.textContent = result;
+            setTimeout(() => { resultEl.classList.remove('success'); }, 1000);
         }
         
         function updateTabOverrideGroup() {
@@ -970,7 +1329,46 @@ export class ConfigEditorPanel {
                 singleLineMaxLength: config.get('singleLineMaxLength', 80),
                 ignoreTabSettings: config.get('ignoreTabSettings', false),
                 tabSizeOverride: config.get('tabSizeOverride', 2),
-                insertSpacesOverride: config.get('insertSpacesOverride', true)
+                insertSpacesOverride: config.get('insertSpacesOverride', true),
+                enableEnhancedChecks: config.get('enableEnhancedChecks', true),
+                enableLinter: config.get('enableLinter', true),
+                showErrorLevel: config.get('showErrorLevel', true),
+                showWarningLevel: config.get('showWarningLevel', true),
+                showInfoLevel: config.get('showInfoLevel', true),
+                enableCodeFolding: config.get('enableCodeFolding', true),
+                enableOutlineView: config.get('enableOutlineView', true),
+                enableStatusBar: config.get('enableStatusBar', true),
+                enableParameterHighlight: config.get('enableParameterHighlight', true),
+                enableSnippets: config.get('enableSnippets', true),
+                enableQuickFix: config.get('enableQuickFix', true),
+                lintAvoidSelectStarEnabled: config.get('lint.avoid_select_star', { enabled: true, severity: 'warning' }).enabled,
+                lintAvoidSelectStarSeverity: config.get('lint.avoid_select_star', { enabled: true, severity: 'warning' }).severity,
+                lintExplicitJoinTypeEnabled: config.get('lint.explicit_join_type', { enabled: true, severity: 'information' }).enabled,
+                lintExplicitJoinTypeSeverity: config.get('lint.explicit_join_type', { enabled: true, severity: 'information' }).severity,
+                lintLimitWithOrderByEnabled: config.get('lint.limit_with_order_by', { enabled: true, severity: 'warning' }).enabled,
+                lintLimitWithOrderBySeverity: config.get('lint.limit_with_order_by', { enabled: true, severity: 'warning' }).severity,
+                lintAvoidColumnCountMismatchEnabled: config.get('lint.avoid_column_count_mismatch', { enabled: true, severity: 'error' }).enabled,
+                lintAvoidColumnCountMismatchSeverity: config.get('lint.avoid_column_count_mismatch', { enabled: true, severity: 'error' }).severity,
+                lintMissingPrimaryKeyEnabled: config.get('lint.missing_primary_key', { enabled: true, severity: 'warning' }).enabled,
+                lintMissingPrimaryKeySeverity: config.get('lint.missing_primary_key', { enabled: true, severity: 'warning' }).severity,
+                lintUseCurrentTimestampEnabled: config.get('lint.use_current_timestamp', { enabled: true, severity: 'information' }).enabled,
+                lintUseCurrentTimestampSeverity: config.get('lint.use_current_timestamp', { enabled: true, severity: 'information' }).severity,
+                lintAvoidSelectInInsertEnabled: config.get('lint.avoid_select_in_insert', { enabled: true, severity: 'warning' }).enabled,
+                lintAvoidSelectInInsertSeverity: config.get('lint.avoid_select_in_insert', { enabled: true, severity: 'warning' }).severity,
+                lintDuplicateColumnAliasesEnabled: config.get('lint.duplicate_column_aliases', { enabled: true, severity: 'warning' }).enabled,
+                lintDuplicateColumnAliasesSeverity: config.get('lint.duplicate_column_aliases', { enabled: true, severity: 'warning' }).severity,
+                lintUppercaseKeywordsEnabled: config.get('lint.uppercase_keywords', { enabled: false, severity: 'information' }).enabled,
+                lintUppercaseKeywordsSeverity: config.get('lint.uppercase_keywords', { enabled: false, severity: 'information' }).severity,
+                lintConsistentAliasingEnabled: config.get('lint.consistent_aliasing', { enabled: false, severity: 'information' }).enabled,
+                lintConsistentAliasingSeverity: config.get('lint.consistent_aliasing', { enabled: false, severity: 'information' }).severity,
+                lintUseCoalesceOverIsnullEnabled: config.get('lint.use_coalesce_over_isnull', { enabled: false, severity: 'information' }).enabled,
+                lintUseCoalesceOverIsnullSeverity: config.get('lint.use_coalesce_over_isnull', { enabled: false, severity: 'information' }).severity,
+                lintExplicitColumnAliasingEnabled: config.get('lint.explicit_column_aliasing', { enabled: false, severity: 'information' }).enabled,
+                lintExplicitColumnAliasingSeverity: config.get('lint.explicit_column_aliasing', { enabled: false, severity: 'information' }).severity,
+                lintAvoidCorrelatedSubqueriesEnabled: config.get('lint.avoid_correlated_subqueries', { enabled: false, severity: 'warning' }).enabled,
+                lintAvoidCorrelatedSubqueriesSeverity: config.get('lint.avoid_correlated_subqueries', { enabled: false, severity: 'warning' }).severity,
+                lintLongQueryLineEnabled: config.get('lint.long_query_line', { enabled: false, severity: 'information' }).enabled,
+                lintLongQueryLineSeverity: config.get('lint.long_query_line', { enabled: false, severity: 'information' }).severity
             }
         })
     }
@@ -1016,6 +1414,31 @@ export class ConfigEditorPanel {
         await config.update('ignoreTabSettings', data.ignoreTabSettings, vscode.ConfigurationTarget.Global)
         await config.update('tabSizeOverride', data.tabSizeOverride, vscode.ConfigurationTarget.Global)
         await config.update('insertSpacesOverride', data.insertSpacesOverride, vscode.ConfigurationTarget.Global)
+        await config.update('enableEnhancedChecks', data.enableEnhancedChecks, vscode.ConfigurationTarget.Global)
+        await config.update('enableLinter', data.enableLinter, vscode.ConfigurationTarget.Global)
+        await config.update('showErrorLevel', data.showErrorLevel, vscode.ConfigurationTarget.Global)
+        await config.update('showWarningLevel', data.showWarningLevel, vscode.ConfigurationTarget.Global)
+        await config.update('showInfoLevel', data.showInfoLevel, vscode.ConfigurationTarget.Global)
+        await config.update('enableCodeFolding', data.enableCodeFolding, vscode.ConfigurationTarget.Global)
+        await config.update('enableOutlineView', data.enableOutlineView, vscode.ConfigurationTarget.Global)
+        await config.update('enableStatusBar', data.enableStatusBar, vscode.ConfigurationTarget.Global)
+        await config.update('enableParameterHighlight', data.enableParameterHighlight, vscode.ConfigurationTarget.Global)
+        await config.update('enableSnippets', data.enableSnippets, vscode.ConfigurationTarget.Global)
+        await config.update('enableQuickFix', data.enableQuickFix, vscode.ConfigurationTarget.Global)
+        await config.update('lint.avoid_select_star', { enabled: data.lintAvoidSelectStarEnabled, severity: data.lintAvoidSelectStarSeverity }, vscode.ConfigurationTarget.Global)
+        await config.update('lint.explicit_join_type', { enabled: data.lintExplicitJoinTypeEnabled, severity: data.lintExplicitJoinTypeSeverity }, vscode.ConfigurationTarget.Global)
+        await config.update('lint.limit_with_order_by', { enabled: data.lintLimitWithOrderByEnabled, severity: data.lintLimitWithOrderBySeverity }, vscode.ConfigurationTarget.Global)
+        await config.update('lint.avoid_column_count_mismatch', { enabled: data.lintAvoidColumnCountMismatchEnabled, severity: data.lintAvoidColumnCountMismatchSeverity }, vscode.ConfigurationTarget.Global)
+        await config.update('lint.missing_primary_key', { enabled: data.lintMissingPrimaryKeyEnabled, severity: data.lintMissingPrimaryKeySeverity }, vscode.ConfigurationTarget.Global)
+        await config.update('lint.use_current_timestamp', { enabled: data.lintUseCurrentTimestampEnabled, severity: data.lintUseCurrentTimestampSeverity }, vscode.ConfigurationTarget.Global)
+        await config.update('lint.avoid_select_in_insert', { enabled: data.lintAvoidSelectInInsertEnabled, severity: data.lintAvoidSelectInInsertSeverity }, vscode.ConfigurationTarget.Global)
+        await config.update('lint.duplicate_column_aliases', { enabled: data.lintDuplicateColumnAliasesEnabled, severity: data.lintDuplicateColumnAliasesSeverity }, vscode.ConfigurationTarget.Global)
+        await config.update('lint.uppercase_keywords', { enabled: data.lintUppercaseKeywordsEnabled, severity: data.lintUppercaseKeywordsSeverity }, vscode.ConfigurationTarget.Global)
+        await config.update('lint.consistent_aliasing', { enabled: data.lintConsistentAliasingEnabled, severity: data.lintConsistentAliasingSeverity }, vscode.ConfigurationTarget.Global)
+        await config.update('lint.use_coalesce_over_isnull', { enabled: data.lintUseCoalesceOverIsnullEnabled, severity: data.lintUseCoalesceOverIsnullSeverity }, vscode.ConfigurationTarget.Global)
+        await config.update('lint.explicit_column_aliasing', { enabled: data.lintExplicitColumnAliasingEnabled, severity: data.lintExplicitColumnAliasingSeverity }, vscode.ConfigurationTarget.Global)
+        await config.update('lint.avoid_correlated_subqueries', { enabled: data.lintAvoidCorrelatedSubqueriesEnabled, severity: data.lintAvoidCorrelatedSubqueriesSeverity }, vscode.ConfigurationTarget.Global)
+        await config.update('lint.long_query_line', { enabled: data.lintLongQueryLineEnabled, severity: data.lintLongQueryLineSeverity }, vscode.ConfigurationTarget.Global)
         
         vscode.window.showInformationMessage('配置已保存！')
     }
@@ -1060,7 +1483,46 @@ export class ConfigEditorPanel {
             singleLineMaxLength: 80,
             ignoreTabSettings: false,
             tabSizeOverride: 2,
-            insertSpacesOverride: true
+            insertSpacesOverride: true,
+            enableEnhancedChecks: true,
+            enableLinter: true,
+            showErrorLevel: true,
+            showWarningLevel: true,
+            showInfoLevel: true,
+            enableCodeFolding: true,
+            enableOutlineView: true,
+            enableStatusBar: true,
+            enableParameterHighlight: true,
+            enableSnippets: true,
+            enableQuickFix: true,
+            lintAvoidSelectStarEnabled: true,
+            lintAvoidSelectStarSeverity: 'warning',
+            lintExplicitJoinTypeEnabled: true,
+            lintExplicitJoinTypeSeverity: 'information',
+            lintLimitWithOrderByEnabled: true,
+            lintLimitWithOrderBySeverity: 'warning',
+            lintAvoidColumnCountMismatchEnabled: true,
+            lintAvoidColumnCountMismatchSeverity: 'error',
+            lintMissingPrimaryKeyEnabled: true,
+            lintMissingPrimaryKeySeverity: 'warning',
+            lintUseCurrentTimestampEnabled: true,
+            lintUseCurrentTimestampSeverity: 'information',
+            lintAvoidSelectInInsertEnabled: true,
+            lintAvoidSelectInInsertSeverity: 'warning',
+            lintDuplicateColumnAliasesEnabled: true,
+            lintDuplicateColumnAliasesSeverity: 'warning',
+            lintUppercaseKeywordsEnabled: false,
+            lintUppercaseKeywordsSeverity: 'information',
+            lintConsistentAliasingEnabled: false,
+            lintConsistentAliasingSeverity: 'information',
+            lintUseCoalesceOverIsnullEnabled: false,
+            lintUseCoalesceOverIsnullSeverity: 'information',
+            lintExplicitColumnAliasingEnabled: false,
+            lintExplicitColumnAliasingSeverity: 'information',
+            lintAvoidCorrelatedSubqueriesEnabled: false,
+            lintAvoidCorrelatedSubqueriesSeverity: 'warning',
+            lintLongQueryLineEnabled: false,
+            lintLongQueryLineSeverity: 'information'
         }
         
         await this._updateConfig(defaults)

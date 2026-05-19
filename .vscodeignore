@@ -19,3 +19,4 @@ test-runner.js
 converted_*.sql
 final_*.sql
 ultimate_*.sql
+docs/**

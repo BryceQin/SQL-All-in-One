@@ -2,7 +2,7 @@
     "name": "hive-formatter",
     "displayName": "Hive Formatter",
     "description": "一个用于 Hive、MySQL、SparkSQL 格式化的 VSCode 插件，支持 MySQL 与 HiveSQL 互相转换",
-    "version": "0.12.0",
+    "version": "0.14.0",
     "publisher": "bryce-qin",
     "contributors": [
         "TalDu"
@@ -440,7 +440,67 @@
                 "Hive-Formatter.lint.duplicate_column_aliases": {
                     "type": "object",
                     "default": { "enabled": true, "severity": "warning" },
-                    "markdownDescription": "配置 `duplicate_column_aliases` 规则"
+                    "markdownDescription": "配置 \"duplicate_column_aliases\" 规则"
+                },
+                "Hive-Formatter.lint.uppercase_keywords": {
+                    "type": "object",
+                    "default": { "enabled": false, "severity": "information" },
+                    "markdownDescription": "配置 \"uppercase_keywords\" 规则"
+                },
+                "Hive-Formatter.lint.consistent_aliasing": {
+                    "type": "object",
+                    "default": { "enabled": false, "severity": "information" },
+                    "markdownDescription": "配置 \"consistent_aliasing\" 规则"
+                },
+                "Hive-Formatter.lint.use_coalesce_over_isnull": {
+                    "type": "object",
+                    "default": { "enabled": false, "severity": "information" },
+                    "markdownDescription": "配置 \"use_coalesce_over_isnull\" 规则"
+                },
+                "Hive-Formatter.lint.explicit_column_aliasing": {
+                    "type": "object",
+                    "default": { "enabled": false, "severity": "information" },
+                    "markdownDescription": "配置 \"explicit_column_aliasing\" 规则"
+                },
+                "Hive-Formatter.lint.avoid_correlated_subqueries": {
+                    "type": "object",
+                    "default": { "enabled": false, "severity": "warning" },
+                    "markdownDescription": "配置 \"avoid_correlated_subqueries\" 规则"
+                },
+                "Hive-Formatter.lint.long_query_line": {
+                    "type": "object",
+                    "default": { "enabled": false, "severity": "information" },
+                    "markdownDescription": "配置 \"long_query_line\" 规则"
+                },
+                "Hive-Formatter.enableCodeFolding": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "是否启用代码折叠功能"
+                },
+                "Hive-Formatter.enableOutlineView": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "是否启用大纲视图功能"
+                },
+                "Hive-Formatter.enableStatusBar": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "是否启用状态栏功能"
+                },
+                "Hive-Formatter.enableParameterHighlight": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "是否启用参数高亮和替换功能"
+                },
+                "Hive-Formatter.enableSnippets": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "是否启用代码片段功能"
+                },
+                "Hive-Formatter.enableQuickFix": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "是否启用快速修复功能"
                 }
             }
         }

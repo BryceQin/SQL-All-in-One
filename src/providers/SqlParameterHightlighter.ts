@@ -1,4 +1,5 @@
 import * as vscode from 'vscode'
+import { sqlDialects } from '../core/sqlDialects'
 
 export class SqlParameterHighlighter {
     private decorationType: vscode.TextEditorDecorationType
@@ -42,7 +43,7 @@ export class SqlParameterHighlighter {
     }
     
     private isSqlDocument(document: vscode.TextDocument): boolean {
-        return document.languageId === 'sql' || document.languageId === 'hive'
+        return Object.keys(sqlDialects).includes(document.languageId)
     }
     
     public updateDecorations(editor: vscode.TextEditor): void {

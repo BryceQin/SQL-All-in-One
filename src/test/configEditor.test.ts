@@ -8,7 +8,7 @@ suite('ConfigEditorPanel 测试', () => {
         test('配置编辑器应该能够打开', async function() {
             this.timeout(30000)
             
-            const extension = vscode.extensions.getExtension('hive-formatter.hive-formatter')
+            const extension = vscode.extensions.getExtension('bryce-qin.hive-formatter')
             if (!extension) {
                 throw new Error('Extension not found')
             }
@@ -19,9 +19,11 @@ suite('ConfigEditorPanel 测试', () => {
             
             await new Promise(resolve => setTimeout(resolve, 1000))
             
-            const textEditors = vscode.window.visibleTextEditors
             const hasWebviewPanel = vscode.window.tabGroups.all.some(group =>
-                group.tabs.some(tab => tab.viewType === 'hiveFormatterConfig')
+                group.tabs.some(tab => {
+                    const input = tab.input as any
+                    return input && input.viewType === 'hiveFormatterConfig'
+                })
             )
             
             if (!hasWebviewPanel) {
@@ -72,7 +74,7 @@ suite('ConfigEditorPanel 测试', () => {
                 
                 const updatedDialect = config.get<string>('dialect')
                 
-                strictEqual(updatedDialect, 'mysql', '配置未正确更新')
+                assert.strictEqual(updatedDialect, 'mysql', '配置未正确更新')
                 
             } finally {
                 
@@ -97,7 +99,7 @@ suite('回归测试 - 现有功能完整性', () => {
                 language: 'sql'
             })
             
-            const editor = await vscode.window.showTextDocument(document)
+            await vscode.window.showTextDocument(document)
             
             await vscode.commands.executeCommand('editor.action.formatDocument')
             
@@ -105,9 +107,9 @@ suite('回归测试 - 现有功能完整性', () => {
             
             const formattedText = document.getText()
             
-            ok(formattedText.includes('SELECT') || formattedText.includes('select'), 
+            assert.ok(formattedText.includes('SELECT') || formattedText.includes('select'), 
                '格式化后应包含 SELECT 关键字')
-            ok(formattedText.includes('FROM') || formattedText.includes('from'), 
+            assert.ok(formattedText.includes('FROM') || formattedText.includes('from'), 
                '格式化后应包含 FROM 关键字')
             
             await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
@@ -121,13 +123,13 @@ suite('回归测试 - 现有功能完整性', () => {
                 language: 'hive'
             })
             
-            const editor = await vscode.window.showTextDocument(document)
+            await vscode.window.showTextDocument(document)
             
             const config = vscode.workspace.getConfiguration('Hive-Formatter')
             const originalDialect = config.get<string>('dialect')
             
             try {
-                await config.update('dialect', 'hive', vscode.ConfigurationTarget.Workspace)
+                await config.update('dialect', 'hive', vscode.ConfigurationTarget.Global)
                 
                 await vscode.commands.executeCommand('editor.action.formatDocument')
                 
@@ -135,13 +137,13 @@ suite('回归测试 - 现有功能完整性', () => {
                 
                 const formattedText = document.getText()
                 
-                ok(formattedText.length > 0, '格式化结果不应为空')
-                ok(formattedText.includes('SELECT') || formattedText.includes('select'), 
+                assert.ok(formattedText.length > 0, '格式化结果不应为空')
+                assert.ok(formattedText.includes('SELECT') || formattedText.includes('select'), 
                    '应包含 SELECT 关键字')
                    
             } finally {
                 if (originalDialect) {
-                    await config.update('dialect', originalDialect, vscode.ConfigurationTarget.Workspace)
+                    await config.update('dialect', originalDialect, vscode.ConfigurationTarget.Global)
                 }
                 await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
             }
@@ -158,9 +160,7 @@ suite('回归测试 - 现有功能完整性', () => {
                 language: 'sql'
             })
             
-            const editor = await vscode.window.showTextDocument(document)
-            
-            const originalText = document.getText()
+            await vscode.window.showTextDocument(document)
             
             await vscode.commands.executeCommand('hive-formatter.mysql-to-hive')
             
@@ -168,7 +168,7 @@ suite('回归测试 - 现有功能完整性', () => {
             
             const convertedText = document.getText()
             
-            ok(convertedText.length > 0, '转换结果不应为空')
+            assert.ok(convertedText.length > 0, '转换结果不应为空')
             
             await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
         })
@@ -181,7 +181,7 @@ suite('回归测试 - 现有功能完整性', () => {
                 language: 'hive'
             })
             
-            const editor = await vscode.window.showTextDocument(document)
+            await vscode.window.showTextDocument(document)
             
             await vscode.commands.executeCommand('hive-formatter.hive-to-mysql')
             
@@ -189,7 +189,7 @@ suite('回归测试 - 现有功能完整性', () => {
             
             const convertedText = document.getText()
             
-            ok(convertedText.length > 0, '转换结果不应为空')
+            assert.ok(convertedText.length > 0, '转换结果不应为空')
             
             await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
         })
@@ -205,13 +205,11 @@ suite('回归测试 - 现有功能完整性', () => {
                 language: 'hive'
             })
             
-            const editor = await vscode.window.showTextDocument(document)
+            await vscode.window.showTextDocument(document)
             
             await new Promise(resolve => setTimeout(resolve, 2000))
             
-            const diagnostics = vscode.languages.getDiagnostics(document.uri)
-            
-            ok(diagnostics.length >= 0, '诊断系统应正常运行')
+            assert.ok(vscode.languages.getDiagnostics(document.uri).length >= 0, '诊断系统应正常运行')
             
             await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
         })
@@ -224,13 +222,11 @@ suite('回归测试 - 现有功能完整性', () => {
                 language: 'hive'
             })
             
-            const editor = await vscode.window.showTextDocument(document)
+            await vscode.window.showTextDocument(document)
             
             await new Promise(resolve => setTimeout(resolve, 2000))
             
-            const diagnostics = vscode.languages.getDiagnostics(document.uri)
-            
-            ok(true, '诊断系统处理有效SQL时不应崩溃')
+            assert.ok(true, '诊断系统处理有效SQL时不应崩溃')
             
             await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
         })
@@ -263,7 +259,7 @@ suite('回归测试 - 现有功能完整性', () => {
             
             for (const key of expectedKeys) {
                 const value = config.get(key)
-                ok(value !== undefined, `配置项 ${key} 应存在`)
+                assert.ok(value !== undefined, `配置项 ${key} 应存在`)
             }
         })
         
@@ -274,15 +270,15 @@ suite('回归测试 - 现有功能完整性', () => {
             
             const validDialects = ['hive', 'mysql', 'spark', 'sql']
             const dialect = config.get<string>('dialect')
-            ok(validDialects.includes(dialect || ''), `方言值 ${dialect} 应在有效范围内`)
+            assert.ok(validDialects.includes(dialect || ''), `方言值 ${dialect} 应在有效范围内`)
             
             const validCases = ['preserve', 'upper', 'lower']
             const keywordCase = config.get<string>('keywordCase')
-            ok(validCases.includes(keywordCase || ''), `关键字大小写 ${keywordCase} 应在有效范围内`)
+            assert.ok(validCases.includes(keywordCase || ''), `关键字大小写 ${keywordCase} 应在有效范围内`)
             
             const validIndentStyles = ['standard', 'tabularLeft', 'tabularRight']
             const indentStyle = config.get<string>('indentStyle')
-            ok(validIndentStyles.includes(indentStyle || ''), `缩进风格 ${indentStyle} 应在有效范围内`)
+            assert.ok(validIndentStyles.includes(indentStyle || ''), `缩进风格 ${indentStyle} 应在有效范围内`)
         })
     })
 })
@@ -300,14 +296,14 @@ suite('集成测试', () => {
             
             try {
                 
-                await config.update('keywordCase', 'upper', vscode.ConfigurationTarget.Workspace)
+                await config.update('keywordCase', 'upper', vscode.ConfigurationTarget.Global)
                 
                 const document = await vscode.workspace.openTextDocument({
                     content: "select id,name,email from users where age>18 and status='active' order by created_at desc limit 10;",
                     language: 'sql'
                 })
                 
-                const editor = await vscode.window.showTextDocument(document)
+                await vscode.window.showTextDocument(document)
                 
                 await vscode.commands.executeCommand('editor.action.formatDocument')
                 
@@ -315,18 +311,18 @@ suite('集成测试', () => {
                 
                 const formattedText = document.getText()
                 
-                ok(formattedText.toUpperCase().includes('SELECT'), 
+                assert.ok(formattedText.toUpperCase().includes('SELECT'), 
                    '大写模式下应包含大写的 SELECT')
-                ok(formattedText.toUpperCase().includes('FROM'), 
+                assert.ok(formattedText.toUpperCase().includes('FROM'), 
                    '大写模式下应包含大写的 FROM')
-                ok(formattedText.toUpperCase().includes('WHERE'), 
+                assert.ok(formattedText.toUpperCase().includes('WHERE'), 
                    '大写模式下应包含大写的 WHERE')
                 
                 await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
                 
             } finally {
                 if (originalKeywordCase) {
-                    await config.update('keywordCase', originalKeywordCase, vscode.ConfigurationTarget.Workspace)
+                    await config.update('keywordCase', originalKeywordCase, vscode.ConfigurationTarget.Global)
                 }
             }
         })
@@ -347,7 +343,7 @@ suite('集成测试', () => {
                 language: 'hive'
             })
             
-            const editor1 = await vscode.window.showTextDocument(doc1)
+            await vscode.window.showTextDocument(doc1)
             
             await vscode.commands.executeCommand('editor.action.formatDocument')
             
@@ -365,13 +361,13 @@ suite('集成测试', () => {
             
             const formatted2 = doc2.getText()
             
-            ok(formatted1.length > 0 && formatted2.length > 0, '两个文件都应成功格式化')
+            assert.ok(formatted1.length > 0 && formatted2.length > 0, '两个文件都应成功格式化')
             
             const hasSimilarStructure = 
                 (formatted1.toUpperCase().includes('SELECT') && formatted2.toUpperCase().includes('SELECT')) &&
                 (formatted1.toUpperCase().includes('FROM') && formatted2.toUpperCase().includes('FROM'))
             
-            ok(hasSimilarStructure, '两个文件应有相似的结构')
+            assert.ok(hasSimilarStructure, '两个文件应有相似的结构')
             
             await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
             await vscode.commands.executeCommand('workbench.action.closeActiveEditor')

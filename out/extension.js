@@ -35,28 +35,68 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.activate = activate;
 exports.deactivate = deactivate;
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 const vscode = __importStar(require("vscode"));
-const SqlFormattingProvider_1 = require("./SqlFormattingProvider");
-const sqlDialects_1 = require("./sqlDialects");
-const formatSelection_1 = require("./formatSelection");
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
+const SqlFormattingProvider_1 = require("./providers/SqlFormattingProvider");
+const sqlDialects_1 = require("./core/sqlDialects");
+const formatSelectionCommand_1 = require("./commands/formatSelectionCommand");
+const converterCommands_1 = require("./commands/converterCommands");
+const SqlDiagnosticsProvider_1 = require("./providers/SqlDiagnosticsProvider");
+const configEditorCommand_1 = require("./commands/configEditorCommand");
+const StatusBarProvider_1 = require("./providers/StatusBarProvider");
+const SqlCodeActionProvider_1 = require("./providers/SqlCodeActionProvider");
+const SqlFoldingRangeProvider_1 = require("./providers/SqlFoldingRangeProvider");
+const SqlOutlineProvider_1 = require("./providers/SqlOutlineProvider");
+const SqlParameterHightlighter_1 = require("./providers/SqlParameterHightlighter");
+let diagnosticsProvider;
+let statusBarProvider;
+let parameterHighlighter;
 function activate(context) {
-    // Use the console to output diagnostic information (console.log) and errors (console.error)
-    // This line of code will only be executed once when your extension is activated
     console.log('Congratulations, your extension "hive-formatter" is now active!');
-    // The command has been defined in the package.json file
-    // Now provide the implementation of the command with registerCommand
-    // The commandId parameter must match the command field in package.json
-    context.subscriptions.push(vscode.commands.registerCommand("hive-formatter.format-selection", formatSelection_1.formatSelection), ...registerFormattingProviderForEachDialect());
+    diagnosticsProvider = new SqlDiagnosticsProvider_1.SqlDiagnosticsProvider();
+    statusBarProvider = new StatusBarProvider_1.StatusBarProvider();
+    parameterHighlighter = new SqlParameterHightlighter_1.SqlParameterHighlighter();
+    context.subscriptions.push(vscode.commands.registerCommand("hive-formatter.format-selection", formatSelectionCommand_1.formatSelectionCommand), vscode.commands.registerCommand("hive-formatter.mysql-to-hive", converterCommands_1.convertMysqlToHiveCommand), vscode.commands.registerCommand("hive-formatter.hive-to-mysql", converterCommands_1.convertHiveToMysqlCommand), vscode.commands.registerCommand("hive-formatter.open-config-editor", () => (0, configEditorCommand_1.openConfigEditorCommand)(context.extensionUri)), ...registerFormattingProviderForEachDialect(), vscode.workspace.onDidChangeTextDocument((event) => {
+        const document = event.document;
+        if (isSqlDocument(document)) {
+            diagnosticsProvider.provideDiagnostics(document);
+        }
+    }), vscode.workspace.onDidOpenTextDocument((document) => {
+        if (isSqlDocument(document)) {
+            diagnosticsProvider.provideDiagnostics(document);
+        }
+    }), vscode.workspace.onDidSaveTextDocument((document) => {
+        if (isSqlDocument(document)) {
+            diagnosticsProvider.provideDiagnostics(document);
+        }
+    }), vscode.languages.registerCodeActionsProvider({ scheme: 'file', language: 'sql' }, new SqlCodeActionProvider_1.SqlCodeActionProvider(), { providedCodeActionKinds: SqlCodeActionProvider_1.SqlCodeActionProvider.providedCodeActionKinds }), vscode.languages.registerCodeActionsProvider({ scheme: 'file', language: 'hive' }, new SqlCodeActionProvider_1.SqlCodeActionProvider(), { providedCodeActionKinds: SqlCodeActionProvider_1.SqlCodeActionProvider.providedCodeActionKinds }), 
+    // 注册代码折叠提供者
+    vscode.languages.registerFoldingRangeProvider({ scheme: 'file', language: 'sql' }, new SqlFoldingRangeProvider_1.SqlFoldingRangeProvider()), vscode.languages.registerFoldingRangeProvider({ scheme: 'file', language: 'hive' }, new SqlFoldingRangeProvider_1.SqlFoldingRangeProvider()), 
+    // 注册大纲视图提供者
+    vscode.languages.registerDocumentSymbolProvider({ scheme: 'file', language: 'sql' }, new SqlOutlineProvider_1.SqlOutlineProvider()), vscode.languages.registerDocumentSymbolProvider({ scheme: 'file', language: 'hive' }, new SqlOutlineProvider_1.SqlOutlineProvider()), 
+    // 注册参数替换命令
+    SqlParameterHightlighter_1.SqlParameterReplaceCommand.register(context), diagnosticsProvider, statusBarProvider, parameterHighlighter);
+    vscode.workspace.textDocuments.forEach((document) => {
+        if (isSqlDocument(document)) {
+            diagnosticsProvider.provideDiagnostics(document);
+        }
+    });
+}
+function isSqlDocument(document) {
+    const sqlLanguages = Object.keys(sqlDialects_1.sqlDialects);
+    return sqlLanguages.includes(document.languageId);
 }
 function registerFormattingProviderForEachDialect() {
     return Object.entries(sqlDialects_1.sqlDialects).map(([vscodeLang, sqlDialectName]) => vscode.languages.registerDocumentFormattingEditProvider(vscodeLang, new SqlFormattingProvider_1.SqlFormattingProvider(sqlDialectName)));
 }
-// This method is called when your extension is deactivated
 function deactivate() {
-    // 暂无需要清理的资源，保留空函数用于后续扩展
+    if (diagnosticsProvider) {
+        diagnosticsProvider.dispose();
+    }
+    if (statusBarProvider) {
+        statusBarProvider.dispose();
+    }
+    if (parameterHighlighter) {
+        parameterHighlighter.dispose();
+    }
 }
 //# sourceMappingURL=extension.js.map

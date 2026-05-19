@@ -42,7 +42,10 @@ const createParser_1 = require("../parser/createParser");
 const ExpressionFormatter_1 = __importDefault(require("./ExpressionFormatter"));
 const Layout_1 = __importStar(require("./Layout"));
 const Indentation_1 = __importDefault(require("./Indentation"));
-/** Main formatter class that produces a final output string from list of tokens */
+/**
+ * 主要的格式化器类
+ * 负责将SQL字符串转换为格式化后的输出
+ */
 class Formatter {
     dialect;
     cfg;
@@ -53,44 +56,48 @@ class Formatter {
         this.params = new Params_1.default(this.cfg.params);
     }
     /**
-     * Formats an SQL query.
-     * @param query - The SQL query string to be formatted
+     * 格式化SQL查询
+     * @param query - 要格式化的SQL字符串
      */
     format(query) {
-        // 步骤1：解析SQL为AST
         const ast = this.parse(query);
-        // 步骤2：格式化AST为文本
         const formattedQuery = this.formatAst(ast);
-        // 步骤3：去除末尾多余空格/换行
         return formattedQuery.trimEnd();
     }
+    /**
+     * 将SQL字符串解析为AST
+     */
     parse(query) {
         return (0, createParser_1.createParser)(this.dialect.tokenizer).parse(query, this.cfg.paramTypes || {});
     }
+    /**
+     * 将AST格式化为文本
+     */
     formatAst(statements) {
         return statements
-            .map((stat) => this.formatStatement(stat)) // 格式化单条语句
-            .join("\n".repeat(this.cfg.linesBetweenQueries + 1)); // 按配置拼接多条语句
+            .map((stat) => this.formatStatement(stat))
+            .join("\n".repeat(this.cfg.linesBetweenQueries + 1));
     }
+    /**
+     * 格式化单条SQL语句
+     */
     formatStatement(statement) {
-        // 步骤1：创建表达式格式化器，处理AST子节点
         const layout = new ExpressionFormatter_1.default({
             cfg: this.cfg,
             dialectCfg: this.dialect.formatOptions,
             params: this.params,
             layout: new Layout_1.default(new Indentation_1.default((0, config_1.indentString)(this.cfg))),
         }).format(statement.children);
-        // 步骤2：处理分号（根据配置和语句是否含分号）
-        if (!statement.hasSemicolon) {
-            // 无分号则不处理
+        // 根据配置添加分号
+        if (statement.hasSemicolon) {
+            if (this.cfg.newlineBeforeSemicolon) {
+                layout.add(Layout_1.WS.NEWLINE, ";");
+            }
+            else {
+                layout.add(Layout_1.WS.NO_NEWLINE, ";");
+            }
         }
-        else if (this.cfg.newlineBeforeSemicolon) {
-            layout.add(Layout_1.WS.NEWLINE, ";"); // 分号前换行（如 SELECT * FROM t\n;）
-        }
-        else {
-            layout.add(Layout_1.WS.NO_NEWLINE, ";"); // 分号紧跟语句（如 SELECT * FROM t;）
-        }
-        return layout.toString(); // 布局对象转为字符串
+        return layout.toString();
     }
 }
 exports.default = Formatter;

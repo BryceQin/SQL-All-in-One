@@ -19,11 +19,11 @@ class TokenizerEngine {
     // 提供方言相关提示
     dialectInfo() {
         if (this.dialectName === "sql") {
-            return (`This likely happens because you're using the default "sql" dialect.\n` +
-                `If possible, please select a more specific dialect (like sqlite, postgresql, etc).`);
+            return (`这可能是因为您正在使用默认的 "sql" 方言。\n` +
+                `如果可能，请选择一个更具体的方言（如 hive、mysql、spark 等）。`);
         }
         else {
-            return `SQL dialect used: "${this.dialectName}".`;
+            return `使用的 SQL 方言: "${this.dialectName}"。`;
         }
     }
     // 当无规则匹配时，生成带「上下文文本」「行号列号」「方言信息」的友好错误
@@ -32,7 +32,7 @@ class TokenizerEngine {
         const text = this.input.slice(this.index, this.index + 10);
         // 转换为 1-based 行号列号（用户友好）
         const { line, col } = (0, lineColFromIndex_1.lineColFromIndex)(this.input, this.index);
-        return new Error(`Parse error: Unexpected "${text}" at line ${line} column ${col}.\n${this.dialectInfo()}`);
+        return new Error(`解析错误: 在第 ${line} 行第 ${col} 列遇到意外的 "${text}"。\n${this.dialectInfo()}`);
     }
     // 自动跳过空白字符
     getWhitespace() {
