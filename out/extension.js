@@ -47,6 +47,7 @@ const SqlCodeActionProvider_1 = require("./providers/SqlCodeActionProvider");
 const SqlFoldingRangeProvider_1 = require("./providers/SqlFoldingRangeProvider");
 const SqlOutlineProvider_1 = require("./providers/SqlOutlineProvider");
 const SqlParameterHightlighter_1 = require("./providers/SqlParameterHightlighter");
+const completion_1 = require("./completion");
 let diagnosticsProvider;
 let statusBarProvider;
 let parameterHighlighter;
@@ -55,6 +56,8 @@ function activate(context) {
     diagnosticsProvider = new SqlDiagnosticsProvider_1.SqlDiagnosticsProvider();
     statusBarProvider = new StatusBarProvider_1.StatusBarProvider();
     parameterHighlighter = new SqlParameterHightlighter_1.SqlParameterHighlighter();
+    const completionProvider = new completion_1.SqlCompletionProvider(context.extensionUri.fsPath);
+    const triggerChars = [...'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.'];
     context.subscriptions.push(vscode.commands.registerCommand("hive-formatter.format-selection", formatSelectionCommand_1.formatSelectionCommand), vscode.commands.registerCommand("hive-formatter.mysql-to-hive", converterCommands_1.convertMysqlToHiveCommand), vscode.commands.registerCommand("hive-formatter.hive-to-mysql", converterCommands_1.convertHiveToMysqlCommand), vscode.commands.registerCommand("hive-formatter.open-config-editor", () => (0, configEditorCommand_1.openConfigEditorCommand)(context.extensionUri)), ...registerFormattingProviderForEachDialect(), vscode.workspace.onDidChangeTextDocument((event) => {
         const document = event.document;
         if (isSqlDocument(document)) {
@@ -74,7 +77,9 @@ function activate(context) {
     // 注册大纲视图提供者
     vscode.languages.registerDocumentSymbolProvider({ scheme: 'file', language: 'sql' }, new SqlOutlineProvider_1.SqlOutlineProvider()), vscode.languages.registerDocumentSymbolProvider({ scheme: 'file', language: 'hive' }, new SqlOutlineProvider_1.SqlOutlineProvider()), 
     // 注册参数替换命令
-    SqlParameterHightlighter_1.SqlParameterReplaceCommand.register(context), diagnosticsProvider, statusBarProvider, parameterHighlighter);
+    SqlParameterHightlighter_1.SqlParameterReplaceCommand.register(context), 
+    // 注册智能补全
+    vscode.languages.registerCompletionItemProvider({ scheme: 'file', language: 'sql' }, completionProvider, ...triggerChars), vscode.languages.registerCompletionItemProvider({ scheme: 'file', language: 'hive' }, completionProvider, ...triggerChars), diagnosticsProvider, statusBarProvider, parameterHighlighter);
     vscode.workspace.textDocuments.forEach((document) => {
         if (isSqlDocument(document)) {
             diagnosticsProvider.provideDiagnostics(document);

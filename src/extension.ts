@@ -10,7 +10,7 @@ import { SqlCodeActionProvider } from "./providers/SqlCodeActionProvider"
 import { SqlFoldingRangeProvider } from "./providers/SqlFoldingRangeProvider"
 import { SqlOutlineProvider } from "./providers/SqlOutlineProvider"
 import { SqlParameterHighlighter, SqlParameterReplaceCommand } from "./providers/SqlParameterHightlighter"
-import { SqlCompletionProvider } from "./completion/SqlCompletionProvider"
+import { SqlCompletionProvider } from "./completion"
 
 let diagnosticsProvider: SqlDiagnosticsProvider
 let statusBarProvider: StatusBarProvider

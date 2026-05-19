@@ -1,5 +1,16 @@
 # 更新日志
 
+## 0.15.0
+- 新增智能补全功能（IntelliSense / Auto-completion），大幅降低 SQL 编写心智负担
+- 支持关键字补全，输入 SEL 自动提示 SELECT，覆盖 Hive/MySQL/Spark/通用 SQL 四种方言
+- 支持函数补全（带签名、参数占位符、返回值类型和中文说明），合计 470+ 内置函数签名
+- 支持代码片段触发补全，在补全列表中展示已有的 17 个 SQL 代码片段
+- 支持 CTE 名称补全，定义 WITH 子句后自动提示 CTE 名称
+- 支持表名/列名上下文补全，根据当前 SQL 子句位置智能提示
+- 新增可配置的补全开关（enableCompletion、completion.keywords、completion.functions、completion.snippets、completion.cteNames、completion.identifiers）
+- 更新 package.json，添加补全相关配置项
+- 版本号升级到 0.15.0
+
 ## 0.14.0
 - 全面美化可视化配置编辑器 UI，采用现代化卡片设计
 - 新增可折叠配置分组，用箭头动画展开/收拢，减少视觉噪音

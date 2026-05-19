@@ -1,4 +1,4 @@
-import type { FunctionSignature } from '../../completion/functionSignatures'
+import type { FunctionSignature } from '../../completion'
 
 export const functions: string[] = [
     // https://jakewheat.github.io/sql-overview/sql-2008-foundation-grammar.html#_6_9_set_function_specification

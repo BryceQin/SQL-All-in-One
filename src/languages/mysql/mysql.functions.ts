@@ -1,4 +1,4 @@
-import type { FunctionSignature } from '../../completion/functionSignatures'
+import type { FunctionSignature } from '../../completion'
 
 export const functions: string[] = [
     // https://dev.mysql.com/doc/refman/8.0/en/built-in-function-reference.html
