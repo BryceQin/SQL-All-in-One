@@ -10,6 +10,7 @@ import { SqlCodeActionProvider } from "./providers/SqlCodeActionProvider"
 import { SqlFoldingRangeProvider } from "./providers/SqlFoldingRangeProvider"
 import { SqlOutlineProvider } from "./providers/SqlOutlineProvider"
 import { SqlParameterHighlighter, SqlParameterReplaceCommand } from "./providers/SqlParameterHightlighter"
+import { SqlCompletionProvider } from "./completion/SqlCompletionProvider"
 
 let diagnosticsProvider: SqlDiagnosticsProvider
 let statusBarProvider: StatusBarProvider
@@ -21,6 +22,8 @@ export function activate(context: vscode.ExtensionContext) {
     diagnosticsProvider = new SqlDiagnosticsProvider()
     statusBarProvider = new StatusBarProvider()
     parameterHighlighter = new SqlParameterHighlighter()
+    const completionProvider = new SqlCompletionProvider(context.extensionUri.fsPath)
+    const triggerChars = [...'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.']
 
     context.subscriptions.push(
         vscode.commands.registerCommand(
@@ -86,6 +89,15 @@ export function activate(context: vscode.ExtensionContext) {
         ),
         // 注册参数替换命令
         SqlParameterReplaceCommand.register(context),
+        // 注册智能补全
+        vscode.languages.registerCompletionItemProvider(
+            { scheme: 'file', language: 'sql' },
+            completionProvider, ...triggerChars
+        ),
+        vscode.languages.registerCompletionItemProvider(
+            { scheme: 'file', language: 'hive' },
+            completionProvider, ...triggerChars
+        ),
         diagnosticsProvider,
         statusBarProvider,
         parameterHighlighter,
