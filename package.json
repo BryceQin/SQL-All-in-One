@@ -296,6 +296,83 @@
                     "default": false,
                     "markdownDescription": "是否对齐表别名"
                 },
+                "Hive-Formatter.reservedKeywordCase": {
+                    "type": "string",
+                    "enum": [
+                        "preserve",
+                        "upper",
+                        "lower"
+                    ],
+                    "default": "preserve",
+                    "markdownDescription": "保留关键字的大小写（SELECT, FROM, WHERE 等）"
+                },
+                "Hive-Formatter.builtinFunctionCase": {
+                    "type": "string",
+                    "enum": [
+                        "preserve",
+                        "upper",
+                        "lower"
+                    ],
+                    "default": "preserve",
+                    "markdownDescription": "内置函数的大小写（COUNT, SUM, MAX 等）"
+                },
+                "Hive-Formatter.newlineBeforeJoin": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "JOIN 关键字前是否换行"
+                },
+                "Hive-Formatter.newlineAfterComma": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "逗号后是否强制换行"
+                },
+                "Hive-Formatter.alignWhereClauses": {
+                    "type": "boolean",
+                    "default": false,
+                    "markdownDescription": "WHERE 子句是否对齐"
+                },
+                "Hive-Formatter.alignCaseStatements": {
+                    "type": "boolean",
+                    "default": false,
+                    "markdownDescription": "CASE 语句是否对齐"
+                },
+                "Hive-Formatter.breakAfterSelectItem": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "每个 SELECT 项后是否换行"
+                },
+                "Hive-Formatter.breakAfterFromItem": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "每个 FROM 项后是否换行"
+                },
+                "Hive-Formatter.spaceBeforeComma": {
+                    "type": "boolean",
+                    "default": false,
+                    "markdownDescription": "逗号前是否加空格"
+                },
+                "Hive-Formatter.spaceInsideParentheses": {
+                    "type": "boolean",
+                    "default": false,
+                    "markdownDescription": "括号内是否加空格"
+                },
+                "Hive-Formatter.trimTrailingSpaces": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "是否修剪尾部空格"
+                },
+                "Hive-Formatter.semicolonAtEnd": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "是否在语句结尾添加分号"
+                },
+                "Hive-Formatter.singleLineMaxLength": {
+                    "type": "integer",
+                    "default": 80,
+                    "minimum": 40,
+                    "maximum": 500,
+                    "markdownDescription": "单行查询最大长度"
+                },
                 "Hive-Formatter.paramTypes": {
                     "type": "object",
                     "markdownDescription": "指定要支持的参数占位符类型"

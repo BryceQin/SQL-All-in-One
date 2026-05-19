@@ -514,11 +514,100 @@ export class ConfigEditorPanel {
                 </div>
                 
                 <div class="config-group">
+                    <div class="config-group-title">大小写控制（高级）</div>
+                    
+                    <div class="config-item">
+                        <label class="config-label">保留关键字大小写</label>
+                        <select class="config-select" id="reservedKeywordCase">
+                            <option value="preserve">保持原样</option>
+                            <option value="upper">大写</option>
+                            <option value="lower">小写</option>
+                        </select>
+                    </div>
+                    
+                    <div class="config-item">
+                        <label class="config-label">内置函数大小写</label>
+                        <select class="config-select" id="builtinFunctionCase">
+                            <option value="preserve">保持原样</option>
+                            <option value="upper">大写</option>
+                            <option value="lower">小写</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="config-group">
+                    <div class="config-group-title">换行控制（高级）</div>
+                    
+                    <div class="config-item config-checkbox">
+                        <input type="checkbox" id="newlineBeforeJoin">
+                        <label class="config-label">JOIN 前换行</label>
+                    </div>
+                    
+                    <div class="config-item config-checkbox">
+                        <input type="checkbox" id="newlineAfterComma">
+                        <label class="config-label">逗号后换行</label>
+                    </div>
+                    
+                    <div class="config-item config-checkbox">
+                        <input type="checkbox" id="breakAfterSelectItem">
+                        <label class="config-label">每个 SELECT 项后换行</label>
+                    </div>
+                    
+                    <div class="config-item config-checkbox">
+                        <input type="checkbox" id="breakAfterFromItem">
+                        <label class="config-label">每个 FROM 项后换行</label>
+                    </div>
+                </div>
+                
+                <div class="config-group">
+                    <div class="config-group-title">对齐控制</div>
+                    
+                    <div class="config-item config-checkbox">
+                        <input type="checkbox" id="alignWhereClauses">
+                        <label class="config-label">对齐 WHERE 子句</label>
+                    </div>
+                    
+                    <div class="config-item config-checkbox">
+                        <input type="checkbox" id="alignCaseStatements">
+                        <label class="config-label">对齐 CASE 语句</label>
+                    </div>
+                </div>
+                
+                <div class="config-group">
+                    <div class="config-group-title">空格控制</div>
+                    
+                    <div class="config-item config-checkbox">
+                        <input type="checkbox" id="spaceBeforeComma">
+                        <label class="config-label">逗号前加空格</label>
+                    </div>
+                    
+                    <div class="config-item config-checkbox">
+                        <input type="checkbox" id="spaceInsideParentheses">
+                        <label class="config-label">括号内加空格</label>
+                    </div>
+                    
+                    <div class="config-item config-checkbox">
+                        <input type="checkbox" id="trimTrailingSpaces">
+                        <label class="config-label">修剪尾部空格</label>
+                    </div>
+                </div>
+                
+                <div class="config-group">
                     <div class="config-group-title">其他选项</div>
                     
                     <div class="config-item">
                         <label class="config-label">最大行长度</label>
                         <input type="number" class="config-input" id="maxLineLength" min="40" max="500">
+                    </div>
+                    
+                    <div class="config-item">
+                        <label class="config-label">单行查询最大长度</label>
+                        <input type="number" class="config-input" id="singleLineMaxLength" min="40" max="500">
+                    </div>
+                    
+                    <div class="config-item config-checkbox">
+                        <input type="checkbox" id="semicolonAtEnd">
+                        <label class="config-label">语句结尾添加分号</label>
                     </div>
                     
                     <div class="config-item config-checkbox">
@@ -580,6 +669,19 @@ export class ConfigEditorPanel {
                 newlineBeforeLimit: true,
                 maxLineLength: 120,
                 tabulateAlias: false,
+                reservedKeywordCase: 'preserve',
+                builtinFunctionCase: 'preserve',
+                newlineBeforeJoin: true,
+                newlineAfterComma: true,
+                alignWhereClauses: false,
+                alignCaseStatements: false,
+                breakAfterSelectItem: true,
+                breakAfterFromItem: true,
+                spaceBeforeComma: false,
+                spaceInsideParentheses: false,
+                trimTrailingSpaces: true,
+                semicolonAtEnd: true,
+                singleLineMaxLength: 80,
                 ignoreTabSettings: false,
                 tabSizeOverride: 2,
                 insertSpacesOverride: true
@@ -608,6 +710,19 @@ export class ConfigEditorPanel {
                 newlineBeforeLimit: true,
                 maxLineLength: 100,
                 tabulateAlias: true,
+                reservedKeywordCase: 'upper',
+                builtinFunctionCase: 'lower',
+                newlineBeforeJoin: true,
+                newlineAfterComma: true,
+                alignWhereClauses: false,
+                alignCaseStatements: false,
+                breakAfterSelectItem: true,
+                breakAfterFromItem: true,
+                spaceBeforeComma: false,
+                spaceInsideParentheses: false,
+                trimTrailingSpaces: true,
+                semicolonAtEnd: true,
+                singleLineMaxLength: 80,
                 ignoreTabSettings: false,
                 tabSizeOverride: 2,
                 insertSpacesOverride: true
@@ -636,6 +751,19 @@ export class ConfigEditorPanel {
                 newlineBeforeLimit: true,
                 maxLineLength: 120,
                 tabulateAlias: false,
+                reservedKeywordCase: 'upper',
+                builtinFunctionCase: 'preserve',
+                newlineBeforeJoin: true,
+                newlineAfterComma: true,
+                alignWhereClauses: false,
+                alignCaseStatements: false,
+                breakAfterSelectItem: true,
+                breakAfterFromItem: true,
+                spaceBeforeComma: false,
+                spaceInsideParentheses: false,
+                trimTrailingSpaces: true,
+                semicolonAtEnd: true,
+                singleLineMaxLength: 80,
                 ignoreTabSettings: false,
                 tabSizeOverride: 4,
                 insertSpacesOverride: true
@@ -664,6 +792,19 @@ export class ConfigEditorPanel {
                 newlineBeforeLimit: false,
                 maxLineLength: 150,
                 tabulateAlias: false,
+                reservedKeywordCase: 'preserve',
+                builtinFunctionCase: 'preserve',
+                newlineBeforeJoin: false,
+                newlineAfterComma: false,
+                alignWhereClauses: false,
+                alignCaseStatements: false,
+                breakAfterSelectItem: false,
+                breakAfterFromItem: false,
+                spaceBeforeComma: false,
+                spaceInsideParentheses: false,
+                trimTrailingSpaces: true,
+                semicolonAtEnd: true,
+                singleLineMaxLength: 100,
                 ignoreTabSettings: false,
                 tabSizeOverride: 2,
                 insertSpacesOverride: true
@@ -724,6 +865,19 @@ export class ConfigEditorPanel {
                 newlineBeforeLimit: document.getElementById('newlineBeforeLimit').checked,
                 maxLineLength: parseInt(document.getElementById('maxLineLength').value),
                 tabulateAlias: document.getElementById('tabulateAlias').checked,
+                reservedKeywordCase: document.getElementById('reservedKeywordCase').value,
+                builtinFunctionCase: document.getElementById('builtinFunctionCase').value,
+                newlineBeforeJoin: document.getElementById('newlineBeforeJoin').checked,
+                newlineAfterComma: document.getElementById('newlineAfterComma').checked,
+                alignWhereClauses: document.getElementById('alignWhereClauses').checked,
+                alignCaseStatements: document.getElementById('alignCaseStatements').checked,
+                breakAfterSelectItem: document.getElementById('breakAfterSelectItem').checked,
+                breakAfterFromItem: document.getElementById('breakAfterFromItem').checked,
+                spaceBeforeComma: document.getElementById('spaceBeforeComma').checked,
+                spaceInsideParentheses: document.getElementById('spaceInsideParentheses').checked,
+                trimTrailingSpaces: document.getElementById('trimTrailingSpaces').checked,
+                semicolonAtEnd: document.getElementById('semicolonAtEnd').checked,
+                singleLineMaxLength: parseInt(document.getElementById('singleLineMaxLength').value),
                 ignoreTabSettings: document.getElementById('ignoreTabSettings').checked,
                 tabSizeOverride: parseInt(document.getElementById('tabSizeOverride').value),
                 insertSpacesOverride: true
@@ -801,6 +955,19 @@ export class ConfigEditorPanel {
                 newlineBeforeLimit: config.get('newlineBeforeLimit', true),
                 maxLineLength: config.get('maxLineLength', 120),
                 tabulateAlias: config.get('tabulateAlias', false),
+                reservedKeywordCase: config.get('reservedKeywordCase', 'preserve'),
+                builtinFunctionCase: config.get('builtinFunctionCase', 'preserve'),
+                newlineBeforeJoin: config.get('newlineBeforeJoin', true),
+                newlineAfterComma: config.get('newlineAfterComma', true),
+                alignWhereClauses: config.get('alignWhereClauses', false),
+                alignCaseStatements: config.get('alignCaseStatements', false),
+                breakAfterSelectItem: config.get('breakAfterSelectItem', true),
+                breakAfterFromItem: config.get('breakAfterFromItem', true),
+                spaceBeforeComma: config.get('spaceBeforeComma', false),
+                spaceInsideParentheses: config.get('spaceInsideParentheses', false),
+                trimTrailingSpaces: config.get('trimTrailingSpaces', true),
+                semicolonAtEnd: config.get('semicolonAtEnd', true),
+                singleLineMaxLength: config.get('singleLineMaxLength', 80),
                 ignoreTabSettings: config.get('ignoreTabSettings', false),
                 tabSizeOverride: config.get('tabSizeOverride', 2),
                 insertSpacesOverride: config.get('insertSpacesOverride', true)
@@ -833,6 +1000,19 @@ export class ConfigEditorPanel {
         await config.update('newlineBeforeLimit', data.newlineBeforeLimit, vscode.ConfigurationTarget.Global)
         await config.update('maxLineLength', data.maxLineLength, vscode.ConfigurationTarget.Global)
         await config.update('tabulateAlias', data.tabulateAlias, vscode.ConfigurationTarget.Global)
+        await config.update('reservedKeywordCase', data.reservedKeywordCase, vscode.ConfigurationTarget.Global)
+        await config.update('builtinFunctionCase', data.builtinFunctionCase, vscode.ConfigurationTarget.Global)
+        await config.update('newlineBeforeJoin', data.newlineBeforeJoin, vscode.ConfigurationTarget.Global)
+        await config.update('newlineAfterComma', data.newlineAfterComma, vscode.ConfigurationTarget.Global)
+        await config.update('alignWhereClauses', data.alignWhereClauses, vscode.ConfigurationTarget.Global)
+        await config.update('alignCaseStatements', data.alignCaseStatements, vscode.ConfigurationTarget.Global)
+        await config.update('breakAfterSelectItem', data.breakAfterSelectItem, vscode.ConfigurationTarget.Global)
+        await config.update('breakAfterFromItem', data.breakAfterFromItem, vscode.ConfigurationTarget.Global)
+        await config.update('spaceBeforeComma', data.spaceBeforeComma, vscode.ConfigurationTarget.Global)
+        await config.update('spaceInsideParentheses', data.spaceInsideParentheses, vscode.ConfigurationTarget.Global)
+        await config.update('trimTrailingSpaces', data.trimTrailingSpaces, vscode.ConfigurationTarget.Global)
+        await config.update('semicolonAtEnd', data.semicolonAtEnd, vscode.ConfigurationTarget.Global)
+        await config.update('singleLineMaxLength', data.singleLineMaxLength, vscode.ConfigurationTarget.Global)
         await config.update('ignoreTabSettings', data.ignoreTabSettings, vscode.ConfigurationTarget.Global)
         await config.update('tabSizeOverride', data.tabSizeOverride, vscode.ConfigurationTarget.Global)
         await config.update('insertSpacesOverride', data.insertSpacesOverride, vscode.ConfigurationTarget.Global)
@@ -865,6 +1045,19 @@ export class ConfigEditorPanel {
             newlineBeforeLimit: true,
             maxLineLength: 120,
             tabulateAlias: false,
+            reservedKeywordCase: 'preserve',
+            builtinFunctionCase: 'preserve',
+            newlineBeforeJoin: true,
+            newlineAfterComma: true,
+            alignWhereClauses: false,
+            alignCaseStatements: false,
+            breakAfterSelectItem: true,
+            breakAfterFromItem: true,
+            spaceBeforeComma: false,
+            spaceInsideParentheses: false,
+            trimTrailingSpaces: true,
+            semicolonAtEnd: true,
+            singleLineMaxLength: 80,
             ignoreTabSettings: false,
             tabSizeOverride: 2,
             insertSpacesOverride: true

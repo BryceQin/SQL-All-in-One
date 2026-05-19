@@ -14,12 +14,26 @@
 - 新增 newlineBeforeHaving 配置，控制 HAVING 关键字前是否换行
 - 新增 newlineBeforeLimit 配置，控制 LIMIT 关键字前是否换行
 - 新增 maxLineLength 配置，设置最大行长度
+- 新增 reservedKeywordCase 配置，控制保留关键字大小写（SELECT, FROM, WHERE 等）
+- 新增 builtinFunctionCase 配置，控制内置函数大小写（COUNT, SUM, MAX 等）
+- 新增 newlineBeforeJoin 配置，控制 JOIN 关键字前是否换行
+- 新增 newlineAfterComma 配置，控制逗号后是否强制换行
+- 新增 alignWhereClauses 配置，控制 WHERE 子句是否对齐
+- 新增 alignCaseStatements 配置，控制 CASE 语句是否对齐
+- 新增 breakAfterSelectItem 配置，控制每个 SELECT 项后是否换行
+- 新增 breakAfterFromItem 配置，控制每个 FROM 项后是否换行
+- 新增 spaceBeforeComma 配置，控制逗号前是否加空格
+- 新增 spaceInsideParentheses 配置，控制括号内是否加空格
+- 新增 trimTrailingSpaces 配置，控制是否修剪尾部空格
+- 新增 semicolonAtEnd 配置，控制是否在语句结尾添加分号
+- 新增 singleLineMaxLength 配置，设置单行查询最大长度
 - 更新 package.json，添加所有新配置项
-- 更新 configEditorCommand.ts，在可视化配置编辑器中添加新选项
+- 更新 configEditorCommand.ts，在可视化配置编辑器中添加新选项（按功能分组展示）
 - 更新 FormatOptions.ts，添加新配置类型
 - 更新 sqlFormatter.ts，更新默认配置
 - 更新 core/config.ts，支持从 VS Code 配置中读取新选项
 - 更新 validateConfig.ts，移除 commaPosition 和 tabulateAlias 的废弃标记
+- 更新所有预设配置（default, hive, mysql, compact），支持新配置项
 - 版本号升级到 0.12.0
 
 ## 0.11.3

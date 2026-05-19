@@ -37,6 +37,19 @@ export interface FormatOptions {
     newlineBeforeLimit: boolean;
     maxLineLength: number;
     tabulateAlias: boolean;
+    reservedKeywordCase: KeywordCase;
+    builtinFunctionCase: KeywordCase;
+    newlineBeforeJoin: boolean;
+    newlineAfterComma: boolean;
+    alignWhereClauses: boolean;
+    alignCaseStatements: boolean;
+    breakAfterSelectItem: boolean;
+    breakAfterFromItem: boolean;
+    spaceBeforeComma: boolean;
+    spaceInsideParentheses: boolean;
+    trimTrailingSpaces: boolean;
+    semicolonAtEnd: boolean;
+    singleLineMaxLength: number;
     params?: ParamItems | string[];
     paramTypes?: ParamTypes;
 }
