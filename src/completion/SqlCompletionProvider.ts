@@ -10,6 +10,7 @@ import type { FunctionSignature } from './functionSignatures'
 import { getSnippetItems } from './snippetCompletion'
 import { getCTEItems } from './cteCompletion'
 import { getIdentifierItems } from './identifierCompletion'
+import { getCommentCompletionItems } from './commentCompletion'
 
 interface SnippetDef { prefix: string; body: string[]; description: string }
 
@@ -53,6 +54,7 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
             snippets: c.get('completion.snippets', true),
             cteNames: c.get('completion.cteNames', true),
             identifiers: c.get('completion.identifiers', true),
+            commentSnippets: c.get('completion.commentSnippets', true),
         }
     }
 
@@ -85,6 +87,7 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
         if (this.cfg.snippets) items.push(...this.snippetItems)
         if (this.cfg.cteNames && doc.getText().trim()) items.push(...getCTEItems(doc, pos))
         if (this.cfg.identifiers && doc.getText().trim()) items.push(...getIdentifierItems(doc, pos, dialect.tokenizer))
+        if (this.cfg.commentSnippets && doc.getText().trim()) items.push(...getCommentCompletionItems(doc, pos))
 
         return items
     }
