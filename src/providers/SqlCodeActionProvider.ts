@@ -16,7 +16,7 @@ export class SqlCodeActionProvider implements vscode.CodeActionProvider {
         for (const diagnostic of context.diagnostics) {
             const fix = this.tryCreateFix(document, diagnostic)
             if (fix) {
-                actions.push(fix)
+                actions.push(...(Array.isArray(fix) ? fix : [fix]))
             }
         }
 
@@ -26,35 +26,161 @@ export class SqlCodeActionProvider implements vscode.CodeActionProvider {
     private tryCreateFix(
         document: vscode.TextDocument,
         diagnostic: vscode.Diagnostic
-    ): vscode.CodeAction | null {
+    ): vscode.CodeAction | vscode.CodeAction[] | null {
+        const code = typeof diagnostic.code === 'object' ? diagnostic.code.value : diagnostic.code
         const message = diagnostic.message
 
-        // Fix for "使用 = NULL 而非 IS NULL"
+        if (code === 'missing_query_comment') {
+            return this.createMissingQueryCommentFix(document, diagnostic)
+        }
+        if (code === 'missing_column_comment') {
+            return this.createMissingColumnCommentFix(document, diagnostic)
+        }
+        if (code === 'commented_out_code') {
+            return this.createCommentedOutCodeFixes(document, diagnostic)
+        }
+        if (code === 'expired_todo') {
+            return this.createExpiredTodoFixes(document, diagnostic)
+        }
+
         if (message.includes('= NULL') || message.includes('IS NULL')) {
             return this.createNullComparisonFix(document, diagnostic)
         }
-
-        // Fix for "HAVING 子句缺少 GROUP BY"
         if (message.includes('HAVING') && message.includes('GROUP BY')) {
             return this.createHavingFix(document, diagnostic)
         }
-
-        // Fix for "使用了保留字作为标识符"
         if (message.includes('保留字')) {
             return this.createReservedWordFix(document, diagnostic)
         }
-
-        // Fix for "子查询缺少别名"
         if (message.includes('子查询') && message.includes('别名')) {
             return this.createSubqueryAliasFix(document, diagnostic)
         }
-
-        // Fix for "INSERT 语句缺少列名"
         if (message.includes('INSERT') && message.includes('列名')) {
             return this.createInsertColumnsFix(document, diagnostic)
         }
 
         return null
+    }
+
+    private createMissingQueryCommentFix(
+        document: vscode.TextDocument,
+        diagnostic: vscode.Diagnostic
+    ): vscode.CodeAction {
+        const action = new vscode.CodeAction(
+            '添加查询说明注释',
+            vscode.CodeActionKind.QuickFix
+        )
+        action.diagnostics = [diagnostic]
+        action.isPreferred = true
+
+        const insertPos = diagnostic.range.start
+        const linePrefix = document.lineAt(insertPos.line).text.match(/^(\s*)/)?.[1] || ''
+        const today = new Date().toISOString().slice(0, 10)
+        const snippet = `${linePrefix}-- ============================================\n${linePrefix}-- 查询说明：\n${linePrefix}-- 涉及表：\n${linePrefix}-- 条件：\n${linePrefix}-- 输出：\n${linePrefix}-- 日期：${today}\n${linePrefix}-- ============================================\n`
+
+        action.edit = new vscode.WorkspaceEdit()
+        action.edit.insert(document.uri, insertPos, snippet)
+
+        return action
+    }
+
+    private createMissingColumnCommentFix(
+        document: vscode.TextDocument,
+        diagnostic: vscode.Diagnostic
+    ): vscode.CodeAction {
+        const action = new vscode.CodeAction(
+            '添加 COMMENT 占位符',
+            vscode.CodeActionKind.QuickFix
+        )
+        action.diagnostics = [diagnostic]
+        action.isPreferred = true
+
+        const line = document.lineAt(diagnostic.range.start.line).text
+        const trimmed = line.trimEnd()
+        const hasComma = trimmed.endsWith(',')
+
+        if (hasComma) {
+            const commaPos = line.lastIndexOf(',')
+            const insertPos = new vscode.Position(diagnostic.range.start.line, commaPos)
+            action.edit = new vscode.WorkspaceEdit()
+            action.edit.insert(document.uri, insertPos, " COMMENT ''")
+        } else {
+            const insertPos = new vscode.Position(diagnostic.range.start.line, trimmed.length)
+            action.edit = new vscode.WorkspaceEdit()
+            action.edit.insert(document.uri, insertPos, " COMMENT ''")
+        }
+
+        return action
+    }
+
+    private createCommentedOutCodeFixes(
+        document: vscode.TextDocument,
+        diagnostic: vscode.Diagnostic
+    ): vscode.CodeAction[] {
+        const actions: vscode.CodeAction[] = []
+
+        const uncommentAction = new vscode.CodeAction(
+            '取消注释',
+            vscode.CodeActionKind.QuickFix
+        )
+        uncommentAction.diagnostics = [diagnostic]
+        uncommentAction.command = {
+            command: 'hive-formatter.toggleComment',
+            title: '取消注释'
+        }
+        actions.push(uncommentAction)
+
+        const deleteAction = new vscode.CodeAction(
+            '删除注释代码',
+            vscode.CodeActionKind.QuickFix
+        )
+        deleteAction.diagnostics = [diagnostic]
+        deleteAction.edit = new vscode.WorkspaceEdit()
+        deleteAction.edit.delete(document.uri, diagnostic.range)
+        actions.push(deleteAction)
+
+        return actions
+    }
+
+    private createExpiredTodoFixes(
+        document: vscode.TextDocument,
+        diagnostic: vscode.Diagnostic
+    ): vscode.CodeAction[] {
+        const actions: vscode.CodeAction[] = []
+        const line = document.lineAt(diagnostic.range.start.line).text
+
+        const doneAction = new vscode.CodeAction(
+            '标记为已完成',
+            vscode.CodeActionKind.QuickFix
+        )
+        doneAction.diagnostics = [diagnostic]
+        doneAction.isPreferred = true
+        const doneText = line.replace(/--\s*(TODO|FIXME)/i, '-- DONE')
+        doneAction.edit = new vscode.WorkspaceEdit()
+        doneAction.edit.replace(document.uri, diagnostic.range, doneText)
+        actions.push(doneAction)
+
+        const today = new Date().toISOString().slice(0, 10)
+        const updateDateAction = new vscode.CodeAction(
+            '更新日期为今天',
+            vscode.CodeActionKind.QuickFix
+        )
+        updateDateAction.diagnostics = [diagnostic]
+        const updatedText = line.replace(/\d{4}[-/]\d{2}[-/]\d{2}/, today)
+        updateDateAction.edit = new vscode.WorkspaceEdit()
+        updateDateAction.edit.replace(document.uri, diagnostic.range, updatedText)
+        actions.push(updateDateAction)
+
+        const removeAction = new vscode.CodeAction(
+            '移除标记',
+            vscode.CodeActionKind.QuickFix
+        )
+        removeAction.diagnostics = [diagnostic]
+        removeAction.edit = new vscode.WorkspaceEdit()
+        removeAction.edit.delete(document.uri, document.lineAt(diagnostic.range.start.line).rangeIncludingLineBreak)
+        actions.push(removeAction)
+
+        return actions
     }
 
     private createNullComparisonFix(
@@ -70,7 +196,7 @@ export class SqlCodeActionProvider implements vscode.CodeActionProvider {
 
         const text = document.getText(diagnostic.range)
         let newText = text
-        
+
         if (text.includes('= NULL')) {
             newText = text.replace('= NULL', 'IS NULL')
         } else if (text.includes('= null')) {
@@ -103,15 +229,15 @@ export class SqlCodeActionProvider implements vscode.CodeActionProvider {
 
         const text = document.getText()
         const havingMatch = text.match(/HAVING/i)
-        
+
         if (havingMatch && havingMatch.index !== undefined) {
             const beforeHaving = text.substring(0, havingMatch.index)
             const fromMatch = beforeHaving.match(/FROM\s+(\w+)/i)
-            
+
             if (fromMatch) {
                 const tableName = fromMatch[1]
                 const insertPos = document.positionAt(havingMatch.index)
-                
+
                 action.edit = new vscode.WorkspaceEdit()
                 action.edit.insert(
                     document.uri,
@@ -175,13 +301,12 @@ export class SqlCodeActionProvider implements vscode.CodeActionProvider {
         action.diagnostics = [diagnostic]
         action.isPreferred = true
 
-        // Find INSERT INTO table
         const text = document.getText(diagnostic.range)
         const insertMatch = text.match(/INSERT\s+INTO\s+(\w+)/i)
-        
+
         if (insertMatch) {
             const insertPos = diagnostic.range.end
-            
+
             action.edit = new vscode.WorkspaceEdit()
             action.edit.insert(
                 document.uri,
