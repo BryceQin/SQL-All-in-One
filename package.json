@@ -98,6 +98,14 @@
                 "title": "Replace Parameter",
                 "shortTitle": "Replace Param",
                 "command": "hive-formatter.replaceParameter"
+            },
+            {
+                "command": "hive-formatter.toggleComment",
+                "title": "Hive Formatter: 切换注释"
+            },
+            {
+                "command": "hive-formatter.toggleAdvancedComment",
+                "title": "Hive Formatter: 切换高级注释"
             }
         ],
         "keybindings": [
@@ -106,6 +114,18 @@
                 "key": "ctrl+shift+r",
                 "mac": "cmd+shift+r",
                 "when": "editorLangId =~ /sql|hive/"
+            },
+            {
+                "command": "hive-formatter.toggleComment",
+                "key": "ctrl+/",
+                "mac": "cmd+/",
+                "when": "editorTextFocus && editorLangId =~ /sql|hive/"
+            },
+            {
+                "command": "hive-formatter.toggleAdvancedComment",
+                "key": "ctrl+shift+/",
+                "mac": "cmd+shift+/",
+                "when": "editorTextFocus && editorLangId =~ /sql|hive/"
             }
         ],
         "configuration": {
@@ -531,8 +551,97 @@
                     "type": "boolean",
                     "default": true,
                     "markdownDescription": "是否提示表名和列名"
+                },
+                "Hive-Formatter.enableSmartCommentToggle": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "是否启用 SQL 感知的智能注释切换（关闭后回退到 VSCode 默认行为）"
+                },
+                "Hive-Formatter.headerAuthor": {
+                    "type": "string",
+                    "default": "",
+                    "markdownDescription": "文件头注释中的作者名（为空时 header Snippet 的「作者」留空等待输入）"
+                },
+                "Hive-Formatter.headerModifier": {
+                    "type": "string",
+                    "default": "",
+                    "markdownDescription": "文件头注释中的修改人（为空时回退取 headerAuthor 的值）"
+                },
+                "Hive-Formatter.completion.commentSnippets": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "补全列表中是否包含注释模板片段"
+                },
+                "Hive-Formatter.lint.missing_query_comment": {
+                    "type": "object",
+                    "default": { "enabled": true, "severity": "warning" },
+                    "markdownDescription": "配置 `missing_query_comment` 规则（复杂查询缺少说明注释）"
+                },
+                "Hive-Formatter.lint.missing_query_comment_threshold_line_count": {
+                    "type": "number",
+                    "default": 20,
+                    "markdownDescription": "触发 missing_query_comment 的最小查询行数"
+                },
+                "Hive-Formatter.lint.missing_query_comment_threshold_join_count": {
+                    "type": "number",
+                    "default": 3,
+                    "markdownDescription": "触发 missing_query_comment 的最小 JOIN 数量"
+                },
+                "Hive-Formatter.lint.missing_query_comment_threshold_subquery_count": {
+                    "type": "number",
+                    "default": 2,
+                    "markdownDescription": "触发 missing_query_comment 的最小子查询数量"
+                },
+                "Hive-Formatter.lint.missing_column_comment": {
+                    "type": "object",
+                    "default": { "enabled": true, "severity": "warning" },
+                    "markdownDescription": "配置 `missing_column_comment` 规则（DDL 列定义缺少 COMMENT）"
+                },
+                "Hive-Formatter.lint.missing_column_comment_aggregate": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "同一 DDL 中多个缺失 COMMENT 的列是否聚合为一条诊断"
+                },
+                "Hive-Formatter.lint.missing_column_comment_external_table_exempt": {
+                    "type": "boolean",
+                    "default": false,
+                    "markdownDescription": "外部表（EXTERNAL TABLE）是否豁免 missing_column_comment 检查"
+                },
+                "Hive-Formatter.lint.commented_out_code": {
+                    "type": "object",
+                    "default": { "enabled": true, "severity": "information" },
+                    "markdownDescription": "配置 `commented_out_code` 规则（疑似注释掉的大段代码）"
+                },
+                "Hive-Formatter.lint.commented_out_code_threshold_lines": {
+                    "type": "number",
+                    "default": 3,
+                    "markdownDescription": "触发 commented_out_code 的最小注释代码行数"
+                },
+                "Hive-Formatter.lint.expired_todo": {
+                    "type": "object",
+                    "default": { "enabled": true, "severity": "information" },
+                    "markdownDescription": "配置 `expired_todo` 规则（过期的 TODO/FIXME 标记）"
+                },
+                "Hive-Formatter.lint.expired_todo_grace_period_days": {
+                    "type": "number",
+                    "default": 7,
+                    "markdownDescription": "TODO 过期判定宽限期（天）"
                 }
             }
+        },
+        "menus": {
+            "editor/context": [
+                {
+                    "command": "hive-formatter.toggleComment",
+                    "when": "editorLangId =~ /sql|hive/",
+                    "group": "1_comment@1"
+                },
+                {
+                    "command": "hive-formatter.toggleAdvancedComment",
+                    "when": "editorLangId =~ /sql|hive/",
+                    "group": "1_comment@2"
+                }
+            ]
         }
     },
     "scripts": {
