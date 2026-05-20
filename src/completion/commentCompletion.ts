@@ -14,10 +14,11 @@ export function getCommentCompletionItems(
 }
 
 function createHeaderItem(doc: vscode.TextDocument): vscode.CompletionItem {
-    const item = new vscode.CompletionItem('header - 文件头注释', vscode.CompletionItemKind.Snippet)
+    const item = new vscode.CompletionItem('header', vscode.CompletionItemKind.Snippet)
     item.filterText = 'header'
     item.sortText = '0_header'
-    item.detail = '注释片段 (header)'
+    item.detail = '文件头注释（自动检测表依赖）'
+    item.documentation = new vscode.MarkdownString('插入完整的文件头注释模板，包含脚本名称、功能描述、作者、修改记录、上下游表依赖')
 
     const config = vscode.workspace.getConfiguration('Hive-Formatter')
     const author = config.get<string>('headerAuthor', '')
@@ -39,8 +40,7 @@ function createHeaderItem(doc: vscode.TextDocument): vscode.CompletionItem {
         ? outputTables.map(t => `--     - ${t}`).join('\n')
         : '--     （未检测到输出表，请手动填写）'
 
-    const snippet = new vscode.SnippetString()
-    const lines = [
+    const snippetStr = [
         '-- ============================================================',
         `-- 脚本名称：\${1:${fileName}}`,
         '-- 功能描述：$2',
@@ -57,19 +57,17 @@ function createHeaderItem(doc: vscode.TextDocument): vscode.CompletionItem {
         '--   输出表：',
         outputTableLines,
         '-- ============================================================',
-    ]
-    snippet.appendText(lines.join('\n') + '\n')
-    snippet.appendTabstop(0)
+    ].join('\n') + '\n$0'
 
-    item.insertText = snippet
+    item.insertText = new vscode.SnippetString(snippetStr)
     return item
 }
 
 function createColItem(doc: vscode.TextDocument, pos: vscode.Position): vscode.CompletionItem {
-    const item = new vscode.CompletionItem('col - 列 COMMENT', vscode.CompletionItemKind.Snippet)
+    const item = new vscode.CompletionItem('col', vscode.CompletionItemKind.Snippet)
     item.filterText = 'col'
     item.sortText = '0_col'
-    item.detail = '注释片段 (col)'
+    item.detail = '列 COMMENT 注释'
 
     const line = doc.lineAt(pos.line).text
     const trimmed = line.trimEnd()
@@ -105,10 +103,10 @@ function createColItem(doc: vscode.TextDocument, pos: vscode.Position): vscode.C
 }
 
 function createTblItem(): vscode.CompletionItem {
-    const item = new vscode.CompletionItem('tbl - 表 COMMENT', vscode.CompletionItemKind.Snippet)
+    const item = new vscode.CompletionItem('tbl', vscode.CompletionItemKind.Snippet)
     item.filterText = 'tbl'
     item.sortText = '0_tbl'
-    item.detail = '注释片段 (tbl)'
+    item.detail = '表 COMMENT 注释'
 
     const snippet = new vscode.SnippetString()
     snippet.appendText("COMMENT '")

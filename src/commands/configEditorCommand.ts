@@ -506,6 +506,27 @@ export class ConfigEditorPanel {
                         </div>
                     </div>
 
+                    <!-- 注释设置 -->
+                    <div class="config-group">
+                        <div class="cg-header" onclick="toggleGroup(this)">
+                            <span class="cg-arrow open">▶</span>
+                            <span class="cg-icon">💬</span>
+                            <span class="cg-title">注释设置</span>
+                            <span class="cg-badge">3</span>
+                        </div>
+                        <div class="cg-body open">
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text">注释模板作者</span><span class="ci-label-hint">header Snippet 使用</span></div>
+                                <input type="text" class="config-input" id="headerAuthor" placeholder="留空则插入时手动输入">
+                            </div>
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text">注释模板修改人</span><span class="ci-label-hint">为空时回退取作者</span></div>
+                                <input type="text" class="config-input" id="headerModifier" placeholder="留空则使用作者名">
+                            </div>
+                            <div class="toggle-row"><span class="toggle-label">注释模板补全</span><label class="toggle"><input type="checkbox" id="completionCommentSnippets"><span class="toggle-slider"></span></label></div>
+                        </div>
+                    </div>
+
                     <!-- Lint 规则 -->
                     <div class="config-group">
                         <div class="cg-header" onclick="toggleGroup(this)">
@@ -867,6 +888,9 @@ export class ConfigEditorPanel {
     <script>
         let currentConfig = {
             enableSmartCommentToggle: true,
+            headerAuthor: '',
+            headerModifier: '',
+            completionCommentSnippets: true,
         };
         
         const presets = {
@@ -922,6 +946,9 @@ export class ConfigEditorPanel {
                 enableSnippets: true,
                 enableQuickFix: true,
                 enableSmartCommentToggle: true,
+                headerAuthor: '',
+                headerModifier: '',
+                completionCommentSnippets: true,
                 lintAvoidSelectStarEnabled: true,
                 lintAvoidSelectStarSeverity: 'warning',
                 lintExplicitJoinTypeEnabled: true,
@@ -1011,6 +1038,9 @@ export class ConfigEditorPanel {
                 enableSnippets: true,
                 enableQuickFix: true,
                 enableSmartCommentToggle: true,
+                headerAuthor: '',
+                headerModifier: '',
+                completionCommentSnippets: true,
                 lintAvoidSelectStarEnabled: true,
                 lintAvoidSelectStarSeverity: 'warning',
                 lintExplicitJoinTypeEnabled: true,
@@ -1100,6 +1130,9 @@ export class ConfigEditorPanel {
                 enableSnippets: true,
                 enableQuickFix: true,
                 enableSmartCommentToggle: true,
+                headerAuthor: '',
+                headerModifier: '',
+                completionCommentSnippets: true,
                 lintAvoidSelectStarEnabled: true,
                 lintAvoidSelectStarSeverity: 'warning',
                 lintExplicitJoinTypeEnabled: true,
@@ -1189,6 +1222,9 @@ export class ConfigEditorPanel {
                 enableSnippets: true,
                 enableQuickFix: true,
                 enableSmartCommentToggle: true,
+                headerAuthor: '',
+                headerModifier: '',
+                completionCommentSnippets: true,
                 lintAvoidSelectStarEnabled: false,
                 lintAvoidSelectStarSeverity: 'warning',
                 lintExplicitJoinTypeEnabled: false,
@@ -1310,6 +1346,9 @@ export class ConfigEditorPanel {
                 enableSnippets: document.getElementById('enableSnippets').checked,
                 enableQuickFix: document.getElementById('enableQuickFix').checked,
                 enableSmartCommentToggle: document.getElementById('enableSmartCommentToggle').checked,
+                headerAuthor: document.getElementById('headerAuthor').value,
+                headerModifier: document.getElementById('headerModifier').value,
+                completionCommentSnippets: document.getElementById('completionCommentSnippets').checked,
                 lintAvoidSelectStarEnabled: document.getElementById('avoidSelectStarEnabled').checked,
                 lintAvoidSelectStarSeverity: document.getElementById('avoidSelectStarSeverity').value,
                 lintExplicitJoinTypeEnabled: document.getElementById('explicitJoinTypeEnabled').checked,
@@ -1502,6 +1541,9 @@ export class ConfigEditorPanel {
                 enableSnippets: config.get('enableSnippets', true),
                 enableQuickFix: config.get('enableQuickFix', true),
                 enableSmartCommentToggle: config.get('enableSmartCommentToggle', true),
+                headerAuthor: config.get('headerAuthor', ''),
+                headerModifier: config.get('headerModifier', ''),
+                completionCommentSnippets: config.get('completion.commentSnippets', true),
                 lintAvoidSelectStarEnabled: config.get('lint.avoid_select_star', { enabled: true, severity: 'warning' }).enabled,
                 lintAvoidSelectStarSeverity: config.get('lint.avoid_select_star', { enabled: true, severity: 'warning' }).severity,
                 lintExplicitJoinTypeEnabled: config.get('lint.explicit_join_type', { enabled: true, severity: 'information' }).enabled,
@@ -1595,6 +1637,9 @@ export class ConfigEditorPanel {
         await config.update('enableSnippets', data.enableSnippets, vscode.ConfigurationTarget.Global)
         await config.update('enableQuickFix', data.enableQuickFix, vscode.ConfigurationTarget.Global)
         await config.update('enableSmartCommentToggle', data.enableSmartCommentToggle, vscode.ConfigurationTarget.Global)
+        await config.update('headerAuthor', data.headerAuthor, vscode.ConfigurationTarget.Global)
+        await config.update('headerModifier', data.headerModifier, vscode.ConfigurationTarget.Global)
+        await config.update('completion.commentSnippets', data.completionCommentSnippets, vscode.ConfigurationTarget.Global)
         await config.update('lint.avoid_select_star', { enabled: data.lintAvoidSelectStarEnabled, severity: data.lintAvoidSelectStarSeverity }, vscode.ConfigurationTarget.Global)
         await config.update('lint.explicit_join_type', { enabled: data.lintExplicitJoinTypeEnabled, severity: data.lintExplicitJoinTypeSeverity }, vscode.ConfigurationTarget.Global)
         await config.update('lint.limit_with_order_by', { enabled: data.lintLimitWithOrderByEnabled, severity: data.lintLimitWithOrderBySeverity }, vscode.ConfigurationTarget.Global)
@@ -1670,6 +1715,9 @@ export class ConfigEditorPanel {
             enableSnippets: true,
             enableQuickFix: true,
             enableSmartCommentToggle: true,
+            headerAuthor: '',
+            headerModifier: '',
+            completionCommentSnippets: true,
             lintAvoidSelectStarEnabled: true,
             lintAvoidSelectStarSeverity: 'warning',
             lintExplicitJoinTypeEnabled: true,

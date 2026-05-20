@@ -1,5 +1,10 @@
 # 更新日志
 
+## 0.18.1
+- 修复 header/col/tbl 补全不生效：改用 SnippetString 构造函数避免占位符被转义
+- 修复补全项 label 包含中文导致模糊匹配失败，中文描述移至 detail/documentation
+- 可视化配置编辑器新增「注释设置」组（作者、修改人、注释模板补全开关）
+
 ## 0.18.0
 - 新增智能注释切换：Ctrl+/ 单行/多行自动切换，Ctrl+Shift+/ 高级模式（DDL 列注释、格式化禁用标记）
 - 新增注释模板补全：静态 Snippet（todo/fixme/hack/desc/section）+ 动态补全（header/col/tbl）
