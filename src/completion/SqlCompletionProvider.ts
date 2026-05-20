@@ -87,11 +87,11 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
         if (this.cfg.snippets) items.push(...this.snippetItems)
         if (this.cfg.cteNames && doc.getText().trim()) items.push(...getCTEItems(doc, pos))
         if (this.cfg.identifiers && doc.getText().trim()) items.push(...getIdentifierItems(doc, pos, dialect.tokenizer))
-        if (this.cfg.commentSnippets && doc.getText().trim()) {
+        if (this.cfg.commentSnippets) {
             try {
                 items.push(...getCommentCompletionItems(doc, pos))
             } catch {
-                // dynamic comment completion failed, static snippets from sql.json still work
+                // dynamic comment completion failed
             }
         }
 

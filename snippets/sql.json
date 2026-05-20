@@ -176,23 +176,6 @@
         ],
         "description": "Hive select from partition"
     },
-    "Comment Header": {
-        "prefix": "header",
-        "body": [
-            "-- ============================================================",
-            "-- 脚本名称：${1:script_name}",
-            "-- 功能描述：$2",
-            "-- 作者：${3:author}",
-            "-- 创建时间：$CURRENT_YEAR-$CURRENT_MONTH-$CURRENT_DATE",
-            "-- ============================================================",
-            "-- 修改记录：",
-            "--   日期         修改人       修改内容",
-            "--   $CURRENT_YEAR-$CURRENT_MONTH-$CURRENT_DATE  ${4:modifier}     ${5:初始版本}",
-            "-- ============================================================",
-            "$0"
-        ],
-        "description": "文件头注释"
-    },
     "Column Comment": {
         "prefix": "col",
         "body": [

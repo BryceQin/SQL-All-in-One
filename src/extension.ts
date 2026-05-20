@@ -97,16 +97,14 @@ export function activate(context: vscode.ExtensionContext) {
     }
 
     try {
+        const sqlLanguages = Object.keys(sqlDialects)
         context.subscriptions.push(
-            vscode.languages.registerCodeActionsProvider(
-                { scheme: 'file', language: 'sql' },
-                new SqlCodeActionProvider(),
-                { providedCodeActionKinds: SqlCodeActionProvider.providedCodeActionKinds }
-            ),
-            vscode.languages.registerCodeActionsProvider(
-                { scheme: 'file', language: 'hive' },
-                new SqlCodeActionProvider(),
-                { providedCodeActionKinds: SqlCodeActionProvider.providedCodeActionKinds }
+            ...sqlLanguages.map(lang =>
+                vscode.languages.registerCodeActionsProvider(
+                    { language: lang },
+                    new SqlCodeActionProvider(),
+                    { providedCodeActionKinds: SqlCodeActionProvider.providedCodeActionKinds }
+                )
             ),
         )
     } catch (e) {
@@ -114,14 +112,13 @@ export function activate(context: vscode.ExtensionContext) {
     }
 
     try {
+        const sqlLanguages = Object.keys(sqlDialects)
         context.subscriptions.push(
-            vscode.languages.registerFoldingRangeProvider(
-                { scheme: 'file', language: 'sql' },
-                new SqlFoldingRangeProvider()
-            ),
-            vscode.languages.registerFoldingRangeProvider(
-                { scheme: 'file', language: 'hive' },
-                new SqlFoldingRangeProvider()
+            ...sqlLanguages.map(lang =>
+                vscode.languages.registerFoldingRangeProvider(
+                    { language: lang },
+                    new SqlFoldingRangeProvider()
+                )
             ),
         )
     } catch (e) {
@@ -129,14 +126,13 @@ export function activate(context: vscode.ExtensionContext) {
     }
 
     try {
+        const sqlLanguages = Object.keys(sqlDialects)
         context.subscriptions.push(
-            vscode.languages.registerDocumentSymbolProvider(
-                { scheme: 'file', language: 'sql' },
-                new SqlOutlineProvider()
-            ),
-            vscode.languages.registerDocumentSymbolProvider(
-                { scheme: 'file', language: 'hive' },
-                new SqlOutlineProvider()
+            ...sqlLanguages.map(lang =>
+                vscode.languages.registerDocumentSymbolProvider(
+                    { language: lang },
+                    new SqlOutlineProvider()
+                )
             ),
         )
     } catch (e) {
@@ -151,15 +147,14 @@ export function activate(context: vscode.ExtensionContext) {
 
     if (completionProvider) {
         try {
+            const sqlLanguages = Object.keys(sqlDialects)
             context.subscriptions.push(
-                vscode.languages.registerCompletionItemProvider(
-                    { scheme: 'file', language: 'sql' },
-                    completionProvider, ...triggerChars
-                ),
-                vscode.languages.registerCompletionItemProvider(
-                    { scheme: 'file', language: 'hive' },
-                    completionProvider, ...triggerChars
-                ),
+                ...sqlLanguages.map(lang =>
+                    vscode.languages.registerCompletionItemProvider(
+                        { language: lang },
+                        completionProvider, ...triggerChars
+                    )
+                )
             )
         } catch (e) {
             console.error('Hive Formatter: failed to register CompletionProvider', e)

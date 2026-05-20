@@ -2,34 +2,57 @@ import * as vscode from 'vscode'
 
 export function getCommentCompletionItems(
     doc: vscode.TextDocument,
-    pos: vscode.Position
+    _pos: vscode.Position
 ): vscode.CompletionItem[] {
-    const config = vscode.workspace.getConfiguration('Hive-Formatter')
-    const author = config.get<string>('headerAuthor', '')
-    const modifier = config.get<string>('headerModifier', '') || author
-    const { inputTables, outputTables } = extractTableDependencies(doc.getText())
-    const hasAuthor = author.length > 0
-    const hasDependencies = inputTables.length > 0 || outputTables.length > 0
+    try {
+        const config = vscode.workspace.getConfiguration('Hive-Formatter')
+        const author = config.get<string>('headerAuthor', '')
+        const modifier = config.get<string>('headerModifier', '') || author
+        const { inputTables, outputTables } = extractTableDependencies(doc.getText())
 
-    if (!hasAuthor && !hasDependencies) return []
+        return [createHeaderItem(doc, author, modifier, inputTables, outputTables)]
+    } catch {
+        // 如果出错，返回一个绝对可靠的简单 header 作为 fallback
+        const item = new vscode.CompletionItem('header', vscode.CompletionItemKind.Snippet)
+        item.filterText = 'header'
+        item.sortText = '0_header'
+        item.detail = '文件头注释（安全版）'
+        item.documentation = new vscode.MarkdownString('文件头注释模板')
 
-    const items: vscode.CompletionItem[] = []
-    items.push(createEnhancedHeaderItem(doc, author, modifier, inputTables, outputTables))
-    return items
+        const fileName = doc.fileName.split('/').pop()?.replace(/\.\w+$/, '') || 'script_name'
+        const today = new Date().toISOString().slice(0, 10)
+
+        const snippetStr = [
+            '-- ============================================================',
+            `-- 脚本名称：\${1:${fileName}}`,
+            '-- 功能描述：$2',
+            '-- 作者：${3:author}',
+            `-- 创建时间：\${4:${today}}`,
+            '-- ============================================================',
+            '-- 修改记录：',
+            '--   日期         修改人       修改内容',
+            `--   \${5:${today}}  \${6:modifier}     \${7:初始版本}`,
+            '-- ============================================================',
+            '$0'
+        ].join('\n')
+
+        item.insertText = new vscode.SnippetString(snippetStr)
+        return [item]
+    }
 }
 
-function createEnhancedHeaderItem(
+function createHeaderItem(
     doc: vscode.TextDocument,
     author: string,
     modifier: string,
     inputTables: string[],
     outputTables: string[]
 ): vscode.CompletionItem {
-    const item = new vscode.CompletionItem('header+', vscode.CompletionItemKind.Snippet)
+    const item = new vscode.CompletionItem('header', vscode.CompletionItemKind.Snippet)
     item.filterText = 'header'
-    item.sortText = '0_header_enhanced'
-    item.detail = '文件头注释（增强版 - 含作者/表依赖）'
-    item.documentation = new vscode.MarkdownString('自动填充作者和上下游表依赖的文件头注释模板')
+    item.sortText = '0_header'
+    item.detail = '文件头注释（含作者配置/上下游依赖）'
+    item.documentation = new vscode.MarkdownString('自动填充配置的作者名和检测到的上下游表依赖')
 
     const fileName = doc.fileName.split('/').pop()?.replace(/\.\w+$/, '') || 'script_name'
     const today = new Date().toISOString().slice(0, 10)
@@ -37,6 +60,9 @@ function createEnhancedHeaderItem(
     const existingHeader = doc.getText(new vscode.Range(0, 0, Math.min(doc.lineCount, 10), 0))
     const existingDateMatch = existingHeader.match(/创建时间[：:]\s*(\d{4}-\d{2}-\d{2})/)
     const createDate = existingDateMatch ? existingDateMatch[1] : today
+
+    const authorPlaceholder = author || 'author'
+    const modifierPlaceholder = modifier || 'modifier'
 
     const inputTableLines = inputTables.length > 0
         ? inputTables.map(t => `--     - ${t}`).join('\n')
@@ -50,12 +76,12 @@ function createEnhancedHeaderItem(
         '-- ============================================================',
         `-- 脚本名称：\${1:${fileName}}`,
         '-- 功能描述：$2',
-        `-- 作者：\${3:${author}}`,
+        `-- 作者：\${3:${authorPlaceholder}}`,
         `-- 创建时间：\${4:${createDate}}`,
         '-- ============================================================',
         '-- 修改记录：',
         '--   日期         修改人       修改内容',
-        `--   \${5:${today}}  \${6:${modifier}}     \${7:初始版本}`,
+        `--   \${5:${today}}  \${6:${modifierPlaceholder}}     \${7:初始版本}`,
         '-- ============================================================',
         '-- 上游依赖：',
         '--   输入表：',
