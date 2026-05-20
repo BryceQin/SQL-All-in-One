@@ -2,6 +2,7 @@ import * as vscode from "vscode"
 import { SqlFormattingProvider } from "./providers/SqlFormattingProvider"
 import { sqlDialects } from "./core/sqlDialects"
 import { formatSelectionCommand } from "./commands/formatSelectionCommand"
+import { toggleComment, toggleAdvancedComment } from "./commands/commentCommands"
 import { convertMysqlToHiveCommand, convertHiveToMysqlCommand } from "./commands/converterCommands"
 import { SqlDiagnosticsProvider } from "./providers/SqlDiagnosticsProvider"
 import { openConfigEditorCommand } from "./commands/configEditorCommand"
@@ -10,7 +11,7 @@ import { SqlCodeActionProvider } from "./providers/SqlCodeActionProvider"
 import { SqlFoldingRangeProvider } from "./providers/SqlFoldingRangeProvider"
 import { SqlOutlineProvider } from "./providers/SqlOutlineProvider"
 import { SqlParameterHighlighter, SqlParameterReplaceCommand } from "./providers/SqlParameterHightlighter"
-import { SqlCompletionProvider } from "./completion"
+import { SqlCompletionProvider, } from "./completion"
 
 let diagnosticsProvider: SqlDiagnosticsProvider
 let statusBarProvider: StatusBarProvider
@@ -29,6 +30,14 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand(
             "hive-formatter.format-selection",
             formatSelectionCommand,
+        ),
+        vscode.commands.registerCommand(
+            "hive-formatter.toggleComment",
+            toggleComment,
+        ),
+        vscode.commands.registerCommand(
+            "hive-formatter.toggleAdvancedComment",
+            toggleAdvancedComment,
         ),
         vscode.commands.registerCommand(
             "hive-formatter.mysql-to-hive",

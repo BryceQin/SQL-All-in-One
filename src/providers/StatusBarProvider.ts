@@ -3,6 +3,8 @@ import * as vscode from 'vscode'
 export class StatusBarProvider {
     private statusBarItem: vscode.StatusBarItem
     private disposables: vscode.Disposable[] = []
+    private static tempItem: vscode.StatusBarItem | undefined
+    private static tempTimeout: ReturnType<typeof setTimeout> | undefined
 
     constructor() {
         this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100)
@@ -44,6 +46,24 @@ export class StatusBarProvider {
         } else {
             this.statusBarItem.hide()
         }
+    }
+
+    public static showTemporaryMessage(message: string): void {
+        if (StatusBarProvider.tempItem) {
+            StatusBarProvider.tempItem.dispose()
+        }
+        if (StatusBarProvider.tempTimeout) {
+            clearTimeout(StatusBarProvider.tempTimeout)
+        }
+        StatusBarProvider.tempItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 99)
+        StatusBarProvider.tempItem.text = `$(check) ${message}`
+        StatusBarProvider.tempItem.show()
+        StatusBarProvider.tempTimeout = setTimeout(() => {
+            if (StatusBarProvider.tempItem) {
+                StatusBarProvider.tempItem.dispose()
+                StatusBarProvider.tempItem = undefined
+            }
+        }, 2000)
     }
 
     public dispose() {
