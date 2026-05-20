@@ -2,7 +2,7 @@
     "name": "hive-formatter",
     "displayName": "Hive Formatter",
     "description": "一个用于 Hive、MySQL、SparkSQL 格式化的 VSCode 插件，支持 SQL IntelliSense 智能补全、语法检查和 MySQL/HiveSQL 互相转换",
-    "version": "0.18.3",
+    "version": "0.18.4",
     "publisher": "bryce-qin",
     "contributors": [
         "TalDu"
@@ -10,7 +10,7 @@
     "license": "MIT",
     "icon": "hive-formatter-icon.png",
     "engines": {
-        "vscode": "^1.108.1"
+        "vscode": "^1.85.0"
     },
     "repository": {
         "type": "git",
@@ -656,7 +656,7 @@
         "@types/mocha": "^10.0.10",
         "@types/nearley": "^2.11.5",
         "@types/node": "22.x",
-        "@types/vscode": "^1.108.1",
+        "@types/vscode": "^1.85.0",
         "@vscode/test-cli": "^0.0.12",
         "@vscode/test-electron": "^2.5.2",
         "@vscode/vsce": "^3.9.1",

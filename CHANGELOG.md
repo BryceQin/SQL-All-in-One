@@ -1,5 +1,12 @@
 # 更新日志
 
+## 0.18.4
+- 修复扩展无法激活：engines.vscode 版本要求过高（^1.108.1），降为 ^1.85.0
+- activate 函数添加 try-catch 容错保护，单个 Provider 创建失败不影响其他功能
+- header 补全恢复双轨策略：基础版由 VS Code 内置 snippet 提供，增强版（header+）由动态补全提供
+- 修复可视化配置保存后作者设置丢失
+- 修复可视化配置保存提示不准确
+
 ## 0.18.3
 - 修复键入 header 无法触发注释补全：静态 snippet label 改用英文前缀，确保模糊匹配生效
 - 移除 sql.json 中的 Comment Header 静态 snippet，由动态补全统一提供 header 项
