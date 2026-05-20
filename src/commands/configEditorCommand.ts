@@ -488,7 +488,7 @@ export class ConfigEditorPanel {
                             <span class="cg-arrow open">▶</span>
                             <span class="cg-icon">🔌</span>
                             <span class="cg-title">功能开关</span>
-                            <span class="cg-badge">11</span>
+                            <span class="cg-badge">12</span>
                         </div>
                         <div class="cg-body open">
                             <div class="toggle-row"><span class="toggle-label">启用增强语法检查</span><label class="toggle"><input type="checkbox" id="enableEnhancedChecks"><span class="toggle-slider"></span></label></div>
@@ -502,16 +502,17 @@ export class ConfigEditorPanel {
                             <div class="toggle-row"><span class="toggle-label">启用参数高亮</span><label class="toggle"><input type="checkbox" id="enableParameterHighlight"><span class="toggle-slider"></span></label></div>
                             <div class="toggle-row"><span class="toggle-label">启用代码片段</span><label class="toggle"><input type="checkbox" id="enableSnippets"><span class="toggle-slider"></span></label></div>
                             <div class="toggle-row"><span class="toggle-label">启用快速修复</span><label class="toggle"><input type="checkbox" id="enableQuickFix"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">启用智能注释切换</span><label class="toggle"><input type="checkbox" id="enableSmartCommentToggle"><span class="toggle-slider"></span></label></div>
                         </div>
                     </div>
-                    
+
                     <!-- Lint 规则 -->
                     <div class="config-group">
                         <div class="cg-header" onclick="toggleGroup(this)">
                             <span class="cg-arrow open">▶</span>
                             <span class="cg-icon">🔍</span>
                             <span class="cg-title">Lint 规则</span>
-                            <span class="cg-badge">14</span>
+                            <span class="cg-badge">18</span>
                         </div>
                         <div class="cg-body open">
                             <div class="lint-rule">
@@ -639,6 +640,42 @@ export class ConfigEditorPanel {
                                     <option value="information">Info</option>
                                 </select>
                                 <label class="toggle lint-rule-toggle"><input type="checkbox" id="longQueryLineEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name">复杂查询缺注释</span>
+                                <select class="config-select lint-rule-severity" id="missingQueryCommentSeverity">
+                                    <option value="error">Error</option>
+                                    <option value="warning">Warning</option>
+                                    <option value="information">Info</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="missingQueryCommentEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name">DDL 列缺 COMMENT</span>
+                                <select class="config-select lint-rule-severity" id="missingColumnCommentSeverity">
+                                    <option value="error">Error</option>
+                                    <option value="warning">Warning</option>
+                                    <option value="information">Info</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="missingColumnCommentEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name">注释掉的代码</span>
+                                <select class="config-select lint-rule-severity" id="commentedOutCodeSeverity">
+                                    <option value="error">Error</option>
+                                    <option value="warning">Warning</option>
+                                    <option value="information">Info</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="commentedOutCodeEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name">过期 TODO/FIXME</span>
+                                <select class="config-select lint-rule-severity" id="expiredTodoSeverity">
+                                    <option value="error">Error</option>
+                                    <option value="warning">Warning</option>
+                                    <option value="information">Info</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="expiredTodoEnabled"><span class="toggle-slider"></span></label>
                             </div>
                         </div>
                     </div>
@@ -828,7 +865,9 @@ export class ConfigEditorPanel {
     <div class="toast" id="toast"></div>
     
     <script>
-        let currentConfig = {};
+        let currentConfig = {
+            enableSmartCommentToggle: true,
+        };
         
         const presets = {
             default: {
@@ -882,6 +921,7 @@ export class ConfigEditorPanel {
                 enableParameterHighlight: true,
                 enableSnippets: true,
                 enableQuickFix: true,
+                enableSmartCommentToggle: true,
                 lintAvoidSelectStarEnabled: true,
                 lintAvoidSelectStarSeverity: 'warning',
                 lintExplicitJoinTypeEnabled: true,
@@ -909,7 +949,15 @@ export class ConfigEditorPanel {
                 lintAvoidCorrelatedSubqueriesEnabled: false,
                 lintAvoidCorrelatedSubqueriesSeverity: 'warning',
                 lintLongQueryLineEnabled: false,
-                lintLongQueryLineSeverity: 'information'
+                lintLongQueryLineSeverity: 'information',
+                lintMissingQueryCommentEnabled: false,
+                lintMissingQueryCommentSeverity: 'warning',
+                lintMissingColumnCommentEnabled: false,
+                lintMissingColumnCommentSeverity: 'warning',
+                lintCommentedOutCodeEnabled: false,
+                lintCommentedOutCodeSeverity: 'information',
+                lintExpiredTodoEnabled: false,
+                lintExpiredTodoSeverity: 'warning'
             },
             hive: {
                 dialect: 'hive',
@@ -962,6 +1010,7 @@ export class ConfigEditorPanel {
                 enableParameterHighlight: true,
                 enableSnippets: true,
                 enableQuickFix: true,
+                enableSmartCommentToggle: true,
                 lintAvoidSelectStarEnabled: true,
                 lintAvoidSelectStarSeverity: 'warning',
                 lintExplicitJoinTypeEnabled: true,
@@ -989,7 +1038,15 @@ export class ConfigEditorPanel {
                 lintAvoidCorrelatedSubqueriesEnabled: false,
                 lintAvoidCorrelatedSubqueriesSeverity: 'warning',
                 lintLongQueryLineEnabled: false,
-                lintLongQueryLineSeverity: 'information'
+                lintLongQueryLineSeverity: 'information',
+                lintMissingQueryCommentEnabled: false,
+                lintMissingQueryCommentSeverity: 'warning',
+                lintMissingColumnCommentEnabled: false,
+                lintMissingColumnCommentSeverity: 'warning',
+                lintCommentedOutCodeEnabled: false,
+                lintCommentedOutCodeSeverity: 'information',
+                lintExpiredTodoEnabled: false,
+                lintExpiredTodoSeverity: 'warning'
             },
             mysql: {
                 dialect: 'mysql',
@@ -1042,6 +1099,7 @@ export class ConfigEditorPanel {
                 enableParameterHighlight: true,
                 enableSnippets: true,
                 enableQuickFix: true,
+                enableSmartCommentToggle: true,
                 lintAvoidSelectStarEnabled: true,
                 lintAvoidSelectStarSeverity: 'warning',
                 lintExplicitJoinTypeEnabled: true,
@@ -1069,7 +1127,15 @@ export class ConfigEditorPanel {
                 lintAvoidCorrelatedSubqueriesEnabled: false,
                 lintAvoidCorrelatedSubqueriesSeverity: 'warning',
                 lintLongQueryLineEnabled: false,
-                lintLongQueryLineSeverity: 'information'
+                lintLongQueryLineSeverity: 'information',
+                lintMissingQueryCommentEnabled: false,
+                lintMissingQueryCommentSeverity: 'warning',
+                lintMissingColumnCommentEnabled: false,
+                lintMissingColumnCommentSeverity: 'warning',
+                lintCommentedOutCodeEnabled: false,
+                lintCommentedOutCodeSeverity: 'information',
+                lintExpiredTodoEnabled: false,
+                lintExpiredTodoSeverity: 'warning'
             },
             compact: {
                 dialect: 'hive',
@@ -1122,6 +1188,7 @@ export class ConfigEditorPanel {
                 enableParameterHighlight: true,
                 enableSnippets: true,
                 enableQuickFix: true,
+                enableSmartCommentToggle: true,
                 lintAvoidSelectStarEnabled: false,
                 lintAvoidSelectStarSeverity: 'warning',
                 lintExplicitJoinTypeEnabled: false,
@@ -1149,7 +1216,15 @@ export class ConfigEditorPanel {
                 lintAvoidCorrelatedSubqueriesEnabled: false,
                 lintAvoidCorrelatedSubqueriesSeverity: 'warning',
                 lintLongQueryLineEnabled: false,
-                lintLongQueryLineSeverity: 'information'
+                lintLongQueryLineSeverity: 'information',
+                lintMissingQueryCommentEnabled: false,
+                lintMissingQueryCommentSeverity: 'warning',
+                lintMissingColumnCommentEnabled: false,
+                lintMissingColumnCommentSeverity: 'warning',
+                lintCommentedOutCodeEnabled: false,
+                lintCommentedOutCodeSeverity: 'information',
+                lintExpiredTodoEnabled: false,
+                lintExpiredTodoSeverity: 'warning'
             }
         };
         
@@ -1234,6 +1309,7 @@ export class ConfigEditorPanel {
                 enableParameterHighlight: document.getElementById('enableParameterHighlight').checked,
                 enableSnippets: document.getElementById('enableSnippets').checked,
                 enableQuickFix: document.getElementById('enableQuickFix').checked,
+                enableSmartCommentToggle: document.getElementById('enableSmartCommentToggle').checked,
                 lintAvoidSelectStarEnabled: document.getElementById('avoidSelectStarEnabled').checked,
                 lintAvoidSelectStarSeverity: document.getElementById('avoidSelectStarSeverity').value,
                 lintExplicitJoinTypeEnabled: document.getElementById('explicitJoinTypeEnabled').checked,
@@ -1261,7 +1337,15 @@ export class ConfigEditorPanel {
                 lintAvoidCorrelatedSubqueriesEnabled: document.getElementById('avoidCorrelatedSubqueriesEnabled').checked,
                 lintAvoidCorrelatedSubqueriesSeverity: document.getElementById('avoidCorrelatedSubqueriesSeverity').value,
                 lintLongQueryLineEnabled: document.getElementById('longQueryLineEnabled').checked,
-                lintLongQueryLineSeverity: document.getElementById('longQueryLineSeverity').value
+                lintLongQueryLineSeverity: document.getElementById('longQueryLineSeverity').value,
+                lintMissingQueryCommentEnabled: document.getElementById('missingQueryCommentEnabled').checked,
+                lintMissingQueryCommentSeverity: document.getElementById('missingQueryCommentSeverity').value,
+                lintMissingColumnCommentEnabled: document.getElementById('missingColumnCommentEnabled').checked,
+                lintMissingColumnCommentSeverity: document.getElementById('missingColumnCommentSeverity').value,
+                lintCommentedOutCodeEnabled: document.getElementById('commentedOutCodeEnabled').checked,
+                lintCommentedOutCodeSeverity: document.getElementById('commentedOutCodeSeverity').value,
+                lintExpiredTodoEnabled: document.getElementById('expiredTodoEnabled').checked,
+                lintExpiredTodoSeverity: document.getElementById('expiredTodoSeverity').value
             };
         }
         
@@ -1417,6 +1501,7 @@ export class ConfigEditorPanel {
                 enableParameterHighlight: config.get('enableParameterHighlight', true),
                 enableSnippets: config.get('enableSnippets', true),
                 enableQuickFix: config.get('enableQuickFix', true),
+                enableSmartCommentToggle: config.get('enableSmartCommentToggle', true),
                 lintAvoidSelectStarEnabled: config.get('lint.avoid_select_star', { enabled: true, severity: 'warning' }).enabled,
                 lintAvoidSelectStarSeverity: config.get('lint.avoid_select_star', { enabled: true, severity: 'warning' }).severity,
                 lintExplicitJoinTypeEnabled: config.get('lint.explicit_join_type', { enabled: true, severity: 'information' }).enabled,
@@ -1444,7 +1529,15 @@ export class ConfigEditorPanel {
                 lintAvoidCorrelatedSubqueriesEnabled: config.get('lint.avoid_correlated_subqueries', { enabled: false, severity: 'warning' }).enabled,
                 lintAvoidCorrelatedSubqueriesSeverity: config.get('lint.avoid_correlated_subqueries', { enabled: false, severity: 'warning' }).severity,
                 lintLongQueryLineEnabled: config.get('lint.long_query_line', { enabled: false, severity: 'information' }).enabled,
-                lintLongQueryLineSeverity: config.get('lint.long_query_line', { enabled: false, severity: 'information' }).severity
+                lintLongQueryLineSeverity: config.get('lint.long_query_line', { enabled: false, severity: 'information' }).severity,
+                lintMissingQueryCommentEnabled: config.get('lint.missing_query_comment', { enabled: false, severity: 'warning' }).enabled,
+                lintMissingQueryCommentSeverity: config.get('lint.missing_query_comment', { enabled: false, severity: 'warning' }).severity,
+                lintMissingColumnCommentEnabled: config.get('lint.missing_column_comment', { enabled: false, severity: 'warning' }).enabled,
+                lintMissingColumnCommentSeverity: config.get('lint.missing_column_comment', { enabled: false, severity: 'warning' }).severity,
+                lintCommentedOutCodeEnabled: config.get('lint.commented_out_code', { enabled: false, severity: 'information' }).enabled,
+                lintCommentedOutCodeSeverity: config.get('lint.commented_out_code', { enabled: false, severity: 'information' }).severity,
+                lintExpiredTodoEnabled: config.get('lint.expired_todo', { enabled: false, severity: 'warning' }).enabled,
+                lintExpiredTodoSeverity: config.get('lint.expired_todo', { enabled: false, severity: 'warning' }).severity
             }
         })
     }
@@ -1501,6 +1594,7 @@ export class ConfigEditorPanel {
         await config.update('enableParameterHighlight', data.enableParameterHighlight, vscode.ConfigurationTarget.Global)
         await config.update('enableSnippets', data.enableSnippets, vscode.ConfigurationTarget.Global)
         await config.update('enableQuickFix', data.enableQuickFix, vscode.ConfigurationTarget.Global)
+        await config.update('enableSmartCommentToggle', data.enableSmartCommentToggle, vscode.ConfigurationTarget.Global)
         await config.update('lint.avoid_select_star', { enabled: data.lintAvoidSelectStarEnabled, severity: data.lintAvoidSelectStarSeverity }, vscode.ConfigurationTarget.Global)
         await config.update('lint.explicit_join_type', { enabled: data.lintExplicitJoinTypeEnabled, severity: data.lintExplicitJoinTypeSeverity }, vscode.ConfigurationTarget.Global)
         await config.update('lint.limit_with_order_by', { enabled: data.lintLimitWithOrderByEnabled, severity: data.lintLimitWithOrderBySeverity }, vscode.ConfigurationTarget.Global)
@@ -1515,6 +1609,10 @@ export class ConfigEditorPanel {
         await config.update('lint.explicit_column_aliasing', { enabled: data.lintExplicitColumnAliasingEnabled, severity: data.lintExplicitColumnAliasingSeverity }, vscode.ConfigurationTarget.Global)
         await config.update('lint.avoid_correlated_subqueries', { enabled: data.lintAvoidCorrelatedSubqueriesEnabled, severity: data.lintAvoidCorrelatedSubqueriesSeverity }, vscode.ConfigurationTarget.Global)
         await config.update('lint.long_query_line', { enabled: data.lintLongQueryLineEnabled, severity: data.lintLongQueryLineSeverity }, vscode.ConfigurationTarget.Global)
+        await config.update('lint.missing_query_comment', { enabled: data.lintMissingQueryCommentEnabled, severity: data.lintMissingQueryCommentSeverity }, vscode.ConfigurationTarget.Global)
+        await config.update('lint.missing_column_comment', { enabled: data.lintMissingColumnCommentEnabled, severity: data.lintMissingColumnCommentSeverity }, vscode.ConfigurationTarget.Global)
+        await config.update('lint.commented_out_code', { enabled: data.lintCommentedOutCodeEnabled, severity: data.lintCommentedOutCodeSeverity }, vscode.ConfigurationTarget.Global)
+        await config.update('lint.expired_todo', { enabled: data.lintExpiredTodoEnabled, severity: data.lintExpiredTodoSeverity }, vscode.ConfigurationTarget.Global)
         
         vscode.window.showInformationMessage('配置已保存！')
     }
@@ -1571,6 +1669,7 @@ export class ConfigEditorPanel {
             enableParameterHighlight: true,
             enableSnippets: true,
             enableQuickFix: true,
+            enableSmartCommentToggle: true,
             lintAvoidSelectStarEnabled: true,
             lintAvoidSelectStarSeverity: 'warning',
             lintExplicitJoinTypeEnabled: true,
@@ -1598,9 +1697,17 @@ export class ConfigEditorPanel {
             lintAvoidCorrelatedSubqueriesEnabled: false,
             lintAvoidCorrelatedSubqueriesSeverity: 'warning',
             lintLongQueryLineEnabled: false,
-            lintLongQueryLineSeverity: 'information'
+            lintLongQueryLineSeverity: 'information',
+            lintMissingQueryCommentEnabled: false,
+            lintMissingQueryCommentSeverity: 'warning',
+            lintMissingColumnCommentEnabled: false,
+            lintMissingColumnCommentSeverity: 'warning',
+            lintCommentedOutCodeEnabled: false,
+            lintCommentedOutCodeSeverity: 'information',
+            lintExpiredTodoEnabled: false,
+            lintExpiredTodoSeverity: 'warning'
         }
-        
+
         await this._updateConfig(defaults)
         await this._sendCurrentConfig()
     }
