@@ -20,7 +20,7 @@ const { Parser: NearleyParser, Grammar } = nearley_1.default;
 function createParser(tokenizer) {
     // 闭包变量：共享参数类型配置（Tokenizer 和 parse 方法间）
     let paramTypesOverrides = {};
-    let currentSql = "";
+    let _currentSql = "";
     // 初始化 LexerAdapter：关联自定义分词逻辑
     const lexer = new LexerAdapter_1.default((chunk) => [
         // 步骤1：分词 → 步骤2：消歧 → 合并为 Token 数组
@@ -35,7 +35,7 @@ function createParser(tokenizer) {
         parse: (sql, paramTypes) => {
             // 1. 共享参数配置：传递给 Tokenizer 的分词逻辑
             paramTypesOverrides = paramTypes;
-            currentSql = sql;
+            _currentSql = sql;
             try {
                 // 2. 执行解析：feed 方法传入 SQL 文本，触发 Lexer 分词 + 文法解析
                 const { results } = parser.feed(sql);

@@ -142,7 +142,6 @@ export const keywords: string[] = [
     'URI',
     'USE',
     'UTC',
-    'UTCTIMESTAMP',
     'VALUE_TYPE',
     'VIEW',
     'WHILE',
@@ -335,7 +334,9 @@ export const dataTypes: string[] = [
     'NUMERIC',
     'PRECISION',
     'SMALLINT',
+    'STRING',
     'STRUCT',
     'TIMESTAMP',
+    'TINYINT',
     'VARCHAR'
 ];

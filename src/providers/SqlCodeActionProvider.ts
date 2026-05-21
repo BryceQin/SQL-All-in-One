@@ -1,4 +1,5 @@
 import * as vscode from 'vscode'
+import { t } from '../i18n'
 
 export class SqlCodeActionProvider implements vscode.CodeActionProvider {
     public static readonly providedCodeActionKinds = [
@@ -67,7 +68,7 @@ export class SqlCodeActionProvider implements vscode.CodeActionProvider {
         diagnostic: vscode.Diagnostic
     ): vscode.CodeAction {
         const action = new vscode.CodeAction(
-            '添加查询说明注释',
+            t('codeAction.addQueryComment'),
             vscode.CodeActionKind.QuickFix
         )
         action.diagnostics = [diagnostic]
@@ -89,7 +90,7 @@ export class SqlCodeActionProvider implements vscode.CodeActionProvider {
         diagnostic: vscode.Diagnostic
     ): vscode.CodeAction {
         const action = new vscode.CodeAction(
-            '添加 COMMENT 占位符',
+            t('codeAction.addCommentPlaceholder'),
             vscode.CodeActionKind.QuickFix
         )
         action.diagnostics = [diagnostic]
@@ -120,18 +121,18 @@ export class SqlCodeActionProvider implements vscode.CodeActionProvider {
         const actions: vscode.CodeAction[] = []
 
         const uncommentAction = new vscode.CodeAction(
-            '取消注释',
+            t('codeAction.uncomment'),
             vscode.CodeActionKind.QuickFix
         )
         uncommentAction.diagnostics = [diagnostic]
         uncommentAction.command = {
             command: 'hive-formatter.toggleComment',
-            title: '取消注释'
+            title: t('codeAction.uncomment')
         }
         actions.push(uncommentAction)
 
         const deleteAction = new vscode.CodeAction(
-            '删除注释代码',
+            t('codeAction.deleteCommentedCode'),
             vscode.CodeActionKind.QuickFix
         )
         deleteAction.diagnostics = [diagnostic]
@@ -150,7 +151,7 @@ export class SqlCodeActionProvider implements vscode.CodeActionProvider {
         const line = document.lineAt(diagnostic.range.start.line).text
 
         const doneAction = new vscode.CodeAction(
-            '标记为已完成',
+            t('codeAction.markAsCompleted'),
             vscode.CodeActionKind.QuickFix
         )
         doneAction.diagnostics = [diagnostic]
@@ -162,7 +163,7 @@ export class SqlCodeActionProvider implements vscode.CodeActionProvider {
 
         const today = new Date().toISOString().slice(0, 10)
         const updateDateAction = new vscode.CodeAction(
-            '更新日期为今天',
+            t('codeAction.updateDate'),
             vscode.CodeActionKind.QuickFix
         )
         updateDateAction.diagnostics = [diagnostic]
@@ -172,7 +173,7 @@ export class SqlCodeActionProvider implements vscode.CodeActionProvider {
         actions.push(updateDateAction)
 
         const removeAction = new vscode.CodeAction(
-            '移除标记',
+            t('codeAction.removeMarker'),
             vscode.CodeActionKind.QuickFix
         )
         removeAction.diagnostics = [diagnostic]
@@ -188,7 +189,7 @@ export class SqlCodeActionProvider implements vscode.CodeActionProvider {
         diagnostic: vscode.Diagnostic
     ): vscode.CodeAction {
         const action = new vscode.CodeAction(
-            '将 = NULL 改为 IS NULL',
+            t('codeAction.fixNullComparison'),
             vscode.CodeActionKind.QuickFix
         )
         action.diagnostics = [diagnostic]
@@ -197,11 +198,7 @@ export class SqlCodeActionProvider implements vscode.CodeActionProvider {
         const text = document.getText(diagnostic.range)
         let newText = text
 
-        if (text.includes('= NULL')) {
-            newText = text.replace('= NULL', 'IS NULL')
-        } else if (text.includes('= null')) {
-            newText = text.replace('= null', 'IS NULL')
-        } else if (text.includes('!= NULL')) {
+        if (text.includes('!= NULL')) {
             newText = text.replace('!= NULL', 'IS NOT NULL')
         } else if (text.includes('!= null')) {
             newText = text.replace('!= null', 'IS NOT NULL')
@@ -209,6 +206,10 @@ export class SqlCodeActionProvider implements vscode.CodeActionProvider {
             newText = text.replace('<> NULL', 'IS NOT NULL')
         } else if (text.includes('<> null')) {
             newText = text.replace('<> null', 'IS NOT NULL')
+        } else if (text.includes('= NULL')) {
+            newText = text.replace('= NULL', 'IS NULL')
+        } else if (text.includes('= null')) {
+            newText = text.replace('= null', 'IS NULL')
         }
 
         action.edit = new vscode.WorkspaceEdit()
@@ -222,21 +223,25 @@ export class SqlCodeActionProvider implements vscode.CodeActionProvider {
         diagnostic: vscode.Diagnostic
     ): vscode.CodeAction {
         const action = new vscode.CodeAction(
-            '添加 GROUP BY 子句',
+            t('codeAction.addGroupBy'),
             vscode.CodeActionKind.QuickFix
         )
         action.diagnostics = [diagnostic]
 
         const text = document.getText()
-        const havingMatch = text.match(/HAVING/i)
+        const lineStart = document.offsetAt(new vscode.Position(diagnostic.range.start.line, 0))
+        const lineEnd = document.offsetAt(new vscode.Position(diagnostic.range.end.line + 1, 0))
+        const lineText = text.substring(lineStart, lineEnd)
+        const havingMatch = /\bHAVING\b/i.exec(lineText)
 
         if (havingMatch && havingMatch.index !== undefined) {
-            const beforeHaving = text.substring(0, havingMatch.index)
+            const havingAbsIndex = lineStart + havingMatch.index
+            const beforeHaving = text.substring(0, havingAbsIndex)
             const fromMatch = beforeHaving.match(/FROM\s+(\w+)/i)
 
             if (fromMatch) {
                 const tableName = fromMatch[1]
-                const insertPos = document.positionAt(havingMatch.index)
+                const insertPos = document.positionAt(havingAbsIndex)
 
                 action.edit = new vscode.WorkspaceEdit()
                 action.edit.insert(
@@ -255,7 +260,7 @@ export class SqlCodeActionProvider implements vscode.CodeActionProvider {
         diagnostic: vscode.Diagnostic
     ): vscode.CodeAction {
         const action = new vscode.CodeAction(
-            '用反引号包裹标识符',
+            t('codeAction.wrapWithBacktick'),
             vscode.CodeActionKind.QuickFix
         )
         action.diagnostics = [diagnostic]
@@ -275,7 +280,7 @@ export class SqlCodeActionProvider implements vscode.CodeActionProvider {
         diagnostic: vscode.Diagnostic
     ): vscode.CodeAction {
         const action = new vscode.CodeAction(
-            '为子查询添加别名',
+            t('codeAction.addSubqueryAlias'),
             vscode.CodeActionKind.QuickFix
         )
         action.diagnostics = [diagnostic]
@@ -295,7 +300,7 @@ export class SqlCodeActionProvider implements vscode.CodeActionProvider {
         diagnostic: vscode.Diagnostic
     ): vscode.CodeAction {
         const action = new vscode.CodeAction(
-            '添加列名占位符',
+            t('codeAction.addColumnPlaceholder'),
             vscode.CodeActionKind.QuickFix
         )
         action.diagnostics = [diagnostic]
@@ -310,7 +315,7 @@ export class SqlCodeActionProvider implements vscode.CodeActionProvider {
             action.edit = new vscode.WorkspaceEdit()
             action.edit.insert(
                 document.uri,
-                document.positionAt(insertPos.character),
+                insertPos,
                 ' (col1, col2, col3)'
             )
         }

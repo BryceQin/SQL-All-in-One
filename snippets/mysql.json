@@ -1,0 +1,26 @@
+{
+    "MySQL Insert on Duplicate Key": {
+        "prefix": "mysqlinsdup",
+        "body": [
+            "INSERT INTO $1 ($2)",
+            "VALUES ($3)",
+            "ON DUPLICATE KEY UPDATE $4;"
+        ],
+        "description": "MySQL INSERT ON DUPLICATE KEY UPDATE"
+    },
+    "MySQL Replace": {
+        "prefix": "mysqlrepl",
+        "body": [
+            "REPLACE INTO $1 ($2)",
+            "VALUES ($3);"
+        ],
+        "description": "MySQL REPLACE INTO"
+    },
+    "MySQL Show Create Table": {
+        "prefix": "mysqlshow",
+        "body": [
+            "SHOW CREATE TABLE $1;"
+        ],
+        "description": "MySQL SHOW CREATE TABLE"
+    }
+}

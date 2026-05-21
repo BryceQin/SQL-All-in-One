@@ -16,7 +16,6 @@
     "include": ["src/**/*"], // 仅包含src下的所有TS文件
     "exclude": [
         "node_modules",
-        "eslint.config.ts", // 新增：排除ESLint配置文件，解决rootDir冲突
-        "src/test/**/*" // 排除测试文件，避免打包时的编译错误
+        "eslint.config.ts"
     ]
 }

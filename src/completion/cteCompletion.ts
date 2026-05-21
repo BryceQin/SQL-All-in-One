@@ -1,4 +1,5 @@
 import * as vscode from 'vscode'
+import { t } from '../i18n'
 
 export function getCTEItems(
     document: vscode.TextDocument,
@@ -14,7 +15,7 @@ export function getCTEItems(
 
     return cteNames.map((name) => {
         const item = new vscode.CompletionItem(name, vscode.CompletionItemKind.Variable)
-        item.detail = 'CTE (公共表表达式)'
+        item.detail = t('completion.cteLabel')
         item.sortText = `3_${name}`
         return item
     })

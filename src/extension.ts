@@ -12,12 +12,14 @@ import { SqlFoldingRangeProvider } from "./providers/SqlFoldingRangeProvider"
 import { SqlOutlineProvider } from "./providers/SqlOutlineProvider"
 import { SqlParameterHighlighter, SqlParameterReplaceCommand } from "./providers/SqlParameterHightlighter"
 import { SqlCompletionProvider, } from "./completion"
+import { initI18n } from "./i18n"
 
 let diagnosticsProvider: SqlDiagnosticsProvider
 let statusBarProvider: StatusBarProvider
 let parameterHighlighter: SqlParameterHighlighter
 
 export function activate(context: vscode.ExtensionContext) {
+    initI18n()
     console.log('Hive Formatter: activating...')
 
     try {
@@ -161,6 +163,10 @@ export function activate(context: vscode.ExtensionContext) {
         }
     }
 
+    if (completionProvider) {
+        context.subscriptions.push(completionProvider)
+    }
+
     if (statusBarProvider) {
         context.subscriptions.push(statusBarProvider)
     }
@@ -195,13 +201,5 @@ function registerFormattingProviderForEachDialect() {
 }
 
 export function deactivate() {
-    if (diagnosticsProvider) {
-        diagnosticsProvider.dispose()
-    }
-    if (statusBarProvider) {
-        statusBarProvider.dispose()
-    }
-    if (parameterHighlighter) {
-        parameterHighlighter.dispose()
-    }
+    // Resources are automatically disposed via context.subscriptions
 }

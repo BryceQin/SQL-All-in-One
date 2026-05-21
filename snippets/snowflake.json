@@ -1,0 +1,64 @@
+{
+    "Snowflake Copy Into": {
+        "prefix": "sfcopy",
+        "body": [
+            "COPY INTO $1",
+            "FROM @$2",
+            "FILE_FORMAT = (TYPE = $3);"
+        ],
+        "description": "Snowflake COPY INTO"
+    },
+    "Snowflake Create Stage": {
+        "prefix": "sfstage",
+        "body": [
+            "CREATE OR REPLACE STAGE $1",
+            "URL = '$2'",
+            "FILE_FORMAT = $3;"
+        ],
+        "description": "Create Snowflake stage"
+    },
+    "Snowflake Qualify": {
+        "prefix": "sfqualify",
+        "body": [
+            "QUALIFY ROW_NUMBER() OVER (PARTITION BY $1 ORDER BY $2) = 1"
+        ],
+        "description": "Snowflake QUALIFY"
+    },
+    "Snowflake Sample": {
+        "prefix": "sfsample",
+        "body": [
+            "SELECT $1",
+            "FROM $2",
+            "SAMPLE ($3);"
+        ],
+        "description": "Snowflake SAMPLE"
+    },
+    "Snowflake Pivot": {
+        "prefix": "sfpivot",
+        "body": [
+            "PIVOT($1($2) FOR $3 IN ($4))"
+        ],
+        "description": "Snowflake PIVOT"
+    },
+    "Snowflake Try Cast": {
+        "prefix": "sftrycast",
+        "body": [
+            "TRY_CAST($1 AS $2)"
+        ],
+        "description": "Snowflake TRY_CAST"
+    },
+    "Snowflake Lateral Flatten": {
+        "prefix": "sfflatten",
+        "body": [
+            "LATERAL FLATTEN(INPUT => $1) AS $2"
+        ],
+        "description": "Snowflake LATERAL FLATTEN"
+    },
+    "Snowflake IFF": {
+        "prefix": "sfiff",
+        "body": [
+            "IFF($1, $2, $3)"
+        ],
+        "description": "Snowflake IFF function"
+    }
+}

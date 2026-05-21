@@ -12,6 +12,9 @@ import {
     LogicalOperatorNewline,
     FormatOptions,
     CommaPosition,
+    CteCommaPosition,
+    SubqueryParenStyle,
+    CommentPosition,
 } from "../formatter/FormatOptions"
 
 type ParamTypes = FormatOptions["paramTypes"]
@@ -72,6 +75,51 @@ export const createConfig = (
         semicolonAtEnd: extensionSettings.get<boolean>("semicolonAtEnd"),
         singleLineMaxLength: extensionSettings.get<number>("singleLineMaxLength"),
         paramTypes: extensionSettings.get<ParamTypes>("paramTypes"),
+        nullCase: extensionSettings.get<KeywordCase>("nullCase"),
+        booleanCase: extensionSettings.get<KeywordCase>("booleanCase"),
+        newlineAfterGroupBy: extensionSettings.get<boolean>("newlineAfterGroupBy"),
+        newlineAfterHaving: extensionSettings.get<boolean>("newlineAfterHaving"),
+        newlineAfterOrderBy: extensionSettings.get<boolean>("newlineAfterOrderBy"),
+        newlineAfterLimit: extensionSettings.get<boolean>("newlineAfterLimit"),
+        newlineAfterJoin: extensionSettings.get<boolean>("newlineAfterJoin"),
+        newlineBeforeSetOperation: extensionSettings.get<boolean>("newlineBeforeSetOperation"),
+        newlineAfterSetOperation: extensionSettings.get<boolean>("newlineAfterSetOperation"),
+        newlineBeforeOn: extensionSettings.get<boolean>("newlineBeforeOn"),
+        newlineBeforeUsing: extensionSettings.get<boolean>("newlineBeforeUsing"),
+        newlineBeforeWith: extensionSettings.get<boolean>("newlineBeforeWith"),
+        newlineAfterWith: extensionSettings.get<boolean>("newlineAfterWith"),
+        indentCteBody: extensionSettings.get<boolean>("indentCteBody"),
+        newlineBetweenCtes: extensionSettings.get<boolean>("newlineBetweenCtes"),
+        cteCommaPosition: extensionSettings.get<CteCommaPosition>("cteCommaPosition"),
+        newlineAfterOver: extensionSettings.get<boolean>("newlineAfterOver"),
+        newlineBeforePartitionBy: extensionSettings.get<boolean>("newlineBeforePartitionBy"),
+        newlineAfterPartitionBy: extensionSettings.get<boolean>("newlineAfterPartitionBy"),
+        newlineBeforeOrderByInWindow: extensionSettings.get<boolean>("newlineBeforeOrderByInWindow"),
+        indentJoinConditions: extensionSettings.get<boolean>("indentJoinConditions"),
+        alignOnClauses: extensionSettings.get<boolean>("alignOnClauses"),
+        alignInsertColumns: extensionSettings.get<boolean>("alignInsertColumns"),
+        alignInsertValuesGroups: extensionSettings.get<boolean>("alignInsertValuesGroups"),
+        newlineAfterInsert: extensionSettings.get<boolean>("newlineAfterInsert"),
+        newlineAfterInsertColumns: extensionSettings.get<boolean>("newlineAfterInsertColumns"),
+        newlineBetweenValuesGroups: extensionSettings.get<boolean>("newlineBetweenValuesGroups"),
+        newlineAfterCase: extensionSettings.get<boolean>("newlineAfterCase"),
+        newlineAfterWhen: extensionSettings.get<boolean>("newlineAfterWhen"),
+        newlineAfterThen: extensionSettings.get<boolean>("newlineAfterThen"),
+        newlineAfterElse: extensionSettings.get<boolean>("newlineAfterElse"),
+        indentWhen: extensionSettings.get<boolean>("indentWhen"),
+        indentThen: extensionSettings.get<boolean>("indentThen"),
+        newlineAfterIn: extensionSettings.get<boolean>("newlineAfterIn"),
+        maxItemsInlineList: extensionSettings.get<number>("maxItemsInlineList"),
+        subqueryParenStyle: extensionSettings.get<SubqueryParenStyle>("subqueryParenStyle"),
+        commentPosition: extensionSettings.get<CommentPosition>("commentPosition"),
+        blankLinesBeforeSetOperation: extensionSettings.get<number>("blankLinesBeforeSetOperation"),
+        blankLinesAfterSetOperation: extensionSettings.get<number>("blankLinesAfterSetOperation"),
+        newlineBeforeLateralView: extensionSettings.get<boolean>("newlineBeforeLateralView"),
+        newlineBeforeDistributeBy: extensionSettings.get<boolean>("newlineBeforeDistributeBy"),
+        newlineBeforeClusterBy: extensionSettings.get<boolean>("newlineBeforeClusterBy"),
+        newlineBeforeSortBy: extensionSettings.get<boolean>("newlineBeforeSortBy"),
+        newlineBeforeConnectBy: extensionSettings.get<boolean>("newlineBeforeConnectBy"),
+        newlineBeforeStartWith: extensionSettings.get<boolean>("newlineBeforeStartWith"),
     }
 }
 
@@ -80,9 +128,10 @@ const createIndentationConfig = (
     formattingOptions: vscode.FormattingOptions,
 ): FormatOptionsWithLanguage => {
     if (extensionSettings.get<boolean>("ignoreTabSettings")) {
+        const tabSizeOverride = extensionSettings.get<number>("tabSizeOverride")
         return {
-            tabWidth: extensionSettings.get<number>("tabSizeOverride"),
-            useTabs: !extensionSettings.get<boolean>("insertSpacesOverride"),
+            tabWidth: (tabSizeOverride !== undefined && tabSizeOverride > 0) ? tabSizeOverride : 2,
+            useTabs: !extensionSettings.get<boolean>("insertSpacesOverride", true),
         }
     } else {
         return {

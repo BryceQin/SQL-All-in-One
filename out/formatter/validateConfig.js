@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ConfigError = void 0;
 exports.validateConfig = validateConfig;
+const i18n_1 = require("../i18n");
 // 自定义错误类
 class ConfigError extends Error {
 }
@@ -17,20 +18,20 @@ function validateConfig(cfg) {
     // 校验规则 1：检测【废弃配置项】，发现则直接抛错
     for (const optionName of removedOptions) {
         if (optionName in cfg) {
-            throw new ConfigError(`${optionName} 配置项已废弃。`);
+            throw new ConfigError((0, i18n_1.t)('validate.deprecated', optionName));
         }
     }
     // 校验 expressionWidth 必须为正整数，非法则抛错
     if (cfg.expressionWidth <= 0) {
-        throw new ConfigError(`expressionWidth 必须为正整数。当前传入的值为 ${cfg.expressionWidth}.`);
+        throw new ConfigError((0, i18n_1.t)('validate.expressionWidthPositive', String(cfg.expressionWidth)));
     }
     // 校验 cfg.params 参数合法性，非法则【控制台警告】
     if (cfg.params && !validateParams(cfg.params)) {
-        console.warn("警告：params 配置项的所有值都应为字符串类型。");
+        console.warn((0, i18n_1.t)('validate.paramsStringType'));
     }
     // 校验 cfg.paramTypes 参数规则合法性，非法则抛错
     if (cfg.paramTypes && !validateParamTypes(cfg.paramTypes)) {
-        throw new ConfigError("自定义 paramTypes 中传入了空的正则表达式，这将导致匹配出无限多个参数。");
+        throw new ConfigError((0, i18n_1.t)('validate.emptyParamRegex'));
     }
     return cfg;
 }
@@ -45,8 +46,18 @@ function validateParams(params) {
 function validateParamTypes(paramTypes) {
     // 仅校验「自定义规则」：如果有自定义参数规则数组，且是数组格式
     if (paramTypes.custom && Array.isArray(paramTypes.custom)) {
-        // 数组中每一项的 regex 属性，都不能是空字符串
-        return paramTypes.custom.every((p) => p.regex !== "");
+        // 数组中每一项的 regex 属性，都不能是空字符串，且必须是合法正则
+        return paramTypes.custom.every((p) => {
+            if (!p.regex || p.regex === "")
+                return false;
+            try {
+                new RegExp(p.regex);
+                return true;
+            }
+            catch {
+                return false;
+            }
+        });
     }
     // 无自定义规则 → 校验通过
     return true;

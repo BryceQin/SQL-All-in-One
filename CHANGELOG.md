@@ -1,5 +1,74 @@
 # 更新日志
 
+## 0.20.0
+- 修复 UTC_TMESTAMP 拼写错误（应为 UTC_TIMESTAMP），删除非标准的 UTCTIMESTAMP
+- 修复 Hive 格式化器缺少 LATERAL VIEW 子句（导致 LATERAL VIEW 格式化不正确）
+- 修复 STRING/TINYINT 被错误分类为关键字而非数据类型（影响 dataTypeCase 配置）
+- 删除非 Hive 关键字 TIMESTAMPTZ（PostgreSQL 类型）
+- 修复 commentCompletion 中 removeCommentsAndStrings 处理顺序错误（字符串含 -- 被截断）
+- 修复 commentCompletion 中字符串正则不处理 SQL 转义引号 ''
+- 修复 commentCompletion 中 FROM/JOIN 正则缺少 \b 词边界
+- 修复 identifierCompletion 中 alias 未转义直接注入正则（特殊字符导致崩溃）
+- 修复 validateConfig 中 validateParamTypes 未校验正则表达式合法性
+- 修复 config.ts 中 tabSizeOverride 可能为 undefined 导致格式化器崩溃
+- 修复 configEditorCommand 中 _previewFormat 忽略 webview 未保存配置（预览不反映修改）
+- 修复 commentCommands 中 isInsideCreateTable 括号计数错误
+
+## 0.19.2
+- 修复 checkIncompleteCase 中 substring+\b 词边界 Bug（encase/suitcase 等被误匹配为 CASE）
+- 修复 checkDateFunctionUsage 中 now()/sysdate() 正则将括号当作捕获组
+- 修复 createHavingFix 只找文档中第一个 HAVING 而非诊断对应位置
+- 修复 mysqlConverter yearPlaceholders 占位符子串冲突（__YEAR_1__ 匹配 __YEAR_10__）
+- 修复 mysqlConverter convert() 异常时 yearPlaceholders/yearIndex 状态未重置
+- 修复 checkDuplicateColumnAliases 别名正则过于宽泛（改为只匹配 AS 后的别名）
+- 修复 countCommaSeparated 不处理 SQL 转义引号 ''
+- 修复 SqlParameterReplaceCommand 替换位置偏移（不同长度替换导致后续位置错误）
+- 修复 StatusBarProvider dispose 未清理静态 tempTimeout/tempItem
+- 修复 paramTypes 配置缺少 default 值导致 config.get() 返回 undefined
+- 修复 configEditor.test.ts 恒真断言和 validDialects 列表不完整
+
+## 0.19.1
+- 修复 FROM 关键字匹配在子串中 `\b` 词边界失效（`transform`/`fromb` 等被误匹配为 FROM）
+- 修复聚合函数在 WHERE 中检查不区分子查询内位置（子查询内合法聚合被误报）
+- 修复 NATURAL LEFT/INNER/FULL JOIN 被误报为缺少 ON 子句
+- 修复字符串闭合检查中反斜杠转义对 Hive SQL 不正确（`'C:\Users\'` 被误报为未闭合）
+- 修复 sqlParser 字符串转义使用反斜杠而非 SQL 标准 `''`（与 splitColumnDefinitions 不一致）
+- 修复 JDBC `:?param` 参数正则不支持双字符前缀（getWordRangeAtPosition 和验证正则）
+
+## 0.19.0
+- 修复 HAVING 缺少 GROUP BY 检查逻辑颠倒（正则前瞻方向错误，导致所有 HAVING 都被误报）
+- 修复 LIMIT 缺少 ORDER BY 检查逻辑颠倒（正则前瞻方向错误，导致合法语句被误报）
+- 修复 Quick Fix 在错误位置插入 INSERT 列名（`document.positionAt()` 误用列号作为文档偏移量）
+- 修复 JDBC `:?` 参数前缀无法识别（`startsWith(':')` 短路了 `startsWith(':?')`）
+- 修复 NULL 比较快速修复顺序错误（`= NULL` 先于 `!= NULL` 匹配导致错误替换）
+- 修复 CURRENT_TIMESTAMP / CURRENT_DATE 正则要求括号但 SQL 中不带括号也合法
+- 修复块注释内的行注释（`--`/`#`）跳过块注释结束标记 `*/`
+- 修复列定义拆分不处理字符串中的逗号（如 `COMMENT 'a,b'`）
+- 修复括号匹配检查不排除字符串和注释中的括号
+- 修复字符串闭合检查不处理 SQL 转义引号（`''`）和反斜杠转义
+- 修复 SELECT 缺少列名检查匹配到子查询中的 FROM
+- 修复 FROM 缺少表名检查不识别 WHERE/JOIN 等子句边界
+- 修复保留字标识符检查产生大量误报（改为只检查 AS 后的别名）
+- 修复 JOIN 缺少 ON 检查不考虑 CROSS JOIN / NATURAL JOIN / USING 语法
+- 修复 CASE 完整性检查正则跨语句匹配导致漏报（改为 CASE/END 深度计数）
+- 修复子查询缺少别名检查不处理嵌套括号
+- 修复聚合函数在 WHERE 中检查不区分子查询中的合法用法
+- 修复 LIMIT 缺少数字检查对 `LIMIT ALL/?/:param/OFFSET` 误报
+- 修复 CREATE TABLE 缺少主键检查跨语句边界匹配
+- 修复重复列别名检查在子查询中的 FROM 处提前截断
+- 修复长查询行和连续行注释定位使用 `indexOf` 导致重复行位置错误
+- 修复 JOIN 类型检查正则性能问题
+- 修复 3 处事件监听器内存泄漏（SqlDiagnosticsProvider / SqlCompletionProvider / SqlParameterHightlighter）
+- 修复 `deactivate()` 双重释放资源（与 `context.subscriptions` 重复释放）
+- 修复 `completionProvider` 未加入 `context.subscriptions` 导致配置变更监听器泄漏
+- 修复 tsconfig.json 排除测试文件导致测试无法编译运行
+- 修复测试文件动态导入路径缺少 `.js` 扩展名
+- 修复 configEditor.test.ts 永远为真的断言和不完整的方言列表
+- 替换 extension.test.ts 无意义的样板测试为实际验证测试
+- 更新 ESLint 配置：允许下划线前缀未使用参数、排除自动生成的 grammar.ts
+- 修复 LexerAdapter.save() 返回类型和 createParser.ts 未使用变量
+- README 更新：新增方言列表、减少误报说明、JDBC 参数支持、方言配置选项更新
+
 ## 0.18.4
 - 修复扩展无法激活：engines.vscode 版本要求过高（^1.108.1），降为 ^1.85.0
 - activate 函数添加 try-catch 容错保护，单个 Provider 创建失败不影响其他功能

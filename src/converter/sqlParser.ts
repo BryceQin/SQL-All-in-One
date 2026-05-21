@@ -6,6 +6,7 @@ export interface CreateTableInfo {
   startIndex: number
 }
 
+// eslint-disable-next-line @typescript-eslint/no-extraneous-class
 export class SqlParser {
   static findCreateTable(sql: string): CreateTableInfo | null {
     const createStart = sql.search(/CREATE\s+TABLE/i)
@@ -49,22 +50,30 @@ export class SqlParser {
         if (!inString) {
           inString = true
           stringChar = char
-        } else if (char === stringChar && sql[i - 1] !== '\\') {
-          inString = false
+        } else if (char === stringChar) {
+          const nextCh = i + 1 < sql.length ? sql[i + 1] : ''
+          if (nextCh === stringChar) {
+            i++
+          } else {
+            inString = false
+          }
         }
       }
 
-      if (!inString) {
+      if (!inString && !inComment) {
         if (char === '/' && nextChar === '*') {
           inComment = true
-          i++
-        } else if (char === '*' && nextChar === '/') {
-          inComment = false
           i++
         } else if (char === '-' && nextChar === '-') {
           while (i < sql.length && sql[i] !== '\n') i++
         } else if (char === '#') {
           while (i < sql.length && sql[i] !== '\n') i++
+        }
+      }
+      if (!inString && inComment) {
+        if (char === '*' && nextChar === '/') {
+          inComment = false
+          i++
         }
       }
 
@@ -99,20 +108,42 @@ export class SqlParser {
     const items: string[] = []
     let current = ''
     let depth = 0
+    let inString = false
+    let stringChar = ''
 
     for (let i = 0; i < content.length; i++) {
       const char = content[i]
 
-      if (char === '(') depth++
-      if (char === ')') depth--
-
-      if (char === ',' && depth === 0) {
-        if (current.trim()) {
-          items.push(current.trim())
-        }
-        current = ''
-      } else {
+      if (inString) {
         current += char
+        if (char === stringChar) {
+          const nextChar = i + 1 < content.length ? content[i + 1] : ''
+          if (nextChar === stringChar) {
+            current += nextChar
+            i++
+          } else {
+            inString = false
+          }
+        }
+        continue
+      }
+
+      if (char === "'" || char === '"') {
+        inString = true
+        stringChar = char
+        current += char
+      } else {
+        if (char === '(') depth++
+        if (char === ')') depth--
+
+        if (char === ',' && depth === 0) {
+          if (current.trim()) {
+            items.push(current.trim())
+          }
+          current = ''
+        } else {
+          current += char
+        }
       }
     }
 

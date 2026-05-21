@@ -49,10 +49,12 @@ const SqlFoldingRangeProvider_1 = require("./providers/SqlFoldingRangeProvider")
 const SqlOutlineProvider_1 = require("./providers/SqlOutlineProvider");
 const SqlParameterHightlighter_1 = require("./providers/SqlParameterHightlighter");
 const completion_1 = require("./completion");
+const i18n_1 = require("./i18n");
 let diagnosticsProvider;
 let statusBarProvider;
 let parameterHighlighter;
 function activate(context) {
+    (0, i18n_1.initI18n)();
     console.log('Hive Formatter: activating...');
     try {
         diagnosticsProvider = new SqlDiagnosticsProvider_1.SqlDiagnosticsProvider();
@@ -134,6 +136,9 @@ function activate(context) {
             console.error('Hive Formatter: failed to register CompletionProvider', e);
         }
     }
+    if (completionProvider) {
+        context.subscriptions.push(completionProvider);
+    }
     if (statusBarProvider) {
         context.subscriptions.push(statusBarProvider);
     }
@@ -158,14 +163,6 @@ function registerFormattingProviderForEachDialect() {
     return Object.entries(sqlDialects_1.sqlDialects).map(([vscodeLang, sqlDialectName]) => vscode.languages.registerDocumentFormattingEditProvider(vscodeLang, new SqlFormattingProvider_1.SqlFormattingProvider(sqlDialectName)));
 }
 function deactivate() {
-    if (diagnosticsProvider) {
-        diagnosticsProvider.dispose();
-    }
-    if (statusBarProvider) {
-        statusBarProvider.dispose();
-    }
-    if (parameterHighlighter) {
-        parameterHighlighter.dispose();
-    }
+    // Resources are automatically disposed via context.subscriptions
 }
 //# sourceMappingURL=extension.js.map

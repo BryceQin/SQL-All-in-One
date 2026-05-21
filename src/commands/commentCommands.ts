@@ -1,5 +1,6 @@
 import * as vscode from 'vscode'
 import { StatusBarProvider } from '../providers/StatusBarProvider'
+import { t } from '../i18n'
 
 export function toggleComment(): void {
     const editor = vscode.window.activeTextEditor
@@ -61,7 +62,7 @@ function addBlockComment(editor: vscode.TextEditor, selection: vscode.Selection)
     const newText = `/* ${selectedText.replace(/\n/g, `\n   `)} */`
     edit.replace(editor.document.uri, selection, newText)
     vscode.workspace.applyEdit(edit).then(success => {
-        if (success) StatusBarProvider.showTemporaryMessage('已添加块注释')
+        if (success) StatusBarProvider.showTemporaryMessage(t('notification.commentAdded'))
     })
 }
 
@@ -74,7 +75,7 @@ function removeBlockComment(editor: vscode.TextEditor, selection: vscode.Selecti
     cleaned = cleaned.trim()
     edit.replace(editor.document.uri, selection, cleaned)
     vscode.workspace.applyEdit(edit).then(success => {
-        if (success) StatusBarProvider.showTemporaryMessage('已移除块注释')
+        if (success) StatusBarProvider.showTemporaryMessage(t('notification.commentRemoved'))
     })
 }
 
@@ -92,13 +93,17 @@ function isInsideCreateTable(editor: vscode.TextEditor): boolean {
     const currentLine = editor.selection.active.line
     let depth = 0
     for (let i = currentLine; i >= 0; i--) {
-        const lineText = editor.document.lineAt(i).text.toUpperCase()
-        if (lineText.includes(')')) depth++
-        if (lineText.includes('CREATE') && lineText.includes('TABLE')) {
-            if (lineText.includes('(')) depth--
+        const lineText = editor.document.lineAt(i).text
+        const upperLine = lineText.toUpperCase()
+
+        for (let j = lineText.length - 1; j >= 0; j--) {
+            if (lineText[j] === ')') depth++
+            else if (lineText[j] === '(') depth--
+        }
+
+        if (upperLine.includes('CREATE') && upperLine.includes('TABLE')) {
             return depth <= 0
         }
-        if (lineText.includes('(')) depth--
         if (depth < 0) return false
     }
     return false
@@ -140,7 +145,7 @@ function addColumnComment(editor: vscode.TextEditor): void {
                     quoteEnd
                 )
             }
-            StatusBarProvider.showTemporaryMessage('已添加 DDL 列注释')
+            StatusBarProvider.showTemporaryMessage(t('notification.ddlCommentAdded'))
         }
     })
 }
@@ -152,6 +157,6 @@ function wrapWithFormatterDisable(editor: vscode.TextEditor): void {
     edit.insert(editor.document.uri, selection.start, `/* sql-formatter-disable */\n${linePrefix}`)
     edit.insert(editor.document.uri, selection.end, `\n${linePrefix}/* sql-formatter-enable */`)
     vscode.workspace.applyEdit(edit).then(success => {
-        if (success) StatusBarProvider.showTemporaryMessage('已添加格式化禁用标记')
+        if (success) StatusBarProvider.showTemporaryMessage(t('notification.formatDisabledMarkAdded'))
     })
 }

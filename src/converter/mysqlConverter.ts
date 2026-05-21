@@ -7,14 +7,20 @@ export class MysqlToHiveConverter {
   private yearIndex = 0
 
   convert(sql: string): string {
-    let converted = sql
+    try {
+      let converted = sql
 
-    converted = this.preserveYearColumnNames(converted)
-    converted = this.processCreateTable(converted)
-    converted = this.convertFunctions(converted)
-    converted = this.restoreYearColumnNames(converted)
+      converted = this.preserveYearColumnNames(converted)
+      converted = this.processCreateTable(converted)
+      converted = this.convertFunctions(converted)
+      converted = this.restoreYearColumnNames(converted)
 
-    return converted
+      return converted
+    } catch (e) {
+      this.yearPlaceholders = []
+      this.yearIndex = 0
+      throw e
+    }
   }
 
   private preserveYearColumnNames(sql: string): string {
@@ -28,7 +34,8 @@ export class MysqlToHiveConverter {
 
   private restoreYearColumnNames(sql: string): string {
     let result = sql
-    for (const { placeholder, original } of this.yearPlaceholders) {
+    for (let i = this.yearPlaceholders.length - 1; i >= 0; i--) {
+      const { placeholder, original } = this.yearPlaceholders[i]
       result = result.replace(placeholder, original)
     }
     this.yearPlaceholders = []

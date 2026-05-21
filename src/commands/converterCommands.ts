@@ -1,10 +1,11 @@
 import * as vscode from 'vscode'
 import { SqlConverter } from '../converter/sqlConverter'
+import { t } from '../i18n'
 
 export async function convertMysqlToHiveCommand() {
     const editor = vscode.window.activeTextEditor
     if (!editor) {
-        vscode.window.showWarningMessage('No active editor found')
+        vscode.window.showWarningMessage(t('notification.noActiveEditor'))
         return
     }
 
@@ -16,13 +17,13 @@ export async function convertMysqlToHiveCommand() {
     const convertedText = converter.mysqlToHive(text)
 
     await replaceEditorText(editor, document, selection, convertedText)
-    vscode.window.showInformationMessage('Successfully converted MySQL to HiveSQL')
+    vscode.window.showInformationMessage(t('notification.convertMysqlSuccess'))
 }
 
 export async function convertHiveToMysqlCommand() {
     const editor = vscode.window.activeTextEditor
     if (!editor) {
-        vscode.window.showWarningMessage('No active editor found')
+        vscode.window.showWarningMessage(t('notification.noActiveEditor'))
         return
     }
 
@@ -34,7 +35,7 @@ export async function convertHiveToMysqlCommand() {
     const convertedText = converter.hiveToMysql(text)
 
     await replaceEditorText(editor, document, selection, convertedText)
-    vscode.window.showInformationMessage('Successfully converted HiveSQL to MySQL')
+    vscode.window.showInformationMessage(t('notification.convertHiveSuccess'))
 }
 
 async function replaceEditorText(

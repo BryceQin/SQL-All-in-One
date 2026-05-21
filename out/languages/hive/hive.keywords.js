@@ -145,7 +145,6 @@ exports.keywords = [
     'URI',
     'USE',
     'UTC',
-    'UTCTIMESTAMP',
     'VALUE_TYPE',
     'VIEW',
     'WHILE',
@@ -335,8 +334,10 @@ exports.dataTypes = [
     'NUMERIC',
     'PRECISION',
     'SMALLINT',
+    'STRING',
     'STRUCT',
     'TIMESTAMP',
+    'TINYINT',
     'VARCHAR'
 ];
 //# sourceMappingURL=hive.keywords.js.map

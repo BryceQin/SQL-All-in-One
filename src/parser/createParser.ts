@@ -25,7 +25,7 @@ export interface Parser {
 export function createParser(tokenizer: Tokenizer): Parser {
     // 闭包变量：共享参数类型配置（Tokenizer 和 parse 方法间）
     let paramTypesOverrides: ParamTypes = {}
-    let currentSql = ""
+    let _currentSql = ""
     // 初始化 LexerAdapter：关联自定义分词逻辑
     const lexer = new LexerAdapter((chunk) => [
         // 步骤1：分词 → 步骤2：消歧 → 合并为 Token 数组
@@ -42,7 +42,7 @@ export function createParser(tokenizer: Tokenizer): Parser {
         parse: (sql: string, paramTypes: ParamTypes) => {
             // 1. 共享参数配置：传递给 Tokenizer 的分词逻辑
             paramTypesOverrides = paramTypes
-            currentSql = sql
+            _currentSql = sql
 
             try {
                 // 2. 执行解析：feed 方法传入 SQL 文本，触发 Lexer 分词 + 文法解析

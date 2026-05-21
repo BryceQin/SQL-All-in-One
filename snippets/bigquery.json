@@ -1,0 +1,68 @@
+{
+    "BigQuery Struct": {
+        "prefix": "bqstruct",
+        "body": [
+            "STRUCT($1 AS $2, $3 AS $4)"
+        ],
+        "description": "BigQuery STRUCT"
+    },
+    "BigQuery Array Agg": {
+        "prefix": "bqarray",
+        "body": [
+            "ARRAY_AGG($1 $2 $3)"
+        ],
+        "description": "BigQuery ARRAY_AGG"
+    },
+    "BigQuery Unnest": {
+        "prefix": "bqunnest",
+        "body": [
+            "CROSS JOIN UNNEST($1) AS $2"
+        ],
+        "description": "BigQuery UNNEST"
+    },
+    "BigQuery Create or Replace Table": {
+        "prefix": "bqcreate",
+        "body": [
+            "CREATE OR REPLACE TABLE $1.$2 (",
+            "    $3",
+            ")",
+            "OPTIONS($4);"
+        ],
+        "description": "Create BigQuery table"
+    },
+    "BigQuery Partition By": {
+        "prefix": "bqpartition",
+        "body": [
+            "CREATE TABLE $1 (",
+            "    $2",
+            ")",
+            "PARTITION BY $3;"
+        ],
+        "description": "BigQuery partitioned table"
+    },
+    "BigQuery Merge": {
+        "prefix": "bqmerge",
+        "body": [
+            "MERGE $1 T",
+            "USING $2 S",
+            "ON $3",
+            "WHEN MATCHED THEN UPDATE SET $4",
+            "WHEN NOT MATCHED THEN INSERT ($5) VALUES ($6);"
+        ],
+        "description": "BigQuery MERGE"
+    },
+    "BigQuery Qualify": {
+        "prefix": "bqqualify",
+        "body": [
+            "QUALIFY ROW_NUMBER() OVER (PARTITION BY $1 ORDER BY $2) = 1"
+        ],
+        "description": "BigQuery QUALIFY"
+    },
+    "BigQuery Pivot": {
+        "prefix": "bqpivot",
+        "body": [
+            "PIVOT($1($2) FOR $3 IN ('$4', '$5'))"
+        ],
+        "description": "BigQuery PIVOT"
+    }
+}

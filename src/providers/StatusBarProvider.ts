@@ -1,4 +1,5 @@
 import * as vscode from 'vscode'
+import { t } from '../i18n'
 
 export class StatusBarProvider {
     private statusBarItem: vscode.StatusBarItem
@@ -9,7 +10,7 @@ export class StatusBarProvider {
     constructor() {
         this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100)
         this.statusBarItem.text = '$(sql)'
-        this.statusBarItem.tooltip = 'Hive Formatter'
+        this.statusBarItem.tooltip = t('statusBar.tooltip')
         this.statusBarItem.command = 'hive-formatter.open-config-editor'
         
         this.updateStatusBar()
@@ -67,6 +68,8 @@ export class StatusBarProvider {
     }
 
     public dispose() {
+        if (StatusBarProvider.tempTimeout) clearTimeout(StatusBarProvider.tempTimeout)
+        if (StatusBarProvider.tempItem) StatusBarProvider.tempItem.dispose()
         this.statusBarItem.dispose()
         this.disposables.forEach(d => d.dispose())
     }

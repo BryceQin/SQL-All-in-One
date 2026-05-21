@@ -240,7 +240,14 @@ class ExpressionFormatter {
             this.layout.add(Layout_1.WS.NO_SPACE, node.closeParen, Layout_1.WS.SPACE);
         }
         else {
-            this.layout.add(node.openParen, Layout_1.WS.NEWLINE);
+            const isSubquery = this.isSubqueryContent(node);
+            const subqueryStyle = this.cfg.subqueryParenStyle ?? "inline";
+            if (isSubquery && subqueryStyle === "newline") {
+                this.layout.add(node.openParen, Layout_1.WS.NEWLINE);
+            }
+            else {
+                this.layout.add(node.openParen, Layout_1.WS.NEWLINE);
+            }
             if ((0, config_1.isTabularStyle)(this.cfg)) {
                 this.layout.add(Layout_1.WS.INDENT);
                 this.layout = this.formatSubExpression(node.children);
@@ -254,6 +261,12 @@ class ExpressionFormatter {
             this.layout.add(Layout_1.WS.NEWLINE, Layout_1.WS.INDENT, node.closeParen, Layout_1.WS.SPACE);
         }
     }
+    isSubqueryContent(node) {
+        return node.children.some((child) => child.type === ast_1.NodeType.clause ||
+            child.type === ast_1.NodeType.set_operation ||
+            (child.type === ast_1.NodeType.keyword &&
+                child.tokenType === token_1.TokenType.RESERVED_COMMAND));
+    }
     formatBetweenPredicate(node) {
         this.layout.add(this.showKw(node.betweenKw), Layout_1.WS.SPACE);
         this.layout = this.formatSubExpression(node.expr1);
@@ -263,23 +276,41 @@ class ExpressionFormatter {
     }
     formatCaseExpression(node) {
         this.formatNode(node.caseKw);
-        this.layout.indentation.increaseBlockLevel();
+        if (this.cfg.newlineAfterCase !== false) {
+            this.layout.indentation.increaseBlockLevel();
+        }
         this.layout = this.formatSubExpression(node.expr);
         this.layout = this.formatSubExpression(node.clauses);
-        this.layout.indentation.decreaseBlockLevel();
+        if (this.cfg.newlineAfterCase !== false) {
+            this.layout.indentation.decreaseBlockLevel();
+        }
         this.layout.add(Layout_1.WS.NEWLINE, Layout_1.WS.INDENT);
         this.formatNode(node.endKw);
     }
     formatCaseWhen(node) {
-        this.layout.add(Layout_1.WS.NEWLINE, Layout_1.WS.INDENT);
+        if (this.cfg.indentWhen !== false) {
+            this.layout.add(Layout_1.WS.NEWLINE, Layout_1.WS.INDENT);
+        }
+        else {
+            this.layout.add(Layout_1.WS.SPACE);
+        }
         this.formatNode(node.whenKw);
+        if (this.cfg.newlineAfterWhen) {
+            this.layout.add(Layout_1.WS.NEWLINE, Layout_1.WS.INDENT);
+        }
         this.layout = this.formatSubExpression(node.condition);
         this.formatNode(node.thenKw);
+        if (this.cfg.newlineAfterThen) {
+            this.layout.add(Layout_1.WS.NEWLINE, Layout_1.WS.INDENT);
+        }
         this.layout = this.formatSubExpression(node.result);
     }
     formatCaseElse(node) {
         this.layout.add(Layout_1.WS.NEWLINE, Layout_1.WS.INDENT);
         this.formatNode(node.elseKw);
+        if (this.cfg.newlineAfterElse) {
+            this.layout.add(Layout_1.WS.NEWLINE, Layout_1.WS.INDENT);
+        }
         this.layout = this.formatSubExpression(node.result);
     }
     formatClause(node) {
@@ -302,11 +333,31 @@ class ExpressionFormatter {
         }
     }
     formatClauseInIndentedStyle(node) {
-        this.layout.add(Layout_1.WS.NEWLINE, Layout_1.WS.INDENT, this.showKw(node.nameKw), Layout_1.WS.NEWLINE);
+        const newlineAfter = this.getNewlineAfterClause(node);
+        this.layout.add(Layout_1.WS.NEWLINE, Layout_1.WS.INDENT, this.showKw(node.nameKw), newlineAfter);
         this.layout.indentation.increaseTopLevel();
         this.layout.add(Layout_1.WS.INDENT);
         this.layout = this.formatSubExpression(node.children);
         this.layout.indentation.decreaseTopLevel();
+    }
+    getNewlineAfterClause(node) {
+        const name = node.nameKw.text.toUpperCase();
+        switch (name) {
+            case "GROUP BY":
+                return this.cfg.newlineAfterGroupBy ? Layout_1.WS.NEWLINE : Layout_1.WS.SPACE;
+            case "HAVING":
+                return this.cfg.newlineAfterHaving ? Layout_1.WS.NEWLINE : Layout_1.WS.SPACE;
+            case "ORDER BY":
+                return this.cfg.newlineAfterOrderBy ? Layout_1.WS.NEWLINE : Layout_1.WS.SPACE;
+            case "WHERE":
+                return this.cfg.newlineAfterWhere ? Layout_1.WS.NEWLINE : Layout_1.WS.SPACE;
+            case "SELECT":
+                return this.cfg.newlineAfterSelect ? Layout_1.WS.NEWLINE : Layout_1.WS.SPACE;
+            case "FROM":
+                return this.cfg.newlineAfterFrom ? Layout_1.WS.NEWLINE : Layout_1.WS.SPACE;
+            default:
+                return Layout_1.WS.NEWLINE;
+        }
     }
     formatClauseInOnelineStyle(node) {
         this.layout.add(Layout_1.WS.NEWLINE, Layout_1.WS.INDENT, this.showKw(node.nameKw), Layout_1.WS.SPACE);
@@ -319,8 +370,28 @@ class ExpressionFormatter {
         this.layout.indentation.decreaseTopLevel();
     }
     formatSetOperation(node) {
-        this.layout.add(Layout_1.WS.NEWLINE, Layout_1.WS.INDENT, this.showKw(node.nameKw), Layout_1.WS.NEWLINE);
-        this.layout.add(Layout_1.WS.INDENT);
+        const beforeNewline = this.cfg.newlineBeforeSetOperation !== false;
+        const afterNewline = this.cfg.newlineAfterSetOperation !== false;
+        const blankBefore = this.cfg.blankLinesBeforeSetOperation ?? 1;
+        const blankAfter = this.cfg.blankLinesAfterSetOperation ?? 0;
+        if (beforeNewline) {
+            for (let i = 0; i < blankBefore; i++) {
+                this.layout.add(Layout_1.WS.NEWLINE);
+            }
+            this.layout.add(Layout_1.WS.NEWLINE, Layout_1.WS.INDENT, this.showKw(node.nameKw));
+        }
+        else {
+            this.layout.add(Layout_1.WS.SPACE, this.showKw(node.nameKw));
+        }
+        if (afterNewline) {
+            for (let i = 0; i < blankAfter; i++) {
+                this.layout.add(Layout_1.WS.NEWLINE);
+            }
+            this.layout.add(Layout_1.WS.NEWLINE, Layout_1.WS.INDENT);
+        }
+        else {
+            this.layout.add(Layout_1.WS.SPACE);
+        }
         this.layout = this.formatSubExpression(node.children);
     }
     formatLimitClause(node) {
@@ -328,11 +399,17 @@ class ExpressionFormatter {
             this.layout.add(Layout_1.WS.NEWLINE, Layout_1.WS.INDENT, this.showKw(node.limitKw));
         });
         this.layout.indentation.increaseTopLevel();
+        const newlineAfter = this.cfg.newlineAfterLimit !== undefined
+            ? this.cfg.newlineAfterLimit
+            : false;
         if ((0, config_1.isTabularStyle)(this.cfg)) {
             this.layout.add(Layout_1.WS.SPACE);
         }
-        else {
+        else if (newlineAfter) {
             this.layout.add(Layout_1.WS.NEWLINE, Layout_1.WS.INDENT);
+        }
+        else {
+            this.layout.add(Layout_1.WS.SPACE);
         }
         if (node.offset) {
             this.layout = this.formatSubExpression(node.offset);
@@ -405,14 +482,25 @@ class ExpressionFormatter {
     }
     formatLineComment(node, isLeading = false) {
         const text = this.normalizeLineComment(node.text);
-        if (isLeading || (0, utils_1.isMultiline)(node.precedingWhitespace || "")) {
+        const commentPos = this.cfg.commentPosition ?? "preserve";
+        if (commentPos === "newline") {
+            this.layout.add(Layout_1.WS.NEWLINE, Layout_1.WS.INDENT, text, Layout_1.WS.MANDATORY_NEWLINE, Layout_1.WS.INDENT);
+        }
+        else if (commentPos === "inline") {
+            if (this.layout.getLayoutItems().length > 0) {
+                this.layout.add(Layout_1.WS.NO_NEWLINE, Layout_1.WS.SPACE, text, Layout_1.WS.MANDATORY_NEWLINE, Layout_1.WS.INDENT);
+            }
+            else {
+                this.layout.add(text, Layout_1.WS.MANDATORY_NEWLINE, Layout_1.WS.INDENT);
+            }
+        }
+        else if (isLeading || (0, utils_1.isMultiline)(node.precedingWhitespace || "")) {
             this.layout.add(Layout_1.WS.NEWLINE, Layout_1.WS.INDENT, text, Layout_1.WS.MANDATORY_NEWLINE, Layout_1.WS.INDENT);
         }
         else if (this.layout.getLayoutItems().length > 0) {
             this.layout.add(Layout_1.WS.NO_NEWLINE, Layout_1.WS.SPACE, text, Layout_1.WS.MANDATORY_NEWLINE, Layout_1.WS.INDENT);
         }
         else {
-            // comment is the first item in code - no need to add preceding spaces
             this.layout.add(text, Layout_1.WS.MANDATORY_NEWLINE, Layout_1.WS.INDENT);
         }
     }
@@ -532,19 +620,48 @@ class ExpressionFormatter {
             case token_1.TokenType.OR:
             case token_1.TokenType.XOR:
                 return this.formatLogicalOperator(node);
+            case token_1.TokenType.ON:
+                return this.formatOnKeyword(node);
+            case token_1.TokenType.USING:
+                return this.formatUsingKeyword(node);
             default:
                 return this.formatKeyword(node);
         }
     }
     formatJoin(node) {
+        const newlineAfter = this.cfg.newlineAfterJoin !== false;
         if ((0, config_1.isTabularStyle)(this.cfg)) {
-            // in tabular style JOINs are at the same level as clauses
             this.layout.indentation.decreaseTopLevel();
-            this.layout.add(Layout_1.WS.NEWLINE, Layout_1.WS.INDENT, this.showKw(node), Layout_1.WS.SPACE);
+            this.layout.add(Layout_1.WS.NEWLINE, Layout_1.WS.INDENT, this.showKw(node), newlineAfter ? Layout_1.WS.NEWLINE : Layout_1.WS.SPACE);
             this.layout.indentation.increaseTopLevel();
         }
         else {
+            this.layout.add(Layout_1.WS.NEWLINE, Layout_1.WS.INDENT, this.showKw(node), newlineAfter ? Layout_1.WS.NEWLINE : Layout_1.WS.SPACE);
+            if (this.cfg.indentJoinConditions) {
+                this.layout.indentation.increaseBlockLevel();
+                this.layout.add(Layout_1.WS.INDENT);
+            }
+        }
+    }
+    formatOnKeyword(node) {
+        if (this.cfg.newlineBeforeOn !== false) {
+            if (this.cfg.indentJoinConditions) {
+                this.layout.add(Layout_1.WS.NEWLINE, Layout_1.WS.INDENT, this.showKw(node), Layout_1.WS.SPACE);
+            }
+            else {
+                this.layout.add(Layout_1.WS.NEWLINE, Layout_1.WS.INDENT, this.showKw(node), Layout_1.WS.SPACE);
+            }
+        }
+        else {
+            this.layout.add(Layout_1.WS.SPACE, this.showKw(node), Layout_1.WS.SPACE);
+        }
+    }
+    formatUsingKeyword(node) {
+        if (this.cfg.newlineBeforeUsing) {
             this.layout.add(Layout_1.WS.NEWLINE, Layout_1.WS.INDENT, this.showKw(node), Layout_1.WS.SPACE);
+        }
+        else {
+            this.layout.add(Layout_1.WS.SPACE, this.showKw(node), Layout_1.WS.SPACE);
         }
     }
     formatKeyword(node) {
@@ -579,7 +696,17 @@ class ExpressionFormatter {
     }
     // Like showKw(), but skips tabular formatting
     showNonTabularKw(node) {
-        switch (this.cfg.keywordCase) {
+        const text = node.text.toUpperCase();
+        if (text === "NULL" && this.cfg.nullCase) {
+            return this.applyCase(node, this.cfg.nullCase);
+        }
+        if ((text === "TRUE" || text === "FALSE") && this.cfg.booleanCase) {
+            return this.applyCase(node, this.cfg.booleanCase);
+        }
+        return this.applyCase(node, this.cfg.keywordCase);
+    }
+    applyCase(node, caseOption) {
+        switch (caseOption) {
             case "preserve":
                 return (0, utils_1.equalizeWhitespace)(node.raw);
             case "upper":

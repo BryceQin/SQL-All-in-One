@@ -1,5 +1,5 @@
 // ExpressionFormatter 是 SQL 格式化器的核心逻辑类，负责将 AST（抽象语法树）节点转换为格式化后的 SQL 字符串
-import type { FormatOptions } from "./FormatOptions.ts"
+import type { FormatOptions, KeywordCase } from "./FormatOptions.ts"
 import { equalizeWhitespace, isMultiline, last } from "../lexer/utils"
 
 import Params from "./Params"
@@ -288,7 +288,14 @@ export default class ExpressionFormatter {
             this.layout.add(...inlineLayout.getLayoutItems())
             this.layout.add(WS.NO_SPACE, node.closeParen, WS.SPACE)
         } else {
-            this.layout.add(node.openParen, WS.NEWLINE)
+            const isSubquery = this.isSubqueryContent(node)
+            const subqueryStyle = this.cfg.subqueryParenStyle ?? "inline"
+
+            if (isSubquery && subqueryStyle === "newline") {
+                this.layout.add(node.openParen, WS.NEWLINE)
+            } else {
+                this.layout.add(node.openParen, WS.NEWLINE)
+            }
 
             if (isTabularStyle(this.cfg)) {
                 this.layout.add(WS.INDENT)
@@ -302,6 +309,16 @@ export default class ExpressionFormatter {
 
             this.layout.add(WS.NEWLINE, WS.INDENT, node.closeParen, WS.SPACE)
         }
+    }
+
+    private isSubqueryContent(node: ParenthesisNode): boolean {
+        return node.children.some(
+            (child) =>
+                child.type === NodeType.clause ||
+                child.type === NodeType.set_operation ||
+                (child.type === NodeType.keyword &&
+                    child.tokenType === TokenType.RESERVED_COMMAND),
+        )
     }
 
     private formatBetweenPredicate(node: BetweenPredicateNode) {
@@ -320,26 +337,49 @@ export default class ExpressionFormatter {
     private formatCaseExpression(node: CaseExpressionNode) {
         this.formatNode(node.caseKw)
 
-        this.layout.indentation.increaseBlockLevel()
+        if (this.cfg.newlineAfterCase !== false) {
+            this.layout.indentation.increaseBlockLevel()
+        }
         this.layout = this.formatSubExpression(node.expr)
         this.layout = this.formatSubExpression(node.clauses)
-        this.layout.indentation.decreaseBlockLevel()
+        if (this.cfg.newlineAfterCase !== false) {
+            this.layout.indentation.decreaseBlockLevel()
+        }
 
         this.layout.add(WS.NEWLINE, WS.INDENT)
         this.formatNode(node.endKw)
     }
 
     private formatCaseWhen(node: CaseWhenNode) {
-        this.layout.add(WS.NEWLINE, WS.INDENT)
+        if (this.cfg.indentWhen !== false) {
+            this.layout.add(WS.NEWLINE, WS.INDENT)
+        } else {
+            this.layout.add(WS.SPACE)
+        }
         this.formatNode(node.whenKw)
+
+        if (this.cfg.newlineAfterWhen) {
+            this.layout.add(WS.NEWLINE, WS.INDENT)
+        }
+
         this.layout = this.formatSubExpression(node.condition)
         this.formatNode(node.thenKw)
+
+        if (this.cfg.newlineAfterThen) {
+            this.layout.add(WS.NEWLINE, WS.INDENT)
+        }
+
         this.layout = this.formatSubExpression(node.result)
     }
 
     private formatCaseElse(node: CaseElseNode) {
         this.layout.add(WS.NEWLINE, WS.INDENT)
         this.formatNode(node.elseKw)
+
+        if (this.cfg.newlineAfterElse) {
+            this.layout.add(WS.NEWLINE, WS.INDENT)
+        }
+
         this.layout = this.formatSubExpression(node.result)
     }
 
@@ -362,16 +402,37 @@ export default class ExpressionFormatter {
     }
 
     private formatClauseInIndentedStyle(node: ClauseNode) {
+        const newlineAfter = this.getNewlineAfterClause(node)
         this.layout.add(
             WS.NEWLINE,
             WS.INDENT,
             this.showKw(node.nameKw),
-            WS.NEWLINE,
+            newlineAfter,
         )
         this.layout.indentation.increaseTopLevel()
         this.layout.add(WS.INDENT)
         this.layout = this.formatSubExpression(node.children)
         this.layout.indentation.decreaseTopLevel()
+    }
+
+    private getNewlineAfterClause(node: ClauseNode): typeof WS.NEWLINE | typeof WS.SPACE {
+        const name = node.nameKw.text.toUpperCase()
+        switch (name) {
+            case "GROUP BY":
+                return this.cfg.newlineAfterGroupBy ? WS.NEWLINE : WS.SPACE
+            case "HAVING":
+                return this.cfg.newlineAfterHaving ? WS.NEWLINE : WS.SPACE
+            case "ORDER BY":
+                return this.cfg.newlineAfterOrderBy ? WS.NEWLINE : WS.SPACE
+            case "WHERE":
+                return this.cfg.newlineAfterWhere ? WS.NEWLINE : WS.SPACE
+            case "SELECT":
+                return this.cfg.newlineAfterSelect ? WS.NEWLINE : WS.SPACE
+            case "FROM":
+                return this.cfg.newlineAfterFrom ? WS.NEWLINE : WS.SPACE
+            default:
+                return WS.NEWLINE
+        }
     }
 
     private formatClauseInOnelineStyle(node: ClauseNode) {
@@ -397,13 +458,29 @@ export default class ExpressionFormatter {
     }
 
     private formatSetOperation(node: SetOperationNode) {
-        this.layout.add(
-            WS.NEWLINE,
-            WS.INDENT,
-            this.showKw(node.nameKw),
-            WS.NEWLINE,
-        )
-        this.layout.add(WS.INDENT)
+        const beforeNewline = this.cfg.newlineBeforeSetOperation !== false
+        const afterNewline = this.cfg.newlineAfterSetOperation !== false
+        const blankBefore = this.cfg.blankLinesBeforeSetOperation ?? 1
+        const blankAfter = this.cfg.blankLinesAfterSetOperation ?? 0
+
+        if (beforeNewline) {
+            for (let i = 0; i < blankBefore; i++) {
+                this.layout.add(WS.NEWLINE)
+            }
+            this.layout.add(WS.NEWLINE, WS.INDENT, this.showKw(node.nameKw))
+        } else {
+            this.layout.add(WS.SPACE, this.showKw(node.nameKw))
+        }
+
+        if (afterNewline) {
+            for (let i = 0; i < blankAfter; i++) {
+                this.layout.add(WS.NEWLINE)
+            }
+            this.layout.add(WS.NEWLINE, WS.INDENT)
+        } else {
+            this.layout.add(WS.SPACE)
+        }
+
         this.layout = this.formatSubExpression(node.children)
     }
 
@@ -413,10 +490,16 @@ export default class ExpressionFormatter {
         })
         this.layout.indentation.increaseTopLevel()
 
+        const newlineAfter = this.cfg.newlineAfterLimit !== undefined
+            ? this.cfg.newlineAfterLimit
+            : false
+
         if (isTabularStyle(this.cfg)) {
             this.layout.add(WS.SPACE)
-        } else {
+        } else if (newlineAfter) {
             this.layout.add(WS.NEWLINE, WS.INDENT)
+        } else {
+            this.layout.add(WS.SPACE)
         }
 
         if (node.offset) {
@@ -495,7 +578,29 @@ export default class ExpressionFormatter {
 
     private formatLineComment(node: LineCommentNode, isLeading = false) {
         const text = this.normalizeLineComment(node.text)
-        if (isLeading || isMultiline(node.precedingWhitespace || "")) {
+        const commentPos = this.cfg.commentPosition ?? "preserve"
+
+        if (commentPos === "newline") {
+            this.layout.add(
+                WS.NEWLINE,
+                WS.INDENT,
+                text,
+                WS.MANDATORY_NEWLINE,
+                WS.INDENT,
+            )
+        } else if (commentPos === "inline") {
+            if (this.layout.getLayoutItems().length > 0) {
+                this.layout.add(
+                    WS.NO_NEWLINE,
+                    WS.SPACE,
+                    text,
+                    WS.MANDATORY_NEWLINE,
+                    WS.INDENT,
+                )
+            } else {
+                this.layout.add(text, WS.MANDATORY_NEWLINE, WS.INDENT)
+            }
+        } else if (isLeading || isMultiline(node.precedingWhitespace || "")) {
             this.layout.add(
                 WS.NEWLINE,
                 WS.INDENT,
@@ -512,7 +617,6 @@ export default class ExpressionFormatter {
                 WS.INDENT,
             )
         } else {
-            // comment is the first item in code - no need to add preceding spaces
             this.layout.add(text, WS.MANDATORY_NEWLINE, WS.INDENT)
         }
     }
@@ -640,19 +744,57 @@ export default class ExpressionFormatter {
             case TokenType.OR:
             case TokenType.XOR:
                 return this.formatLogicalOperator(node)
+            case TokenType.ON:
+                return this.formatOnKeyword(node)
+            case TokenType.USING:
+                return this.formatUsingKeyword(node)
             default:
                 return this.formatKeyword(node)
         }
     }
 
     private formatJoin(node: KeywordNode) {
+        const newlineAfter = this.cfg.newlineAfterJoin !== false
         if (isTabularStyle(this.cfg)) {
-            // in tabular style JOINs are at the same level as clauses
             this.layout.indentation.decreaseTopLevel()
-            this.layout.add(WS.NEWLINE, WS.INDENT, this.showKw(node), WS.SPACE)
+            this.layout.add(
+                WS.NEWLINE,
+                WS.INDENT,
+                this.showKw(node),
+                newlineAfter ? WS.NEWLINE : WS.SPACE,
+            )
             this.layout.indentation.increaseTopLevel()
         } else {
+            this.layout.add(
+                WS.NEWLINE,
+                WS.INDENT,
+                this.showKw(node),
+                newlineAfter ? WS.NEWLINE : WS.SPACE,
+            )
+            if (this.cfg.indentJoinConditions) {
+                this.layout.indentation.increaseBlockLevel()
+                this.layout.add(WS.INDENT)
+            }
+        }
+    }
+
+    private formatOnKeyword(node: KeywordNode) {
+        if (this.cfg.newlineBeforeOn !== false) {
+            if (this.cfg.indentJoinConditions) {
+                this.layout.add(WS.NEWLINE, WS.INDENT, this.showKw(node), WS.SPACE)
+            } else {
+                this.layout.add(WS.NEWLINE, WS.INDENT, this.showKw(node), WS.SPACE)
+            }
+        } else {
+            this.layout.add(WS.SPACE, this.showKw(node), WS.SPACE)
+        }
+    }
+
+    private formatUsingKeyword(node: KeywordNode) {
+        if (this.cfg.newlineBeforeUsing) {
             this.layout.add(WS.NEWLINE, WS.INDENT, this.showKw(node), WS.SPACE)
+        } else {
+            this.layout.add(WS.SPACE, this.showKw(node), WS.SPACE)
         }
     }
 
@@ -702,7 +844,18 @@ export default class ExpressionFormatter {
 
     // Like showKw(), but skips tabular formatting
     private showNonTabularKw(node: KeywordNode): string {
-        switch (this.cfg.keywordCase) {
+        const text = node.text.toUpperCase()
+        if (text === "NULL" && this.cfg.nullCase) {
+            return this.applyCase(node, this.cfg.nullCase)
+        }
+        if ((text === "TRUE" || text === "FALSE") && this.cfg.booleanCase) {
+            return this.applyCase(node, this.cfg.booleanCase)
+        }
+        return this.applyCase(node, this.cfg.keywordCase)
+    }
+
+    private applyCase(node: KeywordNode, caseOption: KeywordCase): string {
+        switch (caseOption) {
             case "preserve":
                 return equalizeWhitespace(node.raw)
             case "upper":

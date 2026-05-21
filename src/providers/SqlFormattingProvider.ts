@@ -2,6 +2,7 @@ import * as vscode from "vscode"
 import { SqlLanguage } from "../formatter/sqlFormatter"
 import { createConfig } from "../core/config"
 import { formatEditorText } from "../utils/formatEditorText"
+import { t } from "../i18n"
 
 export class SqlFormattingProvider
     implements vscode.DocumentFormattingEditProvider
@@ -24,7 +25,7 @@ export class SqlFormattingProvider
                 ),
             ]
         } catch (e) {
-            vscode.window.showErrorMessage("Unable to format SQL:\n" + e)
+            vscode.window.showErrorMessage(t('notification.formatError', String(e)))
             return []
         }
     }

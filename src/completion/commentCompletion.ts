@@ -1,4 +1,5 @@
 import * as vscode from 'vscode'
+import { t } from '../i18n'
 
 export function getCommentCompletionItems(
     doc: vscode.TextDocument,
@@ -16,22 +17,22 @@ export function getCommentCompletionItems(
         const item = new vscode.CompletionItem('header', vscode.CompletionItemKind.Snippet)
         item.filterText = 'header'
         item.sortText = '0_header'
-        item.detail = '文件头注释（安全版）'
-        item.documentation = new vscode.MarkdownString('文件头注释模板')
+        item.detail = t('completion.headerCommentSafe')
+        item.documentation = new vscode.MarkdownString(t('completion.headerCommentTemplate'))
 
         const fileName = doc.fileName.split('/').pop()?.replace(/\.\w+$/, '') || 'script_name'
         const today = new Date().toISOString().slice(0, 10)
 
         const snippetStr = [
             '-- ============================================================',
-            `-- 脚本名称：\${1:${fileName}}`,
-            '-- 功能描述：$2',
-            '-- 作者：${3:author}',
-            `-- 创建时间：\${4:${today}}`,
+            `-- ${t('completion.scriptName')}：\${1:${fileName}}`,
+            `-- ${t('completion.functionDesc')}：$2`,
+            `-- ${t('completion.author')}：\${3:author}`,
+            `-- ${t('completion.createdTime')}：\${4:${today}}`,
             '-- ============================================================',
-            '-- 修改记录：',
-            '--   日期         修改人       修改内容',
-            `--   \${5:${today}}  \${6:modifier}     \${7:初始版本}`,
+            `-- ${t('completion.modifiedRecord')}：`,
+            `--   ${t('completion.date')}         ${t('completion.modifierPerson')}       ${t('completion.modifyContent')}`,
+            `--   \${5:${today}}  \${6:modifier}     \${7:${t('completion.initialVersion')}}`,
             '-- ============================================================',
             '$0'
         ].join('\n')
@@ -51,8 +52,8 @@ function createHeaderItem(
     const item = new vscode.CompletionItem('header', vscode.CompletionItemKind.Snippet)
     item.filterText = 'header'
     item.sortText = '0_header'
-    item.detail = '文件头注释（含作者配置/上下游依赖）'
-    item.documentation = new vscode.MarkdownString('自动填充配置的作者名和检测到的上下游表依赖')
+    item.detail = t('completion.headerCommentAuto')
+    item.documentation = new vscode.MarkdownString(t('completion.headerCommentAutoDesc'))
 
     const fileName = doc.fileName.split('/').pop()?.replace(/\.\w+$/, '') || 'script_name'
     const today = new Date().toISOString().slice(0, 10)
@@ -65,28 +66,28 @@ function createHeaderItem(
     const modifierPlaceholder = modifier || 'modifier'
 
     const inputTableLines = inputTables.length > 0
-        ? inputTables.map(t => `--     - ${t}`).join('\n')
-        : '--     （未检测到表依赖，请手动填写）'
+        ? inputTables.map(tbl => `--     - ${tbl}`).join('\n')
+        : `--     ${t('completion.noTableDepsDetected')}`
 
     const outputTableLines = outputTables.length > 0
-        ? outputTables.map(t => `--     - ${t}`).join('\n')
-        : '--     （未检测到输出表，请手动填写）'
+        ? outputTables.map(tbl => `--     - ${tbl}`).join('\n')
+        : `--     ${t('completion.noOutputTableDetected')}`
 
     const snippetStr = [
         '-- ============================================================',
-        `-- 脚本名称：\${1:${fileName}}`,
-        '-- 功能描述：$2',
-        `-- 作者：\${3:${authorPlaceholder}}`,
-        `-- 创建时间：\${4:${createDate}}`,
+        `-- ${t('completion.scriptName')}：\${1:${fileName}}`,
+        `-- ${t('completion.functionDesc')}：$2`,
+        `-- ${t('completion.author')}：\${3:${authorPlaceholder}}`,
+        `-- ${t('completion.createdTime')}：\${4:${createDate}}`,
         '-- ============================================================',
-        '-- 修改记录：',
-        '--   日期         修改人       修改内容',
-        `--   \${5:${today}}  \${6:${modifierPlaceholder}}     \${7:初始版本}`,
+        `-- ${t('completion.modifiedRecord')}：`,
+        `--   ${t('completion.date')}         ${t('completion.modifierPerson')}       ${t('completion.modifyContent')}`,
+        `--   \${5:${today}}  \${6:${modifierPlaceholder}}     \${7:${t('completion.initialVersion')}}`,
         '-- ============================================================',
-        '-- 上游依赖：',
-        '--   输入表：',
+        `-- ${t('completion.upstreamDeps')}：`,
+        `--   ${t('completion.inputTable')}：`,
         inputTableLines,
-        '--   输出表：',
+        `--   ${t('completion.outputTable')}：`,
         outputTableLines,
         '-- ============================================================',
     ].join('\n') + '\n$0'
@@ -125,7 +126,7 @@ function extractTableDependencies(text: string): { inputTables: string[]; output
 
     if (sortedInput.length > 20) {
         const truncated = sortedInput.slice(0, 20)
-        truncated.push(`（共 ${sortedInput.length} 个表，此处仅展示前20个）`)
+        truncated.push(t('completion.tableCountTruncated', `${sortedInput.length}`))
         return { inputTables: truncated, outputTables: sortedOutput }
     }
 
@@ -134,10 +135,10 @@ function extractTableDependencies(text: string): { inputTables: string[]; output
 
 function removeCommentsAndStrings(text: string): string {
     let result = text
+    result = result.replace(/'(?:[^']|'')*'/g, "''")
+    result = result.replace(/"(?:[^"]|"")*"/g, '""')
     result = result.replace(/\/\*[\s\S]*?\*\//g, '')
     result = result.replace(/--[^\n]*/g, '')
-    result = result.replace(/'[^']*'/g, "''")
-    result = result.replace(/"[^"]*"/g, '""')
     return result
 }
 

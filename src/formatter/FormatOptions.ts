@@ -11,6 +11,9 @@ export type FunctionCase = KeywordCase;
 export type LogicalOperatorNewline = 'before' | 'after';
 
 export type CommaPosition = 'before' | 'after';
+export type CteCommaPosition = 'before' | 'after'
+export type SubqueryParenStyle = 'inline' | 'newline'
+export type CommentPosition = 'preserve' | 'newline' | 'inline'
 
 export interface FormatOptions {
     tabWidth: number;
@@ -52,4 +55,49 @@ export interface FormatOptions {
     singleLineMaxLength: number;
     params?: ParamItems | string[];
     paramTypes?: ParamTypes;
+    nullCase?: KeywordCase
+    booleanCase?: KeywordCase
+    newlineAfterGroupBy?: boolean
+    newlineAfterHaving?: boolean
+    newlineAfterOrderBy?: boolean
+    newlineAfterLimit?: boolean
+    newlineAfterJoin?: boolean
+    newlineBeforeSetOperation?: boolean
+    newlineAfterSetOperation?: boolean
+    newlineBeforeOn?: boolean
+    newlineBeforeUsing?: boolean
+    newlineBeforeWith?: boolean
+    newlineAfterWith?: boolean
+    indentCteBody?: boolean
+    newlineBetweenCtes?: boolean
+    cteCommaPosition?: CteCommaPosition
+    newlineAfterOver?: boolean
+    newlineBeforePartitionBy?: boolean
+    newlineAfterPartitionBy?: boolean
+    newlineBeforeOrderByInWindow?: boolean
+    indentJoinConditions?: boolean
+    alignOnClauses?: boolean
+    alignInsertColumns?: boolean
+    alignInsertValuesGroups?: boolean
+    newlineAfterInsert?: boolean
+    newlineAfterInsertColumns?: boolean
+    newlineBetweenValuesGroups?: boolean
+    newlineAfterCase?: boolean
+    newlineAfterWhen?: boolean
+    newlineAfterThen?: boolean
+    newlineAfterElse?: boolean
+    indentWhen?: boolean
+    indentThen?: boolean
+    newlineAfterIn?: boolean
+    maxItemsInlineList?: number
+    subqueryParenStyle?: SubqueryParenStyle
+    commentPosition?: CommentPosition
+    blankLinesBeforeSetOperation?: number
+    blankLinesAfterSetOperation?: number
+    newlineBeforeLateralView?: boolean
+    newlineBeforeDistributeBy?: boolean
+    newlineBeforeClusterBy?: boolean
+    newlineBeforeSortBy?: boolean
+    newlineBeforeConnectBy?: boolean
+    newlineBeforeStartWith?: boolean
 }

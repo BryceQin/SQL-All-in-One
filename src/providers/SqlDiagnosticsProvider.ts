@@ -5,6 +5,7 @@ import { createDialect } from "../languages/dialect"
 import type { DialectOptions } from "../languages/dialect"
 import * as allDialects from "../languages/allDialects"
 import { lineColFromIndex } from "../lexer/lineColFromIndex"
+import { t } from "../i18n"
 import { EnhancedSqlChecker } from "./EnhancedSqlChecker"
 import { SqlLinter } from "./SqlLinter"
 
@@ -14,6 +15,8 @@ export class SqlDiagnosticsProvider {
     private linter: SqlLinter
     private configCache: Record<string, boolean> = {}
 
+    private configChangeListener: vscode.Disposable
+
     constructor() {
         this.diagnosticCollection =
             vscode.languages.createDiagnosticCollection("hive-formatter")
@@ -21,12 +24,10 @@ export class SqlDiagnosticsProvider {
         this.linter = new SqlLinter()
         this.loadConfig()
         
-        // 监听配置变化
-        vscode.workspace.onDidChangeConfiguration((e) => {
+        this.configChangeListener = vscode.workspace.onDidChangeConfiguration((e) => {
             if (e.affectsConfiguration('Hive-Formatter')) {
                 this.loadConfig()
-                this.linter = new SqlLinter() // 重新加载配置
-                // 重新检查所有打开的文档
+                this.linter = new SqlLinter()
                 vscode.workspace.textDocuments.forEach((doc) => {
                     if (this.isSqlDocument(doc)) {
                         this.provideDiagnostics(doc)
@@ -132,7 +133,7 @@ export class SqlDiagnosticsProvider {
             const lineNum = lineCol.line
             const diagnostic = new vscode.Diagnostic(
                 new vscode.Range(lineNum - 1, lineCol.col, lineNum - 1, lineCol.col + 1),
-                `【第 ${lineNum} 行】语法错误：逗号后面缺少列名或表达式`,
+                t('diagnostic.missingColumnAfterComma', String(lineNum)),
                 vscode.DiagnosticSeverity.Error
             )
             diagnostic.source = "Hive Formatter"
@@ -150,9 +151,18 @@ export class SqlDiagnosticsProvider {
             const selectEnd = selectStart + 6;
             
             const afterSelect = text.substring(selectEnd);
-            const fromMatch = /\bfrom\b/i.exec(afterSelect);
-            if (fromMatch) {
-                const fromStartRelative = fromMatch.index;
+            let depth = 0
+            let fromStartRelative = -1
+            for (let i = 0; i < afterSelect.length; i++) {
+                if (afterSelect[i] === '(') depth++
+                else if (afterSelect[i] === ')') depth--
+                else if (depth === 0 && afterSelect.substring(i, i + 4).toLowerCase() === 'from' && (i === 0 || !/\w/.test(afterSelect[i - 1])) && (i + 4 >= afterSelect.length || !/\w/.test(afterSelect[i + 4]))) {
+                    fromStartRelative = i
+                    break
+                }
+            }
+            
+            if (fromStartRelative !== -1) {
                 const betweenText = afterSelect.substring(0, fromStartRelative).trim();
                 
                 if (betweenText === '') {
@@ -160,7 +170,7 @@ export class SqlDiagnosticsProvider {
                     const lineNum = lineCol.line;
                     const diagnostic = new vscode.Diagnostic(
                         new vscode.Range(lineNum - 1, lineCol.col, lineNum - 1, lineCol.col + 6),
-                        `【第 ${lineNum} 行】语法错误：SELECT 关键字后面缺少要查询的列名`,
+                        t('diagnostic.missingColumnAfterSelect', String(lineNum)),
                         vscode.DiagnosticSeverity.Error
                     );
                     diagnostic.source = "Hive Formatter";
@@ -180,8 +190,8 @@ export class SqlDiagnosticsProvider {
             const fromEnd = fromStart + 4;
             
             const afterFrom = text.substring(fromEnd);
-            const semicolonMatch = /[;$]/i.exec(afterFrom);
-            const endPosition = semicolonMatch ? semicolonMatch.index : afterFrom.length;
+            const clauseEndMatch = /(?:;|\bwhere\b|\bgroup\b|\bhaving\b|\border\b|\blimit\b|\bjoin\b|\binner\b|\bleft\b|\bright\b|\bfull\b|\bcross\b|\bnatural\b|\bunion\b|\bon\b)/i.exec(afterFrom);
+            const endPosition = clauseEndMatch ? clauseEndMatch.index : afterFrom.length;
             const afterFromText = afterFrom.substring(0, endPosition).trim();
             
             if (afterFromText === '') {
@@ -189,7 +199,7 @@ export class SqlDiagnosticsProvider {
                 const lineNum = lineCol.line;
                 const diagnostic = new vscode.Diagnostic(
                     new vscode.Range(lineNum - 1, lineCol.col, lineNum - 1, lineCol.col + 4),
-                    `【第 ${lineNum} 行】语法错误：FROM 关键字后面缺少表名`,
+                    t('diagnostic.missingTableAfterFrom', String(lineNum)),
                     vscode.DiagnosticSeverity.Error
                 );
                 diagnostic.source = "Hive Formatter";
@@ -201,16 +211,49 @@ export class SqlDiagnosticsProvider {
 
     private checkMismatchedParentheses(text: string, document: vscode.TextDocument, diagnostics: vscode.Diagnostic[]): void {
         const openParens: number[] = []
+        let inString = false
+        let stringChar = ''
+        let inLineComment = false
+        let inBlockComment = false
+        
         for (let i = 0; i < text.length; i++) {
-            if (text[i] === '(') {
+            const char = text[i]
+            const nextChar = i + 1 < text.length ? text[i + 1] : ''
+            
+            if (inLineComment) {
+                if (char === '\n') inLineComment = false
+                continue
+            }
+            if (inBlockComment) {
+                if (char === '*' && nextChar === '/') { inBlockComment = false; i++ }
+                continue
+            }
+            if (inString) {
+                if (char === stringChar) {
+                    if (nextChar === stringChar) { i++ }
+                    else { inString = false }
+                }
+                continue
+            }
+            
+            if (char === "'" || char === '"') {
+                inString = true
+                stringChar = char
+            } else if (char === '-' && nextChar === '-') {
+                inLineComment = true
+                i++
+            } else if (char === '/' && nextChar === '*') {
+                inBlockComment = true
+                i++
+            } else if (char === '(') {
                 openParens.push(i)
-            } else if (text[i] === ')') {
+            } else if (char === ')') {
                 if (openParens.length === 0) {
                     const lineCol = lineColFromIndex(text, i)
                     const lineNum = lineCol.line
                     const diagnostic = new vscode.Diagnostic(
                         new vscode.Range(lineNum - 1, lineCol.col, lineNum - 1, lineCol.col + 1),
-                        `【第 ${lineNum} 行】语法错误：发现多余的右括号 ")"，没有对应的左括号 "("`,
+                        t('diagnostic.extraRightParen', String(lineNum)),
                         vscode.DiagnosticSeverity.Error
                     )
                     diagnostic.source = "Hive Formatter"
@@ -226,7 +269,7 @@ export class SqlDiagnosticsProvider {
             const lineNum = lineCol.line
             const diagnostic = new vscode.Diagnostic(
                 new vscode.Range(lineNum - 1, lineCol.col, lineNum - 1, lineCol.col + 1),
-                `【第 ${lineNum} 行】语法错误：左括号 "(" 没有被正确闭合，缺少对应的右括号 ")"`,
+                t('diagnostic.unclosedLeftParen', String(lineNum)),
                 vscode.DiagnosticSeverity.Error
             )
             diagnostic.source = "Hive Formatter"
@@ -239,15 +282,43 @@ export class SqlDiagnosticsProvider {
         let inString = false
         let stringStartPos = -1
         let currentQuote = ''
+        let inLineComment = false
+        let inBlockComment = false
         
         for (let i = 0; i < text.length; i++) {
-            if (!inString && (text[i] === "'" || text[i] === '"')) {
-                inString = true
-                stringStartPos = i
-                currentQuote = text[i]
-            } else if (inString && text[i] === currentQuote) {
-                inString = false
-                stringStartPos = -1
+            const char = text[i]
+            const nextChar = i + 1 < text.length ? text[i + 1] : ''
+            
+            if (inLineComment) {
+                if (char === '\n') inLineComment = false
+                continue
+            }
+            if (inBlockComment) {
+                if (char === '*' && nextChar === '/') { inBlockComment = false; i++ }
+                continue
+            }
+            
+            if (inString) {
+                if (char === currentQuote) {
+                    if (nextChar === currentQuote) {
+                        i++
+                    } else {
+                        inString = false
+                        stringStartPos = -1
+                    }
+                }
+            } else {
+                if (char === "'" || char === '"') {
+                    inString = true
+                    stringStartPos = i
+                    currentQuote = char
+                } else if (char === '-' && nextChar === '-') {
+                    inLineComment = true
+                    i++
+                } else if (char === '/' && nextChar === '*') {
+                    inBlockComment = true
+                    i++
+                }
             }
         }
         
@@ -256,7 +327,7 @@ export class SqlDiagnosticsProvider {
             const lineNum = lineCol.line
             const diagnostic = new vscode.Diagnostic(
                 new vscode.Range(lineNum - 1, lineCol.col, lineNum - 1, lineCol.col + 1),
-                `【第 ${lineNum} 行】语法错误：字符串没有正确闭合，缺少结束的 ${currentQuote}`,
+                t('diagnostic.unclosedString', String(lineNum), currentQuote),
                 vscode.DiagnosticSeverity.Error
             )
             diagnostic.source = "Hive Formatter"
@@ -283,7 +354,7 @@ export class SqlDiagnosticsProvider {
                 const lineNum = lineCol.line;
                 const diagnostic = new vscode.Diagnostic(
                     new vscode.Range(lineNum - 1, lineCol.col, lineNum - 1, lineCol.col + 8),
-                    `【第 ${lineNum} 行】语法错误：ORDER BY 后面缺少排序的列名`,
+                    t('diagnostic.missingOrderByColumn', String(lineNum)),
                     vscode.DiagnosticSeverity.Error
                 );
                 diagnostic.source = "Hive Formatter";
@@ -311,7 +382,7 @@ export class SqlDiagnosticsProvider {
                 const lineNum = lineCol.line;
                 const diagnostic = new vscode.Diagnostic(
                     new vscode.Range(lineNum - 1, lineCol.col, lineNum - 1, lineCol.col + 5),
-                    `【第 ${lineNum} 行】语法错误：WHERE 后面缺少查询条件`,
+                    t('diagnostic.missingWhereCondition', String(lineNum)),
                     vscode.DiagnosticSeverity.Error
                 );
                 diagnostic.source = "Hive Formatter";
@@ -339,7 +410,7 @@ export class SqlDiagnosticsProvider {
                 const lineNum = lineCol.line;
                 const diagnostic = new vscode.Diagnostic(
                     new vscode.Range(lineNum - 1, lineCol.col, lineNum - 1, lineCol.col + 8),
-                    `【第 ${lineNum} 行】语法错误：GROUP BY 后面缺少分组的列名`,
+                    t('diagnostic.missingGroupByColumn', String(lineNum)),
                     vscode.DiagnosticSeverity.Error
                 );
                 diagnostic.source = "Hive Formatter";
@@ -357,7 +428,7 @@ export class SqlDiagnosticsProvider {
             const lineNum = lineCol.line
             const diagnostic = new vscode.Diagnostic(
                 new vscode.Range(lineNum - 1, lineCol.col, lineNum - 1, lineCol.col + 1),
-                `【第 ${lineNum} 行】语法警告：在右括号前发现多余的逗号`,
+                t('diagnostic.trailingCommaBeforeParen', String(lineNum)),
                 vscode.DiagnosticSeverity.Warning
             )
             diagnostic.source = "Hive Formatter"
@@ -371,7 +442,7 @@ export class SqlDiagnosticsProvider {
             const lineNum = lineCol.line
             const diagnostic = new vscode.Diagnostic(
                 new vscode.Range(lineNum - 1, lineCol.col, lineNum - 1, lineCol.col + 1),
-                `【第 ${lineNum} 行】语法警告：在语句结束前发现多余的逗号`,
+                t('diagnostic.trailingCommaBeforeEnd', String(lineNum)),
                 vscode.DiagnosticSeverity.Warning
             )
             diagnostic.source = "Hive Formatter"
@@ -385,7 +456,7 @@ export class SqlDiagnosticsProvider {
         text: string,
         document: vscode.TextDocument,
     ): vscode.Diagnostic | undefined {
-        let message = "SQL 语法错误"
+        let message = t('diagnostic.sqlSyntaxError')
         let line = 0
         let col = 0
         let endLine = 0
@@ -429,6 +500,7 @@ export class SqlDiagnosticsProvider {
     }
 
     public dispose(): void {
+        this.configChangeListener.dispose()
         this.diagnosticCollection.dispose()
     }
 }

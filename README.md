@@ -1,19 +1,20 @@
 # Hive Formatter
 
-一个强大的 SQL 格式化 VSCode 插件，支持 Hive、MySQL、SparkSQL 等多种 SQL 方言，提供丰富的自定义配置选项。
+一个强大的 SQL 格式化 VSCode 插件，支持 Hive、MySQL、SparkSQL、PostgreSQL、Oracle、BigQuery、Snowflake、Presto、SQLite 等多种 SQL 方言，提供丰富的自定义配置选项。
 
 ## 特性
 
 区别于市场上多数仅提供单一格式化效果的 SQL 插件，本工具以个性化配置为核心设计理念，内置丰富的可配置项：
 
-- 📝 **多种 SQL 方言支持** - Hive、MySQL、SparkSQL、通用 SQL
+- 📝 **多种 SQL 方言支持** - Hive、MySQL、SparkSQL、PostgreSQL、Oracle、BigQuery、Snowflake、Presto、SQLite、通用 SQL
 - 🎨 **丰富的格式化选项** - 关键字大小写、缩进风格、换行策略等
 - 🤖 **智能补全（IntelliSense）** - 关键字、函数签名、代码片段、CTE、标识符智能提示
 - 💬 **注释增强** - 智能注释切换、注释模板补全、注释 Lint 规则
 - 📏 **灵活的缩进配置** - 支持标准缩进和表格风格对齐
 - 🖥️ **可视化配置编辑器** - 现代化图形化配置界面，可折叠分组、Toggle 开关、实时预览格式化效果
-- 🔍 **增强的语法检查** - 15+ 项语法和代码质量检查，智能提示
-- ⚙️ **高度自定义** - 超过 10 项可配置项满足各种团队规范
+- 🔍 **增强的语法检查** - 15+ 项语法和代码质量检查，智能提示，减少误报
+- 🛡️ **安全的参数处理** - 支持 JDBC `:?` 参数、正则注入防护、参数批量替换
+- ⚙️ **高度自定义** - 超过 40 项可配置项满足各种团队规范
 - 🔧 **命令支持** - 提供"格式化选择"命令，支持部分格式化
 - ✅ **语法错误检测** - 实时检测常见 SQL 语法错误并提供友好的中文提示
 - 🚀 **快速修复** - 配合语法检查提供一键修复功能
@@ -21,7 +22,7 @@
 - 📑 **代码片段** - 提供常用 SQL 代码片段，提升编写效率
 - 📁 **代码折叠** - 支持 CTE、子查询、函数块等代码块的折叠
 - 🗺️ **大纲视图** - 提供 SQL 文档的大纲视图，快速导航
-- 🔢 **参数化查询** - 支持变量高亮和批量替换功能
+- 🔢 **参数化查询** - 支持变量高亮和批量替换功能（含 JDBC `:?` 参数支持）
 - 🔍 **SQL Lint** - 内置 17+ 条 Lint 规则，支持自定义配置
 
 ## 快速开始
@@ -48,21 +49,24 @@
 插件提供 15+ 项增强的语法和代码质量检查功能：
 
 ### 语法错误检查
-- HAVING 子句缺少 GROUP BY
-- LIMIT 缺少数字参数
-- JOIN 缺少 ON 子句
+- HAVING 子句缺少 GROUP BY（正确检查 GROUP BY 在 HAVING 之前）
+- LIMIT 缺少数字参数（支持占位符和 ALL/OFFSET 语法）
+- JOIN 缺少 ON 或 USING 子句（支持 CROSS/NATURAL JOIN）
 - 错误的 DISTINCT 位置
-- WHERE 子句中使用聚合函数
+- WHERE 子句中使用聚合函数（排除子查询中的合法用法）
 - UPDATE 语句中使用 *
-- 不完整的 CASE 语句
+- 不完整的 CASE 语句（正确处理嵌套 CASE，精确词边界匹配）
+- 括号不匹配（排除字符串和注释中的括号，支持 SQL '' 转义）
+- 未闭合的字符串（支持 SQL '' 转义引号）
+- 重复列别名（仅检查 AS 后的别名，正确处理子查询）
 
 ### 代码质量建议
 - 重复的表别名
-- 使用保留字作为标识符
+- 使用保留字作为别名（仅检查 AS 后的别名，大幅减少误报）
 - SELECT 语句缺少 FROM 子句（特定函数除外）
 - INSERT 语句缺少列名
 - 冗余的 DISTINCT 用法
-- 子查询缺少别名
+- 子查询缺少别名（正确处理嵌套子查询）
 - 可疑的 NULL 比较（= NULL vs IS NULL）
 
 ### 方言提示
@@ -80,10 +84,10 @@
 插件支持对检测到的问题提供一键快速修复：
 
 - 将 `= NULL` 自动修复为 `IS NULL`
-- 将 `!= NULL` 自动修复为 `IS NOT NULL`
-- 为保留字标识符添加反引号包裹
+- 将 `!= NULL` / `<> NULL` 自动修复为 `IS NOT NULL`
+- 为保留字别名添加反引号包裹
 - 为子查询添加别名
-- 为 INSERT 语句添加列名占位符
+- 为 INSERT 语句添加列名占位符（修复插入位置错误）
 - 为 HAVING 子句添加 GROUP BY
 
 ## 状态栏功能
@@ -134,7 +138,7 @@
 
 | 补全类型 | 说明 | 示例 |
 |---------|------|------|
-| **关键字补全** | 输入 SEL → 提示 SELECT，覆盖四种方言的全部关键字和数据类型 | `SEL` → `SELECT` |
+| **关键字补全** | 输入 SEL → 提示 SELECT，覆盖多种方言的全部关键字和数据类型 | `SEL` → `SELECT` |
 | **函数补全** | 输入 SUB → 提示 SUBSTR(string, start, length)，展示签名、参数说明、返回值类型和中文分类 | `SUB` → `SUBSTR(string, start, length)` |
 | **代码片段补全** | 在补全列表中展示已有的 17 个 SQL 代码片段 | `sel` → 插入完整 SELECT 模板 |
 | **CTE 名称补全** | 定义 WITH 子句后，后续查询自动提示 CTE 名称 | `WITH cte_name AS (...) SELECT` → 提示 `cte_name` |
@@ -142,7 +146,7 @@
 
 ### 函数签名库
 
-插件内置 470+ 函数签名，覆盖四种方言，每个函数包含：
+插件内置 470+ 函数签名，覆盖多种方言，每个函数包含：
 - 参数列表（带占位符提示）
 - 返回值类型
 - 中文描述
@@ -202,7 +206,7 @@
 
 | 设置项 | 描述 | 默认值 |
 |--------|------|--------|
-| `dialect` | 选择使用的SQL方言（hive/mysql/spark/sql） | `hive` |
+| `dialect` | 选择使用的SQL方言（auto-detect/hive/mysql/spark/sql/postgresql/oracle/bigquery/snowflake/presto/sqlite） | `hive` |
 | `ignoreTabSettings` | 是否忽略编辑器的 tabSize 和 insertSpaces 设置 | `false` |
 | `tabSizeOverride` | 覆盖 tabSize 设置（需要先启用 ignoreTabSettings） | `2` |
 | `insertSpacesOverride` | 覆盖 insertSpaces 设置（需要先启用 ignoreTabSettings） | `true` |
@@ -292,8 +296,8 @@ LIMIT 10;
 - 逗号后面缺少列名（如 `select id, from ...`）
 - SELECT 后面缺少列名
 - FROM 后面缺少表名
-- 不匹配的括号
-- 未正确闭合的字符串
+- 不匹配的括号（排除字符串和注释中的括号）
+- 未正确闭合的字符串（支持转义引号 `''`）
 - ORDER BY 后面缺少列名
 - WHERE 后面缺少条件
 - GROUP BY 后面缺少列名

@@ -8,6 +8,7 @@ import tsdoc from 'eslint-plugin-tsdoc';
 export default defineConfig([
     {
         files: ['**/*.ts', '*.tsx'],
+        ignores: ['src/parser/grammar.ts'],
         plugins: {
             tsdoc: tsdoc
         },
@@ -19,6 +20,13 @@ export default defineConfig([
             tseslint.configs.strict,
             tseslint.configs.stylistic
         ],
-        rules: { 'tsdoc/syntax': 'warn' }
+        rules: {
+            'tsdoc/syntax': 'warn',
+            '@typescript-eslint/no-unused-vars': ['error', {
+                argsIgnorePattern: '^_',
+                varsIgnorePattern: '^_'
+            }],
+            '@typescript-eslint/no-explicit-any': 'off'
+        }
     }
 ]);

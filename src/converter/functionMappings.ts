@@ -32,11 +32,11 @@ export const HIVE_TO_MYSQL_FUNCTIONS: FunctionMapping[] = [
     replacement: 'IFNULL($1, $2)'
   },
   {
-    pattern: /\bCURRENT_TIMESTAMP\s*\(\s*\)?/gi,
+    pattern: /\bCURRENT_TIMESTAMP\s*(?:\(\s*\))?/gi,
     replacement: 'NOW()'
   },
   {
-    pattern: /\bCURRENT_DATE\s*\(\s*\)?/gi,
+    pattern: /\bCURRENT_DATE\s*(?:\(\s*\))?/gi,
     replacement: 'CURDATE()'
   },
   {

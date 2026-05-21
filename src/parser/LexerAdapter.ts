@@ -43,9 +43,8 @@ export default class LexerAdapter {
         return this.tokens[this.index++] as NearleyToken | undefined
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    save(): any {
-        return
+    save(): Record<string, unknown> {
+        return {}
     }
 
     // 格式化解析错误信息

@@ -33,9 +33,8 @@ class LexerAdapter {
         // 读取当前游标位置的 Token，游标自增，同时类型断言为 NearleyToken
         return this.tokens[this.index++];
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     save() {
-        return;
+        return {};
     }
     // 格式化解析错误信息
     formatError(token) {

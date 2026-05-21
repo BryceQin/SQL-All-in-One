@@ -1,0 +1,71 @@
+{
+    "PostgreSQL Create Function": {
+        "prefix": "pgfunc",
+        "body": [
+            "CREATE OR REPLACE FUNCTION $1($2)",
+            "RETURNS $3",
+            "LANGUAGE $4",
+            "AS $$",
+            "BEGIN",
+            "    $5",
+            "END;",
+            "$$;"
+        ],
+        "description": "Create PostgreSQL function"
+    },
+    "PostgreSQL Returning": {
+        "prefix": "pgret",
+        "body": [
+            "INSERT INTO $1 $2",
+            "VALUES ($3)",
+            "RETURNING *;"
+        ],
+        "description": "PostgreSQL INSERT with RETURNING"
+    },
+    "PostgreSQL On Conflict": {
+        "prefix": "pgconflict",
+        "body": [
+            "INSERT INTO $1 ($2)",
+            "VALUES ($3)",
+            "ON CONFLICT ($4) DO UPDATE SET $5;"
+        ],
+        "description": "PostgreSQL ON CONFLICT (UPSERT)"
+    },
+    "PostgreSQL ILIKE": {
+        "prefix": "pgilike",
+        "body": [
+            "$1 ILIKE '%$2%'"
+        ],
+        "description": "PostgreSQL ILIKE (case-insensitive)"
+    },
+    "PostgreSQL JSON Query": {
+        "prefix": "pgjson",
+        "body": [
+            "SELECT $1->'$2', $1->>'$2' FROM $3;"
+        ],
+        "description": "PostgreSQL JSON query"
+    },
+    "PostgreSQL Type Cast": {
+        "prefix": "pgcast",
+        "body": [
+            "$1::$2"
+        ],
+        "description": "PostgreSQL type cast operator"
+    },
+    "PostgreSQL Array Literal": {
+        "prefix": "pgarray",
+        "body": [
+            "ARRAY[$1]"
+        ],
+        "description": "PostgreSQL array literal"
+    },
+    "PostgreSQL Distinct On": {
+        "prefix": "pgdistinct",
+        "body": [
+            "SELECT DISTINCT ON ($1) $2",
+            "FROM $3",
+            "ORDER BY $1, $4;"
+        ],
+        "description": "PostgreSQL DISTINCT ON"
+    }
+}

@@ -1,0 +1,18 @@
+{
+    "Spark Create Temporary View": {
+        "prefix": "sparktemp",
+        "body": [
+            "CREATE OR REPLACE TEMPORARY VIEW $1 AS",
+            "SELECT $2 FROM $3 WHERE $4;"
+        ],
+        "description": "Create Spark temporary view"
+    },
+    "Spark Create Global Temp View": {
+        "prefix": "sparkglobaltemp",
+        "body": [
+            "CREATE OR REPLACE GLOBAL TEMPORARY VIEW $1 AS",
+            "SELECT $2 FROM $3 WHERE $4;"
+        ],
+        "description": "Create Spark global temporary view"
+    }
+}

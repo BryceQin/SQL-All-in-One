@@ -1,4 +1,5 @@
 import * as vscode from 'vscode'
+import { t } from '../i18n'
 
 export class SqlOutlineProvider implements vscode.DocumentSymbolProvider {
     provideDocumentSymbols(
@@ -57,8 +58,8 @@ export class SqlOutlineProvider implements vscode.DocumentSymbolProvider {
                     if (cteSymbols.length > 0) {
                         const withSymbol = this.createSymbol(
                             document,
-                            'WITH Clause',
-                            'Common Table Expressions',
+                            t('outline.withClause'),
+                            t('outline.cte'),
                             vscode.SymbolKind.Namespace,
                             withStartLine,
                             lineNum - 1
@@ -94,7 +95,7 @@ export class SqlOutlineProvider implements vscode.DocumentSymbolProvider {
                 const symbol = this.createSymbol(
                     document,
                     createTableMatch[2],
-                    'Table',
+                    t('outline.table'),
                     vscode.SymbolKind.Struct,
                     lineNum,
                     this.findEndOfBlock(lineNum, lines)
@@ -107,7 +108,7 @@ export class SqlOutlineProvider implements vscode.DocumentSymbolProvider {
                 const symbol = this.createSymbol(
                     document,
                     createViewMatch[2],
-                    'View',
+                    t('outline.view'),
                     vscode.SymbolKind.Interface,
                     lineNum,
                     this.findEndOfBlock(lineNum, lines)
@@ -120,7 +121,7 @@ export class SqlOutlineProvider implements vscode.DocumentSymbolProvider {
                 const symbol = this.createSymbol(
                     document,
                     createFunctionMatch[2],
-                    'Function',
+                    t('outline.function'),
                     vscode.SymbolKind.Function,
                     lineNum,
                     this.findEndOfBlock(lineNum, lines)
@@ -133,7 +134,7 @@ export class SqlOutlineProvider implements vscode.DocumentSymbolProvider {
                 const symbol = this.createSymbol(
                     document,
                     createProcedureMatch[2],
-                    'Procedure',
+                    t('outline.procedure'),
                     vscode.SymbolKind.Method,
                     lineNum,
                     this.findEndOfBlock(lineNum, lines)
@@ -146,8 +147,8 @@ export class SqlOutlineProvider implements vscode.DocumentSymbolProvider {
         if (inWithBlock && withStartLine >= 0 && cteSymbols.length > 0) {
             const withSymbol = this.createSymbol(
                 document,
-                'WITH Clause',
-                'Common Table Expressions',
+                t('outline.withClause'),
+                t('outline.cte'),
                 vscode.SymbolKind.Namespace,
                 withStartLine,
                 lines.length - 1
@@ -232,7 +233,7 @@ export class SqlOutlineProvider implements vscode.DocumentSymbolProvider {
         return this.createSymbol(
             document,
             name,
-            'Query',
+            t('outline.query'),
             vscode.SymbolKind.Event,
             startLine,
             endLine

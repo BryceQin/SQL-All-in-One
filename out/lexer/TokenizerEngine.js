@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const lineColFromIndex_1 = require("./lineColFromIndex");
 const regexUtil_1 = require("./regexUtil");
+const i18n_1 = require("../i18n");
 // SQL/自定义 DSL 词法分析的核心执行类
 class TokenizerEngine {
     // 待处理的原始 SQL 输入字符串
@@ -19,11 +20,10 @@ class TokenizerEngine {
     // 提供方言相关提示
     dialectInfo() {
         if (this.dialectName === "sql") {
-            return (`这可能是因为您正在使用默认的 "sql" 方言。\n` +
-                `如果可能，请选择一个更具体的方言（如 hive、mysql、spark 等）。`);
+            return (0, i18n_1.t)('lexer.defaultDialectHint');
         }
         else {
-            return `使用的 SQL 方言: "${this.dialectName}"。`;
+            return (0, i18n_1.t)('lexer.currentDialect', this.dialectName);
         }
     }
     // 当无规则匹配时，生成带「上下文文本」「行号列号」「方言信息」的友好错误
@@ -32,7 +32,7 @@ class TokenizerEngine {
         const text = this.input.slice(this.index, this.index + 10);
         // 转换为 1-based 行号列号（用户友好）
         const { line, col } = (0, lineColFromIndex_1.lineColFromIndex)(this.input, this.index);
-        return new Error(`解析错误: 在第 ${line} 行第 ${col} 列遇到意外的 "${text}"。\n${this.dialectInfo()}`);
+        return new Error((0, i18n_1.t)('lexer.parseError', String(line), String(col), text, this.dialectInfo()));
     }
     // 自动跳过空白字符
     getWhitespace() {

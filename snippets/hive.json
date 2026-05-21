@@ -1,0 +1,39 @@
+{
+    "Hive Partition Insert": {
+        "prefix": "hivepart",
+        "body": [
+            "INSERT OVERWRITE TABLE $1",
+            "PARTITION ($2 = '$3')",
+            "SELECT",
+            "    $4",
+            "FROM $5",
+            "WHERE $6;"
+        ],
+        "description": "Hive partition insert"
+    },
+    "Hive Select Partition": {
+        "prefix": "hiveselpart",
+        "body": [
+            "SELECT",
+            "    $1",
+            "FROM $2",
+            "WHERE $3 = '$4'",
+            "LIMIT 100;"
+        ],
+        "description": "Hive select from partition"
+    },
+    "Hive Create External Table": {
+        "prefix": "hiveext",
+        "body": [
+            "CREATE EXTERNAL TABLE $1 (",
+            "    $2",
+            ")",
+            "COMMENT '$3'",
+            "PARTITIONED BY ($4)",
+            "ROW FORMAT DELIMITED",
+            "FIELDS TERMINATED BY '$5'",
+            "LOCATION '$6';"
+        ],
+        "description": "Create Hive external table"
+    }
+}

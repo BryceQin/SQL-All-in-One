@@ -1,10 +1,11 @@
 import * as vscode from 'vscode'
 import { sqlDialects } from '../core/sqlDialects'
+import { t } from '../i18n'
 
 export class SqlParameterHighlighter {
     private decorationType: vscode.TextEditorDecorationType
-    private disposable: vscode.Disposable
-    
+    private disposables: vscode.Disposable[] = []
+
     constructor() {
         this.decorationType = vscode.window.createTextEditorDecorationType({
             backgroundColor: new vscode.ThemeColor('editor.findMatchHighlightBackground'),
@@ -13,30 +14,26 @@ export class SqlParameterHighlighter {
             overviewRulerColor: new vscode.ThemeColor('editor.findMatchHighlightBackground'),
             overviewRulerLane: vscode.OverviewRulerLane.Right
         })
-        
-        // 监听活动编辑器变化
-        this.disposable = vscode.window.onDidChangeActiveTextEditor(editor => {
-            if (editor && this.isSqlDocument(editor.document)) {
-                this.updateDecorations(editor)
-            }
-        })
-        
-        // 监听文档变化
-        vscode.workspace.onDidChangeTextDocument(event => {
-            const editor = vscode.window.activeTextEditor
-            if (editor && editor.document === event.document && this.isSqlDocument(event.document)) {
-                this.updateDecorations(editor)
-            }
-        })
-        
-        // 监听光标位置变化
-        vscode.window.onDidChangeTextEditorSelection(event => {
-            if (this.isSqlDocument(event.textEditor.document)) {
-                this.updateDecorations(event.textEditor)
-            }
-        })
-        
-        // 初始更新
+
+        this.disposables.push(
+            vscode.window.onDidChangeActiveTextEditor(editor => {
+                if (editor && this.isSqlDocument(editor.document)) {
+                    this.updateDecorations(editor)
+                }
+            }),
+            vscode.workspace.onDidChangeTextDocument(event => {
+                const editor = vscode.window.activeTextEditor
+                if (editor && editor.document === event.document && this.isSqlDocument(event.document)) {
+                    this.updateDecorations(editor)
+                }
+            }),
+            vscode.window.onDidChangeTextEditorSelection(event => {
+                if (this.isSqlDocument(event.textEditor.document)) {
+                    this.updateDecorations(event.textEditor)
+                }
+            })
+        )
+
         if (vscode.window.activeTextEditor) {
             this.updateDecorations(vscode.window.activeTextEditor)
         }
@@ -61,7 +58,7 @@ export class SqlParameterHighlighter {
         
         for (const selection of selections) {
             const pos = selection.active
-            const wordRange = document.getWordRangeAtPosition(pos, /[$:?@][a-zA-Z0-9_]+|:[a-zA-Z0-9_]+/)
+            const wordRange = document.getWordRangeAtPosition(pos, /[$@][a-zA-Z0-9_]+|:\??[a-zA-Z0-9_]+/)
             if (wordRange) {
                 const word = document.getText(wordRange)
                 if (this.isParameter(word)) {
@@ -84,7 +81,7 @@ export class SqlParameterHighlighter {
                 
                 decorations.push({
                     range,
-                    hoverMessage: `Parameter: ${currentParameter}`
+                    hoverMessage: t('paramHover', currentParameter)
                 })
             }
             
@@ -96,11 +93,11 @@ export class SqlParameterHighlighter {
     
     private isParameter(word: string): boolean {
         // 支持常见的参数格式
-        const startsWithValidPrefix = word.startsWith('$') || 
-                                     word.startsWith('@') || 
-                                     word.startsWith(':') ||
-                                     word.startsWith(':?')
-        return startsWithValidPrefix && /^[$:?@][a-zA-Z0-9_]+$/.test(word)
+        const startsWithValidPrefix = word.startsWith('$') ||
+                                     word.startsWith('@') ||
+                                     word.startsWith(':?') ||
+                                     word.startsWith(':')
+        return startsWithValidPrefix && /^([$@][a-zA-Z0-9_]+|:\??[a-zA-Z0-9_]+)$/.test(word)
     }
     
     private createParameterRegex(param: string): RegExp {
@@ -111,7 +108,7 @@ export class SqlParameterHighlighter {
     
     public dispose(): void {
         this.decorationType.dispose()
-        this.disposable.dispose()
+        for (const d of this.disposables) d.dispose()
     }
 }
 
@@ -121,13 +118,13 @@ export class SqlParameterReplaceCommand {
         return vscode.commands.registerCommand('hive-formatter.replaceParameter', async () => {
             const editor = vscode.window.activeTextEditor
             if (!editor) {
-                vscode.window.showErrorMessage('No active editor')
+                vscode.window.showErrorMessage(t('notification.noActiveEditor'))
                 return
             }
             
             const document = editor.document
             if (document.languageId !== 'sql' && document.languageId !== 'hive') {
-                vscode.window.showErrorMessage('Not an SQL document')
+                vscode.window.showErrorMessage(t('notification.notSqlDocument'))
                 return
             }
             
@@ -135,14 +132,14 @@ export class SqlParameterReplaceCommand {
             let currentParameter: string | null = null
             for (const selection of editor.selections) {
                 const pos = selection.active
-                const wordRange = document.getWordRangeAtPosition(pos, /[$:?@][a-zA-Z0-9_]+|:[a-zA-Z0-9_]+/)
+                const wordRange = document.getWordRangeAtPosition(pos, /[$@][a-zA-Z0-9_]+|:\??[a-zA-Z0-9_]+/)
                 if (wordRange) {
                     const word = document.getText(wordRange)
-                const startsWithValidPrefix = word.startsWith('$') || 
-                                             word.startsWith('@') || 
-                                             word.startsWith(':') ||
-                                             word.startsWith(':?')
-                if (startsWithValidPrefix && /^[$:?@][a-zA-Z0-9_]+$/.test(word)) {
+                const startsWithValidPrefix = word.startsWith('$') ||
+                                             word.startsWith('@') ||
+                                             word.startsWith(':?') ||
+                                             word.startsWith(':')
+                if (startsWithValidPrefix && /^([$@][a-zA-Z0-9_]+|:\??[a-zA-Z0-9_]+)$/.test(word)) {
                         currentParameter = word
                         break
                     }
@@ -150,14 +147,14 @@ export class SqlParameterReplaceCommand {
             }
             
             if (!currentParameter) {
-                vscode.window.showInformationMessage('No parameter under cursor')
+                vscode.window.showInformationMessage(t('notification.noParameterFound'))
                 return
             }
             
             // 询问新值
             const newValue = await vscode.window.showInputBox({
-                prompt: `Replace ${currentParameter} with:`,
-                placeHolder: 'Enter new value',
+                prompt: t('notification.replaceParameter', currentParameter),
+                placeHolder: t('notification.replaceParameterPlaceholder'),
                 value: currentParameter
             })
             
@@ -166,20 +163,24 @@ export class SqlParameterReplaceCommand {
             }
             
             // 替换所有匹配
+            const fullText = document.getText()
+            const paramRegex = new RegExp(currentParameter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')
+            const ranges: vscode.Range[] = []
+            let match
+
+            while ((match = paramRegex.exec(fullText)) !== null) {
+                const startPos = document.positionAt(match.index)
+                const endPos = document.positionAt(match.index + match[0].length)
+                ranges.push(new vscode.Range(startPos, endPos))
+            }
+            ranges.reverse()
             await editor.edit(editBuilder => {
-                const text = document.getText()
-                const paramRegex = new RegExp(currentParameter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')
-                let match
-                
-                while ((match = paramRegex.exec(text)) !== null) {
-                    const startPos = document.positionAt(match.index)
-                    const endPos = document.positionAt(match.index + match[0].length)
-                    const range = new vscode.Range(startPos, endPos)
+                for (const range of ranges) {
                     editBuilder.replace(range, newValue)
                 }
             })
             
-            vscode.window.showInformationMessage(`Replaced all occurrences of ${currentParameter}`)
+            vscode.window.showInformationMessage(t('notification.replacedAll', currentParameter))
         })
     }
 }

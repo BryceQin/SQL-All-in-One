@@ -15,7 +15,7 @@ suite('Completion Module Tests', () => {
     })
 
     test('signatureToString formats correctly', async () => {
-        const mod = await import('../completion/functionSignatures')
+        const mod = await import('../completion/functionSignatures.js')
         const result = mod.signatureToString({
             name: 'SUBSTR',
             params: ['string str', 'int start', 'int length'],
@@ -26,7 +26,7 @@ suite('Completion Module Tests', () => {
     })
 
     test('getCategoryLabel returns Chinese labels', async () => {
-        const mod = await import('../completion/functionSignatures')
+        const mod = await import('../completion/functionSignatures.js')
         assert.strictEqual(mod.getCategoryLabel('string'), '字符串')
         assert.strictEqual(mod.getCategoryLabel('math'), '数学')
         assert.strictEqual(mod.getCategoryLabel('date'), '日期')
@@ -35,7 +35,7 @@ suite('Completion Module Tests', () => {
     })
 
     test('Hive functionSignatures export is a non-empty array', async () => {
-        const hive = await import('../languages/hive/hive.functions')
+        const hive = await import('../languages/hive/hive.functions.js')
         assert.ok(Array.isArray(hive.functionSignatures))
         assert.ok(hive.functionSignatures.length > 0)
         const f = hive.functionSignatures[0]

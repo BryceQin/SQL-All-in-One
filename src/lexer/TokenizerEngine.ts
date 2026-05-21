@@ -1,6 +1,7 @@
 import type { Token, TokenType } from "./token"
 import { lineColFromIndex } from "./lineColFromIndex"
 import { WHITESPACE_REGEX } from "./regexUtil"
+import { t } from "../i18n"
 
 // 是原生 RegExp 的最小兼容接口，解耦原生正则依赖、支持自定义复杂匹配
 export interface RegExpLike {
@@ -42,12 +43,9 @@ export default class TokenizerEngine {
     // 提供方言相关提示
     private dialectInfo(): string {
         if (this.dialectName === "sql") {
-            return (
-                `这可能是因为您正在使用默认的 "sql" 方言。\n` +
-                `如果可能，请选择一个更具体的方言（如 hive、mysql、spark 等）。`
-            )
+            return t('lexer.defaultDialectHint')
         } else {
-            return `使用的 SQL 方言: "${this.dialectName}"。`
+            return t('lexer.currentDialect', this.dialectName)
         }
     }
 
@@ -58,7 +56,7 @@ export default class TokenizerEngine {
         // 转换为 1-based 行号列号（用户友好）
         const { line, col } = lineColFromIndex(this.input, this.index)
         return new Error(
-            `解析错误: 在第 ${line} 行第 ${col} 列遇到意外的 "${text}"。\n${this.dialectInfo()}`,
+            t('lexer.parseError', String(line), String(col), text, this.dialectInfo()),
         )
     }
 

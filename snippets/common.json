@@ -1,0 +1,282 @@
+{
+    "Select All": {
+        "prefix": "sel",
+        "body": [
+            "SELECT",
+            "    $1",
+            "FROM $2",
+            "WHERE $3",
+            "LIMIT 100;"
+        ],
+        "description": "Basic SELECT statement"
+    },
+    "Select From": {
+        "prefix": "self",
+        "body": [
+            "SELECT",
+            "    $1",
+            "FROM $2;"
+        ],
+        "description": "SELECT FROM statement"
+    },
+    "Select Distinct": {
+        "prefix": "seld",
+        "body": [
+            "SELECT DISTINCT",
+            "    $1",
+            "FROM $2",
+            "WHERE $3",
+            "LIMIT 100;"
+        ],
+        "description": "SELECT with DISTINCT"
+    },
+    "Select with JOIN": {
+        "prefix": "selj",
+        "body": [
+            "SELECT",
+            "    $1",
+            "FROM $2",
+            "JOIN $3 ON $2.$4 = $3.$5",
+            "WHERE $6",
+            "LIMIT 100;"
+        ],
+        "description": "SELECT with JOIN"
+    },
+    "Select with WHERE": {
+        "prefix": "selw",
+        "body": [
+            "SELECT",
+            "    $1",
+            "FROM $2",
+            "WHERE $3",
+            "LIMIT 100;"
+        ],
+        "description": "SELECT with WHERE"
+    },
+    "Select with GROUP BY": {
+        "prefix": "selg",
+        "body": [
+            "SELECT",
+            "    $1,",
+            "    COUNT(*) AS cnt",
+            "FROM $2",
+            "WHERE $3",
+            "GROUP BY $1",
+            "HAVING $4",
+            "ORDER BY cnt DESC",
+            "LIMIT 100;"
+        ],
+        "description": "SELECT with GROUP BY"
+    },
+    "Select with ORDER BY": {
+        "prefix": "selo",
+        "body": [
+            "SELECT",
+            "    $1",
+            "FROM $2",
+            "WHERE $3",
+            "ORDER BY $4",
+            "LIMIT 100;"
+        ],
+        "description": "SELECT with ORDER BY"
+    },
+    "Join Tables": {
+        "prefix": "join",
+        "body": [
+            "SELECT",
+            "    $1",
+            "FROM $2",
+            "JOIN $3 ON $2.$4 = $3.$5",
+            "WHERE $6",
+            "LIMIT 100;"
+        ],
+        "description": "JOIN tables"
+    },
+    "Left Join": {
+        "prefix": "leftjoin",
+        "body": [
+            "SELECT",
+            "    $1",
+            "FROM $2",
+            "LEFT JOIN $3 ON $2.$4 = $3.$5",
+            "WHERE $6",
+            "LIMIT 100;"
+        ],
+        "description": "LEFT JOIN tables"
+    },
+    "Group By": {
+        "prefix": "groupby",
+        "body": [
+            "SELECT",
+            "    $1,",
+            "    COUNT(*) AS cnt",
+            "FROM $2",
+            "WHERE $3",
+            "GROUP BY $1",
+            "HAVING $4",
+            "ORDER BY cnt DESC",
+            "LIMIT 100;"
+        ],
+        "description": "Group By with aggregation"
+    },
+    "Case When": {
+        "prefix": "case",
+        "body": [
+            "CASE",
+            "    WHEN $1 THEN $2",
+            "    WHEN $3 THEN $4",
+            "    ELSE $5",
+            "END AS $6"
+        ],
+        "description": "CASE WHEN statement"
+    },
+    "Subquery": {
+        "prefix": "subq",
+        "body": [
+            "(SELECT $1 FROM $2 WHERE $3)"
+        ],
+        "description": "Subquery"
+    },
+    "Insert Into": {
+        "prefix": "ins",
+        "body": [
+            "INSERT INTO $1 ($2)",
+            "VALUES",
+            "    ($3);"
+        ],
+        "description": "INSERT INTO statement"
+    },
+    "Insert Select": {
+        "prefix": "insv",
+        "body": [
+            "INSERT INTO $1 ($2)",
+            "SELECT",
+            "    $3",
+            "FROM $4",
+            "WHERE $5;"
+        ],
+        "description": "INSERT ... SELECT statement"
+    },
+    "Update": {
+        "prefix": "upd",
+        "body": [
+            "UPDATE $1",
+            "SET $2 = $3",
+            "WHERE $4;"
+        ],
+        "description": "UPDATE statement"
+    },
+    "Delete": {
+        "prefix": "del",
+        "body": [
+            "DELETE FROM $1",
+            "WHERE $2;"
+        ],
+        "description": "DELETE statement"
+    },
+    "Create Table": {
+        "prefix": "crt",
+        "body": [
+            "CREATE TABLE $1 (",
+            "    id BIGINT COMMENT '主键ID',",
+            "    $2",
+            "    created_at TIMESTAMP COMMENT '创建时间'",
+            ") COMMENT '$3';",
+            "$0"
+        ],
+        "description": "Create Table statement"
+    },
+    "Create Table As Select": {
+        "prefix": "ctas",
+        "body": [
+            "CREATE TABLE $1 AS",
+            "SELECT",
+            "    $2",
+            "FROM $3",
+            "WHERE $4;"
+        ],
+        "description": "CREATE TABLE AS SELECT"
+    },
+    "With CTE": {
+        "prefix": "cte",
+        "body": [
+            "WITH $1 AS (",
+            "    SELECT $2 FROM $3 WHERE $4",
+            ")",
+            "SELECT $5",
+            "FROM $1",
+            "WHERE $6",
+            "LIMIT 100;"
+        ],
+        "description": "WITH common table expression"
+    },
+    "Union All": {
+        "prefix": "union",
+        "body": [
+            "SELECT $1 FROM $2",
+            "UNION ALL",
+            "SELECT $3 FROM $4"
+        ],
+        "description": "UNION ALL"
+    },
+    "Column Comment": {
+        "prefix": "col",
+        "body": [
+            "COMMENT '${1:列说明}'"
+        ],
+        "description": "列 COMMENT 注释"
+    },
+    "Table Comment": {
+        "prefix": "tbl",
+        "body": [
+            "COMMENT '${1:表说明}'"
+        ],
+        "description": "表 COMMENT 注释"
+    },
+    "TODO Comment": {
+        "prefix": "todo",
+        "body": [
+            "-- TODO(${1:username}): ${2:description}"
+        ],
+        "description": "TODO 注释（带责任人）"
+    },
+    "FIXME Comment": {
+        "prefix": "fixme",
+        "body": [
+            "-- FIXME: ${1:description}",
+            "-- Reason: ${2:why this needs fixing}"
+        ],
+        "description": "FIXME 注释"
+    },
+    "HACK Comment": {
+        "prefix": "hack",
+        "body": [
+            "-- HACK: ${1:description}",
+            "-- TODO: ${2:proper solution}"
+        ],
+        "description": "HACK 临时方案注释"
+    },
+    "Query Description": {
+        "prefix": "desc",
+        "body": [
+            "-- ============================================",
+            "-- 查询说明：${1:功能描述}",
+            "-- 涉及表：${2:table_list}",
+            "-- 条件：${3:filter_conditions}",
+            "-- 输出：${4:output_description}",
+            "-- 作者：${5:author}",
+            "-- 日期：$CURRENT_YEAR-$CURRENT_MONTH-$CURRENT_DATE",
+            "-- ============================================"
+        ],
+        "description": "查询说明注释块"
+    },
+    "Section Comment": {
+        "prefix": "section",
+        "body": [
+            "-- ============================================================",
+            "-- ${1:section_title}",
+            "-- ============================================================"
+        ],
+        "description": "分区标题注释"
+    }
+}

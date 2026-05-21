@@ -2,6 +2,7 @@ import * as vscode from "vscode"
 import { createConfig } from "../core/config"
 import { sqlDialects } from "../core/sqlDialects"
 import { formatEditorText } from "../utils/formatEditorText"
+import { t } from "../i18n"
 
 export function formatSelectionCommand() {
     const editor = vscode.window.activeTextEditor
@@ -14,7 +15,7 @@ export function formatSelectionCommand() {
             formatEditorText(text, createConfigForEditor(editor)),
         )
     } catch (e) {
-        vscode.window.showErrorMessage("Unable to format SQL:\n" + e)
+        vscode.window.showErrorMessage(t('notification.formatError', String(e)))
     }
 }
 

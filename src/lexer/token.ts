@@ -15,6 +15,7 @@ export const TokenType = {
     RESERVED_CLAUSE: 'RESERVED_CLAUSE',
     RESERVED_SELECT: 'RESERVED_SELECT',
     RESERVED_JOIN: 'RESERVED_JOIN',
+    RESERVED_COMMAND: 'RESERVED_COMMAND',
     ARRAY_IDENTIFIER: 'ARRAY_IDENTIFIER', // IDENTIFIER token in front of [
     ARRAY_KEYWORD: 'ARRAY_KEYWORD', // RESERVED_DATA_TYPE token in front of [
     CASE: 'CASE',
@@ -27,6 +28,8 @@ export const TokenType = {
     AND: 'AND',
     OR: 'OR',
     XOR: 'XOR',
+    ON: 'ON',
+    USING: 'USING',
     OPERATOR: 'OPERATOR',
     COMMA: 'COMMA',
     ASTERISK: 'ASTERISK', // *

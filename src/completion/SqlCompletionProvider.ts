@@ -19,6 +19,12 @@ const keywordMap: Record<string, { keywords: string[]; dataTypes: string[] }> = 
     mysql: { keywords: allDialects.mysqlKeywords, dataTypes: allDialects.mysqlDataTypes },
     spark: { keywords: allDialects.sparkKeywords, dataTypes: allDialects.sparkDataTypes },
     sql:   { keywords: allDialects.sqlKeywords,   dataTypes: allDialects.sqlDataTypes },
+    postgresql: { keywords: allDialects.pgKeywords, dataTypes: allDialects.pgDataTypes },
+    oracle: { keywords: allDialects.oracleKeywords, dataTypes: allDialects.oracleDataTypes },
+    bigquery: { keywords: allDialects.bqKeywords, dataTypes: allDialects.bqDataTypes },
+    snowflake: { keywords: allDialects.sfKeywords, dataTypes: allDialects.sfDataTypes },
+    presto: { keywords: allDialects.prestoKeywords, dataTypes: allDialects.prestoDataTypes },
+    sqlite: { keywords: allDialects.sqliteKeywords, dataTypes: allDialects.sqliteDataTypes },
 }
 
 const functionSigMap: Record<string, FunctionSignature[]> = {
@@ -26,12 +32,19 @@ const functionSigMap: Record<string, FunctionSignature[]> = {
     mysql: allDialects.mysqlFunctionSignatures,
     spark: allDialects.sparkFunctionSignatures,
     sql:   allDialects.sqlFunctionSignatures,
+    postgresql: allDialects.pgFunctionSignatures,
+    oracle: allDialects.oracleFunctionSignatures,
+    bigquery: allDialects.bqFunctionSignatures,
+    snowflake: allDialects.sfFunctionSignatures,
+    presto: allDialects.prestoFunctionSignatures,
+    sqlite: allDialects.sqliteFunctionSignatures,
 }
 
 export class SqlCompletionProvider implements vscode.CompletionItemProvider {
     private dialectCache = new Map<string, Dialect>()
     private snippetItems: vscode.CompletionItem[] = []
     private cfg: Record<string, boolean> = {}
+    private configChangeListener: vscode.Disposable
 
     constructor(extensionPath: string) {
         try {
@@ -40,9 +53,13 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
             this.snippetItems = getSnippetItems(JSON.parse(c) as Record<string, SnippetDef>)
         } catch { this.snippetItems = [] }
         this.loadConfig()
-        vscode.workspace.onDidChangeConfiguration((e) => {
+        this.configChangeListener = vscode.workspace.onDidChangeConfiguration((e) => {
             if (e.affectsConfiguration('Hive-Formatter')) this.loadConfig()
         })
+    }
+
+    public dispose(): void {
+        this.configChangeListener.dispose()
     }
 
     private loadConfig(): void {

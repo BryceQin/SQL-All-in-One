@@ -1,6 +1,7 @@
 import * as vscode from 'vscode'
 import Tokenizer from '../lexer/Tokenizer'
 import { TokenType } from '../lexer/token'
+import { t } from '../i18n'
 
 type ClauseContext = 'from' | 'select' | 'where' | 'unknown'
 
@@ -53,8 +54,9 @@ function getClauseContext(text: string, offset: number, tokenizer: Tokenizer): C
 }
 
 function getColumnCompletionForAlias(alias: string, text: string): vscode.CompletionItem[] {
-    const fromMatch = text.match(new RegExp(`\\bFROM\\s+(\\w+)\\s+(?:AS\\s+)?${alias}\\b`, 'i'))
-    const joinMatch = text.match(new RegExp(`\\bJOIN\\s+(\\w+)\\s+(?:AS\\s+)?${alias}\\b`, 'i'))
+    const escapedAlias = alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const fromMatch = text.match(new RegExp(`\\bFROM\\s+(\\w+)\\s+(?:AS\\s+)?${escapedAlias}\\b`, 'i'))
+    const joinMatch = text.match(new RegExp(`\\bJOIN\\s+(\\w+)\\s+(?:AS\\s+)?${escapedAlias}\\b`, 'i'))
     if (!fromMatch && !joinMatch) return []
 
     const columns = findColumns(text)
@@ -84,17 +86,17 @@ function findColumns(text: string): string[] {
 
 function getCompletionForContext(ctx: ClauseContext, text: string): vscode.CompletionItem[] {
     if (ctx === 'from') {
-        return extractTableNames(text).map((t) => {
-            const item = new vscode.CompletionItem(t, vscode.CompletionItemKind.Class)
-            item.detail = '表名'
-            item.sortText = `4_${t}`
+        return extractTableNames(text).map((tbl) => {
+            const item = new vscode.CompletionItem(tbl, vscode.CompletionItemKind.Class)
+            item.detail = t('completion.tableName')
+            item.sortText = `4_${tbl}`
             return item
         })
     }
     if (ctx === 'select' || ctx === 'where') {
         return findColumns(text).map((col) => {
             const item = new vscode.CompletionItem(col, vscode.CompletionItemKind.Field)
-            item.detail = '列名'
+            item.detail = t('completion.columnName')
             item.sortText = `4_${col}`
             return item
         })
