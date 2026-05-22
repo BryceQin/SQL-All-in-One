@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hive Formatter - 配置编辑器</title>
+    <link rel="stylesheet" href="{{CSS_URI}}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-logo">⚡</div>
+            <div class="header-info">
+                <h1>Hive Formatter 配置编辑器</h1>
+                <div class="header-sub">可视化调整 SQL 格式化选项，实时预览效果</div>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-ghost" onclick="resetConfig()">↺ 重置默认</button>
+                <button class="btn btn-primary" onclick="saveConfig()">✓ 保存配置</button>
+            </div>
+        </div>
+
+        <div class="presets-bar">
+            <span class="presets-bar-label">快速预设</span>
+            <div class="presets-row">
+                <button class="preset-chip active" onclick="applyPreset('default')">默认</button>
+                <button class="preset-chip" onclick="applyPreset('hive')">Hive</button>
+                <button class="preset-chip" onclick="applyPreset('mysql')">MySQL</button>
+                <button class="preset-chip" onclick="applyPreset('compact')">紧凑</button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="preview-panel">
+                <div class="section-header">
+                    <span class="section-header-icon">👁️</span>
+                    <h2>实时预览</h2>
+                </div>
+                <div class="preview-body">
+                    <div class="preview-col">
+                        <div class="preview-col-label">输入 SQL</div>
+                        <textarea class="preview-editor" id="previewInput" placeholder="输入 SQL 进行预览...">select id,name,email from users where age>18 and status='active' order by created_at desc limit 10;</textarea>
+                        <div class="preview-actions">
+                            <button class="btn btn-primary" style="flex:1;" onclick="previewFormat()">▶ 格式化预览</button>
+                        </div>
+                    </div>
+                    <div class="preview-col">
+                        <div class="preview-col-label">格式化结果</div>
+                        <div class="preview-result empty" id="previewResult">点击「格式化预览」查看效果</div>
+                    </div>
+                </div>
+            </div>
+            <div class="resize-handle" id="resizeHandle"></div>
+            <div class="config-section">
+                <div class="section-header">
+                    <span class="section-header-icon">⚙️</span>
+                    <h2>格式化配置</h2>
+                </div>
+                <div class="section-body">
+                    <!-- 基础设置 -->
+                    <div class="config-group">
+                        <div class="cg-header" onclick="toggleGroup(this)">
+                            <span class="cg-arrow open">▶</span>
+                            <span class="cg-icon">📐</span>
+                            <span class="cg-title">基础设置</span>
+                        </div>
+                        <div class="cg-body open">
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text">SQL 方言</span></div>
+                                <select class="config-select" id="dialect">
+                                    <option value="auto-detect">自动检测</option>
+                                    <option value="hive">Apache Hive</option>
+                                    <option value="mysql">MySQL</option>
+                                    <option value="spark">Spark</option>
+                                    <option value="sql">通用 SQL</option>
+                                    <option value="postgresql">PostgreSQL</option>
+                                    <option value="bigquery">BigQuery</option>
+                                    <option value="sqlite">SQLite</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 功能开关 -->
+                    <div class="config-group">
+                        <div class="cg-header" onclick="toggleGroup(this)">
+                            <span class="cg-arrow open">▶</span>
+                            <span class="cg-icon">🔌</span>
+                            <span class="cg-title">功能开关</span>
+                            <span class="cg-badge">12</span>
+                        </div>
+                        <div class="cg-body open">
+                            <div class="toggle-row"><span class="toggle-label">启用增强语法检查</span><label class="toggle"><input type="checkbox" id="enableEnhancedChecks"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">启用 SQL Lint 功能</span><label class="toggle"><input type="checkbox" id="enableLinter"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">显示错误级别诊断</span><label class="toggle"><input type="checkbox" id="showErrorLevel"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">显示警告级别诊断</span><label class="toggle"><input type="checkbox" id="showWarningLevel"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">显示信息级别提示</span><label class="toggle"><input type="checkbox" id="showInfoLevel"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">启用代码折叠</span><label class="toggle"><input type="checkbox" id="enableCodeFolding"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">启用大纲视图</span><label class="toggle"><input type="checkbox" id="enableOutlineView"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">启用状态栏</span><label class="toggle"><input type="checkbox" id="enableStatusBar"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">启用参数高亮</span><label class="toggle"><input type="checkbox" id="enableParameterHighlight"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">启用代码片段</span><label class="toggle"><input type="checkbox" id="enableSnippets"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">启用快速修复</span><label class="toggle"><input type="checkbox" id="enableQuickFix"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">启用智能注释切换</span><label class="toggle"><input type="checkbox" id="enableSmartCommentToggle"><span class="toggle-slider"></span></label></div>
+                        </div>
+                    </div>
+
+                    <!-- 注释设置 -->
+                    <div class="config-group">
+                        <div class="cg-header" onclick="toggleGroup(this)">
+                            <span class="cg-arrow open">▶</span>
+                            <span class="cg-icon">💬</span>
+                            <span class="cg-title">注释设置</span>
+                            <span class="cg-badge">3</span>
+                        </div>
+                        <div class="cg-body open">
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text">注释模板作者</span><span class="ci-label-hint">header Snippet 使用</span></div>
+                                <input type="text" class="config-input" id="headerAuthor" placeholder="留空则插入时手动输入">
+                            </div>
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text">注释模板修改人</span><span class="ci-label-hint">为空时回退取作者</span></div>
+                                <input type="text" class="config-input" id="headerModifier" placeholder="留空则使用作者名">
+                            </div>
+                            <div class="toggle-row"><span class="toggle-label">注释模板补全</span><label class="toggle"><input type="checkbox" id="completionCommentSnippets"><span class="toggle-slider"></span></label></div>
+                        </div>
+                    </div>
+
+                    <!-- Lint 规则 -->
+                    <div class="config-group">
+                        <div class="cg-header" onclick="toggleGroup(this)">
+                            <span class="cg-arrow open">▶</span>
+                            <span class="cg-icon">🔍</span>
+                            <span class="cg-title">Lint 规则</span>
+                            <span class="cg-badge">18</span>
+                        </div>
+                        <div class="cg-body open">
+                            <div class="lint-rule">
+                                <span class="lint-rule-name">避免 SELECT *</span>
+                                <select class="config-select lint-rule-severity" id="avoidSelectStarSeverity">
+                                    <option value="error">Error</option>
+                                    <option value="warning">Warning</option>
+                                    <option value="information">Info</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="avoidSelectStarEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name">显式 JOIN 类型</span>
+                                <select class="config-select lint-rule-severity" id="explicitJoinTypeSeverity">
+                                    <option value="error">Error</option>
+                                    <option value="warning">Warning</option>
+                                    <option value="information">Info</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="explicitJoinTypeEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name">LIMIT 配合 ORDER BY</span>
+                                <select class="config-select lint-rule-severity" id="limitWithOrderBySeverity">
+                                    <option value="error">Error</option>
+                                    <option value="warning">Warning</option>
+                                    <option value="information">Info</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="limitWithOrderByEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name">列数不匹配检测</span>
+                                <select class="config-select lint-rule-severity" id="avoidColumnCountMismatchSeverity">
+                                    <option value="error">Error</option>
+                                    <option value="warning">Warning</option>
+                                    <option value="information">Info</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="avoidColumnCountMismatchEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name">缺失主键检测</span>
+                                <select class="config-select lint-rule-severity" id="missingPrimaryKeySeverity">
+                                    <option value="error">Error</option>
+                                    <option value="warning">Warning</option>
+                                    <option value="information">Info</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="missingPrimaryKeyEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name">使用 CURRENT_TIMESTAMP</span>
+                                <select class="config-select lint-rule-severity" id="useCurrentTimestampSeverity">
+                                    <option value="error">Error</option>
+                                    <option value="warning">Warning</option>
+                                    <option value="information">Info</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="useCurrentTimestampEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name">避免 INSERT 中的 SELECT</span>
+                                <select class="config-select lint-rule-severity" id="avoidSelectInInsertSeverity">
+                                    <option value="error">Error</option>
+                                    <option value="warning">Warning</option>
+                                    <option value="information">Info</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="avoidSelectInInsertEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name">重复列别名检测</span>
+                                <select class="config-select lint-rule-severity" id="duplicateColumnAliasesSeverity">
+                                    <option value="error">Error</option>
+                                    <option value="warning">Warning</option>
+                                    <option value="information">Info</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="duplicateColumnAliasesEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name">关键字大写</span>
+                                <select class="config-select lint-rule-severity" id="uppercaseKeywordsSeverity">
+                                    <option value="error">Error</option>
+                                    <option value="warning">Warning</option>
+                                    <option value="information">Info</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="uppercaseKeywordsEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name">一致的别名</span>
+                                <select class="config-select lint-rule-severity" id="consistentAliasingSeverity">
+                                    <option value="error">Error</option>
+                                    <option value="warning">Warning</option>
+                                    <option value="information">Info</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="consistentAliasingEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name">使用 COALESCE 而非 ISNULL</span>
+                                <select class="config-select lint-rule-severity" id="useCoalesceOverIsnullSeverity">
+                                    <option value="error">Error</option>
+                                    <option value="warning">Warning</option>
+                                    <option value="information">Info</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="useCoalesceOverIsnullEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name">显式列别名</span>
+                                <select class="config-select lint-rule-severity" id="explicitColumnAliasingSeverity">
+                                    <option value="error">Error</option>
+                                    <option value="warning">Warning</option>
+                                    <option value="information">Info</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="explicitColumnAliasingEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name">避免关联子查询</span>
+                                <select class="config-select lint-rule-severity" id="avoidCorrelatedSubqueriesSeverity">
+                                    <option value="error">Error</option>
+                                    <option value="warning">Warning</option>
+                                    <option value="information">Info</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="avoidCorrelatedSubqueriesEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name">长查询行检测</span>
+                                <select class="config-select lint-rule-severity" id="longQueryLineSeverity">
+                                    <option value="error">Error</option>
+                                    <option value="warning">Warning</option>
+                                    <option value="information">Info</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="longQueryLineEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name">复杂查询缺注释</span>
+                                <select class="config-select lint-rule-severity" id="missingQueryCommentSeverity">
+                                    <option value="error">Error</option>
+                                    <option value="warning">Warning</option>
+                                    <option value="information">Info</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="missingQueryCommentEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name">DDL 列缺 COMMENT</span>
+                                <select class="config-select lint-rule-severity" id="missingColumnCommentSeverity">
+                                    <option value="error">Error</option>
+                                    <option value="warning">Warning</option>
+                                    <option value="information">Info</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="missingColumnCommentEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name">注释掉的代码</span>
+                                <select class="config-select lint-rule-severity" id="commentedOutCodeSeverity">
+                                    <option value="error">Error</option>
+                                    <option value="warning">Warning</option>
+                                    <option value="information">Info</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="commentedOutCodeEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name">过期 TODO/FIXME</span>
+                                <select class="config-select lint-rule-severity" id="expiredTodoSeverity">
+                                    <option value="error">Error</option>
+                                    <option value="warning">Warning</option>
+                                    <option value="information">Info</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="expiredTodoEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 大小写设置 -->
+                    <div class="config-group">
+                        <div class="cg-header" onclick="toggleGroup(this)">
+                            <span class="cg-arrow open">▶</span>
+                            <span class="cg-icon">🔤</span>
+                            <span class="cg-title">大小写设置</span>
+                        </div>
+                        <div class="cg-body open">
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text">关键字大小写</span></div>
+                                <select class="config-select" id="keywordCase">
+                                    <option value="preserve">保持原样</option>
+                                    <option value="upper">大写</option>
+                                    <option value="lower">小写</option>
+                                </select>
+                            </div>
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text">数据类型大小写</span></div>
+                                <select class="config-select" id="dataTypeCase">
+                                    <option value="preserve">保持原样</option>
+                                    <option value="upper">大写</option>
+                                    <option value="lower">小写</option>
+                                </select>
+                            </div>
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text">函数名大小写</span></div>
+                                <select class="config-select" id="functionCase">
+                                    <option value="preserve">保持原样</option>
+                                    <option value="upper">大写</option>
+                                    <option value="lower">小写</option>
+                                </select>
+                            </div>
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text">标识符大小写</span></div>
+                                <select class="config-select" id="identifierCase">
+                                    <option value="preserve">保持原样</option>
+                                    <option value="upper">大写</option>
+                                    <option value="lower">小写</option>
+                                </select>
+                            </div>
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text">NULL 大小写</span></div>
+                                <select class="config-select" id="nullCase">
+                                    <option value="preserve">保持原样</option>
+                                    <option value="upper">大写</option>
+                                    <option value="lower">小写</option>
+                                </select>
+                            </div>
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text">布尔值大小写</span></div>
+                                <select class="config-select" id="booleanCase">
+                                    <option value="preserve">保持原样</option>
+                                    <option value="upper">大写</option>
+                                    <option value="lower">小写</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 缩进与格式 -->
+                    <div class="config-group">
+                        <div class="cg-header" onclick="toggleGroup(this)">
+                            <span class="cg-arrow open">▶</span>
+                            <span class="cg-icon">↹</span>
+                            <span class="cg-title">缩进与格式</span>
+                        </div>
+                        <div class="cg-body open">
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text">缩进风格</span></div>
+                                <select class="config-select" id="indentStyle">
+                                    <option value="standard">标准缩进</option>
+                                    <option value="tabularLeft">表格左对齐</option>
+                                    <option value="tabularRight">表格右对齐</option>
+                                </select>
+                            </div>
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text">逻辑运算符换行</span></div>
+                                <select class="config-select" id="logicalOperatorNewline">
+                                    <option value="before">AND/OR 之前换行</option>
+                                    <option value="after">AND/OR 之后换行</option>
+                                </select>
+                            </div>
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text">表达式宽度</span><span class="ci-label-hint">多行阈值</span></div>
+                                <input type="number" class="config-input" id="expressionWidth" min="0" max="200">
+                            </div>
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text">查询间隔行数</span><span class="ci-label-hint">空行数</span></div>
+                                <input type="number" class="config-input" id="linesBetweenQueries" min="0" max="10">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 逗号和对齐 -->
+                    <div class="config-group">
+                        <div class="cg-header" onclick="toggleGroup(this)">
+                            <span class="cg-arrow open">▶</span>
+                            <span class="cg-icon">⫶</span>
+                            <span class="cg-title">逗号和对齐</span>
+                        </div>
+                        <div class="cg-body open">
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text">逗号位置</span></div>
+                                <select class="config-select" id="commaPosition">
+                                    <option value="after">行尾</option>
+                                    <option value="before">行首</option>
+                                </select>
+                            </div>
+                            <div class="toggle-row"><span class="toggle-label">对齐列定义</span><label class="toggle"><input type="checkbox" id="alignColumnDefinitions"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">对齐表别名</span><label class="toggle"><input type="checkbox" id="tabulateAlias"><span class="toggle-slider"></span></label></div>
+                        </div>
+                    </div>
+
+                    <!-- 换行设置 -->
+                    <div class="config-group">
+                        <div class="cg-header" onclick="toggleGroup(this)">
+                            <span class="cg-arrow open">▶</span>
+                            <span class="cg-icon">↵</span>
+                            <span class="cg-title">换行设置</span>
+                        </div>
+                        <div class="cg-body open">
+                            <div class="toggle-row"><span class="toggle-label">SELECT 后换行</span><label class="toggle"><input type="checkbox" id="newlineAfterSelect"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">FROM 后换行</span><label class="toggle"><input type="checkbox" id="newlineAfterFrom"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">WHERE 前换行</span><label class="toggle"><input type="checkbox" id="newlineBeforeWhere"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">WHERE 后换行</span><label class="toggle"><input type="checkbox" id="newlineAfterWhere"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">ORDER BY 前换行</span><label class="toggle"><input type="checkbox" id="newlineBeforeOrderBy"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">GROUP BY 前换行</span><label class="toggle"><input type="checkbox" id="newlineBeforeGroupBy"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">HAVING 前换行</span><label class="toggle"><input type="checkbox" id="newlineBeforeHaving"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">LIMIT 前换行</span><label class="toggle"><input type="checkbox" id="newlineBeforeLimit"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">GROUP BY 后换行</span><label class="toggle"><input type="checkbox" id="newlineAfterGroupBy"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">HAVING 后换行</span><label class="toggle"><input type="checkbox" id="newlineAfterHaving"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">ORDER BY 后换行</span><label class="toggle"><input type="checkbox" id="newlineAfterOrderBy"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">LIMIT 后换行</span><label class="toggle"><input type="checkbox" id="newlineAfterLimit"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">JOIN 后换行</span><label class="toggle"><input type="checkbox" id="newlineAfterJoin"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">ON 前换行</span><label class="toggle"><input type="checkbox" id="newlineBeforeOn"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">UNION 前换行</span><label class="toggle"><input type="checkbox" id="newlineBeforeSetOperation"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">CASE 后换行</span><label class="toggle"><input type="checkbox" id="newlineAfterCase"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">WHEN 后换行</span><label class="toggle"><input type="checkbox" id="newlineAfterWhen"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">THEN 后换行</span><label class="toggle"><input type="checkbox" id="newlineAfterThen"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">ELSE 后换行</span><label class="toggle"><input type="checkbox" id="newlineAfterElse"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">IN 后换行</span><label class="toggle"><input type="checkbox" id="newlineAfterIn"><span class="toggle-slider"></span></label></div>
+                        </div>
+                    </div>
+
+                    <!-- 高级选项 -->
+                    <div class="config-group">
+                        <div class="cg-header" onclick="toggleGroup(this)">
+                            <span class="cg-arrow">▶</span>
+                            <span class="cg-icon">⚡</span>
+                            <span class="cg-title">高级选项</span>
+                        </div>
+                        <div class="cg-body">
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text">保留关键字大小写</span></div>
+                                <select class="config-select" id="reservedKeywordCase">
+                                    <option value="preserve">保持原样</option>
+                                    <option value="upper">大写</option>
+                                    <option value="lower">小写</option>
+                                </select>
+                            </div>
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text">内置函数大小写</span></div>
+                                <select class="config-select" id="builtinFunctionCase">
+                                    <option value="preserve">保持原样</option>
+                                    <option value="upper">大写</option>
+                                    <option value="lower">小写</option>
+                                </select>
+                            </div>
+                            <div class="toggle-row"><span class="toggle-label">JOIN 前换行</span><label class="toggle"><input type="checkbox" id="newlineBeforeJoin"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">逗号后换行</span><label class="toggle"><input type="checkbox" id="newlineAfterComma"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">每个 SELECT 项后换行</span><label class="toggle"><input type="checkbox" id="breakAfterSelectItem"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">每个 FROM 项后换行</span><label class="toggle"><input type="checkbox" id="breakAfterFromItem"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">对齐 WHERE 子句</span><label class="toggle"><input type="checkbox" id="alignWhereClauses"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">对齐 CASE 语句</span><label class="toggle"><input type="checkbox" id="alignCaseStatements"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">逗号前加空格</span><label class="toggle"><input type="checkbox" id="spaceBeforeComma"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">括号内加空格</span><label class="toggle"><input type="checkbox" id="spaceInsideParentheses"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">修剪尾部空格</span><label class="toggle"><input type="checkbox" id="trimTrailingSpaces"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">语句结尾添加分号</span><label class="toggle"><input type="checkbox" id="semicolonAtEnd"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">紧凑运算符</span><label class="toggle"><input type="checkbox" id="denseOperators"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">分号另起一行</span><label class="toggle"><input type="checkbox" id="newlineBeforeSemicolon"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">JOIN 条件缩进</span><label class="toggle"><input type="checkbox" id="indentJoinConditions"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">WHEN 缩进</span><label class="toggle"><input type="checkbox" id="indentWhen"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">THEN 缩进</span><label class="toggle"><input type="checkbox" id="indentThen"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">CTE 体缩进</span><label class="toggle"><input type="checkbox" id="indentCteBody"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">对齐 ON 条件</span><label class="toggle"><input type="checkbox" id="alignOnClauses"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">对齐 INSERT 列</span><label class="toggle"><input type="checkbox" id="alignInsertColumns"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">对齐 VALUES 组</span><label class="toggle"><input type="checkbox" id="alignInsertValuesGroups"><span class="toggle-slider"></span></label></div>
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text">IN 列表阈值</span><span class="ci-label-hint">超过换行</span></div>
+                                <input type="number" class="config-input" id="maxItemsInlineList" min="1" max="100">
+                            </div>
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text">CTE 逗号位置</span></div>
+                                <select class="config-select" id="cteCommaPosition">
+                                    <option value="before">行首</option>
+                                    <option value="after">行尾</option>
+                                </select>
+                            </div>
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text">子查询括号风格</span></div>
+                                <select class="config-select" id="subqueryParenStyle">
+                                    <option value="inline">内联</option>
+                                    <option value="newline">换行</option>
+                                </select>
+                            </div>
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text">注释位置策略</span></div>
+                                <select class="config-select" id="commentPosition">
+                                    <option value="preserve">保持原样</option>
+                                    <option value="newline">独立行</option>
+                                    <option value="inline">行内</option>
+                                </select>
+                            </div>
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text">UNION 前空行数</span></div>
+                                <input type="number" class="config-input" id="blankLinesBeforeSetOperation" min="0" max="5">
+                            </div>
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text">UNION 后空行数</span></div>
+                                <input type="number" class="config-input" id="blankLinesAfterSetOperation" min="0" max="5">
+                            </div>
+                            <div class="toggle-row"><span class="toggle-label">LATERAL VIEW 前换行 (Hive)</span><label class="toggle"><input type="checkbox" id="newlineBeforeLateralView"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">DISTRIBUTE BY 前换行 (Hive)</span><label class="toggle"><input type="checkbox" id="newlineBeforeDistributeBy"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">CLUSTER BY 前换行 (Hive)</span><label class="toggle"><input type="checkbox" id="newlineBeforeClusterBy"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">SORT BY 前换行 (Hive)</span><label class="toggle"><input type="checkbox" id="newlineBeforeSortBy"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label">忽略编辑器 Tab 设置</span><label class="toggle"><input type="checkbox" id="ignoreTabSettings"><span class="toggle-slider"></span></label></div>
+                            <div class="config-item" id="tabOverrideGroup" style="display:none;">
+                                <div class="ci-label"><span class="ci-label-text">Tab 宽度覆盖</span></div>
+                                <input type="number" class="config-input" id="tabSizeOverride" min="1" max="8">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 其他 -->
+                    <div class="config-group">
+                        <div class="cg-header" onclick="toggleGroup(this)">
+                            <span class="cg-arrow">▶</span>
+                            <span class="cg-icon">📏</span>
+                            <span class="cg-title">其他选项</span>
+                        </div>
+                        <div class="cg-body">
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text">最大行长度</span></div>
+                                <input type="number" class="config-input" id="maxLineLength" min="40" max="500">
+                            </div>
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text">单行查询最大长度</span></div>
+                                <input type="number" class="config-input" id="singleLineMaxLength" min="40" max="500">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="toast" id="toast"></div>
+    <script src="{{JS_URI}}"></script>
+</body>
+</html>
