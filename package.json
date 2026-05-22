@@ -2,7 +2,7 @@
     "name": "hive-formatter",
     "displayName": "Hive Formatter",
     "description": "一个用于 Hive、MySQL、SparkSQL 格式化的 VSCode 插件，支持 SQL IntelliSense 智能补全、语法检查和 MySQL/HiveSQL 互相转换",
-    "version": "0.21.0",
+    "version": "0.22.0",
     "publisher": "bryce-qin",
     "contributors": [
         "TalDu"
@@ -40,90 +40,90 @@
         "onLanguage:mysql",
         "onLanguage:spark",
         "onLanguage:postgresql",
-        "onLanguage:oracle",
-        "onLanguage:plsql",
         "onLanguage:bigquery",
         "onLanguage:snowflake",
-        "onLanguage:presto",
         "onLanguage:sqlite"
     ],
     "main": "./out/extension.js",
     "browser": "./out/extension.js",
     "contributes": {
-        "snippets": [
-            { "language": "sql", "path": "./snippets/common.json" },
-            { "language": "sql", "path": "./snippets/sql.json" },
-            { "language": "hive", "path": "./snippets/common.json" },
-            { "language": "hive", "path": "./snippets/hive.json" },
-            { "language": "mysql", "path": "./snippets/common.json" },
-            { "language": "mysql", "path": "./snippets/mysql.json" },
-            { "language": "spark", "path": "./snippets/common.json" },
-            { "language": "spark", "path": "./snippets/spark.json" },
-            { "language": "postgresql", "path": "./snippets/common.json" },
-            { "language": "postgresql", "path": "./snippets/postgresql.json" },
-            { "language": "oracle", "path": "./snippets/common.json" },
-            { "language": "oracle", "path": "./snippets/oracle.json" },
-            { "language": "plsql", "path": "./snippets/common.json" },
-            { "language": "plsql", "path": "./snippets/oracle.json" },
-            { "language": "bigquery", "path": "./snippets/common.json" },
-            { "language": "bigquery", "path": "./snippets/bigquery.json" },
-            { "language": "snowflake", "path": "./snippets/common.json" },
-            { "language": "snowflake", "path": "./snippets/snowflake.json" },
-            { "language": "presto", "path": "./snippets/common.json" },
-            { "language": "presto", "path": "./snippets/presto.json" },
-            { "language": "sqlite", "path": "./snippets/common.json" },
-            { "language": "sqlite", "path": "./snippets/sqlite.json" }
-        ],
         "languages": [
             {
                 "id": "sql",
-                "aliases": ["SQL"],
-                "extensions": [".sql"]
+                "aliases": [
+                    "SQL"
+                ],
+                "extensions": [
+                    ".sql"
+                ]
             },
             {
                 "id": "hive",
-                "aliases": ["Hive", "hive-sql"],
-                "extensions": [".hql"]
+                "aliases": [
+                    "Hive",
+                    "hive-sql"
+                ],
+                "extensions": [
+                    ".hql"
+                ]
             },
             {
                 "id": "mysql",
-                "aliases": ["MySQL"],
-                "extensions": [".mysql"]
+                "aliases": [
+                    "MySQL"
+                ],
+                "extensions": [
+                    ".mysql"
+                ]
             },
             {
                 "id": "spark",
-                "aliases": ["SparkSQL", "spark"],
-                "extensions": [".sparksql"]
+                "aliases": [
+                    "SparkSQL",
+                    "spark"
+                ],
+                "extensions": [
+                    ".sparksql"
+                ]
             },
             {
                 "id": "postgresql",
-                "aliases": ["PostgreSQL", "postgres"],
-                "extensions": [".psql", ".pgsql"]
-            },
-            {
-                "id": "plsql",
-                "aliases": ["Oracle", "PL/SQL"],
-                "extensions": [".pls", ".plsql"]
+                "aliases": [
+                    "PostgreSQL",
+                    "postgres"
+                ],
+                "extensions": [
+                    ".psql",
+                    ".pgsql"
+                ]
             },
             {
                 "id": "bigquery",
-                "aliases": ["BigQuery"],
-                "extensions": [".bqsql"]
+                "aliases": [
+                    "BigQuery"
+                ],
+                "extensions": [
+                    ".bqsql"
+                ]
             },
             {
                 "id": "snowflake",
-                "aliases": ["Snowflake"],
-                "extensions": [".snowsql"]
-            },
-            {
-                "id": "presto",
-                "aliases": ["Presto", "Trino"],
-                "extensions": [".prestosql"]
+                "aliases": [
+                    "Snowflake"
+                ],
+                "extensions": [
+                    ".snowsql"
+                ]
             },
             {
                 "id": "sqlite",
-                "aliases": ["SQLite"],
-                "extensions": [".sqlite", ".sqlt"]
+                "aliases": [
+                    "SQLite"
+                ],
+                "extensions": [
+                    ".sqlite",
+                    ".sqlt"
+                ]
             }
         ],
         "commands": [
@@ -185,39 +185,39 @@
             "title": "Hive Formatter",
             "properties": {
                 "Hive-Formatter.dialect": {
-                "type": "string",
-                "enum": [
-                    "auto-detect",
-                    "hive",
-                    "mysql",
-                    "spark",
-                    "sql",
-                    "postgresql",
-                    "oracle",
-                    "bigquery",
-                    "snowflake",
-                    "presto",
-                    "sqlite"
-                ],
-                "enumDescriptions": [
-                    "自动检测",
-                    "Apache Hive",
-                    "MySQL",
-                    "Spark",
-                    "Basic SQL - generally not recommended.",
-                    "PostgreSQL",
-                    "Oracle",
-                    "BigQuery",
-                    "Snowflake",
-                    "Presto/Trino",
-                    "SQLite"
-                ],
-                "default": "hive",
-                "markdownDescription": "选择使用的SQL方言。强烈建议选择否则可能出错。"
-            },
+                    "type": "string",
+                    "enum": [
+                        "auto-detect",
+                        "hive",
+                        "mysql",
+                        "spark",
+                        "sql",
+                        "postgresql",
+                        "bigquery",
+                        "snowflake",
+                        "sqlite"
+                    ],
+                    "enumDescriptions": [
+                        "自动检测",
+                        "Apache Hive",
+                        "MySQL",
+                        "Spark",
+                        "Basic SQL - generally not recommended.",
+                        "PostgreSQL",
+                        "BigQuery",
+                        "Snowflake",
+                        "SQLite"
+                    ],
+                    "default": "hive",
+                    "markdownDescription": "选择使用的SQL方言。强烈建议选择否则可能出错。"
+                },
                 "Hive-Formatter.displayLanguage": {
                     "type": "string",
-                    "enum": ["auto", "zh", "en"],
+                    "enum": [
+                        "auto",
+                        "zh",
+                        "en"
+                    ],
                     "enumDescriptions": [
                         "%hive-formatter.config.displayLanguage.enumDescriptions.auto%",
                         "%hive-formatter.config.displayLanguage.enumDescriptions.zh%",
@@ -504,72 +504,114 @@
                 },
                 "Hive-Formatter.lint.avoid_select_star": {
                     "type": "object",
-                    "default": { "enabled": true, "severity": "warning" },
+                    "default": {
+                        "enabled": true,
+                        "severity": "warning"
+                    },
                     "markdownDescription": "配置 `avoid_select_star` 规则"
                 },
                 "Hive-Formatter.lint.explicit_join_type": {
                     "type": "object",
-                    "default": { "enabled": true, "severity": "information" },
+                    "default": {
+                        "enabled": true,
+                        "severity": "information"
+                    },
                     "markdownDescription": "配置 `explicit_join_type` 规则"
                 },
                 "Hive-Formatter.lint.limit_with_order_by": {
                     "type": "object",
-                    "default": { "enabled": true, "severity": "warning" },
+                    "default": {
+                        "enabled": true,
+                        "severity": "warning"
+                    },
                     "markdownDescription": "配置 `limit_with_order_by` 规则"
                 },
                 "Hive-Formatter.lint.avoid_column_count_mismatch": {
                     "type": "object",
-                    "default": { "enabled": true, "severity": "error" },
+                    "default": {
+                        "enabled": true,
+                        "severity": "error"
+                    },
                     "markdownDescription": "配置 `avoid_column_count_mismatch` 规则"
                 },
                 "Hive-Formatter.lint.missing_primary_key": {
                     "type": "object",
-                    "default": { "enabled": true, "severity": "warning" },
+                    "default": {
+                        "enabled": true,
+                        "severity": "warning"
+                    },
                     "markdownDescription": "配置 `missing_primary_key` 规则"
                 },
                 "Hive-Formatter.lint.use_current_timestamp": {
                     "type": "object",
-                    "default": { "enabled": true, "severity": "information" },
+                    "default": {
+                        "enabled": true,
+                        "severity": "information"
+                    },
                     "markdownDescription": "配置 `use_current_timestamp` 规则"
                 },
                 "Hive-Formatter.lint.avoid_select_in_insert": {
                     "type": "object",
-                    "default": { "enabled": true, "severity": "warning" },
+                    "default": {
+                        "enabled": true,
+                        "severity": "warning"
+                    },
                     "markdownDescription": "配置 `avoid_select_in_insert` 规则"
                 },
                 "Hive-Formatter.lint.duplicate_column_aliases": {
                     "type": "object",
-                    "default": { "enabled": true, "severity": "warning" },
+                    "default": {
+                        "enabled": true,
+                        "severity": "warning"
+                    },
                     "markdownDescription": "配置 \"duplicate_column_aliases\" 规则"
                 },
                 "Hive-Formatter.lint.uppercase_keywords": {
                     "type": "object",
-                    "default": { "enabled": false, "severity": "information" },
+                    "default": {
+                        "enabled": false,
+                        "severity": "information"
+                    },
                     "markdownDescription": "配置 \"uppercase_keywords\" 规则"
                 },
                 "Hive-Formatter.lint.consistent_aliasing": {
                     "type": "object",
-                    "default": { "enabled": false, "severity": "information" },
+                    "default": {
+                        "enabled": false,
+                        "severity": "information"
+                    },
                     "markdownDescription": "配置 \"consistent_aliasing\" 规则"
                 },
                 "Hive-Formatter.lint.use_coalesce_over_isnull": {
                     "type": "object",
-                    "default": { "enabled": false, "severity": "information" },
+                    "default": {
+                        "enabled": false,
+                        "severity": "information"
+                    },
                     "markdownDescription": "配置 \"use_coalesce_over_isnull\" 规则"
                 },
                 "Hive-Formatter.lint.explicit_column_aliasing": {
                     "type": "object",
-                    "default": { "enabled": false, "severity": "information" },
+                    "default": {
+                        "enabled": false,
+                        "severity": "information"
+                    },
                     "markdownDescription": "配置 \"explicit_column_aliasing\" 规则"
                 },
                 "Hive-Formatter.lint.avoid_correlated_subqueries": {
                     "type": "object",
-                    "default": { "enabled": false, "severity": "warning" },
+                    "default": {
+                        "enabled": false,
+                        "severity": "warning"
+                    },
                     "markdownDescription": "配置 \"avoid_correlated_subqueries\" 规则"
                 },
                 "Hive-Formatter.lint.long_query_line": {
                     "type": "object",
-                    "default": { "enabled": false, "severity": "information" },
+                    "default": {
+                        "enabled": false,
+                        "severity": "information"
+                    },
                     "markdownDescription": "配置 \"long_query_line\" 规则"
                 },
                 "Hive-Formatter.enableCodeFolding": {
@@ -659,7 +701,10 @@
                 },
                 "Hive-Formatter.lint.missing_query_comment": {
                     "type": "object",
-                    "default": { "enabled": true, "severity": "warning" },
+                    "default": {
+                        "enabled": true,
+                        "severity": "warning"
+                    },
                     "markdownDescription": "配置 `missing_query_comment` 规则（复杂查询缺少说明注释）"
                 },
                 "Hive-Formatter.lint.missing_query_comment_threshold_line_count": {
@@ -679,7 +724,10 @@
                 },
                 "Hive-Formatter.lint.missing_column_comment": {
                     "type": "object",
-                    "default": { "enabled": true, "severity": "warning" },
+                    "default": {
+                        "enabled": true,
+                        "severity": "warning"
+                    },
                     "markdownDescription": "配置 `missing_column_comment` 规则（DDL 列定义缺少 COMMENT）"
                 },
                 "Hive-Formatter.lint.missing_column_comment_aggregate": {
@@ -694,7 +742,10 @@
                 },
                 "Hive-Formatter.lint.commented_out_code": {
                     "type": "object",
-                    "default": { "enabled": true, "severity": "information" },
+                    "default": {
+                        "enabled": true,
+                        "severity": "information"
+                    },
                     "markdownDescription": "配置 `commented_out_code` 规则（疑似注释掉的大段代码）"
                 },
                 "Hive-Formatter.lint.commented_out_code_threshold_lines": {
@@ -704,7 +755,10 @@
                 },
                 "Hive-Formatter.lint.expired_todo": {
                     "type": "object",
-                    "default": { "enabled": true, "severity": "information" },
+                    "default": {
+                        "enabled": true,
+                        "severity": "information"
+                    },
                     "markdownDescription": "配置 `expired_todo` 规则（过期的 TODO/FIXME 标记）"
                 },
                 "Hive-Formatter.lint.expired_todo_grace_period_days": {
@@ -714,13 +768,21 @@
                 },
                 "Hive-Formatter.nullCase": {
                     "type": "string",
-                    "enum": ["preserve", "upper", "lower"],
+                    "enum": [
+                        "preserve",
+                        "upper",
+                        "lower"
+                    ],
                     "default": "preserve",
                     "markdownDescription": "NULL 关键字的大小写"
                 },
                 "Hive-Formatter.booleanCase": {
                     "type": "string",
-                    "enum": ["preserve", "upper", "lower"],
+                    "enum": [
+                        "preserve",
+                        "upper",
+                        "lower"
+                    ],
                     "default": "preserve",
                     "markdownDescription": "TRUE / FALSE 关键字的大小写"
                 },
@@ -791,7 +853,10 @@
                 },
                 "Hive-Formatter.cteCommaPosition": {
                     "type": "string",
-                    "enum": ["before", "after"],
+                    "enum": [
+                        "before",
+                        "after"
+                    ],
                     "default": "before",
                     "markdownDescription": "CTE 定义之间的逗号位于行首还是行尾"
                 },
@@ -893,13 +958,20 @@
                 },
                 "Hive-Formatter.subqueryParenStyle": {
                     "type": "string",
-                    "enum": ["inline", "newline"],
+                    "enum": [
+                        "inline",
+                        "newline"
+                    ],
                     "default": "inline",
                     "markdownDescription": "子查询左括号是否与内容同行"
                 },
                 "Hive-Formatter.commentPosition": {
                     "type": "string",
-                    "enum": ["preserve", "newline", "inline"],
+                    "enum": [
+                        "preserve",
+                        "newline",
+                        "inline"
+                    ],
                     "default": "preserve",
                     "markdownDescription": "格式化后行内注释的放置策略"
                 },
@@ -934,16 +1006,6 @@
                     "type": "boolean",
                     "default": true,
                     "markdownDescription": "SORT BY 前是否换行（Hive 方言）"
-                },
-                "Hive-Formatter.newlineBeforeConnectBy": {
-                    "type": "boolean",
-                    "default": true,
-                    "markdownDescription": "CONNECT BY 前是否换行（Oracle 方言）"
-                },
-                "Hive-Formatter.newlineBeforeStartWith": {
-                    "type": "boolean",
-                    "default": true,
-                    "markdownDescription": "START WITH 前是否换行（Oracle 方言）"
                 }
             }
         },
@@ -972,7 +1034,6 @@
     },
     "devDependencies": {
         "@types/mocha": "^10.0.10",
-        "@types/nearley": "^2.11.5",
         "@types/node": "22.x",
         "@types/vscode": "^1.85.0",
         "@vscode/test-cli": "^0.0.12",
@@ -985,6 +1046,6 @@
         "typescript-eslint": "^8.52.0"
     },
     "dependencies": {
-        "nearley": "^2.20.1"
+        "node-sql-parser": "^5.4.0"
     }
 }

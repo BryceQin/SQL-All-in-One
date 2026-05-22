@@ -118,8 +118,6 @@ export const createConfig = (
         newlineBeforeDistributeBy: extensionSettings.get<boolean>("newlineBeforeDistributeBy"),
         newlineBeforeClusterBy: extensionSettings.get<boolean>("newlineBeforeClusterBy"),
         newlineBeforeSortBy: extensionSettings.get<boolean>("newlineBeforeSortBy"),
-        newlineBeforeConnectBy: extensionSettings.get<boolean>("newlineBeforeConnectBy"),
-        newlineBeforeStartWith: extensionSettings.get<boolean>("newlineBeforeStartWith"),
     }
 }
 

@@ -271,7 +271,7 @@ suite('回归测试 - 现有功能完整性', () => {
             
             const config = vscode.workspace.getConfiguration('Hive-Formatter')
             
-            const validDialects = ['auto-detect', 'hive', 'mysql', 'spark', 'sql', 'postgresql', 'oracle', 'bigquery', 'snowflake', 'presto', 'sqlite']
+            const validDialects = ['auto-detect', 'hive', 'mysql', 'spark', 'sql', 'postgresql', 'bigquery', 'snowflake', 'sqlite']
             const dialect = config.get<string>('dialect')
             assert.ok(validDialects.includes(dialect || ''), `方言值 ${dialect} 应在有效范围内`)
             

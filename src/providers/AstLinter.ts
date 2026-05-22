@@ -180,17 +180,16 @@ export class AstLinter {
     }
 
     private walkForSubStatements(root: AstNode, sql: string, diagnostics: vscode.Diagnostic[], document?: vscode.TextDocument): void {
-        const self = this
         walkAst(root, {
-            enter(child) {
+            enter: (child) => {
                 if (child !== root && isAstNode(child)) {
                     const childNode = child as AstNode
                     if (childNode.type === 'select') {
-                        self.checkSelectRules(childNode, sql, diagnostics, document)
+                        this.checkSelectRules(childNode, sql, diagnostics, document)
                     } else if (childNode.type === 'insert') {
-                        self.checkInsertRules(childNode, diagnostics)
+                        this.checkInsertRules(childNode, diagnostics)
                     } else if (childNode.type === 'create') {
-                        self.checkCreateRules(childNode, diagnostics)
+                        this.checkCreateRules(childNode, diagnostics)
                     }
                 }
             },
@@ -413,7 +412,10 @@ export class AstLinter {
                 if (!aliasMap.has(lower)) {
                     aliasMap.set(lower, [])
                 }
-                aliasMap.get(lower)!.push(colNode)
+                const existing = aliasMap.get(lower)
+                if (existing) {
+                    existing.push(colNode)
+                }
             }
         }
 

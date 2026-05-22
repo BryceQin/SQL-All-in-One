@@ -1,5 +1,4 @@
 import * as assert from 'assert'
-import * as vscode from 'vscode'
 import { AstLinter } from '../providers/AstLinter'
 
 suite('AstLinter Test Suite', () => {

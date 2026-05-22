@@ -240,7 +240,7 @@ class AstConverter {
         return false
     }
 
-    private stripHiveColumnAttributes(col: CreateColumnDefinition): void {
+    private stripHiveColumnAttributes(_col: CreateColumnDefinition): void {
         // Hive-specific column attributes that MySQL doesn't support are minimal
         // The main transformation is handled by type mapping
     }

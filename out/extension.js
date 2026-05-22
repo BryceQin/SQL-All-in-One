@@ -55,114 +55,135 @@ let diagnosticsProvider;
 let statusBarProvider;
 let parameterHighlighter;
 function activate(context) {
-    (0, i18n_1.initI18n)();
-    console.log('Hive Formatter: activating...');
     try {
-        diagnosticsProvider = new SqlDiagnosticsProvider_1.SqlDiagnosticsProvider();
-    }
-    catch (e) {
-        console.error('Hive Formatter: failed to create SqlDiagnosticsProvider', e);
-    }
-    try {
-        statusBarProvider = new StatusBarProvider_1.StatusBarProvider();
-    }
-    catch (e) {
-        console.error('Hive Formatter: failed to create StatusBarProvider', e);
-    }
-    try {
-        parameterHighlighter = new SqlParameterHightlighter_1.SqlParameterHighlighter();
-    }
-    catch (e) {
-        console.error('Hive Formatter: failed to create SqlParameterHighlighter', e);
-    }
-    let completionProvider;
-    try {
-        completionProvider = new completion_1.SqlCompletionProvider(context.extensionUri.fsPath);
-    }
-    catch (e) {
-        console.error('Hive Formatter: failed to create SqlCompletionProvider', e);
-    }
-    const triggerChars = [...'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.'];
-    context.subscriptions.push(vscode.commands.registerCommand("hive-formatter.format-selection", formatSelectionCommand_1.formatSelectionCommand), vscode.commands.registerCommand("hive-formatter.toggleComment", commentCommands_1.toggleComment), vscode.commands.registerCommand("hive-formatter.toggleAdvancedComment", commentCommands_1.toggleAdvancedComment), vscode.commands.registerCommand("hive-formatter.mysql-to-hive", converterCommands_1.convertMysqlToHiveCommand), vscode.commands.registerCommand("hive-formatter.hive-to-mysql", converterCommands_1.convertHiveToMysqlCommand), vscode.commands.registerCommand("hive-formatter.open-config-editor", () => (0, configEditorCommand_1.openConfigEditorCommand)(context.extensionUri)), ...registerFormattingProviderForEachDialect());
-    if (diagnosticsProvider) {
-        const dp = diagnosticsProvider;
-        context.subscriptions.push(vscode.workspace.onDidChangeTextDocument((event) => {
-            const document = event.document;
-            if (isSqlDocument(document)) {
-                dp.provideDiagnostics(document);
-            }
-        }), vscode.workspace.onDidOpenTextDocument((document) => {
-            if (isSqlDocument(document)) {
-                dp.provideDiagnostics(document);
-            }
-        }), vscode.workspace.onDidSaveTextDocument((document) => {
-            if (isSqlDocument(document)) {
-                dp.provideDiagnostics(document);
-            }
-        }), dp);
-    }
-    try {
-        const sqlLanguages = Object.keys(sqlDialects_1.sqlDialects);
-        context.subscriptions.push(...sqlLanguages.map(lang => vscode.languages.registerCodeActionsProvider({ language: lang }, new SqlCodeActionProvider_1.SqlCodeActionProvider(), { providedCodeActionKinds: SqlCodeActionProvider_1.SqlCodeActionProvider.providedCodeActionKinds })));
-    }
-    catch (e) {
-        console.error('Hive Formatter: failed to register CodeActionProvider', e);
-    }
-    try {
-        const sqlLanguages = Object.keys(sqlDialects_1.sqlDialects);
-        context.subscriptions.push(...sqlLanguages.map(lang => vscode.languages.registerFoldingRangeProvider({ language: lang }, new SqlFoldingRangeProvider_1.SqlFoldingRangeProvider())));
-    }
-    catch (e) {
-        console.error('Hive Formatter: failed to register FoldingRangeProvider', e);
-    }
-    try {
-        const sqlLanguages = Object.keys(sqlDialects_1.sqlDialects);
-        context.subscriptions.push(...sqlLanguages.map(lang => vscode.languages.registerDocumentSymbolProvider({ language: lang }, new SqlOutlineProvider_1.SqlOutlineProvider())));
-    }
-    catch (e) {
-        console.error('Hive Formatter: failed to register OutlineProvider', e);
-    }
-    try {
-        SqlParameterHightlighter_1.SqlParameterReplaceCommand.register(context);
-    }
-    catch (e) {
-        console.error('Hive Formatter: failed to register SqlParameterReplaceCommand', e);
-    }
-    if (completionProvider) {
         try {
-            const sqlLanguages = Object.keys(sqlDialects_1.sqlDialects);
-            context.subscriptions.push(...sqlLanguages.map(lang => vscode.languages.registerCompletionItemProvider({ language: lang }, completionProvider, ...triggerChars)));
+            (0, i18n_1.initI18n)();
         }
         catch (e) {
-            console.error('Hive Formatter: failed to register CompletionProvider', e);
+            console.error('Hive Formatter: failed to initialize i18n', e);
         }
-    }
-    if (completionProvider) {
-        context.subscriptions.push(completionProvider);
-    }
-    try {
-        const hoverProvider = new SqlHoverProvider_1.SqlHoverProvider();
-        const sqlLanguages = Object.keys(sqlDialects_1.sqlDialects);
-        context.subscriptions.push(...sqlLanguages.map(lang => vscode.languages.registerHoverProvider({ language: lang }, hoverProvider)));
+        console.log('Hive Formatter: activating...');
+        try {
+            diagnosticsProvider = new SqlDiagnosticsProvider_1.SqlDiagnosticsProvider();
+        }
+        catch (e) {
+            console.error('Hive Formatter: failed to create SqlDiagnosticsProvider', e);
+        }
+        try {
+            statusBarProvider = new StatusBarProvider_1.StatusBarProvider();
+        }
+        catch (e) {
+            console.error('Hive Formatter: failed to create StatusBarProvider', e);
+        }
+        try {
+            parameterHighlighter = new SqlParameterHightlighter_1.SqlParameterHighlighter();
+        }
+        catch (e) {
+            console.error('Hive Formatter: failed to create SqlParameterHighlighter', e);
+        }
+        let completionProvider;
+        try {
+            completionProvider = new completion_1.SqlCompletionProvider(context.extensionUri.fsPath);
+        }
+        catch (e) {
+            console.error('Hive Formatter: failed to create SqlCompletionProvider', e);
+        }
+        const triggerChars = [...'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.'];
+        try {
+            context.subscriptions.push(vscode.commands.registerCommand("hive-formatter.format-selection", formatSelectionCommand_1.formatSelectionCommand), vscode.commands.registerCommand("hive-formatter.toggleComment", commentCommands_1.toggleComment), vscode.commands.registerCommand("hive-formatter.toggleAdvancedComment", commentCommands_1.toggleAdvancedComment), vscode.commands.registerCommand("hive-formatter.mysql-to-hive", converterCommands_1.convertMysqlToHiveCommand), vscode.commands.registerCommand("hive-formatter.hive-to-mysql", converterCommands_1.convertHiveToMysqlCommand), vscode.commands.registerCommand("hive-formatter.open-config-editor", () => (0, configEditorCommand_1.openConfigEditorCommand)(context.extensionUri)), ...registerFormattingProviderForEachDialect());
+        }
+        catch (e) {
+            console.error('Hive Formatter: failed to register commands or formatting providers', e);
+        }
+        if (diagnosticsProvider) {
+            const dp = diagnosticsProvider;
+            try {
+                context.subscriptions.push(vscode.workspace.onDidChangeTextDocument((event) => {
+                    const document = event.document;
+                    if (isSqlDocument(document)) {
+                        dp.provideDiagnostics(document);
+                    }
+                }), vscode.workspace.onDidOpenTextDocument((document) => {
+                    if (isSqlDocument(document)) {
+                        dp.provideDiagnostics(document);
+                    }
+                }), vscode.workspace.onDidSaveTextDocument((document) => {
+                    if (isSqlDocument(document)) {
+                        dp.provideDiagnostics(document);
+                    }
+                }), dp);
+            }
+            catch (e) {
+                console.error('Hive Formatter: failed to register diagnostics listeners', e);
+            }
+        }
+        try {
+            const sqlLanguages = Object.keys(sqlDialects_1.sqlDialects);
+            context.subscriptions.push(...sqlLanguages.map(lang => vscode.languages.registerCodeActionsProvider({ language: lang }, new SqlCodeActionProvider_1.SqlCodeActionProvider(), { providedCodeActionKinds: SqlCodeActionProvider_1.SqlCodeActionProvider.providedCodeActionKinds })));
+        }
+        catch (e) {
+            console.error('Hive Formatter: failed to register CodeActionProvider', e);
+        }
+        try {
+            const sqlLanguages = Object.keys(sqlDialects_1.sqlDialects);
+            context.subscriptions.push(...sqlLanguages.map(lang => vscode.languages.registerFoldingRangeProvider({ language: lang }, new SqlFoldingRangeProvider_1.SqlFoldingRangeProvider())));
+        }
+        catch (e) {
+            console.error('Hive Formatter: failed to register FoldingRangeProvider', e);
+        }
+        try {
+            const sqlLanguages = Object.keys(sqlDialects_1.sqlDialects);
+            context.subscriptions.push(...sqlLanguages.map(lang => vscode.languages.registerDocumentSymbolProvider({ language: lang }, new SqlOutlineProvider_1.SqlOutlineProvider())));
+        }
+        catch (e) {
+            console.error('Hive Formatter: failed to register OutlineProvider', e);
+        }
+        try {
+            SqlParameterHightlighter_1.SqlParameterReplaceCommand.register(context);
+        }
+        catch (e) {
+            console.error('Hive Formatter: failed to register SqlParameterReplaceCommand', e);
+        }
+        if (completionProvider) {
+            try {
+                const sqlLanguages = Object.keys(sqlDialects_1.sqlDialects);
+                context.subscriptions.push(...sqlLanguages.map(lang => vscode.languages.registerCompletionItemProvider({ language: lang }, completionProvider, ...triggerChars)));
+            }
+            catch (e) {
+                console.error('Hive Formatter: failed to register CompletionProvider', e);
+            }
+        }
+        if (completionProvider) {
+            context.subscriptions.push(completionProvider);
+        }
+        try {
+            const hoverProvider = new SqlHoverProvider_1.SqlHoverProvider();
+            const sqlLanguages = Object.keys(sqlDialects_1.sqlDialects);
+            context.subscriptions.push(...sqlLanguages.map(lang => vscode.languages.registerHoverProvider({ language: lang }, hoverProvider)));
+        }
+        catch (e) {
+            console.error('Hive Formatter: failed to register HoverProvider', e);
+        }
+        if (statusBarProvider) {
+            context.subscriptions.push(statusBarProvider);
+        }
+        if (parameterHighlighter) {
+            context.subscriptions.push(parameterHighlighter);
+        }
+        if (diagnosticsProvider) {
+            const dp = diagnosticsProvider;
+            vscode.workspace.textDocuments.forEach((document) => {
+                if (isSqlDocument(document)) {
+                    dp.provideDiagnostics(document);
+                }
+            });
+        }
+        console.log('Hive Formatter: activation complete');
     }
     catch (e) {
-        console.error('Hive Formatter: failed to register HoverProvider', e);
+        console.error('Hive Formatter: activation failed', e);
+        vscode.window.showErrorMessage('Hive Formatter failed to activate. Check the developer console for details.');
     }
-    if (statusBarProvider) {
-        context.subscriptions.push(statusBarProvider);
-    }
-    if (parameterHighlighter) {
-        context.subscriptions.push(parameterHighlighter);
-    }
-    if (diagnosticsProvider) {
-        const dp = diagnosticsProvider;
-        vscode.workspace.textDocuments.forEach((document) => {
-            if (isSqlDocument(document)) {
-                dp.provideDiagnostics(document);
-            }
-        });
-    }
-    console.log('Hive Formatter: activation complete');
 }
 function isSqlDocument(document) {
     const sqlLanguages = Object.keys(sqlDialects_1.sqlDialects);

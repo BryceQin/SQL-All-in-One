@@ -1,5 +1,12 @@
 # 更新日志
 
+## 0.22.0
+- 修复插件激活失败：initI18n() 无 try-catch 保护，异常导致整个扩展静默失败
+- 修复插件激活失败：activate() 整体无异常保护，命令和 Provider 均不注册
+- 修复自动补全重复项：package.json contributes.snippets 与 SqlCompletionProvider 双重提供代码片段
+- 增强 SqlCompletionProvider：按方言加载 common.json + 方言专属 snippet 文件，按 prefix 去重
+- 移除 README 中的鸣谢内容
+
 ## 0.21.0
 - 修复 i18n t() 函数 replace 只替换第一个匹配项（改为 replaceAll）
 - 修复 i18n 语言检测只匹配 zh-cn 不覆盖 zh-CN/zh-Hans 等

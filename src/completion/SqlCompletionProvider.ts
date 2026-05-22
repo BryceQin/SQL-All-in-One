@@ -20,10 +20,8 @@ const keywordMap: Record<string, { keywords: string[]; dataTypes: string[] }> = 
     spark: { keywords: allDialects.sparkKeywords, dataTypes: allDialects.sparkDataTypes },
     sql:   { keywords: allDialects.sqlKeywords,   dataTypes: allDialects.sqlDataTypes },
     postgresql: { keywords: allDialects.pgKeywords, dataTypes: allDialects.pgDataTypes },
-    oracle: { keywords: allDialects.oracleKeywords, dataTypes: allDialects.oracleDataTypes },
     bigquery: { keywords: allDialects.bqKeywords, dataTypes: allDialects.bqDataTypes },
     snowflake: { keywords: allDialects.sfKeywords, dataTypes: allDialects.sfDataTypes },
-    presto: { keywords: allDialects.prestoKeywords, dataTypes: allDialects.prestoDataTypes },
     sqlite: { keywords: allDialects.sqliteKeywords, dataTypes: allDialects.sqliteDataTypes },
 }
 
@@ -33,29 +31,61 @@ const functionSigMap: Record<string, FunctionSignature[]> = {
     spark: allDialects.sparkFunctionSignatures,
     sql:   allDialects.sqlFunctionSignatures,
     postgresql: allDialects.pgFunctionSignatures,
-    oracle: allDialects.oracleFunctionSignatures,
     bigquery: allDialects.bqFunctionSignatures,
     snowflake: allDialects.sfFunctionSignatures,
-    presto: allDialects.prestoFunctionSignatures,
     sqlite: allDialects.sqliteFunctionSignatures,
 }
 
 export class SqlCompletionProvider implements vscode.CompletionItemProvider {
     private dialectCache = new Map<string, Dialect>()
-    private snippetItems: vscode.CompletionItem[] = []
+    private snippetItemsMap = new Map<string, vscode.CompletionItem[]>()
     private cfg: Record<string, boolean> = {}
     private configChangeListener: vscode.Disposable
 
     constructor(extensionPath: string) {
-        try {
-            const p = path.join(extensionPath, 'snippets', 'sql.json')
-            const c = fs.readFileSync(p, 'utf-8')
-            this.snippetItems = getSnippetItems(JSON.parse(c) as Record<string, SnippetDef>)
-        } catch { this.snippetItems = [] }
+        this.loadSnippets(extensionPath)
         this.loadConfig()
         this.configChangeListener = vscode.workspace.onDidChangeConfiguration((e) => {
             if (e.affectsConfiguration('Hive-Formatter')) this.loadConfig()
         })
+    }
+
+    private loadSnippets(extensionPath: string): void {
+        const dialectNames = new Set<string>()
+        for (const dName of Object.values(sqlDialects)) {
+            dialectNames.add(dName)
+        }
+        for (const dName of dialectNames) {
+            try {
+                const merged: Record<string, SnippetDef> = {}
+                const usedPrefixes = new Set<string>()
+                try {
+                    const cp = path.join(extensionPath, 'snippets', 'common.json')
+                    const cc = fs.readFileSync(cp, 'utf-8')
+                    const commonSnippets = JSON.parse(cc) as Record<string, SnippetDef>
+                    for (const [key, val] of Object.entries(commonSnippets)) {
+                        if (!usedPrefixes.has(val.prefix)) {
+                            merged[key] = val
+                            usedPrefixes.add(val.prefix)
+                        }
+                    }
+                } catch { /* common snippets not found */ }
+                try {
+                    const dp = path.join(extensionPath, 'snippets', `${dName}.json`)
+                    const dc = fs.readFileSync(dp, 'utf-8')
+                    const dialectSnippets = JSON.parse(dc) as Record<string, SnippetDef>
+                    for (const [key, val] of Object.entries(dialectSnippets)) {
+                        if (!usedPrefixes.has(val.prefix)) {
+                            merged[key] = val
+                            usedPrefixes.add(val.prefix)
+                        }
+                    }
+                } catch { /* dialect snippets not found */ }
+                this.snippetItemsMap.set(dName, getSnippetItems(merged))
+            } catch {
+                this.snippetItemsMap.set(dName, [])
+            }
+        }
     }
 
     public dispose(): void {
@@ -101,7 +131,10 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
             const sigs = functionSigMap[dName]
             if (sigs) items.push(...getFunctionItems(sigs))
         }
-        if (this.cfg.snippets) items.push(...this.snippetItems)
+        if (this.cfg.snippets) {
+            const snippets = this.snippetItemsMap.get(dName)
+            if (snippets) items.push(...snippets)
+        }
         if (this.cfg.cteNames && doc.getText().trim()) items.push(...getCTEItems(doc, pos))
         if (this.cfg.identifiers && doc.getText().trim()) items.push(...getIdentifierItems(doc, pos, dialect.tokenizer))
         if (this.cfg.commentSnippets) {

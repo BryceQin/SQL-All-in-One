@@ -309,11 +309,6 @@ LIMIT 10;
 
 如果你有问题或者好的格式化配置建议，欢迎在 [GitHub Issues](https://github.com/BryceQin/Hive-Formatter/issues) 反馈。
 
-## 鸣谢
-
-- 基于 [SQL Formatter](https://github.com/sql-formatter-org/sql-formatter) 开发
-- 感谢贡献者 @TalDu
-
 ## 更新日志
 
 请查看 [CHANGELOG.md](CHANGELOG.md) 文件了解详细的版本更新历史。

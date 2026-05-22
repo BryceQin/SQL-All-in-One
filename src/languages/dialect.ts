@@ -1,36 +1,31 @@
-import type {
-    DialectFormatOptions,
-    ProcessedDialectFormatOptions,
-} from "../formatter/ExpressionFormatter"
 import Tokenizer from "../lexer/Tokenizer"
 import type { TokenizerOptions } from "../lexer/TokenizerOptions"
 
-/**
- * 方言原始配置接口
- */
+export interface DialectFormatOptions {
+    alwaysDenseOperators?: string[]
+    onelineClauses: string[]
+    tabularOnelineClauses?: string[]
+}
+
+export interface ProcessedDialectFormatOptions {
+    alwaysDenseOperators: string[]
+    onelineClauses: Record<string, boolean>
+    tabularOnelineClauses: Record<string, boolean>
+}
+
 export interface DialectOptions {
     name: string
     tokenizerOptions: TokenizerOptions
     formatOptions: DialectFormatOptions
 }
 
-/**
- * 方言实例接口
- */
 export interface Dialect {
     tokenizer: Tokenizer
     formatOptions: ProcessedDialectFormatOptions
 }
 
-/**
- * 缓存已创建的方言实例
- */
 const cache = new Map<DialectOptions, Dialect>()
 
-/**
- * 创建或获取方言实例
- * 使用缓存避免重复创建
- */
 export const createDialect = (options: DialectOptions): Dialect => {
     let dialect = cache.get(options)
     if (!dialect) {
@@ -40,9 +35,6 @@ export const createDialect = (options: DialectOptions): Dialect => {
     return dialect
 }
 
-/**
- * 从配置创建方言实例
- */
 const dialectFromOptions = (dialectOptions: DialectOptions): Dialect => ({
     tokenizer: new Tokenizer(
         dialectOptions.tokenizerOptions,
@@ -51,9 +43,6 @@ const dialectFromOptions = (dialectOptions: DialectOptions): Dialect => ({
     formatOptions: processDialectFormatOptions(dialectOptions.formatOptions),
 })
 
-/**
- * 处理格式化配置，将数组转换为对象以提高查询效率
- */
 const processDialectFormatOptions = (
     options: DialectFormatOptions,
 ): ProcessedDialectFormatOptions => ({

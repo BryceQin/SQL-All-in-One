@@ -19,10 +19,8 @@
     "hive-formatter.config.dialect.enumDescriptions.spark": "Spark",
     "hive-formatter.config.dialect.enumDescriptions.sql": "Basic SQL - generally not recommended.",
     "hive-formatter.config.dialect.enumDescriptions.postgresql": "PostgreSQL",
-    "hive-formatter.config.dialect.enumDescriptions.oracle": "Oracle",
     "hive-formatter.config.dialect.enumDescriptions.bigquery": "BigQuery",
     "hive-formatter.config.dialect.enumDescriptions.snowflake": "Snowflake",
-    "hive-formatter.config.dialect.enumDescriptions.presto": "Presto/Trino",
     "hive-formatter.config.dialect.enumDescriptions.sqlite": "SQLite",
     "hive-formatter.config.keywordCase.markdownDescription": "Keyword casing",
     "hive-formatter.config.dataTypeCase.markdownDescription": "Data type casing",
@@ -101,7 +99,5 @@
     "hive-formatter.config.newlineBeforeLateralView.markdownDescription": "Newline before LATERAL VIEW (Hive)",
     "hive-formatter.config.newlineBeforeDistributeBy.markdownDescription": "Newline before DISTRIBUTE BY (Hive)",
     "hive-formatter.config.newlineBeforeClusterBy.markdownDescription": "Newline before CLUSTER BY (Hive)",
-    "hive-formatter.config.newlineBeforeSortBy.markdownDescription": "Newline before SORT BY (Hive)",
-    "hive-formatter.config.newlineBeforeConnectBy.markdownDescription": "Newline before CONNECT BY (Oracle)",
-    "hive-formatter.config.newlineBeforeStartWith.markdownDescription": "Newline before START WITH (Oracle)"
+    "hive-formatter.config.newlineBeforeSortBy.markdownDescription": "Newline before SORT BY (Hive)"
 }

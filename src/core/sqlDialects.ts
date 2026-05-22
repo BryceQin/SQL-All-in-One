@@ -1,4 +1,5 @@
 import { SqlLanguage } from "../formatter/sqlFormatter"
+import { SqlDialect } from "../parser/dialectMapper"
 
 export const sqlDialects: Record<string, SqlLanguage> = {
     sql: "sql",
@@ -8,11 +9,12 @@ export const sqlDialects: Record<string, SqlLanguage> = {
     spark: "spark",
     postgresql: "postgresql",
     postgres: "postgresql",
-    plsql: "oracle",
-    oracle: "oracle",
     bigquery: "bigquery",
     snowflake: "snowflake",
-    presto: "presto",
-    trino: "presto",
     sqlite: "sqlite",
+}
+
+export function toSqlDialect(langId: string): SqlDialect {
+    const dialectName = sqlDialects[langId as keyof typeof sqlDialects]
+    return (dialectName as SqlDialect) || "sql"
 }

@@ -5,10 +5,8 @@ import { hiveKeywords } from './hiveKeywords'
 import { sparkKeywords } from './sparkKeywords'
 import { mysqlKeywords } from './mysqlKeywords'
 import { postgresqlKeywords } from './postgresqlKeywords'
-import { oracleKeywords } from './oracleKeywords'
 import { bigqueryKeywords } from './bigqueryKeywords'
 import { snowflakeKeywords } from './snowflakeKeywords'
-import { prestoKeywords } from './prestoKeywords'
 import { sqliteKeywords } from './sqliteKeywords'
 
 const dialectKeywordMap: Record<string, KeywordInfo[]> = {
@@ -17,10 +15,8 @@ const dialectKeywordMap: Record<string, KeywordInfo[]> = {
     spark: sparkKeywords,
     sql: [],
     postgresql: postgresqlKeywords,
-    oracle: oracleKeywords,
     bigquery: bigqueryKeywords,
     snowflake: snowflakeKeywords,
-    presto: prestoKeywords,
     sqlite: sqliteKeywords,
 }
 

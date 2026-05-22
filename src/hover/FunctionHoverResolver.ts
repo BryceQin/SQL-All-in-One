@@ -11,10 +11,8 @@ const functionSigMap: Record<string, FunctionSignature[]> = {
     spark: allDialects.sparkFunctionSignatures,
     sql: allDialects.sqlFunctionSignatures,
     postgresql: allDialects.pgFunctionSignatures,
-    oracle: allDialects.oracleFunctionSignatures,
     bigquery: allDialects.bqFunctionSignatures,
     snowflake: allDialects.sfFunctionSignatures,
-    presto: allDialects.prestoFunctionSignatures,
     sqlite: allDialects.sqliteFunctionSignatures,
 }
 
