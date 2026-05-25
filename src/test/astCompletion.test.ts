@@ -47,13 +47,13 @@ suite('AstCompletionProvider Test Suite', () => {
 
         test('returns join_type when cursor is after JOIN keyword', () => {
             const sql = 'SELECT a.id FROM users a LEFT JOIN orders b ON a.id = b.user_id'
-            const result = findCursorContext(sql, { line: 0, column: 30 }, 'mysql')
+            const result = findCursorContext(sql, { line: 0, column: 36 }, 'mysql')
             assert.strictEqual(result, 'join_type')
         })
 
         test('returns on_condition when cursor is in ON clause', () => {
             const sql = 'SELECT a.id FROM users a LEFT JOIN orders b ON a.id = b.user_id'
-            const result = findCursorContext(sql, { line: 0, column: 50 }, 'mysql')
+            const result = findCursorContext(sql, { line: 0, column: 49 }, 'mysql')
             assert.strictEqual(result, 'on_condition')
         })
 

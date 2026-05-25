@@ -1,5 +1,173 @@
 # 更新日志
 
+## 1.4.0
+
+### ⚡ 性能优化
+
+- **AST 单次解析**：诊断流程从 3 次独立 AST 解析优化为 1 次解析 + 结果共享，诊断性能提升约 60-70%
+- **诊断防抖**：`onDidChangeTextDocument` 事件增加 300ms 防抖，避免快速输入时产生大量无效解析
+- **补全项缓存**：关键字和函数补全项按方言缓存，避免每次触发补全时重复生成
+- **Snippet 异步加载**：`fs.readFileSync` 改为 `fs.promises.readFile`，避免激活时阻塞扩展宿主线程
+- **Provider 单例化**：`SqlCodeActionProvider`、`SqlFoldingRangeProvider`、`SqlOutlineProvider`、`SqlHoverProvider` 从每语言一个实例改为单例共享（32 → 4 个实例）
+- **正则预编译**：`checkCommentedOutCode` 中的 SQL 关键字正则从循环内编译改为模块级预编译
+
+### 🏗️ 架构优化
+
+- **activate() 模块化**：提取 `safeRegister()` 统一错误处理，6 个独立注册函数替代 200 行单体函数，`activate()` 缩减至 ~40 行
+- **共享类型定义**：`AstLocation`、`AstNode` 从 4 个文件中移除，统一到 `parser/astTypes.ts`
+- **共享工具方法**：`getNodeLocation`、`getFunctionName`、`createDiagnostic` 等 6 个方法从 3 个文件中移除，统一到 `parser/astUtils.ts`
+- **Lint 规则统一管理**：新建 `linter/lintRules.ts`，规则定义和配置加载集中管理，`SqlLinter` 从 95 行精简到 28 行
+- **统一配置管理器**：新建 `core/configManager.ts`，集中缓存配置项，监听变更自动失效，支持 i18n 运行时语言切换
+- **统一错误处理**：新建 `core/errorHandler.ts`，三级分类（CRITICAL/FEATURE/SUB_ITEM），格式化和补全等模块接入
+
+### 🔧 功能改进
+
+- **Outline 基于 AST**：`SqlOutlineProvider` 优先使用 AST 解析提取符号，AST 失败时回退到正则方法，准确度大幅提升
+- **Folding 基于 AST**：`SqlFoldingRangeProvider` 优先使用 AST 解析生成折叠范围，AST 失败时回退到正则方法
+- **StatusBar 语言检测修复**：状态栏现在在所有 SQL 方言文件中正确显示（之前仅 sql/hive）
+- **参数替换语言检测修复**：`SqlParameterReplaceCommand` 现在在所有 SQL 方言中可用（之前仅 sql/hive）
+- **i18n 运行时切换**：用户修改 `displayLanguage` 配置后自动刷新消息包，无需重启 VSCode
+
+## 1.3.0
+
+### 🆕 新增功能
+
+- **FlinkSQL 方言支持**：新增 Apache FlinkSQL 方言，支持格式化、智能补全、语法检查、Hover 提示和代码片段
+  - 基于 node-sql-parser v5.x 的 FlinkSQL 解析引擎
+  - 237 个关键字、29 个数据类型、161 个函数名、108 个函数签名
+  - 12 个 FlinkSQL 专属 Hover 提示（WATERMARK、TUMBLE、HOP、CUMULATE 等）
+  - 8 个 FlinkSQL 代码片段（Kafka/JDBC 建表、窗口查询、去重等）
+  - 语言 ID：`flinksql` / `flink-sql`，文件扩展名：`.flinksql`
+
+### 🔧 改进
+
+- **补全异常隔离**：`SqlCompletionProvider.provideCompletionItems()` 中每个子模块（关键字/函数/片段/CTE/标识符/注释）独立 try-catch，一个模块异常不影响其他补全项
+- **代码片段去重**：清理 `sql.json` 中与 `common.json` 重复 prefix 的条目，移除不属于 SQL 方言的 Hive 条目
+- **代码片段默认关闭**：`completion.snippets` 默认值改为 `false`，避免 VSCode 原生 `contributes.snippets` 与 Provider 双重提供导致重复项
+
+### 🐛 Bug 修复
+
+- **修复空文件补全重复**：键入 `sel` 时出现 3 个相同补全项的问题（根因：`common.json` + `sql.json` + Provider 三重提供）
+- **修复有代码时补全失效**：文件中有代码时补全列表为空的问题（根因：子模块异常导致整个补全列表丢失）
+- **修复头注释被删除**：分号后同行头注释格式化后被删除的问题，现在会正确移至最前面
+
+## 1.2.0
+
+### 🔧 架构重构
+
+- **BaseSqlAdapter 抽象基类**：提取 HiveSqlAdapter 和 SparkSqlAdapter 的共享逻辑（replaceSortDistributeCluster/restoreSortDistributeCluster/escapeRegExp 等），消除 384 行重复代码
+- **createConfig 简化**：使用 configMappings 数组替代重复的 get<> 调用，减少 62 行代码
+- **isSqlDocument 去重**：从 extension.ts 和 SqlDiagnosticsProvider.ts 中提取共享的 isSqlDocument 和 getSqlLanguageIds 到 sqlDialects.ts
+
+### 🐛 Bug 修复
+
+- **修复独立注释缩进**：SELECT 语句中的独立注释（`-- a`）格式化后缩进与相邻列对齐
+- **修复尾部注释处理**：`,user--a` 格式化后 `-- a` 作为独立行插入到 `user` 之前
+- **修复注释规范化**：`--` 后自动添加空格（`--a` → `-- a`）
+- **修复头注释被删除**：分号后同行头注释格式化后被删除，现在正确移至最前面
+
+## 1.1.0
+
+### 🔧 架构重构
+
+- **ConfigEditorPanel 模板外部化**：将 1800+ 行内嵌 HTML/CSS/JavaScript 从 TypeScript 文件中提取到独立文件（`media/config-editor.html`、`media/config-editor.css`、`media/config-editor.js`），核心文件从 2394 行缩减至 200 行（↓91.6%）
+- **配置项集中管理**：新增 `src/config/configDefinitions.ts`，统一管理 85 个配置项和 18 条 Lint 规则的元数据、默认值和类型信息，消除 `_updateConfig`/`_resetConfig`/`_sendCurrentConfig` 中 300+ 行硬编码映射
+
+### 🐛 Bug 修复
+
+- 修复 Lint 规则 DOM ID 与后端 key 不匹配，导致配置编辑器中 Lint 规则状态无法正确加载
+- 修复 postgresql/bigquery/sqlite 预设缺少部分配置项，切换预设时产生混合配置
+- 修复 4 条 Lint 规则默认值与 package.json 不一致（missing_query_comment、missing_column_comment、commented_out_code、expired_todo）
+- 修复模板文件加载缺少错误处理，文件缺失时导致整个 Webview 创建失败
+- 修复格式化预览错误消息硬编码中文，改用 i18n 国际化
+
+## 1.0.0
+
+### 🏗️ 架构性重大升级
+
+基于 node-sql-parser v5.x 全面重构为 AST 驱动架构，替代原有的 Nearley 解析器，所有核心功能（格式化、诊断、Lint、补全、转换）均基于 AST 实现。
+
+### 🆕 新增功能
+
+- **SqlParserEngine**：封装 node-sql-parser，提供 astify/sqlify/parse/tryAstify 统一接口，支持 includeLocations 选项
+- **diaMapper**：方言名称映射（Spark 使用 Hive 语法解析），支持 7 种方言
+- **AstVisitor**：通用 AST 遍历工具（walkAst/findNodes/findNodesOfType），支持无 type 属性的普通对象遍历
+- **AstFormatter**：基于 AST 的 SQL 格式化器，替代旧的 Nearley 格式化管道
+  - SelectFormatter：SELECT 语句格式化（含 UNION/CTE）
+  - ExpressionFormatter2：表达式格式化（二元运算、函数调用、窗口函数、CASE 等）
+  - InsertFormatter：INSERT 语句格式化
+  - DDLFormatter：CREATE/ALTER/DROP 语句格式化
+  - CaseFormatter：CASE WHEN 格式化
+  - CTEFormatter：WITH/CTE 格式化
+  - CommonFormatter：共享格式化工具函数
+- **AstDiagnosticsProvider**：基于 AST 的 8 条语法诊断规则
+- **AstEnhancedChecker**：基于 AST 的 15 条增强检查规则，消除字符串/注释中的误报
+- **AstLinter**：基于 AST 的 15 条 Lint 规则，支持嵌套结构分析
+- **AstConverter**：基于 AST 的 HIVE↔MySQL CREATE TABLE 转换
+- **AstCompletionProvider**：基于 AST 的上下文感知补全（findCursorContext/extractCteNames/extractTableNames/extractColumnRefs）
+- **i18n 测试支持**：新增 initI18nForTest() 方法，解决测试环境中 i18n 未初始化的问题
+- **comprehensive.test.ts**：新增 49 个全面测试用例，覆盖格式化、解析、配置验证、AST 遍历、类型映射、DDL 转换等
+
+### 🐛 Bug 修复
+
+- 修复 AstVisitor.walkAst 不遍历没有 type 属性的普通对象（如 Column 包装结构），导致 findNodesOfType 无法找到嵌套节点
+- 修复 AstLinter.getFunctionName() 无法提取 node-sql-parser v5.x 的 FunctionName 嵌套结构（`{ name: [{ type: "default", value: "IFNULL" }] }`）
+- 修复 AstLinter.checkColumnCountMismatch() 不处理 Insert_Replace.values 为 `{ type: "values", values: [...] }` 对象的情况
+- 修复 AstLinter.checkSelectInInsert() 不处理 INSERT...SELECT 通过 values 属性传递 select 节点的情况
+- 修复 AstLinter.checkExplicitJoinType() 裸 JOIN 被解析为 "INNER JOIN" 导致无法检测
+- 修复 AstLinter.checkAvoidSelectStar() 不处理 Column 对象没有 type 属性的情况
+- 修复 AstLinter.checkDuplicateColumnAliases() 不处理 Column.as 为 `{ value: string }` 对象的情况
+- 修复 AstLinter.checkMissingPrimaryKey() 不处理 primary_key 属性值为字符串 "primary key" 和 create_definitions 元素没有 type 属性的情况
+- 修复 AstCompletionProvider.findCursorContext() 列号偏移问题（0-based → 1-based 转换缺少 column +1）
+- 修复 AstCompletionProvider.getArrayClauseLoc() 不处理 groupby 为 `{ columns: [...], modifiers: [...] }` 对象的情况
+- 修复 AstCompletionProvider.extractCteNames() 不处理 Select.with 为 With[] 数组和 With.name 为 `{ value: string }` 对象的情况
+- 修复 AstCompletionProvider.determineFromContext() 不处理 from 条目没有 type 属性和 ON 子句位置超出 from 条目 loc 范围的情况
+- 修复 typeMappings.ts 缺少 ENUM → STRING 和 SET → STRING 映射
+- 修复 completion.test.ts getCategoryLabel 测试因 i18n 未初始化返回键名而非翻译
+
+### ⚠️ 破坏性变更
+
+- 移除 Oracle (PL/SQL) 方言支持（node-sql-parser 无对应解析器）
+- 移除 Presto/Trino 方言支持（node-sql-parser 无对应解析器）
+- 移除 Snowflake 方言支持（node-sql-parser 无对应解析器）
+- Spark 方言改用 Hive 语法解析（替代 FlinkSQL）
+- 移除 Nearley 依赖（nearley、@types/nearley）
+- 删除旧 Nearley 解析器文件（LexerAdapter.ts、ast.ts、createParser.ts、grammar.ne、grammar.ts）
+- 删除旧格式化器文件（Formatter.ts、ExpressionFormatter.ts）
+
+### 📊 测试覆盖
+
+- 262 个测试通过（从 213 个增加到 262 个，通过率从 89.1% 提升到 99.2%）
+- 新增 49 个全面测试用例覆盖核心模块
+- 修复 24 个因 node-sql-parser v5.x AST 结构变更导致的测试失败
+
+## 0.23.0
+- 引入 node-sql-parser 替代 Nearley 解析器，全面重构为 AST 驱动架构
+- 新增 SqlParserEngine：封装 node-sql-parser，提供 astify/sqlify/parse/tryAstify 统一接口
+- 新增 dialectMapper：方言名称映射（Spark 使用 Hive 语法解析）
+- 新增 AstVisitor：通用 AST 遍历工具（walkAst/findNodes/findNodesOfType）
+- 新增 AstFormatter：基于 AST 的 SQL 格式化器，替代旧的 Nearley 格式化管道
+  - SelectFormatter：SELECT 语句格式化（含 UNION/CTE）
+  - ExpressionFormatter2：表达式格式化（二元运算、函数调用、窗口函数、CASE 等）
+  - InsertFormatter：INSERT 语句格式化
+  - DDLFormatter：CREATE/ALTER/DROP 语句格式化
+  - CaseFormatter：CASE WHEN 格式化
+  - CTEFormatter：WITH/CTE 格式化
+  - CommonFormatter：共享格式化工具函数
+- 新增 AstDiagnosticsProvider：基于 AST 的 8 条语法诊断规则
+- 新增 AstEnhancedChecker：基于 AST 的 15 条增强检查规则，消除字符串/注释中的误报
+- 新增 AstLinter：基于 AST 的 15 条 Lint 规则，支持嵌套结构分析
+- 新增 AstConverter：基于 AST 的 HIVE↔MySQL CREATE TABLE 转换
+- 新增 AstCompletionProvider：基于 AST 的上下文感知补全（findCursorContext/extractCteNames/extractTableNames/extractColumnRefs）
+- 移除 Oracle (PL/SQL) 方言支持（node-sql-parser 无对应解析器）
+- 移除 Presto/Trino 方言支持（node-sql-parser 无对应解析器）
+- 移除 Snowflake 方言支持（node-sql-parser 无对应解析器）
+- Spark 方言改用 Hive 语法解析（替代 FlinkSQL）
+- 移除 Nearley 依赖（nearley、@types/nearley）
+- 删除旧 Nearley 解析器文件（LexerAdapter.ts、ast.ts、createParser.ts、grammar.ne、grammar.ts）
+- 删除旧格式化器文件（Formatter.ts、ExpressionFormatter.ts）
+- 当前支持 7 种方言：MySQL、Hive、Spark(→Hive)、PostgreSQL、BigQuery、SQLite、SQL
+
 ## 0.22.0
 - 修复插件激活失败：initI18n() 无 try-catch 保护，异常导致整个扩展静默失败
 - 修复插件激活失败：activate() 整体无异常保护，命令和 Provider 均不注册

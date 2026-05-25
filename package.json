@@ -2,7 +2,7 @@
     "name": "hive-formatter",
     "displayName": "Hive Formatter",
     "description": "一个用于 Hive、MySQL、SparkSQL 格式化的 VSCode 插件，支持 SQL IntelliSense 智能补全、语法检查和 MySQL/HiveSQL 互相转换",
-    "version": "0.22.0",
+    "version": "1.4.0",
     "publisher": "bryce-qin",
     "contributors": [
         "TalDu"
@@ -39,9 +39,9 @@
         "onLanguage:hive",
         "onLanguage:mysql",
         "onLanguage:spark",
+        "onLanguage:flinksql",
         "onLanguage:postgresql",
         "onLanguage:bigquery",
-        "onLanguage:snowflake",
         "onLanguage:sqlite"
     ],
     "main": "./out/extension.js",
@@ -87,6 +87,16 @@
                 ]
             },
             {
+                "id": "flinksql",
+                "aliases": [
+                    "FlinkSQL",
+                    "flink-sql"
+                ],
+                "extensions": [
+                    ".flinksql"
+                ]
+            },
+            {
                 "id": "postgresql",
                 "aliases": [
                     "PostgreSQL",
@@ -107,15 +117,6 @@
                 ]
             },
             {
-                "id": "snowflake",
-                "aliases": [
-                    "Snowflake"
-                ],
-                "extensions": [
-                    ".snowsql"
-                ]
-            },
-            {
                 "id": "sqlite",
                 "aliases": [
                     "SQLite"
@@ -124,6 +125,68 @@
                     ".sqlite",
                     ".sqlt"
                 ]
+            }
+        ],
+        "snippets": [
+            {
+                "language": "sql",
+                "path": "./snippets/common.json"
+            },
+            {
+                "language": "sql",
+                "path": "./snippets/sql.json"
+            },
+            {
+                "language": "hive",
+                "path": "./snippets/common.json"
+            },
+            {
+                "language": "hive",
+                "path": "./snippets/hive.json"
+            },
+            {
+                "language": "mysql",
+                "path": "./snippets/common.json"
+            },
+            {
+                "language": "mysql",
+                "path": "./snippets/mysql.json"
+            },
+            {
+                "language": "spark",
+                "path": "./snippets/common.json"
+            },
+            {
+                "language": "spark",
+                "path": "./snippets/spark.json"
+            },
+            {
+                "language": "flinksql",
+                "path": "./snippets/common.json"
+            },
+            {
+                "language": "flinksql",
+                "path": "./snippets/flinksql.json"
+            },
+            {
+                "language": "postgresql",
+                "path": "./snippets/common.json"
+            },
+            {
+                "language": "postgresql",
+                "path": "./snippets/postgresql.json"
+            },
+            {
+                "language": "bigquery",
+                "path": "./snippets/common.json"
+            },
+            {
+                "language": "bigquery",
+                "path": "./snippets/bigquery.json"
+            },
+            {
+                "language": "sqlite",
+                "path": "./snippets/common.json"
             }
         ],
         "commands": [
@@ -191,10 +254,10 @@
                         "hive",
                         "mysql",
                         "spark",
+                        "flinksql",
                         "sql",
                         "postgresql",
                         "bigquery",
-                        "snowflake",
                         "sqlite"
                     ],
                     "enumDescriptions": [
@@ -202,10 +265,10 @@
                         "Apache Hive",
                         "MySQL",
                         "Spark",
+                        "FlinkSQL",
                         "Basic SQL - generally not recommended.",
                         "PostgreSQL",
                         "BigQuery",
-                        "Snowflake",
                         "SQLite"
                     ],
                     "default": "hive",
@@ -666,8 +729,8 @@
                 },
                 "Hive-Formatter.completion.snippets": {
                     "type": "boolean",
-                    "default": true,
-                    "markdownDescription": "补全列表中是否包含代码片段"
+                    "default": false,
+                    "markdownDescription": "补全列表中是否包含代码片段（VSCode 已通过 contributes.snippets 原生提供，此处默认关闭避免重复）"
                 },
                 "Hive-Formatter.completion.cteNames": {
                     "type": "boolean",

@@ -1,5 +1,5 @@
 import * as vscode from 'vscode'
-import { sqlDialects } from '../core/sqlDialects'
+import { isSqlDocument } from '../core/sqlDialects'
 import { t } from '../i18n'
 
 export class SqlParameterHighlighter {
@@ -40,7 +40,7 @@ export class SqlParameterHighlighter {
     }
     
     private isSqlDocument(document: vscode.TextDocument): boolean {
-        return Object.keys(sqlDialects).includes(document.languageId)
+        return isSqlDocument(document)
     }
     
     public updateDecorations(editor: vscode.TextEditor): void {
@@ -123,7 +123,7 @@ export class SqlParameterReplaceCommand {
             }
             
             const document = editor.document
-            if (document.languageId !== 'sql' && document.languageId !== 'hive') {
+            if (!isSqlDocument(document)) {
                 vscode.window.showErrorMessage(t('notification.notSqlDocument'))
                 return
             }

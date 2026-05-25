@@ -3,73 +3,25 @@ import { getParserEngine } from '../parser/SqlParserEngine'
 import type { SqlDialect } from '../parser/dialectMapper'
 import { walkAst, findNodes, findNodesOfType, isAstNode } from '../parser/AstVisitor'
 import { t } from '../i18n'
-
-interface AstLocation {
-    line: number
-    column: number
-}
-
-interface AstNode {
-    type: string
-    loc?: {
-        start?: AstLocation
-        end?: AstLocation
-    }
-    [key: string]: unknown
-}
-
-interface LintRule {
-    id: string
-    defaultSeverity: vscode.DiagnosticSeverity
-    defaultEnabled: boolean
-}
-
-const BUILT_IN_RULES: LintRule[] = [
-    { id: 'avoid_select_star', defaultSeverity: vscode.DiagnosticSeverity.Warning, defaultEnabled: true },
-    { id: 'explicit_join_type', defaultSeverity: vscode.DiagnosticSeverity.Information, defaultEnabled: true },
-    { id: 'limit_with_order_by', defaultSeverity: vscode.DiagnosticSeverity.Warning, defaultEnabled: true },
-    { id: 'avoid_column_count_mismatch', defaultSeverity: vscode.DiagnosticSeverity.Error, defaultEnabled: true },
-    { id: 'missing_primary_key', defaultSeverity: vscode.DiagnosticSeverity.Warning, defaultEnabled: true },
-    { id: 'avoid_select_in_insert', defaultSeverity: vscode.DiagnosticSeverity.Warning, defaultEnabled: true },
-    { id: 'duplicate_column_aliases', defaultSeverity: vscode.DiagnosticSeverity.Warning, defaultEnabled: true },
-    { id: 'use_coalesce_over_isnull', defaultSeverity: vscode.DiagnosticSeverity.Information, defaultEnabled: false },
-    { id: 'use_current_timestamp', defaultSeverity: vscode.DiagnosticSeverity.Information, defaultEnabled: true },
-    { id: 'avoid_correlated_subqueries', defaultSeverity: vscode.DiagnosticSeverity.Warning, defaultEnabled: false },
-    { id: 'explicit_column_aliasing', defaultSeverity: vscode.DiagnosticSeverity.Information, defaultEnabled: false },
-    { id: 'missing_query_comment', defaultSeverity: vscode.DiagnosticSeverity.Warning, defaultEnabled: true },
-    { id: 'missing_column_comment', defaultSeverity: vscode.DiagnosticSeverity.Warning, defaultEnabled: true },
-    { id: 'commented_out_code', defaultSeverity: vscode.DiagnosticSeverity.Information, defaultEnabled: true },
-    { id: 'expired_todo', defaultSeverity: vscode.DiagnosticSeverity.Information, defaultEnabled: true },
-]
+import type { AstLocation, AstNode } from '../parser/astTypes'
+import { getNodeLocation, getStatementEndLocation, getFunctionName, getColumnLoc, getLocFromAny, createDiagnostic } from '../parser/astUtils'
+import { loadRuleConfigs, type LintRuleConfig } from '../linter/lintRules'
 
 const ISNULL_FUNCTION_NAMES = new Set(['ifnull', 'isnull'])
 
 const CURRENT_TIMESTAMP_FUNCTION_NAMES = new Set(['now', 'sysdate', 'getdate', 'current_date'])
 
+const SQL_KEYWORDS_FOR_COMMENT_CHECK = ['SELECT', 'FROM', 'WHERE', 'JOIN', 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'DROP', 'ALTER', 'GROUP BY', 'ORDER BY', 'HAVING', 'UNION']
+const SQL_KEYWORD_REGEXES = SQL_KEYWORDS_FOR_COMMENT_CHECK.map(kw => ({
+    regex: new RegExp(`\\b${kw}\\b`, 'i'),
+    keyword: kw,
+}))
+
 export class AstLinter {
-    private config = new Map<string, { enabled: boolean; severity: vscode.DiagnosticSeverity }>()
+    private config = new Map<string, LintRuleConfig>()
 
     constructor() {
-        this.loadConfig()
-    }
-
-    private loadConfig(): void {
-        const cfg = vscode.workspace.getConfiguration('Hive-Formatter')
-        for (const rule of BUILT_IN_RULES) {
-            const ruleConfig = cfg.get<{ enabled?: boolean; severity?: string }>(`lint.${rule.id}`)
-            const enabled = ruleConfig?.enabled ?? rule.defaultEnabled
-            const severityStr = ruleConfig?.severity
-            let severity = rule.defaultSeverity
-            if (severityStr) {
-                switch (severityStr.toLowerCase()) {
-                    case 'error': severity = vscode.DiagnosticSeverity.Error; break
-                    case 'warning': severity = vscode.DiagnosticSeverity.Warning; break
-                    case 'information': severity = vscode.DiagnosticSeverity.Information; break
-                    case 'hint': severity = vscode.DiagnosticSeverity.Hint; break
-                }
-            }
-            this.config.set(rule.id, { enabled, severity })
-        }
+        this.config = loadRuleConfigs()
     }
 
     private isRuleEnabled(ruleId: string): boolean {
@@ -80,15 +32,19 @@ export class AstLinter {
         return this.config.get(ruleId)?.severity ?? vscode.DiagnosticSeverity.Warning
     }
 
-    lint(sql: string, dialect: SqlDialect, document?: vscode.TextDocument): vscode.Diagnostic[] {
+    lint(sql: string, dialect: SqlDialect, document?: vscode.TextDocument, preParsedAst?: unknown[]): vscode.Diagnostic[] {
         const diagnostics: vscode.Diagnostic[] = []
 
-        const result = getParserEngine().tryAstify(sql, dialect)
-        if (!result.success || !result.ast) {
-            return diagnostics
+        let astList: unknown[]
+        if (preParsedAst) {
+            astList = preParsedAst
+        } else {
+            const result = getParserEngine().tryAstify(sql, dialect)
+            if (!result.success || !result.ast) {
+                return diagnostics
+            }
+            astList = Array.isArray(result.ast) ? result.ast : [result.ast]
         }
-
-        const astList = Array.isArray(result.ast) ? result.ast : [result.ast]
 
         for (const ast of astList) {
             if (!isAstNode(ast)) {
@@ -203,12 +159,49 @@ export class AstLinter {
         }
 
         for (const col of columns) {
+            if (col == null || typeof col !== 'object') {
+                continue
+            }
+            const colObj = col as Record<string, unknown>
+
             if (isAstNode(col)) {
                 const colNode = col as AstNode
                 if (colNode.type === 'column_ref' && colNode.column === '*') {
-                    this.addDiagnosticFromNode(colNode, 1, t('linter.avoidSelectStar.description'), 'avoid_select_star', diagnostics)
-                } else if (colNode.type === 'star') {
-                    this.addDiagnosticFromNode(colNode, 1, t('linter.avoidSelectStar.description'), 'avoid_select_star', diagnostics)
+                    const loc = getNodeLocation(colNode)
+                    if (loc) {
+                        const severity = this.getRuleSeverity('avoid_select_star')
+                        diagnostics.push(createDiagnostic(loc, 1, 'avoid_select_star', `【第 ${loc.line} 行】${t('linter.avoidSelectStar.description')}`, severity, t('linter.source')))
+                    }
+                    continue
+                }
+                if (colNode.type === 'star') {
+                    const loc = getNodeLocation(colNode)
+                    if (loc) {
+                        const severity = this.getRuleSeverity('avoid_select_star')
+                        diagnostics.push(createDiagnostic(loc, 1, 'avoid_select_star', `【第 ${loc.line} 行】${t('linter.avoidSelectStar.description')}`, severity, t('linter.source')))
+                    }
+                    continue
+                }
+            }
+
+            const expr = colObj.expr
+            if (expr != null && typeof expr === 'object') {
+                const exprObj = expr as Record<string, unknown>
+                if (exprObj.type === 'column_ref' && exprObj.column === '*') {
+                    const loc = getColumnLoc(colObj)
+                    if (loc) {
+                        const severity = this.getRuleSeverity('avoid_select_star')
+                        diagnostics.push(createDiagnostic(loc, 1, 'avoid_select_star', `【第 ${loc.line} 行】${t('linter.avoidSelectStar.description')}`, severity, t('linter.source')))
+                    }
+                    continue
+                }
+                if (exprObj.type === 'star') {
+                    const loc = getColumnLoc(colObj)
+                    if (loc) {
+                        const severity = this.getRuleSeverity('avoid_select_star')
+                        diagnostics.push(createDiagnostic(loc, 1, 'avoid_select_star', `【第 ${loc.line} 行】${t('linter.avoidSelectStar.description')}`, severity, t('linter.source')))
+                    }
+                    continue
                 }
             }
         }
@@ -218,7 +211,11 @@ export class AstLinter {
             if (columns.includes(star as unknown)) {
                 continue
             }
-            this.addDiagnosticFromNode(star, 1, t('linter.avoidSelectStar.description'), 'avoid_select_star', diagnostics)
+            const loc = getNodeLocation(star)
+            if (loc) {
+                const severity = this.getRuleSeverity('avoid_select_star')
+                diagnostics.push(createDiagnostic(loc, 1, 'avoid_select_star', `【第 ${loc.line} 行】${t('linter.avoidSelectStar.description')}`, severity, t('linter.source')))
+            }
         }
     }
 
@@ -229,17 +226,21 @@ export class AstLinter {
         }
 
         for (const entry of from) {
-            if (!isAstNode(entry)) {
+            if (entry == null || typeof entry !== 'object') {
                 continue
             }
-            const fromEntry = entry as AstNode
+            const fromEntry = entry as Record<string, unknown>
             const join = fromEntry.join
             if (typeof join !== 'string') {
                 continue
             }
             const joinUpper = join.toUpperCase()
-            if (joinUpper === 'JOIN') {
-                this.addDiagnosticFromNode(fromEntry, join.length, t('linter.explicitJoinType.description'), 'explicit_join_type', diagnostics)
+            if (joinUpper === 'JOIN' || joinUpper === 'INNER JOIN') {
+                const loc = getLocFromAny(fromEntry)
+                if (loc) {
+                    const severity = this.getRuleSeverity('explicit_join_type')
+                    diagnostics.push(createDiagnostic(loc, 4, 'explicit_join_type', `【第 ${loc.line} 行】${t('linter.explicitJoinType.description')}`, severity, t('linter.source')))
+                }
             }
         }
     }
@@ -251,9 +252,10 @@ export class AstLinter {
         }
         const orderby = node.orderby
         if (orderby == null || (Array.isArray(orderby) && orderby.length === 0)) {
-            const loc = this.getNodeLocation(node)
+            const loc = getNodeLocation(node)
             if (loc) {
-                this.addDiagnostic(loc, 5, t('linter.limitWithoutOrderBy.description'), 'limit_with_order_by', diagnostics)
+                const severity = this.getRuleSeverity('limit_with_order_by')
+                diagnostics.push(createDiagnostic(loc, 5, 'limit_with_order_by', `【第 ${loc.line} 行】${t('linter.limitWithoutOrderBy.description')}`, severity, t('linter.source')))
             }
         }
     }
@@ -269,11 +271,22 @@ export class AstLinter {
         if (!Array.isArray(columns) || columns.length === 0) {
             return
         }
-        if (!Array.isArray(values) || values.length === 0) {
+
+        let valueRows: unknown[] = []
+        if (Array.isArray(values)) {
+            valueRows = values
+        } else if (values != null && typeof values === 'object') {
+            const valuesObj = values as Record<string, unknown>
+            if (valuesObj.type === 'values' && Array.isArray(valuesObj.values)) {
+                valueRows = valuesObj.values
+            }
+        }
+
+        if (valueRows.length === 0) {
             return
         }
 
-        const firstValue = values[0]
+        const firstValue = valueRows[0]
         if (!isAstNode(firstValue)) {
             return
         }
@@ -286,9 +299,10 @@ export class AstLinter {
         const valCount = (valueNode.value as unknown[]).length
 
         if (colCount !== valCount) {
-            const loc = this.getNodeLocation(node)
+            const loc = getNodeLocation(node)
             if (loc) {
-                this.addDiagnostic(loc, 6, t('linter.columnCountMismatch.description', String(colCount), String(valCount)), 'avoid_column_count_mismatch', diagnostics)
+                const severity = this.getRuleSeverity('avoid_column_count_mismatch')
+                diagnostics.push(createDiagnostic(loc, 6, 'avoid_column_count_mismatch', `【第 ${loc.line} 行】${t('linter.columnCountMismatch.description', String(colCount), String(valCount))}`, severity, t('linter.source')))
             }
         }
     }
@@ -310,10 +324,10 @@ export class AstLinter {
 
         let hasPrimaryKey = false
         for (const def of createDefinitions) {
-            if (!isAstNode(def)) {
+            if (def == null || typeof def !== 'object') {
                 continue
             }
-            const defNode = def as AstNode
+            const defNode = def as Record<string, unknown>
 
             if (defNode.resource === 'constraint') {
                 const constraintType = defNode.constraint_type
@@ -323,7 +337,7 @@ export class AstLinter {
                 }
             }
 
-            if (defNode.primary_key === true) {
+            if (defNode.primary_key === true || defNode.primary_key === 'primary key' || defNode.primary_key === 'key' || defNode.primary === 'key' || defNode.primary === 'primary key') {
                 hasPrimaryKey = true
                 break
             }
@@ -344,9 +358,28 @@ export class AstLinter {
         }
 
         if (!hasPrimaryKey) {
-            const loc = this.getNodeLocation(node)
+            const loc = getNodeLocation(node)
             if (loc) {
-                this.addDiagnostic(loc, 12, t('linter.createTableWithoutPK.description'), 'missing_primary_key', diagnostics)
+                const severity = this.getRuleSeverity('missing_primary_key')
+                diagnostics.push(createDiagnostic(loc, 12, 'missing_primary_key', `【第 ${loc.line} 行】${t('linter.createTableWithoutPK.description')}`, severity, t('linter.source')))
+            } else {
+                let fallbackLoc: AstLocation | null = null
+                const table = node.table
+                if (Array.isArray(table) && table.length > 0) {
+                    const firstTable = table[0] as Record<string, unknown>
+                    fallbackLoc = getLocFromAny(firstTable)
+                }
+                if (!fallbackLoc && Array.isArray(createDefinitions) && createDefinitions.length > 0) {
+                    const firstDef = createDefinitions[0] as Record<string, unknown>
+                    fallbackLoc = getLocFromAny(firstDef)
+                    if (!fallbackLoc && firstDef.column != null && typeof firstDef.column === 'object') {
+                        fallbackLoc = getLocFromAny(firstDef.column as Record<string, unknown>)
+                    }
+                }
+                if (fallbackLoc) {
+                    const severity = this.getRuleSeverity('missing_primary_key')
+                    diagnostics.push(createDiagnostic(fallbackLoc, 12, 'missing_primary_key', `【第 ${fallbackLoc.line} 行】${t('linter.createTableWithoutPK.description')}`, severity, t('linter.source')))
+                }
             }
         }
     }
@@ -356,20 +389,36 @@ export class AstLinter {
             return
         }
 
+        let selectNode: AstNode | null = null
+
         const selectProp = node.select
-        if (!isAstNode(selectProp)) {
-            return
+        if (isAstNode(selectProp)) {
+            const sn = selectProp as AstNode
+            if (sn.type === 'select') {
+                selectNode = sn
+            }
         }
-        const selectNode = selectProp as AstNode
-        if (selectNode.type !== 'select') {
+
+        if (!selectNode) {
+            const values = node.values
+            if (values != null && typeof values === 'object' && !Array.isArray(values)) {
+                const valuesObj = values as Record<string, unknown>
+                if (isAstNode(valuesObj) && (valuesObj as AstNode).type === 'select') {
+                    selectNode = valuesObj as AstNode
+                }
+            }
+        }
+
+        if (!selectNode) {
             return
         }
 
         const hasStar = this.selectHasStar(selectNode)
         if (hasStar) {
-            const loc = this.getNodeLocation(selectNode)
+            const loc = getNodeLocation(selectNode)
             if (loc) {
-                this.addDiagnostic(loc, 1, t('linter.insertWithoutColumns.description'), 'avoid_select_in_insert', diagnostics)
+                const severity = this.getRuleSeverity('avoid_select_in_insert')
+                diagnostics.push(createDiagnostic(loc, 1, 'avoid_select_in_insert', `【第 ${loc.line} 行】${t('linter.insertWithoutColumns.description')}`, severity, t('linter.source')))
             }
         }
     }
@@ -380,12 +429,26 @@ export class AstLinter {
             return false
         }
         for (const col of columns) {
+            if (col == null || typeof col !== 'object') {
+                continue
+            }
+            const colObj = col as Record<string, unknown>
             if (isAstNode(col)) {
                 const colNode = col as AstNode
                 if (colNode.type === 'column_ref' && colNode.column === '*') {
                     return true
                 }
                 if (colNode.type === 'star') {
+                    return true
+                }
+            }
+            const expr = colObj.expr
+            if (expr != null && typeof expr === 'object') {
+                const exprObj = expr as Record<string, unknown>
+                if (exprObj.type === 'column_ref' && exprObj.column === '*') {
+                    return true
+                }
+                if (exprObj.type === 'star') {
                     return true
                 }
             }
@@ -399,30 +462,43 @@ export class AstLinter {
             return
         }
 
-        const aliasMap = new Map<string, AstNode[]>()
+        const aliasMap = new Map<string, { node: Record<string, unknown>; alias: string }[]>()
 
         for (const col of columns) {
-            if (!isAstNode(col)) {
+            if (col == null || typeof col !== 'object') {
                 continue
             }
-            const colNode = col as AstNode
-            const as = colNode.as
+            const colObj = col as Record<string, unknown>
+            const as = colObj.as
+            let aliasStr: string | null = null
             if (typeof as === 'string' && as.length > 0) {
-                const lower = as.toLowerCase()
+                aliasStr = as
+            } else if (as != null && typeof as === 'object') {
+                const asObj = as as Record<string, unknown>
+                if (typeof asObj.value === 'string' && asObj.value.length > 0) {
+                    aliasStr = asObj.value
+                }
+            }
+            if (aliasStr) {
+                const lower = aliasStr.toLowerCase()
                 if (!aliasMap.has(lower)) {
                     aliasMap.set(lower, [])
                 }
                 const existing = aliasMap.get(lower)
                 if (existing) {
-                    existing.push(colNode)
+                    existing.push({ node: colObj, alias: aliasStr })
                 }
             }
         }
 
-        for (const [alias, nodes] of aliasMap) {
-            if (nodes.length > 1) {
-                for (let i = 1; i < nodes.length; i++) {
-                    this.addDiagnosticFromNode(nodes[i], alias.length, t('linter.duplicateAlias.description', alias), 'duplicate_column_aliases', diagnostics)
+        for (const [alias, entries] of aliasMap) {
+            if (entries.length > 1) {
+                for (let i = 1; i < entries.length; i++) {
+                    const loc = getColumnLoc(entries[i].node)
+                    if (loc) {
+                        const severity = this.getRuleSeverity('duplicate_column_aliases')
+                        diagnostics.push(createDiagnostic(loc, alias.length, 'duplicate_column_aliases', `【第 ${loc.line} 行】${t('linter.duplicateAlias.description', alias)}`, severity, t('linter.source')))
+                    }
                 }
             }
         }
@@ -432,9 +508,13 @@ export class AstLinter {
         const funcNodes = findNodesOfType<AstNode>(node, 'function')
 
         for (const func of funcNodes) {
-            const name = this.getFunctionName(func)
+            const name = getFunctionName(func)
             if (name && ISNULL_FUNCTION_NAMES.has(name.toLowerCase())) {
-                this.addDiagnosticFromNode(func, name.length, t('linter.useCoalesce.description'), 'use_coalesce_over_isnull', diagnostics)
+                const loc = getNodeLocation(func)
+                if (loc) {
+                    const severity = this.getRuleSeverity('use_coalesce_over_isnull')
+                    diagnostics.push(createDiagnostic(loc, name.length, 'use_coalesce_over_isnull', `【第 ${loc.line} 行】${t('linter.useCoalesce.description')}`, severity, t('linter.source')))
+                }
             }
         }
     }
@@ -443,9 +523,13 @@ export class AstLinter {
         const funcNodes = findNodesOfType<AstNode>(node, 'function')
 
         for (const func of funcNodes) {
-            const name = this.getFunctionName(func)
+            const name = getFunctionName(func)
             if (name && CURRENT_TIMESTAMP_FUNCTION_NAMES.has(name.toLowerCase())) {
-                this.addDiagnosticFromNode(func, name.length, t('linter.useCurrentTimestamp.description'), 'use_current_timestamp', diagnostics)
+                const loc = getNodeLocation(func)
+                if (loc) {
+                    const severity = this.getRuleSeverity('use_current_timestamp')
+                    diagnostics.push(createDiagnostic(loc, name.length, 'use_current_timestamp', `【第 ${loc.line} 行】${t('linter.useCurrentTimestamp.description')}`, severity, t('linter.source')))
+                }
             }
         }
     }
@@ -464,9 +548,10 @@ export class AstLinter {
 
         for (const subSelect of subquerySelects) {
             if (this.isCorrelatedSubquery(subSelect, outerTables)) {
-                const loc = this.getNodeLocation(subSelect)
+                const loc = getNodeLocation(subSelect)
                 if (loc) {
-                    this.addDiagnostic(loc, 6, t('linter.subqueryPerformance.description'), 'avoid_correlated_subqueries', diagnostics)
+                    const severity = this.getRuleSeverity('avoid_correlated_subqueries')
+                    diagnostics.push(createDiagnostic(loc, 6, 'avoid_correlated_subqueries', `【第 ${loc.line} 行】${t('linter.subqueryPerformance.description')}`, severity, t('linter.source')))
                 }
             }
         }
@@ -524,7 +609,7 @@ export class AstLinter {
         const thresholdJoins = cfg.get<number>('lint.missing_query_comment_threshold_join_count', 3)
         const thresholdSubqueries = cfg.get<number>('lint.missing_query_comment_threshold_subquery_count', 2)
 
-        const loc = this.getNodeLocation(node)
+        const loc = getNodeLocation(node)
         if (!loc) {
             return
         }
@@ -548,7 +633,7 @@ export class AstLinter {
             },
         })
 
-        const endLoc = this.getStatementEndLocation(node)
+        const endLoc = getStatementEndLocation(node)
         const statementEndLine = endLoc ? endLoc.line - 1 : selectStartLine
         const lineCount = statementEndLine - selectStartLine + 1
 
@@ -567,7 +652,8 @@ export class AstLinter {
         if (joinCount >= thresholdJoins) details.push(`${joinCount}个JOIN`)
         if (subqueryCount >= thresholdSubqueries) details.push(`${subqueryCount}个子查询`)
 
-        this.addDiagnostic(loc, 6, t('linter.complexQueryComment.description', details.join('/')), 'missing_query_comment', diagnostics)
+        const severity = this.getRuleSeverity('missing_query_comment')
+        diagnostics.push(createDiagnostic(loc, 6, 'missing_query_comment', `【第 ${loc.line} 行】${t('linter.complexQueryComment.description', details.join('/'))}`, severity, t('linter.source')))
     }
 
     private hasCommentAboveLine(document: vscode.TextDocument, line: number): boolean {
@@ -625,13 +711,18 @@ export class AstLinter {
         const aggregate = cfg.get<boolean>('lint.missing_column_comment_aggregate', true)
 
         if (aggregate && missingColumns.length > 1) {
-            const loc = this.getNodeLocation(node)
+            const loc = getNodeLocation(node)
             if (loc) {
-                this.addDiagnostic(loc, 12, t('linter.createTableMissingComment.description', String(missingColumns.length)), 'missing_column_comment', diagnostics)
+                const severity = this.getRuleSeverity('missing_column_comment')
+                diagnostics.push(createDiagnostic(loc, 12, 'missing_column_comment', `【第 ${loc.line} 行】${t('linter.createTableMissingComment.description', String(missingColumns.length))}`, severity, t('linter.source')))
             }
         } else {
             for (const col of missingColumns) {
-                this.addDiagnosticFromNode(col.node, col.name.length, t('linter.columnMissingComment.description', col.name), 'missing_column_comment', diagnostics)
+                const loc = getNodeLocation(col.node)
+                if (loc) {
+                    const severity = this.getRuleSeverity('missing_column_comment')
+                    diagnostics.push(createDiagnostic(loc, col.name.length, 'missing_column_comment', `【第 ${loc.line} 行】${t('linter.columnMissingComment.description', col.name)}`, severity, t('linter.source')))
+                }
             }
         }
     }
@@ -670,6 +761,29 @@ export class AstLinter {
         return false
     }
 
+    private isCommentedOutCode(content: string, thresholdLines: number): boolean {
+        if (/sql-formatter-disable|sql-formatter-enable/i.test(content)) {
+            return false
+        }
+
+        const lines = content.split('\n').filter(l => l.trim().length > 0)
+        if (lines.length < thresholdLines) {
+            return false
+        }
+
+        let keywordCount = 0
+        for (const { regex } of SQL_KEYWORD_REGEXES) {
+            if (regex.test(content)) {
+                keywordCount++
+            }
+        }
+        if (keywordCount < 3) {
+            return false
+        }
+
+        return true
+    }
+
     private checkCommentedOutCode(sql: string, diagnostics: vscode.Diagnostic[]): void {
         const cfg = vscode.workspace.getConfiguration('Hive-Formatter')
         const thresholdLines = cfg.get<number>('lint.commented_out_code_threshold_lines', 3)
@@ -678,65 +792,27 @@ export class AstLinter {
         let match
         while ((match = blockCommentPattern.exec(sql)) !== null) {
             const content = match[1]
-            if (/sql-formatter-disable|sql-formatter-enable/i.test(content)) {
+            if (!this.isCommentedOutCode(content, thresholdLines)) {
                 continue
             }
 
             const lines = content.split('\n').filter(l => l.trim().length > 0)
-            if (lines.length < thresholdLines) {
-                continue
-            }
-
-            const sqlKeywords = ['SELECT', 'FROM', 'WHERE', 'JOIN', 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'DROP', 'ALTER', 'GROUP BY', 'ORDER BY', 'HAVING', 'UNION']
-            let keywordCount = 0
-            for (const kw of sqlKeywords) {
-                if (new RegExp(`\\b${kw}\\b`, 'i').test(content)) {
-                    keywordCount++
-                }
-            }
-            if (keywordCount < 3) {
-                continue
-            }
-
             const startLine = sql.substring(0, match.index).split('\n').length
-            this.addDiagnostic(
-                { line: startLine, column: 1 },
-                2,
-                t('linter.commentedOutCode.description', String(lines.length)),
-                'commented_out_code',
-                diagnostics,
-            )
+            const loc: AstLocation = { line: startLine, column: 1 }
+            const severity = this.getRuleSeverity('commented_out_code')
+            diagnostics.push(createDiagnostic(loc, 2, 'commented_out_code', `【第 ${loc.line} 行】${t('linter.commentedOutCode.description', String(lines.length))}`, severity, t('linter.source')))
         }
 
         const lineCommentGroups = this.findConsecutiveLineComments(sql)
         for (const group of lineCommentGroups) {
-            if (group.lineCount < thresholdLines) {
-                continue
-            }
-            const content = group.text
-            if (/sql-formatter-disable|sql-formatter-enable/i.test(content)) {
-                continue
-            }
-
-            const sqlKeywords = ['SELECT', 'FROM', 'WHERE', 'JOIN', 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'DROP', 'ALTER', 'GROUP BY', 'ORDER BY', 'HAVING', 'UNION']
-            let keywordCount = 0
-            for (const kw of sqlKeywords) {
-                if (new RegExp(`\\b${kw}\\b`, 'i').test(content)) {
-                    keywordCount++
-                }
-            }
-            if (keywordCount < 3) {
+            if (!this.isCommentedOutCode(group.text, thresholdLines)) {
                 continue
             }
 
             const startLine = sql.substring(0, group.startIndex).split('\n').length
-            this.addDiagnostic(
-                { line: startLine, column: 1 },
-                2,
-                t('linter.commentedOutCode.description', String(group.lineCount)),
-                'commented_out_code',
-                diagnostics,
-            )
+            const loc: AstLocation = { line: startLine, column: 1 }
+            const severity = this.getRuleSeverity('commented_out_code')
+            diagnostics.push(createDiagnostic(loc, 2, 'commented_out_code', `【第 ${loc.line} 行】${t('linter.commentedOutCode.description', String(group.lineCount))}`, severity, t('linter.source')))
         }
     }
 
@@ -803,69 +879,10 @@ export class AstLinter {
                 }
 
                 const startLine = sql.substring(0, match.index).split('\n').length
-                this.addDiagnostic(
-                    { line: startLine, column: 1 },
-                    match[0].length,
-                    t('linter.expiredTodo.description', dateStr, String(diffDays)),
-                    'expired_todo',
-                    diagnostics,
-                )
+                const loc: AstLocation = { line: startLine, column: 1 }
+                const severity = this.getRuleSeverity('expired_todo')
+                diagnostics.push(createDiagnostic(loc, match[0].length, 'expired_todo', `【第 ${loc.line} 行】${t('linter.expiredTodo.description', dateStr, String(diffDays))}`, severity, t('linter.source')))
             }
         }
-    }
-
-    private addDiagnosticFromNode(node: AstNode, length: number, message: string, ruleId: string, diagnostics: vscode.Diagnostic[]): void {
-        const loc = this.getNodeLocation(node)
-        if (loc) {
-            this.addDiagnostic(loc, length, message, ruleId, diagnostics)
-        }
-    }
-
-    private addDiagnostic(loc: AstLocation, length: number, message: string, ruleId: string, diagnostics: vscode.Diagnostic[]): void {
-        const severity = this.getRuleSeverity(ruleId)
-        const diagnostic = new vscode.Diagnostic(
-            new vscode.Range(loc.line - 1, loc.column - 1, loc.line - 1, loc.column - 1 + length),
-            `【第 ${loc.line} 行】${message}`,
-            severity,
-        )
-        diagnostic.source = t('linter.source')
-        diagnostic.code = ruleId
-        diagnostics.push(diagnostic)
-    }
-
-    private getFunctionName(node: AstNode): string | null {
-        const name = node.name
-        if (typeof name === 'string') {
-            return name
-        }
-        if (isAstNode(name)) {
-            const nameNode = name as AstNode
-            if (typeof nameNode.value === 'string') {
-                return nameNode.value
-            }
-        }
-        return null
-    }
-
-    private getNodeLocation(node: AstNode): AstLocation | null {
-        const loc = (node as Record<string, unknown>).loc as { start?: AstLocation; end?: AstLocation } | undefined
-        if (loc?.start?.line !== undefined && loc?.start?.column !== undefined) {
-            return {
-                line: loc.start.line,
-                column: loc.start.column,
-            }
-        }
-        return null
-    }
-
-    private getStatementEndLocation(node: AstNode): AstLocation | null {
-        const loc = (node as Record<string, unknown>).loc as { start?: AstLocation; end?: AstLocation } | undefined
-        if (loc?.end?.line !== undefined && loc?.end?.column !== undefined) {
-            return {
-                line: loc.end.line,
-                column: loc.end.column,
-            }
-        }
-        return null
     }
 }

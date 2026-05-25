@@ -1,11 +1,12 @@
 import * as vscode from "vscode"
-import { sqlDialects } from "../core/sqlDialects"
+import { isSqlDocument } from "../core/sqlDialects"
 import { toSqlDialect } from "../core/sqlDialects"
 import { lineColFromIndex } from "../lexer/lineColFromIndex"
 import { t } from "../i18n"
 import { EnhancedSqlChecker } from "./EnhancedSqlChecker"
 import { SqlLinter } from "./SqlLinter"
 import { AstDiagnosticsProvider } from "./AstDiagnosticsProvider"
+import { getDocumentAstCache } from "../parser/DocumentAstCache"
 
 export class SqlDiagnosticsProvider {
     private diagnosticCollection: vscode.DiagnosticCollection
@@ -14,6 +15,9 @@ export class SqlDiagnosticsProvider {
     private configCache: Record<string, boolean> = {}
 
     private configChangeListener: vscode.Disposable
+
+    private debounceTimer: ReturnType<typeof setTimeout> | null = null
+    private readonly DEBOUNCE_MS = 300
 
     constructor() {
         this.diagnosticCollection =
@@ -27,7 +31,7 @@ export class SqlDiagnosticsProvider {
                 this.loadConfig()
                 this.linter = new SqlLinter()
                 vscode.workspace.textDocuments.forEach((doc) => {
-                    if (this.isSqlDocument(doc)) {
+                    if (isSqlDocument(doc)) {
                         this.provideDiagnostics(doc)
                     }
                 })
@@ -46,9 +50,14 @@ export class SqlDiagnosticsProvider {
         }
     }
 
-    private isSqlDocument(document: vscode.TextDocument): boolean {
-        const sqlLanguages = Object.keys(sqlDialects)
-        return sqlLanguages.includes(document.languageId)
+    public debouncedProvideDiagnostics(document: vscode.TextDocument): void {
+        if (this.debounceTimer) {
+            clearTimeout(this.debounceTimer)
+        }
+        this.debounceTimer = setTimeout(() => {
+            this.provideDiagnostics(document)
+            this.debounceTimer = null
+        }, this.DEBOUNCE_MS)
     }
 
     public provideDiagnostics(document: vscode.TextDocument): void {
@@ -62,18 +71,24 @@ export class SqlDiagnosticsProvider {
 
         try {
             const sqlDialect = toSqlDialect(document.languageId)
+
+            const parseResult = getDocumentAstCache().getOrParse(document, sqlDialect)
+            const astList = (parseResult.success && parseResult.ast)
+                ? (Array.isArray(parseResult.ast) ? parseResult.ast : [parseResult.ast])
+                : []
+
             const astProvider = new AstDiagnosticsProvider()
-            const astDiagnostics = astProvider.check(text, sqlDialect)
+            const astDiagnostics = astProvider.check(text, sqlDialect, astList)
             diagnostics.push(...astDiagnostics)
 
             if (this.configCache.enableEnhancedChecks) {
-                const enhancedDiagnostics = this.enhancedChecker.checkEnhancedIssues(text, document)
+                const enhancedDiagnostics = this.enhancedChecker.checkEnhancedIssues(text, document, astList)
                 const filteredDiagnostics = this.filterBySeverity(enhancedDiagnostics)
                 diagnostics.push(...filteredDiagnostics)
             }
 
             if (this.configCache.enableLinter) {
-                const lintDiagnostics = this.linter.lint(text, document)
+                const lintDiagnostics = this.linter.lint(text, document, astList)
                 const filteredLintDiagnostics = this.filterBySeverity(lintDiagnostics)
                 diagnostics.push(...filteredLintDiagnostics)
             }
@@ -147,6 +162,7 @@ export class SqlDiagnosticsProvider {
     }
 
     public dispose(): void {
+        if (this.debounceTimer) clearTimeout(this.debounceTimer)
         this.configChangeListener.dispose()
         this.diagnosticCollection.dispose()
     }

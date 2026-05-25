@@ -80,6 +80,7 @@ export class CTEFormatter {
 
         const stmt = cte.stmt;
         if (stmt && stmt.ast) {
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
             const { SelectFormatter } = require('./SelectFormatter');
             const selectFmt = new SelectFormatter(this.cfg, this.indent);
             this.layout.add(selectFmt.format(stmt.ast));

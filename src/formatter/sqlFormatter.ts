@@ -7,10 +7,10 @@ const dialectNameMap: Record<string, SqlDialect> = {
     hive: "hive",
     mysql: "mysql",
     spark: "spark",
+    flinksql: "flinksql",
     sql: "sql",
     postgresql: "postgresql",
     bigquery: "bigquery",
-    snowflake: "snowflake",
     sqlite: "sqlite",
 }
 

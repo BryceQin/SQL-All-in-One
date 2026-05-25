@@ -16,17 +16,26 @@ const messageBundles: Record<Language, Record<MessageKey, string>> = {
 const validLanguages: Language[] = ['zh', 'en'];
 
 export function initI18n(): void {
-    const config = vscode.workspace.getConfiguration('Hive-Formatter');
-    const userLang = config.get<string>('displayLanguage', 'auto');
+    try {
+        const config = vscode.workspace.getConfiguration('Hive-Formatter');
+        const userLang = config.get<string>('displayLanguage', 'auto');
 
-    if (userLang === 'auto') {
-        currentLang = vscode.env.language.startsWith('zh') ? 'zh' : 'en';
-    } else if (validLanguages.includes(userLang as Language)) {
-        currentLang = userLang as Language;
-    } else {
-        currentLang = 'en';
+        if (userLang === 'auto') {
+            currentLang = vscode.env.language.startsWith('zh') ? 'zh' : 'en';
+        } else if (validLanguages.includes(userLang as Language)) {
+            currentLang = userLang as Language;
+        } else {
+            currentLang = 'en';
+        }
+    } catch {
+        currentLang = 'zh';
     }
 
+    messages = messageBundles[currentLang];
+}
+
+export function initI18nForTest(lang: Language = 'zh'): void {
+    currentLang = lang;
     messages = messageBundles[currentLang];
 }
 

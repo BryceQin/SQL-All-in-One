@@ -38,13 +38,11 @@ export type LayoutItem =
  * Now it's storing items to array and builds the string only in the end.
 //  */
 export default class Layout {
-    // 核心存储结构，按顺序存储「空白符指令 + SQL 文本」
     private items: LayoutItem[] = []
 
-    // 缩进管理实例，提供「单个缩进字符串」和「当前缩进层级」
     public indentation: Indentation
-    constructor(indentation: Indentation) {
-        this.indentation = indentation
+    constructor(indentation?: Indentation) {
+        this.indentation = indentation ?? new Indentation('    ')
     }
 
     // Layout 类的核心入口，接收任意数量的「空白符指令」或「SQL 文本」，逐个处理并更新 items 数组
@@ -125,6 +123,19 @@ export default class Layout {
     // 延迟拼接最终 SQL 字符串，将 LayoutItem 解析为实际字符
     public toString(): string {
         return this.items.map((item) => this.itemToString(item)).join("")
+    }
+
+    public addNewlineIndent(): void {
+        this.trimHorizontalWhitespace()
+        this.addNewline(WS.NEWLINE)
+        this.addIndentation()
+    }
+
+    public addCommaNewlineIndent(): void {
+        this.trimWhitespace()
+        this.items.push(',')
+        this.addNewline(WS.NEWLINE)
+        this.addIndentation()
     }
 
     /**

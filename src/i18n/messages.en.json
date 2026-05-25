@@ -29,6 +29,10 @@
     "enhanced.nullComparison": "[Line {0}] Code quality: NULL comparison should use {0} instead of {1}",
     "enhanced.dateFunctionHint": "Using {0} in Hive is supported, but verify version compatibility",
 
+    "linter.uppercaseKeywords.name": "Uppercase Keywords",
+    "linter.uppercaseKeywords.description": "Use uppercase for SQL keywords",
+    "linter.consistentAliasing.name": "Consistent Aliasing",
+    "linter.consistentAliasing.description": "Use meaningful table aliases",
     "linter.avoidSelectStar.name": "Avoid SELECT *",
     "linter.avoidSelectStar.description": "Consider explicitly specifying column names instead of SELECT *",
     "linter.explicitJoinType.name": "Explicit JOIN Type",

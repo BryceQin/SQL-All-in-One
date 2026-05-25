@@ -1,8 +1,9 @@
 import type { FormatOptions } from '../FormatOptions';
 import Indentation from '../Indentation';
 import Layout, { WS } from '../Layout';
-import { formatKeyword, formatAlias } from './CommonFormatter';
+import { formatKeyword } from './CommonFormatter';
 import { ExpressionFormatter2 } from './ExpressionFormatter2';
+import { SelectFormatter } from './SelectFormatter';
 
 export class InsertFormatter {
     private cfg: FormatOptions;
@@ -13,9 +14,11 @@ export class InsertFormatter {
     constructor(cfg: FormatOptions, indent: Indentation) {
         this.cfg = cfg;
         this.indent = indent;
-        this.layout = new Layout(new Indentation(indent.getSingleIndent()));
-        this.layout.indentation = indent;
-        this.exprFmt = new ExpressionFormatter2(cfg, indent);
+        this.layout = new Layout(indent);
+        this.exprFmt = new ExpressionFormatter2(cfg, indent, (expr) => {
+            const selectFmt = new SelectFormatter(this.cfg, this.indent);
+            return selectFmt.format(expr);
+        });
     }
 
     public format(stmt: any): string {
@@ -139,7 +142,6 @@ export class InsertFormatter {
             this.indent.decreaseBlockLevel();
         } else if (values.type === 'select') {
             this.layout.add(WS.NEWLINE, WS.INDENT);
-            const { SelectFormatter } = require('./SelectFormatter');
             const selectFmt = new SelectFormatter(this.cfg, this.indent);
             this.layout.add(selectFmt.format(values));
         }

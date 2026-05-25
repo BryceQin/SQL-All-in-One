@@ -137,165 +137,165 @@
                         <div class="cg-body open">
                             <div class="lint-rule">
                                 <span class="lint-rule-name">避免 SELECT *</span>
-                                <select class="config-select lint-rule-severity" id="avoidSelectStarSeverity">
+                                <select class="config-select lint-rule-severity" id="lintAvoidSelectStarSeverity">
                                     <option value="error">Error</option>
                                     <option value="warning">Warning</option>
                                     <option value="information">Info</option>
                                 </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="avoidSelectStarEnabled"><span class="toggle-slider"></span></label>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintAvoidSelectStarEnabled"><span class="toggle-slider"></span></label>
                             </div>
                             <div class="lint-rule">
                                 <span class="lint-rule-name">显式 JOIN 类型</span>
-                                <select class="config-select lint-rule-severity" id="explicitJoinTypeSeverity">
+                                <select class="config-select lint-rule-severity" id="lintExplicitJoinTypeSeverity">
                                     <option value="error">Error</option>
                                     <option value="warning">Warning</option>
                                     <option value="information">Info</option>
                                 </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="explicitJoinTypeEnabled"><span class="toggle-slider"></span></label>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintExplicitJoinTypeEnabled"><span class="toggle-slider"></span></label>
                             </div>
                             <div class="lint-rule">
                                 <span class="lint-rule-name">LIMIT 配合 ORDER BY</span>
-                                <select class="config-select lint-rule-severity" id="limitWithOrderBySeverity">
+                                <select class="config-select lint-rule-severity" id="lintLimitWithOrderBySeverity">
                                     <option value="error">Error</option>
                                     <option value="warning">Warning</option>
                                     <option value="information">Info</option>
                                 </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="limitWithOrderByEnabled"><span class="toggle-slider"></span></label>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintLimitWithOrderByEnabled"><span class="toggle-slider"></span></label>
                             </div>
                             <div class="lint-rule">
                                 <span class="lint-rule-name">列数不匹配检测</span>
-                                <select class="config-select lint-rule-severity" id="avoidColumnCountMismatchSeverity">
+                                <select class="config-select lint-rule-severity" id="lintAvoidColumnCountMismatchSeverity">
                                     <option value="error">Error</option>
                                     <option value="warning">Warning</option>
                                     <option value="information">Info</option>
                                 </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="avoidColumnCountMismatchEnabled"><span class="toggle-slider"></span></label>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintAvoidColumnCountMismatchEnabled"><span class="toggle-slider"></span></label>
                             </div>
                             <div class="lint-rule">
                                 <span class="lint-rule-name">缺失主键检测</span>
-                                <select class="config-select lint-rule-severity" id="missingPrimaryKeySeverity">
+                                <select class="config-select lint-rule-severity" id="lintMissingPrimaryKeySeverity">
                                     <option value="error">Error</option>
                                     <option value="warning">Warning</option>
                                     <option value="information">Info</option>
                                 </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="missingPrimaryKeyEnabled"><span class="toggle-slider"></span></label>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintMissingPrimaryKeyEnabled"><span class="toggle-slider"></span></label>
                             </div>
                             <div class="lint-rule">
                                 <span class="lint-rule-name">使用 CURRENT_TIMESTAMP</span>
-                                <select class="config-select lint-rule-severity" id="useCurrentTimestampSeverity">
+                                <select class="config-select lint-rule-severity" id="lintUseCurrentTimestampSeverity">
                                     <option value="error">Error</option>
                                     <option value="warning">Warning</option>
                                     <option value="information">Info</option>
                                 </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="useCurrentTimestampEnabled"><span class="toggle-slider"></span></label>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintUseCurrentTimestampEnabled"><span class="toggle-slider"></span></label>
                             </div>
                             <div class="lint-rule">
                                 <span class="lint-rule-name">避免 INSERT 中的 SELECT</span>
-                                <select class="config-select lint-rule-severity" id="avoidSelectInInsertSeverity">
+                                <select class="config-select lint-rule-severity" id="lintAvoidSelectInInsertSeverity">
                                     <option value="error">Error</option>
                                     <option value="warning">Warning</option>
                                     <option value="information">Info</option>
                                 </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="avoidSelectInInsertEnabled"><span class="toggle-slider"></span></label>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintAvoidSelectInInsertEnabled"><span class="toggle-slider"></span></label>
                             </div>
                             <div class="lint-rule">
                                 <span class="lint-rule-name">重复列别名检测</span>
-                                <select class="config-select lint-rule-severity" id="duplicateColumnAliasesSeverity">
+                                <select class="config-select lint-rule-severity" id="lintDuplicateColumnAliasesSeverity">
                                     <option value="error">Error</option>
                                     <option value="warning">Warning</option>
                                     <option value="information">Info</option>
                                 </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="duplicateColumnAliasesEnabled"><span class="toggle-slider"></span></label>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintDuplicateColumnAliasesEnabled"><span class="toggle-slider"></span></label>
                             </div>
                             <div class="lint-rule">
                                 <span class="lint-rule-name">关键字大写</span>
-                                <select class="config-select lint-rule-severity" id="uppercaseKeywordsSeverity">
+                                <select class="config-select lint-rule-severity" id="lintUppercaseKeywordsSeverity">
                                     <option value="error">Error</option>
                                     <option value="warning">Warning</option>
                                     <option value="information">Info</option>
                                 </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="uppercaseKeywordsEnabled"><span class="toggle-slider"></span></label>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintUppercaseKeywordsEnabled"><span class="toggle-slider"></span></label>
                             </div>
                             <div class="lint-rule">
                                 <span class="lint-rule-name">一致的别名</span>
-                                <select class="config-select lint-rule-severity" id="consistentAliasingSeverity">
+                                <select class="config-select lint-rule-severity" id="lintConsistentAliasingSeverity">
                                     <option value="error">Error</option>
                                     <option value="warning">Warning</option>
                                     <option value="information">Info</option>
                                 </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="consistentAliasingEnabled"><span class="toggle-slider"></span></label>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintConsistentAliasingEnabled"><span class="toggle-slider"></span></label>
                             </div>
                             <div class="lint-rule">
                                 <span class="lint-rule-name">使用 COALESCE 而非 ISNULL</span>
-                                <select class="config-select lint-rule-severity" id="useCoalesceOverIsnullSeverity">
+                                <select class="config-select lint-rule-severity" id="lintUseCoalesceOverIsnullSeverity">
                                     <option value="error">Error</option>
                                     <option value="warning">Warning</option>
                                     <option value="information">Info</option>
                                 </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="useCoalesceOverIsnullEnabled"><span class="toggle-slider"></span></label>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintUseCoalesceOverIsnullEnabled"><span class="toggle-slider"></span></label>
                             </div>
                             <div class="lint-rule">
                                 <span class="lint-rule-name">显式列别名</span>
-                                <select class="config-select lint-rule-severity" id="explicitColumnAliasingSeverity">
+                                <select class="config-select lint-rule-severity" id="lintExplicitColumnAliasingSeverity">
                                     <option value="error">Error</option>
                                     <option value="warning">Warning</option>
                                     <option value="information">Info</option>
                                 </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="explicitColumnAliasingEnabled"><span class="toggle-slider"></span></label>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintExplicitColumnAliasingEnabled"><span class="toggle-slider"></span></label>
                             </div>
                             <div class="lint-rule">
                                 <span class="lint-rule-name">避免关联子查询</span>
-                                <select class="config-select lint-rule-severity" id="avoidCorrelatedSubqueriesSeverity">
+                                <select class="config-select lint-rule-severity" id="lintAvoidCorrelatedSubqueriesSeverity">
                                     <option value="error">Error</option>
                                     <option value="warning">Warning</option>
                                     <option value="information">Info</option>
                                 </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="avoidCorrelatedSubqueriesEnabled"><span class="toggle-slider"></span></label>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintAvoidCorrelatedSubqueriesEnabled"><span class="toggle-slider"></span></label>
                             </div>
                             <div class="lint-rule">
                                 <span class="lint-rule-name">长查询行检测</span>
-                                <select class="config-select lint-rule-severity" id="longQueryLineSeverity">
+                                <select class="config-select lint-rule-severity" id="lintLongQueryLineSeverity">
                                     <option value="error">Error</option>
                                     <option value="warning">Warning</option>
                                     <option value="information">Info</option>
                                 </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="longQueryLineEnabled"><span class="toggle-slider"></span></label>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintLongQueryLineEnabled"><span class="toggle-slider"></span></label>
                             </div>
                             <div class="lint-rule">
                                 <span class="lint-rule-name">复杂查询缺注释</span>
-                                <select class="config-select lint-rule-severity" id="missingQueryCommentSeverity">
+                                <select class="config-select lint-rule-severity" id="lintMissingQueryCommentSeverity">
                                     <option value="error">Error</option>
                                     <option value="warning">Warning</option>
                                     <option value="information">Info</option>
                                 </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="missingQueryCommentEnabled"><span class="toggle-slider"></span></label>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintMissingQueryCommentEnabled"><span class="toggle-slider"></span></label>
                             </div>
                             <div class="lint-rule">
                                 <span class="lint-rule-name">DDL 列缺 COMMENT</span>
-                                <select class="config-select lint-rule-severity" id="missingColumnCommentSeverity">
+                                <select class="config-select lint-rule-severity" id="lintMissingColumnCommentSeverity">
                                     <option value="error">Error</option>
                                     <option value="warning">Warning</option>
                                     <option value="information">Info</option>
                                 </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="missingColumnCommentEnabled"><span class="toggle-slider"></span></label>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintMissingColumnCommentEnabled"><span class="toggle-slider"></span></label>
                             </div>
                             <div class="lint-rule">
                                 <span class="lint-rule-name">注释掉的代码</span>
-                                <select class="config-select lint-rule-severity" id="commentedOutCodeSeverity">
+                                <select class="config-select lint-rule-severity" id="lintCommentedOutCodeSeverity">
                                     <option value="error">Error</option>
                                     <option value="warning">Warning</option>
                                     <option value="information">Info</option>
                                 </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="commentedOutCodeEnabled"><span class="toggle-slider"></span></label>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintCommentedOutCodeEnabled"><span class="toggle-slider"></span></label>
                             </div>
                             <div class="lint-rule">
                                 <span class="lint-rule-name">过期 TODO/FIXME</span>
-                                <select class="config-select lint-rule-severity" id="expiredTodoSeverity">
+                                <select class="config-select lint-rule-severity" id="lintExpiredTodoSeverity">
                                     <option value="error">Error</option>
                                     <option value="warning">Warning</option>
                                     <option value="information">Info</option>
                                 </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="expiredTodoEnabled"><span class="toggle-slider"></span></label>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintExpiredTodoEnabled"><span class="toggle-slider"></span></label>
                             </div>
                         </div>
                     </div>

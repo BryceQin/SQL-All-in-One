@@ -1,0 +1,107 @@
+{
+    "FlinkSQL Create Table with Kafka": {
+        "prefix": "flinkkafka",
+        "body": [
+            "CREATE TABLE $1 (",
+            "    $2",
+            ") WITH (",
+            "    'connector' = 'kafka',",
+            "    'topic' = '$3',",
+            "    'properties.bootstrap.servers' = '$4',",
+            "    'properties.group.id' = '$5',",
+            "    'format' = '$6',",
+            "    'scan.startup.mode' = '$7'",
+            ");"
+        ],
+        "description": "Create FlinkSQL table with Kafka connector"
+    },
+    "FlinkSQL Create Table with JDBC": {
+        "prefix": "flinkjdbc",
+        "body": [
+            "CREATE TABLE $1 (",
+            "    $2",
+            ") WITH (",
+            "    'connector' = 'jdbc',",
+            "    'url' = '$3',",
+            "    'table-name' = '$4',",
+            "    'username' = '$5',",
+            "    'password' = '$6'",
+            ");"
+        ],
+        "description": "Create FlinkSQL table with JDBC connector"
+    },
+    "FlinkSQL Tumble Window": {
+        "prefix": "flinktumble",
+        "body": [
+            "SELECT $1,",
+            "    TUMBLE_START($2, INTERVAL $3) AS window_start,",
+            "    TUMBLE_END($2, INTERVAL $3) AS window_end,",
+            "    $4($5) AS $6",
+            "FROM $7",
+            "GROUP BY",
+            "    TUMBLE($2, INTERVAL $3);"
+        ],
+        "description": "FlinkSQL TUMBLE window query"
+    },
+    "FlinkSQL Hop Window": {
+        "prefix": "flinkhop",
+        "body": [
+            "SELECT $1,",
+            "    HOP_START($2, INTERVAL $3, INTERVAL $4) AS window_start,",
+            "    HOP_END($2, INTERVAL $3, INTERVAL $4) AS window_end,",
+            "    $5($6) AS $7",
+            "FROM $8",
+            "GROUP BY",
+            "    HOP($2, INTERVAL $3, INTERVAL $4);"
+        ],
+        "description": "FlinkSQL HOP window query"
+    },
+    "FlinkSQL Cumulate Window": {
+        "prefix": "flinkcumulate",
+        "body": [
+            "SELECT $1,",
+            "    CUMULATE_START($2, INTERVAL $3, INTERVAL $4) AS window_start,",
+            "    CUMULATE_END($2, INTERVAL $3, INTERVAL $4) AS window_end,",
+            "    $5($6) AS $7",
+            "FROM $8",
+            "GROUP BY",
+            "    CUMULATE($2, INTERVAL $3, INTERVAL $4);"
+        ],
+        "description": "FlinkSQL CUMULATE window query"
+    },
+    "FlinkSQL Watermark": {
+        "prefix": "flinkwatermark",
+        "body": [
+            "CREATE TABLE $1 (",
+            "    $2,",
+            "    $3 WATERMARK FOR $4 AS $4 - INTERVAL $5",
+            ") WITH (",
+            "    $6",
+            ");"
+        ],
+        "description": "Create FlinkSQL table with WATERMARK definition"
+    },
+    "FlinkSQL Temporal Join": {
+        "prefix": "flinktemporal",
+        "body": [
+            "SELECT $1",
+            "FROM $2 AS s",
+            "JOIN $3 FOR SYSTEM_TIME AS OF s.$4 AS t",
+            "ON s.$5 = t.$6;"
+        ],
+        "description": "FlinkSQL temporal join query"
+    },
+    "FlinkSQL Deduplication": {
+        "prefix": "flinkdedup",
+        "body": [
+            "SELECT $1",
+            "FROM (",
+            "    SELECT *,",
+            "        ROW_NUMBER() OVER (PARTITION BY $2 ORDER BY $3) AS row_num",
+            "    FROM $4",
+            ")",
+            "WHERE row_num = 1;"
+        ],
+        "description": "FlinkSQL deduplication query using ROW_NUMBER"
+    }
+}

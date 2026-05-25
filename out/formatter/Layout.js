@@ -1,8 +1,12 @@
 "use strict";
 // 管理空白符（空格、换行、缩进）的核心类，通过「延迟拼接 + 指令化空白符操作」实现高效的空白符管理
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.WS = void 0;
 const utils_1 = require("../lexer/utils");
+const Indentation_1 = __importDefault(require("./Indentation"));
 /** 是控制空白符行为的核心指令，所有空白符操作均通过该枚举触发 */
 exports.WS = Object.freeze({
     // 单个空格,向 items 中添加 SPACE 标记
@@ -28,12 +32,10 @@ exports.WS = Object.freeze({
  * Now it's storing items to array and builds the string only in the end.
 //  */
 class Layout {
-    // 核心存储结构，按顺序存储「空白符指令 + SQL 文本」
     items = [];
-    // 缩进管理实例，提供「单个缩进字符串」和「当前缩进层级」
     indentation;
     constructor(indentation) {
-        this.indentation = indentation;
+        this.indentation = indentation ?? new Indentation_1.default('    ');
     }
     // Layout 类的核心入口，接收任意数量的「空白符指令」或「SQL 文本」，逐个处理并更新 items 数组
     add(...items) {
@@ -106,6 +108,17 @@ class Layout {
     // 延迟拼接最终 SQL 字符串，将 LayoutItem 解析为实际字符
     toString() {
         return this.items.map((item) => this.itemToString(item)).join("");
+    }
+    addNewlineIndent() {
+        this.trimHorizontalWhitespace();
+        this.addNewline(exports.WS.NEWLINE);
+        this.addIndentation();
+    }
+    addCommaNewlineIndent() {
+        this.trimWhitespace();
+        this.items.push(',');
+        this.addNewline(exports.WS.NEWLINE);
+        this.addIndentation();
     }
     /**
      * Returns the internal layout data

@@ -10,6 +10,7 @@ import { InsertFormatter } from './nodeFormatters/InsertFormatter';
 import { DDLFormatter } from './nodeFormatters/DDLFormatter';
 import { ExpressionFormatter2 } from './nodeFormatters/ExpressionFormatter2';
 import { formatKeyword } from './nodeFormatters/CommonFormatter';
+import { AstNodeType } from './AstNodeTypes';
 
 export class AstFormatter {
     private cfg: FormatOptions;
@@ -44,20 +45,20 @@ export class AstFormatter {
         if (!isAstNode(stmt)) return '';
         const type = (stmt as any).type;
         switch (type) {
-            case 'select':
+            case AstNodeType.SELECT:
                 return this.formatSelect(stmt);
-            case 'insert':
-            case 'replace':
+            case AstNodeType.INSERT:
+            case AstNodeType.REPLACE:
                 return new InsertFormatter(this.cfg, this.indent).format(stmt);
-            case 'update':
+            case AstNodeType.UPDATE:
                 return this.formatUpdate(stmt);
-            case 'delete':
+            case AstNodeType.DELETE:
                 return this.formatDelete(stmt);
-            case 'create':
-            case 'alter':
-            case 'drop':
+            case AstNodeType.CREATE:
+            case AstNodeType.ALTER:
+            case AstNodeType.DROP:
                 return new DDLFormatter(this.cfg, this.indent).format(stmt);
-            case 'use':
+            case AstNodeType.USE:
                 return this.formatUse(stmt);
             default:
                 return this.formatUnknown(stmt);

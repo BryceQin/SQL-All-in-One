@@ -4,31 +4,23 @@ import type { SqlDialect } from '../parser/dialectMapper'
 import { walkAst, isAstNode } from '../parser/AstVisitor'
 import { lineColFromIndex } from '../lexer/lineColFromIndex'
 import { t } from '../i18n'
-
-interface AstLocation {
-    line: number
-    column: number
-}
-
-interface AstNode {
-    type: string
-    loc?: {
-        start?: AstLocation
-        end?: AstLocation
-    }
-    [key: string]: unknown
-}
+import type { AstNode } from '../parser/astTypes'
+import { getNodeLocation, createDiagnostic } from '../parser/astUtils'
 
 export class AstDiagnosticsProvider {
-    check(sql: string, dialect: SqlDialect): vscode.Diagnostic[] {
+    check(sql: string, dialect: SqlDialect, preParsedAst?: unknown[]): vscode.Diagnostic[] {
         const diagnostics: vscode.Diagnostic[] = []
 
-        const result = getParserEngine().tryAstify(sql, dialect)
-        if (!result.success || !result.ast) {
-            return diagnostics
+        let astList: unknown[]
+        if (preParsedAst) {
+            astList = preParsedAst
+        } else {
+            const result = getParserEngine().tryAstify(sql, dialect)
+            if (!result.success || !result.ast) {
+                return diagnostics
+            }
+            astList = Array.isArray(result.ast) ? result.ast : [result.ast]
         }
-
-        const astList = Array.isArray(result.ast) ? result.ast : [result.ast]
 
         for (const ast of astList) {
             if (!isAstNode(ast)) {
@@ -94,17 +86,17 @@ export class AstDiagnosticsProvider {
             if (isAstNode(col) && (col as AstNode).type === 'column_ref') {
                 const colRef = col as AstNode
                 if (colRef.column === '*' && !colRef.table) {
-                    const loc = this.getNodeLocation(colRef)
+                    const loc = getNodeLocation(colRef)
                     if (loc) {
-                        const lineNum = loc.line
-                        const diagnostic = new vscode.Diagnostic(
-                            new vscode.Range(lineNum - 1, loc.column - 1, lineNum - 1, loc.column),
-                            t('diagnostic.missingColumnAfterComma', String(lineNum)),
-                            vscode.DiagnosticSeverity.Error
+                        diagnostics.push(
+                            createDiagnostic(
+                                loc,
+                                1,
+                                'COMMA_FROM',
+                                t('diagnostic.missingColumnAfterComma', String(loc.line)),
+                                vscode.DiagnosticSeverity.Error,
+                            ),
                         )
-                        diagnostic.source = 'Hive Formatter'
-                        diagnostic.code = 'COMMA_FROM'
-                        diagnostics.push(diagnostic)
                     }
                 }
             }
@@ -114,33 +106,33 @@ export class AstDiagnosticsProvider {
     private checkSelectNoColumns(node: AstNode, sql: string, diagnostics: vscode.Diagnostic[]): void {
         const columns = node.columns
         if (columns === null || columns === undefined) {
-            const loc = this.getNodeLocation(node)
+            const loc = getNodeLocation(node)
             if (loc) {
-                const lineNum = loc.line
-                const diagnostic = new vscode.Diagnostic(
-                    new vscode.Range(lineNum - 1, loc.column - 1, lineNum - 1, loc.column + 5),
-                    t('diagnostic.missingColumnAfterSelect', String(lineNum)),
-                    vscode.DiagnosticSeverity.Error
+                diagnostics.push(
+                    createDiagnostic(
+                        loc,
+                        6,
+                        'SELECT_NO_COLUMNS',
+                        t('diagnostic.missingColumnAfterSelect', String(loc.line)),
+                        vscode.DiagnosticSeverity.Error,
+                    ),
                 )
-                diagnostic.source = 'Hive Formatter'
-                diagnostic.code = 'SELECT_NO_COLUMNS'
-                diagnostics.push(diagnostic)
             }
             return
         }
 
         if (Array.isArray(columns) && columns.length === 0) {
-            const loc = this.getNodeLocation(node)
+            const loc = getNodeLocation(node)
             if (loc) {
-                const lineNum = loc.line
-                const diagnostic = new vscode.Diagnostic(
-                    new vscode.Range(lineNum - 1, loc.column - 1, lineNum - 1, loc.column + 5),
-                    t('diagnostic.missingColumnAfterSelect', String(lineNum)),
-                    vscode.DiagnosticSeverity.Error
+                diagnostics.push(
+                    createDiagnostic(
+                        loc,
+                        6,
+                        'SELECT_NO_COLUMNS',
+                        t('diagnostic.missingColumnAfterSelect', String(loc.line)),
+                        vscode.DiagnosticSeverity.Error,
+                    ),
                 )
-                diagnostic.source = 'Hive Formatter'
-                diagnostic.code = 'SELECT_NO_COLUMNS'
-                diagnostics.push(diagnostic)
             }
         }
     }
@@ -152,17 +144,17 @@ export class AstDiagnosticsProvider {
         }
 
         if (Array.isArray(from) && from.length === 0) {
-            const loc = this.getNodeLocation(node)
+            const loc = getNodeLocation(node)
             if (loc) {
-                const lineNum = loc.line
-                const diagnostic = new vscode.Diagnostic(
-                    new vscode.Range(lineNum - 1, loc.column - 1, lineNum - 1, loc.column + 3),
-                    t('diagnostic.missingTableAfterFrom', String(lineNum)),
-                    vscode.DiagnosticSeverity.Error
+                diagnostics.push(
+                    createDiagnostic(
+                        loc,
+                        4,
+                        'FROM_NO_TABLE',
+                        t('diagnostic.missingTableAfterFrom', String(loc.line)),
+                        vscode.DiagnosticSeverity.Error,
+                    ),
                 )
-                diagnostic.source = 'Hive Formatter'
-                diagnostic.code = 'FROM_NO_TABLE'
-                diagnostics.push(diagnostic)
             }
         }
     }
@@ -174,17 +166,17 @@ export class AstDiagnosticsProvider {
         }
 
         if (Array.isArray(orderby) && orderby.length === 0) {
-            const loc = this.getNodeLocation(node)
+            const loc = getNodeLocation(node)
             if (loc) {
-                const lineNum = loc.line
-                const diagnostic = new vscode.Diagnostic(
-                    new vscode.Range(lineNum - 1, loc.column - 1, lineNum - 1, loc.column + 7),
-                    t('diagnostic.missingOrderByColumn', String(lineNum)),
-                    vscode.DiagnosticSeverity.Error
+                diagnostics.push(
+                    createDiagnostic(
+                        loc,
+                        8,
+                        'ORDERBY_NO_COL',
+                        t('diagnostic.missingOrderByColumn', String(loc.line)),
+                        vscode.DiagnosticSeverity.Error,
+                    ),
                 )
-                diagnostic.source = 'Hive Formatter'
-                diagnostic.code = 'ORDERBY_NO_COL'
-                diagnostics.push(diagnostic)
             }
         }
     }
@@ -196,17 +188,17 @@ export class AstDiagnosticsProvider {
         }
 
         if (isAstNode(where) && (where as AstNode).type === 'null') {
-            const loc = this.getNodeLocation(where as AstNode)
+            const loc = getNodeLocation(where as AstNode)
             if (loc) {
-                const lineNum = loc.line
-                const diagnostic = new vscode.Diagnostic(
-                    new vscode.Range(lineNum - 1, loc.column - 1, lineNum - 1, loc.column + 4),
-                    t('diagnostic.missingWhereCondition', String(lineNum)),
-                    vscode.DiagnosticSeverity.Error
+                diagnostics.push(
+                    createDiagnostic(
+                        loc,
+                        5,
+                        'WHERE_NO_CONDITION',
+                        t('diagnostic.missingWhereCondition', String(loc.line)),
+                        vscode.DiagnosticSeverity.Error,
+                    ),
                 )
-                diagnostic.source = 'Hive Formatter'
-                diagnostic.code = 'WHERE_NO_CONDITION'
-                diagnostics.push(diagnostic)
             }
         }
     }
@@ -218,17 +210,17 @@ export class AstDiagnosticsProvider {
         }
 
         if (Array.isArray(groupby) && groupby.length === 0) {
-            const loc = this.getNodeLocation(node)
+            const loc = getNodeLocation(node)
             if (loc) {
-                const lineNum = loc.line
-                const diagnostic = new vscode.Diagnostic(
-                    new vscode.Range(lineNum - 1, loc.column - 1, lineNum - 1, loc.column + 7),
-                    t('diagnostic.missingGroupByColumn', String(lineNum)),
-                    vscode.DiagnosticSeverity.Error
+                diagnostics.push(
+                    createDiagnostic(
+                        loc,
+                        8,
+                        'GROUPBY_NO_COL',
+                        t('diagnostic.missingGroupByColumn', String(loc.line)),
+                        vscode.DiagnosticSeverity.Error,
+                    ),
                 )
-                diagnostic.source = 'Hive Formatter'
-                diagnostic.code = 'GROUPBY_NO_COL'
-                diagnostics.push(diagnostic)
             }
         }
     }
@@ -241,15 +233,15 @@ export class AstDiagnosticsProvider {
         while ((match = pattern1.exec(sql)) !== null) {
             if (this.isInRange(match.index, strippedRanges)) {
                 const lineCol = lineColFromIndex(sql, match.index)
-                const lineNum = lineCol.line
-                const diagnostic = new vscode.Diagnostic(
-                    new vscode.Range(lineNum - 1, lineCol.col - 1, lineNum - 1, lineCol.col),
-                    t('diagnostic.trailingCommaBeforeParen', String(lineNum)),
-                    vscode.DiagnosticSeverity.Warning
+                diagnostics.push(
+                    createDiagnostic(
+                        { line: lineCol.line, column: lineCol.col },
+                        1,
+                        'EXTRA_COMMA_PAREN',
+                        t('diagnostic.trailingCommaBeforeParen', String(lineCol.line)),
+                        vscode.DiagnosticSeverity.Warning,
+                    ),
                 )
-                diagnostic.source = 'Hive Formatter'
-                diagnostic.code = 'EXTRA_COMMA_PAREN'
-                diagnostics.push(diagnostic)
             }
         }
 
@@ -257,15 +249,15 @@ export class AstDiagnosticsProvider {
         while ((match = pattern2.exec(sql)) !== null) {
             if (this.isInRange(match.index, strippedRanges)) {
                 const lineCol = lineColFromIndex(sql, match.index)
-                const lineNum = lineCol.line
-                const diagnostic = new vscode.Diagnostic(
-                    new vscode.Range(lineNum - 1, lineCol.col - 1, lineNum - 1, lineCol.col),
-                    t('diagnostic.trailingCommaBeforeEnd', String(lineNum)),
-                    vscode.DiagnosticSeverity.Warning
+                diagnostics.push(
+                    createDiagnostic(
+                        { line: lineCol.line, column: lineCol.col },
+                        1,
+                        'EXTRA_COMMA_SEMI',
+                        t('diagnostic.trailingCommaBeforeEnd', String(lineCol.line)),
+                        vscode.DiagnosticSeverity.Warning,
+                    ),
                 )
-                diagnostic.source = 'Hive Formatter'
-                diagnostic.code = 'EXTRA_COMMA_SEMI'
-                diagnostics.push(diagnostic)
             }
         }
     }
@@ -338,16 +330,5 @@ export class AstDiagnosticsProvider {
             }
         }
         return false
-    }
-
-    private getNodeLocation(node: AstNode): AstLocation | null {
-        const loc = (node as any).loc
-        if (loc?.start?.line !== undefined && loc?.start?.column !== undefined) {
-            return {
-                line: loc.start.line as number,
-                column: loc.start.column as number,
-            }
-        }
-        return null
     }
 }

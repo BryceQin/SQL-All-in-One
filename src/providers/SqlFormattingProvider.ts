@@ -2,7 +2,7 @@ import * as vscode from "vscode"
 import { SqlLanguage } from "../formatter/sqlFormatter"
 import { createConfig } from "../core/config"
 import { formatEditorText } from "../utils/formatEditorText"
-import { t } from "../i18n"
+import { handleError, ErrorCategory } from "../core/errorHandler"
 
 export class SqlFormattingProvider
     implements vscode.DocumentFormattingEditProvider
@@ -25,7 +25,7 @@ export class SqlFormattingProvider
                 ),
             ]
         } catch (e) {
-            vscode.window.showErrorMessage(t('notification.formatError', String(e)))
+            handleError(e, 'format document', ErrorCategory.CRITICAL)
             return []
         }
     }

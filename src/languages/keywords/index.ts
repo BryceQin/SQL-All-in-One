@@ -3,20 +3,20 @@ import type { SqlLanguage } from '../../formatter/sqlFormatter'
 import { baseKeywords } from './baseKeywords'
 import { hiveKeywords } from './hiveKeywords'
 import { sparkKeywords } from './sparkKeywords'
+import { flinksqlKeywords } from './flinksqlKeywords'
 import { mysqlKeywords } from './mysqlKeywords'
 import { postgresqlKeywords } from './postgresqlKeywords'
 import { bigqueryKeywords } from './bigqueryKeywords'
-import { snowflakeKeywords } from './snowflakeKeywords'
 import { sqliteKeywords } from './sqliteKeywords'
 
 const dialectKeywordMap: Record<string, KeywordInfo[]> = {
     hive: hiveKeywords,
     mysql: mysqlKeywords,
     spark: sparkKeywords,
+    flinksql: flinksqlKeywords,
     sql: [],
     postgresql: postgresqlKeywords,
     bigquery: bigqueryKeywords,
-    snowflake: snowflakeKeywords,
     sqlite: sqliteKeywords,
 }
 

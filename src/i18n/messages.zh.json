@@ -29,6 +29,10 @@
     "enhanced.nullComparison": "【第 {0} 行】代码质量建议：NULL 比较应该使用 {0} 而不是 {1}",
     "enhanced.dateFunctionHint": "在 Hive 中使用 {0} 也可以，但建议确认版本",
 
+    "linter.uppercaseKeywords.name": "关键字大写",
+    "linter.uppercaseKeywords.description": "建议 SQL 关键字使用大写",
+    "linter.consistentAliasing.name": "一致的别名",
+    "linter.consistentAliasing.description": "建议使用有意义的表别名",
     "linter.avoidSelectStar.name": "避免 SELECT *",
     "linter.avoidSelectStar.description": "建议明确指定列名而不是使用 SELECT *",
     "linter.explicitJoinType.name": "显式 JOIN 类型",

@@ -1,5 +1,6 @@
 import * as vscode from 'vscode'
 import { t } from '../i18n'
+import { isSqlDocument } from '../core/sqlDialects'
 
 export class StatusBarProvider {
     private statusBarItem: vscode.StatusBarItem
@@ -39,9 +40,9 @@ export class StatusBarProvider {
         }
 
         const langId = activeEditor.document.languageId
-        const isSqlDocument = ['sql', 'hive'].includes(langId)
+        const isSql = isSqlDocument({ languageId: langId })
 
-        if (isSqlDocument) {
+        if (isSql) {
             this.statusBarItem.text = `$(sql) ${dialect.toUpperCase()}`
             this.statusBarItem.show()
         } else {

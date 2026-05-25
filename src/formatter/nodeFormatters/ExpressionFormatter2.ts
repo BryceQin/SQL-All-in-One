@@ -1,15 +1,19 @@
-import type { FormatOptions, KeywordCase, FunctionCase } from '../FormatOptions';
+import type { FormatOptions } from '../FormatOptions';
 import Indentation from '../Indentation';
-import Layout, { WS } from '../Layout';
-import { formatKeyword, formatFunctionName, formatAlias, hasProperty, getStringValue, isLogicalOperator } from './CommonFormatter';
+import { formatKeyword, formatFunctionName, hasProperty, isLogicalOperator } from './CommonFormatter';
+import { AstNodeType } from '../AstNodeTypes';
+
+export type SubqueryFormatter = (expr: unknown) => string;
 
 export class ExpressionFormatter2 {
     private cfg: FormatOptions;
     private indent: Indentation;
+    private formatSubqueryFn?: SubqueryFormatter;
 
-    constructor(cfg: FormatOptions, indent: Indentation) {
+    constructor(cfg: FormatOptions, indent: Indentation, formatSubqueryFn?: SubqueryFormatter) {
         this.cfg = cfg;
         this.indent = indent;
+        this.formatSubqueryFn = formatSubqueryFn;
     }
 
     public format(expr: unknown): string {
@@ -21,48 +25,48 @@ export class ExpressionFormatter2 {
 
         const type = (expr as any).type;
         switch (type) {
-            case 'column_ref':
+            case AstNodeType.COLUMN_REF:
                 return this.formatColumnRef(expr);
-            case 'binary_expr':
+            case AstNodeType.BINARY_EXPR:
                 return this.formatBinaryExpr(expr);
-            case 'string':
-            case 'single_quote_string':
-            case 'double_quote_string':
+            case AstNodeType.STRING:
+            case AstNodeType.SINGLE_QUOTE_STRING:
+            case AstNodeType.DOUBLE_QUOTE_STRING:
                 return "'" + (expr as any).value + "'";
-            case 'number':
+            case AstNodeType.NUMBER:
                 return String((expr as any).value);
-            case 'bigint':
+            case AstNodeType.BIGINT:
                 return String((expr as any).value);
-            case 'boolean':
+            case AstNodeType.BOOLEAN:
                 return formatKeyword(String((expr as any).value), this.cfg.booleanCase ?? this.cfg.keywordCase);
-            case 'null':
+            case AstNodeType.NULL:
                 return formatKeyword('NULL', this.cfg.nullCase ?? this.cfg.keywordCase);
-            case 'star':
+            case AstNodeType.STAR:
                 return '*';
-            case 'function':
+            case AstNodeType.FUNCTION:
                 return this.formatFunction(expr);
-            case 'aggr_func':
+            case AstNodeType.AGGR_FUNC:
                 return this.formatAggrFunc(expr);
-            case 'expr_list':
+            case AstNodeType.EXPR_LIST:
                 return this.formatExprList(expr);
-            case 'case':
+            case AstNodeType.CASE:
                 return this.formatCase(expr);
-            case 'cast':
+            case AstNodeType.CAST:
                 return this.formatCast(expr);
-            case 'interval':
+            case AstNodeType.INTERVAL:
                 return this.formatInterval(expr);
-            case 'param':
+            case AstNodeType.PARAM:
                 return this.formatParam(expr);
-            case 'unary_expr':
+            case AstNodeType.UNARY_EXPR:
                 return this.formatUnaryExpr(expr);
-            case 'ternary_expr':
+            case AstNodeType.TERNARY_EXPR:
                 return this.formatTernaryExpr(expr);
-            case 'select':
-            case 'union':
+            case AstNodeType.SELECT:
+            case AstNodeType.UNION:
                 return '(' + this.formatSubquery(expr) + ')';
-            case 'origin':
+            case AstNodeType.ORIGIN:
                 return String((expr as any).value);
-            case 'default':
+            case AstNodeType.DEFAULT:
                 return formatKeyword('DEFAULT', this.cfg.keywordCase);
             default:
                 return this.formatUnknown(expr);
@@ -322,8 +326,10 @@ export class ExpressionFormatter2 {
     }
 
     private formatSubquery(expr: any): string {
-        const { SelectFormatter } = require('./SelectFormatter');
-        return new SelectFormatter(this.cfg, this.indent).format(expr);
+        if (this.formatSubqueryFn) {
+            return '(' + this.formatSubqueryFn(expr) + ')';
+        }
+        return '(' + JSON.stringify(expr) + ')';
     }
 
     private formatUnknown(expr: any): string {

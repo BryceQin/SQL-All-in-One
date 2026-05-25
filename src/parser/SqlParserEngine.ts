@@ -69,3 +69,7 @@ export function getParserEngine(): SqlParserEngine {
     }
     return engineInstance
 }
+
+export function resetParserEngine(): void {
+    engineInstance = null
+}

@@ -3,19 +3,25 @@ import Indentation from '../Indentation';
 import Layout, { WS } from '../Layout';
 import { formatKeyword } from './CommonFormatter';
 import { ExpressionFormatter2 } from './ExpressionFormatter2';
+import { SelectFormatter } from './SelectFormatter';
+import { CommonLayoutHelper } from './CommonLayoutHelper';
 
 export class DDLFormatter {
     private cfg: FormatOptions;
     private indent: Indentation;
     private layout: Layout;
     private exprFmt: ExpressionFormatter2;
+    private helper: CommonLayoutHelper;
 
     constructor(cfg: FormatOptions, indent: Indentation) {
         this.cfg = cfg;
         this.indent = indent;
-        this.layout = new Layout(new Indentation(indent.getSingleIndent()));
-        this.layout.indentation = indent;
-        this.exprFmt = new ExpressionFormatter2(cfg, indent);
+        this.layout = new Layout(indent);
+        this.exprFmt = new ExpressionFormatter2(cfg, indent, (expr) => {
+            const selectFmt = new SelectFormatter(this.cfg, this.indent);
+            return selectFmt.format(expr);
+        });
+        this.helper = new CommonLayoutHelper(cfg, indent, this.layout);
     }
 
     public format(stmt: any): string {
@@ -64,7 +70,6 @@ export class DDLFormatter {
         if (stmt.query_expr) {
             this.layout.add(WS.SPACE, formatKeyword('AS', this.cfg.keywordCase));
             this.layout.add(WS.NEWLINE, WS.INDENT);
-            const { SelectFormatter } = require('./SelectFormatter');
             const selectFmt = new SelectFormatter(this.cfg, this.indent);
             this.layout.add(selectFmt.format(stmt.query_expr));
         }
@@ -104,17 +109,7 @@ export class DDLFormatter {
     }
 
     private formatTableName(table: any): string {
-        if (typeof table === 'string') return table;
-        let result = '';
-        if (table.db) {
-            result += table.db + '.';
-        }
-        if (typeof table.table === 'object' && table.table !== null) {
-            result += this.exprFmt.format(table.table);
-        } else {
-            result += String(table.table ?? '');
-        }
-        return result;
+        return this.helper.formatTableName(table, this.exprFmt);
     }
 
     private formatCreateDefinitions(defs: any[]): void {

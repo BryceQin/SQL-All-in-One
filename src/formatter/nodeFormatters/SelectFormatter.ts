@@ -1,22 +1,27 @@
 import type { FormatOptions } from '../FormatOptions';
 import Indentation from '../Indentation';
 import Layout, { WS } from '../Layout';
-import { formatKeyword, formatAlias, getStringValue, hasProperty } from './CommonFormatter';
+import { formatKeyword, formatAlias } from './CommonFormatter';
 import { ExpressionFormatter2 } from './ExpressionFormatter2';
 import { CTEFormatter } from './CTEFormatter';
+import { CommonLayoutHelper } from './CommonLayoutHelper';
 
 export class SelectFormatter {
     private cfg: FormatOptions;
     private indent: Indentation;
     private layout: Layout;
     private exprFmt: ExpressionFormatter2;
+    private helper: CommonLayoutHelper;
 
     constructor(cfg: FormatOptions, indent: Indentation) {
         this.cfg = cfg;
         this.indent = indent;
-        this.layout = new Layout(new Indentation(indent.getSingleIndent()));
-        this.layout.indentation = indent;
-        this.exprFmt = new ExpressionFormatter2(cfg, indent);
+        this.layout = new Layout(indent);
+        this.exprFmt = new ExpressionFormatter2(cfg, indent, (expr) => {
+            const subFmt = new SelectFormatter(this.cfg, this.indent);
+            return subFmt.format(expr);
+        });
+        this.helper = new CommonLayoutHelper(cfg, indent, this.layout);
     }
 
     public format(stmt: any): string {
@@ -152,16 +157,7 @@ export class SelectFormatter {
     }
 
     private formatTableRef(item: any): void {
-        let tableStr = '';
-        if (item.db) {
-            tableStr += item.db + '.';
-        }
-        if (typeof item.table === 'object' && item.table !== null) {
-            tableStr += this.exprFmt.format(item.table);
-        } else {
-            tableStr += String(item.table ?? '');
-        }
-        this.layout.add(tableStr);
+        this.layout.add(this.helper.formatTableName(item, this.exprFmt));
 
         if (item.as) {
             this.layout.add(formatAlias(item.as, this.cfg));
@@ -169,7 +165,6 @@ export class SelectFormatter {
     }
 
     private formatSubqueryFrom(item: any): void {
-        const { SelectFormatter } = require('./SelectFormatter');
         const subFmt = new SelectFormatter(this.cfg, this.indent);
         const subSql = subFmt.format(item.expr.ast);
         this.layout.add('(', WS.NEWLINE);
@@ -242,124 +237,56 @@ export class SelectFormatter {
     }
 
     private formatWhereClause(where: any): void {
-        if (this.cfg.newlineBeforeWhere) {
-            this.layout.add(WS.NEWLINE, WS.INDENT);
-        } else {
-            this.layout.add(WS.SPACE);
-        }
-
-        this.layout.add(formatKeyword('WHERE', this.cfg.keywordCase));
-
-        if (this.cfg.newlineAfterWhere) {
-            this.layout.indentation.increaseTopLevel();
-            this.layout.add(WS.NEWLINE, WS.INDENT);
-        } else {
-            this.layout.add(WS.SPACE);
-            this.layout.indentation.increaseTopLevel();
-        }
-
-        this.layout.add(this.exprFmt.format(where));
-        this.layout.indentation.decreaseTopLevel();
+        this.helper.clauseStart('WHERE', this.cfg.newlineBeforeWhere);
+        this.helper.clauseBody(this.cfg.newlineAfterWhere, () => {
+            this.layout.add(this.exprFmt.format(where));
+        });
     }
 
     private formatGroupByClause(groupby: any): void {
-        if (this.cfg.newlineBeforeGroupBy) {
-            this.layout.add(WS.NEWLINE, WS.INDENT);
-        } else {
-            this.layout.add(WS.SPACE);
-        }
-
-        this.layout.add(formatKeyword('GROUP BY', this.cfg.keywordCase));
-
-        if (this.cfg.newlineAfterGroupBy) {
-            this.layout.indentation.increaseTopLevel();
-            this.layout.add(WS.NEWLINE, WS.INDENT);
-        } else {
-            this.layout.add(WS.SPACE);
-            this.layout.indentation.increaseTopLevel();
-        }
-
-        const columns = groupby.columns || (Array.isArray(groupby) ? groupby : []);
-        const colStrs = columns.map((c: any) => this.exprFmt.format(c));
-        this.layout.add(colStrs.join(', '));
-        this.layout.indentation.decreaseTopLevel();
+        this.helper.clauseStart('GROUP BY', this.cfg.newlineBeforeGroupBy);
+        this.helper.clauseBody(this.cfg.newlineAfterGroupBy ?? true, () => {
+            const columns = groupby.columns || (Array.isArray(groupby) ? groupby : []);
+            const colStrs = columns.map((c: any) => this.exprFmt.format(c));
+            this.layout.add(colStrs.join(', '));
+        });
     }
 
     private formatHavingClause(having: any): void {
-        if (this.cfg.newlineBeforeHaving) {
-            this.layout.add(WS.NEWLINE, WS.INDENT);
-        } else {
-            this.layout.add(WS.SPACE);
-        }
-
-        this.layout.add(formatKeyword('HAVING', this.cfg.keywordCase));
-
-        if (this.cfg.newlineAfterHaving) {
-            this.layout.indentation.increaseTopLevel();
-            this.layout.add(WS.NEWLINE, WS.INDENT);
-        } else {
-            this.layout.add(WS.SPACE);
-            this.layout.indentation.increaseTopLevel();
-        }
-
-        this.layout.add(this.exprFmt.format(having));
-        this.layout.indentation.decreaseTopLevel();
+        this.helper.clauseStart('HAVING', this.cfg.newlineBeforeHaving);
+        this.helper.clauseBody(this.cfg.newlineAfterHaving ?? true, () => {
+            this.layout.add(this.exprFmt.format(having));
+        });
     }
 
     private formatOrderByClause(orderby: any): void {
-        if (this.cfg.newlineBeforeOrderBy) {
-            this.layout.add(WS.NEWLINE, WS.INDENT);
-        } else {
-            this.layout.add(WS.SPACE);
-        }
-
-        this.layout.add(formatKeyword('ORDER BY', this.cfg.keywordCase));
-
-        if (this.cfg.newlineAfterOrderBy) {
-            this.layout.indentation.increaseTopLevel();
-            this.layout.add(WS.NEWLINE, WS.INDENT);
-        } else {
-            this.layout.add(WS.SPACE);
-            this.layout.indentation.increaseTopLevel();
-        }
-
-        const items = Array.isArray(orderby) ? orderby : [];
-        const itemStrs = items.map((o: any) => {
-            const expr = this.exprFmt.format(o.expr);
-            const type = o.type ? ' ' + o.type : '';
-            return expr + type;
+        this.helper.clauseStart('ORDER BY', this.cfg.newlineBeforeOrderBy);
+        this.helper.clauseBody(this.cfg.newlineAfterOrderBy ?? true, () => {
+            const items = Array.isArray(orderby) ? orderby : [];
+            const itemStrs = items.map((o: any) => {
+                const expr = this.exprFmt.format(o.expr);
+                const type = o.type ? ' ' + o.type : '';
+                return expr + type;
+            });
+            this.layout.add(itemStrs.join(', '));
         });
-        this.layout.add(itemStrs.join(', '));
-        this.layout.indentation.decreaseTopLevel();
     }
 
     private formatLimitClause(limit: any): void {
-        if (this.cfg.newlineBeforeLimit) {
-            this.layout.add(WS.NEWLINE, WS.INDENT);
-        } else {
-            this.layout.add(WS.SPACE);
-        }
-
-        this.layout.add(formatKeyword('LIMIT', this.cfg.keywordCase));
-
-        if (this.cfg.newlineAfterLimit) {
-            this.layout.indentation.increaseTopLevel();
-            this.layout.add(WS.NEWLINE, WS.INDENT);
-        } else {
-            this.layout.add(WS.SPACE);
-        }
-
-        if (limit.value) {
-            const values = Array.isArray(limit.value) ? limit.value : [limit.value];
-            const valStrs = values.map((v: any) => {
-                if (typeof v === 'object' && v !== null) {
-                    return String(v.value ?? v);
-                }
-                return String(v);
-            });
-            const sep = limit.seperator || ',';
-            this.layout.add(valStrs.join(sep + ' '));
-        }
+        this.helper.clauseStart('LIMIT', this.cfg.newlineBeforeLimit);
+        this.helper.clauseBody(this.cfg.newlineAfterLimit ?? false, () => {
+            if (limit.value) {
+                const values = Array.isArray(limit.value) ? limit.value : [limit.value];
+                const valStrs = values.map((v: any) => {
+                    if (typeof v === 'object' && v !== null) {
+                        return String(v.value ?? v);
+                    }
+                    return String(v);
+                });
+                const sep = limit.seperator || ',';
+                this.layout.add(valStrs.join(sep + ' '));
+            }
+        });
     }
 
     private formatWith(withClause: any[]): void {
@@ -393,7 +320,6 @@ export class SelectFormatter {
             this.layout.add(WS.SPACE);
         }
 
-        const { SelectFormatter } = require('./SelectFormatter');
         const nextFmt = new SelectFormatter(this.cfg, this.indent);
         this.layout.add(nextFmt.format(next));
     }

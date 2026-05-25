@@ -2,21 +2,9 @@ import * as vscode from 'vscode'
 import { getParserEngine } from '../parser/SqlParserEngine'
 import type { SqlDialect } from '../parser/dialectMapper'
 import { walkAst, findNodes, isAstNode } from '../parser/AstVisitor'
+import type { AstNode } from '../parser/astTypes'
+import { getNodeLocation, getFunctionName, createDiagnostic } from '../parser/astUtils'
 import { t } from '../i18n'
-
-interface AstLocation {
-    line: number
-    column: number
-}
-
-interface AstNode {
-    type: string
-    loc?: {
-        start?: AstLocation
-        end?: AstLocation
-    }
-    [key: string]: unknown
-}
 
 const RESERVED_WORDS = new Set([
     'select', 'from', 'where', 'group', 'by', 'having', 'order', 'limit',
@@ -34,15 +22,19 @@ const NO_FROM_FUNCTIONS = new Set([
 const DATE_FUNCTION_NAMES = new Set(['date_add', 'date_sub', 'now', 'sysdate'])
 
 export class AstEnhancedChecker {
-    check(sql: string, dialect: SqlDialect): vscode.Diagnostic[] {
+    check(sql: string, dialect: SqlDialect, preParsedAst?: unknown[]): vscode.Diagnostic[] {
         const diagnostics: vscode.Diagnostic[] = []
 
-        const result = getParserEngine().tryAstify(sql, dialect)
-        if (!result.success || !result.ast) {
-            return diagnostics
+        let astList: unknown[]
+        if (preParsedAst) {
+            astList = preParsedAst
+        } else {
+            const result = getParserEngine().tryAstify(sql, dialect)
+            if (!result.success || !result.ast) {
+                return diagnostics
+            }
+            astList = Array.isArray(result.ast) ? result.ast : [result.ast]
         }
-
-        const astList = Array.isArray(result.ast) ? result.ast : [result.ast]
 
         for (const ast of astList) {
             if (!isAstNode(ast)) {
@@ -120,9 +112,9 @@ export class AstEnhancedChecker {
         }
         const groupby = node.groupby
         if (groupby == null || (Array.isArray(groupby) && groupby.length === 0)) {
-            const loc = this.getNodeLocation(node.having as AstNode) ?? this.getNodeLocation(node)
+            const loc = getNodeLocation(node.having as AstNode) ?? getNodeLocation(node)
             if (loc) {
-                diagnostics.push(this.createDiagnostic(
+                diagnostics.push(createDiagnostic(
                     loc, 6, 'HAVING_WITHOUT_GROUPBY',
                     t('enhanced.havingWithoutGroupBy', String(loc.line)),
                     vscode.DiagnosticSeverity.Warning,
@@ -139,9 +131,9 @@ export class AstEnhancedChecker {
         const limitNode = limit as AstNode
         const value = limitNode.value
         if (typeof value === 'number' && value < 0) {
-            const loc = this.getNodeLocation(limitNode) ?? this.getNodeLocation(node)
+            const loc = getNodeLocation(limitNode) ?? getNodeLocation(node)
             if (loc) {
-                diagnostics.push(this.createDiagnostic(
+                diagnostics.push(createDiagnostic(
                     loc, 5, 'LIMIT_WITHOUT_NUMBER',
                     t('enhanced.limitWithoutNumber', String(loc.line)),
                     vscode.DiagnosticSeverity.Error,
@@ -179,10 +171,10 @@ export class AstEnhancedChecker {
         for (const [, entries] of aliasMap) {
             if (entries.length > 1) {
                 for (let i = 1; i < entries.length; i++) {
-                    const loc = this.getNodeLocation(entries[i])
+                    const loc = getNodeLocation(entries[i])
                     if (loc) {
                         const alias = (entries[i].as as string).toLowerCase()
-                        diagnostics.push(this.createDiagnostic(
+                        diagnostics.push(createDiagnostic(
                             loc, alias.length, 'DUPLICATE_ALIAS',
                             t('enhanced.duplicateAlias', String(loc.line), alias),
                             vscode.DiagnosticSeverity.Warning,
@@ -206,9 +198,9 @@ export class AstEnhancedChecker {
             const colNode = col as AstNode
             const as = colNode.as
             if (typeof as === 'string' && RESERVED_WORDS.has(as.toLowerCase())) {
-                const loc = this.getNodeLocation(colNode)
+                const loc = getNodeLocation(colNode)
                 if (loc) {
-                    diagnostics.push(this.createDiagnostic(
+                    diagnostics.push(createDiagnostic(
                         loc, as.length, 'RESERVED_WORD_IDENTIFIER',
                         t('enhanced.reservedWordIdentifier', String(loc.line), as),
                         vscode.DiagnosticSeverity.Warning,
@@ -238,9 +230,9 @@ export class AstEnhancedChecker {
                 continue
             }
             if (fromEntry.on == null && fromEntry.using == null) {
-                const loc = this.getNodeLocation(fromEntry)
+                const loc = getNodeLocation(fromEntry)
                 if (loc) {
-                    diagnostics.push(this.createDiagnostic(
+                    diagnostics.push(createDiagnostic(
                         loc, join.length, 'EMPTY_JOIN',
                         t('enhanced.joinMissingOn', String(loc.line)),
                         vscode.DiagnosticSeverity.Warning,
@@ -260,9 +252,9 @@ export class AstEnhancedChecker {
             return
         }
 
-        const loc = this.getNodeLocation(node)
+        const loc = getNodeLocation(node)
         if (loc) {
-            diagnostics.push(this.createDiagnostic(
+            diagnostics.push(createDiagnostic(
                 loc, 6, 'SELECT_WITHOUT_FROM',
                 t('enhanced.selectWithoutFrom', String(loc.line)),
                 vscode.DiagnosticSeverity.Warning,
@@ -289,7 +281,7 @@ export class AstEnhancedChecker {
 
     private nodeContainsNoFromFunction(node: AstNode): boolean {
         if (node.type === 'function') {
-            const name = this.getFunctionName(node)
+            const name = getFunctionName(node)
             if (name && NO_FROM_FUNCTIONS.has(name.toLowerCase())) {
                 return true
             }
@@ -312,20 +304,6 @@ export class AstEnhancedChecker {
         return false
     }
 
-    private getFunctionName(node: AstNode): string | null {
-        const name = node.name
-        if (typeof name === 'string') {
-            return name
-        }
-        if (isAstNode(name)) {
-            const nameNode = name as AstNode
-            if (typeof nameNode.value === 'string') {
-                return nameNode.value
-            }
-        }
-        return null
-    }
-
     private checkMisplacedDistinct(node: AstNode, diagnostics: vscode.Diagnostic[]): void {
         const columns = node.columns
         if (!Array.isArray(columns) || columns.length < 2) {
@@ -343,9 +321,9 @@ export class AstEnhancedChecker {
             }
             const colNode = col as AstNode
             if (colNode.distinct === true) {
-                const loc = this.getNodeLocation(colNode)
+                const loc = getNodeLocation(colNode)
                 if (loc) {
-                    diagnostics.push(this.createDiagnostic(
+                    diagnostics.push(createDiagnostic(
                         loc, 8, 'MISPLACED_DISTINCT',
                         t('enhanced.distinctMisplaced', String(loc.line)),
                         vscode.DiagnosticSeverity.Error,
@@ -369,10 +347,10 @@ export class AstEnhancedChecker {
             if (this.isInsideSubquery(aggr, where)) {
                 continue
             }
-            const loc = this.getNodeLocation(aggr)
+            const loc = getNodeLocation(aggr)
             if (loc) {
                 const name = typeof aggr.name === 'string' ? aggr.name : 'aggregate'
-                diagnostics.push(this.createDiagnostic(
+                diagnostics.push(createDiagnostic(
                     loc, name.length, 'AGGREGATE_IN_WHERE',
                     t('enhanced.aggregateInWhere', String(loc.line)),
                     vscode.DiagnosticSeverity.Error,
@@ -425,9 +403,9 @@ export class AstEnhancedChecker {
             }
             const setItem = item as AstNode
             if (typeof setItem.column === 'string' && setItem.column === '*') {
-                const loc = this.getNodeLocation(setItem)
+                const loc = getNodeLocation(setItem)
                 if (loc) {
-                    diagnostics.push(this.createDiagnostic(
+                    diagnostics.push(createDiagnostic(
                         loc, 1, 'WILDCARD_IN_UPDATE',
                         t('enhanced.starInUpdate', String(loc.line)),
                         vscode.DiagnosticSeverity.Error,
@@ -440,9 +418,9 @@ export class AstEnhancedChecker {
                     return isAstNode(n) && (n as AstNode).type === 'column_ref' && (n as AstNode).column === '*'
                 })
                 for (const ref of starRefs) {
-                    const loc = this.getNodeLocation(ref)
+                    const loc = getNodeLocation(ref)
                     if (loc) {
-                        diagnostics.push(this.createDiagnostic(
+                        diagnostics.push(createDiagnostic(
                             loc, 1, 'WILDCARD_IN_UPDATE',
                             t('enhanced.starInUpdate', String(loc.line)),
                             vscode.DiagnosticSeverity.Error,
@@ -460,9 +438,9 @@ export class AstEnhancedChecker {
 
         const columns = node.columns
         if (columns == null || (Array.isArray(columns) && columns.length === 0)) {
-            const loc = this.getNodeLocation(node)
+            const loc = getNodeLocation(node)
             if (loc) {
-                diagnostics.push(this.createDiagnostic(
+                diagnostics.push(createDiagnostic(
                     loc, 6, 'INSERT_WITHOUT_COLUMNS',
                     t('enhanced.insertWithoutColumns', String(loc.line)),
                     vscode.DiagnosticSeverity.Warning,
@@ -479,9 +457,9 @@ export class AstEnhancedChecker {
         for (const caseNode of caseNodes) {
             const when = caseNode.when
             if (when == null || (Array.isArray(when) && when.length === 0)) {
-                const loc = this.getNodeLocation(caseNode)
+                const loc = getNodeLocation(caseNode)
                 if (loc) {
-                    diagnostics.push(this.createDiagnostic(
+                    diagnostics.push(createDiagnostic(
                         loc, 4, 'INCOMPLETE_CASE',
                         t('enhanced.caseMissingEnd', String(loc.line)),
                         vscode.DiagnosticSeverity.Error,
@@ -502,9 +480,9 @@ export class AstEnhancedChecker {
             }
             const args = aggr.args
             if (this.argsContainStar(args)) {
-                const loc = this.getNodeLocation(aggr)
+                const loc = getNodeLocation(aggr)
                 if (loc) {
-                    diagnostics.push(this.createDiagnostic(
+                    diagnostics.push(createDiagnostic(
                         loc, 5, 'REDUNDANT_DISTINCT',
                         t('enhanced.countDistinctStar', String(loc.line)),
                         vscode.DiagnosticSeverity.Warning,
@@ -564,9 +542,9 @@ export class AstEnhancedChecker {
             if (isAstNode(expr) && (expr as AstNode).type === 'select') {
                 const as = fromEntry.as
                 if (as == null || (typeof as === 'string' && as.length === 0)) {
-                    const loc = this.getNodeLocation(fromEntry)
+                    const loc = getNodeLocation(fromEntry)
                     if (loc) {
-                        diagnostics.push(this.createDiagnostic(
+                        diagnostics.push(createDiagnostic(
                             loc, 4, 'SUBQUERY_WITHOUT_ALIAS',
                             t('enhanced.subqueryMissingAlias', String(loc.line)),
                             vscode.DiagnosticSeverity.Warning,
@@ -589,10 +567,10 @@ export class AstEnhancedChecker {
             }
             const right = binary.right
             if (isAstNode(right) && (right as AstNode).type === 'null') {
-                const loc = this.getNodeLocation(binary)
+                const loc = getNodeLocation(binary)
                 if (loc) {
                     const suggestion = op === '=' ? 'IS NULL' : 'IS NOT NULL'
-                    diagnostics.push(this.createDiagnostic(
+                    diagnostics.push(createDiagnostic(
                         loc, 4, 'SUSPICIOUS_NULL_COMPARISON',
                         t('enhanced.nullComparison', String(loc.line), suggestion, op),
                         vscode.DiagnosticSeverity.Warning,
@@ -608,11 +586,11 @@ export class AstEnhancedChecker {
         })
 
         for (const func of funcNodes) {
-            const name = this.getFunctionName(func)
+            const name = getFunctionName(func)
             if (name && DATE_FUNCTION_NAMES.has(name.toLowerCase())) {
-                const loc = this.getNodeLocation(func)
+                const loc = getNodeLocation(func)
                 if (loc) {
-                    diagnostics.push(this.createDiagnostic(
+                    diagnostics.push(createDiagnostic(
                         loc, name.length, 'DATE_FUNCTION_HINT',
                         t('enhanced.dateFunctionHint', name),
                         vscode.DiagnosticSeverity.Information,
@@ -620,33 +598,5 @@ export class AstEnhancedChecker {
                 }
             }
         }
-    }
-
-    private createDiagnostic(
-        loc: AstLocation,
-        length: number,
-        code: string,
-        message: string,
-        severity: vscode.DiagnosticSeverity,
-    ): vscode.Diagnostic {
-        const diagnostic = new vscode.Diagnostic(
-            new vscode.Range(loc.line - 1, loc.column - 1, loc.line - 1, loc.column - 1 + length),
-            message,
-            severity,
-        )
-        diagnostic.source = 'Hive Formatter'
-        diagnostic.code = code
-        return diagnostic
-    }
-
-    private getNodeLocation(node: AstNode): AstLocation | null {
-        const loc = (node as any).loc
-        if (loc?.start?.line !== undefined && loc?.start?.column !== undefined) {
-            return {
-                line: loc.start.line as number,
-                column: loc.start.column as number,
-            }
-        }
-        return null
     }
 }

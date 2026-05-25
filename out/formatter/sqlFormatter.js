@@ -7,10 +7,10 @@ const dialectNameMap = {
     hive: "hive",
     mysql: "mysql",
     spark: "spark",
+    flinksql: "flinksql",
     sql: "sql",
     postgresql: "postgresql",
     bigquery: "bigquery",
-    snowflake: "snowflake",
     sqlite: "sqlite",
 };
 exports.supportedDialects = Object.keys(dialectNameMap);

@@ -2,19 +2,19 @@ export type SqlDialect =
     | 'mysql'
     | 'hive'
     | 'spark'
+    | 'flinksql'
     | 'postgresql'
     | 'bigquery'
-    | 'snowflake'
     | 'sqlite'
     | 'sql'
 
 const dialectMap: Record<SqlDialect, string> = {
     mysql: 'MySQL',
     hive: 'Hive',
-    spark: 'FlinkSQL',
+    spark: 'Hive',
+    flinksql: 'FlinkSQL',
     postgresql: 'PostgreSQL',
     bigquery: 'BigQuery',
-    snowflake: 'Snowflake',
     sqlite: 'SQLite',
     sql: 'MySQL',
 }

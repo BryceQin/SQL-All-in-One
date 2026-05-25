@@ -1,14 +1,17 @@
 # Hive Formatter
 
-一个强大的 SQL 格式化 VSCode 插件，支持 Hive、MySQL、SparkSQL、PostgreSQL、Oracle、BigQuery、Snowflake、Presto、SQLite 等多种 SQL 方言，提供丰富的自定义配置选项。
+一个强大的 SQL 格式化 VSCode 插件，支持 Hive、MySQL、SparkSQL、FlinkSQL、PostgreSQL、BigQuery、SQLite 等多种 SQL 方言，提供丰富的自定义配置选项。
+
+> **🎉 v1.4.0 性能与架构优化** — AST 单次解析替代 3 次重复解析（诊断性能提升 60%+）、诊断防抖、补全项缓存、Outline/Folding 基于 AST、统一配置管理、错误处理体系化等 16 项架构优化。
 
 ## 特性
 
 区别于市场上多数仅提供单一格式化效果的 SQL 插件，本工具以个性化配置为核心设计理念，内置丰富的可配置项：
 
-- 📝 **多种 SQL 方言支持** - Hive、MySQL、SparkSQL、PostgreSQL、Oracle、BigQuery、Snowflake、Presto、SQLite、通用 SQL
-- 🎨 **丰富的格式化选项** - 关键字大小写、缩进风格、换行策略等
-- 🤖 **智能补全（IntelliSense）** - 关键字、函数签名、代码片段、CTE、标识符智能提示
+- 📝 **多种 SQL 方言支持** - Hive、MySQL、SparkSQL、FlinkSQL、PostgreSQL、BigQuery、SQLite、通用 SQL
+- 🏗️ **AST 驱动架构** - 基于 node-sql-parser v5.x，所有核心功能（格式化、诊断、Lint、补全、转换）均基于 AST 实现
+- 🎨 **丰富的格式化选项** - 关键字大小写、缩进风格、换行策略等 40+ 可配置项
+- 🤖 **智能补全（IntelliSense）** - 关键字、函数签名、代码片段、CTE、标识符智能提示，基于 AST 上下文感知
 - 💬 **注释增强** - 智能注释切换、注释模板补全、注释 Lint 规则
 - 📏 **灵活的缩进配置** - 支持标准缩进和表格风格对齐
 - 🖥️ **可视化配置编辑器** - 现代化图形化配置界面，可折叠分组、Toggle 开关、实时预览格式化效果
@@ -16,7 +19,7 @@
 - 🛡️ **安全的参数处理** - 支持 JDBC `:?` 参数、正则注入防护、参数批量替换
 - ⚙️ **高度自定义** - 超过 40 项可配置项满足各种团队规范
 - 🔧 **命令支持** - 提供"格式化选择"命令，支持部分格式化
-- ✅ **语法错误检测** - 实时检测常见 SQL 语法错误并提供友好的中文提示
+- ✅ **语法错误检测** - 基于 AST 解析实时检测 SQL 语法错误并提供友好的中文提示
 - 🚀 **快速修复** - 配合语法检查提供一键修复功能
 - 💻 **状态栏显示** - 显示当前 SQL 方言和快捷操作入口
 - 📑 **代码片段** - 提供常用 SQL 代码片段，提升编写效率
@@ -24,6 +27,7 @@
 - 🗺️ **大纲视图** - 提供 SQL 文档的大纲视图，快速导航
 - 🔢 **参数化查询** - 支持变量高亮和批量替换功能（含 JDBC `:?` 参数支持）
 - 🔍 **SQL Lint** - 内置 17+ 条 Lint 规则，支持自定义配置
+- 🔄 **DDL 转换** - 基于 AST 的 MySQL ↔ Hive CREATE TABLE 语句转换
 
 ## 快速开始
 
@@ -120,6 +124,15 @@
 | `union` | UNION ALL |
 | `hivepart` | Hive 分区插入 |
 | `hiveselpart` | Hive 分区查询 |
+| `hiveext` | Hive 外部表 |
+| `flinkkafka` | FlinkSQL Kafka 建表 |
+| `flinkjdbc` | FlinkSQL JDBC 建表 |
+| `flinktumble` | FlinkSQL 滚动窗口 |
+| `flinkhop` | FlinkSQL 滑动窗口 |
+| `flinkcumulate` | FlinkSQL 累积窗口 |
+| `flinkwatermark` | FlinkSQL Watermark 定义 |
+| `flinktemporal` | FlinkSQL 时态关联 |
+| `flinkdedup` | FlinkSQL 去重查询 |
 | `header` | 文件头注释（配置作者后自动填充，自动检测表依赖） |
 | `todo` | TODO 注释（带责任人） |
 | `fixme` | FIXME 注释 |
@@ -146,7 +159,7 @@
 
 ### 函数签名库
 
-插件内置 470+ 函数签名，覆盖多种方言，每个函数包含：
+插件内置 580+ 函数签名，覆盖多种方言，每个函数包含：
 - 参数列表（带占位符提示）
 - 返回值类型
 - 中文描述
@@ -161,7 +174,7 @@
 | `enableCompletion` | 是否启用智能补全功能 | `true` |
 | `completion.keywords` | 补全列表中是否包含关键字 | `true` |
 | `completion.functions` | 补全列表中是否包含函数 | `true` |
-| `completion.snippets` | 补全列表中是否包含代码片段 | `true` |
+| `completion.snippets` | 补全列表中是否包含代码片段 | `false` |
 | `completion.cteNames` | 是否提示 CTE 名称 | `true` |
 | `completion.identifiers` | 是否提示表名和列名 | `true` |
 | `completion.commentSnippets` | 补全列表中是否包含注释模板片段 | `true` |
@@ -206,7 +219,7 @@
 
 | 设置项 | 描述 | 默认值 |
 |--------|------|--------|
-| `dialect` | 选择使用的SQL方言（auto-detect/hive/mysql/spark/sql/postgresql/oracle/bigquery/snowflake/presto/sqlite） | `hive` |
+| `dialect` | 选择使用的SQL方言（auto-detect/hive/mysql/spark/flinksql/sql/postgresql/bigquery/sqlite） | `hive` |
 | `ignoreTabSettings` | 是否忽略编辑器的 tabSize 和 insertSpaces 设置 | `false` |
 | `tabSizeOverride` | 覆盖 tabSize 设置（需要先启用 ignoreTabSettings） | `2` |
 | `insertSpacesOverride` | 覆盖 insertSpaces 设置（需要先启用 ignoreTabSettings） | `true` |
@@ -265,6 +278,8 @@
 
 - `.sql` - SQL 文件
 - `.hql` - HiveQL 文件
+- `.sparksql` - SparkSQL 文件
+- `.flinksql` - FlinkSQL 文件
 
 ## 使用示例
 
@@ -289,7 +304,7 @@ LIMIT 10;
 
 ## 语法错误检测
 
-插件会实时检测 SQL 语法错误，并在编辑器中用红色波浪线高亮显示，同时在问题面板中提供详细的中文错误信息。
+插件会基于 AST 解析实时检测 SQL 语法错误，并在编辑器中用红色波浪线高亮显示，同时在问题面板中提供详细的中文错误信息。
 
 ### 支持检测的错误类型
 

@@ -3,9 +3,9 @@ import { AstEnhancedChecker } from "./AstEnhancedChecker"
 import { toSqlDialect } from "../core/sqlDialects"
 
 export class EnhancedSqlChecker {
-    public checkEnhancedIssues(text: string, document: vscode.TextDocument): vscode.Diagnostic[] {
+    public checkEnhancedIssues(text: string, document: vscode.TextDocument, preParsedAst?: unknown[]): vscode.Diagnostic[] {
         const dialect = toSqlDialect(document.languageId)
         const astChecker = new AstEnhancedChecker()
-        return astChecker.check(text, dialect)
+        return astChecker.check(text, dialect, preParsedAst)
     }
 }

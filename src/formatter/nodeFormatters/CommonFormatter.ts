@@ -39,7 +39,7 @@ export function formatAlias(as: unknown, cfg: FormatOptions): string {
     return ' ' + formatKeyword('AS', cfg.keywordCase) + ' ' + aliasStr;
 }
 
-export function joinWithComma(items: string[], cfg: FormatOptions, layout: Layout, indent: Indentation): void {
+export function joinWithComma(items: string[], cfg: FormatOptions, layout: Layout, _indent: Indentation): void {
     items.forEach((item, i) => {
         if (i > 0) {
             if (cfg.commaPosition === 'before') {
@@ -58,7 +58,7 @@ export function joinInline(items: string[], separator: string): string {
     return items.join(separator);
 }
 
-export function hasProperty(obj: unknown, prop: string): boolean {
+export function hasProperty<K extends string>(obj: unknown, prop: K): obj is Record<K, unknown> {
     return typeof obj === 'object' && obj !== null && prop in obj;
 }
 

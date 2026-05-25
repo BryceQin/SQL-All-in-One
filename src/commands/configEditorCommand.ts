@@ -92,20 +92,24 @@ export class ConfigEditorPanel {
     }
 
     private _getHtmlForWebview(): string {
-        const htmlPath = path.join(this._extensionUri.fsPath, 'media', 'config-editor.html')
-        let html = fs.readFileSync(htmlPath, 'utf-8')
+        try {
+            const htmlPath = path.join(this._extensionUri.fsPath, 'media', 'config-editor.html')
+            let html = fs.readFileSync(htmlPath, 'utf-8')
 
-        const cssUri = this._panel.webview.asWebviewUri(
-            vscode.Uri.joinPath(this._extensionUri, 'media', 'config-editor.css')
-        )
-        const jsUri = this._panel.webview.asWebviewUri(
-            vscode.Uri.joinPath(this._extensionUri, 'media', 'config-editor.js')
-        )
+            const cssUri = this._panel.webview.asWebviewUri(
+                vscode.Uri.joinPath(this._extensionUri, 'media', 'config-editor.css')
+            )
+            const jsUri = this._panel.webview.asWebviewUri(
+                vscode.Uri.joinPath(this._extensionUri, 'media', 'config-editor.js')
+            )
 
-        html = html.replace('{{CSS_URI}}', cssUri.toString())
-        html = html.replace('{{JS_URI}}', jsUri.toString())
+            html = html.replace('{{CSS_URI}}', cssUri.toString())
+            html = html.replace('{{JS_URI}}', jsUri.toString())
 
-        return html
+            return html
+        } catch {
+            return '<html><body><h2>Failed to load config editor</h2><p>Please reinstall the extension.</p></body></html>'
+        }
     }
 
     private async _sendCurrentConfig() {
@@ -133,8 +137,11 @@ export class ConfigEditorPanel {
         const config = vscode.workspace.getConfiguration('Hive-Formatter')
 
         for (const item of ALL_CONFIG_ITEMS) {
-            const value = data[item.key]
+            let value = data[item.key]
             const configKey = getConfigKey(item)
+            if (item.type === 'string' && value === '') {
+                value = undefined
+            }
             try { await config.update(configKey, value, vscode.ConfigurationTarget.Global) } catch { /* skip */ }
         }
 
@@ -183,7 +190,7 @@ export class ConfigEditorPanel {
                 data: result
             })
         } catch (error) {
-            vscode.window.showErrorMessage('格式化预览失败: ' + (error as Error).message)
+            vscode.window.showErrorMessage(t('notification.formatPreviewError', (error as Error).message))
         }
     }
 }
