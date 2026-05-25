@@ -1,5 +1,6 @@
 import * as vscode from 'vscode'
 import { t } from '../i18n'
+import { getConfigManager } from '../core/configManager'
 
 export interface LintRuleDefinition {
     id: string
@@ -45,11 +46,11 @@ export function getRuleDefinition(id: string): LintRuleDefinition | undefined {
 }
 
 export function loadRuleConfigs(): Map<string, LintRuleConfig> {
-    const config = vscode.workspace.getConfiguration('Hive-Formatter')
+    const cfgMgr = getConfigManager()
     const result = new Map<string, LintRuleConfig>()
 
     for (const rule of BUILT_IN_RULES) {
-        const ruleConfig = config.get<{ enabled?: boolean; severity?: string }>(`lint.${rule.id}`)
+        const ruleConfig = cfgMgr.get<{ enabled?: boolean; severity?: string }>(`lint.${rule.id}`, { enabled: rule.defaultEnabled, severity: undefined })
         const enabled = ruleConfig?.enabled ?? rule.defaultEnabled
         const severityStr = ruleConfig?.severity
         let severity = rule.defaultSeverity

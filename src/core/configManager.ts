@@ -2,9 +2,7 @@ import * as vscode from 'vscode'
 import { initI18n } from '../i18n'
 import { getContainer, Tokens } from './diContainer'
 
-interface ConfigListener {
-  (): void
-}
+type ConfigListener = () => void
 
 export class ConfigManager {
     private cache = new Map<string, unknown>()
@@ -59,6 +57,22 @@ export class ConfigManager {
         const value = config.get<T>(section, defaultValue)
         this.cache.set(section, value)
         return value
+    }
+
+    getSectionKeys<T extends Record<string, unknown>>(prefix: string, keys: string[], defaults: T): T {
+        const cacheKey = `__sectionKeys::${prefix}::${keys.join(',')}`
+        const cached = this.cache.get(cacheKey)
+        if (cached !== undefined) {
+            return cached as T
+        }
+        const config = vscode.workspace.getConfiguration('Hive-Formatter')
+        const result = {} as Record<string, unknown>
+        for (const key of keys) {
+            const section = prefix ? `${prefix}.${key}` : key
+            result[key] = config.get(section, defaults[key])
+        }
+        this.cache.set(cacheKey, result)
+        return result as T
     }
 
     onConfigChange(listener: ConfigListener): vscode.Disposable {

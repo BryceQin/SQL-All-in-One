@@ -1,6 +1,32 @@
 import * as vscode from 'vscode'
 import type { AstLocation, AstNode } from './astTypes'
 import { isAstNode } from './AstVisitor'
+import type { SqlDialect } from './dialectMapper'
+import { getParserEngine } from './SqlParserEngine'
+
+export function resolveAstList(sql: string, dialect: SqlDialect, preParsedAst?: unknown[]): unknown[] {
+    if (preParsedAst) {
+        return preParsedAst
+    }
+    const result = getParserEngine().tryAstify(sql, dialect)
+    if (!result.success || !result.ast) {
+        return []
+    }
+    return Array.isArray(result.ast) ? result.ast : [result.ast]
+}
+
+export function extractName(name: unknown): string | null {
+    if (typeof name === 'string' && name.length > 0) {
+        return name
+    }
+    if (name != null && typeof name === 'object') {
+        const nameObj = name as Record<string, unknown>
+        if (typeof nameObj.value === 'string' && nameObj.value.length > 0) {
+            return nameObj.value
+        }
+    }
+    return null
+}
 
 export function getNodeLocation(node: AstNode): AstLocation | null {
     const loc = (node as Record<string, unknown>).loc as { start?: AstLocation; end?: AstLocation } | undefined

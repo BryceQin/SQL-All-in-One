@@ -10,6 +10,10 @@ export class DIContainer {
     this.factories.set(token, factory);
   }
 
+  registerLazySingleton<T>(token: string, factory: () => T): void {
+    this.factories.set(token, factory);
+  }
+
   get<T>(token: string): T {
     let service = this.services.get(token) as T | undefined;
 
@@ -30,6 +34,20 @@ export class DIContainer {
     return this.services.has(token) || this.factories.has(token);
   }
 
+  disposeAll(): void {
+    for (const service of this.services.values()) {
+      if (
+        service !== null &&
+        service !== undefined &&
+        typeof (service as Record<string, unknown>).dispose === 'function'
+      ) {
+        (service as { dispose: () => void }).dispose();
+      }
+    }
+    this.services.clear();
+    this.factories.clear();
+  }
+
   clear(): void {
     this.services.clear();
     this.factories.clear();
@@ -44,6 +62,22 @@ export const Tokens = {
   DocumentAstCache: 'DocumentAstCache',
   ErrorHandler: 'ErrorHandler',
   PerformanceMonitor: 'PerformanceMonitor',
+  SqlDiagnosticsProvider: 'SqlDiagnosticsProvider',
+  StatusBarProvider: 'StatusBarProvider',
+  ParameterHighlighter: 'ParameterHighlighter',
+  CompletionProvider: 'CompletionProvider',
+  CodeActionProvider: 'CodeActionProvider',
+  FoldingRangeProvider: 'FoldingRangeProvider',
+  OutlineProvider: 'OutlineProvider',
+  HoverProvider: 'HoverProvider',
+  AstNavigator: 'AstNavigator',
+  DefinitionProvider: 'DefinitionProvider',
+  ReferenceProvider: 'ReferenceProvider',
+  RenameProvider: 'RenameProvider',
+  EnhancedSqlChecker: 'EnhancedSqlChecker',
+  SqlLinter: 'SqlLinter',
+  AstDiagnosticsProvider: 'AstDiagnosticsProvider',
+  AstConverter: 'AstConverter',
 } as const;
 
 export type Token = typeof Tokens[keyof typeof Tokens];

@@ -1,11 +1,10 @@
 import * as vscode from 'vscode'
-import { getParserEngine } from '../parser/SqlParserEngine'
-import type { SqlDialect } from '../parser/dialectMapper'
 import { walkAst, findNodes, findNodesOfType, isAstNode } from '../parser/AstVisitor'
 import { t } from '../i18n'
 import type { AstLocation, AstNode } from '../parser/astTypes'
-import { getNodeLocation, getStatementEndLocation, getFunctionName, getColumnLoc, getLocFromAny, createDiagnostic } from '../parser/astUtils'
+import { getNodeLocation, getStatementEndLocation, getFunctionName, getColumnLoc, getLocFromAny, createDiagnostic, resolveAstList } from '../parser/astUtils'
 import { loadRuleConfigs, type LintRuleConfig } from '../linter/lintRules'
+import type { SqlDialect } from '../parser/dialectMapper'
 
 const ISNULL_FUNCTION_NAMES = new Set(['ifnull', 'isnull'])
 
@@ -34,17 +33,7 @@ export class AstLinter {
 
     lint(sql: string, dialect: SqlDialect, document?: vscode.TextDocument, preParsedAst?: unknown[]): vscode.Diagnostic[] {
         const diagnostics: vscode.Diagnostic[] = []
-
-        let astList: unknown[]
-        if (preParsedAst) {
-            astList = preParsedAst
-        } else {
-            const result = getParserEngine().tryAstify(sql, dialect)
-            if (!result.success || !result.ast) {
-                return diagnostics
-            }
-            astList = Array.isArray(result.ast) ? result.ast : [result.ast]
-        }
+        const astList = resolveAstList(sql, dialect, preParsedAst)
 
         for (const ast of astList) {
             if (!isAstNode(ast)) {

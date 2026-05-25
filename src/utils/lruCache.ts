@@ -1,7 +1,6 @@
 interface LRUCacheEntry<V> {
   value: V;
   timestamp: number;
-  lastAccessed: number;
 }
 
 export class LRUCache<K, V> {
@@ -15,12 +14,16 @@ export class LRUCache<K, V> {
   }
 
   set(key: K, value: V): void {
-    this.evictIfNeeded();
+    this.cache.delete(key);
+
+    if (this.cache.size >= this.maxSize) {
+      const lruKey = this.cache.keys().next().value as K;
+      this.cache.delete(lruKey);
+    }
 
     this.cache.set(key, {
       value,
       timestamp: Date.now(),
-      lastAccessed: Date.now(),
     });
   }
 
@@ -36,7 +39,8 @@ export class LRUCache<K, V> {
       return undefined;
     }
 
-    entry.lastAccessed = Date.now();
+    this.cache.delete(key);
+    this.cache.set(key, entry);
     return entry.value;
   }
 
@@ -62,19 +66,5 @@ export class LRUCache<K, V> {
 
   size(): number {
     return this.cache.size;
-  }
-
-  private evictIfNeeded(): void {
-    if (this.cache.size >= this.maxSize) {
-      const entries = Array.from(this.cache.entries());
-      entries.sort((a, b) => a[1].lastAccessed - b[1].lastAccessed);
-
-      const toRemove = Math.max(1, Math.floor(this.maxSize * 0.2));
-      for (let i = 0; i < toRemove; i++) {
-        if (entries[i]) {
-          this.cache.delete(entries[i][0]);
-        }
-      }
-    }
   }
 }

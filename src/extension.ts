@@ -7,64 +7,57 @@ import { convertMysqlToHiveCommand, convertHiveToMysqlCommand } from "./commands
 import { openConfigEditorCommand } from "./commands/configEditorCommand"
 import { initI18n } from "./i18n"
 import { getConfigManager } from "./core/configManager"
-import { resetParserEngine } from "./parser/SqlParserEngine"
 import { getDocumentAstCache } from "./parser/DocumentAstCache"
 import { Lazy, lazy } from "./utils/lazy"
 import { getErrorHandler, ErrorLevel, ErrorCategory } from "./core/errorHandler"
 import { getPerformanceMonitor } from "./core/performanceMonitor"
+import { getContainer } from "./core/diContainer"
+import { SqlCodeActionProvider } from "./providers/SqlCodeActionProvider"
+import { SqlDiagnosticsProvider } from "./providers/SqlDiagnosticsProvider"
+import { StatusBarProvider } from "./providers/StatusBarProvider"
+import { SqlParameterHighlighter, SqlParameterReplaceCommand } from "./providers/SqlParameterHightlighter"
+import { SqlCompletionProvider } from "./completion"
+import { SqlFoldingRangeProvider } from "./providers/SqlFoldingRangeProvider"
+import { SqlOutlineProvider } from "./providers/SqlOutlineProvider"
+import { SqlHoverProvider } from "./providers/SqlHoverProvider"
+import { AstNavigator } from "./navigation/AstNavigator"
+import { SqlDefinitionProvider } from "./navigation/SqlDefinitionProvider"
+import { SqlReferenceProvider } from "./navigation/SqlReferenceProvider"
+import { SqlRenameProvider } from "./navigation/SqlRenameProvider"
 
-const lazyProviders: Record<string, Lazy<any>> = {
-  diagnosticsProvider: lazy(() => {
-    const { SqlDiagnosticsProvider } = require("./providers/SqlDiagnosticsProvider")
-    return new SqlDiagnosticsProvider()
-  }),
-  statusBarProvider: lazy(() => {
-    const { StatusBarProvider } = require("./providers/StatusBarProvider")
-    return new StatusBarProvider()
-  }),
-  parameterHighlighter: lazy(() => {
-    const { SqlParameterHighlighter } = require("./providers/SqlParameterHightlighter")
-    return new SqlParameterHighlighter()
-  }),
-  completionProvider: lazy(() => {
-    const { SqlCompletionProvider } = require("./completion")
-    return new SqlCompletionProvider('')
-  }),
-  codeActionProvider: lazy(() => {
-    const { SqlCodeActionProvider } = require("./providers/SqlCodeActionProvider")
-    return new SqlCodeActionProvider()
-  }),
-  foldingRangeProvider: lazy(() => {
-    const { SqlFoldingRangeProvider } = require("./providers/SqlFoldingRangeProvider")
-    return new SqlFoldingRangeProvider()
-  }),
-  outlineProvider: lazy(() => {
-    const { SqlOutlineProvider } = require("./providers/SqlOutlineProvider")
-    return new SqlOutlineProvider()
-  }),
-  hoverProvider: lazy(() => {
-    const { SqlHoverProvider } = require("./providers/SqlHoverProvider")
-    return new SqlHoverProvider()
-  }),
-  astNavigator: lazy(() => {
-    const { AstNavigator } = require("./navigation/AstNavigator")
-    return new AstNavigator()
-  }),
-  definitionProvider: lazy(() => {
-    const { SqlDefinitionProvider } = require("./navigation/SqlDefinitionProvider")
-    const navigator = lazyProviders.astNavigator.get()
-    return new SqlDefinitionProvider(navigator)
-  }),
-  referenceProvider: lazy(() => {
-    const { SqlReferenceProvider } = require("./navigation/SqlReferenceProvider")
-    const navigator = lazyProviders.astNavigator.get()
-    return new SqlReferenceProvider(navigator)
-  }),
-  renameProvider: lazy(() => {
-    const { SqlRenameProvider } = require("./navigation/SqlRenameProvider")
-    const navigator = lazyProviders.astNavigator.get()
-    return new SqlRenameProvider(navigator)
-  }),
+interface ProviderMap {
+  diagnosticsProvider: Lazy<SqlDiagnosticsProvider>
+  statusBarProvider: Lazy<StatusBarProvider>
+  parameterHighlighter: Lazy<SqlParameterHighlighter>
+  completionProvider: Lazy<SqlCompletionProvider>
+  codeActionProvider: Lazy<SqlCodeActionProvider>
+  foldingRangeProvider: Lazy<SqlFoldingRangeProvider>
+  outlineProvider: Lazy<SqlOutlineProvider>
+  hoverProvider: Lazy<SqlHoverProvider>
+  astNavigator: Lazy<AstNavigator>
+  definitionProvider: Lazy<SqlDefinitionProvider>
+  referenceProvider: Lazy<SqlReferenceProvider>
+  renameProvider: Lazy<SqlRenameProvider>
+}
+
+let lazyProviders: ProviderMap
+
+function createLazyProviders(extensionPath: string): ProviderMap {
+  const providers: ProviderMap = {
+    diagnosticsProvider: lazy(() => new SqlDiagnosticsProvider()),
+    statusBarProvider: lazy(() => new StatusBarProvider()),
+    parameterHighlighter: lazy(() => new SqlParameterHighlighter()),
+    completionProvider: lazy(() => new SqlCompletionProvider(extensionPath)),
+    codeActionProvider: lazy(() => new SqlCodeActionProvider()),
+    foldingRangeProvider: lazy(() => new SqlFoldingRangeProvider()),
+    outlineProvider: lazy(() => new SqlOutlineProvider()),
+    hoverProvider: lazy(() => new SqlHoverProvider()),
+    astNavigator: lazy(() => new AstNavigator()),
+    definitionProvider: lazy(() => new SqlDefinitionProvider(providers.astNavigator.get())),
+    referenceProvider: lazy(() => new SqlReferenceProvider(providers.astNavigator.get())),
+    renameProvider: lazy(() => new SqlRenameProvider(providers.astNavigator.get())),
+  }
+  return providers
 }
 
 const errorHandler = getErrorHandler()
@@ -143,7 +136,7 @@ function registerProviders(context: vscode.ExtensionContext): void {
       vscode.languages.registerCodeActionsProvider(
         selector,
         codeActionProvider,
-        { providedCodeActionKinds: (codeActionProvider as any).constructor.providedCodeActionKinds },
+        { providedCodeActionKinds: SqlCodeActionProvider.providedCodeActionKinds },
       ),
     )
 
@@ -184,7 +177,7 @@ function registerCompletion(context: vscode.ExtensionContext): void {
   if (!completionProvider) return
 
   const sqlLanguages = getSqlLanguageIds()
-  const triggerChars = [...'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.']
+  const triggerChars: string[] = ['.', ' ', '(']
 
   for (const lang of sqlLanguages) {
     context.subscriptions.push(
@@ -203,12 +196,13 @@ function registerParameterHighlighter(context: vscode.ExtensionContext): void {
   const parameterHighlighter = lazyProviders.parameterHighlighter.get()
   if (!parameterHighlighter) return
 
-  const { SqlParameterReplaceCommand } = require("./providers/SqlParameterHightlighter")
   SqlParameterReplaceCommand.register(context)
   context.subscriptions.push(parameterHighlighter)
 }
 
 export function activate(context: vscode.ExtensionContext): void {
+  lazyProviders = createLazyProviders(context.extensionPath)
+
   perfMonitor.measure('Extension.activate', () => {
     console.log('Hive Formatter: activating...')
 
@@ -218,33 +212,31 @@ export function activate(context: vscode.ExtensionContext): void {
       safeRegister('register commands', () => registerCommands(context))
       safeRegister('register formatting providers', () => registerFormattingProviders(context))
 
-      setTimeout(() => {
-        safeRegister('register diagnostics', () => registerDiagnostics(context))
-        safeRegister('register providers', () => registerProviders(context))
-        safeRegister('register completion', () => registerCompletion(context))
-        safeRegister('register parameter highlighter', () => registerParameterHighlighter(context))
+      safeRegister('register diagnostics', () => registerDiagnostics(context))
+      safeRegister('register providers', () => registerProviders(context))
+      safeRegister('register completion', () => registerCompletion(context))
+      safeRegister('register parameter highlighter', () => registerParameterHighlighter(context))
 
-        const navigator = lazyProviders.astNavigator.get()
-        if (navigator) {
-          context.subscriptions.push(
-            vscode.workspace.onDidChangeTextDocument(e => {
-              if (isSqlDocument(e.document)) {
-                navigator.invalidate(e.document)
-              }
-            }),
-            vscode.workspace.onDidCloseTextDocument(doc => {
-              navigator.invalidate(doc)
-            })
-          )
-        }
+      const navigator = lazyProviders.astNavigator.get()
+      if (navigator) {
+        context.subscriptions.push(
+          vscode.workspace.onDidChangeTextDocument(e => {
+            if (isSqlDocument(e.document)) {
+              navigator.invalidate(e.document)
+            }
+          }),
+          vscode.workspace.onDidCloseTextDocument(doc => {
+            navigator.invalidate(doc)
+          })
+        )
+      }
 
-        if (lazyProviders.statusBarProvider.isInitialized || vscode.workspace.textDocuments.some(isSqlDocument)) {
-          const statusBar = lazyProviders.statusBarProvider.get()
-          if (statusBar) {
-            context.subscriptions.push(statusBar)
-          }
+      if (lazyProviders.statusBarProvider.isInitialized || vscode.workspace.textDocuments.some(isSqlDocument)) {
+        const statusBar = lazyProviders.statusBarProvider.get()
+        if (statusBar) {
+          context.subscriptions.push(statusBar)
         }
-      }, 100)
+      }
 
       context.subscriptions.push(getConfigManager())
       context.subscriptions.push(getDocumentAstCache())
@@ -257,11 +249,5 @@ export function activate(context: vscode.ExtensionContext): void {
 }
 
 export function deactivate(): void {
-  if (lazyProviders.diagnosticsProvider.isInitialized) {
-    const dp = lazyProviders.diagnosticsProvider.get()
-    if (dp) {
-      dp.dispose()
-    }
-  }
-  resetParserEngine()
+  getContainer().disposeAll()
 }

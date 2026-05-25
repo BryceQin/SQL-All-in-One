@@ -13,7 +13,10 @@ export default defineConfig([
             tsdoc: tsdoc
         },
         languageOptions: {
-            parser: tseslint.parser
+            parser: tseslint.parser,
+            parserOptions: {
+                project: './tsconfig.json'
+            }
         },
         extends: [
             eslint.configs.recommended,

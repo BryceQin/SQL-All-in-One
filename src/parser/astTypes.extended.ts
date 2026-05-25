@@ -1,5 +1,3 @@
-import type { AST } from 'node-sql-parser';
-
 export interface AstNode {
   type: string;
   [key: string]: unknown;
@@ -66,7 +64,7 @@ export interface InsertNode extends AstNode {
 export interface UpdateNode extends AstNode {
   type: 'update';
   table?: unknown[];
-  set?: Array<{ column: string; value: unknown }>;
+  set?: { column: string; value: unknown }[];
   where?: unknown;
 }
 
@@ -74,6 +72,11 @@ export interface DeleteNode extends AstNode {
   type: 'delete';
   from?: unknown[];
   where?: unknown;
+}
+
+export interface UseNode extends AstNode {
+  type: 'use';
+  db?: string;
 }
 
 export interface CreateNode extends AstNode {
@@ -99,6 +102,7 @@ export type ExtendedAst =
   | InsertNode
   | UpdateNode
   | DeleteNode
+  | UseNode
   | CreateNode
   | ColumnRefNode
   | FunctionCallNode

@@ -6,6 +6,7 @@ import { ParameterHoverResolver } from '../hover/ParameterHoverResolver'
 import { FunctionHoverResolver } from '../hover/FunctionHoverResolver'
 import { KeywordHoverResolver } from '../hover/KeywordHoverResolver'
 import { extractWordAtPosition } from '../hover/hoverUtils'
+import { getConfigManager } from '../core/configManager'
 
 export class SqlHoverProvider implements vscode.HoverProvider {
     private resolvers: HoverResolver[]
@@ -23,8 +24,7 @@ export class SqlHoverProvider implements vscode.HoverProvider {
         position: vscode.Position,
         _token: vscode.CancellationToken,
     ): vscode.Hover | null {
-        const config = vscode.workspace.getConfiguration('Hive-Formatter')
-        if (!config.get<boolean>('enableHover', true)) return null
+        if (!getConfigManager().get<boolean>('enableHover', true)) return null
 
         const dialectName = sqlDialects[document.languageId as keyof typeof sqlDialects]
         if (!dialectName) return null

@@ -1,10 +1,9 @@
 import * as vscode from 'vscode'
-import { getParserEngine } from '../parser/SqlParserEngine'
-import type { SqlDialect } from '../parser/dialectMapper'
 import { walkAst, findNodes, isAstNode } from '../parser/AstVisitor'
 import type { AstNode } from '../parser/astTypes'
-import { getNodeLocation, getFunctionName, createDiagnostic } from '../parser/astUtils'
+import { getNodeLocation, getFunctionName, createDiagnostic, resolveAstList } from '../parser/astUtils'
 import { t } from '../i18n'
+import type { SqlDialect } from '../parser/dialectMapper'
 
 const RESERVED_WORDS = new Set([
     'select', 'from', 'where', 'group', 'by', 'having', 'order', 'limit',
@@ -24,17 +23,7 @@ const DATE_FUNCTION_NAMES = new Set(['date_add', 'date_sub', 'now', 'sysdate'])
 export class AstEnhancedChecker {
     check(sql: string, dialect: SqlDialect, preParsedAst?: unknown[]): vscode.Diagnostic[] {
         const diagnostics: vscode.Diagnostic[] = []
-
-        let astList: unknown[]
-        if (preParsedAst) {
-            astList = preParsedAst
-        } else {
-            const result = getParserEngine().tryAstify(sql, dialect)
-            if (!result.success || !result.ast) {
-                return diagnostics
-            }
-            astList = Array.isArray(result.ast) ? result.ast : [result.ast]
-        }
+        const astList = resolveAstList(sql, dialect, preParsedAst)
 
         for (const ast of astList) {
             if (!isAstNode(ast)) {

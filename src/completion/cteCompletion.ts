@@ -1,7 +1,8 @@
 import * as vscode from 'vscode'
 import { t } from '../i18n'
-import { extractCteNames } from './AstCompletionProvider'
+import { extractCteNamesFromAst } from './AstCompletionProvider'
 import { toSqlDialect } from '../core/sqlDialects'
+import { getDocumentAstCache } from '../parser/DocumentAstCache'
 
 export function getCTEItems(
     document: vscode.TextDocument,
@@ -12,7 +13,7 @@ export function getCTEItems(
     )
     if (!textBeforeCursor.trim()) return []
 
-    const cteNames = extractCteNamesAstFirst(textBeforeCursor, document.languageId)
+    const cteNames = extractCteNamesAstFirst(textBeforeCursor, document)
     if (cteNames.length === 0) return []
 
     return cteNames.map((name) => {
@@ -23,15 +24,18 @@ export function getCTEItems(
     })
 }
 
-function extractCteNamesAstFirst(text: string, langId: string): string[] {
+function extractCteNamesAstFirst(text: string, document: vscode.TextDocument): string[] {
     try {
-        const dialect = toSqlDialect(langId)
-        const astNames = extractCteNames(text, dialect)
-        if (astNames.length > 0) {
-            return astNames
+        const dialect = toSqlDialect(document.languageId)
+        const result = getDocumentAstCache().getOrParse(document, dialect)
+        if (result.success && result.ast) {
+            const astNames = extractCteNamesFromAst(result.ast)
+            if (astNames.length > 0) {
+                return astNames
+            }
         }
     } catch {
-        // AST extraction failed, fall back to regex
+        // fallback to regex
     }
 
     return extractCteNamesRegex(text)

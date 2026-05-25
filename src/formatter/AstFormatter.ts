@@ -1,6 +1,7 @@
 import type { FormatOptions } from './FormatOptions';
 import { indentString } from './config';
 import { getParserEngine } from '../parser/SqlParserEngine';
+import type { AST } from 'node-sql-parser';
 import type { SqlDialect } from '../parser/dialectMapper';
 import { isAstNode } from '../parser/AstVisitor';
 import Layout, { WS } from './Layout';
@@ -43,7 +44,7 @@ export class AstFormatter {
 
     private formatStatement(stmt: unknown): string {
         if (!isAstNode(stmt)) return '';
-        const type = (stmt as any).type;
+        const type = stmt.type as string;
         switch (type) {
             case AstNodeType.SELECT:
                 return this.formatSelect(stmt);
@@ -65,31 +66,31 @@ export class AstFormatter {
         }
     }
 
-    private formatSelect(stmt: any): string {
+    private formatSelect(stmt: Record<string, unknown>): string {
         const selectFmt = new SelectFormatter(this.cfg, this.indent);
         return selectFmt.format(stmt);
     }
 
-    private formatUpdate(stmt: any): string {
+    private formatUpdate(stmt: Record<string, unknown>): string {
         const layout = new Layout(this.indent);
         const exprFmt = new ExpressionFormatter2(this.cfg, this.indent);
 
         layout.add(formatKeyword('UPDATE', this.cfg.keywordCase));
 
         if (stmt.table) {
-            const tables = Array.isArray(stmt.table) ? stmt.table : [stmt.table];
+            const tables = (Array.isArray(stmt.table) ? stmt.table : [stmt.table]) as Record<string, unknown>[];
             for (const t of tables) {
                 layout.add(WS.SPACE);
                 if (t.type === 'dual') {
                     layout.add(formatKeyword('DUAL', this.cfg.keywordCase));
                 } else if (typeof t.table === 'object' && t.table !== null) {
                     let tableStr = '';
-                    if (t.db) tableStr += t.db + '.';
+                    if (t.db) tableStr += String(t.db) + '.';
                     tableStr += exprFmt.format(t.table);
                     layout.add(tableStr);
                 } else {
                     let tableStr = '';
-                    if (t.db) tableStr += t.db + '.';
+                    if (t.db) tableStr += String(t.db) + '.';
                     tableStr += String(t.table ?? '');
                     layout.add(tableStr);
                 }
@@ -101,11 +102,11 @@ export class AstFormatter {
         layout.add(WS.NEWLINE, WS.INDENT);
 
         if (stmt.set) {
-            stmt.set.forEach((s: any, i: number) => {
+            (stmt.set as Record<string, unknown>[]).forEach((s, i) => {
                 if (i > 0) {
                     layout.add(WS.NO_SPACE, ',', WS.NEWLINE, WS.INDENT);
                 }
-                const col = s.column || '';
+                const col = String(s.column || '');
                 const val = exprFmt.format(s.value);
                 layout.add(col + ' = ' + val);
             });
@@ -124,7 +125,7 @@ export class AstFormatter {
         return layout.toString().trimEnd();
     }
 
-    private formatDelete(stmt: any): string {
+    private formatDelete(stmt: Record<string, unknown>): string {
         const layout = new Layout(this.indent);
         const exprFmt = new ExpressionFormatter2(this.cfg, this.indent);
 
@@ -135,8 +136,8 @@ export class AstFormatter {
             layout.indentation.increaseTopLevel();
             layout.add(WS.NEWLINE, WS.INDENT);
 
-            const fromList = Array.isArray(stmt.from) ? stmt.from : [stmt.from];
-            fromList.forEach((item: any, i: number) => {
+            const fromList = (Array.isArray(stmt.from) ? stmt.from : [stmt.from]) as Record<string, unknown>[];
+            fromList.forEach((item, i) => {
                 if (i > 0) {
                     layout.add(WS.NO_SPACE, ',', WS.NEWLINE, WS.INDENT);
                 }
@@ -144,7 +145,7 @@ export class AstFormatter {
                     layout.add(formatKeyword('DUAL', this.cfg.keywordCase));
                 } else {
                     let tableStr = '';
-                    if (item.db) tableStr += item.db + '.';
+                    if (item.db) tableStr += String(item.db) + '.';
                     if (typeof item.table === 'object' && item.table !== null) {
                         tableStr += exprFmt.format(item.table);
                     } else {
@@ -171,14 +172,14 @@ export class AstFormatter {
         return layout.toString().trimEnd();
     }
 
-    private formatUse(stmt: any): string {
+    private formatUse(stmt: Record<string, unknown>): string {
         return formatKeyword('USE', this.cfg.keywordCase) + ' ' + String(stmt.db);
     }
 
-    private formatUnknown(stmt: any): string {
+    private formatUnknown(stmt: Record<string, unknown>): string {
         const engine = getParserEngine();
         try {
-            return engine.sqlify(stmt, this.dialect);
+            return engine.sqlify(stmt as unknown as AST, this.dialect);
         } catch {
             return JSON.stringify(stmt);
         }

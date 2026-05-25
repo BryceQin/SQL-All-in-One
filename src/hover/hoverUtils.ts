@@ -1,10 +1,10 @@
 import * as vscode from 'vscode'
-import { t } from '../i18n'
+import { t, type MessageKey } from '../i18n'
 import type { FunctionSignature } from '../completion/functionSignatures'
 import { getCategoryLabel } from '../completion/functionSignatures'
 import type { KeywordInfo, KeywordCategory } from './HoverResolver'
 
-const categoryLabelMap: Record<KeywordCategory, string> = {
+const categoryLabelMap: Record<KeywordCategory, MessageKey> = {
     query: 'hover.keywordCategory.query',
     join: 'hover.keywordCategory.join',
     setop: 'hover.keywordCategory.setop',

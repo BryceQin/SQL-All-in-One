@@ -7,14 +7,14 @@ import { EnhancedSqlChecker } from "./EnhancedSqlChecker"
 import { SqlLinter } from "./SqlLinter"
 import { AstDiagnosticsProvider } from "./AstDiagnosticsProvider"
 import { getDocumentAstCache } from "../parser/DocumentAstCache"
+import { getConfigManager } from "../core/configManager"
 
 export class SqlDiagnosticsProvider {
     private diagnosticCollection: vscode.DiagnosticCollection
     private enhancedChecker: EnhancedSqlChecker
+    private astDiagnosticsProvider = new AstDiagnosticsProvider()
     private linter: SqlLinter
-    private configCache: Record<string, boolean> = {}
-
-    private configChangeListener: vscode.Disposable
+    private configChangeDisposable: vscode.Disposable
 
     private debounceTimer: ReturnType<typeof setTimeout> | null = null
     private readonly DEBOUNCE_MS = 300
@@ -24,30 +24,15 @@ export class SqlDiagnosticsProvider {
             vscode.languages.createDiagnosticCollection("hive-formatter")
         this.enhancedChecker = new EnhancedSqlChecker()
         this.linter = new SqlLinter()
-        this.loadConfig()
 
-        this.configChangeListener = vscode.workspace.onDidChangeConfiguration((e) => {
-            if (e.affectsConfiguration('Hive-Formatter')) {
-                this.loadConfig()
-                this.linter = new SqlLinter()
-                vscode.workspace.textDocuments.forEach((doc) => {
-                    if (isSqlDocument(doc)) {
-                        this.provideDiagnostics(doc)
-                    }
-                })
-            }
+        this.configChangeDisposable = getConfigManager().onConfigChange(() => {
+            this.linter = new SqlLinter()
+            vscode.workspace.textDocuments.forEach((doc) => {
+                if (isSqlDocument(doc)) {
+                    this.provideDiagnostics(doc)
+                }
+            })
         })
-    }
-
-    private loadConfig(): void {
-        const config = vscode.workspace.getConfiguration('Hive-Formatter')
-        this.configCache = {
-            enableEnhancedChecks: config.get('enableEnhancedChecks', true),
-            enableLinter: config.get('enableLinter', true),
-            showErrorLevel: config.get('showErrorLevel', true),
-            showWarningLevel: config.get('showWarningLevel', true),
-            showInfoLevel: config.get('showInfoLevel', true),
-        }
     }
 
     public debouncedProvideDiagnostics(document: vscode.TextDocument): void {
@@ -61,6 +46,13 @@ export class SqlDiagnosticsProvider {
     }
 
     public provideDiagnostics(document: vscode.TextDocument): void {
+        const cfg = getConfigManager().getSectionKeys('', ['enableEnhancedChecks', 'enableLinter', 'showErrorLevel', 'showWarningLevel', 'showInfoLevel'], {
+            enableEnhancedChecks: true,
+            enableLinter: true,
+            showErrorLevel: true,
+            showWarningLevel: true,
+            showInfoLevel: true,
+        })
         const diagnostics: vscode.Diagnostic[] = []
         const text = document.getText()
 
@@ -77,23 +69,22 @@ export class SqlDiagnosticsProvider {
                 ? (Array.isArray(parseResult.ast) ? parseResult.ast : [parseResult.ast])
                 : []
 
-            const astProvider = new AstDiagnosticsProvider()
-            const astDiagnostics = astProvider.check(text, sqlDialect, astList)
+            const astDiagnostics = this.astDiagnosticsProvider.check(text, sqlDialect, astList)
             diagnostics.push(...astDiagnostics)
 
-            if (this.configCache.enableEnhancedChecks) {
+            if (cfg.enableEnhancedChecks) {
                 const enhancedDiagnostics = this.enhancedChecker.checkEnhancedIssues(text, document, astList)
-                const filteredDiagnostics = this.filterBySeverity(enhancedDiagnostics)
+                const filteredDiagnostics = this.filterBySeverity(enhancedDiagnostics, cfg)
                 diagnostics.push(...filteredDiagnostics)
             }
 
-            if (this.configCache.enableLinter) {
+            if (cfg.enableLinter) {
                 const lintDiagnostics = this.linter.lint(text, document, astList)
-                const filteredLintDiagnostics = this.filterBySeverity(lintDiagnostics)
+                const filteredLintDiagnostics = this.filterBySeverity(lintDiagnostics, cfg)
                 diagnostics.push(...filteredLintDiagnostics)
             }
         } catch (error) {
-            if (this.configCache.showErrorLevel) {
+            if (cfg.showErrorLevel) {
                 const diagnostic = this.createDiagnosticFromError(error, text, document)
                 if (diagnostic) {
                     diagnostics.push(diagnostic)
@@ -104,11 +95,11 @@ export class SqlDiagnosticsProvider {
         this.diagnosticCollection.set(document.uri, diagnostics)
     }
 
-    private filterBySeverity(diagnostics: vscode.Diagnostic[]): vscode.Diagnostic[] {
+    private filterBySeverity(diagnostics: vscode.Diagnostic[], cfg: Record<string, boolean>): vscode.Diagnostic[] {
         return diagnostics.filter(d => {
-            if (d.severity === vscode.DiagnosticSeverity.Error && !this.configCache.showErrorLevel) return false
-            if (d.severity === vscode.DiagnosticSeverity.Warning && !this.configCache.showWarningLevel) return false
-            if (d.severity === vscode.DiagnosticSeverity.Information && !this.configCache.showInfoLevel) return false
+            if (d.severity === vscode.DiagnosticSeverity.Error && !cfg.showErrorLevel) return false
+            if (d.severity === vscode.DiagnosticSeverity.Warning && !cfg.showWarningLevel) return false
+            if (d.severity === vscode.DiagnosticSeverity.Information && !cfg.showInfoLevel) return false
             return true
         })
     }
@@ -163,7 +154,7 @@ export class SqlDiagnosticsProvider {
 
     public dispose(): void {
         if (this.debounceTimer) clearTimeout(this.debounceTimer)
-        this.configChangeListener.dispose()
+        this.configChangeDisposable.dispose()
         this.diagnosticCollection.dispose()
     }
 }

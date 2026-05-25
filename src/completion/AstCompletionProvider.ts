@@ -513,6 +513,31 @@ function findContextInWithNode(withNode: AstNode, pos: Position): CompletionCont
     return 'cte_name'
 }
 
+export function extractCteNamesFromAst(ast: unknown[] | unknown): string[] {
+    const astList = Array.isArray(ast) ? ast : [ast]
+    const names: string[] = []
+
+    for (const a of astList) {
+        if (!isAstNode(a)) continue
+        const node = a as AstNode
+
+        if (node.type === 'with') {
+            collectCteNames(node, names)
+        }
+
+        if (node.type === 'select') {
+            const withClause = node.with
+            if (isAstNode(withClause) && (withClause as AstNode).type === 'with') {
+                collectCteNames(withClause as AstNode, names)
+            } else if (Array.isArray(withClause)) {
+                collectCteNamesFromArray(withClause, names)
+            }
+        }
+    }
+
+    return names
+}
+
 export function extractCteNames(sql: string, dialect: SqlDialect): string[] {
     const result = getParserEngine().tryAstify(sql, dialect)
     if (!result.success || !result.ast) {

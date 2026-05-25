@@ -1,4 +1,10 @@
-import { BaseSqlAdapter } from "./BaseSqlAdapter"
+import {
+    AdapterState,
+    replaceSortDistributeCluster,
+    restoreSortDistributeCluster,
+    extractUntilNextClause,
+    escapeRegExp,
+} from "./BaseSqlAdapter"
 
 interface UsingSlot {
     tableName: string
@@ -14,153 +20,159 @@ interface MergeSlot {
     original: string
 }
 
-export class SparkSqlAdapter extends BaseSqlAdapter {
-    private usingSlots: UsingSlot[] = []
-    private lateralViewSlots: LateralViewSlot[] = []
-    private mergeSlots: MergeSlot[] = []
-    private clauseCounter = 0
+export interface SparkAdapterState extends AdapterState {
+    usingSlots: UsingSlot[]
+    lateralViewSlots: LateralViewSlot[]
+    mergeSlots: MergeSlot[]
+}
 
-    preprocess(sql: string): string {
-        this.keywordOccurrences = []
-        this.usingSlots = []
-        this.lateralViewSlots = []
-        this.mergeSlots = []
-        this.clauseCounter = 0
+export function preprocessSparkSql(sql: string): { processedSql: string; state: SparkAdapterState } {
+    const counter = { value: 0 }
+    const usingSlots: UsingSlot[] = []
+    const lateralViewSlots: LateralViewSlot[] = []
+    const mergeSlots: MergeSlot[] = []
 
-        let result = sql
+    let result = sql
 
-        result = this.extractMergeInto(result)
-        result = this.extractLateralView(result)
-        result = this.extractCreateTableUsing(result)
-        result = this.replaceSortDistributeCluster(result)
+    result = extractMergeInto(result, mergeSlots, counter)
+    result = extractLateralView(result, lateralViewSlots, counter)
+    result = extractCreateTableUsing(result, usingSlots)
+    const sortResult = replaceSortDistributeCluster(result)
 
-        return result
+    return {
+        processedSql: sortResult.result,
+        state: {
+            keywordOccurrences: sortResult.keywordOccurrences,
+            usingSlots,
+            lateralViewSlots,
+            mergeSlots,
+        },
     }
+}
 
-    postprocess(formatted: string): string {
-        let result = formatted
+export function postprocessSparkSql(formatted: string, state: SparkAdapterState): string {
+    let result = formatted
 
-        result = this.restoreSortDistributeCluster(result)
-        result = this.restoreCreateTableUsing(result)
-        result = this.restoreLateralView(result)
-        result = this.restoreMergeInto(result)
+    result = restoreSortDistributeCluster(result, state.keywordOccurrences)
+    result = restoreCreateTableUsing(result, state.usingSlots)
+    result = restoreLateralView(result, state.lateralViewSlots)
+    result = restoreMergeInto(result, state.mergeSlots)
 
-        return result
-    }
+    return result
+}
 
-    private extractLateralView(sql: string): string {
-        let result = sql
+function extractLateralView(sql: string, lateralViewSlots: LateralViewSlot[], counter: { value: number }): string {
+    let result = sql
 
-        const patterns = [
-            /\bLATERAL\s+VIEW\s+OUTER\b/gi,
-            /\bLATERAL\s+VIEW\b/gi,
-        ]
+    const patterns = [
+        /\bLATERAL\s+VIEW\s+OUTER\b/gi,
+        /\bLATERAL\s+VIEW\b/gi,
+    ]
 
-        for (const pattern of patterns) {
-            let m
-            while ((m = pattern.exec(result)) !== null) {
-                const matchText = m[0]
-                const afterMatch = result.substring(m.index + matchText.length)
-                const clauseRest = this.extractUntilNextClause(afterMatch)
-                const fullClause = matchText + clauseRest
-
-                const id = `spark_lv_${this.clauseCounter++}`
-                this.lateralViewSlots.push({ id, original: fullClause })
-
-                const escaped = this.escapeRegExp(fullClause)
-                const replaceRegex = new RegExp(escaped, 'i')
-                result = result.replace(replaceRegex, `CROSS JOIN ${id}`)
-
-                pattern.lastIndex = 0
-            }
-        }
-
-        return result
-    }
-
-    private restoreLateralView(formatted: string): string {
-        let result = formatted
-
-        for (const slot of this.lateralViewSlots) {
-            const escapedId = this.escapeRegExp(slot.id)
-            const withBackticks = new RegExp(
-                `CROSS\\s+JOIN\\s+\`?${escapedId}\`?`,
-                'gi'
-            )
-            result = result.replace(withBackticks, slot.original)
-        }
-
-        return result
-    }
-
-    private extractCreateTableUsing(sql: string): string {
-        const usingPattern = /\b(CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?[\w.`"]+)\s+(USING\s+\w+)/gi
-        let result = sql
+    for (const pattern of patterns) {
         let m
+        while ((m = pattern.exec(result)) !== null) {
+            const matchText = m[0]
+            const afterMatch = result.substring(m.index + matchText.length)
+            const clauseRest = extractUntilNextClause(afterMatch)
+            const fullClause = matchText + clauseRest
 
-        while ((m = usingPattern.exec(result)) !== null) {
-            const tableName = m[1]
-            const usingClause = m[2]
-            this.usingSlots.push({ tableName, usingClause })
+            const id = `spark_lv_${counter.value++}`
+            lateralViewSlots.push({ id, original: fullClause })
 
-            result = result.replace(usingClause, '')
-            usingPattern.lastIndex = 0
-        }
-
-        result = result.replace(/\b(CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?[\w.`"]+)\s{2,}/gi, '$1 ')
-
-        return result
-    }
-
-    private restoreCreateTableUsing(formatted: string): string {
-        let result = formatted
-
-        for (const slot of this.usingSlots) {
-            const tablePattern = this.escapeRegExp(slot.tableName)
-            const regex = new RegExp(`(${tablePattern})`, 'i')
-            result = result.replace(regex, `$1 ${slot.usingClause}`)
-        }
-
-        return result
-    }
-
-    private extractMergeInto(sql: string): string {
-        let result = sql
-
-        const mergePattern = /\bMERGE\s+INTO\b/gi
-        let m
-
-        while ((m = mergePattern.exec(result)) !== null) {
-            const startIdx = m.index
-
-            let endIdx = result.length
-            const semiIdx = result.indexOf(';', startIdx)
-            if (semiIdx !== -1) {
-                endIdx = semiIdx
-            }
-
-            const original = result.substring(startIdx, endIdx).trimEnd()
-            const id = `spark_merge_${this.clauseCounter++}`
-            this.mergeSlots.push({ original })
-
-            const escaped = this.escapeRegExp(original)
+            const escaped = escapeRegExp(fullClause)
             const replaceRegex = new RegExp(escaped, 'i')
-            result = result.replace(replaceRegex, `SELECT * FROM ${id}`)
+            result = result.replace(replaceRegex, `CROSS JOIN ${id}`)
 
-            mergePattern.lastIndex = 0
+            pattern.lastIndex = 0
         }
-
-        return result
     }
 
-    private restoreMergeInto(formatted: string): string {
-        let result = formatted
+    return result
+}
 
-        for (const slot of this.mergeSlots) {
-            const selectPattern = /SELECT\s+\*\s+FROM\s+`?spark_merge_\d+`?/gi
-            result = result.replace(selectPattern, slot.original)
+function restoreLateralView(formatted: string, lateralViewSlots: LateralViewSlot[]): string {
+    let result = formatted
+
+    for (const slot of lateralViewSlots) {
+        const escapedId = escapeRegExp(slot.id)
+        const withBackticks = new RegExp(
+            `CROSS\\s+JOIN\\s+\`?${escapedId}\`?`,
+            'gi'
+        )
+        result = result.replace(withBackticks, slot.original)
+    }
+
+    return result
+}
+
+function extractCreateTableUsing(sql: string, usingSlots: UsingSlot[]): string {
+    const usingPattern = /\b(CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?[\w.`"]+)\s+(USING\s+\w+)/gi
+    let result = sql
+    let m
+
+    while ((m = usingPattern.exec(result)) !== null) {
+        const tableName = m[1]
+        const usingClause = m[2]
+        usingSlots.push({ tableName, usingClause })
+
+        result = result.replace(usingClause, '')
+        usingPattern.lastIndex = 0
+    }
+
+    result = result.replace(/\b(CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?[\w.`"]+)\s{2,}/gi, '$1 ')
+
+    return result
+}
+
+function restoreCreateTableUsing(formatted: string, usingSlots: UsingSlot[]): string {
+    let result = formatted
+
+    for (const slot of usingSlots) {
+        const tablePattern = escapeRegExp(slot.tableName)
+        const regex = new RegExp(`(${tablePattern})`, 'i')
+        result = result.replace(regex, `$1 ${slot.usingClause}`)
+    }
+
+    return result
+}
+
+function extractMergeInto(sql: string, mergeSlots: MergeSlot[], counter: { value: number }): string {
+    let result = sql
+
+    const mergePattern = /\bMERGE\s+INTO\b/gi
+    let m
+
+    while ((m = mergePattern.exec(result)) !== null) {
+        const startIdx = m.index
+
+        let endIdx = result.length
+        const semiIdx = result.indexOf(';', startIdx)
+        if (semiIdx !== -1) {
+            endIdx = semiIdx
         }
 
-        return result
+        const original = result.substring(startIdx, endIdx).trimEnd()
+        const id = `spark_merge_${counter.value++}`
+        mergeSlots.push({ original })
+
+        const escaped = escapeRegExp(original)
+        const replaceRegex = new RegExp(escaped, 'i')
+        result = result.replace(replaceRegex, `SELECT * FROM ${id}`)
+
+        mergePattern.lastIndex = 0
     }
+
+    return result
+}
+
+function restoreMergeInto(formatted: string, mergeSlots: MergeSlot[]): string {
+    let result = formatted
+
+    for (const slot of mergeSlots) {
+        const selectPattern = /SELECT\s+\*\s+FROM\s+`?spark_merge_\d+`?/gi
+        result = result.replace(selectPattern, slot.original)
+    }
+
+    return result
 }

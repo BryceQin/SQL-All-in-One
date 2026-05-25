@@ -245,7 +245,7 @@ class AstConverter {
         // The main transformation is handled by type mapping
     }
 
-    private transformTableOptions(tableOptions: any[], toDialect: SqlDialect): any[] {
+    private transformTableOptions(tableOptions: Record<string, unknown>[], toDialect: SqlDialect): Record<string, unknown>[] {
         const unsupported = toDialect === 'hive'
             ? HIVE_UNSUPPORTED_TABLE_OPTIONS
             : toDialect === 'mysql'

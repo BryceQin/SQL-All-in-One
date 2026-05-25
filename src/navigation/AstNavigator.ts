@@ -2,7 +2,7 @@ import * as vscode from 'vscode'
 import { getDocumentAstCache } from '../parser/DocumentAstCache'
 import { toSqlDialect } from '../core/sqlDialects'
 import { walkAst, isAstNode } from '../parser/AstVisitor'
-import { getNodeLocation } from '../parser/astUtils'
+import { extractName } from '../parser/astUtils'
 import type { AstNode, AstLocation } from '../parser/astTypes'
 
 export interface SymbolIndex {
@@ -22,19 +22,6 @@ interface CacheEntry {
     version: number
     ast: unknown[] | unknown
     index: SymbolIndex
-}
-
-export function extractName(name: unknown): string | null {
-    if (typeof name === 'string' && name.length > 0) {
-        return name
-    }
-    if (name != null && typeof name === 'object') {
-        const nameObj = name as Record<string, unknown>
-        if (typeof nameObj.value === 'string' && nameObj.value.length > 0) {
-            return nameObj.value
-        }
-    }
-    return null
 }
 
 function toVscodeLocationFromLoc(loc: { start?: AstLocation; end?: AstLocation } | undefined, document: vscode.TextDocument): vscode.Location | null {
@@ -295,7 +282,7 @@ function findReferences(
 }
 
 export class AstNavigator {
-    private cache: Map<string, CacheEntry> = new Map()
+    private cache = new Map<string, CacheEntry>()
 
     getAST(document: vscode.TextDocument): { ast: unknown[] | unknown; index: SymbolIndex } | null {
         const key = document.uri.toString()
