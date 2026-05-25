@@ -62,6 +62,8 @@ export class DocumentAstCache {
     }
 }
 
+import { getContainer, Tokens } from '../core/diContainer';
+
 let instance: DocumentAstCache | null = null;
 
 export function getDocumentAstCache(): DocumentAstCache {
@@ -70,3 +72,5 @@ export function getDocumentAstCache(): DocumentAstCache {
     }
     return instance;
 }
+
+getContainer().registerFactory(Tokens.DocumentAstCache, getDocumentAstCache);

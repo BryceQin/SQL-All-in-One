@@ -1,10 +1,16 @@
 import * as vscode from 'vscode'
 import { initI18n } from '../i18n'
+import { getContainer, Tokens } from './diContainer'
 
-class ConfigManager {
+interface ConfigListener {
+  (): void
+}
+
+export class ConfigManager {
     private cache = new Map<string, unknown>()
     private disposables: vscode.Disposable[] = []
-    private listeners: (() => void)[] = []
+    private listeners: ConfigListener[] = []
+    private validators = new Map<string, (value: unknown) => boolean>()
 
     constructor() {
         this.disposables.push(
@@ -22,13 +28,24 @@ class ConfigManager {
         )
     }
 
+    registerValidator<T>(section: string, validator: (value: T) => boolean): void {
+        this.validators.set(section, validator as (value: unknown) => boolean)
+    }
+
     get<T>(section: string, defaultValue: T): T {
         const cached = this.cache.get(section)
         if (cached !== undefined) {
             return cached as T
         }
         const config = vscode.workspace.getConfiguration('Hive-Formatter')
-        const value = config.get<T>(section, defaultValue)
+        let value = config.get<T>(section, defaultValue)
+        
+        const validator = this.validators.get(section)
+        if (validator && !validator(value)) {
+            console.warn(`Invalid value for ${section}, using default')
+            value = defaultValue
+        }
+        
         this.cache.set(section, value)
         return value
     }
@@ -44,7 +61,7 @@ class ConfigManager {
         return value
     }
 
-    onConfigChange(listener: () => void): vscode.Disposable {
+    onConfigChange(listener: ConfigListener): vscode.Disposable {
         this.listeners.push(listener)
         return {
             dispose: () => {
@@ -72,3 +89,5 @@ export function getConfigManager(): ConfigManager {
     }
     return instance
 }
+
+getContainer().registerFactory(Tokens.ConfigManager, getConfigManager)
