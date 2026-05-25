@@ -1,5 +1,34 @@
 # 更新日志
 
+## 1.5.0
+
+### 🏗️ 架构深度优化
+
+- **依赖注入容器**：新增 DIContainer，统一管理 ConfigManager、ParserEngine、DocumentAstCache、ErrorHandler、PerformanceMonitor，支持 register()/get()/registerFactory() 接口
+- **类型守卫系统**：新增 astTypes.extended.ts 和 typeGuards.ts，为所有 AST 节点类型（Select/Insert/Update/Delete/Create/ColumnRef/FunctionCall）提供 is* 和 as* 类型守卫
+- **性能监控框架**：新增 PerformanceMonitor，提供 measure()/measureAsync() 接口，支持 getStats() 查看统计
+- **LRU 缓存实现**：新增 utils/lruCache.ts，支持 maxSize/maxAge 配置，自动 evict 过期数据
+- **懒加载工具库**：新增 utils/lazy.ts，提供 Lazy 和 LazyAsync 工具类，优化资源加载
+- **类型安全加强**：启用 eslint @typescript-eslint/no-explicit-any 为 warn，逐步替换 any 类型为安全类型
+
+### ⚡ 性能优化增强
+
+- **DocumentAstCache 升级**：替换 Map 为 LRUCache（max 50 entries, 30s TTL），内存占用更可控
+- **启动流程分阶段**：extension.ts 实现分阶段激活，核心功能（命令 + 格式化）立即初始化，其他 Provider 延迟 100ms 初始化
+- **懒加载 Provider**：所有 Provider （SqlDiagnosticsProvider、StatusBarProvider、SqlParameterHightlighter、SqlCompletionProvider、SqlCodeActionProvider、SqlFoldingRangeProvider、SqlOutlineProvider、SqlHoverProvider）均采用 lazy 初始化，首次使用时才创建实例
+
+### 🛡️ 错误处理升级
+
+- **ErrorHandler 重写**：新增 ErrorLevel（DEBUG/INFO/WARNING/ERROR/FATAL）和 FormatterError 接口，统一错误处理
+- **try/tryAsync**：新增 ErrorHandler.try() 和 tryAsync() 方法，支持 fallback 和 rethrow 配置
+- **错误历史记录**：新增 getHistory() 和 clearHistory() 方法，便于问题排查
+- **错误监听器**：新增 addListener() 机制，可监听错误事件
+
+### ⚙️ 配置管理升级
+
+- **ConfigManager 扩展**：新增 registerValidator() 方法，支持配置项验证
+- **验证机制**：Config.get() 调用前会先验证配置值，非法值使用默认值
+
 ## 1.4.0
 
 ### ⚡ 性能优化

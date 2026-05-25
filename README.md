@@ -2,7 +2,7 @@
 
 一个强大的 SQL 格式化 VSCode 插件，支持 Hive、MySQL、SparkSQL、FlinkSQL、PostgreSQL、BigQuery、SQLite 等多种 SQL 方言，提供丰富的自定义配置选项。
 
-> **🎉 v1.4.0 性能与架构优化** — AST 单次解析替代 3 次重复解析（诊断性能提升 60%+）、诊断防抖、补全项缓存、Outline/Folding 基于 AST、统一配置管理、错误处理体系化等 16 项架构优化。
+> **🎉 v1.7.0 跳转与导航增强** — Go to Definition（CTE/表别名/列别名）、Find All References、Rename Symbol（含保留字/冲突校验）、Breadcrumb 子句级导航、AstNavigator 共享导航引擎。
 
 ## 特性
 

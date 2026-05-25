@@ -82,6 +82,8 @@
     "notification.commentRemoved": "已移除块注释",
     "notification.ddlCommentAdded": "已添加 DDL 列注释",
     "notification.formatDisabledMarkAdded": "已添加格式化禁用标记",
+    "notification.error": "{0}",
+    "notification.warning": "{0}",
 
     "codeAction.addQueryComment": "添加查询说明注释",
     "codeAction.addCommentPlaceholder": "添加 COMMENT 占位符",
@@ -211,5 +213,16 @@
     "hover.parameterUsage": "该参数在以下位置被使用（共 {0} 处）：",
     "hover.parameterLine": "第 {0} 行:",
     "hover.parameterMore": "还有 {0} 处",
-    "hover.parameterTip": "提示：使用 \"Hive-Formatter: 替换 SQL 参数\" 命令可批量替换"
+    "hover.parameterTip": "提示：使用 \"Hive-Formatter: 替换 SQL 参数\" 命令可批量替换",
+
+    "navigation.cteDefinition": "CTE 定义",
+    "navigation.tableAliasDefinition": "表别名定义",
+    "navigation.columnAliasDefinition": "列别名定义",
+    "navigation.fromReference": "FROM 引用",
+    "navigation.joinReference": "JOIN 引用",
+    "navigation.columnReference": "列引用",
+    "navigation.clauseReference": "子句引用",
+    "navigation.reservedWord": "'{0}' 是 SQL 保留字，不能用作标识符",
+    "navigation.nameConflict": "名称 '{0}' 已被使用",
+    "navigation.invalidName": "名称只能包含字母、数字和下划线，且不能以数字开头"
 }

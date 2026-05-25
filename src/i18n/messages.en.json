@@ -82,6 +82,8 @@
     "notification.commentRemoved": "Block comment removed",
     "notification.ddlCommentAdded": "DDL column comment added",
     "notification.formatDisabledMarkAdded": "Format disable marker added",
+    "notification.error": "{0}",
+    "notification.warning": "{0}",
 
     "codeAction.addQueryComment": "Add query description comment",
     "codeAction.addCommentPlaceholder": "Add COMMENT placeholder",
@@ -211,5 +213,16 @@
     "hover.parameterUsage": "This parameter is used in the following locations (total {0}):",
     "hover.parameterLine": "Line {0}:",
     "hover.parameterMore": "... and {0} more",
-    "hover.parameterTip": "Tip: Use \"Hive-Formatter: Replace SQL Parameters\" command to batch replace"
+    "hover.parameterTip": "Tip: Use \"Hive-Formatter: Replace SQL Parameters\" command to batch replace",
+
+    "navigation.cteDefinition": "CTE definition",
+    "navigation.tableAliasDefinition": "Table alias definition",
+    "navigation.columnAliasDefinition": "Column alias definition",
+    "navigation.fromReference": "FROM reference",
+    "navigation.joinReference": "JOIN reference",
+    "navigation.columnReference": "Column reference",
+    "navigation.clauseReference": "Clause reference",
+    "navigation.reservedWord": "'{0}' is a SQL reserved word and cannot be used as an identifier",
+    "navigation.nameConflict": "Name '{0}' is already in use",
+    "navigation.invalidName": "Name can only contain letters, digits, and underscores, and cannot start with a digit"
 }
