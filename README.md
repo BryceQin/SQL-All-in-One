@@ -25,6 +25,8 @@
 - 📑 **代码片段** - 提供常用 SQL 代码片段，提升编写效率
 - 📁 **代码折叠** - 支持 CTE、子查询、函数块等代码块的折叠
 - 🗺️ **大纲视图** - 提供 SQL 文档的大纲视图，快速导航
+- 🧭 **代码导航** - Go to Definition（F12）、Find All References（Shift+F12）、Rename Symbol（F2），支持 CTE/表别名/列别名
+- 📊 **Breadcrumb 导航** - 子句级面包屑导航，SELECT/FROM/WHERE/GROUP BY/HAVING/ORDER BY 一目了然
 - 🔢 **参数化查询** - 支持变量高亮和批量替换功能（含 JDBC `:?` 参数支持）
 - 🔍 **SQL Lint** - 内置 17+ 条 Lint 规则，支持自定义配置
 - 🔄 **DDL 转换** - 基于 AST 的 MySQL ↔ Hive CREATE TABLE 语句转换
@@ -234,6 +236,7 @@
 | `denseOperators` | 是否去除运算符周围的空格 | `false` |
 | `newlineBeforeSemicolon` | 分号是否另起一行 | `false` |
 | `paramTypes` | 指定支持的参数占位符类型 | - |
+| `enableNavigation` | 启用/禁用代码导航功能（跳转到定义、查找引用、重命名符号、面包屑导航） | `true` |
 
 ### 缩进风格说明
 

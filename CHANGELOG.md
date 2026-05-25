@@ -1,5 +1,24 @@
 # 更新日志
 
+## 1.7.0
+
+### 🧭 跳转与导航增强
+
+- **Go to Definition**：支持 CTE 名称、表别名、列别名的跳转到定义，光标置于标识符上按 F12 即可跳转
+- **Find All References**：支持查找 CTE、表别名、列别名的所有引用位置，Shift+F12 查看引用面板
+- **Rename Symbol**：支持 CTE、表别名、列别名的重命名，F2 触发重命名，自动更新定义和所有引用
+  - 保留字冲突校验：新名称不能是 SQL 保留字
+  - 名称冲突校验：新名称不能与已有符号重名
+  - 格式非法校验：名称只能包含字母、数字和下划线
+- **Breadcrumb 导航增强**：大纲视图新增子句级层级符号
+  - SELECT 列（含列别名子节点）
+  - FROM/JOIN 子句（显示表名和别名）
+  - WHERE / GROUP BY / HAVING / ORDER BY 子句
+  - 30 字符自动截断，避免过长标签
+- **AstNavigator 共享导航引擎**：构建符号索引（CTE 定义、表别名定义、列别名定义），复用 DocumentAstCache 避免重复解析
+- **引用上下文标签**：引用结果附带细粒度上下文（FROM 子句 / JOIN 子句 / WHERE 条件 / ON 条件 / SELECT 列 / ORDER BY / HAVING）
+- **enableNavigation 配置项**：统一管控跳转、引用、重命名和面包屑导航功能，默认启用
+
 ## 1.5.0
 
 ### 🏗️ 架构深度优化
