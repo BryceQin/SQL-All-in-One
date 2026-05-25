@@ -125,7 +125,6 @@ export const keywords: string[] = [
     'STATISTICS',
     'STORED',
     'STREAMTABLE',
-    'STRING',
     'TABLES',
     'TBLPROPERTIES',
     'TEMPORARY',
@@ -177,7 +176,6 @@ export const keywords: string[] = [
     'HOURS',
     'MINUTES',
     'SECONDS',
-    'TIMESTAMPTZ',
     'ZONE',
 
     // reserved

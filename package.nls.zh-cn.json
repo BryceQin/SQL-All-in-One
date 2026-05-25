@@ -17,12 +17,10 @@
     "hive-formatter.config.dialect.enumDescriptions.hive": "Apache Hive",
     "hive-formatter.config.dialect.enumDescriptions.mysql": "MySQL",
     "hive-formatter.config.dialect.enumDescriptions.spark": "Spark",
+    "hive-formatter.config.dialect.enumDescriptions.flinksql": "Apache FlinkSQL",
     "hive-formatter.config.dialect.enumDescriptions.sql": "Basic SQL - generally not recommended.",
     "hive-formatter.config.dialect.enumDescriptions.postgresql": "PostgreSQL",
-    "hive-formatter.config.dialect.enumDescriptions.oracle": "Oracle",
     "hive-formatter.config.dialect.enumDescriptions.bigquery": "BigQuery",
-    "hive-formatter.config.dialect.enumDescriptions.snowflake": "Snowflake",
-    "hive-formatter.config.dialect.enumDescriptions.presto": "Presto/Trino",
     "hive-formatter.config.dialect.enumDescriptions.sqlite": "SQLite",
     "hive-formatter.config.keywordCase.markdownDescription": "关键字大小写",
     "hive-formatter.config.dataTypeCase.markdownDescription": "数据类型大小写",
@@ -101,7 +99,5 @@
     "hive-formatter.config.newlineBeforeLateralView.markdownDescription": "LATERAL VIEW 前是否换行（Hive 方言）",
     "hive-formatter.config.newlineBeforeDistributeBy.markdownDescription": "DISTRIBUTE BY 前是否换行（Hive 方言）",
     "hive-formatter.config.newlineBeforeClusterBy.markdownDescription": "CLUSTER BY 前是否换行（Hive 方言）",
-    "hive-formatter.config.newlineBeforeSortBy.markdownDescription": "SORT BY 前是否换行（Hive 方言）",
-    "hive-formatter.config.newlineBeforeConnectBy.markdownDescription": "CONNECT BY 前是否换行（Oracle 方言）",
-    "hive-formatter.config.newlineBeforeStartWith.markdownDescription": "START WITH 前是否换行（Oracle 方言）"
+    "hive-formatter.config.newlineBeforeSortBy.markdownDescription": "SORT BY 前是否换行（Hive 方言）"
 }

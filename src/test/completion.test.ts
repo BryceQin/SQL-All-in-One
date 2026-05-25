@@ -26,6 +26,8 @@ suite('Completion Module Tests', () => {
     })
 
     test('getCategoryLabel returns Chinese labels', async () => {
+        const i18n = await import('../i18n/index.js')
+        i18n.initI18nForTest('zh')
         const mod = await import('../completion/functionSignatures.js')
         assert.strictEqual(mod.getCategoryLabel('string'), '字符串')
         assert.strictEqual(mod.getCategoryLabel('math'), '数学')

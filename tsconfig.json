@@ -11,7 +11,9 @@
         // "noImplicitReturns": true, /* Report error when not all code paths in function return a value. */
         // "noFallthroughCasesInSwitch": true, /* Report errors for fallthrough cases in switch statement. */
         // "noUnusedParameters": true,  /* Report errors on unused parameters. */
-        "allowImportingTsExtensions": false
+        "allowImportingTsExtensions": false,
+        "resolveJsonModule": true,
+        "esModuleInterop": true
     },
     "include": ["src/**/*"], // 仅包含src下的所有TS文件
     "exclude": [

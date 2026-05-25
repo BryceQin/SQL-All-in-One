@@ -98,6 +98,4 @@ export interface FormatOptions {
     newlineBeforeDistributeBy?: boolean
     newlineBeforeClusterBy?: boolean
     newlineBeforeSortBy?: boolean
-    newlineBeforeConnectBy?: boolean
-    newlineBeforeStartWith?: boolean
 }

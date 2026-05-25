@@ -13,11 +13,15 @@ export async function convertMysqlToHiveCommand() {
     const selection = editor.selection
     const text = selection.isEmpty ? document.getText() : document.getText(selection)
 
-    const converter = new SqlConverter()
-    const convertedText = converter.mysqlToHive(text)
+    try {
+        const converter = new SqlConverter()
+        const convertedText = converter.mysqlToHive(text)
 
-    await replaceEditorText(editor, document, selection, convertedText)
-    vscode.window.showInformationMessage(t('notification.convertMysqlSuccess'))
+        await replaceEditorText(editor, document, selection, convertedText)
+        vscode.window.showInformationMessage(t('notification.convertMysqlSuccess'))
+    } catch (e) {
+        vscode.window.showErrorMessage(t('notification.formatError', String(e)))
+    }
 }
 
 export async function convertHiveToMysqlCommand() {
@@ -31,11 +35,15 @@ export async function convertHiveToMysqlCommand() {
     const selection = editor.selection
     const text = selection.isEmpty ? document.getText() : document.getText(selection)
 
-    const converter = new SqlConverter()
-    const convertedText = converter.hiveToMysql(text)
+    try {
+        const converter = new SqlConverter()
+        const convertedText = converter.hiveToMysql(text)
 
-    await replaceEditorText(editor, document, selection, convertedText)
-    vscode.window.showInformationMessage(t('notification.convertHiveSuccess'))
+        await replaceEditorText(editor, document, selection, convertedText)
+        vscode.window.showInformationMessage(t('notification.convertHiveSuccess'))
+    } catch (e) {
+        vscode.window.showErrorMessage(t('notification.formatError', String(e)))
+    }
 }
 
 async function replaceEditorText(

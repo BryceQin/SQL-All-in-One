@@ -41,6 +41,6 @@ const detectSqlDialect = (editor: vscode.TextEditor) =>
     sqlDialects[editor.document.languageId] ?? "sql"
 
 const editorFormattingOptions = (editor: vscode.TextEditor) => ({
-    tabSize: editor.options.tabSize as number,
-    insertSpaces: editor.options.insertSpaces as boolean,
+    tabSize: typeof editor.options.tabSize === 'number' ? editor.options.tabSize : 2,
+    insertSpaces: editor.options.insertSpaces === true,
 })

@@ -128,7 +128,6 @@ exports.keywords = [
     'STATISTICS',
     'STORED',
     'STREAMTABLE',
-    'STRING',
     'TABLES',
     'TBLPROPERTIES',
     'TEMPORARY',
@@ -180,7 +179,6 @@ exports.keywords = [
     'HOURS',
     'MINUTES',
     'SECONDS',
-    'TIMESTAMPTZ',
     'ZONE',
     // reserved
     'ALL',

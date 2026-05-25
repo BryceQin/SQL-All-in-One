@@ -1,76 +1,4 @@
 {
-    "Select All": {
-        "prefix": "sel",
-        "body": [
-            "SELECT",
-            "    $1",
-            "FROM $2",
-            "WHERE $3",
-            "LIMIT 100;"
-        ],
-        "description": "Basic SELECT statement"
-    },
-    "Select Distinct": {
-        "prefix": "seld",
-        "body": [
-            "SELECT DISTINCT",
-            "    $1",
-            "FROM $2",
-            "WHERE $3",
-            "LIMIT 100;"
-        ],
-        "description": "SELECT with DISTINCT"
-    },
-    "Join Tables": {
-        "prefix": "join",
-        "body": [
-            "SELECT",
-            "    $1",
-            "FROM $2",
-            "JOIN $3 ON $2.$4 = $3.$5",
-            "WHERE $6",
-            "LIMIT 100;"
-        ],
-        "description": "JOIN tables"
-    },
-    "Left Join": {
-        "prefix": "leftjoin",
-        "body": [
-            "SELECT",
-            "    $1",
-            "FROM $2",
-            "LEFT JOIN $3 ON $2.$4 = $3.$5",
-            "WHERE $6",
-            "LIMIT 100;"
-        ],
-        "description": "LEFT JOIN tables"
-    },
-    "Group By": {
-        "prefix": "groupby",
-        "body": [
-            "SELECT",
-            "    $1,",
-            "    COUNT(*) AS cnt",
-            "FROM $2",
-            "WHERE $3",
-            "GROUP BY $1",
-            "HAVING $4",
-            "ORDER BY cnt DESC",
-            "LIMIT 100;"
-        ],
-        "description": "Group By with aggregation"
-    },
-    "Case When": {
-        "prefix": "case",
-        "body": [
-            "CASE",
-            "    WHEN $1 THEN $2",
-            "    WHEN $3 THEN $4",
-            "    ELSE $5",
-            "END AS $6"
-        ],
-        "description": "CASE WHEN statement"
-    },
     "Insert Into": {
         "prefix": "insert",
         "body": [
@@ -144,38 +72,6 @@
         ],
         "description": "WITH common table expression"
     },
-    "Union All": {
-        "prefix": "union",
-        "body": [
-            "SELECT $1 FROM $2",
-            "UNION ALL",
-            "SELECT $3 FROM $4"
-        ],
-        "description": "UNION ALL"
-    },
-    "Hive Partition Insert": {
-        "prefix": "hivepart",
-        "body": [
-            "INSERT OVERWRITE TABLE $1",
-            "PARTITION ($2 = '$3')",
-            "SELECT",
-            "    $4",
-            "FROM $5",
-            "WHERE $6;"
-        ],
-        "description": "Hive partition insert"
-    },
-    "Hive Select Partition": {
-        "prefix": "hiveselpart",
-        "body": [
-            "SELECT",
-            "    $1",
-            "FROM $2",
-            "WHERE $3 = '$4'",
-            "LIMIT 100;"
-        ],
-        "description": "Hive select from partition"
-    },
     "Column Comment": {
         "prefix": "col",
         "body": [
@@ -189,51 +85,5 @@
             "COMMENT '${1:表说明}'"
         ],
         "description": "表 COMMENT 注释"
-    },
-    "TODO Comment": {
-        "prefix": "todo",
-        "body": [
-            "-- TODO(${1:username}): ${2:description}"
-        ],
-        "description": "TODO 注释（带责任人）"
-    },
-    "FIXME Comment": {
-        "prefix": "fixme",
-        "body": [
-            "-- FIXME: ${1:description}",
-            "-- Reason: ${2:why this needs fixing}"
-        ],
-        "description": "FIXME 注释"
-    },
-    "HACK Comment": {
-        "prefix": "hack",
-        "body": [
-            "-- HACK: ${1:description}",
-            "-- TODO: ${2:proper solution}"
-        ],
-        "description": "HACK 临时方案注释"
-    },
-    "Query Description": {
-        "prefix": "desc",
-        "body": [
-            "-- ============================================",
-            "-- 查询说明：${1:功能描述}",
-            "-- 涉及表：${2:table_list}",
-            "-- 条件：${3:filter_conditions}",
-            "-- 输出：${4:output_description}",
-            "-- 作者：${5:author}",
-            "-- 日期：$CURRENT_YEAR-$CURRENT_MONTH-$CURRENT_DATE",
-            "-- ============================================"
-        ],
-        "description": "查询说明注释块"
-    },
-    "Section Comment": {
-        "prefix": "section",
-        "body": [
-            "-- ============================================================",
-            "-- ${1:section_title}",
-            "-- ============================================================"
-        ],
-        "description": "分区标题注释"
     }
 }

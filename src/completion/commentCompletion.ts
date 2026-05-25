@@ -116,7 +116,7 @@ function extractTableDependencies(text: string): { inputTables: string[]; output
         outputTables.add(match[1].toLowerCase())
     }
 
-    const ctasPattern = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([\w.]+)\s+AS\b/gi
+    const ctasPattern = /\bCREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([\w.]+)\s+AS\b/gi
     while ((match = ctasPattern.exec(strippedText)) !== null) {
         outputTables.add(match[1].toLowerCase())
     }

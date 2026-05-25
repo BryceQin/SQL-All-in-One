@@ -1,4 +1,4 @@
-import { t } from '../i18n'
+import { t, type MessageKey } from '../i18n'
 
 export interface FunctionSignature {
     name: string
@@ -19,7 +19,7 @@ export function signatureToString(fn: FunctionSignature): string {
     return `${fn.name}(${fn.params.join(', ')})`
 }
 
-const categoryKeyMap: Record<FunctionCategory, string> = {
+const categoryKeyMap: Record<FunctionCategory, MessageKey> = {
     'string': 'completion.functionCategory.string',
     'math': 'completion.functionCategory.math',
     'date': 'completion.functionCategory.date',

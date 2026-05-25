@@ -30,7 +30,9 @@ export const MYSQL_TO_HIVE_TYPES: TypeMapping = {
   'BIT': 'BOOLEAN',
   'BOOLEAN': 'BOOLEAN',
   'BOOL': 'BOOLEAN',
-  'JSON': 'STRING'
+  'JSON': 'STRING',
+  'ENUM': 'STRING',
+  'SET': 'STRING'
 }
 
 export const HIVE_TO_MYSQL_TYPES: TypeMapping = {
