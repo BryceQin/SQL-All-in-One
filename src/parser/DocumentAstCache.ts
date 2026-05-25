@@ -3,74 +3,80 @@ import type { AST } from 'node-sql-parser';
 import { getParserEngine } from './SqlParserEngine';
 import type { SqlDialect } from './dialectMapper';
 import type { ParseError } from './ParseError';
+import { LRUCache } from '../utils/lruCache';
+import { getPerformanceMonitor } from '../core/performanceMonitor';
+import { getContainer, Tokens } from '../core/diContainer';
 
 interface CacheEntry {
-    version: number;
-    ast: AST[] | AST;
-    timestamp: number;
+  version: number;
+  ast: AST[] | AST;
+  timestamp: number;
 }
 
 export class DocumentAstCache {
-    private cache = new Map<string, CacheEntry>();
-    private disposables: vscode.Disposable[] = [];
-    private maxAge = 5000;
+  private cache: LRUCache<string, CacheEntry>;
+  private disposables: vscode.Disposable[] = [];
+  private perfMonitor = getPerformanceMonitor();
 
-    constructor() {
-        this.disposables.push(
-            vscode.workspace.onDidCloseTextDocument((doc) => {
-                this.cache.delete(doc.uri.toString());
-            }),
-        );
-    }
+  constructor() {
+    this.cache = new LRUCache<string, CacheEntry>({
+      maxSize: 50,
+      maxAge: 30000,
+    });
 
-    getOrParse(document: vscode.TextDocument, dialect: SqlDialect): {
-        success: boolean;
-        ast: AST[] | AST | null;
-        error: ParseError | null;
-    } {
-        const key = document.uri.toString();
-        const version = document.version;
-        const cached = this.cache.get(key);
+    this.disposables.push(
+      vscode.workspace.onDidCloseTextDocument((doc) => {
+        this.cache.delete(doc.uri.toString());
+      }),
+    );
+  }
 
-        if (cached && cached.version === version) {
-            if (Date.now() - cached.timestamp < this.maxAge) {
-                return { success: true, ast: cached.ast, error: null };
-            }
-        }
+  getOrParse(document: vscode.TextDocument, dialect: SqlDialect): {
+    success: boolean;
+    ast: AST[] | AST | null;
+    error: ParseError | null;
+  } {
+    return this.perfMonitor.measure('DocumentAstCache.getOrParse', () => {
+      const key = document.uri.toString();
+      const version = document.version;
+      const cached = this.cache.get(key);
 
-        const engine = getParserEngine();
-        const result = engine.tryAstify(document.getText(), dialect);
+      if (cached && cached.version === version) {
+        return { success: true, ast: cached.ast, error: null };
+      }
 
-        if (result.success && result.ast) {
-            this.cache.set(key, {
-                version,
-                ast: result.ast,
-                timestamp: Date.now(),
-            });
-        }
+      const engine = getParserEngine();
+      const result = engine.tryAstify(document.getText(), dialect);
 
-        return result;
-    }
+      if (result.success && result.ast) {
+        this.cache.set(key, {
+          version,
+          ast: result.ast,
+          timestamp: Date.now(),
+        });
+      }
 
-    invalidate(uri: vscode.Uri): void {
-        this.cache.delete(uri.toString());
-    }
+      return result;
+    });
+  }
 
-    dispose(): void {
-        this.cache.clear();
-        this.disposables.forEach((d) => d.dispose());
-    }
+  invalidate(uri: vscode.Uri): void {
+    this.cache.delete(uri.toString());
+  }
+
+  dispose(): void {
+    this.cache.clear();
+    this.disposables.forEach((d) => d.dispose());
+  }
 }
-
-import { getContainer, Tokens } from '../core/diContainer';
 
 let instance: DocumentAstCache | null = null;
 
 export function getDocumentAstCache(): DocumentAstCache {
-    if (!instance) {
-        instance = new DocumentAstCache();
-    }
-    return instance;
+  if (!instance) {
+    instance = new DocumentAstCache();
+  }
+  return instance;
 }
 
 getContainer().registerFactory(Tokens.DocumentAstCache, getDocumentAstCache);
