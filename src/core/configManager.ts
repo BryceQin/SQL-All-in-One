@@ -42,7 +42,7 @@ export class ConfigManager {
         
         const validator = this.validators.get(section)
         if (validator && !validator(value)) {
-            console.warn(`Invalid value for ${section}, using default')
+            console.warn(`Invalid value for ${section}, using default`)
             value = defaultValue
         }
         
