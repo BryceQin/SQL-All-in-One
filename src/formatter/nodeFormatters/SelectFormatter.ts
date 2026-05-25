@@ -2,22 +2,23 @@ import type { FormatOptions } from '../FormatOptions';
 import Indentation from '../Indentation';
 import Layout, { WS } from '../Layout';
 import { formatKeyword, formatAlias } from './CommonFormatter';
-import { ExpressionFormatter2 } from './ExpressionFormatter2';
+import { ExpressionFormatter } from './ExpressionFormatter';
 import { CTEFormatter } from './CTEFormatter';
 import { CommonLayoutHelper } from './CommonLayoutHelper';
+import { asSelectStmt } from '../../parser/typeGuards';
 
 export class SelectFormatter {
     private cfg: FormatOptions;
     private indent: Indentation;
     private layout: Layout;
-    private exprFmt: ExpressionFormatter2;
+    private exprFmt: ExpressionFormatter;
     private helper: CommonLayoutHelper;
 
     constructor(cfg: FormatOptions, indent: Indentation) {
         this.cfg = cfg;
         this.indent = indent;
         this.layout = new Layout(indent);
-        this.exprFmt = new ExpressionFormatter2(cfg, indent, (expr) => {
+        this.exprFmt = new ExpressionFormatter(cfg, indent, (expr) => {
             const subFmt = new SelectFormatter(this.cfg, this.indent);
             return subFmt.format(expr);
         });
@@ -25,37 +26,39 @@ export class SelectFormatter {
     }
 
     public format(stmt: any): string {
-        if (stmt.with) {
-            this.formatWith(stmt.with);
+        const typed = asSelectStmt(stmt);
+
+        if (typed && typed.with) {
+            this.formatWith(typed.with);
         }
 
         this.formatSelectClause(stmt);
 
-        if (stmt.from) {
-            this.formatFromClause(stmt.from);
+        if (typed && typed.from) {
+            this.formatFromClause(typed.from);
         }
 
-        if (stmt.where) {
-            this.formatWhereClause(stmt.where);
+        if (typed && typed.where) {
+            this.formatWhereClause(typed.where);
         }
 
-        if (stmt.groupby) {
-            this.formatGroupByClause(stmt.groupby);
+        if (typed && typed.groupby) {
+            this.formatGroupByClause(typed.groupby);
         }
 
-        if (stmt.having) {
-            this.formatHavingClause(stmt.having);
+        if (typed && typed.having) {
+            this.formatHavingClause(typed.having);
         }
 
-        if (stmt.orderby) {
-            this.formatOrderByClause(stmt.orderby);
+        if (typed && typed.orderby) {
+            this.formatOrderByClause(typed.orderby);
         }
 
-        if (stmt.limit) {
-            this.formatLimitClause(stmt.limit);
+        if (typed && typed.limit) {
+            this.formatLimitClause(typed.limit);
         }
 
-        if (stmt._next) {
+        if (typed && typed._next) {
             this.formatSetOperation(stmt);
         }
 
@@ -63,9 +66,10 @@ export class SelectFormatter {
     }
 
     private formatSelectClause(stmt: any): void {
+        const typed = asSelectStmt(stmt);
         this.layout.add(formatKeyword('SELECT', this.cfg.keywordCase));
 
-        if (stmt.distinct) {
+        if (typed && typed.distinct) {
             this.layout.add(WS.SPACE, formatKeyword('DISTINCT', this.cfg.keywordCase));
         }
 
@@ -76,7 +80,7 @@ export class SelectFormatter {
             this.layout.add(WS.SPACE);
         }
 
-        const columns = stmt.columns || [];
+        const columns = (typed ? typed.columns : null) || [];
         this.formatColumns(columns);
 
         if (this.cfg.newlineAfterSelect) {
@@ -296,7 +300,8 @@ export class SelectFormatter {
     }
 
     private formatSetOperation(stmt: any): void {
-        const next = stmt._next;
+        const typed = asSelectStmt(stmt);
+        const next = typed ? typed._next : stmt._next;
         const setOp = stmt.set_op || 'UNION';
         const formattedOp = formatKeyword(setOp, this.cfg.keywordCase);
 

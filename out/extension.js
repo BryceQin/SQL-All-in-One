@@ -50,59 +50,40 @@ const errorHandler_1 = require("./core/errorHandler");
 const performanceMonitor_1 = require("./core/performanceMonitor");
 const diContainer_1 = require("./core/diContainer");
 const SqlCodeActionProvider_1 = require("./providers/SqlCodeActionProvider");
+const SqlDiagnosticsProvider_1 = require("./providers/SqlDiagnosticsProvider");
+const StatusBarProvider_1 = require("./providers/StatusBarProvider");
+const SqlParameterHightlighter_1 = require("./providers/SqlParameterHightlighter");
+const completion_1 = require("./completion");
+const SqlFoldingRangeProvider_1 = require("./providers/SqlFoldingRangeProvider");
+const SqlOutlineProvider_1 = require("./providers/SqlOutlineProvider");
+const SqlHoverProvider_1 = require("./providers/SqlHoverProvider");
+const AstNavigator_1 = require("./navigation/AstNavigator");
+const SqlDefinitionProvider_1 = require("./navigation/SqlDefinitionProvider");
+const SqlReferenceProvider_1 = require("./navigation/SqlReferenceProvider");
+const SqlRenameProvider_1 = require("./navigation/SqlRenameProvider");
 let lazyProviders;
 function createLazyProviders(extensionPath) {
     const providers = {
-        diagnosticsProvider: (0, lazy_1.lazy)(() => {
-            const { SqlDiagnosticsProvider } = require("./providers/SqlDiagnosticsProvider");
-            return new SqlDiagnosticsProvider();
-        }),
-        statusBarProvider: (0, lazy_1.lazy)(() => {
-            const { StatusBarProvider } = require("./providers/StatusBarProvider");
-            return new StatusBarProvider();
-        }),
-        parameterHighlighter: (0, lazy_1.lazy)(() => {
-            const { SqlParameterHighlighter } = require("./providers/SqlParameterHightlighter");
-            return new SqlParameterHighlighter();
-        }),
-        completionProvider: (0, lazy_1.lazy)(() => {
-            const { SqlCompletionProvider } = require("./completion");
-            return new SqlCompletionProvider(extensionPath);
-        }),
-        codeActionProvider: (0, lazy_1.lazy)(() => {
-            const { SqlCodeActionProvider } = require("./providers/SqlCodeActionProvider");
-            return new SqlCodeActionProvider();
-        }),
-        foldingRangeProvider: (0, lazy_1.lazy)(() => {
-            const { SqlFoldingRangeProvider } = require("./providers/SqlFoldingRangeProvider");
-            return new SqlFoldingRangeProvider();
-        }),
-        outlineProvider: (0, lazy_1.lazy)(() => {
-            const { SqlOutlineProvider } = require("./providers/SqlOutlineProvider");
-            return new SqlOutlineProvider();
-        }),
-        hoverProvider: (0, lazy_1.lazy)(() => {
-            const { SqlHoverProvider } = require("./providers/SqlHoverProvider");
-            return new SqlHoverProvider();
-        }),
-        astNavigator: (0, lazy_1.lazy)(() => {
-            const { AstNavigator } = require("./navigation/AstNavigator");
-            return new AstNavigator();
-        }),
+        diagnosticsProvider: (0, lazy_1.lazy)(() => new SqlDiagnosticsProvider_1.SqlDiagnosticsProvider()),
+        statusBarProvider: (0, lazy_1.lazy)(() => new StatusBarProvider_1.StatusBarProvider()),
+        parameterHighlighter: (0, lazy_1.lazy)(() => new SqlParameterHightlighter_1.SqlParameterHighlighter()),
+        completionProvider: (0, lazy_1.lazy)(() => new completion_1.SqlCompletionProvider(extensionPath)),
+        codeActionProvider: (0, lazy_1.lazy)(() => new SqlCodeActionProvider_1.SqlCodeActionProvider()),
+        foldingRangeProvider: (0, lazy_1.lazy)(() => new SqlFoldingRangeProvider_1.SqlFoldingRangeProvider()),
+        outlineProvider: (0, lazy_1.lazy)(() => new SqlOutlineProvider_1.SqlOutlineProvider()),
+        hoverProvider: (0, lazy_1.lazy)(() => new SqlHoverProvider_1.SqlHoverProvider()),
+        astNavigator: (0, lazy_1.lazy)(() => new AstNavigator_1.AstNavigator()),
         definitionProvider: (0, lazy_1.lazy)(() => {
-            const { SqlDefinitionProvider } = require("./navigation/SqlDefinitionProvider");
-            const navigator = providers.astNavigator.get();
-            return new SqlDefinitionProvider(navigator);
+            const nav = providers.astNavigator.get();
+            return new SqlDefinitionProvider_1.SqlDefinitionProvider(nav);
         }),
         referenceProvider: (0, lazy_1.lazy)(() => {
-            const { SqlReferenceProvider } = require("./navigation/SqlReferenceProvider");
-            const navigator = providers.astNavigator.get();
-            return new SqlReferenceProvider(navigator);
+            const nav = providers.astNavigator.get();
+            return new SqlReferenceProvider_1.SqlReferenceProvider(nav);
         }),
         renameProvider: (0, lazy_1.lazy)(() => {
-            const { SqlRenameProvider } = require("./navigation/SqlRenameProvider");
-            const navigator = providers.astNavigator.get();
-            return new SqlRenameProvider(navigator);
+            const nav = providers.astNavigator.get();
+            return new SqlRenameProvider_1.SqlRenameProvider(nav);
         }),
     };
     return providers;
@@ -182,37 +163,44 @@ function registerParameterHighlighter(context) {
     const parameterHighlighter = lazyProviders.parameterHighlighter.get();
     if (!parameterHighlighter)
         return;
-    const { SqlParameterReplaceCommand } = require("./providers/SqlParameterHightlighter");
-    SqlParameterReplaceCommand.register(context);
+    SqlParameterHightlighter_1.SqlParameterReplaceCommand.register(context);
     context.subscriptions.push(parameterHighlighter);
+}
+function createModules() {
+    return [
+        { name: 'i18n', register: () => (0, i18n_1.initI18n)() },
+        { name: 'commands', register: (ctx) => registerCommands(ctx) },
+        { name: 'formatting', register: (ctx) => registerFormattingProviders(ctx) },
+        { name: 'diagnostics', register: (ctx) => registerDiagnostics(ctx) },
+        { name: 'providers', register: (ctx) => registerProviders(ctx) },
+        { name: 'completion', register: (ctx) => registerCompletion(ctx) },
+        { name: 'parameterHighlighter', register: (ctx) => registerParameterHighlighter(ctx) },
+        { name: 'astNavigatorEvents', register: (ctx) => {
+                const navigator = lazyProviders.astNavigator.get();
+                if (navigator) {
+                    ctx.subscriptions.push(vscode.workspace.onDidChangeTextDocument(e => {
+                        if ((0, sqlDialects_1.isSqlDocument)(e.document))
+                            navigator.invalidate(e.document);
+                    }), vscode.workspace.onDidCloseTextDocument(doc => navigator.invalidate(doc)));
+                }
+            } },
+        { name: 'statusBar', register: (ctx) => {
+                if (lazyProviders.statusBarProvider.isInitialized || vscode.workspace.textDocuments.some(sqlDialects_1.isSqlDocument)) {
+                    const statusBar = lazyProviders.statusBarProvider.get();
+                    if (statusBar)
+                        ctx.subscriptions.push(statusBar);
+                }
+            } },
+    ];
 }
 function activate(context) {
     lazyProviders = createLazyProviders(context.extensionPath);
     perfMonitor.measure('Extension.activate', () => {
         console.log('Hive Formatter: activating...');
         try {
-            safeRegister('initialize i18n', () => (0, i18n_1.initI18n)());
-            safeRegister('register commands', () => registerCommands(context));
-            safeRegister('register formatting providers', () => registerFormattingProviders(context));
-            safeRegister('register diagnostics', () => registerDiagnostics(context));
-            safeRegister('register providers', () => registerProviders(context));
-            safeRegister('register completion', () => registerCompletion(context));
-            safeRegister('register parameter highlighter', () => registerParameterHighlighter(context));
-            const navigator = lazyProviders.astNavigator.get();
-            if (navigator) {
-                context.subscriptions.push(vscode.workspace.onDidChangeTextDocument(e => {
-                    if ((0, sqlDialects_1.isSqlDocument)(e.document)) {
-                        navigator.invalidate(e.document);
-                    }
-                }), vscode.workspace.onDidCloseTextDocument(doc => {
-                    navigator.invalidate(doc);
-                }));
-            }
-            if (lazyProviders.statusBarProvider.isInitialized || vscode.workspace.textDocuments.some(sqlDialects_1.isSqlDocument)) {
-                const statusBar = lazyProviders.statusBarProvider.get();
-                if (statusBar) {
-                    context.subscriptions.push(statusBar);
-                }
+            const modules = createModules();
+            for (const mod of modules) {
+                safeRegister('register ' + mod.name, () => mod.register(context));
             }
             context.subscriptions.push((0, configManager_1.getConfigManager)());
             context.subscriptions.push((0, DocumentAstCache_1.getDocumentAstCache)());
@@ -225,5 +213,6 @@ function activate(context) {
 }
 function deactivate() {
     (0, diContainer_1.getContainer)().disposeAll();
+    lazyProviders = undefined;
 }
 //# sourceMappingURL=extension.js.map

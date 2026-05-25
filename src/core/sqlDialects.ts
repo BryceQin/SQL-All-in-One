@@ -1,31 +1,8 @@
-import { SqlLanguage } from "../formatter/sqlFormatter"
-import { SqlDialect } from "../parser/dialectMapper"
+import type { SqlLanguage } from "../formatter/sqlFormatter"
+import { getDialectEntries, isSqlDocument, toSqlDialect, getSqlLanguageIds } from "./dialectRegistry"
 
-export const sqlDialects: Record<string, SqlLanguage> = {
-    sql: "sql",
-    mysql: "mysql",
-    hive: "hive",
-    "hive-sql": "hive",
-    spark: "spark",
-    flinksql: "flinksql",
-    "flink-sql": "flinksql",
-    postgresql: "postgresql",
-    postgres: "postgresql",
-    bigquery: "bigquery",
-    sqlite: "sqlite",
-}
+export { isSqlDocument, toSqlDialect, getSqlLanguageIds }
 
-const sqlLanguageIds = Object.keys(sqlDialects)
-
-export function isSqlDocument(document: { languageId: string }): boolean {
-    return sqlLanguageIds.includes(document.languageId)
-}
-
-export function toSqlDialect(langId: string): SqlDialect {
-    const dialectName = sqlDialects[langId as keyof typeof sqlDialects]
-    return (dialectName as SqlDialect) || "sql"
-}
-
-export function getSqlLanguageIds(): readonly string[] {
-    return sqlLanguageIds
-}
+export const sqlDialects: Record<string, SqlLanguage> = Object.fromEntries(
+    getDialectEntries().map(e => [e.vscodeLangId, e.sqlLanguage])
+) as Record<string, SqlLanguage>

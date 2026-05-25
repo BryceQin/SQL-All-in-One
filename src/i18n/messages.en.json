@@ -224,5 +224,21 @@
     "navigation.clauseReference": "Clause reference",
     "navigation.reservedWord": "'{0}' is a SQL reserved word and cannot be used as an identifier",
     "navigation.nameConflict": "Name '{0}' is already in use",
-    "navigation.invalidName": "Name can only contain letters, digits, and underscores, and cannot start with a digit"
+    "navigation.invalidName": "Name can only contain letters, digits, and underscores, and cannot start with a digit",
+
+    "configEditor.title": "Hive Formatter - Config Editor",
+    "configEditor.subtitle": "Visually adjust SQL formatting options with live preview",
+    "configEditor.presets": "Quick Presets",
+    "configEditor.presetDefault": "Default",
+    "configEditor.presetHive": "Hive",
+    "configEditor.presetMySQL": "MySQL",
+    "configEditor.presetCompact": "Compact",
+    "configEditor.resetDefault": "Reset Defaults",
+    "configEditor.save": "Save Config",
+    "configEditor.previewTitle": "Preview",
+    "configEditor.previewPlaceholder": "Enter SQL here to preview formatting...",
+    "configEditor.formatPreviewBtn": "Format Preview",
+    "configEditor.formattingOptions": "Formatting Options",
+    "configEditor.loadFailed": "Failed to load config editor",
+    "configEditor.reinstall": "Please reinstall the extension."
 }

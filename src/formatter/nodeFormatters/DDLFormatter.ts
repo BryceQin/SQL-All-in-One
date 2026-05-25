@@ -2,7 +2,7 @@ import type { FormatOptions } from '../FormatOptions';
 import Indentation from '../Indentation';
 import Layout, { WS } from '../Layout';
 import { formatKeyword } from './CommonFormatter';
-import { ExpressionFormatter2 } from './ExpressionFormatter2';
+import { ExpressionFormatter } from './ExpressionFormatter';
 import { SelectFormatter } from './SelectFormatter';
 import { CommonLayoutHelper } from './CommonLayoutHelper';
 
@@ -10,14 +10,14 @@ export class DDLFormatter {
     private cfg: FormatOptions;
     private indent: Indentation;
     private layout: Layout;
-    private exprFmt: ExpressionFormatter2;
+    private exprFmt: ExpressionFormatter;
     private helper: CommonLayoutHelper;
 
     constructor(cfg: FormatOptions, indent: Indentation) {
         this.cfg = cfg;
         this.indent = indent;
         this.layout = new Layout(indent);
-        this.exprFmt = new ExpressionFormatter2(cfg, indent, (expr) => {
+        this.exprFmt = new ExpressionFormatter(cfg, indent, (expr) => {
             const selectFmt = new SelectFormatter(this.cfg, this.indent);
             return selectFmt.format(expr);
         });

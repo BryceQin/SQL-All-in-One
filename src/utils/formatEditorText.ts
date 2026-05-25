@@ -15,8 +15,6 @@ export function formatEditorText(
         formatted = formatSparkSql(processedSql, config)
     } else if (config.language === 'hive') {
         formatted = formatHiveSql(processedSql, config)
-    } else if (config.language === 'flinksql') {
-        formatted = formatWithFallback(processedSql, config)
     } else {
         formatted = formatWithFallback(processedSql, config)
     }

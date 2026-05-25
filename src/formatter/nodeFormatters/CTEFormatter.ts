@@ -2,20 +2,20 @@ import type { FormatOptions } from '../FormatOptions';
 import Indentation from '../Indentation';
 import Layout, { WS } from '../Layout';
 import { formatKeyword } from './CommonFormatter';
-import { ExpressionFormatter2 } from './ExpressionFormatter2';
+import { ExpressionFormatter } from './ExpressionFormatter';
 
 export class CTEFormatter {
     private cfg: FormatOptions;
     private indent: Indentation;
     private layout: Layout;
-    private exprFmt: ExpressionFormatter2;
+    private exprFmt: ExpressionFormatter;
 
     constructor(cfg: FormatOptions, indent: Indentation) {
         this.cfg = cfg;
         this.indent = indent;
         this.layout = new Layout(new Indentation(indent.getSingleIndent()));
         this.layout.indentation = indent;
-        this.exprFmt = new ExpressionFormatter2(cfg, indent);
+        this.exprFmt = new ExpressionFormatter(cfg, indent);
     }
 
     public format(withClause: any[]): string {

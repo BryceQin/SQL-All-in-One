@@ -65,3 +65,51 @@ export function asAstNodeArray(nodes: unknown): AstNode[] {
   }
   return [];
 }
+
+// ============ Typed AST helpers for SelectFormatter ============
+
+export interface TypedSelectStmt {
+    with: unknown[] | null
+    from: TypedFromItem[] | null
+    where: unknown | null
+    groupby: unknown[] | null
+    having: unknown | null
+    orderby: unknown[] | null
+    limit: unknown | null
+    _next: unknown | null
+    columns: TypedSelectColumn[] | null
+    distinct: string | null
+}
+
+export interface TypedFromItem {
+    db: string | null
+    table: unknown
+    as: string | null
+    join: string | null
+    on: unknown | null
+    type?: string
+}
+
+export interface TypedSelectColumn {
+    expr: unknown
+    as: string | null
+    type?: string
+}
+
+export function asSelectStmt(stmt: unknown): TypedSelectStmt | null {
+    if (stmt == null || typeof stmt !== 'object') return null
+    const s = stmt as Record<string, unknown>
+    if (s.type !== 'select') return null
+    return {
+        with: (s.with as unknown[] | null) ?? null,
+        from: (s.from as TypedFromItem[] | null) ?? null,
+        where: (s.where as unknown | null) ?? null,
+        groupby: (s.groupby as unknown[] | null) ?? null,
+        having: (s.having as unknown | null) ?? null,
+        orderby: (s.orderby as unknown[] | null) ?? null,
+        limit: (s.limit as unknown | null) ?? null,
+        _next: (s._next as unknown | null) ?? null,
+        columns: (s.columns as TypedSelectColumn[] | null) ?? null,
+        distinct: (s.distinct as string | null) ?? null,
+    }
+}
