@@ -1,5 +1,5 @@
 import * as vscode from 'vscode'
-import { getParserEngine } from '../parser/SqlParserEngine'
+import { getDocumentAstCache } from '../parser/DocumentAstCache'
 import { toSqlDialect } from '../core/sqlDialects'
 import { isAstNode, walkAst } from '../parser/AstVisitor'
 import { getNodeLocation, getStatementEndLocation } from '../parser/astUtils'
@@ -11,26 +11,21 @@ export class SqlFoldingRangeProvider implements vscode.FoldingRangeProvider {
         _context: vscode.FoldingContext,
         _token: vscode.CancellationToken
     ): vscode.ProviderResult<vscode.FoldingRange[]> {
-        const text = document.getText()
-        const dialect = toSqlDialect(document.languageId)
+        try {
+            const dialect = toSqlDialect(document.languageId)
+            const result = getDocumentAstCache().getOrParse(document, dialect)
 
-        // 尝试使用 AST 解析
-        const engine = getParserEngine()
-        const result = engine.tryAstify(text, dialect)
-
-        if (result.success && result.ast) {
-            try {
+            if (result.success && result.ast) {
                 const ranges = this.provideFoldingRangesFromAst(result.ast)
                 if (ranges.length > 0) {
                     return ranges
                 }
-            } catch {
-                // AST 遍历失败，回退到正则方式
             }
-        }
 
-        // 回退到正则/括号计数方式
-        return this.provideFoldingRangesFallback(text)
+            return this.provideFoldingRangesFallback(document.getText())
+        } catch {
+            return []
+        }
     }
 
     private provideFoldingRangesFromAst(ast: unknown): vscode.FoldingRange[] {

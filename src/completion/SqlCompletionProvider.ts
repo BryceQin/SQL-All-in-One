@@ -12,6 +12,7 @@ import { getCTEItems } from './cteCompletion'
 import { getIdentifierItems } from './identifierCompletion'
 import { getCommentCompletionItems } from './commentCompletion'
 import { handleError, ErrorCategory } from '../core/errorHandler'
+import { getConfigManager } from '../core/configManager'
 
 interface SnippetDef { prefix: string; body: string[]; description: string }
 
@@ -43,14 +44,13 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
     private snippetsLoaded: Promise<void>
     private keywordItemsCache = new Map<string, vscode.CompletionItem[]>()
     private functionItemsCache = new Map<string, vscode.CompletionItem[]>()
-    private cfg: Record<string, boolean> = {}
-    private configChangeListener: vscode.Disposable
+    private configChangeDisposable: vscode.Disposable
 
     constructor(extensionPath: string) {
         this.snippetsLoaded = this.loadSnippets(extensionPath)
-        this.loadConfig()
-        this.configChangeListener = vscode.workspace.onDidChangeConfiguration((e) => {
-            if (e.affectsConfiguration('Hive-Formatter')) this.loadConfig()
+        this.configChangeDisposable = getConfigManager().onConfigChange(() => {
+            this.keywordItemsCache.clear()
+            this.functionItemsCache.clear()
         })
     }
 
@@ -93,22 +93,7 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
     }
 
     public dispose(): void {
-        this.configChangeListener.dispose()
-    }
-
-    private loadConfig(): void {
-        const c = vscode.workspace.getConfiguration('Hive-Formatter')
-        this.cfg = {
-            enableCompletion: c.get('enableCompletion', true),
-            keywords: c.get('completion.keywords', true),
-            functions: c.get('completion.functions', true),
-            snippets: c.get('completion.snippets', true),
-            cteNames: c.get('completion.cteNames', true),
-            identifiers: c.get('completion.identifiers', true),
-            commentSnippets: c.get('completion.commentSnippets', true),
-        }
-        this.keywordItemsCache.clear()
-        this.functionItemsCache.clear()
+        this.configChangeDisposable.dispose()
     }
 
     private getDialect(langId: string): { dialect: Dialect; dName: string } {
@@ -121,16 +106,32 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
         return { dialect, dName }
     }
 
+    private tryCollect(items: vscode.CompletionItem[], fn: () => vscode.CompletionItem[], context: string): void {
+        try {
+            items.push(...fn())
+        } catch (e) { handleError(e, context, ErrorCategory.SUB_ITEM) }
+    }
+
     provideCompletionItems(
         doc: vscode.TextDocument,
         pos: vscode.Position,
     ): vscode.ProviderResult<vscode.CompletionItem[]> {
-        if (!this.cfg.enableCompletion) return []
-        const { dName } = this.getDialect(doc.languageId)
-        const items: vscode.CompletionItem[] = []
-
         try {
-            if (this.cfg.keywords) {
+            const cfgMgr = getConfigManager()
+            if (!cfgMgr.get('enableCompletion', true)) return []
+            const cfg = cfgMgr.getSectionKeys('completion', ['keywords', 'functions', 'snippets', 'cteNames', 'identifiers', 'commentSnippets'], {
+                keywords: true,
+                functions: true,
+                snippets: true,
+                cteNames: true,
+                identifiers: true,
+                commentSnippets: true,
+            })
+            const { dName } = this.getDialect(doc.languageId)
+            const items: vscode.CompletionItem[] = []
+
+            this.tryCollect(items, () => {
+                if (!cfg.keywords) return []
                 let kwItems = this.keywordItemsCache.get(dName)
                 if (!kwItems) {
                     const kd = keywordMap[dName]
@@ -139,11 +140,10 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
                         this.keywordItemsCache.set(dName, kwItems)
                     }
                 }
-                if (kwItems) items.push(...kwItems)
-            }
-        } catch (e) { handleError(e, 'keyword completion', ErrorCategory.SUB_ITEM) }
-        try {
-            if (this.cfg.functions) {
+                return kwItems || []
+            }, 'keyword completion')
+            this.tryCollect(items, () => {
+                if (!cfg.functions) return []
                 let fnItems = this.functionItemsCache.get(dName)
                 if (!fnItems) {
                     const sigs = functionSigMap[dName]
@@ -152,27 +152,30 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
                         this.functionItemsCache.set(dName, fnItems)
                     }
                 }
-                if (fnItems) items.push(...fnItems)
-            }
-        } catch (e) { handleError(e, 'function completion', ErrorCategory.SUB_ITEM) }
-        try {
-            if (this.cfg.snippets) {
+                return fnItems || []
+            }, 'function completion')
+            this.tryCollect(items, () => {
+                if (!cfg.snippets) return []
                 const snippets = this.snippetItemsMap.get(dName)
-                if (snippets) items.push(...snippets)
-            }
-        } catch (e) { handleError(e, 'snippet completion', ErrorCategory.SUB_ITEM) }
-        try {
-            if (this.cfg.cteNames && doc.getText().trim()) items.push(...getCTEItems(doc, pos))
-        } catch (e) { handleError(e, 'CTE completion', ErrorCategory.SUB_ITEM) }
-        try {
-            if (this.cfg.identifiers && doc.getText().trim()) items.push(...getIdentifierItems(doc, pos, this.getDialect(doc.languageId).dialect.tokenizer))
-        } catch (e) { handleError(e, 'identifier completion', ErrorCategory.SUB_ITEM) }
-        try {
-            if (this.cfg.commentSnippets) {
-                items.push(...getCommentCompletionItems(doc, pos))
-            }
-        } catch (e) { handleError(e, 'comment snippet completion', ErrorCategory.SUB_ITEM) }
+                return snippets || []
+            }, 'snippet completion')
+            this.tryCollect(items, () => {
+                if (!cfg.cteNames || !doc.getText().trim()) return []
+                return getCTEItems(doc, pos)
+            }, 'CTE completion')
+            this.tryCollect(items, () => {
+                if (!cfg.identifiers || !doc.getText().trim()) return []
+                return getIdentifierItems(doc, pos, this.getDialect(doc.languageId).dialect.tokenizer)
+            }, 'identifier completion')
+            this.tryCollect(items, () => {
+                if (!cfg.commentSnippets) return []
+                return getCommentCompletionItems(doc, pos)
+            }, 'comment snippet completion')
 
-        return items
+            return items
+        } catch (e) {
+            handleError(e, 'completion provider', ErrorCategory.FEATURE)
+            return []
+        }
     }
 }

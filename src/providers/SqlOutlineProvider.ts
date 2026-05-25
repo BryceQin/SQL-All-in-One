@@ -1,9 +1,9 @@
 import * as vscode from 'vscode'
 import { t } from '../i18n'
-import { getParserEngine } from '../parser/SqlParserEngine'
+import { getDocumentAstCache } from '../parser/DocumentAstCache'
 import { toSqlDialect } from '../core/sqlDialects'
 import { isAstNode } from '../parser/AstVisitor'
-import { getNodeLocation, getStatementEndLocation } from '../parser/astUtils'
+import { getNodeLocation, getStatementEndLocation, extractName } from '../parser/astUtils'
 import type { AstNode, AstLocation } from '../parser/astTypes'
 
 export class SqlOutlineProvider implements vscode.DocumentSymbolProvider {
@@ -11,19 +11,16 @@ export class SqlOutlineProvider implements vscode.DocumentSymbolProvider {
         document: vscode.TextDocument,
         _token: vscode.CancellationToken
     ): vscode.ProviderResult<vscode.SymbolInformation[] | vscode.DocumentSymbol[]> {
-        const text = document.getText()
-        const dialect = toSqlDialect(document.languageId)
-
-        const result = getParserEngine().tryAstify(text, dialect)
-        if (result.success && result.ast) {
-            try {
+        try {
+            const dialect = toSqlDialect(document.languageId)
+            const result = getDocumentAstCache().getOrParse(document, dialect)
+            if (result.success && result.ast) {
                 return this.provideDocumentSymbolsFromAst(document, result.ast)
-            } catch {
-                // AST parsing succeeded but symbol extraction failed, fall back to regex
             }
+            return this.provideDocumentSymbolsFallback(document)
+        } catch {
+            return []
         }
-
-        return this.provideDocumentSymbolsFallback(document)
     }
 
     private provideDocumentSymbolsFromAst(
@@ -177,7 +174,7 @@ export class SqlOutlineProvider implements vscode.DocumentSymbolProvider {
         for (const item of cteItems) {
             if (item == null || typeof item !== 'object') continue
             const itemNode = item as Record<string, unknown>
-            const cteName = this.extractCteName(itemNode)
+            const cteName = extractName(itemNode)
             if (cteName && isAstNode(item)) {
                 const cteSymbol = this.createSymbolFromAst(
                     document,
@@ -220,20 +217,6 @@ export class SqlOutlineProvider implements vscode.DocumentSymbolProvider {
         withSymbol.children = cteSymbols
 
         return withSymbol
-    }
-
-    private extractCteName(item: Record<string, unknown>): string | null {
-        const name = item.name
-        if (typeof name === 'string' && name.length > 0) {
-            return name
-        }
-        if (name != null && typeof name === 'object') {
-            const nameObj = name as Record<string, unknown>
-            if (typeof nameObj.value === 'string' && nameObj.value.length > 0) {
-                return nameObj.value
-            }
-        }
-        return null
     }
 
     private processInsertStatement(
@@ -408,7 +391,7 @@ export class SqlOutlineProvider implements vscode.DocumentSymbolProvider {
             if (col == null || typeof col !== 'object') continue
             const colEntry = col as Record<string, unknown>
             if (colEntry.as) {
-                const aliasName = this.extractNameFromAny(colEntry.as)
+                const aliasName = extractName(colEntry.as)
                 if (aliasName) {
                     const loc = colEntry.loc as { start?: AstLocation; end?: AstLocation } | undefined
                     if (loc?.start?.line && loc?.start?.column) {
@@ -472,8 +455,8 @@ export class SqlOutlineProvider implements vscode.DocumentSymbolProvider {
                 : startPos
             const range = new vscode.Range(startPos, endPos)
 
-            const tableName = this.extractNameFromAny(fromEntry.table)
-            const alias = this.extractNameFromAny(fromEntry.as)
+            const tableName = extractName(fromEntry.table)
+            const alias = extractName(fromEntry.as)
             const join = fromEntry.join
 
             let label = ''
@@ -590,17 +573,6 @@ export class SqlOutlineProvider implements vscode.DocumentSymbolProvider {
             return this.createClauseSymbol(document, orderby, clauseName)
         }
 
-        return null
-    }
-
-    private extractNameFromAny(name: unknown): string | null {
-        if (typeof name === 'string' && name.length > 0) return name
-        if (name != null && typeof name === 'object') {
-            const nameObj = name as Record<string, unknown>
-            if (typeof nameObj.value === 'string' && nameObj.value.length > 0) {
-                return nameObj.value
-            }
-        }
         return null
     }
 
