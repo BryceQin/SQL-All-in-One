@@ -801,9 +801,9 @@
                     break;
                 case 'saveResult':
                     if (message.success) {
-                        showToast('配置已保存', 'success');
+                        showToast('配置已保存 (Config saved)', 'success');
                     } else {
-                        showToast('保存失败，请重试', 'error');
+                        showToast('保存失败，请重试 (Save failed, please retry)', 'error');
                     }
                     break;
             }
