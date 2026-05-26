@@ -9,7 +9,7 @@ import { ALL_CONFIG_ITEMS, LINT_RULES, getDefaultConfig, getConfigKey } from '..
 
 export class ConfigEditorPanel {
     public static currentPanel: ConfigEditorPanel | undefined
-    public static readonly viewType = 'sqlAllInOneConfig'
+    public static readonly viewType = 'SQLAllInOneConfig'
 
     private readonly _panel: vscode.WebviewPanel
     private readonly _extensionUri: vscode.Uri

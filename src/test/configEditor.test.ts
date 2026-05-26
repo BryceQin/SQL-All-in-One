@@ -22,7 +22,7 @@ suite('ConfigEditorPanel 测试', () => {
             const hasWebviewPanel = vscode.window.tabGroups.all.some(group =>
                 group.tabs.some(tab => {
                     const input = tab.input as { viewType?: string }
-                    return input && input.viewType === 'sqlAllInOneConfig'
+                    return input && input.viewType === 'SQLAllInOneConfig'
                 })
             )
             
