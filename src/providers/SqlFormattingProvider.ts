@@ -47,7 +47,7 @@ export class SqlFormattingProvider
         uri: vscode.Uri,
     ) {
         const extensionSettings = vscode.workspace.getConfiguration(
-            "Hive-Formatter",
+            "SQL-All-in-One",
             uri,
         )
         const formatConfig = createConfig(

@@ -3,12 +3,13 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { format, type SqlLanguage } from '../formatter/sqlFormatter'
 import type { KeywordCase, DataTypeCase, FunctionCase, IndentStyle, LogicalOperatorNewline } from '../formatter/FormatOptions'
-import { t } from '../i18n'
+import { t, getLanguage } from '../i18n'
+import type { MessageKey } from '../i18n'
 import { ALL_CONFIG_ITEMS, LINT_RULES, getDefaultConfig, getConfigKey } from '../config/configDefinitions'
 
 export class ConfigEditorPanel {
     public static currentPanel: ConfigEditorPanel | undefined
-    public static readonly viewType = 'hiveFormatterConfig'
+    public static readonly viewType = 'SQLAllInOneConfig'
 
     private readonly _panel: vscode.WebviewPanel
     private readonly _extensionUri: vscode.Uri
@@ -106,14 +107,36 @@ export class ConfigEditorPanel {
             html = html.replace('{{CSS_URI}}', cssUri.toString())
             html = html.replace('{{JS_URI}}', jsUri.toString())
 
+            const i18nDict = this._getConfigEditorI18n()
+            const i18nScript = '<script>window.__I18N__ = ' + JSON.stringify(i18nDict) + '; window.__LANG__ = "' + getLanguage() + '";</script>'
+            html = html.replace('{{I18N_INJECT}}', i18nScript)
+
             return html
         } catch {
-            return '<html><body><h2>Failed to load config editor</h2><p>Please reinstall the extension.</p></body></html>'
+            return '<html><body><h2>' + t('configEditor.loadFailed') + '</h2><p>' + t('configEditor.reinstall') + '</p></body></html>'
         }
     }
 
+    private _getConfigEditorI18n(): Record<string, string> {
+        const keys: MessageKey[] = [
+            'configEditor.title', 'configEditor.subtitle',
+            'configEditor.presets', 'configEditor.presetDefault',
+            'configEditor.presetHive', 'configEditor.presetMySQL',
+            'configEditor.presetCompact', 'configEditor.resetDefault',
+            'configEditor.save', 'configEditor.previewTitle',
+            'configEditor.previewPlaceholder', 'configEditor.formatPreviewBtn',
+            'configEditor.formattingOptions', 'configEditor.loadFailed',
+            'configEditor.reinstall',
+        ]
+        const dict: Record<string, string> = {}
+        for (const key of keys) {
+            dict[key] = t(key)
+        }
+        return dict
+    }
+
     private async _sendCurrentConfig() {
-        const config = vscode.workspace.getConfiguration('Hive-Formatter')
+        const config = vscode.workspace.getConfiguration('SQL-All-in-One')
         const data: Record<string, unknown> = {}
 
         for (const item of ALL_CONFIG_ITEMS) {
@@ -134,7 +157,7 @@ export class ConfigEditorPanel {
     }
 
     private async _updateConfig(data: Record<string, unknown>) {
-        const config = vscode.workspace.getConfiguration('Hive-Formatter')
+        const config = vscode.workspace.getConfiguration('SQL-All-in-One')
 
         for (const item of ALL_CONFIG_ITEMS) {
             let value = data[item.key]
@@ -164,7 +187,7 @@ export class ConfigEditorPanel {
 
     private async _previewFormat(sql: string, webviewConfig?: Record<string, unknown>) {
         try {
-            const config = vscode.workspace.getConfiguration('Hive-Formatter')
+            const config = vscode.workspace.getConfiguration('SQL-All-in-One')
             const get = <T>(key: string, defaultValue: T): T => {
                 if (webviewConfig && key in webviewConfig && webviewConfig[key] !== undefined) {
                     return webviewConfig[key] as T

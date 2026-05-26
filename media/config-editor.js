@@ -1,3 +1,17 @@
+        (function() {
+    var dict = window.__I18N__ || {};
+    document.querySelectorAll('[data-i18n]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n');
+        if (dict[key]) {
+            if (el.tagName === 'TITLE') {
+                document.title = dict[key];
+            } else {
+                el.textContent = dict[key];
+            }
+        }
+    });
+})();
+
         let currentConfig = {
             enableSmartCommentToggle: true,
             headerAuthor: '',

@@ -8,21 +8,8 @@ export type SqlDialect =
     | 'sqlite'
     | 'sql'
 
-const dialectMap: Record<SqlDialect, string> = {
-    mysql: 'MySQL',
-    hive: 'Hive',
-    spark: 'Hive',
-    flinksql: 'FlinkSQL',
-    postgresql: 'PostgreSQL',
-    bigquery: 'BigQuery',
-    sqlite: 'SQLite',
-    sql: 'MySQL',
-}
-
-export function toNodeSqlParserDialect(dialect: SqlDialect): string {
-    return dialectMap[dialect]
-}
+export { toNodeSqlParserDialect } from '../core/dialectRegistry'
 
 export function getSupportedDialects(): SqlDialect[] {
-    return Object.keys(dialectMap) as SqlDialect[]
+    return ['mysql', 'hive', 'spark', 'flinksql', 'postgresql', 'bigquery', 'sqlite', 'sql'] as SqlDialect[]
 }

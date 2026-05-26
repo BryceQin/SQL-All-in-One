@@ -190,9 +190,9 @@
     "validate.emptyParamRegex": "An empty regex was provided in custom paramTypes. This will match an infinite number of parameters.",
 
     "paramHover": "Parameter: {0}",
-    "statusBar.tooltip": "Hive Formatter",
-    "linter.source": "Hive Formatter Linter",
-    "configEditor.panelTitle": "Hive Formatter - Configuration Editor",
+    "statusBar.tooltip": "SQL All in One",
+    "linter.source": "SQL All in One Linter",
+    "configEditor.panelTitle": "SQL All in One - Configuration Editor",
     "hover.keywordCategory.query": "Query Clause",
     "hover.keywordCategory.join": "Join",
     "hover.keywordCategory.setop": "Set Operation",
@@ -213,7 +213,7 @@
     "hover.parameterUsage": "This parameter is used in the following locations (total {0}):",
     "hover.parameterLine": "Line {0}:",
     "hover.parameterMore": "... and {0} more",
-    "hover.parameterTip": "Tip: Use \"Hive-Formatter: Replace SQL Parameters\" command to batch replace",
+    "hover.parameterTip": "Tip: Use \"SQL-All-in-One: Replace SQL Parameters\" command to batch replace",
 
     "navigation.cteDefinition": "CTE definition",
     "navigation.tableAliasDefinition": "Table alias definition",
@@ -224,5 +224,21 @@
     "navigation.clauseReference": "Clause reference",
     "navigation.reservedWord": "'{0}' is a SQL reserved word and cannot be used as an identifier",
     "navigation.nameConflict": "Name '{0}' is already in use",
-    "navigation.invalidName": "Name can only contain letters, digits, and underscores, and cannot start with a digit"
+    "navigation.invalidName": "Name can only contain letters, digits, and underscores, and cannot start with a digit",
+
+    "configEditor.title": "SQL All in One - Config Editor",
+    "configEditor.subtitle": "Visually adjust SQL formatting options with live preview",
+    "configEditor.presets": "Quick Presets",
+    "configEditor.presetDefault": "Default",
+    "configEditor.presetHive": "Hive",
+    "configEditor.presetMySQL": "MySQL",
+    "configEditor.presetCompact": "Compact",
+    "configEditor.resetDefault": "Reset Defaults",
+    "configEditor.save": "Save Config",
+    "configEditor.previewTitle": "Preview",
+    "configEditor.previewPlaceholder": "Enter SQL here to preview formatting...",
+    "configEditor.formatPreviewBtn": "Format Preview",
+    "configEditor.formattingOptions": "Formatting Options",
+    "configEditor.loadFailed": "Failed to load config editor",
+    "configEditor.reinstall": "Please reinstall the extension."
 }

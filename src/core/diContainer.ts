@@ -1,6 +1,7 @@
 export class DIContainer {
   private services = new Map<string, unknown>();
   private factories = new Map<string, () => unknown>();
+  private factoryInstances = new Set<unknown>();
 
   register<T>(token: string, service: T): void {
     this.services.set(token, service);
@@ -22,6 +23,7 @@ export class DIContainer {
       if (factory) {
         service = factory() as T;
         this.services.set(token, service);
+        this.factoryInstances.add(service);
       } else {
         throw new Error(`Service not registered: ${token}`);
       }
@@ -46,11 +48,13 @@ export class DIContainer {
     }
     this.services.clear();
     this.factories.clear();
+    this.factoryInstances.clear();
   }
 
   clear(): void {
     this.services.clear();
     this.factories.clear();
+    this.factoryInstances.clear();
   }
 }
 

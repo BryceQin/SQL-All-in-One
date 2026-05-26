@@ -1,32 +1,33 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hive Formatter - 配置编辑器</title>
+    <title data-i18n="configEditor.title">SQL All in One - Config Editor</title>
     <link rel="stylesheet" href="{{CSS_URI}}">
+    {{I18N_INJECT}}
 </head>
 <body>
     <div class="container">
         <div class="header">
             <div class="header-logo">⚡</div>
             <div class="header-info">
-                <h1>Hive Formatter 配置编辑器</h1>
-                <div class="header-sub">可视化调整 SQL 格式化选项，实时预览效果</div>
+                <h1 data-i18n="configEditor.title">SQL All in One - Config Editor</h1>
+                <div class="header-sub" data-i18n="configEditor.subtitle">Visually adjust SQL formatting options with live preview</div>
             </div>
             <div class="header-actions">
-                <button class="btn btn-ghost" onclick="resetConfig()">↺ 重置默认</button>
-                <button class="btn btn-primary" onclick="saveConfig()">✓ 保存配置</button>
+                <button class="btn btn-ghost" onclick="resetConfig()" data-i18n="configEditor.resetDefault">Reset Defaults</button>
+                <button class="btn btn-primary" onclick="saveConfig()" data-i18n="configEditor.save">Save Config</button>
             </div>
         </div>
 
         <div class="presets-bar">
-            <span class="presets-bar-label">快速预设</span>
+            <span class="presets-bar-label" data-i18n="configEditor.presets">Quick Presets</span>
             <div class="presets-row">
-                <button class="preset-chip active" onclick="applyPreset('default')">默认</button>
-                <button class="preset-chip" onclick="applyPreset('hive')">Hive</button>
-                <button class="preset-chip" onclick="applyPreset('mysql')">MySQL</button>
-                <button class="preset-chip" onclick="applyPreset('compact')">紧凑</button>
+                <button class="preset-chip active" onclick="applyPreset('default')" data-i18n="configEditor.presetDefault">Default</button>
+                <button class="preset-chip" onclick="applyPreset('hive')" data-i18n="configEditor.presetHive">Hive</button>
+                <button class="preset-chip" onclick="applyPreset('mysql')" data-i18n="configEditor.presetMySQL">MySQL</button>
+                <button class="preset-chip" onclick="applyPreset('compact')" data-i18n="configEditor.presetCompact">Compact</button>
             </div>
         </div>
 
@@ -34,19 +35,19 @@
             <div class="preview-panel">
                 <div class="section-header">
                     <span class="section-header-icon">👁️</span>
-                    <h2>实时预览</h2>
+                    <h2 data-i18n="configEditor.previewTitle">Preview</h2>
                 </div>
                 <div class="preview-body">
                     <div class="preview-col">
-                        <div class="preview-col-label">输入 SQL</div>
-                        <textarea class="preview-editor" id="previewInput" placeholder="输入 SQL 进行预览...">select id,name,email from users where age>18 and status='active' order by created_at desc limit 10;</textarea>
+                        <div class="preview-col-label">Input SQL</div>
+                        <textarea class="preview-editor" id="previewInput" placeholder="Enter SQL here to preview formatting...">select id,name,email from users where age>18 and status='active' order by created_at desc limit 10;</textarea>
                         <div class="preview-actions">
-                            <button class="btn btn-primary" style="flex:1;" onclick="previewFormat()">▶ 格式化预览</button>
+                            <button class="btn btn-primary" style="flex:1;" onclick="previewFormat()" data-i18n="configEditor.formatPreviewBtn">Format Preview</button>
                         </div>
                     </div>
                     <div class="preview-col">
-                        <div class="preview-col-label">格式化结果</div>
-                        <div class="preview-result empty" id="previewResult">点击「格式化预览」查看效果</div>
+                        <div class="preview-col-label">Formatted Result</div>
+                        <div class="preview-result empty" id="previewResult" data-i18n="configEditor.previewPlaceholder">Click Format Preview to see result</div>
                     </div>
                 </div>
             </div>
@@ -54,7 +55,7 @@
             <div class="config-section">
                 <div class="section-header">
                     <span class="section-header-icon">⚙️</span>
-                    <h2>格式化配置</h2>
+                    <h2 data-i18n="configEditor.formattingOptions">Formatting Options</h2>
                 </div>
                 <div class="section-body">
                     <!-- 基础设置 -->

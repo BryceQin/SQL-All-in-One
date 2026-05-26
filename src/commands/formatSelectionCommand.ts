@@ -32,7 +32,7 @@ function replaceEachSelection(
 
 const createConfigForEditor = (editor: vscode.TextEditor) =>
     createConfig(
-        vscode.workspace.getConfiguration("Hive-Formatter"),
+        vscode.workspace.getConfiguration("SQL-All-in-One"),
         editorFormattingOptions(editor),
         detectSqlDialect(editor),
     )

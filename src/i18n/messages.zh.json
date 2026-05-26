@@ -190,9 +190,9 @@
     "validate.emptyParamRegex": "自定义 paramTypes 中传入了空的正则表达式，这将导致匹配出无限多个参数。",
 
     "paramHover": "参数：{0}",
-    "statusBar.tooltip": "Hive Formatter",
-    "linter.source": "Hive Formatter Linter",
-    "configEditor.panelTitle": "Hive Formatter - 配置编辑器",
+    "statusBar.tooltip": "SQL All in One",
+    "linter.source": "SQL All in One Linter",
+    "configEditor.panelTitle": "SQL All in One - 配置编辑器",
     "hover.keywordCategory.query": "查询子句",
     "hover.keywordCategory.join": "连接",
     "hover.keywordCategory.setop": "集合运算",
@@ -213,7 +213,7 @@
     "hover.parameterUsage": "该参数在以下位置被使用（共 {0} 处）：",
     "hover.parameterLine": "第 {0} 行:",
     "hover.parameterMore": "还有 {0} 处",
-    "hover.parameterTip": "提示：使用 \"Hive-Formatter: 替换 SQL 参数\" 命令可批量替换",
+    "hover.parameterTip": "提示：使用 \"SQL-All-in-One: 替换 SQL 参数\" 命令可批量替换",
 
     "navigation.cteDefinition": "CTE 定义",
     "navigation.tableAliasDefinition": "表别名定义",
@@ -224,5 +224,21 @@
     "navigation.clauseReference": "子句引用",
     "navigation.reservedWord": "'{0}' 是 SQL 保留字，不能用作标识符",
     "navigation.nameConflict": "名称 '{0}' 已被使用",
-    "navigation.invalidName": "名称只能包含字母、数字和下划线，且不能以数字开头"
+    "navigation.invalidName": "名称只能包含字母、数字和下划线，且不能以数字开头",
+
+    "configEditor.title": "SQL All in One - 配置编辑器",
+    "configEditor.subtitle": "可视化调整 SQL 格式化选项，实时预览效果",
+    "configEditor.presets": "快速预设",
+    "configEditor.presetDefault": "默认",
+    "configEditor.presetHive": "Hive",
+    "configEditor.presetMySQL": "MySQL",
+    "configEditor.presetCompact": "紧凑",
+    "configEditor.resetDefault": "重置默认",
+    "configEditor.save": "保存配置",
+    "configEditor.previewTitle": "预览",
+    "configEditor.previewPlaceholder": "输入 SQL 预览格式化效果...",
+    "configEditor.formatPreviewBtn": "格式化预览",
+    "configEditor.formattingOptions": "格式化选项",
+    "configEditor.loadFailed": "配置编辑器加载失败",
+    "configEditor.reinstall": "请重新安装插件。"
 }

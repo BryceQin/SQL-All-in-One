@@ -5,7 +5,7 @@ import { t } from '../i18n'
 export function toggleComment(): void {
     const editor = vscode.window.activeTextEditor
     if (!editor) return
-    const config = vscode.workspace.getConfiguration('Hive-Formatter')
+    const config = vscode.workspace.getConfiguration('SQL-All-in-One')
     if (!config.get<boolean>('enableSmartCommentToggle', true)) {
         vscode.commands.executeCommand('editor.action.commentLine')
         return
@@ -22,7 +22,7 @@ export function toggleComment(): void {
 export function toggleAdvancedComment(): void {
     const editor = vscode.window.activeTextEditor
     if (!editor) return
-    const config = vscode.workspace.getConfiguration('Hive-Formatter')
+    const config = vscode.workspace.getConfiguration('SQL-All-in-One')
     if (!config.get<boolean>('enableSmartCommentToggle', true)) {
         vscode.commands.executeCommand('editor.action.blockComment')
         return

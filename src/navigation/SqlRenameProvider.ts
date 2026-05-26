@@ -38,7 +38,7 @@ export class SqlRenameProvider implements vscode.RenameProvider {
         _token: vscode.CancellationToken,
     ): vscode.Range | null {
         try {
-            const config = vscode.workspace.getConfiguration('Hive-Formatter')
+            const config = vscode.workspace.getConfiguration('SQL-All-in-One')
             if (!config.get<boolean>('enableNavigation', true)) return null
 
             const range = document.getWordRangeAtPosition(position)
@@ -63,7 +63,7 @@ export class SqlRenameProvider implements vscode.RenameProvider {
         newName: string,
         _token: vscode.CancellationToken,
     ): vscode.WorkspaceEdit | null {
-        const config = vscode.workspace.getConfiguration('Hive-Formatter')
+        const config = vscode.workspace.getConfiguration('SQL-All-in-One')
         if (!config.get<boolean>('enableNavigation', true)) return null
 
         const range = document.getWordRangeAtPosition(position)

@@ -9,7 +9,7 @@ import Indentation from './Indentation';
 import { SelectFormatter } from './nodeFormatters/SelectFormatter';
 import { InsertFormatter } from './nodeFormatters/InsertFormatter';
 import { DDLFormatter } from './nodeFormatters/DDLFormatter';
-import { ExpressionFormatter2 } from './nodeFormatters/ExpressionFormatter2';
+import { ExpressionFormatter } from './nodeFormatters/ExpressionFormatter';
 import { formatKeyword } from './nodeFormatters/CommonFormatter';
 import { AstNodeType } from './AstNodeTypes';
 
@@ -73,7 +73,7 @@ export class AstFormatter {
 
     private formatUpdate(stmt: Record<string, unknown>): string {
         const layout = new Layout(this.indent);
-        const exprFmt = new ExpressionFormatter2(this.cfg, this.indent);
+        const exprFmt = new ExpressionFormatter(this.cfg, this.indent);
 
         layout.add(formatKeyword('UPDATE', this.cfg.keywordCase));
 
@@ -127,7 +127,7 @@ export class AstFormatter {
 
     private formatDelete(stmt: Record<string, unknown>): string {
         const layout = new Layout(this.indent);
-        const exprFmt = new ExpressionFormatter2(this.cfg, this.indent);
+        const exprFmt = new ExpressionFormatter(this.cfg, this.indent);
 
         layout.add(formatKeyword('DELETE', this.cfg.keywordCase));
 

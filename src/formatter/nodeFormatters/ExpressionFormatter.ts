@@ -5,7 +5,7 @@ import { AstNodeType } from '../AstNodeTypes';
 
 export type SubqueryFormatter = (expr: unknown) => string;
 
-export class ExpressionFormatter2 {
+export class ExpressionFormatter {
     private cfg: FormatOptions;
     private indent: Indentation;
     private formatSubqueryFn?: SubqueryFormatter;

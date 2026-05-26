@@ -93,13 +93,13 @@ suite('AstLinter Test Suite', () => {
 
     test('use_coalesce_over_isnull detects IFNULL when enabled', async () => {
         const vscode = await import('vscode')
-        await vscode.workspace.getConfiguration('Hive-Formatter').update('lint.use_coalesce_over_isnull', { enabled: true }, vscode.ConfigurationTarget.Global)
+        await vscode.workspace.getConfiguration('SQL-All-in-One').update('lint.use_coalesce_over_isnull', { enabled: true }, vscode.ConfigurationTarget.Global)
         const enabledLinter = new AstLinter()
         const sql = "SELECT IFNULL(name, 'N/A') FROM users"
         const diags = enabledLinter.lint(sql, 'mysql')
         const coalesceDiags = diags.filter(d => d.code === 'use_coalesce_over_isnull')
         assert.ok(coalesceDiags.length > 0, 'Should detect IFNULL when rule is enabled')
-        await vscode.workspace.getConfiguration('Hive-Formatter').update('lint.use_coalesce_over_isnull', undefined, vscode.ConfigurationTarget.Global)
+        await vscode.workspace.getConfiguration('SQL-All-in-One').update('lint.use_coalesce_over_isnull', undefined, vscode.ConfigurationTarget.Global)
     })
 
     test('use_current_timestamp detects NOW()', () => {

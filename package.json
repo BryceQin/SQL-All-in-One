@@ -1,23 +1,23 @@
 {
-    "name": "hive-formatter",
-    "displayName": "Hive Formatter",
-    "description": "一个用于 Hive、MySQL、SparkSQL 格式化的 VSCode 插件，支持 SQL IntelliSense 智能补全、语法检查和 MySQL/HiveSQL 互相转换",
-    "version": "1.7.0",
+    "name": "sql-all-in-one",
+    "displayName": "SQL All in One",
+    "description": "SQL All in One - 强大的 SQL 格式化、智能补全、语法检查、DDL 转换 VSCode 插件，支持 Hive、MySQL、SparkSQL、FlinkSQL、PostgreSQL、BigQuery、SQLite 等多种 SQL 方言",
+    "version": "1.9.0",
     "publisher": "bryce-qin",
     "contributors": [
         "TalDu"
     ],
     "license": "MIT",
-    "icon": "hive-formatter-icon.png",
+    "icon": "sql-all-in-one-icon.png",
     "engines": {
         "vscode": "^1.85.0"
     },
     "repository": {
         "type": "git",
-        "url": "https://github.com/BryceQin/Hive-Formatter"
+        "url": "https://github.com/BryceQin/SQL-All-in-One"
     },
     "bugs": {
-        "url": "https://github.com/BryceQin/Hive-Formatter/issues"
+        "url": "https://github.com/BryceQin/SQL-All-in-One/issues"
     },
     "categories": [
         "Formatters",
@@ -25,13 +25,20 @@
         "Other"
     ],
     "keywords": [
-        "hive",
+        "sql",
+        "all in one",
         "formatter",
+        "hive",
         "mysql",
         "spark",
         "sparksql",
-        "sql",
-        "snippets"
+        "flinksql",
+        "postgresql",
+        "bigquery",
+        "sqlite",
+        "snippets",
+        "linter",
+        "intellisense"
     ],
     "activationEvents": [
         "onStartupFinished",
@@ -191,63 +198,63 @@
         ],
         "commands": [
             {
-                "title": "Format Selection (Hive Formatter)",
-                "shortTitle": "Format Hive",
-                "command": "hive-formatter.format-selection"
+                "title": "Format Selection (SQL All in One)",
+                "shortTitle": "Format SQL",
+                "command": "sql-all-in-one.format-selection"
             },
             {
                 "title": "MySQL to HiveSQL",
                 "shortTitle": "MySQL to Hive",
-                "command": "hive-formatter.mysql-to-hive"
+                "command": "sql-all-in-one.mysql-to-hive"
             },
             {
                 "title": "HiveSQL to MySQL",
                 "shortTitle": "Hive to MySQL",
-                "command": "hive-formatter.hive-to-mysql"
+                "command": "sql-all-in-one.hive-to-mysql"
             },
             {
-                "title": "Hive Formatter Config",
+                "title": "SQL All in One Config",
                 "shortTitle": "Config Editor",
-                "command": "hive-formatter.open-config-editor"
+                "command": "sql-all-in-one.open-config-editor"
             },
             {
                 "title": "Replace Parameter",
                 "shortTitle": "Replace Param",
-                "command": "hive-formatter.replaceParameter"
+                "command": "sql-all-in-one.replaceParameter"
             },
             {
-                "command": "hive-formatter.toggleComment",
-                "title": "Hive Formatter: 切换注释"
+                "command": "sql-all-in-one.toggleComment",
+                "title": "SQL All in One: 切换注释"
             },
             {
-                "command": "hive-formatter.toggleAdvancedComment",
-                "title": "Hive Formatter: 切换高级注释"
+                "command": "sql-all-in-one.toggleAdvancedComment",
+                "title": "SQL All in One: 切换高级注释"
             }
         ],
         "keybindings": [
             {
-                "command": "hive-formatter.replaceParameter",
+                "command": "sql-all-in-one.replaceParameter",
                 "key": "ctrl+shift+r",
                 "mac": "cmd+shift+r",
                 "when": "editorLangId =~ /sql|hive/"
             },
             {
-                "command": "hive-formatter.toggleComment",
+                "command": "sql-all-in-one.toggleComment",
                 "key": "ctrl+/",
                 "mac": "cmd+/",
                 "when": "editorTextFocus && editorLangId =~ /sql|hive/"
             },
             {
-                "command": "hive-formatter.toggleAdvancedComment",
+                "command": "sql-all-in-one.toggleAdvancedComment",
                 "key": "ctrl+shift+/",
                 "mac": "cmd+shift+/",
                 "when": "editorTextFocus && editorLangId =~ /sql|hive/"
             }
         ],
         "configuration": {
-            "title": "Hive Formatter",
+            "title": "SQL All in One",
             "properties": {
-                "Hive-Formatter.dialect": {
+                "SQL-All-in-One.dialect": {
                     "type": "string",
                     "enum": [
                         "auto-detect",
@@ -261,20 +268,20 @@
                         "sqlite"
                     ],
                     "enumDescriptions": [
-                        "自动检测",
-                        "Apache Hive",
-                        "MySQL",
-                        "Spark",
-                        "FlinkSQL",
-                        "Basic SQL - generally not recommended.",
-                        "PostgreSQL",
-                        "BigQuery",
-                        "SQLite"
+                        "%sql-all-in-one.config.dialect.enumDescriptions.auto-detect%",
+                        "%sql-all-in-one.config.dialect.enumDescriptions.hive%",
+                        "%sql-all-in-one.config.dialect.enumDescriptions.mysql%",
+                        "%sql-all-in-one.config.dialect.enumDescriptions.spark%",
+                        "%sql-all-in-one.config.dialect.enumDescriptions.flinksql%",
+                        "%sql-all-in-one.config.dialect.enumDescriptions.sql%",
+                        "%sql-all-in-one.config.dialect.enumDescriptions.postgresql%",
+                        "%sql-all-in-one.config.dialect.enumDescriptions.bigquery%",
+                        "%sql-all-in-one.config.dialect.enumDescriptions.sqlite%"
                     ],
                     "default": "hive",
-                    "markdownDescription": "选择使用的SQL方言。强烈建议选择否则可能出错。"
+                    "markdownDescription": "%sql-all-in-one.config.dialect.markdownDescription%"
                 },
-                "Hive-Formatter.displayLanguage": {
+                "SQL-All-in-One.displayLanguage": {
                     "type": "string",
                     "enum": [
                         "auto",
@@ -282,71 +289,91 @@
                         "en"
                     ],
                     "enumDescriptions": [
-                        "%hive-formatter.config.displayLanguage.enumDescriptions.auto%",
-                        "%hive-formatter.config.displayLanguage.enumDescriptions.zh%",
-                        "%hive-formatter.config.displayLanguage.enumDescriptions.en%"
+                        "%sql-all-in-one.config.displayLanguage.enumDescriptions.auto%",
+                        "%sql-all-in-one.config.displayLanguage.enumDescriptions.zh%",
+                        "%sql-all-in-one.config.displayLanguage.enumDescriptions.en%"
                     ],
                     "default": "auto",
-                    "markdownDescription": "%hive-formatter.config.displayLanguage.markdownDescription%",
+                    "markdownDescription": "%sql-all-in-one.config.displayLanguage.markdownDescription%",
                     "order": 1
                 },
-                "Hive-Formatter.ignoreTabSettings": {
+                "SQL-All-in-One.ignoreTabSettings": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "是否忽略用户和工作区设置的 `tabSize` 和 `insertSpaces` (使用 `#Hive-Formatter.tabSizeOverride#` 和 `#Hive-Formatter.insertSpacesOverride#`)?"
+                    "markdownDescription": "%sql-all-in-one.config.ignoreTabSettings.markdownDescription%"
                 },
-                "Hive-Formatter.tabSizeOverride": {
+                "SQL-All-in-One.tabSizeOverride": {
                     "type": "number",
                     "default": 2,
                     "minimum": 1,
-                    "markdownDescription": "当 `#Hive-Formatter.ignoreTabSettings#`激活时，覆盖 `tabSize` 设置，"
+                    "markdownDescription": "%sql-all-in-one.config.tabSizeOverride.markdownDescription%"
                 },
-                "Hive-Formatter.insertSpacesOverride": {
+                "SQL-All-in-One.insertSpacesOverride": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "当 `#Hive-Formatter.ignoreTabSettings#`激活时，覆盖 `insertSpaces` 设置"
+                    "markdownDescription": "%sql-all-in-one.config.insertSpacesOverride.markdownDescription%"
                 },
-                "Hive-Formatter.keywordCase": {
+                "SQL-All-in-One.keywordCase": {
                     "type": "string",
                     "enum": [
                         "preserve",
                         "upper",
                         "lower"
                     ],
+                    "enumDescriptions": [
+                        "%sql-all-in-one.config.keywordCase.enumDescriptions.preserve%",
+                        "%sql-all-in-one.config.keywordCase.enumDescriptions.upper%",
+                        "%sql-all-in-one.config.keywordCase.enumDescriptions.lower%"
+                    ],
                     "default": "preserve",
-                    "markdownDescription": "以大写、小写或保留现状来格式化关键字"
+                    "markdownDescription": "%sql-all-in-one.config.keywordCase.markdownDescription%"
                 },
-                "Hive-Formatter.dataTypeCase": {
+                "SQL-All-in-One.dataTypeCase": {
                     "type": "string",
                     "enum": [
                         "preserve",
                         "upper",
                         "lower"
                     ],
+                    "enumDescriptions": [
+                        "%sql-all-in-one.config.dataTypeCase.enumDescriptions.preserve%",
+                        "%sql-all-in-one.config.dataTypeCase.enumDescriptions.upper%",
+                        "%sql-all-in-one.config.dataTypeCase.enumDescriptions.lower%"
+                    ],
                     "default": "preserve",
-                    "markdownDescription": "以大写、小写或保留现状来格式化数据类型"
+                    "markdownDescription": "%sql-all-in-one.config.dataTypeCase.markdownDescription%"
                 },
-                "Hive-Formatter.functionCase": {
+                "SQL-All-in-One.functionCase": {
                     "type": "string",
                     "enum": [
                         "preserve",
                         "upper",
                         "lower"
                     ],
+                    "enumDescriptions": [
+                        "%sql-all-in-one.config.functionCase.enumDescriptions.preserve%",
+                        "%sql-all-in-one.config.functionCase.enumDescriptions.upper%",
+                        "%sql-all-in-one.config.functionCase.enumDescriptions.lower%"
+                    ],
                     "default": "preserve",
-                    "markdownDescription": "以大写、小写或保留现状来格式化函数名"
+                    "markdownDescription": "%sql-all-in-one.config.functionCase.markdownDescription%"
                 },
-                "Hive-Formatter.identifierCase": {
+                "SQL-All-in-One.identifierCase": {
                     "type": "string",
                     "enum": [
                         "preserve",
                         "upper",
                         "lower"
                     ],
+                    "enumDescriptions": [
+                        "%sql-all-in-one.config.identifierCase.enumDescriptions.preserve%",
+                        "%sql-all-in-one.config.identifierCase.enumDescriptions.upper%",
+                        "%sql-all-in-one.config.identifierCase.enumDescriptions.lower%"
+                    ],
                     "default": "preserve",
-                    "markdownDescription": "以大写、小写或保留现状来格式化标识符"
+                    "markdownDescription": "%sql-all-in-one.config.identifierCase.markdownDescription%"
                 },
-                "Hive-Formatter.indentStyle": {
+                "SQL-All-in-One.indentStyle": {
                     "type": "string",
                     "enum": [
                         "standard",
@@ -354,739 +381,780 @@
                         "tabularRight"
                     ],
                     "enumDescriptions": [
-                        "标准SQL格式，带有级联缩进",
-                        "在关键字和参数之间保留空格列，使关键字左对齐",
-                        "在关键字和参数之间保留空格列，将关键字向右对齐"
+                        "%sql-all-in-one.config.indentStyle.enumDescriptions.standard%",
+                        "%sql-all-in-one.config.indentStyle.enumDescriptions.tabularLeft%",
+                        "%sql-all-in-one.config.indentStyle.enumDescriptions.tabularRight%"
                     ],
                     "default": "standard",
-                    "markdownDescription": "在标准关键词定位与保持中心位置列之间进行切换"
+                    "markdownDescription": "%sql-all-in-one.config.indentStyle.markdownDescription%"
                 },
-                "Hive-Formatter.logicalOperatorNewline": {
+                "SQL-All-in-One.logicalOperatorNewline": {
                     "type": "string",
                     "enum": [
                         "before",
                         "after"
                     ],
+                    "enumDescriptions": [
+                        "%sql-all-in-one.config.logicalOperatorNewline.enumDescriptions.before%",
+                        "%sql-all-in-one.config.logicalOperatorNewline.enumDescriptions.after%"
+                    ],
                     "default": "before",
-                    "markdownDescription": "是否在 AND 和 OR 之前或之后换行"
+                    "markdownDescription": "%sql-all-in-one.config.logicalOperatorNewline.markdownDescription%"
                 },
-                "Hive-Formatter.expressionWidth": {
+                "SQL-All-in-One.expressionWidth": {
                     "type": "integer",
                     "default": 50,
                     "minimum": 0,
-                    "markdownDescription": "一对括号之间的字符数达到多少时，应将表达式拆分为多行"
+                    "markdownDescription": "%sql-all-in-one.config.expressionWidth.markdownDescription%"
                 },
-                "Hive-Formatter.linesBetweenQueries": {
+                "SQL-All-in-One.linesBetweenQueries": {
                     "type": "integer",
                     "default": 1,
                     "minimum": 0,
-                    "markdownDescription": "每个查询/语句之间应放置多少个换行符"
+                    "markdownDescription": "%sql-all-in-one.config.linesBetweenQueries.markdownDescription%"
                 },
-                "Hive-Formatter.denseOperators": {
+                "SQL-All-in-One.denseOperators": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "是否去除运算符（如+或>=）周围的空格"
+                    "markdownDescription": "%sql-all-in-one.config.denseOperators.markdownDescription%"
                 },
-                "Hive-Formatter.newlineBeforeSemicolon": {
+                "SQL-All-in-One.newlineBeforeSemicolon": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "分号应另起一行还是放在上一行"
+                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeSemicolon.markdownDescription%"
                 },
-                "Hive-Formatter.commaPosition": {
+                "SQL-All-in-One.commaPosition": {
                     "type": "string",
                     "enum": [
                         "before",
                         "after"
                     ],
+                    "enumDescriptions": [
+                        "%sql-all-in-one.config.commaPosition.enumDescriptions.before%",
+                        "%sql-all-in-one.config.commaPosition.enumDescriptions.after%"
+                    ],
                     "default": "after",
-                    "markdownDescription": "逗号位置：放在行首还是行尾"
+                    "markdownDescription": "%sql-all-in-one.config.commaPosition.markdownDescription%"
                 },
-                "Hive-Formatter.alignColumnDefinitions": {
+                "SQL-All-in-One.alignColumnDefinitions": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "是否对齐列定义"
+                    "markdownDescription": "%sql-all-in-one.config.alignColumnDefinitions.markdownDescription%"
                 },
-                "Hive-Formatter.newlineAfterSelect": {
+                "SQL-All-in-One.newlineAfterSelect": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "SELECT 关键字后是否换行"
+                    "markdownDescription": "%sql-all-in-one.config.newlineAfterSelect.markdownDescription%"
                 },
-                "Hive-Formatter.newlineAfterFrom": {
+                "SQL-All-in-One.newlineAfterFrom": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "FROM 关键字后是否换行"
+                    "markdownDescription": "%sql-all-in-one.config.newlineAfterFrom.markdownDescription%"
                 },
-                "Hive-Formatter.newlineBeforeWhere": {
+                "SQL-All-in-One.newlineBeforeWhere": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "WHERE 关键字前是否换行"
+                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeWhere.markdownDescription%"
                 },
-                "Hive-Formatter.newlineAfterWhere": {
+                "SQL-All-in-One.newlineAfterWhere": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "WHERE 关键字后是否换行"
+                    "markdownDescription": "%sql-all-in-one.config.newlineAfterWhere.markdownDescription%"
                 },
-                "Hive-Formatter.newlineBeforeOrderBy": {
+                "SQL-All-in-One.newlineBeforeOrderBy": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "ORDER BY 关键字前是否换行"
+                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeOrderBy.markdownDescription%"
                 },
-                "Hive-Formatter.newlineBeforeGroupBy": {
+                "SQL-All-in-One.newlineBeforeGroupBy": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "GROUP BY 关键字前是否换行"
+                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeGroupBy.markdownDescription%"
                 },
-                "Hive-Formatter.newlineBeforeHaving": {
+                "SQL-All-in-One.newlineBeforeHaving": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "HAVING 关键字前是否换行"
+                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeHaving.markdownDescription%"
                 },
-                "Hive-Formatter.newlineBeforeLimit": {
+                "SQL-All-in-One.newlineBeforeLimit": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "LIMIT 关键字前是否换行"
+                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeLimit.markdownDescription%"
                 },
-                "Hive-Formatter.maxLineLength": {
+                "SQL-All-in-One.maxLineLength": {
                     "type": "integer",
                     "default": 120,
                     "minimum": 40,
                     "maximum": 500,
-                    "markdownDescription": "最大行长度"
+                    "markdownDescription": "%sql-all-in-one.config.maxLineLength.markdownDescription%"
                 },
-                "Hive-Formatter.tabulateAlias": {
+                "SQL-All-in-One.tabulateAlias": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "是否对齐表别名"
+                    "markdownDescription": "%sql-all-in-one.config.tabulateAlias.markdownDescription%"
                 },
-                "Hive-Formatter.reservedKeywordCase": {
+                "SQL-All-in-One.reservedKeywordCase": {
                     "type": "string",
                     "enum": [
                         "preserve",
                         "upper",
                         "lower"
                     ],
+                    "enumDescriptions": [
+                        "%sql-all-in-one.config.reservedKeywordCase.enumDescriptions.preserve%",
+                        "%sql-all-in-one.config.reservedKeywordCase.enumDescriptions.upper%",
+                        "%sql-all-in-one.config.reservedKeywordCase.enumDescriptions.lower%"
+                    ],
                     "default": "preserve",
-                    "markdownDescription": "保留关键字的大小写（SELECT, FROM, WHERE 等）"
+                    "markdownDescription": "%sql-all-in-one.config.reservedKeywordCase.markdownDescription%"
                 },
-                "Hive-Formatter.builtinFunctionCase": {
+                "SQL-All-in-One.builtinFunctionCase": {
                     "type": "string",
                     "enum": [
                         "preserve",
                         "upper",
                         "lower"
                     ],
+                    "enumDescriptions": [
+                        "%sql-all-in-one.config.builtinFunctionCase.enumDescriptions.preserve%",
+                        "%sql-all-in-one.config.builtinFunctionCase.enumDescriptions.upper%",
+                        "%sql-all-in-one.config.builtinFunctionCase.enumDescriptions.lower%"
+                    ],
                     "default": "preserve",
-                    "markdownDescription": "内置函数的大小写（COUNT, SUM, MAX 等）"
+                    "markdownDescription": "%sql-all-in-one.config.builtinFunctionCase.markdownDescription%"
                 },
-                "Hive-Formatter.newlineBeforeJoin": {
+                "SQL-All-in-One.newlineBeforeJoin": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "JOIN 关键字前是否换行"
+                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeJoin.markdownDescription%"
                 },
-                "Hive-Formatter.newlineAfterComma": {
+                "SQL-All-in-One.newlineAfterComma": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "逗号后是否强制换行"
+                    "markdownDescription": "%sql-all-in-one.config.newlineAfterComma.markdownDescription%"
                 },
-                "Hive-Formatter.alignWhereClauses": {
+                "SQL-All-in-One.alignWhereClauses": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "WHERE 子句是否对齐"
+                    "markdownDescription": "%sql-all-in-one.config.alignWhereClauses.markdownDescription%"
                 },
-                "Hive-Formatter.alignCaseStatements": {
+                "SQL-All-in-One.alignCaseStatements": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "CASE 语句是否对齐"
+                    "markdownDescription": "%sql-all-in-one.config.alignCaseStatements.markdownDescription%"
                 },
-                "Hive-Formatter.breakAfterSelectItem": {
+                "SQL-All-in-One.breakAfterSelectItem": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "每个 SELECT 项后是否换行"
+                    "markdownDescription": "%sql-all-in-one.config.breakAfterSelectItem.markdownDescription%"
                 },
-                "Hive-Formatter.breakAfterFromItem": {
+                "SQL-All-in-One.breakAfterFromItem": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "每个 FROM 项后是否换行"
+                    "markdownDescription": "%sql-all-in-one.config.breakAfterFromItem.markdownDescription%"
                 },
-                "Hive-Formatter.spaceBeforeComma": {
+                "SQL-All-in-One.spaceBeforeComma": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "逗号前是否加空格"
+                    "markdownDescription": "%sql-all-in-one.config.spaceBeforeComma.markdownDescription%"
                 },
-                "Hive-Formatter.spaceInsideParentheses": {
+                "SQL-All-in-One.spaceInsideParentheses": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "括号内是否加空格"
+                    "markdownDescription": "%sql-all-in-one.config.spaceInsideParentheses.markdownDescription%"
                 },
-                "Hive-Formatter.trimTrailingSpaces": {
+                "SQL-All-in-One.trimTrailingSpaces": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "是否修剪尾部空格"
+                    "markdownDescription": "%sql-all-in-one.config.trimTrailingSpaces.markdownDescription%"
                 },
-                "Hive-Formatter.semicolonAtEnd": {
+                "SQL-All-in-One.semicolonAtEnd": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "是否在语句结尾添加分号"
+                    "markdownDescription": "%sql-all-in-one.config.semicolonAtEnd.markdownDescription%"
                 },
-                "Hive-Formatter.singleLineMaxLength": {
+                "SQL-All-in-One.singleLineMaxLength": {
                     "type": "integer",
                     "default": 80,
                     "minimum": 40,
                     "maximum": 500,
-                    "markdownDescription": "单行查询最大长度"
+                    "markdownDescription": "%sql-all-in-one.config.singleLineMaxLength.markdownDescription%"
                 },
-                "Hive-Formatter.paramTypes": {
+                "SQL-All-in-One.paramTypes": {
                     "type": "object",
                     "default": {},
-                    "markdownDescription": "指定要支持的参数占位符类型"
+                    "markdownDescription": "%sql-all-in-one.config.paramTypes.markdownDescription%"
                 },
-                "Hive-Formatter.enableEnhancedChecks": {
+                "SQL-All-in-One.enableEnhancedChecks": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "是否启用增强的语法检查功能"
+                    "markdownDescription": "%sql-all-in-one.config.enableEnhancedChecks.markdownDescription%"
                 },
-                "Hive-Formatter.showErrorLevel": {
+                "SQL-All-in-One.showErrorLevel": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "是否显示错误级别的诊断信息"
+                    "markdownDescription": "%sql-all-in-one.config.showErrorLevel.markdownDescription%"
                 },
-                "Hive-Formatter.showWarningLevel": {
+                "SQL-All-in-One.showWarningLevel": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "是否显示警告级别的诊断信息"
+                    "markdownDescription": "%sql-all-in-one.config.showWarningLevel.markdownDescription%"
                 },
-                "Hive-Formatter.showInfoLevel": {
+                "SQL-All-in-One.showInfoLevel": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "是否显示信息级别的诊断提示"
+                    "markdownDescription": "%sql-all-in-one.config.showInfoLevel.markdownDescription%"
                 },
-                "Hive-Formatter.enableLinter": {
+                "SQL-All-in-One.enableLinter": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "是否启用 SQL Lint 功能"
+                    "markdownDescription": "%sql-all-in-one.config.enableLinter.markdownDescription%"
                 },
-                "Hive-Formatter.lint.avoid_select_star": {
+                "SQL-All-in-One.lint.avoid_select_star": {
                     "type": "object",
                     "default": {
                         "enabled": true,
                         "severity": "warning"
                     },
-                    "markdownDescription": "配置 `avoid_select_star` 规则"
+                    "markdownDescription": "%sql-all-in-one.config.lint.avoid_select_star.markdownDescription%"
                 },
-                "Hive-Formatter.lint.explicit_join_type": {
+                "SQL-All-in-One.lint.explicit_join_type": {
                     "type": "object",
                     "default": {
                         "enabled": true,
                         "severity": "information"
                     },
-                    "markdownDescription": "配置 `explicit_join_type` 规则"
+                    "markdownDescription": "%sql-all-in-one.config.lint.explicit_join_type.markdownDescription%"
                 },
-                "Hive-Formatter.lint.limit_with_order_by": {
+                "SQL-All-in-One.lint.limit_with_order_by": {
                     "type": "object",
                     "default": {
                         "enabled": true,
                         "severity": "warning"
                     },
-                    "markdownDescription": "配置 `limit_with_order_by` 规则"
+                    "markdownDescription": "%sql-all-in-one.config.lint.limit_with_order_by.markdownDescription%"
                 },
-                "Hive-Formatter.lint.avoid_column_count_mismatch": {
+                "SQL-All-in-One.lint.avoid_column_count_mismatch": {
                     "type": "object",
                     "default": {
                         "enabled": true,
                         "severity": "error"
                     },
-                    "markdownDescription": "配置 `avoid_column_count_mismatch` 规则"
+                    "markdownDescription": "%sql-all-in-one.config.lint.avoid_column_count_mismatch.markdownDescription%"
                 },
-                "Hive-Formatter.lint.missing_primary_key": {
+                "SQL-All-in-One.lint.missing_primary_key": {
                     "type": "object",
                     "default": {
                         "enabled": true,
                         "severity": "warning"
                     },
-                    "markdownDescription": "配置 `missing_primary_key` 规则"
+                    "markdownDescription": "%sql-all-in-one.config.lint.missing_primary_key.markdownDescription%"
                 },
-                "Hive-Formatter.lint.use_current_timestamp": {
+                "SQL-All-in-One.lint.use_current_timestamp": {
                     "type": "object",
                     "default": {
                         "enabled": true,
                         "severity": "information"
                     },
-                    "markdownDescription": "配置 `use_current_timestamp` 规则"
+                    "markdownDescription": "%sql-all-in-one.config.lint.use_current_timestamp.markdownDescription%"
                 },
-                "Hive-Formatter.lint.avoid_select_in_insert": {
+                "SQL-All-in-One.lint.avoid_select_in_insert": {
                     "type": "object",
                     "default": {
                         "enabled": true,
                         "severity": "warning"
                     },
-                    "markdownDescription": "配置 `avoid_select_in_insert` 规则"
+                    "markdownDescription": "%sql-all-in-one.config.lint.avoid_select_in_insert.markdownDescription%"
                 },
-                "Hive-Formatter.lint.duplicate_column_aliases": {
+                "SQL-All-in-One.lint.duplicate_column_aliases": {
                     "type": "object",
                     "default": {
                         "enabled": true,
                         "severity": "warning"
                     },
-                    "markdownDescription": "配置 \"duplicate_column_aliases\" 规则"
+                    "markdownDescription": "%sql-all-in-one.config.lint.duplicate_column_aliases.markdownDescription%"
                 },
-                "Hive-Formatter.lint.uppercase_keywords": {
+                "SQL-All-in-One.lint.uppercase_keywords": {
                     "type": "object",
                     "default": {
                         "enabled": false,
                         "severity": "information"
                     },
-                    "markdownDescription": "配置 \"uppercase_keywords\" 规则"
+                    "markdownDescription": "%sql-all-in-one.config.lint.uppercase_keywords.markdownDescription%"
                 },
-                "Hive-Formatter.lint.consistent_aliasing": {
+                "SQL-All-in-One.lint.consistent_aliasing": {
                     "type": "object",
                     "default": {
                         "enabled": false,
                         "severity": "information"
                     },
-                    "markdownDescription": "配置 \"consistent_aliasing\" 规则"
+                    "markdownDescription": "%sql-all-in-one.config.lint.consistent_aliasing.markdownDescription%"
                 },
-                "Hive-Formatter.lint.use_coalesce_over_isnull": {
+                "SQL-All-in-One.lint.use_coalesce_over_isnull": {
                     "type": "object",
                     "default": {
                         "enabled": false,
                         "severity": "information"
                     },
-                    "markdownDescription": "配置 \"use_coalesce_over_isnull\" 规则"
+                    "markdownDescription": "%sql-all-in-one.config.lint.use_coalesce_over_isnull.markdownDescription%"
                 },
-                "Hive-Formatter.lint.explicit_column_aliasing": {
+                "SQL-All-in-One.lint.explicit_column_aliasing": {
                     "type": "object",
                     "default": {
                         "enabled": false,
                         "severity": "information"
                     },
-                    "markdownDescription": "配置 \"explicit_column_aliasing\" 规则"
+                    "markdownDescription": "%sql-all-in-one.config.lint.explicit_column_aliasing.markdownDescription%"
                 },
-                "Hive-Formatter.lint.avoid_correlated_subqueries": {
+                "SQL-All-in-One.lint.avoid_correlated_subqueries": {
                     "type": "object",
                     "default": {
                         "enabled": false,
                         "severity": "warning"
                     },
-                    "markdownDescription": "配置 \"avoid_correlated_subqueries\" 规则"
+                    "markdownDescription": "%sql-all-in-one.config.lint.avoid_correlated_subqueries.markdownDescription%"
                 },
-                "Hive-Formatter.lint.long_query_line": {
+                "SQL-All-in-One.lint.long_query_line": {
                     "type": "object",
                     "default": {
                         "enabled": false,
                         "severity": "information"
                     },
-                    "markdownDescription": "配置 \"long_query_line\" 规则"
+                    "markdownDescription": "%sql-all-in-one.config.lint.long_query_line.markdownDescription%"
                 },
-                "Hive-Formatter.enableCodeFolding": {
+                "SQL-All-in-One.enableCodeFolding": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "是否启用代码折叠功能"
+                    "markdownDescription": "%sql-all-in-one.config.enableCodeFolding.markdownDescription%"
                 },
-                "Hive-Formatter.enableOutlineView": {
+                "SQL-All-in-One.enableOutlineView": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "是否启用大纲视图功能"
+                    "markdownDescription": "%sql-all-in-one.config.enableOutlineView.markdownDescription%"
                 },
-                "Hive-Formatter.enableStatusBar": {
+                "SQL-All-in-One.enableStatusBar": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "是否启用状态栏功能"
+                    "markdownDescription": "%sql-all-in-one.config.enableStatusBar.markdownDescription%"
                 },
-                "Hive-Formatter.enableParameterHighlight": {
+                "SQL-All-in-One.enableParameterHighlight": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "是否启用参数高亮和替换功能"
+                    "markdownDescription": "%sql-all-in-one.config.enableParameterHighlight.markdownDescription%"
                 },
-                "Hive-Formatter.enableSnippets": {
+                "SQL-All-in-One.enableSnippets": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "是否启用代码片段功能"
+                    "markdownDescription": "%sql-all-in-one.config.enableSnippets.markdownDescription%"
                 },
-                "Hive-Formatter.enableQuickFix": {
+                "SQL-All-in-One.enableQuickFix": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "是否启用快速修复功能"
+                    "markdownDescription": "%sql-all-in-one.config.enableQuickFix.markdownDescription%"
                 },
-                "Hive-Formatter.enableHover": {
+                "SQL-All-in-One.enableHover": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "启用/禁用 SQL 悬停提示（函数签名、关键字说明、参数引用）"
+                    "markdownDescription": "%sql-all-in-one.config.enableHover.markdownDescription%"
                 },
-                "Hive-Formatter.enableNavigation": {
+                "SQL-All-in-One.enableNavigation": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "启用/禁用代码导航功能（跳转到定义、查找引用、重命名符号、面包屑导航）",
+                    "markdownDescription": "%sql-all-in-one.config.enableNavigation.markdownDescription%",
                     "order": 105
                 },
-                "Hive-Formatter.enableCompletion": {
+                "SQL-All-in-One.enableCompletion": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "是否启用智能补全功能"
+                    "markdownDescription": "%sql-all-in-one.config.enableCompletion.markdownDescription%"
                 },
-                "Hive-Formatter.completion.keywords": {
+                "SQL-All-in-One.completion.keywords": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "补全列表中是否包含关键字"
+                    "markdownDescription": "%sql-all-in-one.config.completion.keywords.markdownDescription%"
                 },
-                "Hive-Formatter.completion.functions": {
+                "SQL-All-in-One.completion.functions": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "补全列表中是否包含函数"
+                    "markdownDescription": "%sql-all-in-one.config.completion.functions.markdownDescription%"
                 },
-                "Hive-Formatter.completion.snippets": {
+                "SQL-All-in-One.completion.snippets": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "补全列表中是否包含代码片段（VSCode 已通过 contributes.snippets 原生提供，此处默认关闭避免重复）"
+                    "markdownDescription": "%sql-all-in-one.config.completion.snippets.markdownDescription%"
                 },
-                "Hive-Formatter.completion.cteNames": {
+                "SQL-All-in-One.completion.cteNames": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "是否提示 CTE 名称"
+                    "markdownDescription": "%sql-all-in-one.config.completion.cteNames.markdownDescription%"
                 },
-                "Hive-Formatter.completion.identifiers": {
+                "SQL-All-in-One.completion.identifiers": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "是否提示表名和列名"
+                    "markdownDescription": "%sql-all-in-one.config.completion.identifiers.markdownDescription%"
                 },
-                "Hive-Formatter.enableSmartCommentToggle": {
+                "SQL-All-in-One.enableSmartCommentToggle": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "是否启用 SQL 感知的智能注释切换（关闭后回退到 VSCode 默认行为）"
+                    "markdownDescription": "%sql-all-in-one.config.enableSmartCommentToggle.markdownDescription%"
                 },
-                "Hive-Formatter.headerAuthor": {
+                "SQL-All-in-One.headerAuthor": {
                     "type": "string",
                     "default": "",
-                    "markdownDescription": "文件头注释中的作者名（为空时 header Snippet 的「作者」留空等待输入）"
+                    "markdownDescription": "%sql-all-in-one.config.headerAuthor.markdownDescription%"
                 },
-                "Hive-Formatter.headerModifier": {
+                "SQL-All-in-One.headerModifier": {
                     "type": "string",
                     "default": "",
-                    "markdownDescription": "文件头注释中的修改人（为空时回退取 headerAuthor 的值）"
+                    "markdownDescription": "%sql-all-in-one.config.headerModifier.markdownDescription%"
                 },
-                "Hive-Formatter.completion.commentSnippets": {
+                "SQL-All-in-One.completion.commentSnippets": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "补全列表中是否包含注释模板片段"
+                    "markdownDescription": "%sql-all-in-one.config.completion.commentSnippets.markdownDescription%"
                 },
-                "Hive-Formatter.lint.missing_query_comment": {
+                "SQL-All-in-One.lint.missing_query_comment": {
                     "type": "object",
                     "default": {
                         "enabled": true,
                         "severity": "warning"
                     },
-                    "markdownDescription": "配置 `missing_query_comment` 规则（复杂查询缺少说明注释）"
+                    "markdownDescription": "%sql-all-in-one.config.lint.missing_query_comment.markdownDescription%"
                 },
-                "Hive-Formatter.lint.missing_query_comment_threshold_line_count": {
+                "SQL-All-in-One.lint.missing_query_comment_threshold_line_count": {
                     "type": "number",
                     "default": 20,
-                    "markdownDescription": "触发 missing_query_comment 的最小查询行数"
+                    "markdownDescription": "%sql-all-in-one.config.lint.missing_query_comment_threshold_line_count.markdownDescription%"
                 },
-                "Hive-Formatter.lint.missing_query_comment_threshold_join_count": {
+                "SQL-All-in-One.lint.missing_query_comment_threshold_join_count": {
                     "type": "number",
                     "default": 3,
-                    "markdownDescription": "触发 missing_query_comment 的最小 JOIN 数量"
+                    "markdownDescription": "%sql-all-in-one.config.lint.missing_query_comment_threshold_join_count.markdownDescription%"
                 },
-                "Hive-Formatter.lint.missing_query_comment_threshold_subquery_count": {
+                "SQL-All-in-One.lint.missing_query_comment_threshold_subquery_count": {
                     "type": "number",
                     "default": 2,
-                    "markdownDescription": "触发 missing_query_comment 的最小子查询数量"
+                    "markdownDescription": "%sql-all-in-one.config.lint.missing_query_comment_threshold_subquery_count.markdownDescription%"
                 },
-                "Hive-Formatter.lint.missing_column_comment": {
+                "SQL-All-in-One.lint.missing_column_comment": {
                     "type": "object",
                     "default": {
                         "enabled": true,
                         "severity": "warning"
                     },
-                    "markdownDescription": "配置 `missing_column_comment` 规则（DDL 列定义缺少 COMMENT）"
+                    "markdownDescription": "%sql-all-in-one.config.lint.missing_column_comment.markdownDescription%"
                 },
-                "Hive-Formatter.lint.missing_column_comment_aggregate": {
+                "SQL-All-in-One.lint.missing_column_comment_aggregate": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "同一 DDL 中多个缺失 COMMENT 的列是否聚合为一条诊断"
+                    "markdownDescription": "%sql-all-in-one.config.lint.missing_column_comment_aggregate.markdownDescription%"
                 },
-                "Hive-Formatter.lint.missing_column_comment_external_table_exempt": {
+                "SQL-All-in-One.lint.missing_column_comment_external_table_exempt": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "外部表（EXTERNAL TABLE）是否豁免 missing_column_comment 检查"
+                    "markdownDescription": "%sql-all-in-one.config.lint.missing_column_comment_external_table_exempt.markdownDescription%"
                 },
-                "Hive-Formatter.lint.commented_out_code": {
+                "SQL-All-in-One.lint.commented_out_code": {
                     "type": "object",
                     "default": {
                         "enabled": true,
                         "severity": "information"
                     },
-                    "markdownDescription": "配置 `commented_out_code` 规则（疑似注释掉的大段代码）"
+                    "markdownDescription": "%sql-all-in-one.config.lint.commented_out_code.markdownDescription%"
                 },
-                "Hive-Formatter.lint.commented_out_code_threshold_lines": {
+                "SQL-All-in-One.lint.commented_out_code_threshold_lines": {
                     "type": "number",
                     "default": 3,
-                    "markdownDescription": "触发 commented_out_code 的最小注释代码行数"
+                    "markdownDescription": "%sql-all-in-one.config.lint.commented_out_code_threshold_lines.markdownDescription%"
                 },
-                "Hive-Formatter.lint.expired_todo": {
+                "SQL-All-in-One.lint.expired_todo": {
                     "type": "object",
                     "default": {
                         "enabled": true,
                         "severity": "information"
                     },
-                    "markdownDescription": "配置 `expired_todo` 规则（过期的 TODO/FIXME 标记）"
+                    "markdownDescription": "%sql-all-in-one.config.lint.expired_todo.markdownDescription%"
                 },
-                "Hive-Formatter.lint.expired_todo_grace_period_days": {
+                "SQL-All-in-One.lint.expired_todo_grace_period_days": {
                     "type": "number",
                     "default": 7,
-                    "markdownDescription": "TODO 过期判定宽限期（天）"
+                    "markdownDescription": "%sql-all-in-one.config.lint.expired_todo_grace_period_days.markdownDescription%"
                 },
-                "Hive-Formatter.nullCase": {
+                "SQL-All-in-One.nullCase": {
                     "type": "string",
                     "enum": [
                         "preserve",
                         "upper",
                         "lower"
                     ],
+                    "enumDescriptions": [
+                        "%sql-all-in-one.config.nullCase.enumDescriptions.preserve%",
+                        "%sql-all-in-one.config.nullCase.enumDescriptions.upper%",
+                        "%sql-all-in-one.config.nullCase.enumDescriptions.lower%"
+                    ],
                     "default": "preserve",
-                    "markdownDescription": "NULL 关键字的大小写"
+                    "markdownDescription": "%sql-all-in-one.config.nullCase.markdownDescription%"
                 },
-                "Hive-Formatter.booleanCase": {
+                "SQL-All-in-One.booleanCase": {
                     "type": "string",
                     "enum": [
                         "preserve",
                         "upper",
                         "lower"
                     ],
+                    "enumDescriptions": [
+                        "%sql-all-in-one.config.booleanCase.enumDescriptions.preserve%",
+                        "%sql-all-in-one.config.booleanCase.enumDescriptions.upper%",
+                        "%sql-all-in-one.config.booleanCase.enumDescriptions.lower%"
+                    ],
                     "default": "preserve",
-                    "markdownDescription": "TRUE / FALSE 关键字的大小写"
+                    "markdownDescription": "%sql-all-in-one.config.booleanCase.markdownDescription%"
                 },
-                "Hive-Formatter.newlineAfterGroupBy": {
+                "SQL-All-in-One.newlineAfterGroupBy": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "GROUP BY 后字段列表是否换行"
+                    "markdownDescription": "%sql-all-in-one.config.newlineAfterGroupBy.markdownDescription%"
                 },
-                "Hive-Formatter.newlineAfterHaving": {
+                "SQL-All-in-One.newlineAfterHaving": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "HAVING 后条件表达式是否换行"
+                    "markdownDescription": "%sql-all-in-one.config.newlineAfterHaving.markdownDescription%"
                 },
-                "Hive-Formatter.newlineAfterOrderBy": {
+                "SQL-All-in-One.newlineAfterOrderBy": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "ORDER BY 后排序列是否换行"
+                    "markdownDescription": "%sql-all-in-one.config.newlineAfterOrderBy.markdownDescription%"
                 },
-                "Hive-Formatter.newlineAfterLimit": {
+                "SQL-All-in-One.newlineAfterLimit": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "LIMIT 后数字是否换行"
+                    "markdownDescription": "%sql-all-in-one.config.newlineAfterLimit.markdownDescription%"
                 },
-                "Hive-Formatter.newlineAfterJoin": {
+                "SQL-All-in-One.newlineAfterJoin": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "JOIN 后表名/子查询是否换行"
+                    "markdownDescription": "%sql-all-in-one.config.newlineAfterJoin.markdownDescription%"
                 },
-                "Hive-Formatter.newlineBeforeSetOperation": {
+                "SQL-All-in-One.newlineBeforeSetOperation": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "UNION / INTERSECT / EXCEPT 前是否换行"
+                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeSetOperation.markdownDescription%"
                 },
-                "Hive-Formatter.newlineAfterSetOperation": {
+                "SQL-All-in-One.newlineAfterSetOperation": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "集合操作关键字后是否换行"
+                    "markdownDescription": "%sql-all-in-one.config.newlineAfterSetOperation.markdownDescription%"
                 },
-                "Hive-Formatter.newlineBeforeOn": {
+                "SQL-All-in-One.newlineBeforeOn": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "JOIN ... ON 的 ON 关键字是否换行"
+                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeOn.markdownDescription%"
                 },
-                "Hive-Formatter.newlineBeforeUsing": {
+                "SQL-All-in-One.newlineBeforeUsing": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "JOIN ... USING 的 USING 关键字是否换行"
+                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeUsing.markdownDescription%"
                 },
-                "Hive-Formatter.newlineBeforeWith": {
+                "SQL-All-in-One.newlineBeforeWith": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "WITH 关键字前是否换行"
+                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeWith.markdownDescription%"
                 },
-                "Hive-Formatter.newlineAfterWith": {
+                "SQL-All-in-One.newlineAfterWith": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "WITH 关键字后（第一个 CTE 名前）是否换行"
+                    "markdownDescription": "%sql-all-in-one.config.newlineAfterWith.markdownDescription%"
                 },
-                "Hive-Formatter.indentCteBody": {
+                "SQL-All-in-One.indentCteBody": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "CTE 子查询体是否相对于 AS ( 缩进一级"
+                    "markdownDescription": "%sql-all-in-one.config.indentCteBody.markdownDescription%"
                 },
-                "Hive-Formatter.newlineBetweenCtes": {
+                "SQL-All-in-One.newlineBetweenCtes": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "多个 CTE 之间是否插入独立空行分隔"
+                    "markdownDescription": "%sql-all-in-one.config.newlineBetweenCtes.markdownDescription%"
                 },
-                "Hive-Formatter.cteCommaPosition": {
+                "SQL-All-in-One.cteCommaPosition": {
                     "type": "string",
                     "enum": [
                         "before",
                         "after"
                     ],
+                    "enumDescriptions": [
+                        "%sql-all-in-one.config.cteCommaPosition.enumDescriptions.before%",
+                        "%sql-all-in-one.config.cteCommaPosition.enumDescriptions.after%"
+                    ],
                     "default": "before",
-                    "markdownDescription": "CTE 定义之间的逗号位于行首还是行尾"
+                    "markdownDescription": "%sql-all-in-one.config.cteCommaPosition.markdownDescription%"
                 },
-                "Hive-Formatter.newlineAfterOver": {
+                "SQL-All-in-One.newlineAfterOver": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "OVER( 后是否换行"
+                    "markdownDescription": "%sql-all-in-one.config.newlineAfterOver.markdownDescription%"
                 },
-                "Hive-Formatter.newlineBeforePartitionBy": {
+                "SQL-All-in-One.newlineBeforePartitionBy": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "PARTITION BY 前是否换行"
+                    "markdownDescription": "%sql-all-in-one.config.newlineBeforePartitionBy.markdownDescription%"
                 },
-                "Hive-Formatter.newlineAfterPartitionBy": {
+                "SQL-All-in-One.newlineAfterPartitionBy": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "PARTITION BY 后是否换行"
+                    "markdownDescription": "%sql-all-in-one.config.newlineAfterPartitionBy.markdownDescription%"
                 },
-                "Hive-Formatter.newlineBeforeOrderByInWindow": {
+                "SQL-All-in-One.newlineBeforeOrderByInWindow": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "窗口内 ORDER BY 前是否换行"
+                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeOrderByInWindow.markdownDescription%"
                 },
-                "Hive-Formatter.indentJoinConditions": {
+                "SQL-All-in-One.indentJoinConditions": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "JOIN ON 后的条件是否相对于 JOIN 缩进一级"
+                    "markdownDescription": "%sql-all-in-one.config.indentJoinConditions.markdownDescription%"
                 },
-                "Hive-Formatter.alignOnClauses": {
+                "SQL-All-in-One.alignOnClauses": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "ON 条件中多个 AND/OR 条件关键字是否对齐"
+                    "markdownDescription": "%sql-all-in-one.config.alignOnClauses.markdownDescription%"
                 },
-                "Hive-Formatter.alignInsertColumns": {
+                "SQL-All-in-One.alignInsertColumns": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "INSERT 列名列表与 VALUES 值列表是否列对齐"
+                    "markdownDescription": "%sql-all-in-one.config.alignInsertColumns.markdownDescription%"
                 },
-                "Hive-Formatter.alignInsertValuesGroups": {
+                "SQL-All-in-One.alignInsertValuesGroups": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "多行 VALUES 组之间的值是否对齐"
+                    "markdownDescription": "%sql-all-in-one.config.alignInsertValuesGroups.markdownDescription%"
                 },
-                "Hive-Formatter.newlineAfterInsert": {
+                "SQL-All-in-One.newlineAfterInsert": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "INSERT INTO 关键字后是否换行"
+                    "markdownDescription": "%sql-all-in-one.config.newlineAfterInsert.markdownDescription%"
                 },
-                "Hive-Formatter.newlineAfterInsertColumns": {
+                "SQL-All-in-One.newlineAfterInsertColumns": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "列名列表的闭括号后、VALUES 前是否换行"
+                    "markdownDescription": "%sql-all-in-one.config.newlineAfterInsertColumns.markdownDescription%"
                 },
-                "Hive-Formatter.newlineBetweenValuesGroups": {
+                "SQL-All-in-One.newlineBetweenValuesGroups": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "多行 VALUES 组之间是否换行分隔"
+                    "markdownDescription": "%sql-all-in-one.config.newlineBetweenValuesGroups.markdownDescription%"
                 },
-                "Hive-Formatter.newlineAfterCase": {
+                "SQL-All-in-One.newlineAfterCase": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "CASE 关键字后是否换行"
+                    "markdownDescription": "%sql-all-in-one.config.newlineAfterCase.markdownDescription%"
                 },
-                "Hive-Formatter.newlineAfterWhen": {
+                "SQL-All-in-One.newlineAfterWhen": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "WHEN 条件表达式后是否换行"
+                    "markdownDescription": "%sql-all-in-one.config.newlineAfterWhen.markdownDescription%"
                 },
-                "Hive-Formatter.newlineAfterThen": {
+                "SQL-All-in-One.newlineAfterThen": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "THEN 后的结果表达式是否换行"
+                    "markdownDescription": "%sql-all-in-one.config.newlineAfterThen.markdownDescription%"
                 },
-                "Hive-Formatter.newlineAfterElse": {
+                "SQL-All-in-One.newlineAfterElse": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "ELSE 后的结果表达式是否换行"
+                    "markdownDescription": "%sql-all-in-one.config.newlineAfterElse.markdownDescription%"
                 },
-                "Hive-Formatter.indentWhen": {
+                "SQL-All-in-One.indentWhen": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "WHEN 关键字是否相对于 CASE 缩进一级"
+                    "markdownDescription": "%sql-all-in-one.config.indentWhen.markdownDescription%"
                 },
-                "Hive-Formatter.indentThen": {
+                "SQL-All-in-One.indentThen": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "THEN 关键字是否相对于 WHEN 缩进一级"
+                    "markdownDescription": "%sql-all-in-one.config.indentThen.markdownDescription%"
                 },
-                "Hive-Formatter.newlineAfterIn": {
+                "SQL-All-in-One.newlineAfterIn": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "IN ( 后是否换行"
+                    "markdownDescription": "%sql-all-in-one.config.newlineAfterIn.markdownDescription%"
                 },
-                "Hive-Formatter.maxItemsInlineList": {
+                "SQL-All-in-One.maxItemsInlineList": {
                     "type": "number",
                     "default": 5,
                     "minimum": 1,
-                    "markdownDescription": "IN / VALUES 列表项数超过此阈值时强制换行"
+                    "markdownDescription": "%sql-all-in-one.config.maxItemsInlineList.markdownDescription%"
                 },
-                "Hive-Formatter.subqueryParenStyle": {
+                "SQL-All-in-One.subqueryParenStyle": {
                     "type": "string",
                     "enum": [
                         "inline",
                         "newline"
                     ],
+                    "enumDescriptions": [
+                        "%sql-all-in-one.config.subqueryParenStyle.enumDescriptions.inline%",
+                        "%sql-all-in-one.config.subqueryParenStyle.enumDescriptions.newline%"
+                    ],
                     "default": "inline",
-                    "markdownDescription": "子查询左括号是否与内容同行"
+                    "markdownDescription": "%sql-all-in-one.config.subqueryParenStyle.markdownDescription%"
                 },
-                "Hive-Formatter.commentPosition": {
+                "SQL-All-in-One.commentPosition": {
                     "type": "string",
                     "enum": [
                         "preserve",
                         "newline",
                         "inline"
                     ],
+                    "enumDescriptions": [
+                        "%sql-all-in-one.config.commentPosition.enumDescriptions.preserve%",
+                        "%sql-all-in-one.config.commentPosition.enumDescriptions.newline%",
+                        "%sql-all-in-one.config.commentPosition.enumDescriptions.inline%"
+                    ],
                     "default": "preserve",
-                    "markdownDescription": "格式化后行内注释的放置策略"
+                    "markdownDescription": "%sql-all-in-one.config.commentPosition.markdownDescription%"
                 },
-                "Hive-Formatter.blankLinesBeforeSetOperation": {
+                "SQL-All-in-One.blankLinesBeforeSetOperation": {
                     "type": "number",
                     "default": 1,
                     "minimum": 0,
-                    "markdownDescription": "UNION / INTERSECT / EXCEPT 前插入的空行数"
+                    "markdownDescription": "%sql-all-in-one.config.blankLinesBeforeSetOperation.markdownDescription%"
                 },
-                "Hive-Formatter.blankLinesAfterSetOperation": {
+                "SQL-All-in-One.blankLinesAfterSetOperation": {
                     "type": "number",
                     "default": 0,
                     "minimum": 0,
-                    "markdownDescription": "UNION / INTERSECT / EXCEPT 后插入的空行数"
+                    "markdownDescription": "%sql-all-in-one.config.blankLinesAfterSetOperation.markdownDescription%"
                 },
-                "Hive-Formatter.newlineBeforeLateralView": {
+                "SQL-All-in-One.newlineBeforeLateralView": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "LATERAL VIEW 前是否换行（Hive 方言）"
+                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeLateralView.markdownDescription%"
                 },
-                "Hive-Formatter.newlineBeforeDistributeBy": {
+                "SQL-All-in-One.newlineBeforeDistributeBy": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "DISTRIBUTE BY 前是否换行（Hive 方言）"
+                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeDistributeBy.markdownDescription%"
                 },
-                "Hive-Formatter.newlineBeforeClusterBy": {
+                "SQL-All-in-One.newlineBeforeClusterBy": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "CLUSTER BY 前是否换行（Hive 方言）"
+                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeClusterBy.markdownDescription%"
                 },
-                "Hive-Formatter.newlineBeforeSortBy": {
+                "SQL-All-in-One.newlineBeforeSortBy": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "SORT BY 前是否换行（Hive 方言）"
+                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeSortBy.markdownDescription%"
                 }
             }
         },
         "menus": {
             "editor/context": [
                 {
-                    "command": "hive-formatter.toggleComment",
+                    "command": "sql-all-in-one.toggleComment",
                     "when": "editorLangId =~ /sql|hive/",
                     "group": "1_comment@1"
                 },
                 {
-                    "command": "hive-formatter.toggleAdvancedComment",
+                    "command": "sql-all-in-one.toggleAdvancedComment",
                     "when": "editorLangId =~ /sql|hive/",
                     "group": "1_comment@2"
                 }

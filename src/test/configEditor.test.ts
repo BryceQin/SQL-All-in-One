@@ -8,21 +8,21 @@ suite('ConfigEditorPanel 测试', () => {
         test('配置编辑器应该能够打开', async function() {
             this.timeout(30000)
             
-            const extension = vscode.extensions.getExtension('bryce-qin.hive-formatter')
+            const extension = vscode.extensions.getExtension('bryce-qin.sql-all-in-one')
             if (!extension) {
                 throw new Error('Extension not found')
             }
             
             await extension.activate()
             
-            await vscode.commands.executeCommand('hive-formatter.open-config-editor')
+            await vscode.commands.executeCommand('sql-all-in-one.open-config-editor')
             
             await new Promise(resolve => setTimeout(resolve, 1000))
             
             const hasWebviewPanel = vscode.window.tabGroups.all.some(group =>
                 group.tabs.some(tab => {
                     const input = tab.input as { viewType?: string }
-                    return input && input.viewType === 'hiveFormatterConfig'
+                    return input && input.viewType === 'SQLAllInOneConfig'
                 })
             )
             
@@ -39,22 +39,22 @@ suite('ConfigEditorPanel 测试', () => {
             const commands = await vscode.commands.getCommands()
             
             assert.ok(
-                commands.includes('hive-formatter.open-config-editor'),
+                commands.includes('sql-all-in-one.open-config-editor'),
                 'Open Config Editor 命令未找到'
             )
             
             assert.ok(
-                commands.includes('hive-formatter.format-selection'),
+                commands.includes('sql-all-in-one.format-selection'),
                 'Format Selection 命令未找到'
             )
             
             assert.ok(
-                commands.includes('hive-formatter.mysql-to-hive'),
+                commands.includes('sql-all-in-one.mysql-to-hive'),
                 'MySQL to HiveSQL 命令未找到'
             )
             
             assert.ok(
-                commands.includes('hive-formatter.hive-to-mysql'),
+                commands.includes('sql-all-in-one.hive-to-mysql'),
                 'HiveSQL to MySQL 命令未找到'
             )
         })
@@ -65,11 +65,11 @@ suite('ConfigEditorPanel 测试', () => {
         test('配置应该能正确更新', async function() {
             this.timeout(10000)
             
-            const originalDialect = vscode.workspace.getConfiguration('Hive-Formatter').get<string>('dialect')
+            const originalDialect = vscode.workspace.getConfiguration('SQL-All-in-One').get<string>('dialect')
             
             try {
                 
-                const config = vscode.workspace.getConfiguration('Hive-Formatter')
+                const config = vscode.workspace.getConfiguration('SQL-All-in-One')
                 await config.update('dialect', 'mysql', vscode.ConfigurationTarget.Global)
                 
                 const updatedDialect = config.get<string>('dialect')
@@ -79,7 +79,7 @@ suite('ConfigEditorPanel 测试', () => {
             } finally {
                 
                 if (originalDialect) {
-                    const config = vscode.workspace.getConfiguration('Hive-Formatter')
+                    const config = vscode.workspace.getConfiguration('SQL-All-in-One')
                     await config.update('dialect', originalDialect, vscode.ConfigurationTarget.Global)
                 }
             }
@@ -125,7 +125,7 @@ suite('回归测试 - 现有功能完整性', () => {
             
             await vscode.window.showTextDocument(document)
             
-            const config = vscode.workspace.getConfiguration('Hive-Formatter')
+            const config = vscode.workspace.getConfiguration('SQL-All-in-One')
             const originalDialect = config.get<string>('dialect')
             
             try {
@@ -162,7 +162,7 @@ suite('回归测试 - 现有功能完整性', () => {
             
             await vscode.window.showTextDocument(document)
             
-            await vscode.commands.executeCommand('hive-formatter.mysql-to-hive')
+            await vscode.commands.executeCommand('sql-all-in-one.mysql-to-hive')
             
             await new Promise(resolve => setTimeout(resolve, 500))
             
@@ -183,7 +183,7 @@ suite('回归测试 - 现有功能完整性', () => {
             
             await vscode.window.showTextDocument(document)
             
-            await vscode.commands.executeCommand('hive-formatter.hive-to-mysql')
+            await vscode.commands.executeCommand('sql-all-in-one.hive-to-mysql')
             
             await new Promise(resolve => setTimeout(resolve, 500))
             
@@ -240,7 +240,7 @@ suite('回归测试 - 现有功能完整性', () => {
         test('所有配置项都应该可访问', async function() {
             this.timeout(5000)
             
-            const config = vscode.workspace.getConfiguration('Hive-Formatter')
+            const config = vscode.workspace.getConfiguration('SQL-All-in-One')
             
             const expectedKeys = [
                 'dialect',
@@ -269,7 +269,7 @@ suite('回归测试 - 现有功能完整性', () => {
         test('配置枚举值应该在允许范围内', async function() {
             this.timeout(5000)
             
-            const config = vscode.workspace.getConfiguration('Hive-Formatter')
+            const config = vscode.workspace.getConfiguration('SQL-All-in-One')
             
             const validDialects = ['auto-detect', 'hive', 'mysql', 'spark', 'sql', 'postgresql', 'bigquery', 'sqlite']
             const dialect = config.get<string>('dialect')
@@ -293,7 +293,7 @@ suite('集成测试', () => {
         test('从配置到格式的端到端工作流', async function() {
             this.timeout(30000)
             
-            const config = vscode.workspace.getConfiguration('Hive-Formatter')
+            const config = vscode.workspace.getConfiguration('SQL-All-in-One')
             
             const originalKeywordCase = config.get<string>('keywordCase')
             

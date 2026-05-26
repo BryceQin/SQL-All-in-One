@@ -25,6 +25,11 @@ import { SqlDefinitionProvider } from "./navigation/SqlDefinitionProvider"
 import { SqlReferenceProvider } from "./navigation/SqlReferenceProvider"
 import { SqlRenameProvider } from "./navigation/SqlRenameProvider"
 
+interface ExtensionModule {
+  name: string
+  register: (context: vscode.ExtensionContext) => void
+}
+
 interface ProviderMap {
   diagnosticsProvider: Lazy<SqlDiagnosticsProvider>
   statusBarProvider: Lazy<StatusBarProvider>
@@ -53,9 +58,18 @@ function createLazyProviders(extensionPath: string): ProviderMap {
     outlineProvider: lazy(() => new SqlOutlineProvider()),
     hoverProvider: lazy(() => new SqlHoverProvider()),
     astNavigator: lazy(() => new AstNavigator()),
-    definitionProvider: lazy(() => new SqlDefinitionProvider(providers.astNavigator.get())),
-    referenceProvider: lazy(() => new SqlReferenceProvider(providers.astNavigator.get())),
-    renameProvider: lazy(() => new SqlRenameProvider(providers.astNavigator.get())),
+    definitionProvider: lazy(() => {
+      const nav = providers.astNavigator.get()
+      return new SqlDefinitionProvider(nav)
+    }),
+    referenceProvider: lazy(() => {
+      const nav = providers.astNavigator.get()
+      return new SqlReferenceProvider(nav)
+    }),
+    renameProvider: lazy(() => {
+      const nav = providers.astNavigator.get()
+      return new SqlRenameProvider(nav)
+    }),
   }
   return providers
 }
@@ -72,12 +86,12 @@ function safeRegister(label: string, fn: () => void): void {
 
 function registerCommands(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
-    vscode.commands.registerCommand("hive-formatter.format-selection", formatSelectionCommand),
-    vscode.commands.registerCommand("hive-formatter.toggleComment", toggleComment),
-    vscode.commands.registerCommand("hive-formatter.toggleAdvancedComment", toggleAdvancedComment),
-    vscode.commands.registerCommand("hive-formatter.mysql-to-hive", convertMysqlToHiveCommand),
-    vscode.commands.registerCommand("hive-formatter.hive-to-mysql", convertHiveToMysqlCommand),
-    vscode.commands.registerCommand("hive-formatter.open-config-editor", () =>
+    vscode.commands.registerCommand("sql-all-in-one.format-selection", formatSelectionCommand),
+    vscode.commands.registerCommand("sql-all-in-one.toggleComment", toggleComment),
+    vscode.commands.registerCommand("sql-all-in-one.toggleAdvancedComment", toggleAdvancedComment),
+    vscode.commands.registerCommand("sql-all-in-one.mysql-to-hive", convertMysqlToHiveCommand),
+    vscode.commands.registerCommand("sql-all-in-one.hive-to-mysql", convertHiveToMysqlCommand),
+    vscode.commands.registerCommand("sql-all-in-one.open-config-editor", () =>
       openConfigEditorCommand(context.extensionUri)
     ),
   )
@@ -200,48 +214,51 @@ function registerParameterHighlighter(context: vscode.ExtensionContext): void {
   context.subscriptions.push(parameterHighlighter)
 }
 
+function createModules(): ExtensionModule[] {
+  return [
+    { name: 'i18n', register: () => initI18n() },
+    { name: 'commands', register: (ctx) => registerCommands(ctx) },
+    { name: 'formatting', register: (ctx) => registerFormattingProviders(ctx) },
+    { name: 'diagnostics', register: (ctx) => registerDiagnostics(ctx) },
+    { name: 'providers', register: (ctx) => registerProviders(ctx) },
+    { name: 'completion', register: (ctx) => registerCompletion(ctx) },
+    { name: 'parameterHighlighter', register: (ctx) => registerParameterHighlighter(ctx) },
+    { name: 'astNavigatorEvents', register: (ctx) => {
+      const navigator = lazyProviders.astNavigator.get()
+      if (navigator) {
+        ctx.subscriptions.push(
+          vscode.workspace.onDidChangeTextDocument(e => {
+            if (isSqlDocument(e.document)) navigator.invalidate(e.document)
+          }),
+          vscode.workspace.onDidCloseTextDocument(doc => navigator.invalidate(doc))
+        )
+      }
+    }},
+    { name: 'statusBar', register: (ctx) => {
+      if (lazyProviders.statusBarProvider.isInitialized || vscode.workspace.textDocuments.some(isSqlDocument)) {
+        const statusBar = lazyProviders.statusBarProvider.get()
+        if (statusBar) ctx.subscriptions.push(statusBar)
+      }
+    }},
+  ]
+}
+
 export function activate(context: vscode.ExtensionContext): void {
   lazyProviders = createLazyProviders(context.extensionPath)
 
   perfMonitor.measure('Extension.activate', () => {
-    console.log('Hive Formatter: activating...')
+    console.log('SQL All in One: activating...')
 
     try {
-      safeRegister('initialize i18n', () => initI18n())
-
-      safeRegister('register commands', () => registerCommands(context))
-      safeRegister('register formatting providers', () => registerFormattingProviders(context))
-
-      safeRegister('register diagnostics', () => registerDiagnostics(context))
-      safeRegister('register providers', () => registerProviders(context))
-      safeRegister('register completion', () => registerCompletion(context))
-      safeRegister('register parameter highlighter', () => registerParameterHighlighter(context))
-
-      const navigator = lazyProviders.astNavigator.get()
-      if (navigator) {
-        context.subscriptions.push(
-          vscode.workspace.onDidChangeTextDocument(e => {
-            if (isSqlDocument(e.document)) {
-              navigator.invalidate(e.document)
-            }
-          }),
-          vscode.workspace.onDidCloseTextDocument(doc => {
-            navigator.invalidate(doc)
-          })
-        )
-      }
-
-      if (lazyProviders.statusBarProvider.isInitialized || vscode.workspace.textDocuments.some(isSqlDocument)) {
-        const statusBar = lazyProviders.statusBarProvider.get()
-        if (statusBar) {
-          context.subscriptions.push(statusBar)
-        }
+      const modules = createModules()
+      for (const mod of modules) {
+        safeRegister('register ' + mod.name, () => mod.register(context))
       }
 
       context.subscriptions.push(getConfigManager())
       context.subscriptions.push(getDocumentAstCache())
 
-      console.log('Hive Formatter: activation complete')
+      console.log('SQL All in One: activation complete')
     } catch (e) {
       errorHandler.handle(e, 'Extension activation', ErrorLevel.FATAL, ErrorCategory.CRITICAL)
     }
@@ -250,4 +267,5 @@ export function activate(context: vscode.ExtensionContext): void {
 
 export function deactivate(): void {
   getContainer().disposeAll()
+  lazyProviders = undefined as unknown as ProviderMap
 }

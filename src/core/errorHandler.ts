@@ -63,10 +63,10 @@ export class ErrorHandler {
     try {
       return fn();
     } catch (error) {
-      this.handle(error, context, level, category);
+      const formattedError = this.handle(error, context, level, category);
       
       if (rethrow) {
-        throw error;
+        throw formattedError;
       }
       
       return fallback;
@@ -88,10 +88,10 @@ export class ErrorHandler {
     try {
       return await fn();
     } catch (error) {
-      this.handle(error, context, level, category);
+      const formattedError = this.handle(error, context, level, category);
       
       if (rethrow) {
-        throw error;
+        throw formattedError;
       }
       
       return fallback;
@@ -150,7 +150,7 @@ export class ErrorHandler {
   }
 
   private logError(error: FormatterError): void {
-    const logPrefix = `[Hive Formatter] [${error.level.toUpperCase()}]`;
+    const logPrefix = `[SQL All in One] [${error.level.toUpperCase()}]`;
     const logMessage = `${logPrefix} [${error.context}] ${error.message}`;
 
     switch (error.level) {
