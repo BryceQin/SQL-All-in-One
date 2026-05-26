@@ -8,6 +8,8 @@
 
 一个强大的 SQL 格式化 VSCode 插件，支持 Hive、MySQL、SparkSQL、FlinkSQL、PostgreSQL、BigQuery、SQLite 等多种 SQL 方言，提供丰富的自定义配置选项。
 
+> **v1.10.0 Lint 架构重构** -- AstLinter 规则体系模块化：策略模式 + 规则注册机制，14 个独立规则类实现统一 LintRule 接口，AstLinter 从 877 行缩减至 64 行，支持独立测试和开闭原则扩展。
+
 > **v1.8.0 全面优化** -- 国际化全面改造（设置界面跟随 VS Code 语言切换）、README/CHANGELOG 双语化、配置编辑器多语言、统一方言注册中心、修复内存泄漏、架构优化。
 
 > **v1.7.0 跳转与导航增强** -- Go to Definition（CTE/表别名/列别名）、Find All References、Rename Symbol（含保留字/冲突校验）、Breadcrumb 子句级导航、AstNavigator 共享导航引擎。

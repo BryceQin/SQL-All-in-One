@@ -2,7 +2,7 @@
     "name": "sql-all-in-one",
     "displayName": "SQL All in One",
     "description": "SQL All in One - 强大的 SQL 格式化、智能补全、语法检查、DDL 转换 VSCode 插件，支持 Hive、MySQL、SparkSQL、FlinkSQL、PostgreSQL、BigQuery、SQLite 等多种 SQL 方言",
-    "version": "1.9.0",
+    "version": "1.10.0",
     "publisher": "bryce-qin",
     "contributors": [
         "TalDu"

@@ -1,5 +1,22 @@
 # 更新日志 / Changelog
 
+## 1.10.0
+
+### Lint 架构重构 / Lint Architecture Refactor
+
+| 中文 | English |
+|------|---------|
+| AstLinter 规则体系模块化：将 15+ 个硬编码的 lint 规则检查方法从 AstLinter 类中抽取为 14 个独立规则类 | Modularized AstLinter rule system: extracted 15+ hardcoded lint rule methods into 14 independent rule classes |
+| 统一 LintRule 接口：所有规则实现 `LintRule` 接口（id、applicableTypes、isEnabled、getSeverity、check） | Unified LintRule interface: all rules implement `LintRule` interface (id, applicableTypes, isEnabled, getSeverity, check) |
+| BaseRule 基类：提供 isEnabled()、getSeverity()、addDiagnostic() 通用方法，消除重复样板代码 | BaseRule base class: provides isEnabled(), getSeverity(), addDiagnostic() common methods, eliminating boilerplate code |
+| RuleRegistry 规则注册器：按 AST 节点类型索引规则，自动调度已启用规则 | RuleRegistry: indexes rules by AST node type, auto-dispatches enabled rules |
+| AstLinter 从 877 行缩减至 64 行：转变为轻量级规则协调器 | AstLinter reduced from 877 to 64 lines: transformed into a lightweight rule coordinator |
+| 策略模式 + 开闭原则：添加新规则只需创建规则类并注册，无需修改 AstLinter 核心代码 | Strategy Pattern + Open-Closed Principle: add new rules by creating a rule class and registering it, no AstLinter core changes needed |
+| 配置读取统一：所有规则配置通过 LintRuleConfig 注入，消除方法内部直接读取 vscode.workspace.getConfiguration 的不一致 | Unified config access: all rule configs injected via LintRuleConfig, eliminating inconsistent direct vscode.workspace.getConfiguration calls |
+| 规则可独立测试：每个规则类可独立实例化和单元测试 | Independently testable rules: each rule class can be independently instantiated and unit tested |
+| 新增文件：LintRule.ts、BaseRule.ts、RuleRegistry.ts 及 14 个规则类文件 | New files: LintRule.ts, BaseRule.ts, RuleRegistry.ts, and 14 rule class files |
+| 公共 API 完全兼容：AstLinter.lint() 签名不变，SqlLinter 和测试文件无需修改 | Fully compatible public API: AstLinter.lint() signature unchanged, no changes needed in SqlLinter or test files |
+
 ## 1.9.0
 
 ### 项目重命名 / Project Rename
