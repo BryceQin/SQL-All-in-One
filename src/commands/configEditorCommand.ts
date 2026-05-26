@@ -4,7 +4,8 @@ import * as path from 'path'
 import { format, type SqlLanguage } from '../formatter/sqlFormatter'
 import type { KeywordCase, DataTypeCase, FunctionCase, IndentStyle, LogicalOperatorNewline } from '../formatter/FormatOptions'
 import { t, getLanguage } from '../i18n'
-import type { MessageKey } from '../i18n'
+import messagesEn from '../i18n/messages.en.json'
+import messagesZh from '../i18n/messages.zh.json'
 import { ALL_CONFIG_ITEMS, LINT_RULES, getDefaultConfig, getConfigKey } from '../config/configDefinitions'
 
 export class ConfigEditorPanel {
@@ -68,6 +69,12 @@ export class ConfigEditorPanel {
                     case 'getCurrentConfig':
                         await this._sendCurrentConfig()
                         break
+                    case 'changeLanguage':
+                        if (message.lang) {
+                            const config = vscode.workspace.getConfiguration('SQL-All-in-One')
+                            await config.update('displayLanguage', message.lang, vscode.ConfigurationTarget.Global)
+                        }
+                        break
                 }
             },
             null,
@@ -107,8 +114,9 @@ export class ConfigEditorPanel {
             html = html.replace('{{CSS_URI}}', cssUri.toString())
             html = html.replace('{{JS_URI}}', jsUri.toString())
 
-            const i18nDict = this._getConfigEditorI18n()
-            const i18nScript = '<script>window.__I18N__ = ' + JSON.stringify(i18nDict) + '; window.__LANG__ = "' + getLanguage() + '";</script>'
+            const i18nDicts = this._getConfigEditorI18n()
+            const currentLang = getLanguage()
+            const i18nScript = '<script>window.__I18N_ZH__ = ' + JSON.stringify(i18nDicts.zh) + '; window.__I18N_EN__ = ' + JSON.stringify(i18nDicts.en) + '; window.__LANG__ = "' + currentLang + '"; window.__I18N__ = window.__LANG__ === "en" ? window.__I18N_EN__ : window.__I18N_ZH__;</script>'
             html = html.replace('{{I18N_INJECT}}', i18nScript)
 
             return html
@@ -117,22 +125,11 @@ export class ConfigEditorPanel {
         }
     }
 
-    private _getConfigEditorI18n(): Record<string, string> {
-        const keys: MessageKey[] = [
-            'configEditor.title', 'configEditor.subtitle',
-            'configEditor.presets', 'configEditor.presetDefault',
-            'configEditor.presetHive', 'configEditor.presetMySQL',
-            'configEditor.presetCompact', 'configEditor.resetDefault',
-            'configEditor.save', 'configEditor.previewTitle',
-            'configEditor.previewPlaceholder', 'configEditor.formatPreviewBtn',
-            'configEditor.formattingOptions', 'configEditor.loadFailed',
-            'configEditor.reinstall',
-        ]
-        const dict: Record<string, string> = {}
-        for (const key of keys) {
-            dict[key] = t(key)
+    private _getConfigEditorI18n(): { zh: Record<string, string>; en: Record<string, string> } {
+        return {
+            zh: messagesZh as Record<string, string>,
+            en: messagesEn as Record<string, string>,
         }
-        return dict
     }
 
     private async _sendCurrentConfig() {

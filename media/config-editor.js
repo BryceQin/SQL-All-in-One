@@ -1,5 +1,10 @@
         (function() {
     var dict = window.__I18N__ || {};
+    applyI18nDict(dict);
+})();
+
+function applyI18nDict(dict) {
+    if (!dict) return;
     document.querySelectorAll('[data-i18n]').forEach(function(el) {
         var key = el.getAttribute('data-i18n');
         if (dict[key]) {
@@ -10,7 +15,27 @@
             }
         }
     });
-})();
+    document.querySelectorAll('[data-i18n-ph]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n-ph');
+        if (dict[key]) {
+            el.placeholder = dict[key];
+        }
+    });
+}
+
+function changeLanguage(lang) {
+    var dict;
+    if (lang === 'en') {
+        dict = window.__I18N_EN__ || {};
+    } else {
+        dict = window.__I18N_ZH__ || {};
+    }
+    window.__I18N__ = dict;
+    window.__LANG__ = lang;
+    applyI18nDict(dict);
+    document.documentElement.lang = lang;
+    vscode.postMessage({ command: 'changeLanguage', lang: lang });
+}
 
         let currentConfig = {
             enableSmartCommentToggle: true,
@@ -801,9 +826,9 @@
                     break;
                 case 'saveResult':
                     if (message.success) {
-                        showToast('配置已保存 (Config saved)', 'success');
+                        showToast(window.__I18N__['configEditor.toast.configSaved'] || '配置已保存', 'success');
                     } else {
-                        showToast('保存失败，请重试 (Save failed, please retry)', 'error');
+                        showToast(window.__I18N__['configEditor.toast.saveFailed'] || '保存失败，请重试', 'error');
                     }
                     break;
             }
@@ -824,6 +849,10 @@
                 }
             });
             updateTabOverrideGroup();
+            var langSelect = document.getElementById('langSelect');
+            if (langSelect) {
+                langSelect.value = window.__LANG__ || 'zh';
+            }
         }
         
         function collectConfig() {
