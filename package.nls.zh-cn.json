@@ -1,13 +1,4 @@
 {
-    "sql-all-in-one.command.format.title": "格式化 SQL",
-    "sql-all-in-one.command.formatSelection.title": "格式化选中的 SQL",
-    "sql-all-in-one.command.openConfigEditor.title": "SQL All in One 配置",
-    "sql-all-in-one.command.openConfigEditor.shortTitle": "配置编辑器",
-    "sql-all-in-one.command.convertMysqlToHive.title": "将 MySQL 转换为 HiveSQL",
-    "sql-all-in-one.command.convertHiveToMysql.title": "将 HiveSQL 转换为 MySQL",
-    "sql-all-in-one.command.toggleBlockComment.title": "切换 SQL 块注释",
-    "sql-all-in-one.command.addDdlColumnComment.title": "添加 DDL 列 COMMENT",
-    "sql-all-in-one.command.addFormatDisableMark.title": "添加格式化禁用标记",
     "sql-all-in-one.config.displayLanguage.markdownDescription": "插件显示语言。`auto` 跟随 VSCode，`zh` 强制中文，`en` 强制英文。",
     "sql-all-in-one.config.displayLanguage.enumDescriptions.auto": "自动检测（跟随 VSCode 显示语言）",
     "sql-all-in-one.config.displayLanguage.enumDescriptions.zh": "强制中文",

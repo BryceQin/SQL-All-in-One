@@ -1,13 +1,4 @@
 {
-    "sql-all-in-one.command.format.title": "Format SQL",
-    "sql-all-in-one.command.formatSelection.title": "Format Selected SQL",
-    "sql-all-in-one.command.openConfigEditor.title": "SQL All in One Config",
-    "sql-all-in-one.command.openConfigEditor.shortTitle": "Config Editor",
-    "sql-all-in-one.command.convertMysqlToHive.title": "Convert MySQL to HiveSQL",
-    "sql-all-in-one.command.convertHiveToMysql.title": "Convert HiveSQL to MySQL",
-    "sql-all-in-one.command.toggleBlockComment.title": "Toggle SQL Block Comment",
-    "sql-all-in-one.command.addDdlColumnComment.title": "Add DDL Column COMMENT",
-    "sql-all-in-one.command.addFormatDisableMark.title": "Add Format Disable Mark",
     "sql-all-in-one.config.displayLanguage.markdownDescription": "Plugin display language. `auto` follows VSCode, `zh` forces Chinese, `en` forces English.",
     "sql-all-in-one.config.displayLanguage.enumDescriptions.auto": "Auto-detect (follows VSCode display language)",
     "sql-all-in-one.config.displayLanguage.enumDescriptions.zh": "Force Chinese",
