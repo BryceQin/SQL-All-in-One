@@ -13,9 +13,9 @@ export class ConfigManager {
     constructor() {
         this.disposables.push(
             vscode.workspace.onDidChangeConfiguration((e) => {
-                if (e.affectsConfiguration('Hive-Formatter')) {
+                if (e.affectsConfiguration('SQL-All-in-One')) {
                     this.cache.clear()
-                    if (e.affectsConfiguration('Hive-Formatter.displayLanguage')) {
+                    if (e.affectsConfiguration('SQL-All-in-One.displayLanguage')) {
                         try { initI18n() } catch { /* ignore */ }
                     }
                     for (const listener of this.listeners) {
@@ -35,7 +35,7 @@ export class ConfigManager {
         if (cached !== undefined) {
             return cached as T
         }
-        const config = vscode.workspace.getConfiguration('Hive-Formatter')
+        const config = vscode.workspace.getConfiguration('SQL-All-in-One')
         let value = config.get<T>(section, defaultValue)
         
         const validator = this.validators.get(section)
@@ -53,7 +53,7 @@ export class ConfigManager {
         if (cached !== undefined) {
             return cached as T
         }
-        const config = vscode.workspace.getConfiguration('Hive-Formatter')
+        const config = vscode.workspace.getConfiguration('SQL-All-in-One')
         const value = config.get<T>(section, defaultValue)
         this.cache.set(section, value)
         return value
@@ -65,7 +65,7 @@ export class ConfigManager {
         if (cached !== undefined) {
             return cached as T
         }
-        const config = vscode.workspace.getConfiguration('Hive-Formatter')
+        const config = vscode.workspace.getConfiguration('SQL-All-in-One')
         const result = {} as Record<string, unknown>
         for (const key of keys) {
             const section = prefix ? `${prefix}.${key}` : key

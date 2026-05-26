@@ -593,7 +593,7 @@ export class AstLinter {
             return
         }
 
-        const cfg = vscode.workspace.getConfiguration('Hive-Formatter')
+        const cfg = vscode.workspace.getConfiguration('SQL-All-in-One')
         const thresholdLines = cfg.get<number>('lint.missing_query_comment_threshold_line_count', 20)
         const thresholdJoins = cfg.get<number>('lint.missing_query_comment_threshold_join_count', 3)
         const thresholdSubqueries = cfg.get<number>('lint.missing_query_comment_threshold_subquery_count', 2)
@@ -696,7 +696,7 @@ export class AstLinter {
             return
         }
 
-        const cfg = vscode.workspace.getConfiguration('Hive-Formatter')
+        const cfg = vscode.workspace.getConfiguration('SQL-All-in-One')
         const aggregate = cfg.get<boolean>('lint.missing_column_comment_aggregate', true)
 
         if (aggregate && missingColumns.length > 1) {
@@ -774,7 +774,7 @@ export class AstLinter {
     }
 
     private checkCommentedOutCode(sql: string, diagnostics: vscode.Diagnostic[]): void {
-        const cfg = vscode.workspace.getConfiguration('Hive-Formatter')
+        const cfg = vscode.workspace.getConfiguration('SQL-All-in-One')
         const thresholdLines = cfg.get<number>('lint.commented_out_code_threshold_lines', 3)
 
         const blockCommentPattern = /\/\*([\s\S]*?)\*\//g
@@ -839,7 +839,7 @@ export class AstLinter {
     }
 
     private checkExpiredTodo(sql: string, diagnostics: vscode.Diagnostic[]): void {
-        const cfg = vscode.workspace.getConfiguration('Hive-Formatter')
+        const cfg = vscode.workspace.getConfiguration('SQL-All-in-One')
         const gracePeriod = cfg.get<number>('lint.expired_todo_grace_period_days', 7)
 
         const patterns = [

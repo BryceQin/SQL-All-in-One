@@ -12,14 +12,14 @@ export class StatusBarProvider {
         this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100)
         this.statusBarItem.text = '$(sql)'
         this.statusBarItem.tooltip = t('statusBar.tooltip')
-        this.statusBarItem.command = 'hive-formatter.open-config-editor'
+        this.statusBarItem.command = 'sql-all-in-one.open-config-editor'
         
         this.updateStatusBar()
         this.statusBarItem.show()
 
         this.disposables.push(
             vscode.workspace.onDidChangeConfiguration((e) => {
-                if (e.affectsConfiguration('Hive-Formatter')) {
+                if (e.affectsConfiguration('SQL-All-in-One')) {
                     this.updateStatusBar()
                 }
             }),
@@ -30,7 +30,7 @@ export class StatusBarProvider {
     }
 
     private updateStatusBar() {
-        const config = vscode.workspace.getConfiguration('Hive-Formatter')
+        const config = vscode.workspace.getConfiguration('SQL-All-in-One')
         const dialect = config.get('dialect', 'hive')
         const activeEditor = vscode.window.activeTextEditor
 

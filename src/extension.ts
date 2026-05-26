@@ -86,12 +86,12 @@ function safeRegister(label: string, fn: () => void): void {
 
 function registerCommands(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
-    vscode.commands.registerCommand("hive-formatter.format-selection", formatSelectionCommand),
-    vscode.commands.registerCommand("hive-formatter.toggleComment", toggleComment),
-    vscode.commands.registerCommand("hive-formatter.toggleAdvancedComment", toggleAdvancedComment),
-    vscode.commands.registerCommand("hive-formatter.mysql-to-hive", convertMysqlToHiveCommand),
-    vscode.commands.registerCommand("hive-formatter.hive-to-mysql", convertHiveToMysqlCommand),
-    vscode.commands.registerCommand("hive-formatter.open-config-editor", () =>
+    vscode.commands.registerCommand("sql-all-in-one.format-selection", formatSelectionCommand),
+    vscode.commands.registerCommand("sql-all-in-one.toggleComment", toggleComment),
+    vscode.commands.registerCommand("sql-all-in-one.toggleAdvancedComment", toggleAdvancedComment),
+    vscode.commands.registerCommand("sql-all-in-one.mysql-to-hive", convertMysqlToHiveCommand),
+    vscode.commands.registerCommand("sql-all-in-one.hive-to-mysql", convertHiveToMysqlCommand),
+    vscode.commands.registerCommand("sql-all-in-one.open-config-editor", () =>
       openConfigEditorCommand(context.extensionUri)
     ),
   )
@@ -247,7 +247,7 @@ export function activate(context: vscode.ExtensionContext): void {
   lazyProviders = createLazyProviders(context.extensionPath)
 
   perfMonitor.measure('Extension.activate', () => {
-    console.log('Hive Formatter: activating...')
+    console.log('SQL All in One: activating...')
 
     try {
       const modules = createModules()
@@ -258,7 +258,7 @@ export function activate(context: vscode.ExtensionContext): void {
       context.subscriptions.push(getConfigManager())
       context.subscriptions.push(getDocumentAstCache())
 
-      console.log('Hive Formatter: activation complete')
+      console.log('SQL All in One: activation complete')
     } catch (e) {
       errorHandler.handle(e, 'Extension activation', ErrorLevel.FATAL, ErrorCategory.CRITICAL)
     }

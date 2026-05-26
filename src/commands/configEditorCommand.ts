@@ -9,7 +9,7 @@ import { ALL_CONFIG_ITEMS, LINT_RULES, getDefaultConfig, getConfigKey } from '..
 
 export class ConfigEditorPanel {
     public static currentPanel: ConfigEditorPanel | undefined
-    public static readonly viewType = 'hiveFormatterConfig'
+    public static readonly viewType = 'sqlAllInOneConfig'
 
     private readonly _panel: vscode.WebviewPanel
     private readonly _extensionUri: vscode.Uri
@@ -136,7 +136,7 @@ export class ConfigEditorPanel {
     }
 
     private async _sendCurrentConfig() {
-        const config = vscode.workspace.getConfiguration('Hive-Formatter')
+        const config = vscode.workspace.getConfiguration('SQL-All-in-One')
         const data: Record<string, unknown> = {}
 
         for (const item of ALL_CONFIG_ITEMS) {
@@ -157,7 +157,7 @@ export class ConfigEditorPanel {
     }
 
     private async _updateConfig(data: Record<string, unknown>) {
-        const config = vscode.workspace.getConfiguration('Hive-Formatter')
+        const config = vscode.workspace.getConfiguration('SQL-All-in-One')
 
         for (const item of ALL_CONFIG_ITEMS) {
             let value = data[item.key]
@@ -187,7 +187,7 @@ export class ConfigEditorPanel {
 
     private async _previewFormat(sql: string, webviewConfig?: Record<string, unknown>) {
         try {
-            const config = vscode.workspace.getConfiguration('Hive-Formatter')
+            const config = vscode.workspace.getConfiguration('SQL-All-in-One')
             const get = <T>(key: string, defaultValue: T): T => {
                 if (webviewConfig && key in webviewConfig && webviewConfig[key] !== undefined) {
                     return webviewConfig[key] as T

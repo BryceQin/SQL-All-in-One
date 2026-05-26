@@ -126,7 +126,7 @@ export class SqlCodeActionProvider implements vscode.CodeActionProvider {
         )
         uncommentAction.diagnostics = [diagnostic]
         uncommentAction.command = {
-            command: 'hive-formatter.toggleComment',
+            command: 'sql-all-in-one.toggleComment',
             title: t('codeAction.uncomment')
         }
         actions.push(uncommentAction)

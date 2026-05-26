@@ -190,9 +190,9 @@
     "validate.emptyParamRegex": "自定义 paramTypes 中传入了空的正则表达式，这将导致匹配出无限多个参数。",
 
     "paramHover": "参数：{0}",
-    "statusBar.tooltip": "Hive Formatter",
-    "linter.source": "Hive Formatter Linter",
-    "configEditor.panelTitle": "Hive Formatter - 配置编辑器",
+    "statusBar.tooltip": "SQL All in One",
+    "linter.source": "SQL All in One Linter",
+    "configEditor.panelTitle": "SQL All in One - 配置编辑器",
     "hover.keywordCategory.query": "查询子句",
     "hover.keywordCategory.join": "连接",
     "hover.keywordCategory.setop": "集合运算",
@@ -213,7 +213,7 @@
     "hover.parameterUsage": "该参数在以下位置被使用（共 {0} 处）：",
     "hover.parameterLine": "第 {0} 行:",
     "hover.parameterMore": "还有 {0} 处",
-    "hover.parameterTip": "提示：使用 \"Hive-Formatter: 替换 SQL 参数\" 命令可批量替换",
+    "hover.parameterTip": "提示：使用 \"SQL-All-in-One: 替换 SQL 参数\" 命令可批量替换",
 
     "navigation.cteDefinition": "CTE 定义",
     "navigation.tableAliasDefinition": "表别名定义",
@@ -226,7 +226,7 @@
     "navigation.nameConflict": "名称 '{0}' 已被使用",
     "navigation.invalidName": "名称只能包含字母、数字和下划线，且不能以数字开头",
 
-    "configEditor.title": "Hive Formatter - 配置编辑器",
+    "configEditor.title": "SQL All in One - 配置编辑器",
     "configEditor.subtitle": "可视化调整 SQL 格式化选项，实时预览效果",
     "configEditor.presets": "快速预设",
     "configEditor.presetDefault": "默认",

@@ -6,7 +6,7 @@ export function getCommentCompletionItems(
     _pos: vscode.Position
 ): vscode.CompletionItem[] {
     try {
-        const config = vscode.workspace.getConfiguration('Hive-Formatter')
+        const config = vscode.workspace.getConfiguration('SQL-All-in-One')
         const author = config.get<string>('headerAuthor', '')
         const modifier = config.get<string>('headerModifier', '') || author
         const { inputTables, outputTables } = extractTableDependencies(doc.getText())

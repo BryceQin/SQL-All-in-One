@@ -1,4 +1,4 @@
-# Hive Formatter
+# SQL All in One
 
 [English](#english) | [中文](#中文)
 
@@ -44,14 +44,14 @@ Unlike most SQL plugins on the market that offer only a single formatting style,
 1. After installing, open any `.sql` or `.hql` file
 2. Use `Shift+Alt+F` (Windows/Linux) or `Shift+Option+F` (Mac) to format
 3. Or right-click and select "Format Document"
-4. Or use Command Palette: "Format Selection (Hive Formatter)"
+4. Or use Command Palette: "Format Selection (SQL All in One)"
 
 ### Visual Config Editor
 
 Use the graphical config interface to easily adjust formatting options:
 
 1. Press `Cmd+Shift+P` (Mac) or `Ctrl+Shift+P` (Windows/Linux)
-2. Search for "Hive Formatter Config"
+2. Search for "SQL All in One Config"
 3. Enter SQL in the preview area and click "Format Preview"
 4. Adjust options in the config area below (multi-column flow layout, adaptive, no white gaps)
 5. Drag the divider between preview and config areas to resize
@@ -176,7 +176,7 @@ The plugin includes 580+ function signatures covering multiple dialects. Each fu
 
 #### Configuration Options
 
-Search "Hive Formatter" in VS Code settings to control completion behavior:
+Search "SQL All in One" in VS Code settings to control completion behavior:
 
 | Setting | Description | Default |
 |---------|-------------|---------|
@@ -224,7 +224,7 @@ Enter prefixes to quickly insert comment templates:
 
 ### Extension Settings
 
-Search "Hive Formatter" in VS Code settings to configure:
+Search "SQL All in One" in VS Code settings to configure:
 
 | Setting | Description | Default |
 |---------|-------------|---------|
@@ -279,9 +279,9 @@ The plugin provides powerful SQL linting with 17+ built-in rules and custom conf
 
 #### Configuring Lint Rules
 
-Search "Hive Formatter" in VS Code settings to:
-1. Enable/disable linting via `Hive-Formatter.enableLinter`
-2. Configure each rule's enabled status and severity via `Hive-Formatter.lint.<ruleId>`
+Search "SQL All in One" in VS Code settings to:
+1. Enable/disable linting via `SQL-All-in-One.enableLinter`
+2. Configure each rule's enabled status and severity via `SQL-All-in-One.lint.<ruleId>`
 3. Severity levels: `error`, `warning`, `information`, `hint`
 
 ### Supported File Types
@@ -332,7 +332,7 @@ Error messages include line numbers for quick location and fix.
 
 ### Feedback & Contributions
 
-If you have questions or good formatting configuration suggestions, please provide feedback on [GitHub Issues](https://github.com/BryceQin/Hive-Formatter/issues).
+If you have questions or good formatting configuration suggestions, please provide feedback on [GitHub Issues](https://github.com/BryceQin/SQL-All-in-One/issues).
 
 ### Changelog
 
@@ -388,14 +388,14 @@ MIT
 1. 安装插件后，打开任意 `.sql` 或 `.hql` 文件
 2. 使用快捷键 `Shift+Alt+F`（Windows/Linux）或 `Shift+Option+F`（Mac）格式化文档
 3. 或右键选择"格式化文档"
-4. 或使用命令面板搜索"Format Selection (Hive Formatter)"格式化选中内容
+4. 或使用命令面板搜索"Format Selection (SQL All in One)"格式化选中内容
 
 ## 可视化配置编辑器
 
 使用图形化配置界面轻松调整格式化选项：
 
 1. 按 `Cmd+Shift+P`（Mac）或 `Ctrl+Shift+P`（Windows/Linux）打开命令面板
-2. 搜索并选择 "Hive Formatter Config"
+2. 搜索并选择 "SQL All in One Config"
 3. 在顶部预览区输入 SQL 并点击"格式化预览"查看效果
 4. 在底部配置区调整选项，多列流式布局自适应，无空白间隙
 5. 拖拽预览区和配置区之间的分割线可调整预览区高度
@@ -521,7 +521,7 @@ MIT
 
 ### 配置选项
 
-在 VSCode 设置中搜索 "Hive Formatter" 可以控制补全行为：
+在 VSCode 设置中搜索 "SQL All in One" 可以控制补全行为：
 
 | 配置项 | 说明 | 默认值 |
 |--------|------|--------|
@@ -569,7 +569,7 @@ MIT
 
 ## 扩展设置
 
-在 VSCode 设置中搜索 "Hive Formatter" 进行配置：
+在 VSCode 设置中搜索 "SQL All in One" 进行配置：
 
 | 设置项 | 描述 | 默认值 |
 |--------|------|--------|
@@ -624,9 +624,9 @@ MIT
 
 ### 配置 Lint 规则
 
-在 VSCode 设置中搜索 "Hive Formatter"，可以：
-1. 通过 `Hive-Formatter.enableLinter` 启用/禁用 Lint 功能
-2. 通过 `Hive-Formatter.lint.<ruleId>` 配置每条规则的启用状态和严重级别
+在 VSCode 设置中搜索 "SQL All in One"，可以：
+1. 通过 `SQL-All-in-One.enableLinter` 启用/禁用 Lint 功能
+2. 通过 `SQL-All-in-One.lint.<ruleId>` 配置每条规则的启用状态和严重级别
 3. 严重级别支持：`error`、`warning`、`information`、`hint`
 
 ## 支持的文件类型
@@ -677,7 +677,7 @@ LIMIT 10;
 
 ## 反馈与贡献
 
-如果你有问题或者好的格式化配置建议，欢迎在 [GitHub Issues](https://github.com/BryceQin/Hive-Formatter/issues) 反馈。
+如果你有问题或者好的格式化配置建议，欢迎在 [GitHub Issues](https://github.com/BryceQin/SQL-All-in-One/issues) 反馈。
 
 ## 更新日志
 

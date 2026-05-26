@@ -150,7 +150,7 @@ export class ErrorHandler {
   }
 
   private logError(error: FormatterError): void {
-    const logPrefix = `[Hive Formatter] [${error.level.toUpperCase()}]`;
+    const logPrefix = `[SQL All in One] [${error.level.toUpperCase()}]`;
     const logMessage = `${logPrefix} [${error.context}] ${error.message}`;
 
     switch (error.level) {

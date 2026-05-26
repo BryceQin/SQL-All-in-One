@@ -1,5 +1,18 @@
 # Changelog / 更新日志
 
+## 1.9.0
+
+### Project Rename / 项目重命名
+
+| English | 中文 |
+|---------|------|
+| Project renamed from "Hive Formatter" to "SQL All in One" to better reflect the multi-dialect, all-in-one nature of the extension | 项目从 "Hive Formatter" 重命名为 "SQL All in One"，更准确地反映多方言、一站式扩展的定位 |
+| Extension ID changed: `bryce-qin.hive-formatter` → `bryce-qin.sql-all-in-one` | 扩展 ID 变更：`bryce-qin.hive-formatter` → `bryce-qin.sql-all-in-one` |
+| Config section changed: `Hive-Formatter.*` → `SQL-All-in-One.*` (existing user settings need to be reconfigured) | 配置节变更：`Hive-Formatter.*` → `SQL-All-in-One.*`（已有用户设置需要重新配置） |
+| Command IDs changed: `hive-formatter.*` → `sql-all-in-one.*` | 命令 ID 变更：`hive-formatter.*` → `sql-all-in-one.*` |
+| Repository URL changed: `BryceQin/Hive-Formatter` → `BryceQin/SQL-All-in-One` | 仓库地址变更：`BryceQin/Hive-Formatter` → `BryceQin/SQL-All-in-One` |
+| All functionality remains unchanged, only naming has been updated | 所有功能保持不变，仅更新了命名 |
+
 ## 1.8.0
 
 ### Comprehensive Optimization / 全面架构与国际化优化
@@ -611,7 +624,7 @@
 | English | 中文 |
 |---------|------|
 | New visual config editor feature | 新增可视化配置编辑器功能 |
-| Command name changed from "Open Config Editor" to "Hive Formatter Config" | 命令名从"Open Config Editor"改为"Hive Formatter Config" |
+| Command name changed from "Open Config Editor" to "SQL All in One Config" | 命令名从"Open Config Editor"改为"SQL All in One Config" |
 | Graphical config interface with real-time format preview | 提供图形化配置界面，支持实时预览格式化效果 |
 | Built-in quick presets (Default, Hive, MySQL, Compact) | 内置快速预设（默认、Hive、MySQL、紧凑） |
 | VS Code theme adaptation (dark/light/high contrast) | 支持 VSCode 主题适配（深色/浅色/高对比度） |

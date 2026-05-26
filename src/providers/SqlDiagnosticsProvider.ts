@@ -21,7 +21,7 @@ export class SqlDiagnosticsProvider {
 
     constructor() {
         this.diagnosticCollection =
-            vscode.languages.createDiagnosticCollection("hive-formatter")
+            vscode.languages.createDiagnosticCollection("sql-all-in-one")
         this.enhancedChecker = new EnhancedSqlChecker()
         this.linter = new SqlLinter()
 
@@ -140,7 +140,7 @@ export class SqlDiagnosticsProvider {
             message,
             vscode.DiagnosticSeverity.Error,
         )
-        diagnostic.source = "Hive Formatter"
+        diagnostic.source = "SQL All in One"
         return diagnostic
     }
 

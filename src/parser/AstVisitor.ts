@@ -34,7 +34,7 @@ export function walkAst(
         if (!task) break
 
         if (depth > MAX_AST_DEPTH) {
-            console.warn('Hive Formatter: AST depth exceeded maximum, stopping traversal')
+            console.warn('SQL All in One: AST depth exceeded maximum, stopping traversal')
             return
         }
 

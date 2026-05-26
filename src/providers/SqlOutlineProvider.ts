@@ -89,7 +89,7 @@ export class SqlOutlineProvider implements vscode.DocumentSymbolProvider {
             }
         }
 
-        const enableNavigation = vscode.workspace.getConfiguration('Hive-Formatter').get<boolean>('enableNavigation', true)
+        const enableNavigation = vscode.workspace.getConfiguration('SQL-All-in-One').get<boolean>('enableNavigation', true)
 
         if (enableNavigation) {
             if (Array.isArray(node.columns)) {

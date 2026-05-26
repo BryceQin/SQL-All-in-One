@@ -11,7 +11,7 @@ export class SqlReferenceProvider implements vscode.ReferenceProvider {
         _token: vscode.CancellationToken,
     ): vscode.Location[] | null {
         try {
-            const config = vscode.workspace.getConfiguration('Hive-Formatter')
+            const config = vscode.workspace.getConfiguration('SQL-All-in-One')
             if (!config.get<boolean>('enableNavigation', true)) return null
 
             const range = document.getWordRangeAtPosition(position)

@@ -17,7 +17,7 @@ const validLanguages: Language[] = ['zh', 'en'];
 
 export function initI18n(): void {
     try {
-        const config = vscode.workspace.getConfiguration('Hive-Formatter');
+        const config = vscode.workspace.getConfiguration('SQL-All-in-One');
         const userLang = config.get<string>('displayLanguage', 'auto');
 
         if (userLang === 'auto') {

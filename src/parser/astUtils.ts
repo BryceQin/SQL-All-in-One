@@ -111,7 +111,7 @@ export function createDiagnostic(
     code: string,
     message: string,
     severity: vscode.DiagnosticSeverity,
-    source = 'Hive Formatter',
+    source = 'SQL All in One',
 ): vscode.Diagnostic {
     const diagnostic = new vscode.Diagnostic(
         new vscode.Range(loc.line - 1, loc.column - 1, loc.line - 1, loc.column - 1 + length),

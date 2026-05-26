@@ -97,7 +97,7 @@ function safeRegister(label, fn) {
     });
 }
 function registerCommands(context) {
-    context.subscriptions.push(vscode.commands.registerCommand("hive-formatter.format-selection", formatSelectionCommand_1.formatSelectionCommand), vscode.commands.registerCommand("hive-formatter.toggleComment", commentCommands_1.toggleComment), vscode.commands.registerCommand("hive-formatter.toggleAdvancedComment", commentCommands_1.toggleAdvancedComment), vscode.commands.registerCommand("hive-formatter.mysql-to-hive", converterCommands_1.convertMysqlToHiveCommand), vscode.commands.registerCommand("hive-formatter.hive-to-mysql", converterCommands_1.convertHiveToMysqlCommand), vscode.commands.registerCommand("hive-formatter.open-config-editor", () => (0, configEditorCommand_1.openConfigEditorCommand)(context.extensionUri)));
+    context.subscriptions.push(vscode.commands.registerCommand("sql-all-in-one.format-selection", formatSelectionCommand_1.formatSelectionCommand), vscode.commands.registerCommand("sql-all-in-one.toggleComment", commentCommands_1.toggleComment), vscode.commands.registerCommand("sql-all-in-one.toggleAdvancedComment", commentCommands_1.toggleAdvancedComment), vscode.commands.registerCommand("sql-all-in-one.mysql-to-hive", converterCommands_1.convertMysqlToHiveCommand), vscode.commands.registerCommand("sql-all-in-one.hive-to-mysql", converterCommands_1.convertHiveToMysqlCommand), vscode.commands.registerCommand("sql-all-in-one.open-config-editor", () => (0, configEditorCommand_1.openConfigEditorCommand)(context.extensionUri)));
 }
 function registerFormattingProviders(context) {
     context.subscriptions.push(...Object.entries(sqlDialects_1.sqlDialects).map(([vscodeLang, sqlDialectName]) => vscode.languages.registerDocumentFormattingEditProvider(vscodeLang, new SqlFormattingProvider_1.SqlFormattingProvider(sqlDialectName))));
@@ -196,7 +196,7 @@ function createModules() {
 function activate(context) {
     lazyProviders = createLazyProviders(context.extensionPath);
     perfMonitor.measure('Extension.activate', () => {
-        console.log('Hive Formatter: activating...');
+        console.log('SQL All in One: activating...');
         try {
             const modules = createModules();
             for (const mod of modules) {
@@ -204,7 +204,7 @@ function activate(context) {
             }
             context.subscriptions.push((0, configManager_1.getConfigManager)());
             context.subscriptions.push((0, DocumentAstCache_1.getDocumentAstCache)());
-            console.log('Hive Formatter: activation complete');
+            console.log('SQL All in One: activation complete');
         }
         catch (e) {
             errorHandler.handle(e, 'Extension activation', errorHandler_1.ErrorLevel.FATAL, errorHandler_1.ErrorCategory.CRITICAL);
