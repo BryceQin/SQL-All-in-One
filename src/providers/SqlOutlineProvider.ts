@@ -5,15 +5,19 @@ import { toSqlDialect } from '../core/sqlDialects'
 import { isAstNode } from '../parser/AstVisitor'
 import { getNodeLocation, getStatementEndLocation, extractName } from '../parser/astUtils'
 import type { AstNode, AstLocation } from '../parser/astTypes'
+import { getConfigManager } from '../core/configManager'
 
 export class SqlOutlineProvider implements vscode.DocumentSymbolProvider {
     provideDocumentSymbols(
         document: vscode.TextDocument,
-        _token: vscode.CancellationToken
+        token: vscode.CancellationToken
     ): vscode.ProviderResult<vscode.SymbolInformation[] | vscode.DocumentSymbol[]> {
         try {
             const dialect = toSqlDialect(document.languageId)
             const result = getDocumentAstCache().getOrParse(document, dialect)
+
+            if (token.isCancellationRequested) return []
+
             if (result.success && result.ast) {
                 return this.provideDocumentSymbolsFromAst(document, result.ast)
             }
@@ -89,7 +93,7 @@ export class SqlOutlineProvider implements vscode.DocumentSymbolProvider {
             }
         }
 
-        const enableNavigation = vscode.workspace.getConfiguration('SQL-All-in-One').get<boolean>('enableNavigation', true)
+        const enableNavigation = getConfigManager().get<boolean>('enableNavigation', true)
 
         if (enableNavigation) {
             if (Array.isArray(node.columns)) {

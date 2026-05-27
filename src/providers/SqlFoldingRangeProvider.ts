@@ -9,11 +9,13 @@ export class SqlFoldingRangeProvider implements vscode.FoldingRangeProvider {
     provideFoldingRanges(
         document: vscode.TextDocument,
         _context: vscode.FoldingContext,
-        _token: vscode.CancellationToken
+        token: vscode.CancellationToken
     ): vscode.ProviderResult<vscode.FoldingRange[]> {
         try {
             const dialect = toSqlDialect(document.languageId)
             const result = getDocumentAstCache().getOrParse(document, dialect)
+
+            if (token.isCancellationRequested) return []
 
             if (result.success && result.ast) {
                 const ranges = this.provideFoldingRangesFromAst(result.ast)

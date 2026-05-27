@@ -2,15 +2,20 @@ import * as vscode from 'vscode'
 import type { RuleContext } from './LintRule'
 import { BaseRule } from './BaseRule'
 import type { AstLocation } from '../../parser/astTypes'
+import { getConfigManager } from '../../core/configManager'
 
 export class ExpiredTodoRule extends BaseRule {
     readonly id = 'expired_todo'
     readonly applicableTypes: string[] = []
+    readonly name = 'Expired TODO'
+    readonly description = 'linter.expiredTodo.description'
+    readonly category = 'best-practices'
+    readonly defaultSeverity = vscode.DiagnosticSeverity.Information
+    readonly defaultEnabled = true
 
     check(context: RuleContext): vscode.Diagnostic[] {
         const diagnostics: vscode.Diagnostic[] = []
-        const cfg = vscode.workspace.getConfiguration('SQL-All-in-One')
-        const gracePeriod = cfg.get<number>('lint.expired_todo_grace_period_days', 7)
+        const gracePeriod = getConfigManager().get<number>('lint.expired_todo_grace_period_days', 7)
 
         const patterns = [
             /--\s*(TODO|FIXME)\s*\(\s*(\d{4}[-/]\d{2}[-/]\d{2})\s*\):?\s*.*/gi,

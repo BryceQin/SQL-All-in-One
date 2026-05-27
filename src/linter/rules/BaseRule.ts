@@ -8,6 +8,11 @@ import type { AstLocation } from '../../parser/astTypes'
 export abstract class BaseRule implements LintRule {
     abstract readonly id: string
     abstract readonly applicableTypes: string[]
+    abstract readonly name: string
+    abstract readonly description: string
+    abstract readonly category: string
+    abstract readonly defaultSeverity: vscode.DiagnosticSeverity
+    abstract readonly defaultEnabled: boolean
 
     protected config: LintRuleConfig
 

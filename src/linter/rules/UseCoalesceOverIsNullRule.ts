@@ -8,6 +8,11 @@ import type { AstNode } from '../../parser/astTypes'
 export class UseCoalesceOverIsNullRule extends BaseRule {
     readonly id = 'use_coalesce_over_isnull'
     readonly applicableTypes = ['select']
+    readonly name = 'Use COALESCE Over ISNULL'
+    readonly description = 'linter.useCoalesce.description'
+    readonly category = 'best-practices'
+    readonly defaultSeverity = vscode.DiagnosticSeverity.Information
+    readonly defaultEnabled = false
 
     private static readonly ISNULL_FUNCTION_NAMES = new Set(['ifnull', 'isnull'])
 

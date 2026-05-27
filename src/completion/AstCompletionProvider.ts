@@ -1,7 +1,8 @@
 import { getParserEngine } from '../parser/SqlParserEngine'
 import type { SqlDialect } from '../parser/dialectMapper'
 import { walkAst, findNodes, isAstNode } from '../parser/AstVisitor'
-import type { AstLocation } from '../parser/astTypes'
+import type { AstNode, AstLocation } from '../parser/astTypes'
+import type * as vscode from 'vscode'
 
 export type CompletionContext =
     | 'select_columns'
@@ -22,30 +23,19 @@ interface LocRange {
     end: AstLocation
 }
 
-interface AstNode {
-    type: string
-    loc?: LocRange
-    [key: string]: unknown
-}
-
-interface Position {
-    line: number
-    column: number
-}
-
-function posBeforeOrEqual(a: Position, b: Position): boolean {
+function posBeforeOrEqual(a: AstLocation, b: AstLocation): boolean {
     if (a.line < b.line) return true
     if (a.line === b.line) return a.column <= b.column
     return false
 }
 
-function posAfterOrEqual(a: Position, b: Position): boolean {
+function posAfterOrEqual(a: AstLocation, b: AstLocation): boolean {
     if (a.line > b.line) return true
     if (a.line === b.line) return a.column >= b.column
     return false
 }
 
-function isPosInRange(pos: Position, range: LocRange): boolean {
+function isPosInRange(pos: AstLocation, range: LocRange): boolean {
     return posBeforeOrEqual(range.start, pos) && posBeforeOrEqual(pos, range.end)
 }
 
@@ -53,12 +43,12 @@ function getNodeLoc(node: AstNode): LocRange | null {
     const loc = node.loc
     if (loc?.start?.line !== undefined && loc?.start?.column !== undefined &&
         loc?.end?.line !== undefined && loc?.end?.column !== undefined) {
-        return loc
+        return loc as LocRange
     }
     return null
 }
 
-function findSmallestEnclosingNode(root: AstNode, pos: Position): { node: AstNode; parent: AstNode | null; key: string | null } | null {
+function findSmallestEnclosingNode(root: AstNode, pos: AstLocation): { node: AstNode; parent: AstNode | null; key: string | null } | null {
     let best: { node: AstNode; parent: AstNode | null; key: string | null } | null = null
     let bestSize = Infinity
 
@@ -83,7 +73,7 @@ function findSmallestEnclosingNode(root: AstNode, pos: Position): { node: AstNod
     return best
 }
 
-function determineSelectClauseContext(selectNode: AstNode, pos: Position): CompletionContext {
+function determineSelectClauseContext(selectNode: AstNode, pos: AstLocation): CompletionContext {
     const from = selectNode.from
     const where = selectNode.where
     const groupby = selectNode.groupby
@@ -182,8 +172,8 @@ function getColumnsLoc(selectNode: AstNode): LocRange | null {
     const columns = selectNode.columns
     if (!Array.isArray(columns) || columns.length === 0) return null
 
-    let earliestStart: Position | null = null
-    let latestEnd: Position | null = null
+    let earliestStart: AstLocation | null = null
+    let latestEnd: AstLocation | null = null
 
     for (const col of columns) {
         const loc = getLocFromAny(col)
@@ -205,8 +195,8 @@ function getColumnsLoc(selectNode: AstNode): LocRange | null {
 function getFromLoc(selectNode: AstNode, from: unknown): LocRange | null {
     if (!Array.isArray(from) || from.length === 0) return null
 
-    let earliestStart: Position | null = null
-    let latestEnd: Position | null = null
+    let earliestStart: AstLocation | null = null
+    let latestEnd: AstLocation | null = null
 
     for (const entry of from) {
         const loc = getLocFromAny(entry)
@@ -254,8 +244,8 @@ function getLocFromAny(item: unknown): LocRange | null {
 
 function getArrayClauseLoc(selectNode: AstNode, key: string, clause: unknown): LocRange | null {
     if (Array.isArray(clause) && clause.length > 0) {
-        let earliestStart: Position | null = null
-        let latestEnd: Position | null = null
+        let earliestStart: AstLocation | null = null
+        let latestEnd: AstLocation | null = null
 
         for (const item of clause) {
             const loc = getLocFromAny(item)
@@ -281,8 +271,8 @@ function getArrayClauseLoc(selectNode: AstNode, key: string, clause: unknown): L
         const clauseObj = clause as Record<string, unknown>
         const innerColumns = clauseObj.columns
         if (Array.isArray(innerColumns) && innerColumns.length > 0) {
-            let earliestStart: Position | null = null
-            let latestEnd: Position | null = null
+            let earliestStart: AstLocation | null = null
+            let latestEnd: AstLocation | null = null
 
             for (const item of innerColumns) {
                 const loc = getLocFromAny(item)
@@ -309,7 +299,7 @@ function getArrayClauseLoc(selectNode: AstNode, key: string, clause: unknown): L
     return null
 }
 
-function determineFromContext(from: unknown[], pos: Position): CompletionContext {
+function determineFromContext(from: unknown[], pos: AstLocation): CompletionContext {
     if (!Array.isArray(from)) return 'from_table'
 
     for (let i = from.length - 1; i >= 0; i--) {
@@ -409,15 +399,16 @@ function determineNodeContext(node: AstNode, parent: AstNode | null, key: string
     return 'unknown'
 }
 
-export function findCursorContext(sql: string, position: Position, dialect: SqlDialect): CompletionContext {
+export function findCursorContext(sql: string, position: AstLocation, dialect: SqlDialect, token?: vscode.CancellationToken): CompletionContext {
     const result = getParserEngine().tryAstify(sql, dialect)
+    if (token?.isCancellationRequested) return 'unknown'
     if (!result.success || !result.ast) {
         return 'unknown'
     }
 
     const astList = Array.isArray(result.ast) ? result.ast : [result.ast]
 
-    const astPos: Position = {
+    const astPos: AstLocation = {
         line: position.line + 1,
         column: position.column + 1,
     }
@@ -443,7 +434,7 @@ export function findCursorContext(sql: string, position: Position, dialect: SqlD
     return 'unknown'
 }
 
-function findContextInStatement(node: AstNode, pos: Position): CompletionContext {
+function findContextInStatement(node: AstNode, pos: AstLocation): CompletionContext {
     if (node.type === 'select') {
         const withClause = node.with
         if (withClause) {
@@ -499,7 +490,7 @@ function findContextInStatement(node: AstNode, pos: Position): CompletionContext
     return 'unknown'
 }
 
-function findContextInWithNode(withNode: AstNode, pos: Position): CompletionContext {
+function findContextInWithNode(withNode: AstNode, pos: AstLocation): CompletionContext {
     const withItems = withNode.value
     if (Array.isArray(withItems)) {
         for (const item of withItems) {
@@ -538,34 +529,13 @@ export function extractCteNamesFromAst(ast: unknown[] | unknown): string[] {
     return names
 }
 
-export function extractCteNames(sql: string, dialect: SqlDialect): string[] {
+export function extractCteNames(sql: string, dialect: SqlDialect, token?: vscode.CancellationToken): string[] {
     const result = getParserEngine().tryAstify(sql, dialect)
+    if (token?.isCancellationRequested) return []
     if (!result.success || !result.ast) {
         return []
     }
-
-    const astList = Array.isArray(result.ast) ? result.ast : [result.ast]
-    const names: string[] = []
-
-    for (const ast of astList) {
-        if (!isAstNode(ast)) continue
-        const node = ast as AstNode
-
-        if (node.type === 'with') {
-            collectCteNames(node, names)
-        }
-
-        if (node.type === 'select') {
-            const withClause = node.with
-            if (isAstNode(withClause) && (withClause as AstNode).type === 'with') {
-                collectCteNames(withClause as AstNode, names)
-            } else if (Array.isArray(withClause)) {
-                collectCteNamesFromArray(withClause, names)
-            }
-        }
-    }
-
-    return names
+    return extractCteNamesFromAst(result.ast)
 }
 
 function collectCteNames(withNode: AstNode, names: string[]): void {
@@ -591,8 +561,9 @@ function collectCteNamesFromArray(items: unknown[], names: string[]): void {
     }
 }
 
-export function extractTableNames(sql: string, dialect: SqlDialect): string[] {
+export function extractTableNames(sql: string, dialect: SqlDialect, token?: vscode.CancellationToken): string[] {
     const result = getParserEngine().tryAstify(sql, dialect)
+    if (token?.isCancellationRequested) return []
     if (!result.success || !result.ast) {
         return []
     }
@@ -636,8 +607,9 @@ function collectTableNamesFromSelect(node: AstNode, names: string[], seen: Set<s
     }
 }
 
-export function extractColumnRefs(sql: string, dialect: SqlDialect): { table: string; column: string }[] {
+export function extractColumnRefs(sql: string, dialect: SqlDialect, token?: vscode.CancellationToken): { table: string; column: string }[] {
     const result = getParserEngine().tryAstify(sql, dialect)
+    if (token?.isCancellationRequested) return []
     if (!result.success || !result.ast) {
         return []
     }

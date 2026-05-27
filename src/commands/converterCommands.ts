@@ -1,5 +1,7 @@
 import * as vscode from 'vscode'
 import { SqlConverter } from '../converter/sqlConverter'
+import { getAstConverter } from '../converter/AstConverter'
+import type { SqlDialect } from '../parser/dialectMapper'
 import { t } from '../i18n'
 
 export async function convertMysqlToHiveCommand() {
@@ -14,8 +16,16 @@ export async function convertMysqlToHiveCommand() {
     const text = selection.isEmpty ? document.getText() : document.getText(selection)
 
     try {
-        const converter = new SqlConverter()
-        const convertedText = converter.mysqlToHive(text)
+        const astConverter = getAstConverter()
+        const result = astConverter.tryConvertCreateTable(text, 'mysql' as SqlDialect, 'hive' as SqlDialect)
+
+        let convertedText: string
+        if (result.success && result.result) {
+            convertedText = result.result
+        } else {
+            const converter = new SqlConverter()
+            convertedText = converter.mysqlToHive(text)
+        }
 
         await replaceEditorText(editor, document, selection, convertedText)
         vscode.window.showInformationMessage(t('notification.convertMysqlSuccess'))
@@ -36,8 +46,16 @@ export async function convertHiveToMysqlCommand() {
     const text = selection.isEmpty ? document.getText() : document.getText(selection)
 
     try {
-        const converter = new SqlConverter()
-        const convertedText = converter.hiveToMysql(text)
+        const astConverter = getAstConverter()
+        const result = astConverter.tryConvertCreateTable(text, 'hive' as SqlDialect, 'mysql' as SqlDialect)
+
+        let convertedText: string
+        if (result.success && result.result) {
+            convertedText = result.result
+        } else {
+            const converter = new SqlConverter()
+            convertedText = converter.hiveToMysql(text)
+        }
 
         await replaceEditorText(editor, document, selection, convertedText)
         vscode.window.showInformationMessage(t('notification.convertHiveSuccess'))

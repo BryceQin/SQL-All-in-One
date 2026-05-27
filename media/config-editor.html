@@ -96,10 +96,9 @@
                             <span class="cg-arrow open">▶</span>
                             <span class="cg-icon">🔌</span>
                             <span class="cg-title" data-i18n="configEditor.cg.featureToggles">功能开关</span>
-                            <span class="cg-badge">12</span>
+                            <span class="cg-badge">11</span>
                         </div>
                         <div class="cg-body open">
-                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.enableEnhancedChecks">启用增强语法检查</span><label class="toggle"><input type="checkbox" id="enableEnhancedChecks"><span class="toggle-slider"></span></label></div>
                             <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.enableLinter">启用 SQL Lint 功能</span><label class="toggle"><input type="checkbox" id="enableLinter"><span class="toggle-slider"></span></label></div>
                             <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.showErrorLevel">显示错误级别诊断</span><label class="toggle"><input type="checkbox" id="showErrorLevel"><span class="toggle-slider"></span></label></div>
                             <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.showWarningLevel">显示警告级别诊断</span><label class="toggle"><input type="checkbox" id="showWarningLevel"><span class="toggle-slider"></span></label></div>
@@ -141,7 +140,7 @@
                             <span class="cg-arrow open">▶</span>
                             <span class="cg-icon">🔍</span>
                             <span class="cg-title" data-i18n="configEditor.cg.lintRules">Lint 规则</span>
-                            <span class="cg-badge">18</span>
+                            <span class="cg-badge">31</span>
                         </div>
                         <div class="cg-body open">
                             <div class="lint-rule">
@@ -305,6 +304,123 @@
                                     <option value="information" data-i18n="configEditor.severity.information">信息</option>
                                 </select>
                                 <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintExpiredTodoEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name" data-i18n="configEditor.lint.havingWithoutGroupBy">HAVING 缺少 GROUP BY</span>
+                                <select class="config-select lint-rule-severity" id="lintHavingWithoutGroupBySeverity">
+                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
+                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
+                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintHavingWithoutGroupByEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name" data-i18n="configEditor.lint.limitInvalidValue">LIMIT 值无效</span>
+                                <select class="config-select lint-rule-severity" id="lintLimitInvalidValueSeverity">
+                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
+                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
+                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintLimitInvalidValueEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name" data-i18n="configEditor.lint.reservedWordIdentifier">保留字作标识符</span>
+                                <select class="config-select lint-rule-severity" id="lintReservedWordIdentifierSeverity">
+                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
+                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
+                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintReservedWordIdentifierEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name" data-i18n="configEditor.lint.joinMissingOn">JOIN 缺少 ON</span>
+                                <select class="config-select lint-rule-severity" id="lintJoinMissingOnSeverity">
+                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
+                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
+                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintJoinMissingOnEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name" data-i18n="configEditor.lint.selectWithoutFrom">SELECT 缺少 FROM</span>
+                                <select class="config-select lint-rule-severity" id="lintSelectWithoutFromSeverity">
+                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
+                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
+                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintSelectWithoutFromEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name" data-i18n="configEditor.lint.misplacedDistinct">DISTINCT 位置错误</span>
+                                <select class="config-select lint-rule-severity" id="lintMisplacedDistinctSeverity">
+                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
+                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
+                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintMisplacedDistinctEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name" data-i18n="configEditor.lint.aggregateInWhere">WHERE 中使用聚合函数</span>
+                                <select class="config-select lint-rule-severity" id="lintAggregateInWhereSeverity">
+                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
+                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
+                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintAggregateInWhereEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name" data-i18n="configEditor.lint.subqueryWithoutAlias">子查询缺少别名</span>
+                                <select class="config-select lint-rule-severity" id="lintSubqueryWithoutAliasSeverity">
+                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
+                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
+                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintSubqueryWithoutAliasEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name" data-i18n="configEditor.lint.suspiciousNullComparison">可疑的 NULL 比较</span>
+                                <select class="config-select lint-rule-severity" id="lintSuspiciousNullComparisonSeverity">
+                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
+                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
+                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintSuspiciousNullComparisonEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name" data-i18n="configEditor.lint.incompleteCase">不完整的 CASE</span>
+                                <select class="config-select lint-rule-severity" id="lintIncompleteCaseSeverity">
+                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
+                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
+                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintIncompleteCaseEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name" data-i18n="configEditor.lint.redundantDistinct">冗余的 DISTINCT</span>
+                                <select class="config-select lint-rule-severity" id="lintRedundantDistinctSeverity">
+                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
+                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
+                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintRedundantDistinctEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name" data-i18n="configEditor.lint.dateFunctionUsage">日期函数使用提示</span>
+                                <select class="config-select lint-rule-severity" id="lintDateFunctionUsageSeverity">
+                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
+                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
+                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintDateFunctionUsageEnabled"><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="lint-rule">
+                                <span class="lint-rule-name" data-i18n="configEditor.lint.wildcardInUpdate">UPDATE 中使用通配符</span>
+                                <select class="config-select lint-rule-severity" id="lintWildcardInUpdateSeverity">
+                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
+                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
+                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
+                                </select>
+                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintWildcardInUpdateEnabled"><span class="toggle-slider"></span></label>
                             </div>
                         </div>
                     </div>

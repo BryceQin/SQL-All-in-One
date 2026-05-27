@@ -25,6 +25,7 @@ export class DDLFormatter {
     }
 
     public format(stmt: any): string {
+        this.layout.clear();
         switch (stmt.type) {
             case 'create':
                 return this.formatCreate(stmt);

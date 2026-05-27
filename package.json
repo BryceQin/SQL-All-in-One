@@ -1,5 +1,5 @@
 {
-    "name": "hive-formatter",
+    "name": "sql-all-in-one",
     "displayName": "SQL All in One",
     "description": "SQL All in One - 强大的 SQL 格式化、智能补全、语法检查、DDL 转换 VSCode 插件，支持 Hive、MySQL、SparkSQL、FlinkSQL、PostgreSQL、BigQuery、SQLite 等多种 SQL 方言",
     "version": "1.10.0",
@@ -236,19 +236,19 @@
                 "command": "sql-all-in-one.replaceParameter",
                 "key": "ctrl+shift+r",
                 "mac": "cmd+shift+r",
-                "when": "editorLangId =~ /sql|hive/"
+                "when": "editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite/"
             },
             {
                 "command": "sql-all-in-one.toggleComment",
                 "key": "ctrl+/",
                 "mac": "cmd+/",
-                "when": "editorTextFocus && editorLangId =~ /sql|hive/"
+                "when": "editorTextFocus && editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite/"
             },
             {
                 "command": "sql-all-in-one.toggleAdvancedComment",
                 "key": "ctrl+shift+/",
                 "mac": "cmd+shift+/",
-                "when": "editorTextFocus && editorLangId =~ /sql|hive/"
+                "when": "editorTextFocus && editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite/"
             }
         ],
         "configuration": {
@@ -585,11 +585,6 @@
                     "default": {},
                     "markdownDescription": "%sql-all-in-one.config.paramTypes.markdownDescription%"
                 },
-                "SQL-All-in-One.enableEnhancedChecks": {
-                    "type": "boolean",
-                    "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.enableEnhancedChecks.markdownDescription%"
-                },
                 "SQL-All-in-One.showErrorLevel": {
                     "type": "boolean",
                     "default": true,
@@ -880,6 +875,110 @@
                     "default": 7,
                     "markdownDescription": "%sql-all-in-one.config.lint.expired_todo_grace_period_days.markdownDescription%"
                 },
+                "SQL-All-in-One.lint.having_without_group_by": {
+                    "type": "object",
+                    "default": {
+                        "enabled": true,
+                        "severity": "warning"
+                    },
+                    "markdownDescription": "%sql-all-in-one.config.lint.having_without_group_by.markdownDescription%"
+                },
+                "SQL-All-in-One.lint.limit_invalid_value": {
+                    "type": "object",
+                    "default": {
+                        "enabled": true,
+                        "severity": "error"
+                    },
+                    "markdownDescription": "%sql-all-in-one.config.lint.limit_invalid_value.markdownDescription%"
+                },
+                "SQL-All-in-One.lint.reserved_word_identifier": {
+                    "type": "object",
+                    "default": {
+                        "enabled": true,
+                        "severity": "warning"
+                    },
+                    "markdownDescription": "%sql-all-in-one.config.lint.reserved_word_identifier.markdownDescription%"
+                },
+                "SQL-All-in-One.lint.join_missing_on": {
+                    "type": "object",
+                    "default": {
+                        "enabled": true,
+                        "severity": "warning"
+                    },
+                    "markdownDescription": "%sql-all-in-one.config.lint.join_missing_on.markdownDescription%"
+                },
+                "SQL-All-in-One.lint.select_without_from": {
+                    "type": "object",
+                    "default": {
+                        "enabled": true,
+                        "severity": "warning"
+                    },
+                    "markdownDescription": "%sql-all-in-one.config.lint.select_without_from.markdownDescription%"
+                },
+                "SQL-All-in-One.lint.misplaced_distinct": {
+                    "type": "object",
+                    "default": {
+                        "enabled": true,
+                        "severity": "error"
+                    },
+                    "markdownDescription": "%sql-all-in-one.config.lint.misplaced_distinct.markdownDescription%"
+                },
+                "SQL-All-in-One.lint.aggregate_in_where": {
+                    "type": "object",
+                    "default": {
+                        "enabled": true,
+                        "severity": "error"
+                    },
+                    "markdownDescription": "%sql-all-in-one.config.lint.aggregate_in_where.markdownDescription%"
+                },
+                "SQL-All-in-One.lint.subquery_without_alias": {
+                    "type": "object",
+                    "default": {
+                        "enabled": true,
+                        "severity": "warning"
+                    },
+                    "markdownDescription": "%sql-all-in-one.config.lint.subquery_without_alias.markdownDescription%"
+                },
+                "SQL-All-in-One.lint.suspicious_null_comparison": {
+                    "type": "object",
+                    "default": {
+                        "enabled": true,
+                        "severity": "warning"
+                    },
+                    "markdownDescription": "%sql-all-in-one.config.lint.suspicious_null_comparison.markdownDescription%"
+                },
+                "SQL-All-in-One.lint.incomplete_case": {
+                    "type": "object",
+                    "default": {
+                        "enabled": true,
+                        "severity": "error"
+                    },
+                    "markdownDescription": "%sql-all-in-one.config.lint.incomplete_case.markdownDescription%"
+                },
+                "SQL-All-in-One.lint.redundant_distinct": {
+                    "type": "object",
+                    "default": {
+                        "enabled": true,
+                        "severity": "warning"
+                    },
+                    "markdownDescription": "%sql-all-in-one.config.lint.redundant_distinct.markdownDescription%"
+                },
+                "SQL-All-in-One.lint.date_function_usage": {
+                    "type": "object",
+                    "default": {
+                        "enabled": true,
+                        "severity": "information"
+                    },
+                    "markdownDescription": "%sql-all-in-one.config.lint.date_function_usage.markdownDescription%"
+                },
+                "SQL-All-in-One.lint.wildcard_in_update": {
+                    "type": "object",
+                    "default": {
+                        "enabled": true,
+                        "severity": "error"
+                    },
+                    "markdownDescription": "%sql-all-in-one.config.lint.wildcard_in_update.markdownDescription%"
+                },
                 "SQL-All-in-One.nullCase": {
                     "type": "string",
                     "enum": [
@@ -1150,12 +1249,12 @@
             "editor/context": [
                 {
                     "command": "sql-all-in-one.toggleComment",
-                    "when": "editorLangId =~ /sql|hive/",
+                    "when": "editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite/",
                     "group": "1_comment@1"
                 },
                 {
                     "command": "sql-all-in-one.toggleAdvancedComment",
-                    "when": "editorLangId =~ /sql|hive/",
+                    "when": "editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite/",
                     "group": "1_comment@2"
                 }
             ]

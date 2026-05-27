@@ -26,6 +26,7 @@ export class SelectFormatter {
     }
 
     public format(stmt: any): string {
+        this.layout.clear();
         const typed = asSelectStmt(stmt);
 
         if (typed && typed.with) {

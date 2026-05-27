@@ -1,5 +1,3 @@
-import { getContainer, Tokens } from './diContainer';
-
 interface AggregateStats {
   count: number;
   totalDuration: number;
@@ -108,5 +106,3 @@ export function getPerformanceMonitor(): PerformanceMonitor {
   }
   return instance;
 }
-
-getContainer().registerFactory(Tokens.PerformanceMonitor, getPerformanceMonitor);

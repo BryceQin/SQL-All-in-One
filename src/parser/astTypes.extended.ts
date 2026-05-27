@@ -1,7 +1,6 @@
-export interface AstNode {
-  type: string;
-  [key: string]: unknown;
-}
+import type { AstNode as BaseAstNode } from './astTypes'
+
+export type AstNode = BaseAstNode
 
 export interface SelectNode extends AstNode {
   type: 'select';

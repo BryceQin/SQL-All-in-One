@@ -1,6 +1,7 @@
 import * as vscode from 'vscode'
 import { t } from '../i18n'
 import { getConfigManager } from '../core/configManager'
+import type { LintRule } from './rules/LintRule'
 
 export interface LintRuleDefinition {
     id: string
@@ -35,10 +36,36 @@ const BUILT_IN_RULES: LintRuleDefinition[] = [
     { id: 'missing_column_comment', name: t('linter.createTableMissingComment.name'), description: t('linter.createTableMissingComment.description'), defaultSeverity: vscode.DiagnosticSeverity.Warning, defaultEnabled: true, category: 'best-practices' },
     { id: 'commented_out_code', name: t('linter.commentedOutCode.name'), description: t('linter.commentedOutCode.description'), defaultSeverity: vscode.DiagnosticSeverity.Information, defaultEnabled: true, category: 'code-style' },
     { id: 'expired_todo', name: t('linter.expiredTodo.name'), description: t('linter.expiredTodo.description'), defaultSeverity: vscode.DiagnosticSeverity.Information, defaultEnabled: true, category: 'best-practices' },
+
+    // Migrated from AstEnhancedChecker
+    { id: 'having_without_group_by', name: t('linter.havingWithoutGroupBy.name'), description: t('linter.havingWithoutGroupBy.description'), defaultSeverity: vscode.DiagnosticSeverity.Warning, defaultEnabled: true, category: 'best-practices' },
+    { id: 'limit_invalid_value', name: t('linter.limitInvalidValue.name'), description: t('linter.limitInvalidValue.description'), defaultSeverity: vscode.DiagnosticSeverity.Error, defaultEnabled: true, category: 'error-check' },
+    { id: 'reserved_word_identifier', name: t('linter.reservedWordIdentifier.name'), description: t('linter.reservedWordIdentifier.description'), defaultSeverity: vscode.DiagnosticSeverity.Warning, defaultEnabled: true, category: 'code-style' },
+    { id: 'join_missing_on', name: t('linter.joinMissingOn.name'), description: t('linter.joinMissingOn.description'), defaultSeverity: vscode.DiagnosticSeverity.Warning, defaultEnabled: true, category: 'error-check' },
+    { id: 'select_without_from', name: t('linter.selectWithoutFrom.name'), description: t('linter.selectWithoutFrom.description'), defaultSeverity: vscode.DiagnosticSeverity.Warning, defaultEnabled: true, category: 'best-practices' },
+    { id: 'misplaced_distinct', name: t('linter.misplacedDistinct.name'), description: t('linter.misplacedDistinct.description'), defaultSeverity: vscode.DiagnosticSeverity.Error, defaultEnabled: true, category: 'error-check' },
+    { id: 'aggregate_in_where', name: t('linter.aggregateInWhere.name'), description: t('linter.aggregateInWhere.description'), defaultSeverity: vscode.DiagnosticSeverity.Error, defaultEnabled: true, category: 'error-check' },
+    { id: 'subquery_without_alias', name: t('linter.subqueryWithoutAlias.name'), description: t('linter.subqueryWithoutAlias.description'), defaultSeverity: vscode.DiagnosticSeverity.Warning, defaultEnabled: true, category: 'best-practices' },
+    { id: 'suspicious_null_comparison', name: t('linter.suspiciousNullComparison.name'), description: t('linter.suspiciousNullComparison.description'), defaultSeverity: vscode.DiagnosticSeverity.Warning, defaultEnabled: true, category: 'best-practices' },
+    { id: 'incomplete_case', name: t('linter.incompleteCase.name'), description: t('linter.incompleteCase.description'), defaultSeverity: vscode.DiagnosticSeverity.Error, defaultEnabled: true, category: 'error-check' },
+    { id: 'redundant_distinct', name: t('linter.redundantDistinct.name'), description: t('linter.redundantDistinct.description'), defaultSeverity: vscode.DiagnosticSeverity.Warning, defaultEnabled: true, category: 'best-practices' },
+    { id: 'date_function_usage', name: t('linter.dateFunctionUsage.name'), description: t('linter.dateFunctionUsage.description'), defaultSeverity: vscode.DiagnosticSeverity.Information, defaultEnabled: true, category: 'best-practices' },
+    { id: 'wildcard_in_update', name: t('linter.wildcardInUpdate.name'), description: t('linter.wildcardInUpdate.description'), defaultSeverity: vscode.DiagnosticSeverity.Error, defaultEnabled: true, category: 'error-check' },
 ]
 
 export function getAllRuleDefinitions(): LintRuleDefinition[] {
     return BUILT_IN_RULES
+}
+
+export function getAllRuleDefinitionsFromRules(rules: LintRule[]): LintRuleDefinition[] {
+    return rules.map(rule => ({
+        id: rule.id,
+        name: rule.name,
+        description: rule.description,
+        defaultSeverity: rule.defaultSeverity,
+        defaultEnabled: rule.defaultEnabled,
+        category: rule.category,
+    }))
 }
 
 export function getRuleDefinition(id: string): LintRuleDefinition | undefined {

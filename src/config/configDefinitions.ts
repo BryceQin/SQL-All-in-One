@@ -20,6 +20,8 @@ export interface LintRuleDefinition {
     severityKey: string
 }
 
+// NOTE: Default values here should match src/formatter/sqlFormatter.ts defaultOptions
+// When adding new format options, add them to both this array and defaultOptions
 export const FORMAT_CONFIG_ITEMS: ConfigItemDefinition[] = [
     { key: 'dialect', type: 'enum', defaultValue: 'hive', group: 'basic', label: 'Dialect', enumValues: ['hive', 'spark', 'flinksql', 'mysql', 'postgresql', 'bigquery', 'sqlite', 'sql'] },
     { key: 'keywordCase', type: 'enum', defaultValue: 'preserve', group: 'basic', label: 'Keyword Case', enumValues: ['preserve', 'upper', 'lower'] },
@@ -94,7 +96,6 @@ export const FEATURE_CONFIG_ITEMS: ConfigItemDefinition[] = [
     { key: 'ignoreTabSettings', type: 'boolean', defaultValue: false, group: 'editor', label: 'Ignore Tab Settings' },
     { key: 'tabSizeOverride', type: 'number', defaultValue: 2, group: 'editor', label: 'Tab Size Override' },
     { key: 'insertSpacesOverride', type: 'boolean', defaultValue: true, group: 'editor', label: 'Insert Spaces Override' },
-    { key: 'enableEnhancedChecks', type: 'boolean', defaultValue: true, group: 'feature', label: 'Enable Enhanced Checks' },
     { key: 'enableLinter', type: 'boolean', defaultValue: true, group: 'feature', label: 'Enable Linter' },
     { key: 'showErrorLevel', type: 'boolean', defaultValue: true, group: 'feature', label: 'Show Error Level' },
     { key: 'showWarningLevel', type: 'boolean', defaultValue: true, group: 'feature', label: 'Show Warning Level' },
@@ -130,6 +131,21 @@ export const LINT_RULES: LintRuleDefinition[] = [
     { ruleId: 'missingColumnComment', configKey: 'lint.missing_column_comment', label: 'Missing Column Comment', defaultEnabled: true, defaultSeverity: 'warning', enabledKey: 'lintMissingColumnCommentEnabled', severityKey: 'lintMissingColumnCommentSeverity' },
     { ruleId: 'commentedOutCode', configKey: 'lint.commented_out_code', label: 'Commented Out Code', defaultEnabled: true, defaultSeverity: 'information', enabledKey: 'lintCommentedOutCodeEnabled', severityKey: 'lintCommentedOutCodeSeverity' },
     { ruleId: 'expiredTodo', configKey: 'lint.expired_todo', label: 'Expired TODO', defaultEnabled: true, defaultSeverity: 'information', enabledKey: 'lintExpiredTodoEnabled', severityKey: 'lintExpiredTodoSeverity' },
+
+    // Migrated from AstEnhancedChecker
+    { ruleId: 'havingWithoutGroupBy', configKey: 'lint.having_without_group_by', label: 'HAVING Without GROUP BY', defaultEnabled: true, defaultSeverity: 'warning', enabledKey: 'lintHavingWithoutGroupByEnabled', severityKey: 'lintHavingWithoutGroupBySeverity' },
+    { ruleId: 'limitInvalidValue', configKey: 'lint.limit_invalid_value', label: 'Invalid LIMIT Value', defaultEnabled: true, defaultSeverity: 'error', enabledKey: 'lintLimitInvalidValueEnabled', severityKey: 'lintLimitInvalidValueSeverity' },
+    { ruleId: 'reservedWordIdentifier', configKey: 'lint.reserved_word_identifier', label: 'Reserved Word Identifier', defaultEnabled: true, defaultSeverity: 'warning', enabledKey: 'lintReservedWordIdentifierEnabled', severityKey: 'lintReservedWordIdentifierSeverity' },
+    { ruleId: 'joinMissingOn', configKey: 'lint.join_missing_on', label: 'JOIN Missing ON', defaultEnabled: true, defaultSeverity: 'warning', enabledKey: 'lintJoinMissingOnEnabled', severityKey: 'lintJoinMissingOnSeverity' },
+    { ruleId: 'selectWithoutFrom', configKey: 'lint.select_without_from', label: 'SELECT Without FROM', defaultEnabled: true, defaultSeverity: 'warning', enabledKey: 'lintSelectWithoutFromEnabled', severityKey: 'lintSelectWithoutFromSeverity' },
+    { ruleId: 'misplacedDistinct', configKey: 'lint.misplaced_distinct', label: 'Misplaced DISTINCT', defaultEnabled: true, defaultSeverity: 'error', enabledKey: 'lintMisplacedDistinctEnabled', severityKey: 'lintMisplacedDistinctSeverity' },
+    { ruleId: 'aggregateInWhere', configKey: 'lint.aggregate_in_where', label: 'Aggregate In WHERE', defaultEnabled: true, defaultSeverity: 'error', enabledKey: 'lintAggregateInWhereEnabled', severityKey: 'lintAggregateInWhereSeverity' },
+    { ruleId: 'subqueryWithoutAlias', configKey: 'lint.subquery_without_alias', label: 'Subquery Without Alias', defaultEnabled: true, defaultSeverity: 'warning', enabledKey: 'lintSubqueryWithoutAliasEnabled', severityKey: 'lintSubqueryWithoutAliasSeverity' },
+    { ruleId: 'suspiciousNullComparison', configKey: 'lint.suspicious_null_comparison', label: 'Suspicious NULL Comparison', defaultEnabled: true, defaultSeverity: 'warning', enabledKey: 'lintSuspiciousNullComparisonEnabled', severityKey: 'lintSuspiciousNullComparisonSeverity' },
+    { ruleId: 'incompleteCase', configKey: 'lint.incomplete_case', label: 'Incomplete CASE', defaultEnabled: true, defaultSeverity: 'error', enabledKey: 'lintIncompleteCaseEnabled', severityKey: 'lintIncompleteCaseSeverity' },
+    { ruleId: 'redundantDistinct', configKey: 'lint.redundant_distinct', label: 'Redundant DISTINCT', defaultEnabled: true, defaultSeverity: 'warning', enabledKey: 'lintRedundantDistinctEnabled', severityKey: 'lintRedundantDistinctSeverity' },
+    { ruleId: 'dateFunctionUsage', configKey: 'lint.date_function_usage', label: 'Date Function Usage', defaultEnabled: true, defaultSeverity: 'information', enabledKey: 'lintDateFunctionUsageEnabled', severityKey: 'lintDateFunctionUsageSeverity' },
+    { ruleId: 'wildcardInUpdate', configKey: 'lint.wildcard_in_update', label: 'Wildcard In UPDATE', defaultEnabled: true, defaultSeverity: 'error', enabledKey: 'lintWildcardInUpdateEnabled', severityKey: 'lintWildcardInUpdateSeverity' },
 ]
 
 export const ALL_CONFIG_ITEMS: ConfigItemDefinition[] = [...FORMAT_CONFIG_ITEMS, ...FEATURE_CONFIG_ITEMS]
@@ -151,4 +167,15 @@ export function getDefaultConfig(): Record<string, unknown> {
 
 export function getConfigKey(item: ConfigItemDefinition): string {
     return item.configKey ?? item.key
+}
+
+export function validateConfigConsistency(formatterDefaults: Record<string, unknown>): string[] {
+    const mismatches: string[] = []
+    for (const item of FORMAT_CONFIG_ITEMS) {
+        const formatterValue = formatterDefaults[item.key]
+        if (formatterValue !== undefined && formatterValue !== item.defaultValue) {
+            mismatches.push(`Key '${item.key}': configDefinitions has ${JSON.stringify(item.defaultValue)}, formatter has ${JSON.stringify(formatterValue)}`)
+        }
+    }
+    return mismatches
 }

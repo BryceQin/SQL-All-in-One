@@ -11,3 +11,12 @@ export interface AstNode {
     }
     [key: string]: unknown
 }
+
+export type {
+    AstNode as ExtendedAstNode,
+    SelectNode, InsertNode, UpdateNode, DeleteNode, UseNode, CreateNode,
+    ColumnRefNode, FunctionCallNode, SelectColumn, FromItem,
+    GroupByClause, OrderByItem, LimitClause, CteClause, ExtendedAst
+} from './astTypes.extended'
+
+export { isAstNode } from './AstVisitor'

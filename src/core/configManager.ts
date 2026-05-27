@@ -1,6 +1,5 @@
 import * as vscode from 'vscode'
 import { initI18n } from '../i18n'
-import { getContainer, Tokens } from './diContainer'
 
 type ConfigListener = () => void
 
@@ -103,5 +102,3 @@ export function getConfigManager(): ConfigManager {
     }
     return instance
 }
-
-getContainer().registerFactory(Tokens.ConfigManager, getConfigManager)

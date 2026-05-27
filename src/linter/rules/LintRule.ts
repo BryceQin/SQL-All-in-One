@@ -12,6 +12,11 @@ export interface RuleContext {
 export interface LintRule {
     readonly id: string
     readonly applicableTypes: string[]
+    readonly name: string
+    readonly description: string
+    readonly category: string
+    readonly defaultSeverity: vscode.DiagnosticSeverity
+    readonly defaultEnabled: boolean
     isEnabled(): boolean
     getSeverity(): vscode.DiagnosticSeverity
     check(context: RuleContext): vscode.Diagnostic[]

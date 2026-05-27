@@ -8,6 +8,11 @@ import type { AstNode } from '../../parser/astTypes'
 export class AvoidCorrelatedSubqueriesRule extends BaseRule {
     readonly id = 'avoid_correlated_subqueries'
     readonly applicableTypes = ['select']
+    readonly name = 'Avoid Correlated Subqueries'
+    readonly description = 'linter.subqueryPerformance.description'
+    readonly category = 'performance'
+    readonly defaultSeverity = vscode.DiagnosticSeverity.Warning
+    readonly defaultEnabled = false
 
     check(context: RuleContext): vscode.Diagnostic[] {
         const diagnostics: vscode.Diagnostic[] = []

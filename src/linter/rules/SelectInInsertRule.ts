@@ -2,17 +2,33 @@ import * as vscode from 'vscode'
 import type { RuleContext } from './LintRule'
 import { BaseRule } from './BaseRule'
 import { isAstNode } from '../../parser/AstVisitor'
-import { getNodeLocation } from '../../parser/astUtils'
+import { getNodeLocation, createDiagnostic } from '../../parser/astUtils'
 import type { AstNode } from '../../parser/astTypes'
+import { t } from '../../i18n'
 
 export class SelectInInsertRule extends BaseRule {
     readonly id = 'avoid_select_in_insert'
     readonly applicableTypes = ['insert']
+    readonly name = 'Avoid SELECT In INSERT'
+    readonly description = 'linter.insertWithoutColumns.description'
+    readonly category = 'best-practices'
+    readonly defaultSeverity = vscode.DiagnosticSeverity.Warning
+    readonly defaultEnabled = true
 
     check(context: RuleContext): vscode.Diagnostic[] {
         const diagnostics: vscode.Diagnostic[] = []
         const node = context.node
 
+        // Check for SELECT in INSERT (original rule)
+        this.checkSelectInInsert(node, diagnostics)
+
+        // Check INSERT without column list (merged from AstEnhancedChecker)
+        this.checkInsertWithoutColumns(node, diagnostics)
+
+        return diagnostics
+    }
+
+    private checkSelectInInsert(node: AstNode, diagnostics: vscode.Diagnostic[]): void {
         let selectNode: AstNode | null = null
 
         const selectProp = node.select
@@ -34,7 +50,7 @@ export class SelectInInsertRule extends BaseRule {
         }
 
         if (!selectNode) {
-            return diagnostics
+            return
         }
 
         const hasStar = this.selectHasStar(selectNode)
@@ -44,8 +60,25 @@ export class SelectInInsertRule extends BaseRule {
                 diagnostics.push(this.addDiagnostic(loc, 1, 'linter.insertWithoutColumns.description'))
             }
         }
+    }
 
-        return diagnostics
+    private checkInsertWithoutColumns(node: AstNode, diagnostics: vscode.Diagnostic[]): void {
+        if (node.type !== 'insert') {
+            return
+        }
+
+        const columns = node.columns
+        if (columns == null || (Array.isArray(columns) && columns.length === 0)) {
+            const loc = getNodeLocation(node)
+            if (loc) {
+                diagnostics.push(createDiagnostic(
+                    loc, 6, 'INSERT_WITHOUT_COLUMNS',
+                    t('enhanced.insertWithoutColumns', String(loc.line)),
+                    this.getSeverity(),
+                    t('linter.source'),
+                ))
+            }
+        }
     }
 
     private selectHasStar(node: AstNode): boolean {

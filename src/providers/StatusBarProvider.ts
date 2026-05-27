@@ -1,6 +1,7 @@
 import * as vscode from 'vscode'
 import { t } from '../i18n'
 import { isSqlDocument } from '../core/sqlDialects'
+import { getConfigManager } from '../core/configManager'
 
 export class StatusBarProvider {
     private statusBarItem: vscode.StatusBarItem
@@ -30,8 +31,7 @@ export class StatusBarProvider {
     }
 
     private updateStatusBar() {
-        const config = vscode.workspace.getConfiguration('SQL-All-in-One')
-        const dialect = config.get('dialect', 'hive')
+        const dialect = getConfigManager().get<string>('dialect', 'hive')
         const activeEditor = vscode.window.activeTextEditor
 
         if (!activeEditor) {

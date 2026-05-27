@@ -5,7 +5,6 @@ import type { SqlDialect } from './dialectMapper';
 import type { ParseError } from './ParseError';
 import { LRUCache } from '../utils/lruCache';
 import { getPerformanceMonitor } from '../core/performanceMonitor';
-import { getContainer, Tokens } from '../core/diContainer';
 
 interface CacheEntry {
   version: number;
@@ -76,7 +75,5 @@ export function getDocumentAstCache(): DocumentAstCache {
   if (!instance) {
     instance = new DocumentAstCache();
   }
-  return instance;
+  return instance
 }
-
-getContainer().registerFactory(Tokens.DocumentAstCache, getDocumentAstCache);

@@ -23,6 +23,17 @@ export class Lazy<T> {
     this.instance = null;
     this.initialized = false;
   }
+
+  dispose(): void {
+    if (this.initialized && this.instance !== null) {
+      const obj = this.instance as Record<string, unknown>;
+      if (typeof obj.dispose === 'function') {
+        (obj as { dispose: () => void }).dispose();
+      }
+    }
+    this.instance = null;
+    this.initialized = false;
+  }
 }
 
 export function lazy<T>(factory: () => T): Lazy<T> {

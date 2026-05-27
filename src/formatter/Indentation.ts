@@ -31,6 +31,11 @@ export default class Indentation {
         return this.indentTypes.length
     }
 
+    // 重置缩进栈（用于缓存格式化器时在每次 format 调用前清理状态）
+    reset() {
+        this.indentTypes = []
+    }
+
     // 增加一层「顶级缩进」
     increaseTopLevel() {
         this.indentTypes.push(INDENT_TYPE_TOP_LEVEL)

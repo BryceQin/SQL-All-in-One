@@ -3,7 +3,6 @@ import { isSqlDocument } from "../core/sqlDialects"
 import { toSqlDialect } from "../core/sqlDialects"
 import { lineColFromIndex } from "../lexer/lineColFromIndex"
 import { t } from "../i18n"
-import { EnhancedSqlChecker } from "./EnhancedSqlChecker"
 import { SqlLinter } from "./SqlLinter"
 import { AstDiagnosticsProvider } from "./AstDiagnosticsProvider"
 import { getDocumentAstCache } from "../parser/DocumentAstCache"
@@ -11,7 +10,6 @@ import { getConfigManager } from "../core/configManager"
 
 export class SqlDiagnosticsProvider {
     private diagnosticCollection: vscode.DiagnosticCollection
-    private enhancedChecker: EnhancedSqlChecker
     private astDiagnosticsProvider = new AstDiagnosticsProvider()
     private linter: SqlLinter
     private configChangeDisposable: vscode.Disposable
@@ -22,11 +20,10 @@ export class SqlDiagnosticsProvider {
     constructor() {
         this.diagnosticCollection =
             vscode.languages.createDiagnosticCollection("sql-all-in-one")
-        this.enhancedChecker = new EnhancedSqlChecker()
         this.linter = new SqlLinter()
 
         this.configChangeDisposable = getConfigManager().onConfigChange(() => {
-            this.linter = new SqlLinter()
+            this.linter.resetConfig()
             vscode.workspace.textDocuments.forEach((doc) => {
                 if (isSqlDocument(doc)) {
                     this.provideDiagnostics(doc)
@@ -46,8 +43,7 @@ export class SqlDiagnosticsProvider {
     }
 
     public provideDiagnostics(document: vscode.TextDocument): void {
-        const cfg = getConfigManager().getSectionKeys('', ['enableEnhancedChecks', 'enableLinter', 'showErrorLevel', 'showWarningLevel', 'showInfoLevel'], {
-            enableEnhancedChecks: true,
+        const cfg = getConfigManager().getSectionKeys('', ['enableLinter', 'showErrorLevel', 'showWarningLevel', 'showInfoLevel'], {
             enableLinter: true,
             showErrorLevel: true,
             showWarningLevel: true,
@@ -71,12 +67,6 @@ export class SqlDiagnosticsProvider {
 
             const astDiagnostics = this.astDiagnosticsProvider.check(text, sqlDialect, astList)
             diagnostics.push(...astDiagnostics)
-
-            if (cfg.enableEnhancedChecks) {
-                const enhancedDiagnostics = this.enhancedChecker.checkEnhancedIssues(text, document, astList)
-                const filteredDiagnostics = this.filterBySeverity(enhancedDiagnostics, cfg)
-                diagnostics.push(...filteredDiagnostics)
-            }
 
             if (cfg.enableLinter) {
                 const lintDiagnostics = this.linter.lint(text, document, astList)

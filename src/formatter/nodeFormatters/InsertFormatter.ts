@@ -22,6 +22,7 @@ export class InsertFormatter {
     }
 
     public format(stmt: any): string {
+        this.layout.clear();
         const kw = stmt.type === 'replace' ? 'REPLACE' : 'INSERT';
         this.layout.add(formatKeyword(kw, this.cfg.keywordCase));
 
