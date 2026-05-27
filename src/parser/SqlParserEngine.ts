@@ -3,6 +3,7 @@ import type { AST, TableColumnAst } from 'node-sql-parser'
 import type { SqlDialect } from './dialectMapper'
 import { toNodeSqlParserDialect } from './dialectMapper'
 import { ParseError } from './ParseError'
+import { getContainer, Tokens } from '../core/diContainer'
 
 export interface ParseResult {
     ast: AST[] | AST
@@ -61,9 +62,17 @@ export class SqlParserEngine {
     }
 }
 
+export function createParserEngine(): SqlParserEngine {
+    return new SqlParserEngine()
+}
+
 let engineInstance: SqlParserEngine | null = null
 
 export function getParserEngine(): SqlParserEngine {
+    const container = getContainer()
+    if (container.has(Tokens.ParserEngine)) {
+        return container.get<SqlParserEngine>(Tokens.ParserEngine)
+    }
     if (!engineInstance) {
         engineInstance = new SqlParserEngine()
     }

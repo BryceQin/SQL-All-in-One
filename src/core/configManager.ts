@@ -1,5 +1,6 @@
 import * as vscode from 'vscode'
 import { initI18n } from '../i18n'
+import { getContainer, Tokens } from './diContainer'
 
 type ConfigListener = () => void
 
@@ -94,9 +95,17 @@ export class ConfigManager {
     }
 }
 
+export function createConfigManager(): ConfigManager {
+    return new ConfigManager()
+}
+
 let instance: ConfigManager | null = null
 
 export function getConfigManager(): ConfigManager {
+    const container = getContainer()
+    if (container.has(Tokens.ConfigManager)) {
+        return container.get<ConfigManager>(Tokens.ConfigManager)
+    }
     if (!instance) {
         instance = new ConfigManager()
     }

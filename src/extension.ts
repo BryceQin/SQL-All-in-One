@@ -6,12 +6,14 @@ import { toggleComment, toggleAdvancedComment } from "./commands/commentCommands
 import { convertMysqlToHiveCommand, convertHiveToMysqlCommand } from "./commands/converterCommands"
 import { openConfigEditorCommand } from "./commands/configEditorCommand"
 import { initI18n } from "./i18n"
-import { getConfigManager } from "./core/configManager"
+import { getConfigManager, createConfigManager } from "./core/configManager"
 import { getDocumentAstCache } from "./parser/DocumentAstCache"
 import { Lazy, lazy } from "./utils/lazy"
 import { getErrorHandler, ErrorLevel, ErrorCategory } from "./core/errorHandler"
 import { getPerformanceMonitor } from "./core/performanceMonitor"
-import { getContainer } from "./core/diContainer"
+import { getContainer, Tokens } from "./core/diContainer"
+import { createParserEngine } from "./parser/SqlParserEngine"
+import { createRuleRegistry } from "./linter/RuleRegistry"
 import { SqlCodeActionProvider } from "./providers/SqlCodeActionProvider"
 import { SqlDiagnosticsProvider } from "./providers/SqlDiagnosticsProvider"
 import { StatusBarProvider } from "./providers/StatusBarProvider"
@@ -218,8 +220,17 @@ function registerParameterHighlighter(context: vscode.ExtensionContext): void {
   context.subscriptions.push(parameterHighlighter)
 }
 
+function registerServicesToContainer(): void {
+  const container = getContainer()
+
+  container.registerFactory(Tokens.ConfigManager, createConfigManager)
+  container.registerFactory(Tokens.ParserEngine, createParserEngine)
+  container.registerFactory(Tokens.RuleRegistry, createRuleRegistry)
+}
+
 function createModules(): ExtensionModule[] {
   return [
+    { name: 'services', register: () => registerServicesToContainer() },
     { name: 'i18n', register: () => initI18n() },
     { name: 'commands', register: (ctx) => registerCommands(ctx) },
     { name: 'formatting', register: (ctx) => registerFormattingProviders(ctx) },

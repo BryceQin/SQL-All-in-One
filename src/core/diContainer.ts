@@ -1,20 +1,30 @@
 export class DIContainer {
   private services = new Map<string, unknown>();
+  private factories = new Map<string, () => unknown>();
 
   register<T>(token: string, service: T): void {
     this.services.set(token, service);
   }
 
+  registerFactory<T>(token: string, factory: () => T): void {
+    this.factories.set(token, factory);
+  }
+
   get<T>(token: string): T {
-    const service = this.services.get(token) as T | undefined;
-    if (service === undefined) {
-      throw new Error(`Service not registered: ${token}`);
+    if (this.services.has(token)) {
+      return this.services.get(token) as T;
     }
-    return service;
+    if (this.factories.has(token)) {
+      const factory = this.factories.get(token)!;
+      const instance = factory();
+      this.services.set(token, instance);
+      return instance as T;
+    }
+    throw new Error(`Service not registered: ${token}`);
   }
 
   has(token: string): boolean {
-    return this.services.has(token);
+    return this.services.has(token) || this.factories.has(token);
   }
 
   disposeAll(): void {
@@ -28,6 +38,7 @@ export class DIContainer {
       }
     }
     this.services.clear();
+    this.factories.clear();
   }
 
   clear(): void {
@@ -58,6 +69,7 @@ export const Tokens = {
   SqlLinter: 'SqlLinter',
   AstDiagnosticsProvider: 'AstDiagnosticsProvider',
   AstConverter: 'AstConverter',
+  RuleRegistry: 'RuleRegistry',
 } as const;
 
 export type Token = typeof Tokens[keyof typeof Tokens];

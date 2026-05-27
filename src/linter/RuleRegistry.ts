@@ -1,33 +1,8 @@
 import * as vscode from 'vscode'
 import type { LintRule, RuleContext } from './rules/LintRule'
 import { loadRuleConfigs, type LintRuleConfig, type LintRuleDefinition } from './lintRules'
-import { AvoidSelectStarRule } from './rules/AvoidSelectStarRule'
-import { ExplicitJoinTypeRule } from './rules/ExplicitJoinTypeRule'
-import { LimitWithOrderByRule } from './rules/LimitWithOrderByRule'
-import { ColumnCountMismatchRule } from './rules/ColumnCountMismatchRule'
-import { MissingPrimaryKeyRule } from './rules/MissingPrimaryKeyRule'
-import { SelectInInsertRule } from './rules/SelectInInsertRule'
-import { DuplicateColumnAliasesRule } from './rules/DuplicateColumnAliasesRule'
-import { UseCoalesceOverIsNullRule } from './rules/UseCoalesceOverIsNullRule'
-import { UseCurrentTimestampRule } from './rules/UseCurrentTimestampRule'
-import { AvoidCorrelatedSubqueriesRule } from './rules/AvoidCorrelatedSubqueriesRule'
-import { MissingQueryCommentRule } from './rules/MissingQueryCommentRule'
-import { MissingColumnCommentRule } from './rules/MissingColumnCommentRule'
-import { CommentedOutCodeRule } from './rules/CommentedOutCodeRule'
-import { ExpiredTodoRule } from './rules/ExpiredTodoRule'
-import { HavingWithoutGroupByRule } from './rules/HavingWithoutGroupByRule'
-import { LimitInvalidValueRule } from './rules/LimitInvalidValueRule'
-import { ReservedWordIdentifierRule } from './rules/ReservedWordIdentifierRule'
-import { JoinMissingOnRule } from './rules/JoinMissingOnRule'
-import { SelectWithoutFromRule } from './rules/SelectWithoutFromRule'
-import { MisplacedDistinctRule } from './rules/MisplacedDistinctRule'
-import { AggregateInWhereRule } from './rules/AggregateInWhereRule'
-import { SubqueryWithoutAliasRule } from './rules/SubqueryWithoutAliasRule'
-import { SuspiciousNullComparisonRule } from './rules/SuspiciousNullComparisonRule'
-import { IncompleteCaseRule } from './rules/IncompleteCaseRule'
-import { RedundantDistinctRule } from './rules/RedundantDistinctRule'
-import { DateFunctionUsageRule } from './rules/DateFunctionUsageRule'
-import { WildcardInUpdateRule } from './rules/WildcardInUpdateRule'
+import { getContainer, Tokens } from '../core/diContainer'
+import { RULES, RuleKey } from './rules/index'
 
 const DEFAULT_CONFIG: LintRuleConfig = { enabled: false, severity: vscode.DiagnosticSeverity.Warning }
 
@@ -91,11 +66,24 @@ export class RuleRegistry {
             category: rule.category,
         }))
     }
+
+    registerAllRules(): void {
+        const configs = loadRuleConfigs()
+
+        for (const [key, RuleClass] of Object.entries(RULES)) {
+            const config = configs.get(key as string) ?? DEFAULT_CONFIG
+            this.register(new RuleClass(config))
+        }
+    }
 }
 
 let cachedRegistry: RuleRegistry | null = null
 
 export function getRuleRegistry(): RuleRegistry {
+    const container = getContainer()
+    if (container.has(Tokens.RuleRegistry)) {
+        return container.get<RuleRegistry>(Tokens.RuleRegistry)
+    }
     if (!cachedRegistry) {
         cachedRegistry = createRuleRegistry()
     }
@@ -108,37 +96,6 @@ export function resetRuleRegistry(): void {
 
 export function createRuleRegistry(): RuleRegistry {
     const registry = new RuleRegistry()
-    const configs = loadRuleConfigs()
-
-    registry.register(new AvoidSelectStarRule(configs.get('avoid_select_star') ?? DEFAULT_CONFIG))
-    registry.register(new ExplicitJoinTypeRule(configs.get('explicit_join_type') ?? DEFAULT_CONFIG))
-    registry.register(new LimitWithOrderByRule(configs.get('limit_with_order_by') ?? DEFAULT_CONFIG))
-    registry.register(new ColumnCountMismatchRule(configs.get('avoid_column_count_mismatch') ?? DEFAULT_CONFIG))
-    registry.register(new MissingPrimaryKeyRule(configs.get('missing_primary_key') ?? DEFAULT_CONFIG))
-    registry.register(new SelectInInsertRule(configs.get('avoid_select_in_insert') ?? DEFAULT_CONFIG))
-    registry.register(new DuplicateColumnAliasesRule(configs.get('duplicate_column_aliases') ?? DEFAULT_CONFIG))
-    registry.register(new UseCoalesceOverIsNullRule(configs.get('use_coalesce_over_isnull') ?? DEFAULT_CONFIG))
-    registry.register(new UseCurrentTimestampRule(configs.get('use_current_timestamp') ?? DEFAULT_CONFIG))
-    registry.register(new AvoidCorrelatedSubqueriesRule(configs.get('avoid_correlated_subqueries') ?? DEFAULT_CONFIG))
-    registry.register(new MissingQueryCommentRule(configs.get('missing_query_comment') ?? DEFAULT_CONFIG))
-    registry.register(new MissingColumnCommentRule(configs.get('missing_column_comment') ?? DEFAULT_CONFIG))
-    registry.register(new CommentedOutCodeRule(configs.get('commented_out_code') ?? DEFAULT_CONFIG))
-    registry.register(new ExpiredTodoRule(configs.get('expired_todo') ?? DEFAULT_CONFIG))
-
-    // Migrated from AstEnhancedChecker
-    registry.register(new HavingWithoutGroupByRule(configs.get('having_without_group_by') ?? DEFAULT_CONFIG))
-    registry.register(new LimitInvalidValueRule(configs.get('limit_invalid_value') ?? DEFAULT_CONFIG))
-    registry.register(new ReservedWordIdentifierRule(configs.get('reserved_word_identifier') ?? DEFAULT_CONFIG))
-    registry.register(new JoinMissingOnRule(configs.get('join_missing_on') ?? DEFAULT_CONFIG))
-    registry.register(new SelectWithoutFromRule(configs.get('select_without_from') ?? DEFAULT_CONFIG))
-    registry.register(new MisplacedDistinctRule(configs.get('misplaced_distinct') ?? DEFAULT_CONFIG))
-    registry.register(new AggregateInWhereRule(configs.get('aggregate_in_where') ?? DEFAULT_CONFIG))
-    registry.register(new SubqueryWithoutAliasRule(configs.get('subquery_without_alias') ?? DEFAULT_CONFIG))
-    registry.register(new SuspiciousNullComparisonRule(configs.get('suspicious_null_comparison') ?? DEFAULT_CONFIG))
-    registry.register(new IncompleteCaseRule(configs.get('incomplete_case') ?? DEFAULT_CONFIG))
-    registry.register(new RedundantDistinctRule(configs.get('redundant_distinct') ?? DEFAULT_CONFIG))
-    registry.register(new DateFunctionUsageRule(configs.get('date_function_usage') ?? DEFAULT_CONFIG))
-    registry.register(new WildcardInUpdateRule(configs.get('wildcard_in_update') ?? DEFAULT_CONFIG))
-
+    registry.registerAllRules()
     return registry
 }

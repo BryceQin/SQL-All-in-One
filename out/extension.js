@@ -49,6 +49,8 @@ const lazy_1 = require("./utils/lazy");
 const errorHandler_1 = require("./core/errorHandler");
 const performanceMonitor_1 = require("./core/performanceMonitor");
 const diContainer_1 = require("./core/diContainer");
+const SqlParserEngine_1 = require("./parser/SqlParserEngine");
+const RuleRegistry_1 = require("./linter/RuleRegistry");
 const SqlCodeActionProvider_1 = require("./providers/SqlCodeActionProvider");
 const SqlDiagnosticsProvider_1 = require("./providers/SqlDiagnosticsProvider");
 const StatusBarProvider_1 = require("./providers/StatusBarProvider");
@@ -174,8 +176,15 @@ function registerParameterHighlighter(context) {
     SqlParameterHightlighter_1.SqlParameterReplaceCommand.register(context);
     context.subscriptions.push(parameterHighlighter);
 }
+function registerServicesToContainer() {
+    const container = (0, diContainer_1.getContainer)();
+    container.registerFactory(diContainer_1.Tokens.ConfigManager, configManager_1.createConfigManager);
+    container.registerFactory(diContainer_1.Tokens.ParserEngine, SqlParserEngine_1.createParserEngine);
+    container.registerFactory(diContainer_1.Tokens.RuleRegistry, RuleRegistry_1.createRuleRegistry);
+}
 function createModules() {
     return [
+        { name: 'services', register: () => registerServicesToContainer() },
         { name: 'i18n', register: () => (0, i18n_1.initI18n)() },
         { name: 'commands', register: (ctx) => registerCommands(ctx) },
         { name: 'formatting', register: (ctx) => registerFormattingProviders(ctx) },

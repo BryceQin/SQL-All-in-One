@@ -1,5 +1,17 @@
 # 更新日志 / Changelog
 
+## 1.11.0
+
+### 架构优化与代码简化 / Architecture Optimization & Code Simplification
+
+| 中文 | English |
+|------|---------|
+| DI 容器增强：新增 `registerFactory()` 工厂函数注册接口，支持延迟实例化，新增 `Tokens.RuleRegistry` token | DI Container enhancement: new `registerFactory()` for delayed instantiation, added `Tokens.RuleRegistry` |
+| 核心服务 DI 集成：ConfigManager、SqlParserEngine、RuleRegistry 现在可从 DIContainer 获取，同时保持向后兼容 | Core services DI integration: ConfigManager, SqlParserEngine, RuleRegistry now available from DIContainer with backward compatibility |
+| RuleRegistry 重构：新增 `rules/index.ts` 统一规则管理，新增 `registerAllRules()` 自动注册所有规则，规则注册代码从 44 行重复代码缩减至 8 行 | RuleRegistry refactor: new `rules/index.ts` for unified rule management, new `registerAllRules()` for auto registration, rule registration code reduced from 44 lines to 8 lines |
+| extension.ts 增强：新增 `registerServicesToContainer()` 在激活阶段注册所有核心服务 | extension.ts enhancement: new `registerServicesToContainer()` registers core services during activation |
+| DocumentAstCache 验证：已拥有完善的 LRU 策略（max 50 entries, 30s TTL），无需修改 | DocumentAstCache verified: already has perfect LRU policy (max 50 entries, 30s TTL), no changes needed |
+
 ## 1.10.0
 
 ### Lint 架构重构 / Lint Architecture Refactor
