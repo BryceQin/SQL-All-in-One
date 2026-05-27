@@ -1,15 +1,4 @@
-export type SqlDialect =
-    | 'mysql'
-    | 'hive'
-    | 'spark'
-    | 'flinksql'
-    | 'postgresql'
-    | 'bigquery'
-    | 'sqlite'
-    | 'sql'
+import type { SqlDialect } from '../core/dialectRegistry'
 
+export type { SqlDialect }
 export { toNodeSqlParserDialect } from '../core/dialectRegistry'
-
-export function getSupportedDialects(): SqlDialect[] {
-    return ['mysql', 'hive', 'spark', 'flinksql', 'postgresql', 'bigquery', 'sqlite', 'sql'] as SqlDialect[]
-}

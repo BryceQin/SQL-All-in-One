@@ -9,13 +9,15 @@ export class CTEFormatter {
     private indent: Indentation;
     private layout: Layout;
     private exprFmt: ExpressionFormatter;
+    private subqueryFormatter: (stmt: any) => string;
 
-    constructor(cfg: FormatOptions, indent: Indentation) {
+    constructor(cfg: FormatOptions, indent: Indentation, subqueryFormatter: (stmt: any) => string) {
         this.cfg = cfg;
         this.indent = indent;
         this.layout = new Layout(new Indentation(indent.getSingleIndent()));
         this.layout.indentation = indent;
         this.exprFmt = new ExpressionFormatter(cfg, indent);
+        this.subqueryFormatter = subqueryFormatter;
     }
 
     public format(withClause: any[]): string {
@@ -80,10 +82,7 @@ export class CTEFormatter {
 
         const stmt = cte.stmt;
         if (stmt && stmt.ast) {
-            // eslint-disable-next-line @typescript-eslint/no-require-imports
-            const { SelectFormatter } = require('./SelectFormatter');
-            const selectFmt = new SelectFormatter(this.cfg, this.indent);
-            this.layout.add(selectFmt.format(stmt.ast));
+            this.layout.add(this.subqueryFormatter(stmt.ast));
         }
 
         if (this.cfg.indentCteBody !== false) {

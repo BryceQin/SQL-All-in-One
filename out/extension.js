@@ -61,7 +61,7 @@ const AstNavigator_1 = require("./navigation/AstNavigator");
 const SqlDefinitionProvider_1 = require("./navigation/SqlDefinitionProvider");
 const SqlReferenceProvider_1 = require("./navigation/SqlReferenceProvider");
 const SqlRenameProvider_1 = require("./navigation/SqlRenameProvider");
-let lazyProviders;
+let lazyProviders = null;
 function createLazyProviders(extensionPath) {
     const providers = {
         diagnosticsProvider: (0, lazy_1.lazy)(() => new SqlDiagnosticsProvider_1.SqlDiagnosticsProvider()),
@@ -103,6 +103,8 @@ function registerFormattingProviders(context) {
     context.subscriptions.push(...Object.entries(sqlDialects_1.sqlDialects).map(([vscodeLang, sqlDialectName]) => vscode.languages.registerDocumentFormattingEditProvider(vscodeLang, new SqlFormattingProvider_1.SqlFormattingProvider(sqlDialectName))));
 }
 function registerDiagnostics(context) {
+    if (!lazyProviders)
+        return;
     const dp = lazyProviders.diagnosticsProvider.get();
     if (!dp)
         return;
@@ -123,6 +125,8 @@ function registerDiagnostics(context) {
     });
 }
 function registerProviders(context) {
+    if (!lazyProviders)
+        return;
     const sqlLanguages = (0, sqlDialects_1.getSqlLanguageIds)();
     const codeActionProvider = lazyProviders.codeActionProvider.get();
     const foldingRangeProvider = lazyProviders.foldingRangeProvider.get();
@@ -149,6 +153,8 @@ function registerProviders(context) {
     }
 }
 function registerCompletion(context) {
+    if (!lazyProviders)
+        return;
     const completionProvider = lazyProviders.completionProvider.get();
     if (!completionProvider)
         return;
@@ -160,6 +166,8 @@ function registerCompletion(context) {
     context.subscriptions.push(completionProvider);
 }
 function registerParameterHighlighter(context) {
+    if (!lazyProviders)
+        return;
     const parameterHighlighter = lazyProviders.parameterHighlighter.get();
     if (!parameterHighlighter)
         return;
@@ -176,6 +184,8 @@ function createModules() {
         { name: 'completion', register: (ctx) => registerCompletion(ctx) },
         { name: 'parameterHighlighter', register: (ctx) => registerParameterHighlighter(ctx) },
         { name: 'astNavigatorEvents', register: (ctx) => {
+                if (!lazyProviders)
+                    return;
                 const navigator = lazyProviders.astNavigator.get();
                 if (navigator) {
                     ctx.subscriptions.push(vscode.workspace.onDidChangeTextDocument(e => {
@@ -185,6 +195,8 @@ function createModules() {
                 }
             } },
         { name: 'statusBar', register: (ctx) => {
+                if (!lazyProviders)
+                    return;
                 if (lazyProviders.statusBarProvider.isInitialized || vscode.workspace.textDocuments.some(sqlDialects_1.isSqlDocument)) {
                     const statusBar = lazyProviders.statusBarProvider.get();
                     if (statusBar)
@@ -213,6 +225,6 @@ function activate(context) {
 }
 function deactivate() {
     (0, diContainer_1.getContainer)().disposeAll();
-    lazyProviders = undefined;
+    lazyProviders = null;
 }
 //# sourceMappingURL=extension.js.map

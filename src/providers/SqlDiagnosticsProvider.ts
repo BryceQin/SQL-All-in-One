@@ -16,6 +16,7 @@ export class SqlDiagnosticsProvider {
 
     private debounceTimer: ReturnType<typeof setTimeout> | null = null
     private readonly DEBOUNCE_MS = 300
+    private currentCancellationSource: vscode.CancellationTokenSource | null = null
 
     constructor() {
         this.diagnosticCollection =
@@ -33,16 +34,24 @@ export class SqlDiagnosticsProvider {
     }
 
     public debouncedProvideDiagnostics(document: vscode.TextDocument): void {
+        if (this.currentCancellationSource) {
+            this.currentCancellationSource.cancel()
+            this.currentCancellationSource.dispose()
+            this.currentCancellationSource = null
+        }
+
         if (this.debounceTimer) {
             clearTimeout(this.debounceTimer)
         }
         this.debounceTimer = setTimeout(() => {
-            this.provideDiagnostics(document)
+            const source = new vscode.CancellationTokenSource()
+            this.currentCancellationSource = source
+            this.provideDiagnostics(document, source.token)
             this.debounceTimer = null
         }, this.DEBOUNCE_MS)
     }
 
-    public provideDiagnostics(document: vscode.TextDocument): void {
+    public provideDiagnostics(document: vscode.TextDocument, token?: vscode.CancellationToken): void {
         const cfg = getConfigManager().getSectionKeys('', ['enableLinter', 'showErrorLevel', 'showWarningLevel', 'showInfoLevel'], {
             enableLinter: true,
             showErrorLevel: true,
@@ -68,6 +77,10 @@ export class SqlDiagnosticsProvider {
             const astDiagnostics = this.astDiagnosticsProvider.check(text, sqlDialect, astList)
             diagnostics.push(...astDiagnostics)
 
+            if (token?.isCancellationRequested) {
+                return
+            }
+
             if (cfg.enableLinter) {
                 const lintDiagnostics = this.linter.lint(text, document, astList)
                 const filteredLintDiagnostics = this.filterBySeverity(lintDiagnostics, cfg)
@@ -80,6 +93,10 @@ export class SqlDiagnosticsProvider {
                     diagnostics.push(diagnostic)
                 }
             }
+        }
+
+        if (token?.isCancellationRequested) {
+            return
         }
 
         this.diagnosticCollection.set(document.uri, diagnostics)
@@ -144,6 +161,11 @@ export class SqlDiagnosticsProvider {
 
     public dispose(): void {
         if (this.debounceTimer) clearTimeout(this.debounceTimer)
+        if (this.currentCancellationSource) {
+            this.currentCancellationSource.cancel()
+            this.currentCancellationSource.dispose()
+            this.currentCancellationSource = null
+        }
         this.configChangeDisposable.dispose()
         this.diagnosticCollection.dispose()
     }

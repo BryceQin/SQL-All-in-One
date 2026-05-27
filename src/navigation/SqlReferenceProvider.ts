@@ -1,5 +1,6 @@
 import * as vscode from 'vscode'
 import type { AstNavigator } from './AstNavigator'
+import { getNavigationContext } from './guard'
 
 export class SqlReferenceProvider implements vscode.ReferenceProvider {
     constructor(private navigator: AstNavigator) {}
@@ -11,23 +12,14 @@ export class SqlReferenceProvider implements vscode.ReferenceProvider {
         _token: vscode.CancellationToken,
     ): vscode.Location[] | null {
         try {
-            const config = vscode.workspace.getConfiguration('SQL-All-in-One')
-            if (!config.get<boolean>('enableNavigation', true)) return null
+            const ctx = getNavigationContext(document, position, this.navigator)
+            if (!ctx) return null
 
-            const range = document.getWordRangeAtPosition(position)
-            if (!range) return null
-            const word = document.getText(range)
-
-            const result = this.navigator.getAST(document)
-            if (!result) return null
-
-            const { ast, index } = result
-
-            const symbolType = this.navigator.detectSymbolType(word, index)
+            const symbolType = this.navigator.detectSymbolType(ctx.word, ctx.index)
             if (!symbolType) return null
 
-            const defLoc = this.navigator.getDefinition(word, index)
-            const refs = this.navigator.findReferences(ast, word, document, symbolType)
+            const defLoc = this.navigator.getDefinition(ctx.word, ctx.index)
+            const refs = this.navigator.findReferences(ctx.ast, ctx.word, document, symbolType)
 
             const locations: vscode.Location[] = []
             if (defLoc) {

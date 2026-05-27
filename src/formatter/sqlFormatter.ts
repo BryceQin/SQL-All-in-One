@@ -1,21 +1,12 @@
 import type { FormatOptions } from "./FormatOptions"
-import type { SqlDialect } from "../parser/dialectMapper"
+import type { SqlDialect, SqlLanguage } from "../core/dialectRegistry"
+import { getDialectEntries } from "../core/dialectRegistry"
 import { AstFormatter } from "./AstFormatter"
 import { ConfigError, validateConfig } from "./validateConfig"
 
-const dialectNameMap: Record<string, SqlDialect> = {
-    hive: "hive",
-    mysql: "mysql",
-    spark: "spark",
-    flinksql: "flinksql",
-    sql: "sql",
-    postgresql: "postgresql",
-    bigquery: "bigquery",
-    sqlite: "sqlite",
-}
+export type { SqlLanguage }
 
-export const supportedDialects = Object.keys(dialectNameMap)
-export type SqlLanguage = keyof typeof dialectNameMap
+export const supportedDialects = [...new Set(getDialectEntries().map(e => e.sqlLanguage))]
 
 export type FormatOptionsWithLanguage = Partial<FormatOptions> & {
     language?: SqlLanguage
@@ -121,7 +112,7 @@ export const format = (
         throw new ConfigError(`不支持的SQL方言: ${cfg.language}`)
     }
 
-    const sqlDialectName = dialectNameMap[cfg.language || "sql"]
+    const sqlDialectName = (cfg.language || "sql") as SqlDialect
 
     return formatDialect(query, {
         ...cfg,
