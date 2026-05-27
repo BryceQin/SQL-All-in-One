@@ -1,21 +1,12 @@
 import type { FormatOptions } from "./FormatOptions"
-import type { SqlDialect } from "../parser/dialectMapper"
+import type { SqlDialect, SqlLanguage } from "../core/dialectRegistry"
+import { getDialectEntries } from "../core/dialectRegistry"
 import { AstFormatter } from "./AstFormatter"
 import { ConfigError, validateConfig } from "./validateConfig"
 
-const dialectNameMap: Record<string, SqlDialect> = {
-    hive: "hive",
-    mysql: "mysql",
-    spark: "spark",
-    flinksql: "flinksql",
-    sql: "sql",
-    postgresql: "postgresql",
-    bigquery: "bigquery",
-    sqlite: "sqlite",
-}
+export type { SqlLanguage }
 
-export const supportedDialects = Object.keys(dialectNameMap)
-export type SqlLanguage = keyof typeof dialectNameMap
+export const supportedDialects = [...new Set(getDialectEntries().map(e => e.sqlLanguage))]
 
 export type FormatOptionsWithLanguage = Partial<FormatOptions> & {
     language?: SqlLanguage
@@ -25,6 +16,8 @@ export type FormatOptionsWithDialect = Partial<FormatOptions> & {
     dialect: SqlDialect
 }
 
+// NOTE: Default values here should match src/config/configDefinitions.ts FORMAT_CONFIG_ITEMS
+// When adding new format options, add them to both this object and FORMAT_CONFIG_ITEMS
 const defaultOptions: FormatOptions = {
     tabWidth: 4,
     useTabs: false,
@@ -119,13 +112,16 @@ export const format = (
         throw new ConfigError(`不支持的SQL方言: ${cfg.language}`)
     }
 
-    const sqlDialectName = dialectNameMap[cfg.language || "sql"]
+    const sqlDialectName = (cfg.language || "sql") as SqlDialect
 
     return formatDialect(query, {
         ...cfg,
         dialect: sqlDialectName,
     })
 }
+
+// AstFormatter 缓存：按方言缓存实例，避免每次 format 调用都重新创建格式化器
+const formatterCache = new Map<string, { optionsKey: string; formatter: AstFormatter }>()
 
 export const formatDialect = (
     query: string,
@@ -143,7 +139,15 @@ export const formatDialect = (
         ...cfg,
     })
 
-    return new AstFormatter(options, dialect).format(query)
+    const optionsKey = JSON.stringify(options)
+    const cached = formatterCache.get(dialect)
+    if (cached && cached.optionsKey === optionsKey) {
+        return cached.formatter.format(query)
+    }
+
+    const formatter = new AstFormatter(options, dialect)
+    formatterCache.set(dialect, { optionsKey, formatter })
+    return formatter.format(query)
 }
 
 export type FormatFn = typeof format

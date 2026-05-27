@@ -12,16 +12,21 @@ export class SqlCodeActionProvider implements vscode.CodeActionProvider {
         context: vscode.CodeActionContext,
         _token: vscode.CancellationToken
     ): vscode.CodeAction[] {
-        const actions: vscode.CodeAction[] = []
+        try {
+            const actions: vscode.CodeAction[] = []
 
-        for (const diagnostic of context.diagnostics) {
-            const fix = this.tryCreateFix(document, diagnostic)
-            if (fix) {
-                actions.push(...(Array.isArray(fix) ? fix : [fix]))
+            for (const diagnostic of context.diagnostics) {
+                const fix = this.tryCreateFix(document, diagnostic)
+                if (fix) {
+                    actions.push(...(Array.isArray(fix) ? fix : [fix]))
+                }
             }
-        }
 
-        return actions
+            return actions
+        } catch (error) {
+            console.error('[SqlCodeActionProvider] Error providing code actions:', error)
+            return []
+        }
     }
 
     private tryCreateFix(
@@ -29,7 +34,6 @@ export class SqlCodeActionProvider implements vscode.CodeActionProvider {
         diagnostic: vscode.Diagnostic
     ): vscode.CodeAction | vscode.CodeAction[] | null {
         const code = typeof diagnostic.code === 'object' ? diagnostic.code.value : diagnostic.code
-        const message = diagnostic.message
 
         if (code === 'missing_query_comment') {
             return this.createMissingQueryCommentFix(document, diagnostic)
@@ -44,19 +48,19 @@ export class SqlCodeActionProvider implements vscode.CodeActionProvider {
             return this.createExpiredTodoFixes(document, diagnostic)
         }
 
-        if (message.includes('= NULL') || message.includes('IS NULL')) {
+        if (code === 'suspicious_null_comparison') {
             return this.createNullComparisonFix(document, diagnostic)
         }
-        if (message.includes('HAVING') && message.includes('GROUP BY')) {
+        if (code === 'having_without_group_by') {
             return this.createHavingFix(document, diagnostic)
         }
-        if (message.includes('保留字')) {
+        if (code === 'reserved_word_identifier') {
             return this.createReservedWordFix(document, diagnostic)
         }
-        if (message.includes('子查询') && message.includes('别名')) {
+        if (code === 'subquery_without_alias') {
             return this.createSubqueryAliasFix(document, diagnostic)
         }
-        if (message.includes('INSERT') && message.includes('列名')) {
+        if (code === 'avoid_select_in_insert') {
             return this.createInsertColumnsFix(document, diagnostic)
         }
 

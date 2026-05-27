@@ -1,6 +1,5 @@
 import * as vscode from 'vscode'
 import { t } from '../i18n'
-import { getContainer, Tokens } from './diContainer'
 
 export enum ErrorLevel {
   DEBUG = 'debug',
@@ -219,5 +218,3 @@ export function handleError(error: unknown, context: string, category: ErrorCate
   const level = category === ErrorCategory.CRITICAL ? ErrorLevel.ERROR : ErrorLevel.WARNING;
   getErrorHandler().handle(error, context, level, category);
 }
-
-getContainer().registerFactory(Tokens.ErrorHandler, getErrorHandler);

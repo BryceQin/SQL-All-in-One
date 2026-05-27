@@ -1,8 +1,6 @@
 import { MYSQL_TO_HIVE_TYPES } from './typeMappings'
 import { MYSQL_TO_HIVE_FUNCTIONS } from './functionMappings'
 import { SqlParser } from './sqlParser'
-import { getAstConverter } from './AstConverter'
-import type { SqlDialect } from '../parser/dialectMapper'
 
 export class MysqlToHiveConverter {
   private yearPlaceholders: { placeholder: string; original: string }[] = []
@@ -10,11 +8,6 @@ export class MysqlToHiveConverter {
 
   convert(sql: string): string {
     try {
-      const astResult = getAstConverter().tryConvertCreateTable(sql, 'mysql' as SqlDialect, 'hive' as SqlDialect)
-      if (astResult.success && astResult.result) {
-        return astResult.result
-      }
-
       let converted = sql
 
       converted = this.preserveYearColumnNames(converted)

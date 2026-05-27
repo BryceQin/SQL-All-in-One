@@ -3,8 +3,10 @@ import { isSqlDocument } from '../core/sqlDialects'
 import { t } from '../i18n'
 
 export class SqlParameterHighlighter {
+    private static readonly DEBOUNCE_DELAY = 150
     private decorationType: vscode.TextEditorDecorationType
     private disposables: vscode.Disposable[] = []
+    private debounceTimer: NodeJS.Timeout | undefined
 
     constructor() {
         this.decorationType = vscode.window.createTextEditorDecorationType({
@@ -24,12 +26,12 @@ export class SqlParameterHighlighter {
             vscode.workspace.onDidChangeTextDocument(event => {
                 const editor = vscode.window.activeTextEditor
                 if (editor && editor.document === event.document && this.isSqlDocument(event.document)) {
-                    this.updateDecorations(editor)
+                    this.debouncedUpdateDecorations(editor)
                 }
             }),
             vscode.window.onDidChangeTextEditorSelection(event => {
                 if (this.isSqlDocument(event.textEditor.document)) {
-                    this.updateDecorations(event.textEditor)
+                    this.debouncedUpdateDecorations(event.textEditor)
                 }
             })
         )
@@ -43,6 +45,16 @@ export class SqlParameterHighlighter {
         return isSqlDocument(document)
     }
     
+    private debouncedUpdateDecorations(editor: vscode.TextEditor): void {
+        if (this.debounceTimer) {
+            clearTimeout(this.debounceTimer)
+        }
+        this.debounceTimer = setTimeout(() => {
+            this.debounceTimer = undefined
+            this.updateDecorations(editor)
+        }, SqlParameterHighlighter.DEBOUNCE_DELAY)
+    }
+
     public updateDecorations(editor: vscode.TextEditor): void {
         if (!this.isSqlDocument(editor.document)) {
             editor.setDecorations(this.decorationType, [])
@@ -107,6 +119,10 @@ export class SqlParameterHighlighter {
     }
     
     public dispose(): void {
+        if (this.debounceTimer) {
+            clearTimeout(this.debounceTimer)
+            this.debounceTimer = undefined
+        }
         this.decorationType.dispose()
         for (const d of this.disposables) d.dispose()
     }

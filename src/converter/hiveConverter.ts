@@ -1,15 +1,8 @@
 import { HIVE_TO_MYSQL_TYPES } from './typeMappings'
 import { HIVE_TO_MYSQL_FUNCTIONS } from './functionMappings'
-import { getAstConverter } from './AstConverter'
-import type { SqlDialect } from '../parser/dialectMapper'
 
 export class HiveToMysqlConverter {
   convert(sql: string): string {
-    const astResult = getAstConverter().tryConvertCreateTable(sql, 'hive' as SqlDialect, 'mysql' as SqlDialect)
-    if (astResult.success && astResult.result) {
-      return astResult.result
-    }
-
     let converted = sql
 
     converted = this.convertFunctions(converted)

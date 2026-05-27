@@ -26,6 +26,7 @@ export class SelectFormatter {
     }
 
     public format(stmt: any): string {
+        this.layout.clear();
         const typed = asSelectStmt(stmt);
 
         if (typed && typed.with) {
@@ -294,7 +295,10 @@ export class SelectFormatter {
     }
 
     private formatWith(withClause: any[]): void {
-        const cteFmt = new CTEFormatter(this.cfg, this.indent);
+        const cteFmt = new CTEFormatter(this.cfg, this.indent, (subStmt: any) => {
+            const subFmt = new SelectFormatter(this.cfg, this.indent);
+            return subFmt.format(subStmt);
+        });
         const cteResult = cteFmt.format(withClause);
         this.layout.add(cteResult, WS.NEWLINE);
     }

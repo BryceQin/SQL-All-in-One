@@ -1,5 +1,6 @@
 import * as vscode from 'vscode'
 import type { AstNavigator } from './AstNavigator'
+import { getNavigationContext } from './guard'
 
 export class SqlDefinitionProvider implements vscode.DefinitionProvider {
     constructor(private navigator: AstNavigator) {}
@@ -10,19 +11,10 @@ export class SqlDefinitionProvider implements vscode.DefinitionProvider {
         _token: vscode.CancellationToken,
     ): vscode.Definition | null {
         try {
-            const config = vscode.workspace.getConfiguration('SQL-All-in-One')
-            if (!config.get<boolean>('enableNavigation', true)) return null
+            const ctx = getNavigationContext(document, position, this.navigator)
+            if (!ctx) return null
 
-            const range = document.getWordRangeAtPosition(position)
-            if (!range) return null
-            const word = document.getText(range)
-
-            const result = this.navigator.getAST(document)
-            if (!result) return null
-
-            const { index } = result
-            const loc = this.navigator.getDefinition(word, index)
-
+            const loc = this.navigator.getDefinition(ctx.word, ctx.index)
             return loc || null
         } catch {
             return null

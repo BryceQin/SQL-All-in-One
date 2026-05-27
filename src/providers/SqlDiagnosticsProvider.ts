@@ -3,7 +3,6 @@ import { isSqlDocument } from "../core/sqlDialects"
 import { toSqlDialect } from "../core/sqlDialects"
 import { lineColFromIndex } from "../lexer/lineColFromIndex"
 import { t } from "../i18n"
-import { EnhancedSqlChecker } from "./EnhancedSqlChecker"
 import { SqlLinter } from "./SqlLinter"
 import { AstDiagnosticsProvider } from "./AstDiagnosticsProvider"
 import { getDocumentAstCache } from "../parser/DocumentAstCache"
@@ -11,22 +10,21 @@ import { getConfigManager } from "../core/configManager"
 
 export class SqlDiagnosticsProvider {
     private diagnosticCollection: vscode.DiagnosticCollection
-    private enhancedChecker: EnhancedSqlChecker
     private astDiagnosticsProvider = new AstDiagnosticsProvider()
     private linter: SqlLinter
     private configChangeDisposable: vscode.Disposable
 
     private debounceTimer: ReturnType<typeof setTimeout> | null = null
     private readonly DEBOUNCE_MS = 300
+    private currentCancellationSource: vscode.CancellationTokenSource | null = null
 
     constructor() {
         this.diagnosticCollection =
             vscode.languages.createDiagnosticCollection("sql-all-in-one")
-        this.enhancedChecker = new EnhancedSqlChecker()
         this.linter = new SqlLinter()
 
         this.configChangeDisposable = getConfigManager().onConfigChange(() => {
-            this.linter = new SqlLinter()
+            this.linter.resetConfig()
             vscode.workspace.textDocuments.forEach((doc) => {
                 if (isSqlDocument(doc)) {
                     this.provideDiagnostics(doc)
@@ -36,18 +34,25 @@ export class SqlDiagnosticsProvider {
     }
 
     public debouncedProvideDiagnostics(document: vscode.TextDocument): void {
+        if (this.currentCancellationSource) {
+            this.currentCancellationSource.cancel()
+            this.currentCancellationSource.dispose()
+            this.currentCancellationSource = null
+        }
+
         if (this.debounceTimer) {
             clearTimeout(this.debounceTimer)
         }
         this.debounceTimer = setTimeout(() => {
-            this.provideDiagnostics(document)
+            const source = new vscode.CancellationTokenSource()
+            this.currentCancellationSource = source
+            this.provideDiagnostics(document, source.token)
             this.debounceTimer = null
         }, this.DEBOUNCE_MS)
     }
 
-    public provideDiagnostics(document: vscode.TextDocument): void {
-        const cfg = getConfigManager().getSectionKeys('', ['enableEnhancedChecks', 'enableLinter', 'showErrorLevel', 'showWarningLevel', 'showInfoLevel'], {
-            enableEnhancedChecks: true,
+    public provideDiagnostics(document: vscode.TextDocument, token?: vscode.CancellationToken): void {
+        const cfg = getConfigManager().getSectionKeys('', ['enableLinter', 'showErrorLevel', 'showWarningLevel', 'showInfoLevel'], {
             enableLinter: true,
             showErrorLevel: true,
             showWarningLevel: true,
@@ -72,10 +77,8 @@ export class SqlDiagnosticsProvider {
             const astDiagnostics = this.astDiagnosticsProvider.check(text, sqlDialect, astList)
             diagnostics.push(...astDiagnostics)
 
-            if (cfg.enableEnhancedChecks) {
-                const enhancedDiagnostics = this.enhancedChecker.checkEnhancedIssues(text, document, astList)
-                const filteredDiagnostics = this.filterBySeverity(enhancedDiagnostics, cfg)
-                diagnostics.push(...filteredDiagnostics)
+            if (token?.isCancellationRequested) {
+                return
             }
 
             if (cfg.enableLinter) {
@@ -90,6 +93,10 @@ export class SqlDiagnosticsProvider {
                     diagnostics.push(diagnostic)
                 }
             }
+        }
+
+        if (token?.isCancellationRequested) {
+            return
         }
 
         this.diagnosticCollection.set(document.uri, diagnostics)
@@ -154,6 +161,11 @@ export class SqlDiagnosticsProvider {
 
     public dispose(): void {
         if (this.debounceTimer) clearTimeout(this.debounceTimer)
+        if (this.currentCancellationSource) {
+            this.currentCancellationSource.cancel()
+            this.currentCancellationSource.dispose()
+            this.currentCancellationSource = null
+        }
         this.configChangeDisposable.dispose()
         this.diagnosticCollection.dispose()
     }

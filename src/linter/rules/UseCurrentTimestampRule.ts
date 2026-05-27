@@ -8,6 +8,11 @@ import type { AstNode } from '../../parser/astTypes'
 export class UseCurrentTimestampRule extends BaseRule {
     readonly id = 'use_current_timestamp'
     readonly applicableTypes = ['select']
+    readonly name = 'Use CURRENT_TIMESTAMP'
+    readonly description = 'linter.useCurrentTimestamp.description'
+    readonly category = 'best-practices'
+    readonly defaultSeverity = vscode.DiagnosticSeverity.Information
+    readonly defaultEnabled = true
 
     private static readonly CURRENT_TIMESTAMP_FUNCTION_NAMES = new Set(['now', 'sysdate', 'getdate', 'current_date'])
 

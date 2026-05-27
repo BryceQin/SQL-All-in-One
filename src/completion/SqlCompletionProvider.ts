@@ -115,10 +115,12 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
     provideCompletionItems(
         doc: vscode.TextDocument,
         pos: vscode.Position,
+        token: vscode.CancellationToken,
     ): vscode.ProviderResult<vscode.CompletionItem[]> {
         try {
             const cfgMgr = getConfigManager()
             if (!cfgMgr.get('enableCompletion', true)) return []
+            if (token.isCancellationRequested) return []
             const cfg = cfgMgr.getSectionKeys('completion', ['keywords', 'functions', 'snippets', 'cteNames', 'identifiers', 'commentSnippets'], {
                 keywords: true,
                 functions: true,
@@ -163,10 +165,12 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
                 if (!cfg.cteNames || !doc.getText().trim()) return []
                 return getCTEItems(doc, pos)
             }, 'CTE completion')
+            if (token.isCancellationRequested) return []
             this.tryCollect(items, () => {
                 if (!cfg.identifiers || !doc.getText().trim()) return []
                 return getIdentifierItems(doc, pos, this.getDialect(doc.languageId).dialect.tokenizer)
             }, 'identifier completion')
+            if (token.isCancellationRequested) return []
             this.tryCollect(items, () => {
                 if (!cfg.commentSnippets) return []
                 return getCommentCompletionItems(doc, pos)

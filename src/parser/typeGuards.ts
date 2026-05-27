@@ -9,7 +9,7 @@ import {
   FunctionCallNode,
   SelectColumn,
   FromItem,
-} from './astTypes.extended';
+} from './astTypes';
 import { AstNodeType } from '../formatter/AstNodeTypes';
 
 export function isAstNode(node: unknown): node is AstNode {

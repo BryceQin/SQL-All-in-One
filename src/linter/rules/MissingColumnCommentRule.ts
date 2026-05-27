@@ -4,10 +4,16 @@ import { BaseRule } from './BaseRule'
 import { isAstNode } from '../../parser/AstVisitor'
 import { getNodeLocation } from '../../parser/astUtils'
 import type { AstNode } from '../../parser/astTypes'
+import { getConfigManager } from '../../core/configManager'
 
 export class MissingColumnCommentRule extends BaseRule {
     readonly id = 'missing_column_comment'
     readonly applicableTypes = ['create']
+    readonly name = 'Missing Column Comment'
+    readonly description = 'linter.createTableMissingComment.description'
+    readonly category = 'best-practices'
+    readonly defaultSeverity = vscode.DiagnosticSeverity.Warning
+    readonly defaultEnabled = true
 
     check(context: RuleContext): vscode.Diagnostic[] {
         const diagnostics: vscode.Diagnostic[] = []
@@ -49,8 +55,7 @@ export class MissingColumnCommentRule extends BaseRule {
             return diagnostics
         }
 
-        const cfg = vscode.workspace.getConfiguration('SQL-All-in-One')
-        const aggregate = cfg.get<boolean>('lint.missing_column_comment_aggregate', true)
+        const aggregate = getConfigManager().get<boolean>('lint.missing_column_comment_aggregate', true)
 
         if (aggregate && missingColumns.length > 1) {
             const loc = getNodeLocation(node)

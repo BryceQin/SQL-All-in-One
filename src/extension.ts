@@ -45,7 +45,7 @@ interface ProviderMap {
   renameProvider: Lazy<SqlRenameProvider>
 }
 
-let lazyProviders: ProviderMap
+let lazyProviders: ProviderMap | null = null
 
 function createLazyProviders(extensionPath: string): ProviderMap {
   const providers: ProviderMap = {
@@ -109,6 +109,7 @@ function registerFormattingProviders(context: vscode.ExtensionContext): void {
 }
 
 function registerDiagnostics(context: vscode.ExtensionContext): void {
+  if (!lazyProviders) return
   const dp = lazyProviders.diagnosticsProvider.get()
   if (!dp) return
 
@@ -133,6 +134,7 @@ function registerDiagnostics(context: vscode.ExtensionContext): void {
 }
 
 function registerProviders(context: vscode.ExtensionContext): void {
+  if (!lazyProviders) return
   const sqlLanguages = getSqlLanguageIds()
 
   const codeActionProvider = lazyProviders.codeActionProvider.get()
@@ -187,6 +189,7 @@ function registerProviders(context: vscode.ExtensionContext): void {
 }
 
 function registerCompletion(context: vscode.ExtensionContext): void {
+  if (!lazyProviders) return
   const completionProvider = lazyProviders.completionProvider.get()
   if (!completionProvider) return
 
@@ -207,6 +210,7 @@ function registerCompletion(context: vscode.ExtensionContext): void {
 }
 
 function registerParameterHighlighter(context: vscode.ExtensionContext): void {
+  if (!lazyProviders) return
   const parameterHighlighter = lazyProviders.parameterHighlighter.get()
   if (!parameterHighlighter) return
 
@@ -224,6 +228,7 @@ function createModules(): ExtensionModule[] {
     { name: 'completion', register: (ctx) => registerCompletion(ctx) },
     { name: 'parameterHighlighter', register: (ctx) => registerParameterHighlighter(ctx) },
     { name: 'astNavigatorEvents', register: (ctx) => {
+      if (!lazyProviders) return
       const navigator = lazyProviders.astNavigator.get()
       if (navigator) {
         ctx.subscriptions.push(
@@ -235,6 +240,7 @@ function createModules(): ExtensionModule[] {
       }
     }},
     { name: 'statusBar', register: (ctx) => {
+      if (!lazyProviders) return
       if (lazyProviders.statusBarProvider.isInitialized || vscode.workspace.textDocuments.some(isSqlDocument)) {
         const statusBar = lazyProviders.statusBarProvider.get()
         if (statusBar) ctx.subscriptions.push(statusBar)
@@ -267,5 +273,5 @@ export function activate(context: vscode.ExtensionContext): void {
 
 export function deactivate(): void {
   getContainer().disposeAll()
-  lazyProviders = undefined as unknown as ProviderMap
+  lazyProviders = null
 }

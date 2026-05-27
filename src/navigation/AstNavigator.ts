@@ -4,6 +4,7 @@ import { toSqlDialect } from '../core/sqlDialects'
 import { walkAst, isAstNode } from '../parser/AstVisitor'
 import { extractName } from '../parser/astUtils'
 import type { AstNode, AstLocation } from '../parser/astTypes'
+import { t } from '../i18n'
 
 export interface SymbolIndex {
     cteDefinitions: Map<string, vscode.Location>
@@ -20,7 +21,6 @@ export type SymbolType = 'cte' | 'tableAlias' | 'columnAlias'
 
 interface CacheEntry {
     version: number
-    ast: unknown[] | unknown
     index: SymbolIndex
 }
 
@@ -183,24 +183,24 @@ function findReferencesInSelect(node: AstNode, symbolName: string, document: vsc
                     const location = loc ? toVscodeLocationFromLoc(loc, document) : null
                     if (location) {
                         const join = fromEntry.join
-                        const context = typeof join === 'string' ? 'JOIN 子句' : 'FROM 子句'
+                        const context = typeof join === 'string' ? t('navigation.joinClause') : t('navigation.fromClause')
                         refs.push({ location, context })
                     }
                 }
             }
         }
         if (node.where) {
-            findColumnRefsInExpr(node.where, nameLower, 'WHERE 条件', document, refs)
+            findColumnRefsInExpr(node.where, nameLower, t('navigation.whereCondition'), document, refs)
         }
         if (node.having) {
-            findColumnRefsInExpr(node.having, nameLower, 'HAVING 条件', document, refs)
+            findColumnRefsInExpr(node.having, nameLower, t('navigation.havingCondition'), document, refs)
         }
         if (Array.isArray(node.orderby)) {
             for (const ob of node.orderby) {
                 if (ob == null || typeof ob !== 'object') continue
                 const obEntry = ob as Record<string, unknown>
                 if (obEntry.expr) {
-                    findColumnRefsInExpr(obEntry.expr, nameLower, 'ORDER BY', document, refs)
+                    findColumnRefsInExpr(obEntry.expr, nameLower, t('navigation.orderBy'), document, refs)
                 }
             }
         }
@@ -213,12 +213,12 @@ function findReferencesInSelect(node: AstNode, symbolName: string, document: vsc
                 if (col == null || typeof col !== 'object') continue
                 const colEntry = col as Record<string, unknown>
                 if (colEntry.expr) {
-                    findColumnRefsInExpr(colEntry.expr, nameLower, 'SELECT 列', document, refs)
+                    findColumnRefsInExpr(colEntry.expr, nameLower, t('navigation.selectColumn'), document, refs)
                 }
             }
         }
         if (node.where) {
-            findColumnRefsInExpr(node.where, nameLower, 'WHERE 条件', document, refs)
+            findColumnRefsInExpr(node.where, nameLower, t('navigation.whereCondition'), document, refs)
         }
         const from = node.from
         if (Array.isArray(from)) {
@@ -226,12 +226,12 @@ function findReferencesInSelect(node: AstNode, symbolName: string, document: vsc
                 if (fromItem == null || typeof fromItem !== 'object') continue
                 const fromEntry = fromItem as Record<string, unknown>
                 if (fromEntry.on) {
-                    findColumnRefsInExpr(fromEntry.on, nameLower, 'ON 条件', document, refs)
+                    findColumnRefsInExpr(fromEntry.on, nameLower, t('navigation.onCondition'), document, refs)
                 }
             }
         }
         if (node.having) {
-            findColumnRefsInExpr(node.having, nameLower, 'HAVING 条件', document, refs)
+            findColumnRefsInExpr(node.having, nameLower, t('navigation.havingCondition'), document, refs)
         }
         if (Array.isArray(node.orderby)) {
             for (const ob of node.orderby) {
@@ -283,23 +283,31 @@ function findReferences(
 
 export class AstNavigator {
     private cache = new Map<string, CacheEntry>()
+    private static MAX_CACHE_SIZE = 50
 
     getAST(document: vscode.TextDocument): { ast: unknown[] | unknown; index: SymbolIndex } | null {
         const key = document.uri.toString()
         const version = document.version
-        const cached = this.cache.get(key)
-        if (cached && cached.version === version) {
-            return { ast: cached.ast, index: cached.index }
-        }
-
         const dialect = toSqlDialect(document.languageId)
         const result = getDocumentAstCache().getOrParse(document, dialect)
         if (!result.success || !result.ast) {
             return null
         }
 
+        const cached = this.cache.get(key)
+        if (cached && cached.version === version) {
+            return { ast: result.ast, index: cached.index }
+        }
+
+        if (this.cache.size >= AstNavigator.MAX_CACHE_SIZE) {
+            const firstKey = this.cache.keys().next().value
+            if (firstKey !== undefined) {
+                this.cache.delete(firstKey)
+            }
+        }
+
         const index = buildIndex(result.ast, document)
-        this.cache.set(key, { version, ast: result.ast, index })
+        this.cache.set(key, { version, index })
         return { ast: result.ast, index }
     }
 

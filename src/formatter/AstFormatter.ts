@@ -17,14 +17,23 @@ export class AstFormatter {
     private cfg: FormatOptions;
     private dialect: SqlDialect;
     private indent: Indentation;
+    private selectFormatter: SelectFormatter;
+    private insertFormatter: InsertFormatter;
+    private ddlFormatter: DDLFormatter;
+    private expressionFormatter: ExpressionFormatter;
 
     constructor(cfg: FormatOptions, dialect: SqlDialect) {
         this.cfg = cfg;
         this.dialect = dialect;
         this.indent = new Indentation(indentString(cfg));
+        this.selectFormatter = new SelectFormatter(cfg, this.indent);
+        this.insertFormatter = new InsertFormatter(cfg, this.indent);
+        this.ddlFormatter = new DDLFormatter(cfg, this.indent);
+        this.expressionFormatter = new ExpressionFormatter(cfg, this.indent);
     }
 
     public format(sql: string): string {
+        this.indent.reset();
         const engine = getParserEngine();
         const ast = engine.astify(sql, this.dialect);
         const statements = Array.isArray(ast) ? ast : [ast];
@@ -47,10 +56,10 @@ export class AstFormatter {
         const type = stmt.type as string;
         switch (type) {
             case AstNodeType.SELECT:
-                return this.formatSelect(stmt);
+                return this.selectFormatter.format(stmt);
             case AstNodeType.INSERT:
             case AstNodeType.REPLACE:
-                return new InsertFormatter(this.cfg, this.indent).format(stmt);
+                return this.insertFormatter.format(stmt);
             case AstNodeType.UPDATE:
                 return this.formatUpdate(stmt);
             case AstNodeType.DELETE:
@@ -58,7 +67,7 @@ export class AstFormatter {
             case AstNodeType.CREATE:
             case AstNodeType.ALTER:
             case AstNodeType.DROP:
-                return new DDLFormatter(this.cfg, this.indent).format(stmt);
+                return this.ddlFormatter.format(stmt);
             case AstNodeType.USE:
                 return this.formatUse(stmt);
             default:
@@ -66,14 +75,9 @@ export class AstFormatter {
         }
     }
 
-    private formatSelect(stmt: Record<string, unknown>): string {
-        const selectFmt = new SelectFormatter(this.cfg, this.indent);
-        return selectFmt.format(stmt);
-    }
-
     private formatUpdate(stmt: Record<string, unknown>): string {
         const layout = new Layout(this.indent);
-        const exprFmt = new ExpressionFormatter(this.cfg, this.indent);
+        const exprFmt = this.expressionFormatter;
 
         layout.add(formatKeyword('UPDATE', this.cfg.keywordCase));
 
@@ -127,7 +131,7 @@ export class AstFormatter {
 
     private formatDelete(stmt: Record<string, unknown>): string {
         const layout = new Layout(this.indent);
-        const exprFmt = new ExpressionFormatter(this.cfg, this.indent);
+        const exprFmt = this.expressionFormatter;
 
         layout.add(formatKeyword('DELETE', this.cfg.keywordCase));
 

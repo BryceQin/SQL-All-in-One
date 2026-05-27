@@ -22,9 +22,10 @@ export class SqlHoverProvider implements vscode.HoverProvider {
     provideHover(
         document: vscode.TextDocument,
         position: vscode.Position,
-        _token: vscode.CancellationToken,
+        token: vscode.CancellationToken,
     ): vscode.Hover | null {
         if (!getConfigManager().get<boolean>('enableHover', true)) return null
+        if (token.isCancellationRequested) return null
 
         const dialectName = sqlDialects[document.languageId as keyof typeof sqlDialects]
         if (!dialectName) return null

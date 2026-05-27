@@ -3,11 +3,12 @@ import { format, supportedDialects } from '../formatter/sqlFormatter'
 import { ConfigError, validateConfig } from '../formatter/validateConfig'
 import { getParserEngine } from '../parser/SqlParserEngine'
 import { ParseError } from '../parser/ParseError'
-import { toNodeSqlParserDialect, getSupportedDialects, SqlDialect } from '../parser/dialectMapper'
+import { toNodeSqlParserDialect, SqlDialect } from '../parser/dialectMapper'
 import { isAstNode, walkAst, findNodes, findNodesOfType } from '../parser/AstVisitor'
 import { getAstConverter } from '../converter/AstConverter'
 import { MYSQL_TO_HIVE_TYPES, HIVE_TO_MYSQL_TYPES } from '../converter/typeMappings'
 import { sqlDialects, toSqlDialect } from '../core/sqlDialects'
+import { getDialectEntries } from '../core/dialectRegistry'
 import { formatKeyword, formatFunctionName, formatAlias, isLogicalOperator, isComparisonOperator } from '../formatter/nodeFormatters/CommonFormatter'
 import { formatEditorText } from '../utils/formatEditorText'
 
@@ -770,8 +771,8 @@ suite('DialectMapper Tests', () => {
         assert.strictEqual(toNodeSqlParserDialect('sql'), 'MySQL')
     })
 
-    test('getSupportedDialects returns all dialects', () => {
-        const dialects = getSupportedDialects()
+    test('getDialectEntries returns all dialects', () => {
+        const dialects = [...new Set(getDialectEntries().map(e => e.sqlDialect))]
         assert.ok(dialects.includes('mysql'))
         assert.ok(dialects.includes('hive'))
         assert.ok(dialects.includes('spark'))

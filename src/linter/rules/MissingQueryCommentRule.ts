@@ -4,10 +4,16 @@ import { BaseRule } from './BaseRule'
 import { walkAst, isAstNode } from '../../parser/AstVisitor'
 import { getNodeLocation, getStatementEndLocation } from '../../parser/astUtils'
 import type { AstNode } from '../../parser/astTypes'
+import { getConfigManager } from '../../core/configManager'
 
 export class MissingQueryCommentRule extends BaseRule {
     readonly id = 'missing_query_comment'
     readonly applicableTypes = ['select']
+    readonly name = 'Missing Query Comment'
+    readonly description = 'linter.complexQueryComment.description'
+    readonly category = 'best-practices'
+    readonly defaultSeverity = vscode.DiagnosticSeverity.Warning
+    readonly defaultEnabled = true
 
     check(context: RuleContext): vscode.Diagnostic[] {
         const diagnostics: vscode.Diagnostic[] = []
@@ -17,10 +23,10 @@ export class MissingQueryCommentRule extends BaseRule {
             return diagnostics
         }
 
-        const cfg = vscode.workspace.getConfiguration('SQL-All-in-One')
-        const thresholdLines = cfg.get<number>('lint.missing_query_comment_threshold_line_count', 20)
-        const thresholdJoins = cfg.get<number>('lint.missing_query_comment_threshold_join_count', 3)
-        const thresholdSubqueries = cfg.get<number>('lint.missing_query_comment_threshold_subquery_count', 2)
+        const cfgMgr = getConfigManager()
+        const thresholdLines = cfgMgr.get<number>('lint.missing_query_comment_threshold_line_count', 20)
+        const thresholdJoins = cfgMgr.get<number>('lint.missing_query_comment_threshold_join_count', 3)
+        const thresholdSubqueries = cfgMgr.get<number>('lint.missing_query_comment_threshold_subquery_count', 2)
 
         const loc = getNodeLocation(node)
         if (!loc) {

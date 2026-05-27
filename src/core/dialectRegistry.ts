@@ -1,14 +1,4 @@
-import type { SqlDialect } from '../parser/dialectMapper'
-import type { SqlLanguage } from '../formatter/sqlFormatter'
-
-export interface DialectEntry {
-    vscodeLangId: string
-    sqlLanguage: SqlLanguage
-    sqlDialect: SqlDialect
-    nodeSqlParserDialect: string
-}
-
-const dialectEntries: DialectEntry[] = [
+const dialectEntries = [
     { vscodeLangId: 'sql', sqlLanguage: 'sql', sqlDialect: 'sql', nodeSqlParserDialect: 'MySQL' },
     { vscodeLangId: 'hive', sqlLanguage: 'hive', sqlDialect: 'hive', nodeSqlParserDialect: 'Hive' },
     { vscodeLangId: 'hive-sql', sqlLanguage: 'hive', sqlDialect: 'hive', nodeSqlParserDialect: 'Hive' },
@@ -20,7 +10,17 @@ const dialectEntries: DialectEntry[] = [
     { vscodeLangId: 'postgres', sqlLanguage: 'postgresql', sqlDialect: 'postgresql', nodeSqlParserDialect: 'PostgreSQL' },
     { vscodeLangId: 'bigquery', sqlLanguage: 'bigquery', sqlDialect: 'bigquery', nodeSqlParserDialect: 'BigQuery' },
     { vscodeLangId: 'sqlite', sqlLanguage: 'sqlite', sqlDialect: 'sqlite', nodeSqlParserDialect: 'SQLite' },
-]
+] as const
+
+export type SqlDialect = (typeof dialectEntries)[number]['sqlDialect']
+export type SqlLanguage = (typeof dialectEntries)[number]['sqlLanguage']
+
+export interface DialectEntry {
+    vscodeLangId: string
+    sqlLanguage: string
+    sqlDialect: string
+    nodeSqlParserDialect: string
+}
 
 export function getDialectEntries(): readonly DialectEntry[] {
     return dialectEntries
@@ -40,7 +40,8 @@ export function isSqlDocument(document: { languageId: string }): boolean {
 
 export function toSqlDialect(langId: string): SqlDialect {
     const entry = findDialectByLangId(langId)
-    return entry ? entry.sqlDialect : 'sql'
+    if (!entry) return 'sql'
+    return entry.sqlDialect as SqlDialect
 }
 
 export function toNodeSqlParserDialect(dialect: SqlDialect): string {

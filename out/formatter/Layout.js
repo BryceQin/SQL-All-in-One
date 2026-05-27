@@ -37,6 +37,9 @@ class Layout {
     constructor(indentation) {
         this.indentation = indentation ?? new Indentation_1.default('    ');
     }
+    clear() {
+        this.items = [];
+    }
     // Layout 类的核心入口，接收任意数量的「空白符指令」或「SQL 文本」，逐个处理并更新 items 数组
     add(...items) {
         for (const item of items) {

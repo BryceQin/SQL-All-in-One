@@ -2,6 +2,7 @@ import * as vscode from 'vscode'
 import type { RuleContext } from './LintRule'
 import { BaseRule } from './BaseRule'
 import type { AstLocation } from '../../parser/astTypes'
+import { getConfigManager } from '../../core/configManager'
 
 const SQL_KEYWORDS_FOR_COMMENT_CHECK = ['SELECT', 'FROM', 'WHERE', 'JOIN', 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'DROP', 'ALTER', 'GROUP BY', 'ORDER BY', 'HAVING', 'UNION']
 const SQL_KEYWORD_REGEXES = SQL_KEYWORDS_FOR_COMMENT_CHECK.map(kw => ({
@@ -12,12 +13,16 @@ const SQL_KEYWORD_REGEXES = SQL_KEYWORDS_FOR_COMMENT_CHECK.map(kw => ({
 export class CommentedOutCodeRule extends BaseRule {
     readonly id = 'commented_out_code'
     readonly applicableTypes: string[] = []
+    readonly name = 'Commented Out Code'
+    readonly description = 'linter.commentedOutCode.description'
+    readonly category = 'code-style'
+    readonly defaultSeverity = vscode.DiagnosticSeverity.Information
+    readonly defaultEnabled = true
 
     check(context: RuleContext): vscode.Diagnostic[] {
         const diagnostics: vscode.Diagnostic[] = []
         const sql = context.sql
-        const cfg = vscode.workspace.getConfiguration('SQL-All-in-One')
-        const thresholdLines = cfg.get<number>('lint.commented_out_code_threshold_lines', 3)
+        const thresholdLines = getConfigManager().get<number>('lint.commented_out_code_threshold_lines', 3)
 
         const blockCommentPattern = /\/\*([\s\S]*?)\*\//g
         let match

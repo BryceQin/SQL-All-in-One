@@ -45,6 +45,10 @@ export default class Layout {
         this.indentation = indentation ?? new Indentation('    ')
     }
 
+    public clear(): void {
+        this.items = []
+    }
+
     // Layout 类的核心入口，接收任意数量的「空白符指令」或「SQL 文本」，逐个处理并更新 items 数组
     public add(...items: (WS | string)[]) {
         for (const item of items) {

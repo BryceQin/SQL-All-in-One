@@ -97,6 +97,18 @@ export function getColumnLoc(col: Record<string, unknown>): AstLocation | null {
     return null
 }
 
+export function extractTableName(node: Record<string, unknown>): string | null {
+    const table = node.table
+    if (typeof table === 'string' && table.length > 0) return table
+    if (table != null && typeof table === 'object') {
+        const tableObj = table as Record<string, unknown>
+        if (typeof tableObj.value === 'string' && tableObj.value.length > 0) {
+            return tableObj.value
+        }
+    }
+    return null
+}
+
 export function getLocFromAny(obj: Record<string, unknown>): AstLocation | null {
     const loc = obj.loc as { start?: AstLocation; end?: AstLocation } | undefined
     if (loc?.start?.line !== undefined && loc?.start?.column !== undefined) {

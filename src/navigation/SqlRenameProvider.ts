@@ -1,33 +1,8 @@
 import * as vscode from 'vscode'
 import type { AstNavigator, SymbolIndex } from './AstNavigator'
-
-const SQL_RESERVED_WORDS = new Set([
-    'SELECT', 'FROM', 'WHERE', 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'ALTER',
-    'DROP', 'JOIN', 'INNER', 'LEFT', 'RIGHT', 'FULL', 'CROSS', 'OUTER', 'ON',
-    'AND', 'OR', 'NOT', 'IN', 'IS', 'NULL', 'BETWEEN', 'LIKE', 'EXISTS',
-    'GROUP', 'BY', 'HAVING', 'ORDER', 'ASC', 'DESC', 'LIMIT', 'OFFSET',
-    'UNION', 'ALL', 'AS', 'DISTINCT', 'SET', 'INTO', 'VALUES', 'TABLE',
-    'VIEW', 'INDEX', 'WITH', 'CASE', 'WHEN', 'THEN', 'ELSE', 'END',
-    'BEGIN', 'COMMIT', 'ROLLBACK', 'GRANT', 'REVOKE', 'TRUNCATE', 'MERGE',
-    'USING', 'NATURAL', 'OVER', 'PARTITION', 'WINDOW', 'ROWS', 'RANGE',
-    'FETCH', 'NEXT', 'ONLY', 'EXCEPT', 'INTERSECT', 'MINUS', 'ANY', 'SOME',
-    'TRUE', 'FALSE', 'UNKNOWN', 'PRIMARY', 'KEY', 'FOREIGN', 'REFERENCES',
-    'CHECK', 'DEFAULT', 'CONSTRAINT', 'UNIQUE', 'CASCADE', 'RESTRICT',
-    'IF', 'OF', 'TO', 'FOR', 'AT', 'PRECISION', 'VARYING',
-    'LATERAL', 'RECURSIVE', 'TEMPORARY', 'TEMP', 'GLOBAL', 'LOCAL',
-    'DISTRIBUTE', 'CLUSTER', 'SORT', 'DYNAMIC', 'STATIC', 'REDUCE',
-    'TRANSFORM', 'SERDE', 'SERDEPROPERTIES', 'STORED', 'LOCATION',
-    'OVERWRITE', 'DIRECTORY', 'FORMAT', 'DELIMITED', 'FIELDS', 'TERMINATED',
-    'COLLECTION', 'MAP', 'KEYS', 'LINES', 'FILE', 'ROW',
-    'INPUTFORMAT', 'OUTPUTFORMAT', 'INPUTDRIVER', 'OUTPUTDRIVER',
-    'TBLPROPERTIES', 'BUCKETS', 'SKEWED', 'SORTED', 'PURGE',
-    'EXTERNAL', 'MANAGED', 'CTAS', 'LIKE', 'COMMENT', 'STRUCT', 'ARRAY',
-    'UNIONTYPE', 'BOOLEAN', 'TINYINT', 'SMALLINT', 'INT', 'INTEGER',
-    'BIGINT', 'FLOAT', 'DOUBLE', 'DECIMAL', 'NUMERIC', 'STRING', 'VARCHAR',
-    'CHAR', 'DATE', 'TIMESTAMP', 'BINARY', 'VARBINARY', 'TEXT', 'CLOB',
-    'BLOB', 'REAL', 'TIME', 'DATETIME', 'YEAR', 'MONTH', 'DAY', 'HOUR',
-    'MINUTE', 'SECOND', 'ZONE', 'WITHOUT', 'TIMESTAMPTZ',
-])
+import { getNavigationContext } from './guard'
+import { toSqlDialect } from '../core/sqlDialects'
+import { getReservedWordSet } from '../languages/keywords/reservedWords'
 
 export class SqlRenameProvider implements vscode.RenameProvider {
     constructor(private navigator: AstNavigator) {}
@@ -38,19 +13,13 @@ export class SqlRenameProvider implements vscode.RenameProvider {
         _token: vscode.CancellationToken,
     ): vscode.Range | null {
         try {
-            const config = vscode.workspace.getConfiguration('SQL-All-in-One')
-            if (!config.get<boolean>('enableNavigation', true)) return null
+            const ctx = getNavigationContext(document, position, this.navigator)
+            if (!ctx) return null
+
+            if (!this.navigator.hasDefinition(ctx.word, ctx.index)) return null
 
             const range = document.getWordRangeAtPosition(position)
             if (!range) return null
-            const word = document.getText(range)
-
-            const result = this.navigator.getAST(document)
-            if (!result) return null
-
-            const { index } = result
-            if (!this.navigator.hasDefinition(word, index)) return null
-
             return range
         } catch {
             return null
@@ -63,28 +32,19 @@ export class SqlRenameProvider implements vscode.RenameProvider {
         newName: string,
         _token: vscode.CancellationToken,
     ): vscode.WorkspaceEdit | null {
-        const config = vscode.workspace.getConfiguration('SQL-All-in-One')
-        if (!config.get<boolean>('enableNavigation', true)) return null
+        const ctx = getNavigationContext(document, position, this.navigator)
+        if (!ctx) return null
 
-        const range = document.getWordRangeAtPosition(position)
-        if (!range) return null
-        const word = document.getText(range)
+        if (ctx.word === newName) return null
 
-        if (word === newName) return null
-
-        const result = this.navigator.getAST(document)
-        if (!result) return null
-
-        const { ast, index } = result
-
-        const symbolType = this.navigator.detectSymbolType(word, index)
+        const symbolType = this.navigator.detectSymbolType(ctx.word, ctx.index)
         if (!symbolType) return null
 
-        const validationError = this.validateNewName(newName, word, index)
+        const validationError = this.validateNewName(newName, ctx.word, ctx.index, document.languageId)
         if (validationError) throw new Error(validationError)
 
-        const defLocation = this.navigator.getDefinition(word, index)
-        const refs = this.navigator.findReferences(ast, word, document, symbolType)
+        const defLocation = this.navigator.getDefinition(ctx.word, ctx.index)
+        const refs = this.navigator.findReferences(ctx.ast, ctx.word, document, symbolType)
 
         const edit = new vscode.WorkspaceEdit()
         if (defLocation) {
@@ -99,8 +59,10 @@ export class SqlRenameProvider implements vscode.RenameProvider {
         return edit
     }
 
-    private validateNewName(newName: string, oldName: string, index: SymbolIndex): string | null {
-        if (SQL_RESERVED_WORDS.has(newName.toUpperCase())) {
+    private validateNewName(newName: string, oldName: string, index: SymbolIndex, languageId: string): string | null {
+        const dialect = toSqlDialect(languageId)
+        const reservedWords = getReservedWordSet(dialect)
+        if (reservedWords.has(newName.toUpperCase())) {
             return `'${newName}' 是 SQL 保留字，不能用作标识符`
         }
 

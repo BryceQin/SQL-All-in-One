@@ -8,6 +8,11 @@ import type { AstNode } from '../../parser/astTypes'
 export class ColumnCountMismatchRule extends BaseRule {
     readonly id = 'avoid_column_count_mismatch'
     readonly applicableTypes = ['insert']
+    readonly name = 'Column Count Mismatch'
+    readonly description = 'linter.columnCountMismatch.description'
+    readonly category = 'error-check'
+    readonly defaultSeverity = vscode.DiagnosticSeverity.Error
+    readonly defaultEnabled = true
 
     check(context: RuleContext): vscode.Diagnostic[] {
         const diagnostics: vscode.Diagnostic[] = []

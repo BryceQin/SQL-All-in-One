@@ -8,6 +8,11 @@ import type { AstNode } from '../../parser/astTypes'
 export class AvoidSelectStarRule extends BaseRule {
     readonly id = 'avoid_select_star'
     readonly applicableTypes = ['select']
+    readonly name = 'Avoid SELECT *'
+    readonly description = 'linter.avoidSelectStar.description'
+    readonly category = 'code-style'
+    readonly defaultSeverity = vscode.DiagnosticSeverity.Warning
+    readonly defaultEnabled = true
 
     check(context: RuleContext): vscode.Diagnostic[] {
         const diagnostics: vscode.Diagnostic[] = []
