@@ -108,9 +108,9 @@ export class ConnectionManager {
                 this.sshTunnels.set(id, tunnel);
                 fullConfig.host = tunnelResult.localHost;
                 fullConfig.port = tunnelResult.localPort;
-            } catch (error: any) {
+            } catch (error: unknown) {
                 this.updateConnectionState(id, 'error');
-                throw new Error(`SSH tunnel failed: ${error.message}`);
+                throw new Error(`SSH tunnel failed: ${error instanceof Error ? error.message : String(error)}`);
             }
         }
 
@@ -127,7 +127,7 @@ export class ConnectionManager {
             if (!this.activeConnectionId) {
                 this.setActiveConnection(id);
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             const tunnel = this.sshTunnels.get(id);
             if (tunnel) {
                 try {
@@ -222,8 +222,8 @@ export class ConnectionManager {
                 } finally {
                     await tunnel.close();
                 }
-            } catch (error: any) {
-                return { success: false, error: `SSH tunnel failed: ${error.message}` };
+            } catch (error: unknown) {
+                return { success: false, error: `SSH tunnel failed: ${error instanceof Error ? error.message : String(error)}` };
             }
         }
 

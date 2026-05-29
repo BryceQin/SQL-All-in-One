@@ -187,11 +187,11 @@ export class DataTransferDialog {
                 type: 'tables',
                 tables: tables.map((t) => t.name),
             });
-        } catch (error: any) {
+        } catch (error: unknown) {
             this._panel.webview.postMessage({
                 type: 'tables',
                 tables: [],
-                error: error.message || String(error),
+                error: error instanceof Error ? error.message : String(error),
             });
         }
     }
@@ -240,11 +240,11 @@ export class DataTransferDialog {
                     isPrimaryKey: c.isPrimaryKey,
                 })),
             });
-        } catch (error: any) {
+        } catch (error: unknown) {
             this._panel.webview.postMessage({
                 type: 'columns',
                 columns: [],
-                error: error.message || String(error),
+                error: error instanceof Error ? error.message : String(error),
             });
         }
     }
@@ -341,10 +341,10 @@ export class DataTransferDialog {
                     totalStatements: statements.length,
                 });
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             this._panel.webview.postMessage({
                 type: 'previewError',
-                error: error.message || String(error),
+                error: error instanceof Error ? error.message : String(error),
             });
         }
     }
@@ -452,7 +452,7 @@ export class DataTransferDialog {
                         type: 'importResult',
                         result,
                     });
-                } catch (error: any) {
+                } catch (error: unknown) {
                     this._panel.webview.postMessage({
                         type: 'importResult',
                         result: {
@@ -460,7 +460,7 @@ export class DataTransferDialog {
                             totalRows: 0,
                             importedRows: 0,
                             skippedRows: 0,
-                            errors: [{ row: 0, message: error.message || String(error), data: '' }],
+                            errors: [{ row: 0, message: error instanceof Error ? error.message : String(error), data: '' }],
                         },
                     });
                 }

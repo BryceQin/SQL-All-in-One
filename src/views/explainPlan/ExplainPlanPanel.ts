@@ -136,10 +136,10 @@ export class ExplainPlanPanel {
                     useAnalyze,
                 },
             });
-        } catch (error: any) {
+        } catch (error: unknown) {
             this._panel.webview.postMessage({
                 command: 'explainError',
-                error: error.message || String(error),
+                error: error instanceof Error ? error.message : String(error),
             });
         }
     }

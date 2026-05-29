@@ -53,11 +53,22 @@ export class LRUCache<K, V> {
       return false;
     }
 
+    // Update access order by delete+set, same as get()
+    this.cache.delete(key);
+    this.cache.set(key, entry);
     return true;
   }
 
   delete(key: K): void {
     this.cache.delete(key);
+  }
+
+  deleteByPrefix(prefix: string): void {
+    for (const key of this.cache.keys()) {
+      if (String(key).startsWith(prefix)) {
+        this.cache.delete(key);
+      }
+    }
   }
 
   clear(): void {

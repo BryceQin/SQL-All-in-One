@@ -44,8 +44,8 @@ suite('SshTunnel - connection error handling', () => {
                 3306
             );
             assert.fail('Should have thrown an error');
-        } catch (error: any) {
-            assert.ok(error.message.length > 0);
+        } catch (error: unknown) {
+            assert.ok((error instanceof Error ? error.message : String(error)).length > 0);
             assert.strictEqual(tunnel.isOpen(), false);
         }
     });
@@ -65,8 +65,8 @@ suite('SshTunnel - connection error handling', () => {
                 '127.0.0.1',
                 3306
             );
-        } catch (error: any) {
-            assert.ok(error.message.length > 0);
+        } catch (error: unknown) {
+            assert.ok((error instanceof Error ? error.message : String(error)).length > 0);
             assert.strictEqual(tunnel.isOpen(), false);
         }
     });
