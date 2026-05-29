@@ -40,130 +40,92 @@ export class SchemaCache {
         return parts.join(':');
     }
 
-    async getDatabases(connectionId: string): Promise<DatabaseInfo[]> {
-        const key = this.makeKey(connectionId);
-        const entry = this.databaseCache.get(key);
+    private async cachedFetch<T>(
+        cache: Map<string, CacheEntry<T>>,
+        cacheKey: string,
+        ttlType: string,
+        fetcher: () => Promise<T>
+    ): Promise<T> {
+        const entry = cache.get(cacheKey);
         if (!this.isExpired(entry)) return entry.data;
 
-        const pending = this.pendingRequests.get(key);
-        if (pending) return pending as Promise<DatabaseInfo[]>;
+        const pending = this.pendingRequests.get(cacheKey);
+        if (pending) return pending as Promise<T>;
 
-        const request = (async () => {
+        const request = (async (): Promise<T> => {
             try {
-                const adapter = getConnectionManager().getAdapter(connectionId);
-                if (!adapter) return [];
-
-                const data = await adapter.listDatabases();
-                this.databaseCache.set(key, { data, expireAt: Date.now() + this.getTtl('database') * 1000 });
+                const data = await fetcher();
+                cache.set(cacheKey, { data, expireAt: Date.now() + this.getTtl(ttlType) * 1000 });
                 return data;
             } finally {
-                this.pendingRequests.delete(key);
+                this.pendingRequests.delete(cacheKey);
             }
         })();
 
-        this.pendingRequests.set(key, request);
+        this.pendingRequests.set(cacheKey, request);
         return request;
+    }
+
+    async getDatabases(connectionId: string): Promise<DatabaseInfo[]> {
+        return this.cachedFetch(
+            this.databaseCache,
+            this.makeKey(connectionId),
+            'database',
+            async () => {
+                const adapter = getConnectionManager().getAdapter(connectionId);
+                return adapter ? await adapter.listDatabases() : [];
+            }
+        );
     }
 
     async getTables(connectionId: string, database: string): Promise<TableInfo[]> {
-        const key = this.makeKey(connectionId, database);
-        const entry = this.tableCache.get(key);
-        if (!this.isExpired(entry)) return entry.data;
-
-        const pending = this.pendingRequests.get(key);
-        if (pending) return pending as Promise<TableInfo[]>;
-
-        const request = (async () => {
-            try {
+        return this.cachedFetch(
+            this.tableCache,
+            this.makeKey(connectionId, database),
+            'table',
+            async () => {
                 const adapter = getConnectionManager().getAdapter(connectionId);
-                if (!adapter) return [];
-
-                const data = await adapter.listTables(database);
-                this.tableCache.set(key, { data, expireAt: Date.now() + this.getTtl('table') * 1000 });
-                return data;
-            } finally {
-                this.pendingRequests.delete(key);
+                return adapter ? await adapter.listTables(database) : [];
             }
-        })();
-
-        this.pendingRequests.set(key, request);
-        return request;
+        );
     }
 
     async getColumns(connectionId: string, database: string, table: string): Promise<ColumnInfo[]> {
-        const key = this.makeKey(connectionId, database, table);
-        const entry = this.columnCache.get(key);
-        if (!this.isExpired(entry)) return entry.data;
-
-        const pending = this.pendingRequests.get(key);
-        if (pending) return pending as Promise<ColumnInfo[]>;
-
-        const request = (async () => {
-            try {
+        return this.cachedFetch(
+            this.columnCache,
+            this.makeKey(connectionId, database, table),
+            'column',
+            async () => {
                 const adapter = getConnectionManager().getAdapter(connectionId);
                 if (!adapter) return [];
-
                 const structure = await adapter.describeTable(database, table);
-                const data = structure.columns;
-                this.columnCache.set(key, { data, expireAt: Date.now() + this.getTtl('column') * 1000 });
-                return data;
-            } finally {
-                this.pendingRequests.delete(key);
+                return structure.columns;
             }
-        })();
-
-        this.pendingRequests.set(key, request);
-        return request;
+        );
     }
 
     async getFunctions(connectionId: string, database: string): Promise<FunctionInfo[]> {
-        const key = this.makeKey(connectionId, database);
-        const entry = this.functionCache.get(key);
-        if (!this.isExpired(entry)) return entry.data;
-
-        const pending = this.pendingRequests.get(key);
-        if (pending) return pending as Promise<FunctionInfo[]>;
-
-        const request = (async () => {
-            try {
+        return this.cachedFetch(
+            this.functionCache,
+            this.makeKey(connectionId, database),
+            'function',
+            async () => {
                 const adapter = getConnectionManager().getAdapter(connectionId);
-                if (!adapter) return [];
-
-                const data = await adapter.listFunctions(database);
-                this.functionCache.set(key, { data, expireAt: Date.now() + this.getTtl('function') * 1000 });
-                return data;
-            } finally {
-                this.pendingRequests.delete(key);
+                return adapter ? await adapter.listFunctions(database) : [];
             }
-        })();
-
-        this.pendingRequests.set(key, request);
-        return request;
+        );
     }
 
     async getProcedures(connectionId: string, database: string): Promise<ProcedureInfo[]> {
-        const key = this.makeKey(connectionId, database);
-        const entry = this.procedureCache.get(key);
-        if (!this.isExpired(entry)) return entry.data;
-
-        const pending = this.pendingRequests.get(key);
-        if (pending) return pending as Promise<ProcedureInfo[]>;
-
-        const request = (async () => {
-            try {
+        return this.cachedFetch(
+            this.procedureCache,
+            this.makeKey(connectionId, database),
+            'function',
+            async () => {
                 const adapter = getConnectionManager().getAdapter(connectionId);
-                if (!adapter) return [];
-
-                const data = await adapter.listProcedures(database);
-                this.procedureCache.set(key, { data, expireAt: Date.now() + this.getTtl('function') * 1000 });
-                return data;
-            } finally {
-                this.pendingRequests.delete(key);
+                return adapter ? await adapter.listProcedures(database) : [];
             }
-        })();
-
-        this.pendingRequests.set(key, request);
-        return request;
+        );
     }
 
     invalidate(connectionId: string, scope?: InvalidateScope, database?: string, table?: string): void {

@@ -56,7 +56,7 @@ export class ExplainPlanPanel {
         this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
 
         this._panel.webview.onDidReceiveMessage(
-            async (message) => {
+            async (message: { command?: string; sql?: string }) => {
                 switch (message.command) {
                     case 'runAnalyze':
                         if (message.sql) {
@@ -157,10 +157,12 @@ export class ExplainPlanPanel {
     }
 
     private _update(): void {
-        this._panel.webview.html = this._getHtmlForWebview();
+        this._getHtmlForWebview().then(html => {
+            this._panel.webview.html = html;
+        });
     }
 
-    private _getHtmlForWebview(): string {
+    private async _getHtmlForWebview(): Promise<string> {
         try {
             const htmlPath = path.join(
                 this._extensionUri.fsPath,
@@ -169,7 +171,7 @@ export class ExplainPlanPanel {
                 'explainPlan',
                 'explainPanel.html'
             );
-            let html = fs.readFileSync(htmlPath, 'utf-8');
+            let html = await fs.promises.readFile(htmlPath, 'utf-8');
 
             const cssUri = this._panel.webview.asWebviewUri(
                 vscode.Uri.joinPath(this._extensionUri, 'src', 'views', 'explainPlan', 'explainPanel.css')

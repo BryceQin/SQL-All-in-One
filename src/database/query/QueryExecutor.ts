@@ -156,7 +156,7 @@ export class QueryExecutor {
             let timer: ReturnType<typeof setTimeout> | undefined;
             let cancellationDisposable: vscode.Disposable | undefined;
 
-            const cleanup = () => {
+            const cleanup = (): void => {
                 if (timer !== undefined) {
                     clearTimeout(timer);
                     timer = undefined;

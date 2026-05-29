@@ -4,6 +4,7 @@ import Layout, { WS } from '../formatter/Layout'
 import InlineLayout, { InlineLayoutError } from '../formatter/InlineLayout'
 import { expandSinglePhrase, expandPhrases } from '../formatter/expandPhrases'
 import { indentString, isTabularStyle } from '../formatter/config'
+import type { FormatOptions } from '../formatter/FormatOptions'
 import Params from '../formatter/Params'
 import toTabularFormat, { isTabularToken } from '../formatter/tabularStyle'
 import { TokenType } from '../lexer/token'
@@ -400,17 +401,17 @@ suite('expandPhrases', () => {
 suite('config', () => {
 
     test('indentString returns spaces string for tabWidth', () => {
-        const result = indentString({ tabWidth: 4, useTabs: false } as any)
+        const result = indentString({ tabWidth: 4, useTabs: false } as unknown as FormatOptions)
         assert.strictEqual(result, '    ')
     })
 
     test('indentString returns 2 spaces for tabWidth=2', () => {
-        const result = indentString({ tabWidth: 2, useTabs: false } as any)
+        const result = indentString({ tabWidth: 2, useTabs: false } as unknown as FormatOptions)
         assert.strictEqual(result, '  ')
     })
 
     test('indentString returns tab for useTabs', () => {
-        const result = indentString({ tabWidth: 4, useTabs: true } as any)
+        const result = indentString({ tabWidth: 4, useTabs: true } as unknown as FormatOptions)
         assert.strictEqual(result, '\t')
     })
 
@@ -419,7 +420,7 @@ suite('config', () => {
             tabWidth: 4,
             useTabs: false,
             indentStyle: 'tabularLeft',
-        } as any)
+        } as unknown as FormatOptions)
         assert.strictEqual(result, '          ') // 10 spaces
     })
 
@@ -428,27 +429,27 @@ suite('config', () => {
             tabWidth: 4,
             useTabs: false,
             indentStyle: 'tabularRight',
-        } as any)
+        } as unknown as FormatOptions)
         assert.strictEqual(result, '          ') // 10 spaces
     })
 
     test('isTabularStyle returns true for tabularLeft', () => {
         assert.strictEqual(
-            isTabularStyle({ indentStyle: 'tabularLeft' } as any),
+            isTabularStyle({ indentStyle: 'tabularLeft' } as unknown as FormatOptions),
             true
         )
     })
 
     test('isTabularStyle returns true for tabularRight', () => {
         assert.strictEqual(
-            isTabularStyle({ indentStyle: 'tabularRight' } as any),
+            isTabularStyle({ indentStyle: 'tabularRight' } as unknown as FormatOptions),
             true
         )
     })
 
     test('isTabularStyle returns false for standard', () => {
         assert.strictEqual(
-            isTabularStyle({ indentStyle: 'standard' } as any),
+            isTabularStyle({ indentStyle: 'standard' } as unknown as FormatOptions),
             false
         )
     })

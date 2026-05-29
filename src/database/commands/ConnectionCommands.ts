@@ -98,9 +98,9 @@ export function registerConnectionCommands(
                 return;
             }
 
-            // Step 3: Host
+            // Step 3: Host (defaults to localhost if empty)
             const host = await vscode.window.showInputBox({
-                prompt: 'Step 3/9: Host',
+                prompt: 'Step 3/9: Host (leave empty for localhost)',
                 value: 'localhost',
                 placeHolder: 'localhost'
             });
@@ -178,7 +178,7 @@ export function registerConnectionCommands(
             if (sslChoice.value) {
                 const rejectUnauthorized = await vscode.window.showQuickPick(
                     [
-                        { label: 'Yes', description: 'Reject unauthorized certificates', value: true },
+                        { label: 'Yes (recommended)', description: 'Reject unauthorized certificates', value: true },
                         { label: 'No', description: 'Allow self-signed certificates', value: false }
                     ],
                     {
@@ -267,12 +267,52 @@ export function registerConnectionCommands(
                     return;
                 }
 
+                let sshPassword: string | undefined;
+                let sshPrivateKey: string | undefined;
+
+                if (sshAuthMethod.value === 'password') {
+                    sshPassword = await vscode.window.showInputBox({
+                        prompt: 'SSH password',
+                        password: true,
+                        placeHolder: 'Enter SSH password'
+                    });
+                    if (sshPassword === undefined) {
+                        return;
+                    }
+                } else {
+                    sshPrivateKey = await vscode.window.showInputBox({
+                        prompt: 'SSH private key path',
+                        placeHolder: '~/.ssh/id_rsa',
+                        validateInput: (value) => {
+                            if (!value || !value.trim()) {
+                                return 'Private key path is required';
+                            }
+                            return undefined;
+                        }
+                    });
+                    if (sshPrivateKey === undefined) {
+                        return;
+                    }
+                }
+
+                const sshPassphrase = await vscode.window.showInputBox({
+                    prompt: 'SSH passphrase (leave empty if none)',
+                    password: true,
+                    placeHolder: 'Optional passphrase for private key'
+                });
+                if (sshPassphrase === undefined) {
+                    return;
+                }
+
                 sshConfig = {
                     enabled: true,
                     host: sshHost.trim(),
                     port: parseInt(sshPortInput.trim(), 10),
                     username: sshUsername.trim(),
-                    authentication: sshAuthMethod.value
+                    authentication: sshAuthMethod.value,
+                    password: sshPassword || undefined,
+                    privateKey: sshPrivateKey || undefined,
+                    passphrase: sshPassphrase || undefined
                 };
             }
 
@@ -304,7 +344,6 @@ export function registerConnectionCommands(
         vscode.commands.registerCommand('sql-all-in-one.editConnection', async (node?: ConnectionTreeNode) => {
             const manager = getConnectionManager();
             let connectionId: string | undefined;
-            let currentConfig: ConnectionConfig | undefined;
 
             if (node) {
                 connectionId = node.connectionId;
@@ -324,7 +363,7 @@ export function registerConnectionCommands(
                 connectionId = picked.id;
             }
 
-            currentConfig = manager.getAllConnections().find(c => c.id === connectionId);
+            const currentConfig = manager.getAllConnections().find(c => c.id === connectionId);
             if (!currentConfig) {
                 vscode.window.showErrorMessage('Connection not found');
                 return;

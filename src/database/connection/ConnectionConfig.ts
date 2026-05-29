@@ -42,7 +42,7 @@ export interface ConnectionConfig {
     ssh?: SshConfig;
     connectTimeout?: number;
     poolConfig?: ConnectionPoolConfig;
-    options?: Record<string, any>;
+    options?: Record<string, unknown>;
 }
 
 export interface ConnectionGroup {

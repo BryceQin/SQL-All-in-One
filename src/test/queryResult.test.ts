@@ -4,6 +4,25 @@ import * as path from 'path';
 import * as os from 'os';
 import { ColumnMeta, QueryResult, QueryError } from '../database/adapters/IDatabaseAdapter';
 
+type CellValue = string | number | boolean | null | undefined | Date | Buffer;
+type DataRow = Record<string, CellValue>;
+
+interface PackageContributes {
+    configuration: {
+        properties: Record<string, { type?: string; default?: unknown; enum?: string[] }>;
+    };
+    commands: { command: string }[];
+}
+
+interface PackageJson {
+    contributes: PackageContributes;
+}
+
+interface ParsedRow {
+    length?: number;
+    [key: string]: unknown;
+}
+
 suite('DataExporter - Pure Logic', () => {
 
     suite('escapeCsvField logic', () => {
@@ -64,7 +83,7 @@ suite('DataExporter - Pure Logic', () => {
     });
 
     suite('convertJsonValue logic', () => {
-        function convertJsonValue(value: any): any {
+        function convertJsonValue(value: CellValue): string | number | boolean | null {
             if (value === null || value === undefined) {
                 return null;
             }
@@ -74,8 +93,9 @@ suite('DataExporter - Pure Logic', () => {
             if (Buffer.isBuffer(value)) {
                 return value.toString('base64');
             }
-            if (ArrayBuffer.isView(value) && !(value instanceof DataView)) {
-                return Buffer.from((value as any).buffer, (value as any).byteOffset, (value as any).byteLength).toString('base64');
+            if (ArrayBuffer.isView(value) && !((value as unknown) instanceof DataView)) {
+                const v = value as unknown as Uint8Array;
+                return Buffer.from(v.buffer, v.byteOffset, v.byteLength).toString('base64');
             }
             return value;
         }
@@ -121,7 +141,7 @@ suite('DataExporter - Pure Logic', () => {
     });
 
     suite('formatSqlValue logic', () => {
-        function formatSqlValue(value: any): string {
+        function formatSqlValue(value: CellValue): string {
             if (value === null || value === undefined) {
                 return 'NULL';
             }
@@ -195,7 +215,7 @@ suite('DataExporter - Pure Logic', () => {
             { name: 'email', type: 'VARCHAR', nullable: true, isPrimaryKey: false, isAutoIncrement: false, isEnum: false },
         ];
 
-        function generateCsv(rows: any[], columns: ColumnMeta[], delimiter = ',', includeHeaders = true): string {
+        function generateCsv(rows: DataRow[], columns: ColumnMeta[], delimiter = ',', includeHeaders = true): string {
             const lines: string[] = [];
 
             function escape(value: string, delim: string): string {
@@ -224,7 +244,7 @@ suite('DataExporter - Pure Logic', () => {
         }
 
         test('should generate CSV with headers', () => {
-            const rows: Record<string, any>[] = [
+            const rows: DataRow[] = [
                 { id: 1, name: 'Alice', email: 'alice@test.com' },
                 { id: 2, name: 'Bob', email: 'bob@test.com' },
             ];
@@ -236,7 +256,7 @@ suite('DataExporter - Pure Logic', () => {
         });
 
         test('should generate CSV without headers', () => {
-            const rows: Record<string, any>[] = [
+            const rows: DataRow[] = [
                 { id: 1, name: 'Alice', email: 'alice@test.com' },
             ];
             const csv = generateCsv(rows, columns, ',', false);
@@ -245,7 +265,7 @@ suite('DataExporter - Pure Logic', () => {
         });
 
         test('should handle NULL values as empty string', () => {
-            const rows: Record<string, any>[] = [
+            const rows: DataRow[] = [
                 { id: 1, name: null, email: 'test@test.com' },
             ];
             const csv = generateCsv(rows, columns);
@@ -254,7 +274,7 @@ suite('DataExporter - Pure Logic', () => {
         });
 
         test('should handle undefined values as empty string', () => {
-            const rows: Record<string, any>[] = [
+            const rows: DataRow[] = [
                 { id: 1, name: undefined, email: 'test@test.com' },
             ];
             const csv = generateCsv(rows, columns);
@@ -263,7 +283,7 @@ suite('DataExporter - Pure Logic', () => {
         });
 
         test('should escape fields with commas', () => {
-            const rows: Record<string, any>[] = [
+            const rows: DataRow[] = [
                 { id: 1, name: 'Smith, Jr.', email: 'test@test.com' },
             ];
             const csv = generateCsv(rows, columns);
@@ -272,7 +292,7 @@ suite('DataExporter - Pure Logic', () => {
         });
 
         test('should escape fields with newlines', () => {
-            const rows: Record<string, any>[] = [
+            const rows: DataRow[] = [
                 { id: 1, name: 'Line1\nLine2', email: 'test@test.com' },
             ];
             const csv = generateCsv(rows, columns);
@@ -281,7 +301,7 @@ suite('DataExporter - Pure Logic', () => {
         });
 
         test('should escape fields with double quotes', () => {
-            const rows: Record<string, any>[] = [
+            const rows: DataRow[] = [
                 { id: 1, name: 'Say "hello"', email: 'test@test.com' },
             ];
             const csv = generateCsv(rows, columns);
@@ -290,7 +310,7 @@ suite('DataExporter - Pure Logic', () => {
         });
 
         test('should support custom delimiter', () => {
-            const rows: Record<string, any>[] = [
+            const rows: DataRow[] = [
                 { id: 1, name: 'Alice', email: 'alice@test.com' },
             ];
             const csv = generateCsv(rows, columns, ';');
@@ -315,8 +335,8 @@ suite('DataExporter - Pure Logic', () => {
             { name: 'name', type: 'VARCHAR', nullable: true, isPrimaryKey: false, isAutoIncrement: false, isEnum: false },
         ];
 
-        function generateJson(rows: any[], columns: ColumnMeta[], prettyPrint = true): string {
-            function convert(value: any): any {
+        function generateJson(rows: DataRow[], columns: ColumnMeta[], prettyPrint = true): string {
+            function convert(value: CellValue): string | number | boolean | null {
                 if (value === null || value === undefined) return null;
                 if (value instanceof Date) return value.toISOString();
                 if (Buffer.isBuffer(value)) return value.toString('base64');
@@ -324,7 +344,7 @@ suite('DataExporter - Pure Logic', () => {
             }
 
             const result = rows.map(row => {
-                const obj: Record<string, any> = {};
+                const obj: DataRow = {};
                 for (const col of columns) {
                     obj[col.name] = convert(row[col.name]);
                 }
@@ -335,12 +355,12 @@ suite('DataExporter - Pure Logic', () => {
         }
 
         test('should generate JSON array with column keys', () => {
-            const rows: Record<string, any>[] = [
+            const rows: DataRow[] = [
                 { id: 1, name: 'Alice' },
                 { id: 2, name: 'Bob' },
             ];
             const json = generateJson(rows, columns);
-            const parsed = JSON.parse(json);
+            const parsed = JSON.parse(json) as ParsedRow[];
             assert.strictEqual(parsed.length, 2);
             assert.strictEqual(parsed[0].id, 1);
             assert.strictEqual(parsed[0].name, 'Alice');
@@ -349,57 +369,57 @@ suite('DataExporter - Pure Logic', () => {
         });
 
         test('should convert null to JSON null', () => {
-            const rows: Record<string, any>[] = [{ id: 1, name: null }];
+            const rows: DataRow[] = [{ id: 1, name: null }];
             const json = generateJson(rows, columns);
-            const parsed = JSON.parse(json);
+            const parsed = JSON.parse(json) as ParsedRow[];
             assert.strictEqual(parsed[0].name, null);
         });
 
         test('should convert undefined to JSON null', () => {
-            const rows: Record<string, any>[] = [{ id: 1, name: undefined }];
+            const rows: DataRow[] = [{ id: 1, name: undefined }];
             const json = generateJson(rows, columns);
-            const parsed = JSON.parse(json);
+            const parsed = JSON.parse(json) as ParsedRow[];
             assert.strictEqual(parsed[0].name, null);
         });
 
         test('should convert Date to ISO string', () => {
             const date = new Date('2024-06-15T12:00:00.000Z');
-            const rows: Record<string, any>[] = [{ id: 1, name: date }];
+            const rows: DataRow[] = [{ id: 1, name: date }];
             const json = generateJson(rows, columns);
-            const parsed = JSON.parse(json);
+            const parsed = JSON.parse(json) as ParsedRow[];
             assert.strictEqual(parsed[0].name, '2024-06-15T12:00:00.000Z');
         });
 
         test('should convert Buffer to base64', () => {
-            const rows: Record<string, any>[] = [{ id: 1, name: Buffer.from('hello') }];
+            const rows: DataRow[] = [{ id: 1, name: Buffer.from('hello') }];
             const json = generateJson(rows, columns);
-            const parsed = JSON.parse(json);
+            const parsed = JSON.parse(json) as ParsedRow[];
             assert.strictEqual(parsed[0].name, 'aGVsbG8=');
         });
 
         test('should pretty print when enabled', () => {
-            const rows: Record<string, any>[] = [{ id: 1, name: 'Alice' }];
+            const rows: DataRow[] = [{ id: 1, name: 'Alice' }];
             const json = generateJson(rows, columns, true);
             assert.ok(json.includes('\n'));
             assert.ok(json.includes('  '));
         });
 
         test('should not pretty print when disabled', () => {
-            const rows: Record<string, any>[] = [{ id: 1, name: 'Alice' }];
+            const rows: DataRow[] = [{ id: 1, name: 'Alice' }];
             const json = generateJson(rows, columns, false);
             assert.ok(!json.includes('\n'));
         });
 
         test('should handle empty rows', () => {
             const json = generateJson([], columns);
-            const parsed = JSON.parse(json);
+            const parsed = JSON.parse(json) as ParsedRow[];
             assert.strictEqual(parsed.length, 0);
         });
 
         test('should preserve number types', () => {
-            const rows: Record<string, any>[] = [{ id: 42, name: 'test' }];
+            const rows: DataRow[] = [{ id: 42, name: 'test' }];
             const json = generateJson(rows, columns);
-            const parsed = JSON.parse(json);
+            const parsed = JSON.parse(json) as ParsedRow[];
             assert.strictEqual(typeof parsed[0].id, 'number');
             assert.strictEqual(parsed[0].id, 42);
         });
@@ -409,9 +429,9 @@ suite('DataExporter - Pure Logic', () => {
                 { name: 'id', type: 'INT', nullable: false, isPrimaryKey: true, isAutoIncrement: false, isEnum: false },
                 { name: 'active', type: 'BOOLEAN', nullable: false, isPrimaryKey: false, isAutoIncrement: false, isEnum: false },
             ];
-            const rows: Record<string, any>[] = [{ id: 1, active: true }];
+            const rows: DataRow[] = [{ id: 1, active: true }];
             const json = generateJson(rows, cols);
-            const parsed = JSON.parse(json);
+            const parsed = JSON.parse(json) as ParsedRow[];
             assert.strictEqual(parsed[0].active, true);
         });
     });
@@ -423,8 +443,8 @@ suite('DataExporter - Pure Logic', () => {
             { name: 'age', type: 'INT', nullable: true, isPrimaryKey: false, isAutoIncrement: false, isEnum: false },
         ];
 
-        function generateInsert(rows: any[], columns: ColumnMeta[], tableName: string, batchSize = 1): string {
-            function formatValue(value: any): string {
+        function generateInsert(rows: DataRow[], columns: ColumnMeta[], tableName: string, batchSize = 1): string {
+            function formatValue(value: CellValue): string {
                 if (value === null || value === undefined) return 'NULL';
                 if (typeof value === 'number') return String(value);
                 if (typeof value === 'boolean') return String(value);
@@ -448,7 +468,7 @@ suite('DataExporter - Pure Logic', () => {
         }
 
         test('should generate single-row INSERT statements', () => {
-            const rows: Record<string, any>[] = [
+            const rows: DataRow[] = [
                 { id: 1, name: 'Alice', age: 30 },
                 { id: 2, name: 'Bob', age: 25 },
             ];
@@ -460,7 +480,7 @@ suite('DataExporter - Pure Logic', () => {
         });
 
         test('should generate multi-row INSERT with batchSize', () => {
-            const rows: Record<string, any>[] = [
+            const rows: DataRow[] = [
                 { id: 1, name: 'Alice', age: 30 },
                 { id: 2, name: 'Bob', age: 25 },
                 { id: 3, name: 'Charlie', age: 35 },
@@ -473,7 +493,7 @@ suite('DataExporter - Pure Logic', () => {
         });
 
         test('should handle NULL values', () => {
-            const rows: Record<string, any>[] = [
+            const rows: DataRow[] = [
                 { id: 1, name: null, age: null },
             ];
             const sql = generateInsert(rows, columns, 'users');
@@ -481,7 +501,7 @@ suite('DataExporter - Pure Logic', () => {
         });
 
         test('should escape single quotes in string values', () => {
-            const rows: Record<string, any>[] = [
+            const rows: DataRow[] = [
                 { id: 1, name: "O'Brien", age: 30 },
             ];
             const sql = generateInsert(rows, columns, 'users');
@@ -489,7 +509,7 @@ suite('DataExporter - Pure Logic', () => {
         });
 
         test('should handle numbers without quotes', () => {
-            const rows: Record<string, any>[] = [
+            const rows: DataRow[] = [
                 { id: 42, name: 'test', age: 0 },
             ];
             const sql = generateInsert(rows, columns, 'users');
@@ -503,7 +523,7 @@ suite('DataExporter - Pure Logic', () => {
         });
 
         test('should handle batchSize larger than rows', () => {
-            const rows: Record<string, any>[] = [
+            const rows: DataRow[] = [
                 { id: 1, name: 'Alice', age: 30 },
             ];
             const sql = generateInsert(rows, columns, 'users', 100);
@@ -516,20 +536,20 @@ suite('DataExporter - Pure Logic', () => {
                 { name: 'id', type: 'INT', nullable: false, isPrimaryKey: true, isAutoIncrement: false, isEnum: false },
                 { name: 'active', type: 'BOOLEAN', nullable: false, isPrimaryKey: false, isAutoIncrement: false, isEnum: false },
             ];
-            const rows: Record<string, any>[] = [{ id: 1, active: true }];
+            const rows: DataRow[] = [{ id: 1, active: true }];
             const sql = generateInsert(rows, cols, 'flags');
             assert.ok(sql.includes('true'));
         });
 
         test('should handle Date values', () => {
             const date = new Date('2024-01-15T10:30:00.000Z');
-            const rows: Record<string, any>[] = [{ id: 1, name: date, age: 30 }];
+            const rows: DataRow[] = [{ id: 1, name: date, age: 30 }];
             const sql = generateInsert(rows, columns, 'users');
             assert.ok(sql.includes("'2024-01-15T10:30:00.000Z'"));
         });
 
         test('should batch all rows in single INSERT when batchSize equals rows length', () => {
-            const rows: Record<string, any>[] = [
+            const rows: DataRow[] = [
                 { id: 1, name: 'Alice', age: 30 },
                 { id: 2, name: 'Bob', age: 25 },
             ];
@@ -560,7 +580,7 @@ suite('DataExporter - File Operations', () => {
                 { name: 'id', type: 'INT', nullable: false, isPrimaryKey: true, isAutoIncrement: true, isEnum: false },
                 { name: 'name', type: 'VARCHAR', nullable: true, isPrimaryKey: false, isAutoIncrement: false, isEnum: false },
             ];
-            const rows: Record<string, any>[] = [
+            const rows: DataRow[] = [
                 { id: 1, name: 'Alice' },
                 { id: 2, name: 'Bob' },
             ];
@@ -598,12 +618,12 @@ suite('DataExporter - File Operations', () => {
                 { name: 'id', type: 'INT', nullable: false, isPrimaryKey: true, isAutoIncrement: true, isEnum: false },
                 { name: 'name', type: 'VARCHAR', nullable: true, isPrimaryKey: false, isAutoIncrement: false, isEnum: false },
             ];
-            const rows: Record<string, any>[] = [
+            const rows: DataRow[] = [
                 { id: 1, name: 'Alice' },
                 { id: 2, name: null },
             ];
 
-            function convertJsonValue(value: any): any {
+            function convertJsonValue(value: CellValue): string | number | boolean | null {
                 if (value === null || value === undefined) return null;
                 if (value instanceof Date) return value.toISOString();
                 if (Buffer.isBuffer(value)) return value.toString('base64');
@@ -611,7 +631,7 @@ suite('DataExporter - File Operations', () => {
             }
 
             const result = rows.map(row => {
-                const obj: Record<string, any> = {};
+                const obj: DataRow = {};
                 for (const col of columns) {
                     obj[col.name] = convertJsonValue(row[col.name]);
                 }
@@ -623,7 +643,7 @@ suite('DataExporter - File Operations', () => {
             await fs.promises.writeFile(filePath, content, 'utf-8');
 
             const readBack = await fs.promises.readFile(filePath, 'utf-8');
-            const parsed = JSON.parse(readBack);
+            const parsed = JSON.parse(readBack) as ParsedRow[];
             assert.strictEqual(parsed.length, 2);
             assert.strictEqual(parsed[0].id, 1);
             assert.strictEqual(parsed[0].name, 'Alice');
@@ -638,12 +658,12 @@ suite('DataExporter - File Operations', () => {
                 { name: 'id', type: 'INT', nullable: false, isPrimaryKey: true, isAutoIncrement: true, isEnum: false },
                 { name: 'name', type: 'VARCHAR', nullable: true, isPrimaryKey: false, isAutoIncrement: false, isEnum: false },
             ];
-            const rows: Record<string, any>[] = [
+            const rows: DataRow[] = [
                 { id: 1, name: 'Alice' },
                 { id: 2, name: null },
             ];
 
-            function formatSqlValue(value: any): string {
+            function formatSqlValue(value: CellValue): string {
                 if (value === null || value === undefined) return 'NULL';
                 if (typeof value === 'number') return String(value);
                 if (typeof value === 'boolean') return String(value);
@@ -745,7 +765,7 @@ suite('QueryResultPanel - Serialization', () => {
             };
 
             const serialized = serializeResult(result);
-            const col = (serialized.columns as any[])[0];
+            const col = (serialized.columns as Record<string, unknown>[])[0];
 
             assert.strictEqual(col.name, 'id');
             assert.strictEqual(col.type, 'INT');
@@ -1291,7 +1311,7 @@ suite('Sort Logic', () => {
     });
 
     test('should sort numbers correctly ascending', () => {
-        const rows: any[][] = [[3], [1], [2]];
+        const rows: (string | number | null)[][] = [[3], [1], [2]];
         rows.sort((a, b) => {
             const va = a[0];
             const vb = b[0];
@@ -1308,7 +1328,7 @@ suite('Sort Logic', () => {
     });
 
     test('should sort numbers correctly descending', () => {
-        const rows: any[][] = [[3], [1], [2]];
+        const rows: (string | number | null)[][] = [[3], [1], [2]];
         rows.sort((a, b) => {
             const va = a[0];
             const vb = b[0];
@@ -1325,7 +1345,7 @@ suite('Sort Logic', () => {
     });
 
     test('should sort strings correctly ascending', () => {
-        const rows: any[][] = [['Charlie'], ['Alice'], ['Bob']];
+        const rows: (string | number | null)[][] = [['Charlie'], ['Alice'], ['Bob']];
         rows.sort((a, b) => {
             const va = String(a[0]);
             const vb = String(b[0]);
@@ -1337,7 +1357,7 @@ suite('Sort Logic', () => {
     });
 
     test('should sort strings correctly descending', () => {
-        const rows: any[][] = [['Charlie'], ['Alice'], ['Bob']];
+        const rows: (string | number | null)[][] = [['Charlie'], ['Alice'], ['Bob']];
         rows.sort((a, b) => {
             const va = String(a[0]);
             const vb = String(b[0]);
@@ -1349,7 +1369,7 @@ suite('Sort Logic', () => {
     });
 
     test('should sort nulls to end', () => {
-        const rows: any[][] = [[3], [null], [1], [null], [2]];
+        const rows: (string | number | null)[][] = [[3], [null], [1], [null], [2]];
         rows.sort((a, b) => {
             const va = a[0];
             const vb = b[0];
@@ -1612,10 +1632,10 @@ suite('JS File Validation', () => {
 
 suite('Package.json Configuration Validation', () => {
     const packagePath = path.join(__dirname, '..', '..', 'package.json');
-    let pkg: any;
+    let pkg: PackageJson;
 
     suiteSetup(() => {
-        pkg = JSON.parse(fs.readFileSync(packagePath, 'utf-8'));
+        pkg = JSON.parse(fs.readFileSync(packagePath, 'utf-8')) as PackageJson;
     });
 
     test('should have query.pageSize configuration', () => {
@@ -1629,10 +1649,10 @@ suite('Package.json Configuration Validation', () => {
         const config = pkg.contributes.configuration.properties['SQL-All-in-One.export.defaultFormat'];
         assert.ok(config, 'export.defaultFormat should be defined');
         assert.strictEqual(config.default, 'csv');
-        assert.ok(config.enum.includes('csv'));
-        assert.ok(config.enum.includes('json'));
-        assert.ok(config.enum.includes('insert'));
-        assert.ok(config.enum.includes('ddl'));
+        assert.ok(config.enum!.includes('csv'));
+        assert.ok(config.enum!.includes('json'));
+        assert.ok(config.enum!.includes('insert'));
+        assert.ok(config.enum!.includes('ddl'));
     });
 
     test('should have export.csvDelimiter configuration', () => {
@@ -1675,9 +1695,9 @@ suite('Package.json Configuration Validation', () => {
         const config = pkg.contributes.configuration.properties['SQL-All-in-One.results.dateFormat'];
         assert.ok(config, 'results.dateFormat should be defined');
         assert.strictEqual(config.default, 'local');
-        assert.ok(config.enum.includes('local'));
-        assert.ok(config.enum.includes('utc'));
-        assert.ok(config.enum.includes('relative'));
+        assert.ok(config.enum!.includes('local'));
+        assert.ok(config.enum!.includes('utc'));
+        assert.ok(config.enum!.includes('relative'));
     });
 
     test('should have results.longTextThreshold configuration', () => {
@@ -1688,25 +1708,25 @@ suite('Package.json Configuration Validation', () => {
 
     test('should have exportCsv command', () => {
         const commands = pkg.contributes.commands;
-        const cmd = commands.find((c: any) => c.command === 'sql-all-in-one.exportCsv');
+        const cmd = commands.find((c: { command: string }) => c.command === 'sql-all-in-one.exportCsv');
         assert.ok(cmd, 'exportCsv command should exist');
     });
 
     test('should have exportJson command', () => {
         const commands = pkg.contributes.commands;
-        const cmd = commands.find((c: any) => c.command === 'sql-all-in-one.exportJson');
+        const cmd = commands.find((c: { command: string }) => c.command === 'sql-all-in-one.exportJson');
         assert.ok(cmd, 'exportJson command should exist');
     });
 
     test('should have exportInsert command', () => {
         const commands = pkg.contributes.commands;
-        const cmd = commands.find((c: any) => c.command === 'sql-all-in-one.exportInsert');
+        const cmd = commands.find((c: { command: string }) => c.command === 'sql-all-in-one.exportInsert');
         assert.ok(cmd, 'exportInsert command should exist');
     });
 
     test('should have exportDdl command', () => {
         const commands = pkg.contributes.commands;
-        const cmd = commands.find((c: any) => c.command === 'sql-all-in-one.exportDdl');
+        const cmd = commands.find((c: { command: string }) => c.command === 'sql-all-in-one.exportDdl');
         assert.ok(cmd, 'exportDdl command should exist');
     });
 });

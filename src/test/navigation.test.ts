@@ -53,7 +53,7 @@ class MockAstNavigator {
         _symbolName: string,
         _document: vscode.TextDocument,
         _symbolType: SymbolType,
-    ) { return [] }
+    ): vscode.Location[] { return [] }
     invalidate(_document: vscode.TextDocument): void {
         // no-op for mock: invalidate is intentionally empty
     }

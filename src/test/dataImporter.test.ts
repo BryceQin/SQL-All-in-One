@@ -13,10 +13,19 @@ import {
 } from '../database/transfer/DataImporter';
 import type { IDatabaseAdapter } from '../database/adapters/IDatabaseAdapter';
 
-function createMockAdapter(executeFn: (sql: string) => Promise<any>): IDatabaseAdapter {
+const mockQueryResult: import('../database/adapters/IDatabaseAdapter').QueryResult = {
+    queryId: 'mock-qid',
+    status: 'success',
+    columns: [],
+    rows: [],
+    rowCount: 0,
+    executionTime: 0,
+};
+
+function createMockAdapter(executeFn: (sql: string) => Promise<import('../database/adapters/IDatabaseAdapter').QueryResult>): IDatabaseAdapter {
     return {
-        connect: async () => {},
-        disconnect: async () => {},
+        connect: async () => { /* noop */ },
+        disconnect: async () => { /* noop */ },
         isConnected: () => false,
         testConnection: async () => ({ success: true }),
         execute: executeFn,
@@ -39,10 +48,10 @@ function createMockAdapter(executeFn: (sql: string) => Promise<any>): IDatabaseA
         getSupportedDataTypes: () => [],
         getTableCreateScript: async () => '',
         getDatabaseCreateScript: async () => '',
-        beginTransaction: async () => {},
-        commit: async () => {},
-        rollback: async () => {},
-        cancelQuery: async () => {},
+        beginTransaction: async () => { /* noop */ },
+        commit: async () => { /* noop */ },
+        rollback: async () => { /* noop */ },
+        cancelQuery: async () => { /* noop */ },
         getConnectionId: () => 'mock',
         getTableData: async () => ({ columns: [], rows: [], totalRows: 0, hasMore: false }),
         updateRow: async () => ({ success: true }),
@@ -62,6 +71,14 @@ function createMockAdapter(executeFn: (sql: string) => Promise<any>): IDatabaseA
         getViewDDL: async () => '',
         getTableRowCount: async () => 0,
         quoteIdentifier: (id: string) => '`' + id + '`',
+        getPoolStatus: () => ({
+            totalConnections: 0,
+            activeConnections: 0,
+            idleConnections: 0,
+            waitingRequests: 0,
+            connectionLimit: 5,
+            acquireTimeout: 60000,
+        }),
     } as IDatabaseAdapter;
 }
 
@@ -141,7 +158,7 @@ suite('DataImporter - importFromJson', () => {
             { id: 2, name: 'Bob', age: 25 },
         ]));
 
-        const adapter = createMockAdapter(async () => ({ status: 'success' }));
+        const adapter = createMockAdapter(async () => (mockQueryResult));
         const options: JsonImportOptions = {
             onError: 'skip',
             dedupStrategy: 'ignore',
@@ -159,7 +176,7 @@ suite('DataImporter - importFromJson', () => {
         const filePath = path.join(tempDir, 'notarray.json');
         fs.writeFileSync(filePath, JSON.stringify({ id: 1, name: 'Alice' }));
 
-        const adapter = createMockAdapter(async () => ({ status: 'success' }));
+        const adapter = createMockAdapter(async () => (mockQueryResult));
         const options: JsonImportOptions = {
             onError: 'skip',
             dedupStrategy: 'ignore',
@@ -175,7 +192,7 @@ suite('DataImporter - importFromJson', () => {
         const filePath = path.join(tempDir, 'empty.json');
         fs.writeFileSync(filePath, '[]');
 
-        const adapter = createMockAdapter(async () => ({ status: 'success' }));
+        const adapter = createMockAdapter(async () => (mockQueryResult));
         const options: JsonImportOptions = {
             onError: 'skip',
             dedupStrategy: 'ignore',
@@ -192,7 +209,7 @@ suite('DataImporter - importFromJson', () => {
             { id: 1, name: null, age: 30 },
         ]));
 
-        const adapter = createMockAdapter(async () => ({ status: 'success' }));
+        const adapter = createMockAdapter(async () => (mockQueryResult));
         const options: JsonImportOptions = {
             onError: 'skip',
             dedupStrategy: 'ignore',
@@ -214,7 +231,7 @@ suite('DataImporter - importFromJson', () => {
         const adapter = createMockAdapter(async () => {
             callCount++;
             if (callCount === 1) throw new Error('Batch insert failed');
-            return { status: 'success' };
+            return mockQueryResult;
         });
 
         const options: JsonImportOptions = {
@@ -268,7 +285,7 @@ suite('DataImporter - importFromSql', () => {
         const executedSqls: string[] = [];
         const adapter = createMockAdapter(async (sql: string) => {
             executedSqls.push(sql);
-            return { status: 'success' };
+            return mockQueryResult;
         });
 
         const result = await importFromSql(adapter, filePath);
@@ -284,7 +301,7 @@ suite('DataImporter - importFromSql', () => {
         const adapter = createMockAdapter(async () => {
             callCount++;
             if (callCount === 2) throw new Error('Syntax error');
-            return { status: 'success' };
+            return mockQueryResult;
         });
 
         const result = await importFromSql(adapter, filePath);
@@ -297,7 +314,7 @@ suite('DataImporter - importFromSql', () => {
         const filePath = path.join(tempDir, 'empty.sql');
         fs.writeFileSync(filePath, '');
 
-        const adapter = createMockAdapter(async () => ({ status: 'success' }));
+        const adapter = createMockAdapter(async () => (mockQueryResult));
         const result = await importFromSql(adapter, filePath);
         assert.strictEqual(result.importedRows, 0);
     });
@@ -306,7 +323,7 @@ suite('DataImporter - importFromSql', () => {
         const filePath = path.join(tempDir, 'whitespace.sql');
         fs.writeFileSync(filePath, '  ;  ;  ');
 
-        const adapter = createMockAdapter(async () => ({ status: 'success' }));
+        const adapter = createMockAdapter(async () => (mockQueryResult));
         const result = await importFromSql(adapter, filePath);
         assert.strictEqual(result.importedRows, 0);
     });
@@ -331,7 +348,7 @@ suite('DataImporter - importFromCsv', () => {
         const executedSqls: string[] = [];
         const adapter = createMockAdapter(async (sql: string) => {
             executedSqls.push(sql);
-            return { status: 'success' };
+            return mockQueryResult;
         });
 
         const options: CsvImportOptions = {
@@ -352,7 +369,7 @@ suite('DataImporter - importFromCsv', () => {
         const executedSqls: string[] = [];
         const adapter = createMockAdapter(async (sql: string) => {
             executedSqls.push(sql);
-            return { status: 'success' };
+            return mockQueryResult;
         });
 
         const options: CsvImportOptions = {
@@ -373,7 +390,7 @@ suite('DataImporter - importFromCsv', () => {
         const executedSqls: string[] = [];
         const adapter = createMockAdapter(async (sql: string) => {
             executedSqls.push(sql);
-            return { status: 'success' };
+            return mockQueryResult;
         });
 
         const options: CsvImportOptions = {
@@ -396,7 +413,7 @@ suite('DataImporter - importFromCsv', () => {
         const executedSqls: string[] = [];
         const adapter = createMockAdapter(async (sql: string) => {
             executedSqls.push(sql);
-            return { status: 'success' };
+            return mockQueryResult;
         });
 
         const options: CsvImportOptions = {
@@ -417,7 +434,7 @@ suite('DataImporter - importFromCsv', () => {
         const executedSqls: string[] = [];
         const adapter = createMockAdapter(async (sql: string) => {
             executedSqls.push(sql);
-            return { status: 'success' };
+            return mockQueryResult;
         });
 
         const options: CsvImportOptions = {
@@ -470,7 +487,7 @@ suite('DataImporter - importFromCsv', () => {
         const filePath = path.join(tempDir, 'empty.csv');
         fs.writeFileSync(filePath, '');
 
-        const adapter = createMockAdapter(async () => ({ status: 'success' }));
+        const adapter = createMockAdapter(async () => (mockQueryResult));
 
         const options: CsvImportOptions = {
             onError: 'skip',
@@ -486,7 +503,7 @@ suite('DataImporter - importFromCsv', () => {
         const filePath = path.join(tempDir, 'headers_only.csv');
         fs.writeFileSync(filePath, 'id,name,age');
 
-        const adapter = createMockAdapter(async () => ({ status: 'success' }));
+        const adapter = createMockAdapter(async () => (mockQueryResult));
 
         const options: CsvImportOptions = {
             onError: 'skip',
@@ -511,7 +528,7 @@ suite('DataImporter - SQL value formatting', () => {
         const executedSqls: string[] = [];
         const adapter = createMockAdapter(async (sql: string) => {
             executedSqls.push(sql);
-            return { status: 'success' };
+            return mockQueryResult;
         });
 
         const options: JsonImportOptions = {
@@ -536,7 +553,7 @@ suite('DataImporter - SQL value formatting', () => {
         const executedSqls: string[] = [];
         const adapter = createMockAdapter(async (sql: string) => {
             executedSqls.push(sql);
-            return { status: 'success' };
+            return mockQueryResult;
         });
 
         const options: JsonImportOptions = {
@@ -561,7 +578,7 @@ suite('DataImporter - SQL value formatting', () => {
         const executedSqls: string[] = [];
         const adapter = createMockAdapter(async (sql: string) => {
             executedSqls.push(sql);
-            return { status: 'success' };
+            return mockQueryResult;
         });
 
         const options: JsonImportOptions = {
@@ -593,7 +610,7 @@ suite('DataImporter - batch processing', () => {
         const executedSqls: string[] = [];
         const adapter = createMockAdapter(async (sql: string) => {
             executedSqls.push(sql);
-            return { status: 'success' };
+            return mockQueryResult;
         });
 
         const options: JsonImportOptions = {
@@ -622,7 +639,7 @@ suite('DataImporter - batch processing', () => {
         const executedSqls: string[] = [];
         const adapter = createMockAdapter(async (sql: string) => {
             executedSqls.push(sql);
-            return { status: 'success' };
+            return mockQueryResult;
         });
 
         const options: CsvImportOptions = {
