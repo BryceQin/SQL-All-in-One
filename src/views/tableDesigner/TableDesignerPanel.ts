@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { ConnectionManager } from '../../database/connection/ConnectionManager';
-import { SchemaCache } from '../../database/schema/SchemaCache';
+import { getConnectionManager } from '../../database/connection/ConnectionManager';
+import { getSchemaCache } from '../../database/schema/SchemaCache';
 import type { IDatabaseAdapter, TableStructure, DataTypeCategory } from '../../database/adapters/IDatabaseAdapter';
 
 interface ColumnDesign {
@@ -329,7 +329,7 @@ export class TableDesignerPanel {
     }
 
     private _getAdapter(): IDatabaseAdapter | undefined {
-        const connectionManager = ConnectionManager.getInstance();
+        const connectionManager = getConnectionManager();
         const activeConn = connectionManager.getActiveConnection();
         if (!activeConn) {
             return undefined;
@@ -433,10 +433,10 @@ export class TableDesignerPanel {
                 await adapter.execute(stmt);
             }
 
-            const connectionManager = ConnectionManager.getInstance();
+            const connectionManager = getConnectionManager();
             const activeConn = connectionManager.getActiveConnection();
             if (activeConn) {
-                SchemaCache.getInstance().invalidate(activeConn.id, 'table', this._database);
+                getSchemaCache().invalidate(activeConn.id, 'table', this._database);
             }
 
             this.dispose();

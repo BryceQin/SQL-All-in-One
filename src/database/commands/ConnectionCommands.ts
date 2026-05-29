@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { ConnectionManager } from '../connection/ConnectionManager';
+import { getConnectionManager } from '../connection/ConnectionManager';
 import { DatabaseTreeProvider } from '../../views/databaseExplorer/DatabaseTreeProvider';
 import { ConnectionTreeNode } from '../../views/databaseExplorer/treeNodes';
 
@@ -31,7 +31,7 @@ export function registerConnectionCommands(
         vscode.commands.registerCommand('sql-all-in-one.connect', async (node?: ConnectionTreeNode) => {
             if (node) {
                 try {
-                    await ConnectionManager.getInstance().connect(node.connectionId);
+                    await getConnectionManager().connect(node.connectionId);
                     vscode.window.showInformationMessage(`Connected to ${node.connectionName}`);
                     treeProvider.refresh();
                 } catch (error) {
@@ -47,7 +47,7 @@ export function registerConnectionCommands(
         vscode.commands.registerCommand('sql-all-in-one.disconnect', async (node?: ConnectionTreeNode) => {
             if (node) {
                 try {
-                    await ConnectionManager.getInstance().disconnect(node.connectionId);
+                    await getConnectionManager().disconnect(node.connectionId);
                     vscode.window.showInformationMessage(`Disconnected from ${node.connectionName}`);
                     treeProvider.refresh();
                 } catch (error) {

@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { EventEmitter } from 'vscode';
 import { IDatabaseAdapter, QueryResult } from '../adapters/IDatabaseAdapter';
-import { ConnectionManager } from '../connection/ConnectionManager';
+import { getConnectionManager } from '../connection/ConnectionManager';
 import { QueryOptions, QueryStartEvent, QueryEndEvent, RunningQuery } from './QueryResult';
 import { getConfigManager } from '../../core/configManager';
 
@@ -110,7 +110,7 @@ export class QueryExecutor {
 
         runningQuery.cancellationTokenSource.cancel();
 
-        const connectionManager = ConnectionManager.getInstance();
+        const connectionManager = getConnectionManager();
         const adapter = connectionManager.getAdapter(runningQuery.connectionId);
 
         if (adapter) {

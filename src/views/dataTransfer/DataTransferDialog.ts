@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { ConnectionManager } from '../../database/connection/ConnectionManager';
+import { getConnectionManager } from '../../database/connection/ConnectionManager';
 import {
     importFromCsv,
     importFromJson,
@@ -158,7 +158,7 @@ export class DataTransferDialog {
     }
 
     private async _handleRequestTables(): Promise<void> {
-        const connectionManager = ConnectionManager.getInstance();
+        const connectionManager = getConnectionManager();
         const activeConfig = connectionManager.getActiveConnection();
 
         if (!activeConfig) {
@@ -206,7 +206,7 @@ export class DataTransferDialog {
             return;
         }
 
-        const connectionManager = ConnectionManager.getInstance();
+        const connectionManager = getConnectionManager();
         const activeConfig = connectionManager.getActiveConnection();
 
         if (!activeConfig) {
@@ -361,7 +361,7 @@ export class DataTransferDialog {
         delimiter?: string;
         encoding?: string;
     }): Promise<void> {
-        const connectionManager = ConnectionManager.getInstance();
+        const connectionManager = getConnectionManager();
         const activeConfig = connectionManager.getActiveConnection();
 
         if (!activeConfig) {

@@ -16,9 +16,9 @@ import {
     ColumnTreeNode,
     IndexTreeNode
 } from './treeNodes';
-import { ConnectionManager } from '../../database/connection/ConnectionManager';
+import { ConnectionManager, getConnectionManager } from '../../database/connection/ConnectionManager';
 import { ConnectionConfig } from '../../database/adapters/IDatabaseAdapter';
-import { SchemaCache } from '../../database/schema/SchemaCache';
+import { SchemaCache, getSchemaCache } from '../../database/schema/SchemaCache';
 import { getConfigManager } from '../../core/configManager';
 import { handleError, ErrorCategory } from '../../core/errorHandler';
 
@@ -43,8 +43,8 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
 
     constructor(context: vscode.ExtensionContext) {
         this.context = context;
-        this.connectionManager = ConnectionManager.getInstance();
-        this.schemaCache = SchemaCache.getInstance();
+        this.connectionManager = getConnectionManager();
+        this.schemaCache = getSchemaCache();
 
         this.loadFavorites();
         this.setupEventListeners();

@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { ConnectionManager } from '../../database/connection/ConnectionManager';
+import { getConnectionManager } from '../../database/connection/ConnectionManager';
 import { ExplainPlan } from '../../database/query/ExplainPlan';
 
 export class ExplainPlanPanel {
@@ -71,7 +71,7 @@ export class ExplainPlanPanel {
     }
 
     public async showExplainPlan(sql: string, useAnalyze = false): Promise<void> {
-        const connectionManager = ConnectionManager.getInstance();
+        const connectionManager = getConnectionManager();
         const activeConfig = connectionManager.getActiveConnection();
 
         if (!activeConfig) {

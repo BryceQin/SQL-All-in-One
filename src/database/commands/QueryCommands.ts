@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { ConnectionManager } from '../connection/ConnectionManager';
+import { getConnectionManager } from '../connection/ConnectionManager';
 import { QueryExecutor } from '../query/QueryExecutor';
 import { SafeQueryGuard } from '../query/SafeQueryGuard';
 import { QueryHistory } from '../history/QueryHistory';
@@ -7,8 +7,9 @@ import { SqlStatementDetector } from '../query/SqlStatementDetector';
 import type { SqlDialect } from '../../parser/dialectMapper';
 import { QueryResultPanel, FilterCondition } from '../../views/queryResult/QueryResultPanel';
 import type { QueryError, QueryRow, QueryParam } from '../adapters/IDatabaseAdapter';
-import { SchemaCache } from '../schema/SchemaCache';
+import { getSchemaCache } from '../schema/SchemaCache';
 import { getConfigManager } from '../../core/configManager';
+
 
 function isDDLStatement(sql: string): boolean {
     const upper = sql.trim().toUpperCase();
@@ -28,11 +29,11 @@ function invalidateSchemaOnDDL(sql: string): void {
     const cfgMgr = getConfigManager();
     if (!cfgMgr.get<boolean>('schemaCache.refreshOnDDL', true)) return;
 
-    const connectionManager = ConnectionManager.getInstance();
+    const connectionManager = getConnectionManager();
     const activeConn = connectionManager.getActiveConnection();
     if (!activeConn) return;
 
-    const schemaCache = SchemaCache.getInstance();
+    const schemaCache = getSchemaCache();
     schemaCache.invalidate(activeConn.id, 'table', activeConn.database);
     if (isRoutineDDL(sql)) {
         schemaCache.invalidate(activeConn.id, 'function', activeConn.database);
@@ -61,7 +62,7 @@ export function registerQueryCommands(
                 return;
             }
 
-            const connectionManager = ConnectionManager.getInstance();
+            const connectionManager = getConnectionManager();
             const activeConn = connectionManager.getActiveConnection();
             let adapter = activeConn
                 ? connectionManager.getAdapter(activeConn.id)
@@ -135,7 +136,7 @@ export function registerQueryCommands(
 
             queryResultPanel.onCommitChanges = async (changes, tableName, _database) => {
                 try {
-                    const connectionManager = ConnectionManager.getInstance();
+                    const connectionManager = getConnectionManager();
                     const activeConfig = connectionManager.getActiveConnection();
                     const adapter = activeConfig ? connectionManager.getAdapter(activeConfig.id) : undefined;
                     if (!adapter) {
@@ -205,7 +206,7 @@ export function registerQueryCommands(
 
             queryResultPanel.onRequestForeignKeyOptions = async (_column, referencedTable, database) => {
                 try {
-                    const connectionManager = ConnectionManager.getInstance();
+                    const connectionManager = getConnectionManager();
                     const activeConfig = connectionManager.getActiveConnection();
                     const adapter = activeConfig ? connectionManager.getAdapter(activeConfig.id) : undefined;
                     if (!adapter) return [];
@@ -233,35 +234,35 @@ export function registerQueryCommands(
             };
 
             queryResultPanel.onBeginTransaction = async () => {
-                const connectionManager = ConnectionManager.getInstance();
+                const connectionManager = getConnectionManager();
                 const activeConfig = connectionManager.getActiveConnection();
                 const adapter = activeConfig ? connectionManager.getAdapter(activeConfig.id) : undefined;
                 if (adapter) await adapter.beginTransaction();
             };
 
             queryResultPanel.onCommitTransaction = async () => {
-                const connectionManager = ConnectionManager.getInstance();
+                const connectionManager = getConnectionManager();
                 const activeConfig = connectionManager.getActiveConnection();
                 const adapter = activeConfig ? connectionManager.getAdapter(activeConfig.id) : undefined;
                 if (adapter) await adapter.commit();
             };
 
             queryResultPanel.onRollbackTransaction = async () => {
-                const connectionManager = ConnectionManager.getInstance();
+                const connectionManager = getConnectionManager();
                 const activeConfig = connectionManager.getActiveConnection();
                 const adapter = activeConfig ? connectionManager.getAdapter(activeConfig.id) : undefined;
                 if (adapter) await adapter.rollback();
             };
 
             queryResultPanel.onCreateSavepoint = async (name: string) => {
-                const connectionManager = ConnectionManager.getInstance();
+                const connectionManager = getConnectionManager();
                 const activeConfig = connectionManager.getActiveConnection();
                 const adapter = activeConfig ? connectionManager.getAdapter(activeConfig.id) : undefined;
                 if (adapter) await adapter.execute(`SAVEPOINT ${name}`);
             };
 
             queryResultPanel.onRollbackToSavepoint = async (name: string) => {
-                const connectionManager = ConnectionManager.getInstance();
+                const connectionManager = getConnectionManager();
                 const activeConfig = connectionManager.getActiveConnection();
                 const adapter = activeConfig ? connectionManager.getAdapter(activeConfig.id) : undefined;
                 if (adapter) await adapter.execute(`ROLLBACK TO SAVEPOINT ${name}`);

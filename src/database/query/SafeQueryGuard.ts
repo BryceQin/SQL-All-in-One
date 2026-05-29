@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { getParserEngine } from '../../parser/SqlParserEngine';
 import { SafetyCheckResult, SafetyWarning, SafetyConfirmation, SafetyLevel } from './QueryResult';
 import type { SqlDialect } from '../../parser/dialectMapper';
-import { ConnectionManager } from '../connection/ConnectionManager';
+import { getConnectionManager } from '../connection/ConnectionManager';
 import { t } from '../../i18n';
 import { getConfigManager } from '../../core/configManager';
 
@@ -13,7 +13,7 @@ export class SafeQueryGuard {
 
     private inferDialect(): SqlDialect {
         try {
-            const activeConn = ConnectionManager.getInstance().getActiveConnection();
+            const activeConn = getConnectionManager().getActiveConnection();
             if (activeConn?.dialect) {
                 return activeConn.dialect as SqlDialect;
             }

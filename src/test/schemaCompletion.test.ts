@@ -1,8 +1,11 @@
 import * as assert from 'assert'
 import type { DatabaseInfo, TableInfo, ViewInfo, FunctionInfo, ProcedureInfo, ColumnInfo } from '../database/adapters/IDatabaseAdapter'
 import { findCursorContext, extractTableNames } from '../completion/AstCompletionProvider'
-import { SchemaProvider, type ClauseType, type CompletionContext } from '../database/schema/SchemaProvider'
-import { SchemaCache } from '../database/schema/SchemaCache'
+import { SchemaProvider, getSchemaProvider, type ClauseType, type CompletionContext } from '../database/schema/SchemaProvider'
+import { SchemaCache, getSchemaCache } from '../database/schema/SchemaCache'
+import { getContainer, Tokens } from '../core/diContainer'
+import { createSchemaProvider } from '../database/schema/SchemaProvider'
+import { createSchemaCache } from '../database/schema/SchemaCache'
 
 const sampleDatabases: DatabaseInfo[] = [
     { name: 'mydb', charset: 'utf8mb4', collation: 'utf8mb4_general_ci' },
@@ -213,8 +216,8 @@ suite('SchemaProvider - CompletionContext', () => {
     test('ClauseType includes all required values', () => {
         const requiredTypes: ClauseType[] = [
             'USE', 'FROM', 'JOIN', 'SELECT', 'WHERE',
-            'ORDER_BY', 'GROUP_BY', 'HAVING',
-            'INSERT_INTO', 'UPDATE', 'CALL', 'OTHER',
+            'ORDER BY', 'GROUP BY', 'HAVING',
+            'INSERT INTO', 'UPDATE', 'CALL', 'OTHER',
         ]
         assert.strictEqual(requiredTypes.length, 12)
         for (const ct of requiredTypes) {
@@ -225,8 +228,8 @@ suite('SchemaProvider - CompletionContext', () => {
     test('all ClauseType values are distinct', () => {
         const types: ClauseType[] = [
             'USE', 'FROM', 'JOIN', 'SELECT', 'WHERE',
-            'ORDER_BY', 'GROUP_BY', 'HAVING',
-            'INSERT_INTO', 'UPDATE', 'CALL', 'OTHER',
+            'ORDER BY', 'GROUP BY', 'HAVING',
+            'INSERT INTO', 'UPDATE', 'CALL', 'OTHER',
         ]
         const unique = new Set(types)
         assert.strictEqual(unique.size, types.length)
@@ -245,10 +248,13 @@ suite('SchemaProvider - MRU Cache', () => {
         assert.ok(true)
     })
 
-    test('getInstance returns singleton', () => {
-        const instance1 = SchemaProvider.getInstance()
-        const instance2 = SchemaProvider.getInstance()
+    test('getSchemaProvider returns singleton', () => {
+        const container = getContainer()
+        container.registerSingleton(Tokens.SchemaProvider, createSchemaProvider)
+        const instance1 = getSchemaProvider()
+        const instance2 = getSchemaProvider()
         assert.strictEqual(instance1, instance2)
+        container.unregister(Tokens.SchemaProvider)
     })
 })
 
@@ -1034,23 +1040,29 @@ suite('SchemaCache - Invalidation Scope', () => {
 
 suite('SchemaProvider - Singleton', () => {
 
-    test('getInstance returns same instance', () => {
-        const instance1 = SchemaProvider.getInstance()
-        const instance2 = SchemaProvider.getInstance()
+    test('getSchemaProvider returns same instance', () => {
+        const container = getContainer()
+        container.registerSingleton(Tokens.SchemaProvider, createSchemaProvider)
+        const instance1 = getSchemaProvider()
+        const instance2 = getSchemaProvider()
         assert.strictEqual(instance1, instance2)
+        container.unregister(Tokens.SchemaProvider)
     })
 })
 
 // ============================================================================
-// SchemaCache - getInstance Singleton Tests
+// SchemaCache - Singleton Tests
 // ============================================================================
 
 suite('SchemaCache - Singleton', () => {
 
-    test('getInstance returns same instance', () => {
-        const instance1 = SchemaCache.getInstance()
-        const instance2 = SchemaCache.getInstance()
+    test('getSchemaCache returns same instance', () => {
+        const container = getContainer()
+        container.registerSingleton(Tokens.SchemaCache, createSchemaCache)
+        const instance1 = getSchemaCache()
+        const instance2 = getSchemaCache()
         assert.strictEqual(instance1, instance2)
+        container.unregister(Tokens.SchemaCache)
     })
 })
 

@@ -8,7 +8,7 @@ import { KeywordHoverResolver } from '../hover/KeywordHoverResolver'
 import { SchemaHoverResolver } from '../hover/SchemaHoverResolver'
 import { extractWordAtPosition } from '../hover/hoverUtils'
 import { getConfigManager } from '../core/configManager'
-import { ConnectionManager } from '../database/connection/ConnectionManager'
+import { getConnectionManager } from '../database/connection/ConnectionManager'
 
 export class SqlHoverProvider implements vscode.HoverProvider {
     private docResolvers: HoverResolver[]
@@ -45,7 +45,7 @@ export class SqlHoverProvider implements vscode.HoverProvider {
             if (result) return result
         }
 
-        const activeConn = ConnectionManager.getInstance().getActiveConnection()
+        const activeConn = getConnectionManager().getActiveConnection()
         if (activeConn) {
             try {
                 const schemaResult = await this.schemaResolver.resolve(word, dialectName as SqlLanguage, document, position)

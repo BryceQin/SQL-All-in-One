@@ -1,8 +1,8 @@
 import * as vscode from 'vscode'
 import type { SqlLanguage } from '../formatter/sqlFormatter'
 import type { HoverResolver } from './HoverResolver'
-import { SchemaProvider } from '../database/schema/SchemaProvider'
-import { ConnectionManager } from '../database/connection/ConnectionManager'
+import { SchemaProvider, getSchemaProvider } from '../database/schema/SchemaProvider'
+import { getConnectionManager } from '../database/connection/ConnectionManager'
 import { sqlDialects } from '../core/sqlDialects'
 import { getParserEngine } from '../parser/SqlParserEngine'
 import type { SqlDialect } from '../parser/dialectMapper'
@@ -14,7 +14,7 @@ export class SchemaHoverResolver implements HoverResolver {
     private schemaProvider: SchemaProvider
 
     constructor() {
-        this.schemaProvider = SchemaProvider.getInstance()
+        this.schemaProvider = getSchemaProvider()
     }
 
     async resolve(
@@ -23,7 +23,7 @@ export class SchemaHoverResolver implements HoverResolver {
         document: vscode.TextDocument,
         position: vscode.Position,
     ): Promise<vscode.Hover | null> {
-        const connectionManager = ConnectionManager.getInstance()
+        const connectionManager = getConnectionManager()
         const activeConn = connectionManager.getActiveConnection()
         if (!activeConn) return null
 

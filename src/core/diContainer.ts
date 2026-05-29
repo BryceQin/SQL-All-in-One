@@ -1,81 +1,89 @@
 export class DIContainer {
-  private services = new Map<string, unknown>();
-  private factories = new Map<string, () => unknown>();
+    private services = new Map<string, unknown>();
+    private factories = new Map<string, () => unknown>();
+    private singletons = new Map<string, () => unknown>();
 
-  register<T>(token: string, service: T): void {
-    this.services.set(token, service);
-  }
-
-  registerFactory<T>(token: string, factory: () => T): void {
-    this.factories.set(token, factory);
-  }
-
-  registerSingleton<T>(token: string, factory: () => T): void {
-    this.factories.set(token, () => {
-      if (this.services.has(token)) {
-        return this.services.get(token) as T;
-      }
-      const instance = factory();
-      this.services.set(token, instance);
-      return instance as T;
-    });
-  }
-
-  get<T>(token: string): T {
-    if (this.services.has(token)) {
-      return this.services.get(token) as T;
+    register<T>(token: string, service: T): void {
+        this.services.set(token, service);
     }
-    if (this.factories.has(token)) {
-      const factory = this.factories.get(token) as () => T;
-      const instance = factory();
-      this.services.set(token, instance);
-      return instance as T;
+
+    registerFactory<T>(token: string, factory: () => T): void {
+        this.factories.set(token, factory);
     }
-    throw new Error(`Service not registered: ${token}`);
-  }
 
-  has(token: string): boolean {
-    return this.services.has(token) || this.factories.has(token);
-  }
-
-  hasInstance(token: string): boolean {
-    return this.services.has(token);
-  }
-
-  tryGet<T>(token: string): T | undefined {
-    if (this.services.has(token)) {
-      return this.services.get(token) as T;
+    registerSingleton<T>(token: string, factory: () => T): void {
+        this.singletons.set(token, factory);
     }
-    if (this.factories.has(token)) {
-      const factory = this.factories.get(token) as () => T;
-      const instance = factory();
-      this.services.set(token, instance);
-      return instance as T;
+
+    get<T>(token: string): T {
+        // 首先检查是否已有实例
+        if (this.services.has(token)) {
+            return this.services.get(token) as T;
+        }
+
+        // 检查是否是单例
+        if (this.singletons.has(token)) {
+            const factory = this.singletons.get(token) as () => T;
+            const instance = factory();
+            this.services.set(token, instance);
+            return instance;
+        }
+
+        // 检查是否有工厂函数
+        if (this.factories.has(token)) {
+            const factory = this.factories.get(token) as () => T;
+            return factory();
+        }
+
+        throw new Error(`Service not registered: ${token}`);
     }
-    return undefined;
-  }
 
-  disposeAll(): void {
-    for (const service of this.services.values()) {
-      if (
-        service !== null &&
-        service !== undefined &&
-        typeof (service as Record<string, unknown>).dispose === 'function'
-      ) {
-        (service as { dispose: () => void }).dispose();
-      }
+    has(token: string): boolean {
+        return (
+            this.services.has(token) ||
+            this.factories.has(token) ||
+            this.singletons.has(token)
+        );
     }
-    this.services.clear();
-    this.factories.clear();
-  }
 
-  clear(): void {
-    this.services.clear();
-  }
+    hasInstance(token: string): boolean {
+        return this.services.has(token);
+    }
 
-  unregister(token: string): void {
-    this.services.delete(token);
-  }
+    tryGet<T>(token: string): T | undefined {
+        try {
+            return this.get(token);
+        } catch {
+            return undefined;
+        }
+    }
+
+    disposeAll(): void {
+        for (const service of this.services.values()) {
+            if (
+                service !== null &&
+                service !== undefined &&
+                typeof (service as Record<string, unknown>).dispose === 'function'
+            ) {
+                try {
+                    (service as { dispose: () => void }).dispose();
+                } catch {
+                    // ignore dispose errors
+                }
+            }
+        }
+        this.services.clear();
+        this.factories.clear();
+        this.singletons.clear();
+    }
+
+    clear(): void {
+        this.services.clear();
+    }
+
+    unregister(token: string): void {
+        this.services.delete(token);
+    }
 }
 
 const container = new DIContainer();
@@ -115,5 +123,5 @@ export const Tokens = {
 export type Token = typeof Tokens[keyof typeof Tokens];
 
 export function getContainer(): DIContainer {
-  return container;
+    return container;
 }

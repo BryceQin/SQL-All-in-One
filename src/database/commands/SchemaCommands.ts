@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { ConnectionManager } from '../connection/ConnectionManager';
+import { getConnectionManager } from '../connection/ConnectionManager';
 import { DatabaseTreeProvider } from '../../views/databaseExplorer/DatabaseTreeProvider';
 import {
     ConnectionTreeNode,
@@ -10,8 +10,9 @@ import {
     FavoriteTreeNode
 } from '../../views/databaseExplorer/treeNodes';
 import { SqlStatementDetector } from '../query/SqlStatementDetector';
-import { SchemaCache } from '../schema/SchemaCache';
+import { getSchemaCache } from '../schema/SchemaCache';
 import { TableDesignerPanel } from '../../views/tableDesigner/TableDesignerPanel';
+
 
 export function registerSchemaCommands(
     context: vscode.ExtensionContext,
@@ -22,9 +23,9 @@ export function registerSchemaCommands(
 
     disposables.push(
         vscode.commands.registerCommand('sql-all-in-one.refreshSchema', async () => {
-            const activeConn = ConnectionManager.getInstance().getActiveConnection();
+            const activeConn = getConnectionManager().getActiveConnection();
             if (activeConn) {
-                SchemaCache.getInstance().invalidate(activeConn.id);
+                getSchemaCache().invalidate(activeConn.id);
             }
             treeProvider.refresh();
         })
@@ -42,7 +43,7 @@ export function registerSchemaCommands(
     disposables.push(
         vscode.commands.registerCommand('sql-all-in-one.viewTableDDL', async (node?: TableTreeNode) => {
             if (node) {
-                const adapter = ConnectionManager.getInstance().getAdapter(node.connectionId);
+                const adapter = getConnectionManager().getAdapter(node.connectionId);
                 if (adapter) {
                     try {
                         const ddl = await adapter.getTableDDL(node.databaseName, node.tableName);
@@ -86,7 +87,7 @@ export function registerSchemaCommands(
     disposables.push(
         vscode.commands.registerCommand('sql-all-in-one.addToFavorites', async (node?: TableTreeNode | ViewTreeNode) => {
             if (node) {
-                const conn = ConnectionManager.getInstance().getAllConnections().find(
+                const conn = getConnectionManager().getAllConnections().find(
                     (c) => c.id === node.connectionId
                 );
                 if (conn) {
@@ -137,7 +138,7 @@ export function registerSchemaCommands(
 
     disposables.push(
         vscode.commands.registerCommand('sql-all-in-one.designTable', async (node?: DatabaseTreeNode | ConnectionTreeNode) => {
-            const connectionManager = ConnectionManager.getInstance();
+            const connectionManager = getConnectionManager();
             const activeConn = connectionManager.getActiveConnection();
             if (!activeConn) {
                 vscode.window.showWarningMessage('No active connection. Please connect to a database first.');
@@ -188,7 +189,7 @@ export function registerSchemaCommands(
                 return;
             }
 
-            const connectionManager = ConnectionManager.getInstance();
+            const connectionManager = getConnectionManager();
             const adapter = connectionManager.getAdapter(node.connectionId);
             if (!adapter) {
                 vscode.window.showWarningMessage('No active connection for the selected table');
@@ -211,7 +212,7 @@ export function registerSchemaCommands(
                 return;
             }
 
-            const connectionManager = ConnectionManager.getInstance();
+            const connectionManager = getConnectionManager();
             const activeConn = connectionManager.getActiveConnection();
             if (!activeConn) {
                 vscode.window.showWarningMessage('No active connection. Please connect to a database first.');
@@ -248,7 +249,7 @@ export function registerSchemaCommands(
 
     disposables.push(
         vscode.commands.registerCommand('sql-all-in-one.importData', async () => {
-            const connectionManager = ConnectionManager.getInstance();
+            const connectionManager = getConnectionManager();
             const activeConn = connectionManager.getActiveConnection();
             if (!activeConn) {
                 vscode.window.showWarningMessage('No active connection. Please connect to a database first.');

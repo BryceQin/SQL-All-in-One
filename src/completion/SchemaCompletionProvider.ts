@@ -1,6 +1,6 @@
 import * as vscode from 'vscode'
-import { SchemaProvider, type ClauseType, type CompletionContext } from '../database/schema/SchemaProvider'
-import { ConnectionManager } from '../database/connection/ConnectionManager'
+import { SchemaProvider, getSchemaProvider, type ClauseType, type CompletionContext } from '../database/schema/SchemaProvider'
+import { getConnectionManager } from '../database/connection/ConnectionManager'
 import { getConfigManager } from '../core/configManager'
 import { sqlDialects } from '../core/sqlDialects'
 import type { SqlDialect } from '../parser/dialectMapper'
@@ -12,8 +12,8 @@ const clauseTypeMap: Record<string, ClauseType> = {
     join_type: 'JOIN',
     on_condition: 'WHERE',
     where_expr: 'WHERE',
-    groupby_columns: 'GROUP_BY',
-    orderby_columns: 'ORDER_BY',
+    groupby_columns: 'GROUP BY',
+    orderby_columns: 'ORDER BY',
     cte_name: 'FROM',
     unknown: 'OTHER',
     function_args: 'OTHER',
@@ -25,7 +25,7 @@ export class SchemaCompletionProvider {
     private schemaProvider: SchemaProvider
 
     constructor() {
-        this.schemaProvider = SchemaProvider.getInstance()
+        this.schemaProvider = getSchemaProvider()
     }
 
     async provideCompletionItems(
@@ -37,7 +37,7 @@ export class SchemaCompletionProvider {
         if (!cfgMgr.get('enableCompletion', true)) return []
         if (!cfgMgr.get('completion.schema', true)) return []
 
-        const connectionManager = ConnectionManager.getInstance()
+        const connectionManager = getConnectionManager()
         const activeConn = connectionManager.getActiveConnection()
         if (!activeConn) return []
 
@@ -84,7 +84,7 @@ export class SchemaCompletionProvider {
             return 'CALL'
         }
         if (/\bINSERT\s+INTO\s+$/i.test(textBeforeCursor)) {
-            return 'INSERT_INTO'
+            return 'INSERT INTO'
         }
         if (/\bUPDATE\s+$/i.test(textBeforeCursor)) {
             return 'UPDATE'
@@ -98,8 +98,8 @@ export class SchemaCompletionProvider {
         if (/\bJOIN\s+$/i.test(textBeforeCursor)) return 'JOIN'
         if (/\bSELECT\s+$/i.test(textBeforeCursor)) return 'SELECT'
         if (/\bWHERE\s+$/i.test(textBeforeCursor)) return 'WHERE'
-        if (/\bORDER\s+BY\s+$/i.test(textBeforeCursor)) return 'ORDER_BY'
-        if (/\bGROUP\s+BY\s+$/i.test(textBeforeCursor)) return 'GROUP_BY'
+        if (/\bORDER\s+BY\s+$/i.test(textBeforeCursor)) return 'ORDER BY'
+        if (/\bGROUP\s+BY\s+$/i.test(textBeforeCursor)) return 'GROUP BY'
         if (/\bHAVING\s+$/i.test(textBeforeCursor)) return 'HAVING'
 
         return 'OTHER'

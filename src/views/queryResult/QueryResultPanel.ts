@@ -365,10 +365,11 @@ export class QueryResultPanel {
         exporter: InstanceType<typeof import('../../database/transfer/DataExporter.js').DataExporter>,
         options?: Record<string, unknown>
     ): Promise<void> {
-        const connectionManager = (await import('../../database/connection/ConnectionManager.js')).ConnectionManager;
-        const activeConfig = connectionManager.getInstance().getActiveConnection();
+        const { getConnectionManager } = (await import('../../database/connection/ConnectionManager.js'));
+        const connectionManager = getConnectionManager();
+        const activeConfig = connectionManager.getActiveConnection();
         const adapter = activeConfig
-            ? connectionManager.getInstance().getAdapter(activeConfig.id)
+            ? connectionManager.getAdapter(activeConfig.id)
             : undefined;
 
         if (!adapter) {

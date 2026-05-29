@@ -1,12 +1,11 @@
 import { EventEmitter, Event } from 'vscode';
 import { ConnectionConfig, ConnectionState, TestConnectionResult } from './ConnectionConfig';
-import { ConnectionStore } from './ConnectionStore';
+import { ConnectionStore, getConnectionStore } from './ConnectionStore';
 import { AdapterFactory } from '../adapters/AdapterFactory';
 import { IDatabaseAdapter } from '../adapters/IDatabaseAdapter';
 import { SshTunnel } from './SshTunnel';
 import { handleError, ErrorCategory } from '../../core/errorHandler';
-import { Tokens } from '../../core/diContainer';
-import { getSingleton, resetSingleton } from '../../core/singleton';
+import { getContainer, Tokens } from '../../core/diContainer';
 
 export interface ConnectionEvent {
     type: 'add' | 'remove' | 'update';
@@ -32,77 +31,65 @@ export class ConnectionManager {
     private retryAttempts = new Map<string, number>();
     private retryTimers = new Map<string, ReturnType<typeof setTimeout>>();
     private sshTunnels = new Map<string, SshTunnel>();
-    
+
     private readonly _onDidChangeConnections = new EventEmitter<ConnectionEvent>();
     private readonly _onDidChangeConnectionState = new EventEmitter<ConnectionStateEvent>();
     private readonly _onDidChangeActiveConnection = new EventEmitter<ActiveConnectionEvent>();
-    
+
     readonly onDidChangeConnections: Event<ConnectionEvent> = this._onDidChangeConnections.event;
     readonly onDidChangeConnectionState: Event<ConnectionStateEvent> = this._onDidChangeConnectionState.event;
     readonly onDidChangeActiveConnection: Event<ActiveConnectionEvent> = this._onDidChangeActiveConnection.event;
-    
-    private constructor() {
-        this.connectionStore = ConnectionStore.getInstance();
+
+    constructor() {
+        this.connectionStore = getConnectionStore();
     }
 
-    static getInstance(): ConnectionManager {
-        return getSingleton(Tokens.ConnectionManager, () => new ConnectionManager(), { current: _connManagerInstance })
-    }
-
-    static resetInstance(): void {
-        resetSingleton(Tokens.ConnectionManager, { current: _connManagerInstance }, (instance) => {
-            instance._onDidChangeConnections.dispose()
-            instance._onDidChangeConnectionState.dispose()
-            instance._onDidChangeActiveConnection.dispose()
-        })
-    }
-    
     async initialize(): Promise<void> {
         await this.connectionStore.load();
     }
-    
+
     async addConnection(config: ConnectionConfig, password?: string): Promise<void> {
         await this.connectionStore.addConnection(config, password);
         this._onDidChangeConnections.fire({ type: 'add', connectionId: config.id });
     }
-    
+
     async removeConnection(id: string): Promise<void> {
         await this.disconnect(id);
         await this.connectionStore.removeConnection(id);
-        
+
         if (this.activeConnectionId === id) {
             const oldId = this.activeConnectionId;
             this.activeConnectionId = undefined;
             this._onDidChangeActiveConnection.fire({ oldId });
         }
-        
+
         this._onDidChangeConnections.fire({ type: 'remove', connectionId: id });
     }
-    
+
     async updateConnection(id: string, config: ConnectionConfig, password?: string): Promise<void> {
         const oldState = this.connectionStates.get(id) || 'disconnected';
         if (oldState !== 'disconnected') {
             await this.disconnect(id);
         }
-        
+
         await this.connectionStore.updateConnection(id, config, password);
         this._onDidChangeConnections.fire({ type: 'update', connectionId: id });
     }
-    
+
     async connect(id: string): Promise<void> {
         const oldState = this.connectionStates.get(id) || 'disconnected';
         if (oldState === 'connected' || oldState === 'connecting') {
             return;
         }
-        
+
         const config = this.connectionStore.getConnection(id);
         if (!config) {
             throw new Error(`Connection not found: ${id}`);
         }
-        
+
         const password = await this.connectionStore.getPassword(id);
         const fullConfig = { ...config, password };
-        
+
         if (config.ssh?.enabled) {
             const tunnel = new SshTunnel();
             try {
@@ -126,17 +113,17 @@ export class ConnectionManager {
                 throw new Error(`SSH tunnel failed: ${error.message}`);
             }
         }
-        
+
         this.updateConnectionState(id, 'connecting');
-        
+
         try {
             const adapter = AdapterFactory.create(config.dialect, fullConfig);
             await adapter.connect(fullConfig);
-            
+
             this.adapters.set(id, adapter);
             this.updateConnectionState(id, 'connected');
             this.retryAttempts.delete(id);
-            
+
             if (!this.activeConnectionId) {
                 this.setActiveConnection(id);
             }
@@ -155,13 +142,13 @@ export class ConnectionManager {
             throw error;
         }
     }
-    
+
     async disconnect(id: string): Promise<void> {
         const oldState = this.connectionStates.get(id) || 'disconnected';
         if (oldState === 'disconnected') {
             return;
         }
-        
+
         const adapter = this.adapters.get(id);
         if (adapter) {
             try {
@@ -181,17 +168,17 @@ export class ConnectionManager {
             }
             this.sshTunnels.delete(id);
         }
-        
+
         this.updateConnectionState(id, 'disconnected');
         this.cancelRetry(id);
-        
+
         if (this.activeConnectionId === id) {
             const oldId = this.activeConnectionId;
             this.activeConnectionId = undefined;
             this._onDidChangeActiveConnection.fire({ oldId });
         }
     }
-    
+
     async disconnectAll(): Promise<void> {
         const ids = Array.from(this.adapters.keys());
         for (const id of ids) {
@@ -202,13 +189,13 @@ export class ConnectionManager {
         }
         this.retryTimers.clear();
     }
-    
+
     async testConnection(id: string): Promise<TestConnectionResult>;
     async testConnection(config: ConnectionConfig, password?: string): Promise<TestConnectionResult>;
     async testConnection(arg: string | ConnectionConfig, password?: string): Promise<TestConnectionResult> {
         let config: ConnectionConfig;
         let pass: string | undefined;
-        
+
         if (typeof arg === 'string') {
             const conn = this.connectionStore.getConnection(arg);
             if (!conn) {
@@ -220,7 +207,7 @@ export class ConnectionManager {
             config = arg;
             pass = password;
         }
-        
+
         if (config.ssh?.enabled) {
             const tunnel = new SshTunnel();
             try {
@@ -239,51 +226,51 @@ export class ConnectionManager {
                 return { success: false, error: `SSH tunnel failed: ${error.message}` };
             }
         }
-        
+
         const fullConfig = { ...config, password: pass };
         const adapter = AdapterFactory.create(config.dialect, fullConfig);
         return await adapter.testConnection(fullConfig);
     }
-    
+
     getAdapter(id: string): IDatabaseAdapter | undefined {
         return this.adapters.get(id);
     }
-    
+
     getState(id: string): ConnectionState {
         return this.connectionStates.get(id) || 'disconnected';
     }
-    
+
     getAllConnections(): ConnectionConfig[] {
         return this.connectionStore.getConnections();
     }
-    
+
     getActiveConnection(): ConnectionConfig | undefined {
         if (!this.activeConnectionId) {
             return undefined;
         }
         return this.connectionStore.getConnection(this.activeConnectionId);
     }
-    
+
     setActiveConnection(id: string): void {
         const oldId = this.activeConnectionId;
         if (oldId === id) {
             return;
         }
-        
+
         this.activeConnectionId = id;
         this._onDidChangeActiveConnection.fire({ oldId, newId: id });
     }
-    
+
     private updateConnectionState(id: string, newState: ConnectionState): void {
         const oldState = this.connectionStates.get(id) || 'disconnected';
         if (oldState === newState) {
             return;
         }
-        
+
         this.connectionStates.set(id, newState);
         this._onDidChangeConnectionState.fire({ connectionId: id, oldState, newState });
     }
-    
+
     private scheduleRetry(id: string): void {
         const maxAttempts = 3;
         const maxDelay = 30000;
@@ -291,15 +278,15 @@ export class ConnectionManager {
         if (attempts > maxAttempts) {
             return;
         }
-        
+
         this.retryAttempts.set(id, attempts);
         const delay = Math.min(Math.pow(2, attempts) * 1000, maxDelay);
-        
+
         const existingTimer = this.retryTimers.get(id);
         if (existingTimer) {
             clearTimeout(existingTimer);
         }
-        
+
         const timer = setTimeout(async () => {
             this.retryTimers.delete(id);
             const state = this.connectionStates.get(id);
@@ -311,7 +298,7 @@ export class ConnectionManager {
                 }
             }
         }, delay);
-        
+
         this.retryTimers.set(id, timer);
     }
 
@@ -323,7 +310,18 @@ export class ConnectionManager {
         }
         this.retryAttempts.delete(id);
     }
+
+    dispose(): void {
+        this._onDidChangeConnections.dispose();
+        this._onDidChangeConnectionState.dispose();
+        this._onDidChangeActiveConnection.dispose();
+    }
 }
 
-// eslint-disable-next-line prefer-const
-let _connManagerInstance: ConnectionManager | null = null
+export function createConnectionManager(): ConnectionManager {
+    return new ConnectionManager();
+}
+
+export function getConnectionManager(): ConnectionManager {
+    return getContainer().get<ConnectionManager>(Tokens.ConnectionManager);
+}

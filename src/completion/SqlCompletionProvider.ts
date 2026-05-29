@@ -15,7 +15,7 @@ import { handleError, ErrorCategory } from '../core/errorHandler'
 import { getConfigManager } from '../core/configManager'
 import { getPerformanceMonitor } from '../core/performanceMonitor'
 import { SchemaCompletionProvider } from './SchemaCompletionProvider'
-import { ConnectionManager } from '../database/connection/ConnectionManager'
+import { getConnectionManager } from '../database/connection/ConnectionManager'
 
 interface SnippetDef { prefix: string; body: string[]; description: string }
 
@@ -163,7 +163,7 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
                 const { dName } = this.getDialect(doc.languageId)
                 const items: vscode.CompletionItem[] = []
 
-                if (cfg.schema && ConnectionManager.getInstance().getActiveConnection()) {
+                if (cfg.schema && getConnectionManager().getActiveConnection()) {
                     try {
                         const schemaItems = await this.provideSchemaItems(doc, pos, token)
                         items.push(...schemaItems)

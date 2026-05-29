@@ -1,6 +1,7 @@
 import * as assert from 'assert'
 import { AstLinter } from '../providers/AstLinter'
-import { resetRuleRegistry } from '../linter/RuleRegistry'
+import { createRuleRegistry } from '../linter/RuleRegistry'
+import { getContainer, Tokens } from '../core/diContainer'
 import { getConfigManager } from '../core/configManager'
 
 suite('AstLinter Test Suite', () => {
@@ -111,7 +112,9 @@ suite('AstLinter Test Suite', () => {
         })
 
         getConfigManager().invalidate()
-        resetRuleRegistry()
+        const container = getContainer()
+        container.unregister(Tokens.RuleRegistry)
+        container.registerSingleton(Tokens.RuleRegistry, createRuleRegistry)
         const enabledLinter = new AstLinter()
         const sql = "SELECT IFNULL(name, 'N/A') FROM users"
         const diags = enabledLinter.lint(sql, 'mysql')
@@ -119,7 +122,8 @@ suite('AstLinter Test Suite', () => {
         assert.ok(coalesceDiags.length > 0, 'Should detect IFNULL when rule is enabled')
 
         await vscode.workspace.getConfiguration('SQL-All-in-One').update('lint.use_coalesce_over_isnull', undefined, vscode.ConfigurationTarget.Global)
-        resetRuleRegistry()
+        container.unregister(Tokens.RuleRegistry)
+        container.registerSingleton(Tokens.RuleRegistry, createRuleRegistry)
     })
 
     test('use_current_timestamp detects NOW()', () => {

@@ -2,7 +2,8 @@ import * as vscode from "vscode"
 import { AstLinter } from "./AstLinter"
 import { toSqlDialect } from "../core/sqlDialects"
 import { getAllRuleDefinitions, loadRuleConfigs, type LintRuleDefinition, type LintRuleConfig } from "../linter/lintRules"
-import { resetRuleRegistry } from "../linter/RuleRegistry"
+import { createRuleRegistry } from "../linter/RuleRegistry"
+import { getContainer, Tokens } from "../core/diContainer"
 
 export type { LintRuleDefinition, LintRuleConfig }
 
@@ -29,7 +30,9 @@ export class SqlLinter {
 
     public resetConfig(): void {
         this.config = loadRuleConfigs()
-        resetRuleRegistry()
+        const container = getContainer()
+        container.unregister(Tokens.RuleRegistry)
+        container.registerSingleton(Tokens.RuleRegistry, createRuleRegistry)
         this.astLinter = new AstLinter()
     }
 }

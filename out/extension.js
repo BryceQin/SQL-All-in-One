@@ -66,12 +66,8 @@ const SqlRenameProvider_1 = require("./navigation/SqlRenameProvider");
 const DatabaseModule_1 = require("./database/DatabaseModule");
 const ConnectionManager_1 = require("./database/connection/ConnectionManager");
 const ConnectionStore_1 = require("./database/connection/ConnectionStore");
-const SchemaCache_1 = require("./database/schema/SchemaCache");
 const SchemaProvider_1 = require("./database/schema/SchemaProvider");
-const QueryExecutor_1 = require("./database/query/QueryExecutor");
-const SafeQueryGuard_1 = require("./database/query/SafeQueryGuard");
-const QueryHistory_1 = require("./database/history/QueryHistory");
-const SqlStatementDetector_1 = require("./database/query/SqlStatementDetector");
+const SchemaCache_1 = require("./database/schema/SchemaCache");
 let lazyProviders = null;
 function createLazyProviders(extensionPath) {
     const providers = {
@@ -99,24 +95,16 @@ function createLazyProviders(extensionPath) {
     };
     return providers;
 }
-const errorHandler = (0, errorHandler_1.getErrorHandler)();
-const perfMonitor = (0, performanceMonitor_1.getPerformanceMonitor)();
-function _safeRegister(label, fn) {
-    errorHandler.try(fn, label, {
-        level: errorHandler_1.ErrorLevel.ERROR,
-        category: errorHandler_1.ErrorCategory.CRITICAL,
-    });
-}
 async function safeRegisterAsync(label, fn) {
     try {
         await fn();
     }
     catch (e) {
-        errorHandler.handle(e, label, errorHandler_1.ErrorLevel.ERROR, errorHandler_1.ErrorCategory.CRITICAL);
+        (0, errorHandler_1.getErrorHandler)().handle(e, label, errorHandler_1.ErrorLevel.ERROR, errorHandler_1.ErrorCategory.CRITICAL);
     }
 }
 function registerCommands(context) {
-    context.subscriptions.push(vscode.commands.registerCommand("sql-all-in-one.format-selection", formatSelectionCommand_1.formatSelectionCommand), vscode.commands.registerCommand("sql-all-in-one.toggleComment", commentCommands_1.toggleComment), vscode.commands.registerCommand("sql-all-in-one.toggleAdvancedComment", commentCommands_1.toggleAdvancedComment), vscode.commands.registerCommand("sql-all-in-one.mysql-to-hive", converterCommands_1.convertMysqlToHiveCommand), vscode.commands.registerCommand("sql-all-in-one.hive-to-mysql", converterCommands_1.convertHiveToMysqlCommand), vscode.commands.registerCommand("sql-all-in-one.open-config-editor", () => (0, configEditorCommand_1.openConfigEditorCommand)(context.extensionUri)));
+    context.subscriptions.push(vscode.commands.registerCommand('sql-all-in-one.format-selection', formatSelectionCommand_1.formatSelectionCommand), vscode.commands.registerCommand('sql-all-in-one.toggleComment', commentCommands_1.toggleComment), vscode.commands.registerCommand('sql-all-in-one.toggleAdvancedComment', commentCommands_1.toggleAdvancedComment), vscode.commands.registerCommand('sql-all-in-one.mysql-to-hive', converterCommands_1.convertMysqlToHiveCommand), vscode.commands.registerCommand('sql-all-in-one.hive-to-mysql', converterCommands_1.convertHiveToMysqlCommand), vscode.commands.registerCommand('sql-all-in-one.open-config-editor', () => (0, configEditorCommand_1.openConfigEditorCommand)(context.extensionUri)));
 }
 function registerFormattingProviders(context) {
     context.subscriptions.push(...Object.entries(sqlDialects_1.sqlDialects).map(([vscodeLang, sqlDialectName]) => vscode.languages.registerDocumentFormattingEditProvider(vscodeLang, new SqlFormattingProvider_1.SqlFormattingProvider(sqlDialectName))));
@@ -156,7 +144,9 @@ function registerProviders(context) {
     const renameProvider = lazyProviders.renameProvider.get();
     for (const lang of sqlLanguages) {
         const selector = { language: lang };
-        context.subscriptions.push(vscode.languages.registerCodeActionsProvider(selector, codeActionProvider, { providedCodeActionKinds: SqlCodeActionProvider_1.SqlCodeActionProvider.providedCodeActionKinds }));
+        context.subscriptions.push(vscode.languages.registerCodeActionsProvider(selector, codeActionProvider, {
+            providedCodeActionKinds: SqlCodeActionProvider_1.SqlCodeActionProvider.providedCodeActionKinds,
+        }));
         context.subscriptions.push(vscode.languages.registerFoldingRangeProvider(selector, foldingRangeProvider));
         context.subscriptions.push(vscode.languages.registerDocumentSymbolProvider(selector, outlineProvider));
         context.subscriptions.push(vscode.languages.registerHoverProvider(selector, hoverProvider));
@@ -195,20 +185,16 @@ function registerParameterHighlighter(context) {
 }
 function registerServicesToContainer() {
     const container = (0, diContainer_1.getContainer)();
-    container.registerFactory(diContainer_1.Tokens.ConfigManager, configManager_1.createConfigManager);
-    container.registerFactory(diContainer_1.Tokens.ParserEngine, SqlParserEngine_1.createParserEngine);
-    container.registerFactory(diContainer_1.Tokens.RuleRegistry, RuleRegistry_1.createRuleRegistry);
-    container.registerFactory(diContainer_1.Tokens.ErrorHandler, () => (0, errorHandler_1.getErrorHandler)());
-    container.registerFactory(diContainer_1.Tokens.PerformanceMonitor, () => (0, performanceMonitor_1.getPerformanceMonitor)());
-    container.registerFactory(diContainer_1.Tokens.DocumentAstCache, () => (0, DocumentAstCache_1.getDocumentAstCache)());
-    container.registerFactory(diContainer_1.Tokens.ConnectionManager, () => ConnectionManager_1.ConnectionManager.getInstance());
-    container.registerFactory(diContainer_1.Tokens.ConnectionStore, () => ConnectionStore_1.ConnectionStore.getInstance());
-    container.registerFactory(diContainer_1.Tokens.SchemaProvider, () => SchemaProvider_1.SchemaProvider.getInstance());
-    container.registerFactory(diContainer_1.Tokens.SchemaCache, () => SchemaCache_1.SchemaCache.getInstance());
-    container.registerFactory(diContainer_1.Tokens.QueryExecutor, () => new QueryExecutor_1.QueryExecutor());
-    container.registerFactory(diContainer_1.Tokens.SafeQueryGuard, () => new SafeQueryGuard_1.SafeQueryGuard());
-    container.registerFactory(diContainer_1.Tokens.QueryHistory, () => new QueryHistory_1.QueryHistory());
-    container.registerFactory(diContainer_1.Tokens.SqlStatementDetector, () => new SqlStatementDetector_1.SqlStatementDetector());
+    container.registerSingleton(diContainer_1.Tokens.ConfigManager, configManager_1.createConfigManager);
+    container.registerSingleton(diContainer_1.Tokens.ParserEngine, SqlParserEngine_1.createParserEngine);
+    container.registerSingleton(diContainer_1.Tokens.RuleRegistry, RuleRegistry_1.createRuleRegistry);
+    container.registerSingleton(diContainer_1.Tokens.ErrorHandler, errorHandler_1.createErrorHandler);
+    container.registerSingleton(diContainer_1.Tokens.PerformanceMonitor, performanceMonitor_1.createPerformanceMonitor);
+    container.registerSingleton(diContainer_1.Tokens.DocumentAstCache, DocumentAstCache_1.createDocumentAstCache);
+    container.registerSingleton(diContainer_1.Tokens.ConnectionManager, ConnectionManager_1.createConnectionManager);
+    container.registerSingleton(diContainer_1.Tokens.ConnectionStore, ConnectionStore_1.createConnectionStore);
+    container.registerSingleton(diContainer_1.Tokens.SchemaProvider, SchemaProvider_1.createSchemaProvider);
+    container.registerSingleton(diContainer_1.Tokens.SchemaCache, SchemaCache_1.createSchemaCache);
 }
 function createModules() {
     return [
@@ -244,18 +230,21 @@ function createModules() {
                 const dbModule = new DatabaseModule_1.DatabaseModule(ctx);
                 await dbModule.initialize();
                 ctx.subscriptions.push({
-                    dispose: async () => await dbModule.dispose()
+                    dispose: async () => await dbModule.dispose(),
                 });
             } },
     ];
 }
 async function activate(context) {
+    // 首先注册服务
+    registerServicesToContainer();
     lazyProviders = createLazyProviders(context.extensionPath);
-    await perfMonitor.measureAsync('Extension.activate', async () => {
+    await (0, performanceMonitor_1.getPerformanceMonitor)().measureAsync('Extension.activate', async () => {
         console.log('SQL All in One: activating...');
         try {
             const modules = createModules();
-            for (const mod of modules) {
+            // 跳过第一个模块，因为我们已经手动调用了 registerServicesToContainer
+            for (const mod of modules.slice(1)) {
                 await safeRegisterAsync('register ' + mod.name, () => mod.register(context));
             }
             context.subscriptions.push((0, configManager_1.getConfigManager)());
@@ -263,18 +252,12 @@ async function activate(context) {
             console.log('SQL All in One: activation complete');
         }
         catch (e) {
-            errorHandler.handle(e, 'Extension activation', errorHandler_1.ErrorLevel.FATAL, errorHandler_1.ErrorCategory.CRITICAL);
+            (0, errorHandler_1.getErrorHandler)().handle(e, 'Extension activation', errorHandler_1.ErrorLevel.FATAL, errorHandler_1.ErrorCategory.CRITICAL);
         }
     });
 }
 function deactivate() {
     (0, diContainer_1.getContainer)().disposeAll();
     lazyProviders = null;
-    (0, SqlParserEngine_1.resetParserEngine)();
-    (0, RuleRegistry_1.resetRuleRegistry)();
-    SchemaCache_1.SchemaCache.resetInstance();
-    SchemaProvider_1.SchemaProvider.resetInstance();
-    ConnectionManager_1.ConnectionManager.resetInstance();
-    ConnectionStore_1.ConnectionStore.resetInstance();
 }
 //# sourceMappingURL=extension.js.map
