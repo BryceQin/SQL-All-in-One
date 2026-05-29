@@ -61,6 +61,7 @@ function createMockAdapter(executeFn: (sql: string) => Promise<any>): IDatabaseA
         getTableDDL: async () => '',
         getViewDDL: async () => '',
         getTableRowCount: async () => 0,
+        quoteIdentifier: (id: string) => '`' + id + '`',
     } as IDatabaseAdapter;
 }
 

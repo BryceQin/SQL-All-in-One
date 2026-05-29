@@ -54,6 +54,7 @@ export interface ISchemaAdapter {
     getTableRowCount(database: string, table: string, schema?: string): Promise<number>;
     getDialectCapabilities(): DialectCapabilities;
     getSupportedDataTypes(): DataTypeCategory[];
+    quoteIdentifier(identifier: string): string;
 }
 
 export interface IDatabaseAdapter extends IConnectionAdapter, IQueryAdapter, IMetadataAdapter, ISchemaAdapter {}

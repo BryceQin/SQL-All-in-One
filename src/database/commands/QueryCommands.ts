@@ -6,9 +6,10 @@ import { QueryHistory } from '../history/QueryHistory';
 import { SqlStatementDetector } from '../query/SqlStatementDetector';
 import type { SqlDialect } from '../../parser/dialectMapper';
 import { QueryResultPanel, FilterCondition } from '../../views/queryResult/QueryResultPanel';
-import type { QueryError, QueryRow, QueryParam } from '../adapters/IDatabaseAdapter';
+import type { QueryError, QueryRow } from '../adapters/IDatabaseAdapter';
 import { getSchemaCache } from '../schema/SchemaCache';
 import { getConfigManager } from '../../core/configManager';
+import { generateEditSql, executeInTransaction, getActiveAdapter } from '../query/DataEditService';
 
 
 function isDDLStatement(sql: string): boolean {
@@ -136,69 +137,25 @@ export function registerQueryCommands(
 
             queryResultPanel.onCommitChanges = async (changes, tableName, _database) => {
                 try {
-                    const connectionManager = getConnectionManager();
-                    const activeConfig = connectionManager.getActiveConnection();
-                    const adapter = activeConfig ? connectionManager.getAdapter(activeConfig.id) : undefined;
+                    const adapter = getActiveAdapter();
                     if (!adapter) {
                         return { success: false, errors: ['No active database connection'] };
                     }
 
-                    const sqlStatements: string[] = [];
-                    const allParams: QueryParam[][] = [];
-                    const sorted = [...changes].sort((a, b) => {
-                        const order: Record<string, number> = { delete: 0, update: 1, insert: 2 };
-                        return order[a.type] - order[b.type];
-                    });
-
-                    for (const change of sorted) {
-                        if (change.type === 'delete') {
-                            const conditions: string[] = [];
-                            const params: QueryParam[] = [];
-                            for (const [k, v] of Object.entries(change.primaryKey)) {
-                                conditions.push(`\`${k}\` = ?`);
-                                params.push({ name: k, value: v as string | number | boolean | null | undefined });
-                            }
-                            sqlStatements.push(`DELETE FROM \`${tableName}\` WHERE ${conditions.join(' AND ')}`);
-                            allParams.push(params);
-                        } else if (change.type === 'update') {
-                            const setClauses: string[] = [];
-                            const params: QueryParam[] = [];
-                            for (const [k, v] of Object.entries(change.changes || {})) {
-                                setClauses.push(`\`${k}\` = ?`);
-                                params.push({ name: k, value: (v as { old: unknown; new: unknown }).new as string | number | boolean | null | undefined });
-                            }
-                            for (const [k, v] of Object.entries(change.primaryKey)) {
-                                setClauses.push(`\`${k}\` = ?`);
-                                params.push({ name: k, value: v as string | number | boolean | null | undefined });
-                            }
-                            sqlStatements.push(`UPDATE \`${tableName}\` SET ${setClauses.slice(0, Object.keys(change.changes || {}).length).join(', ')} WHERE ${setClauses.slice(Object.keys(change.changes || {}).length).join(' AND ')}`);
-                            allParams.push(params);
-                        } else if (change.type === 'insert') {
-                            const currentResult = queryResultPanel?.getCurrentResult();
-                            if (!currentResult || !currentResult.rows[change.rowIndex]) continue;
-                            const row = currentResult.rows[change.rowIndex];
-                            const colNames = currentResult.columns.map(c => '`' + c.name + '`').join(', ');
-                            const placeholders = currentResult.columns.map(() => '?').join(', ');
-                            const vals: QueryParam[] = currentResult.columns.map(c => ({
-                                name: c.name,
-                                value: row[c.name] as string | number | boolean | null | undefined
-                            }));
-                            sqlStatements.push(`INSERT INTO \`${tableName}\` (${colNames}) VALUES (${placeholders})`);
-                            allParams.push(vals);
-                        }
+                    const currentResult = queryResultPanel?.getCurrentResult();
+                    if (!currentResult) {
+                        return { success: false, errors: ['No current result data'] };
                     }
 
-                    try {
-                        await adapter.beginTransaction();
-                        for (let i = 0; i < sqlStatements.length; i++) {
-                            await adapter.execute(sqlStatements[i], allParams[i]);
-                        }
-                        await adapter.commit();
-                        return { success: true };
-                    } catch (error) {
-                        try { await adapter.rollback(); } catch { /* rollback failed */ }
-                        return { success: false, errors: [(error as Error).message] };
-                    }
+                    const statements = generateEditSql(
+                        changes,
+                        tableName,
+                        currentResult.columns,
+                        currentResult.rows,
+                        adapter.quoteIdentifier.bind(adapter)
+                    );
+
+                    return await executeInTransaction(adapter, statements);
                 } catch (error) {
                     return { success: false, errors: [(error as Error).message] };
                 }
@@ -206,11 +163,10 @@ export function registerQueryCommands(
 
             queryResultPanel.onRequestForeignKeyOptions = async (_column, referencedTable, database) => {
                 try {
-                    const connectionManager = getConnectionManager();
-                    const activeConfig = connectionManager.getActiveConnection();
-                    const adapter = activeConfig ? connectionManager.getAdapter(activeConfig.id) : undefined;
+                    const adapter = getActiveAdapter();
                     if (!adapter) return [];
 
+                    const activeConfig = getConnectionManager().getActiveConnection();
                     const structure = await adapter.describeTable(database || activeConfig?.database || '', referencedTable);
                     const pkCol = structure.columns.find(c => c.isPrimaryKey);
                     let displayCol = structure.columns.find(c => c.comment && c.type.toUpperCase().includes('VARCHAR'));
@@ -219,7 +175,8 @@ export function registerQueryCommands(
 
                     if (!pkCol) return [];
 
-                    const sql = `SELECT \`${pkCol.name}\`, \`${displayCol?.name || pkCol.name}\` FROM \`${referencedTable}\` LIMIT 100`;
+                    const q = adapter.quoteIdentifier.bind(adapter);
+                    const sql = `SELECT ${q(pkCol.name)}, ${q(displayCol?.name || pkCol.name)} FROM ${q(referencedTable)} LIMIT 100`;
                     const result = await adapter.execute(sql);
 
                     return result.rows.map((row: QueryRow) => ({
@@ -234,37 +191,27 @@ export function registerQueryCommands(
             };
 
             queryResultPanel.onBeginTransaction = async () => {
-                const connectionManager = getConnectionManager();
-                const activeConfig = connectionManager.getActiveConnection();
-                const adapter = activeConfig ? connectionManager.getAdapter(activeConfig.id) : undefined;
+                const adapter = getActiveAdapter();
                 if (adapter) await adapter.beginTransaction();
             };
 
             queryResultPanel.onCommitTransaction = async () => {
-                const connectionManager = getConnectionManager();
-                const activeConfig = connectionManager.getActiveConnection();
-                const adapter = activeConfig ? connectionManager.getAdapter(activeConfig.id) : undefined;
+                const adapter = getActiveAdapter();
                 if (adapter) await adapter.commit();
             };
 
             queryResultPanel.onRollbackTransaction = async () => {
-                const connectionManager = getConnectionManager();
-                const activeConfig = connectionManager.getActiveConnection();
-                const adapter = activeConfig ? connectionManager.getAdapter(activeConfig.id) : undefined;
+                const adapter = getActiveAdapter();
                 if (adapter) await adapter.rollback();
             };
 
             queryResultPanel.onCreateSavepoint = async (name: string) => {
-                const connectionManager = getConnectionManager();
-                const activeConfig = connectionManager.getActiveConnection();
-                const adapter = activeConfig ? connectionManager.getAdapter(activeConfig.id) : undefined;
+                const adapter = getActiveAdapter();
                 if (adapter) await adapter.execute(`SAVEPOINT ${name}`);
             };
 
             queryResultPanel.onRollbackToSavepoint = async (name: string) => {
-                const connectionManager = getConnectionManager();
-                const activeConfig = connectionManager.getActiveConnection();
-                const adapter = activeConfig ? connectionManager.getAdapter(activeConfig.id) : undefined;
+                const adapter = getActiveAdapter();
                 if (adapter) await adapter.execute(`ROLLBACK TO SAVEPOINT ${name}`);
             };
 

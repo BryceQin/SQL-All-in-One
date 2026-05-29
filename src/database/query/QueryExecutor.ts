@@ -51,7 +51,7 @@ export class QueryExecutor {
         try {
             if (mergedOptions.database) {
                 try {
-                    await adapter.execute(`USE \`${mergedOptions.database}\``);
+                    await adapter.execute(`USE ${adapter.quoteIdentifier(mergedOptions.database)}`);
                 } catch {
                     // ignore USE failure
                 }

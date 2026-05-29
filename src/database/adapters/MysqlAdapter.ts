@@ -198,6 +198,10 @@ export class MysqlAdapter implements IDatabaseAdapter {
         };
     }
 
+    quoteIdentifier(identifier: string): string {
+        return '`' + identifier.replace(/`/g, '``') + '`';
+    }
+
     getSupportedDataTypes(): DataTypeCategory[] {
         return [
             {
