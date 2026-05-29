@@ -2,13 +2,14 @@ import type { FormatOptions } from '../FormatOptions';
 import Indentation from '../Indentation';
 import Layout, { WS } from '../Layout';
 import { formatKeyword } from './CommonFormatter';
-import { ExpressionFormatter } from './ExpressionFormatter';
+// import { ExpressionFormatter } from './ExpressionFormatter';
 
 export class CTEFormatter {
     private cfg: FormatOptions;
     private indent: Indentation;
     private layout: Layout;
-    private exprFmt: ExpressionFormatter;
+    // No longer used
+    // private _exprFmt: ExpressionFormatter;
     private subqueryFormatter: (stmt: any) => string;
 
     constructor(cfg: FormatOptions, indent: Indentation, subqueryFormatter: (stmt: any) => string) {
@@ -16,7 +17,7 @@ export class CTEFormatter {
         this.indent = indent;
         this.layout = new Layout(new Indentation(indent.getSingleIndent()));
         this.layout.indentation = indent;
-        this.exprFmt = new ExpressionFormatter(cfg, indent);
+        // this._exprFmt = new ExpressionFormatter(cfg, indent);
         this.subqueryFormatter = subqueryFormatter;
     }
 

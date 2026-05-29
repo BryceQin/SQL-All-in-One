@@ -30,7 +30,8 @@ export class QueryResultPanel {
 
     private readonly _panel: vscode.WebviewPanel;
     private readonly _extensionUri: vscode.Uri;
-    private readonly _context: vscode.ExtensionContext;
+    // Context is received but not used in this dialog
+    // private readonly __context: vscode.ExtensionContext;
     private _disposables: vscode.Disposable[] = [];
     private _currentResult: QueryResult | undefined;
 
@@ -78,11 +79,11 @@ export class QueryResultPanel {
     private constructor(
         panel: vscode.WebviewPanel,
         extensionUri: vscode.Uri,
-        context: vscode.ExtensionContext
+        _context: vscode.ExtensionContext
     ) {
         this._panel = panel;
         this._extensionUri = extensionUri;
-        this._context = context;
+        // this.__context = context;
 
         this._update();
 

@@ -44,7 +44,8 @@ const functionSigMap: Record<string, FunctionSignature[]> = {
 export class SqlCompletionProvider implements vscode.CompletionItemProvider {
     private dialectCache = new Map<string, Dialect>()
     private snippetItemsMap = new Map<string, vscode.CompletionItem[]>()
-    private snippetsLoaded: Promise<void>
+    // No longer used
+    // private _snippetsLoaded: Promise<void>
     private keywordItemsCache = new Map<string, vscode.CompletionItem[]>()
     private functionItemsCache = new Map<string, vscode.CompletionItem[]>()
     private schemaCompletionProvider: SchemaCompletionProvider
@@ -53,7 +54,7 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
     private readonly SCHEMA_DEBOUNCE_MS = 200
 
     constructor(extensionPath: string) {
-        this.snippetsLoaded = this.loadSnippets(extensionPath)
+        this.loadSnippets(extensionPath)
         this.schemaCompletionProvider = new SchemaCompletionProvider()
         this.configChangeDisposable = getConfigManager().onConfigChange(() => {
             this.keywordItemsCache.clear()

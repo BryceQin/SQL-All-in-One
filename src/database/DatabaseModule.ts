@@ -38,7 +38,7 @@ export class DatabaseModule {
         await connectionManager.initialize();
         
         this.treeProvider = new DatabaseTreeProvider(this.context);
-        const _treeView = vscode.window.createTreeView('sql-all-in-one.databaseExplorer', {
+        vscode.window.createTreeView('sql-all-in-one.databaseExplorer', {
             treeDataProvider: this.treeProvider,
             showCollapseAll: true
         });

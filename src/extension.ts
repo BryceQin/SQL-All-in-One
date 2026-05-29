@@ -88,12 +88,12 @@ function createLazyProviders(extensionPath: string): ProviderMap {
 const errorHandler = getErrorHandler()
 const perfMonitor = getPerformanceMonitor()
 
-function _safeRegister(label: string, fn: () => void): void {
-  errorHandler.try(fn, label, {
-    level: ErrorLevel.ERROR,
-    category: ErrorCategory.CRITICAL,
-  })
-}
+// function _safeRegister(label: string, fn: () => void): void {
+//   errorHandler.try(fn, label, {
+//     level: ErrorLevel.ERROR,
+//     category: ErrorCategory.CRITICAL,
+//   })
+// }
 
 async function safeRegisterAsync(label: string, fn: () => void | Promise<void>): Promise<void> {
   try {

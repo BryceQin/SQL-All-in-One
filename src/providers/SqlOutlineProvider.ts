@@ -296,9 +296,7 @@ export class SqlOutlineProvider implements vscode.DocumentSymbolProvider {
         return extractTableName(first as Record<string, unknown>)
     }
 
-    private extractNameFromTableObj(tableObj: Record<string, unknown>): string | null {
-        return extractTableName(tableObj)
-    }
+
 
     private extractCreateTableName(node: AstNode): string | null {
         const table = node.table
@@ -322,7 +320,7 @@ export class SqlOutlineProvider implements vscode.DocumentSymbolProvider {
     }
 
     private createSymbolFromAst(
-        document: vscode.TextDocument,
+        _document: vscode.TextDocument,
         name: string,
         detail: string,
         kind: vscode.SymbolKind,
@@ -342,7 +340,7 @@ export class SqlOutlineProvider implements vscode.DocumentSymbolProvider {
     }
 
     private processSelectColumns(
-        document: vscode.TextDocument,
+        _document: vscode.TextDocument,
         columns: unknown[]
     ): vscode.DocumentSymbol | null {
         if (!Array.isArray(columns) || columns.length === 0) return null
@@ -398,7 +396,7 @@ export class SqlOutlineProvider implements vscode.DocumentSymbolProvider {
     }
 
     private processFromClauses(
-        document: vscode.TextDocument,
+        _document: vscode.TextDocument,
         from: unknown[]
     ): vscode.DocumentSymbol[] {
         const symbols: vscode.DocumentSymbol[] = []

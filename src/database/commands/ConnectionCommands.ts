@@ -4,7 +4,7 @@ import { DatabaseTreeProvider } from '../../views/databaseExplorer/DatabaseTreeP
 import { ConnectionTreeNode } from '../../views/databaseExplorer/treeNodes';
 
 export function registerConnectionCommands(
-    context: vscode.ExtensionContext,
+    _context: vscode.ExtensionContext,
     treeProvider: DatabaseTreeProvider
 ): vscode.Disposable[] {
     const disposables: vscode.Disposable[] = [];

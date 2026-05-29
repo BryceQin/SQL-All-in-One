@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { ExplainPlan, OptimizationSuggestion } from '../database/query/ExplainPlan';
+import { ExplainPlan } from '../database/query/ExplainPlan';
 import type { ExplainResult, ExplainNode } from '../database/adapters/IDatabaseAdapter';
 
 suite('ExplainPlan - parseMysqlExplain', () => {

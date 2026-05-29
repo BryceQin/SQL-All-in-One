@@ -192,7 +192,7 @@ function getColumnsLoc(selectNode: AstNode): LocRange | null {
     return null
 }
 
-function getFromLoc(selectNode: AstNode, from: unknown): LocRange | null {
+function getFromLoc(_selectNode: AstNode, from: unknown): LocRange | null {
     if (!Array.isArray(from) || from.length === 0) return null
 
     let earliestStart: AstLocation | null = null
@@ -242,7 +242,7 @@ function getLocFromAny(item: unknown): LocRange | null {
     return null
 }
 
-function getArrayClauseLoc(selectNode: AstNode, key: string, clause: unknown): LocRange | null {
+function getArrayClauseLoc(_selectNode: AstNode, _key: string, clause: unknown): LocRange | null {
     if (Array.isArray(clause) && clause.length > 0) {
         let earliestStart: AstLocation | null = null
         let latestEnd: AstLocation | null = null
@@ -290,7 +290,7 @@ function getArrayClauseLoc(selectNode: AstNode, key: string, clause: unknown): L
             }
         }
 
-        const selectNodeLoc = getNodeLoc(selectNode)
+        const selectNodeLoc = getNodeLoc(_selectNode)
         if (selectNodeLoc) {
             return selectNodeLoc
         }

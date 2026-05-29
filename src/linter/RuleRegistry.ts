@@ -2,7 +2,7 @@ import * as vscode from 'vscode'
 import type { LintRule, RuleContext } from './rules/LintRule'
 import { loadRuleConfigs, type LintRuleConfig, type LintRuleDefinition } from './lintRules'
 import { getContainer, Tokens } from '../core/diContainer'
-import { RULES, RuleKey } from './rules/index'
+import { RULES } from './rules/index'
 
 const DEFAULT_CONFIG: LintRuleConfig = { enabled: false, severity: vscode.DiagnosticSeverity.Warning }
 

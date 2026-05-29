@@ -60,7 +60,7 @@ export class AstDiagnosticsProvider {
         })
     }
 
-    private checkCommaFrom(node: AstNode, sql: string, diagnostics: vscode.Diagnostic[]): void {
+    private checkCommaFrom(node: AstNode, _sql: string, diagnostics: vscode.Diagnostic[]): void {
         const columns = node.columns
         if (!Array.isArray(columns) || columns.length === 0) {
             return
@@ -92,7 +92,7 @@ export class AstDiagnosticsProvider {
         }
     }
 
-    private checkSelectNoColumns(node: AstNode, sql: string, diagnostics: vscode.Diagnostic[]): void {
+    private checkSelectNoColumns(node: AstNode, _sql: string, diagnostics: vscode.Diagnostic[]): void {
         const columns = node.columns
         if (columns === null || columns === undefined) {
             const loc = getNodeLocation(node)
@@ -126,7 +126,7 @@ export class AstDiagnosticsProvider {
         }
     }
 
-    private checkFromNoTable(node: AstNode, sql: string, diagnostics: vscode.Diagnostic[]): void {
+    private checkFromNoTable(node: AstNode, _sql: string, diagnostics: vscode.Diagnostic[]): void {
         const from = node.from
         if (from === null || from === undefined) {
             return
@@ -148,7 +148,7 @@ export class AstDiagnosticsProvider {
         }
     }
 
-    private checkOrderByNoColumn(node: AstNode, sql: string, diagnostics: vscode.Diagnostic[]): void {
+    private checkOrderByNoColumn(node: AstNode, _sql: string, diagnostics: vscode.Diagnostic[]): void {
         const orderby = node.orderby
         if (orderby === null || orderby === undefined) {
             return
@@ -170,7 +170,7 @@ export class AstDiagnosticsProvider {
         }
     }
 
-    private checkWhereNoCondition(node: AstNode, sql: string, diagnostics: vscode.Diagnostic[]): void {
+    private checkWhereNoCondition(node: AstNode, _sql: string, diagnostics: vscode.Diagnostic[]): void {
         const where = node.where
         if (where === null || where === undefined) {
             return
@@ -192,7 +192,7 @@ export class AstDiagnosticsProvider {
         }
     }
 
-    private checkGroupByNoColumn(node: AstNode, sql: string, diagnostics: vscode.Diagnostic[]): void {
+    private checkGroupByNoColumn(node: AstNode, _sql: string, diagnostics: vscode.Diagnostic[]): void {
         const groupby = node.groupby
         if (groupby === null || groupby === undefined) {
             return

@@ -19,7 +19,7 @@ export class SchemaHoverResolver implements HoverResolver {
 
     async resolve(
         word: string,
-        dialect: SqlLanguage,
+        _dialect: SqlLanguage,
         document: vscode.TextDocument,
         position: vscode.Position,
     ): Promise<vscode.Hover | null> {
@@ -65,7 +65,7 @@ export class SchemaHoverResolver implements HoverResolver {
 
     private findTableNameAtPosition(
         document: vscode.TextDocument,
-        position: vscode.Position,
+        _position: vscode.Position,
         word: string,
         dialect: SqlDialect,
     ): string | null {

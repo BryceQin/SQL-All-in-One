@@ -1164,7 +1164,7 @@ suite('Virtual Scroll Calculation', () => {
         const viewportHeight = 500;
         const scrollTop = totalHeight - viewportHeight;
 
-        const _startRow = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - BUFFER_ROWS);
+        Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - BUFFER_ROWS);
         const endRow = Math.min(totalRows, Math.ceil((scrollTop + viewportHeight) / ROW_HEIGHT) + BUFFER_ROWS);
 
         assert.strictEqual(endRow, totalRows);

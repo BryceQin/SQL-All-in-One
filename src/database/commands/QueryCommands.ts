@@ -203,7 +203,7 @@ export function registerQueryCommands(
                 }
             };
 
-            queryResultPanel.onRequestForeignKeyOptions = async (column, referencedTable, database) => {
+            queryResultPanel.onRequestForeignKeyOptions = async (_column, referencedTable, database) => {
                 try {
                     const connectionManager = ConnectionManager.getInstance();
                     const activeConfig = connectionManager.getActiveConnection();
