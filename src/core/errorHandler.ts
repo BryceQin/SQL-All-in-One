@@ -34,6 +34,20 @@ export class ErrorHandler {
     private errorHistory: FormatterError[] = [];
     private maxHistorySize = 100;
     private showNotifications = true;
+    private outputChannel: vscode.OutputChannel | undefined
+
+    private logToOutputChannel(error: FormatterError): void {
+        if (!this.outputChannel) {
+            this.outputChannel = vscode.window.createOutputChannel('SQL All in One Errors')
+        }
+        const timestamp = new Date(error.timestamp).toISOString()
+        const level = error.level.toUpperCase()
+        const category = error.category.toUpperCase()
+        this.outputChannel.appendLine(`[${timestamp}] [${level}] [${category}] ${error.context}: ${error.message}`)
+        if (error.stack) {
+            this.outputChannel.appendLine(error.stack)
+        }
+    }
 
     handle(
         error: unknown,
@@ -43,6 +57,7 @@ export class ErrorHandler {
     ): FormatterError {
         const formattedError = this.normalizeError(error, context, level, category);
         this.logError(formattedError);
+        this.logToOutputChannel(formattedError);
         this.notifyListeners(formattedError);
         this.maybeShowNotification(formattedError);
         return formattedError;
@@ -221,6 +236,14 @@ export class ErrorHandler {
                 }
                 break;
         }
+    }
+
+    dispose(): void {
+        if (this.outputChannel) {
+            this.outputChannel.dispose()
+        }
+        this.listeners.length = 0
+        this.errorHistory.length = 0
     }
 }
 
