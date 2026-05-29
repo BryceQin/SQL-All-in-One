@@ -2,7 +2,9 @@ import * as vscode from 'vscode';
 import type { LintRule, RuleContext } from './rules/LintRule';
 import { loadRuleConfigs, type LintRuleConfig, type LintRuleDefinition } from './lintRules';
 import { getContainer, Tokens } from '../core/diContainer';
+import { getConfigManager } from '../core/configManager';
 import { RULES } from './rules/index';
+import { tAny } from '../i18n';
 
 const DEFAULT_CONFIG: LintRuleConfig = { enabled: false, severity: vscode.DiagnosticSeverity.Warning };
 
@@ -59,8 +61,8 @@ export class RuleRegistry {
   getRuleDefinitions(): LintRuleDefinition[] {
     return Array.from(this.rules.values()).map(rule => ({
       id: rule.id,
-      name: rule.name,
-      description: rule.description,
+      name: tAny(rule.name),
+      description: tAny(rule.description),
       defaultSeverity: rule.defaultSeverity,
       defaultEnabled: rule.defaultEnabled,
       category: rule.category,
@@ -68,6 +70,10 @@ export class RuleRegistry {
   }
 
   registerAllRules(): void {
+    // Register lint rule keys with ConfigManager so it can build config snapshots dynamically
+    const lintKeys = Object.keys(RULES).map(k => `lint.${k}`);
+    getConfigManager().registerLintKeys(lintKeys);
+
     const configs = loadRuleConfigs();
 
     for (const [key, RuleClass] of Object.entries(RULES)) {

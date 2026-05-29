@@ -10,6 +10,16 @@ export class ConfigManager {
     private listeners: ConfigListener[] = [];
     private validators = new Map<string, (value: unknown) => boolean>();
     private lastConfigSnapshot: Map<string, unknown> = new Map();
+    private lintRuleKeys: string[] = [];
+
+    /**
+     * Register lint rule keys dynamically. Called by RuleRegistry during initialization
+     * to avoid hardcoding lint config keys and to avoid circular dependencies
+     * (ConfigManager in core/ should not import from linter/).
+     */
+    registerLintKeys(keys: string[]): void {
+        this.lintRuleKeys = keys;
+    }
 
     constructor() {
         this.disposables.push(
@@ -95,50 +105,23 @@ export class ConfigManager {
     private getConfigSnapshot(): Map<string, unknown> {
         const snapshot = new Map<string, unknown>();
         const config = vscode.workspace.getConfiguration('SQL-All-in-One');
-        const allKeys = [
+
+        // Fixed non-rule lint keys
+        const fixedKeys = [
             'enableLinter',
             'showErrorLevel',
             'showWarningLevel',
             'showInfoLevel',
-            'lint.avoid_select_star',
-            'lint.explicit_join_type',
-            'lint.limit_with_order_by',
-            'lint.avoid_column_count_mismatch',
-            'lint.missing_primary_key',
-            'lint.use_current_timestamp',
-            'lint.avoid_select_in_insert',
-            'lint.duplicate_column_aliases',
-            'lint.uppercase_keywords',
-            'lint.consistent_aliasing',
-            'lint.use_coalesce_over_isnull',
-            'lint.explicit_column_aliasing',
-            'lint.avoid_correlated_subqueries',
-            'lint.long_query_line',
-            'lint.missing_query_comment',
             'lint.missing_query_comment_threshold_line_count',
             'lint.missing_query_comment_threshold_join_count',
             'lint.missing_query_comment_threshold_subquery_count',
-            'lint.missing_column_comment',
             'lint.missing_column_comment_aggregate',
             'lint.missing_column_comment_external_table_exempt',
-            'lint.commented_out_code',
             'lint.commented_out_code_threshold_lines',
-            'lint.expired_todo',
             'lint.expired_todo_grace_period_days',
-            'lint.having_without_group_by',
-            'lint.limit_invalid_value',
-            'lint.reserved_word_identifier',
-            'lint.join_missing_on',
-            'lint.select_without_from',
-            'lint.misplaced_distinct',
-            'lint.aggregate_in_where',
-            'lint.subquery_without_alias',
-            'lint.suspicious_null_comparison',
-            'lint.incomplete_case',
-            'lint.redundant_distinct',
-            'lint.date_function_usage',
-            'lint.wildcard_in_update',
         ];
+
+        const allKeys = [...fixedKeys, ...this.lintRuleKeys];
         for (const key of allKeys) {
             snapshot.set(key, config.get(key));
         }

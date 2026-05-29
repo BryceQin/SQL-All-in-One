@@ -9,7 +9,7 @@ import { t } from '../../i18n'
 export class DuplicateColumnAliasesRule extends BaseRule {
     readonly id = 'duplicate_column_aliases'
     readonly applicableTypes = ['select']
-    readonly name = 'Duplicate Column Aliases'
+    readonly name = 'linter.duplicateAlias.name'
     readonly description = 'linter.duplicateAlias.description'
     readonly category = 'code-style'
     readonly defaultSeverity = vscode.DiagnosticSeverity.Warning

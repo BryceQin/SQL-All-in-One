@@ -9,8 +9,8 @@ import { t } from '../../i18n'
 export class LimitInvalidValueRule extends BaseRule {
     readonly id = 'limit_invalid_value'
     readonly applicableTypes = ['select']
-    readonly name = 'LIMIT Invalid Value'
-    readonly description = 'enhanced.limitWithoutNumber'
+    readonly name = 'linter.limitInvalidValue.name'
+    readonly description = 'linter.limitInvalidValue.description'
     readonly category = 'error-check'
     readonly defaultSeverity = vscode.DiagnosticSeverity.Error
     readonly defaultEnabled = true

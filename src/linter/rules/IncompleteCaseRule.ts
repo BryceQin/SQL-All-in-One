@@ -9,10 +9,10 @@ import { t } from '../../i18n'
 export class IncompleteCaseRule extends BaseRule {
     readonly id = 'incomplete_case'
     readonly applicableTypes = ['select']
-    readonly name = 'Incomplete CASE'
-    readonly description = 'enhanced.caseMissingEnd'
+    readonly name = 'linter.incompleteCase.name'
+    readonly description = 'linter.incompleteCase.description'
     readonly category = 'error-check'
-    readonly defaultSeverity = vscode.DiagnosticSeverity.Warning
+    readonly defaultSeverity = vscode.DiagnosticSeverity.Error
     readonly defaultEnabled = true
 
     check(context: RuleContext): vscode.Diagnostic[] {

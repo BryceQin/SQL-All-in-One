@@ -8,10 +8,10 @@ import { t } from '../../i18n'
 export class HavingWithoutGroupByRule extends BaseRule {
     readonly id = 'having_without_group_by'
     readonly applicableTypes = ['select']
-    readonly name = 'HAVING Without GROUP BY'
-    readonly description = 'enhanced.havingWithoutGroupBy'
-    readonly category = 'error-check'
-    readonly defaultSeverity = vscode.DiagnosticSeverity.Error
+    readonly name = 'linter.havingWithoutGroupBy.name'
+    readonly description = 'linter.havingWithoutGroupBy.description'
+    readonly category = 'best-practices'
+    readonly defaultSeverity = vscode.DiagnosticSeverity.Warning
     readonly defaultEnabled = true
 
     check(context: RuleContext): vscode.Diagnostic[] {

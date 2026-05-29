@@ -13,7 +13,7 @@ const SQL_KEYWORD_REGEXES = SQL_KEYWORDS_FOR_COMMENT_CHECK.map(kw => ({
 export class CommentedOutCodeRule extends BaseRule {
     readonly id = 'commented_out_code'
     readonly applicableTypes: string[] = []
-    readonly name = 'Commented Out Code'
+    readonly name = 'linter.commentedOutCode.name'
     readonly description = 'linter.commentedOutCode.description'
     readonly category = 'code-style'
     readonly defaultSeverity = vscode.DiagnosticSeverity.Information

@@ -9,7 +9,7 @@ import { getConfigManager } from '../../core/configManager'
 export class MissingColumnCommentRule extends BaseRule {
     readonly id = 'missing_column_comment'
     readonly applicableTypes = ['create']
-    readonly name = 'Missing Column Comment'
+    readonly name = 'linter.createTableMissingComment.name'
     readonly description = 'linter.createTableMissingComment.description'
     readonly category = 'best-practices'
     readonly defaultSeverity = vscode.DiagnosticSeverity.Warning

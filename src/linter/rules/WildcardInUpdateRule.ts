@@ -9,8 +9,8 @@ import { t } from '../../i18n'
 export class WildcardInUpdateRule extends BaseRule {
     readonly id = 'wildcard_in_update'
     readonly applicableTypes = ['update']
-    readonly name = 'Wildcard In UPDATE'
-    readonly description = 'enhanced.starInUpdate'
+    readonly name = 'linter.wildcardInUpdate.name'
+    readonly description = 'linter.wildcardInUpdate.description'
     readonly category = 'error-check'
     readonly defaultSeverity = vscode.DiagnosticSeverity.Error
     readonly defaultEnabled = true

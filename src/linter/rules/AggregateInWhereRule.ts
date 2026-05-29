@@ -9,8 +9,8 @@ import { t } from '../../i18n'
 export class AggregateInWhereRule extends BaseRule {
     readonly id = 'aggregate_in_where'
     readonly applicableTypes = ['select']
-    readonly name = 'Aggregate In WHERE'
-    readonly description = 'enhanced.aggregateInWhere'
+    readonly name = 'linter.aggregateInWhere.name'
+    readonly description = 'linter.aggregateInWhere.description'
     readonly category = 'error-check'
     readonly defaultSeverity = vscode.DiagnosticSeverity.Error
     readonly defaultEnabled = true

@@ -9,8 +9,8 @@ import { t } from '../../i18n'
 export class SubqueryWithoutAliasRule extends BaseRule {
     readonly id = 'subquery_without_alias'
     readonly applicableTypes = ['select']
-    readonly name = 'Subquery Without Alias'
-    readonly description = 'enhanced.subqueryMissingAlias'
+    readonly name = 'linter.subqueryWithoutAlias.name'
+    readonly description = 'linter.subqueryWithoutAlias.description'
     readonly category = 'best-practices'
     readonly defaultSeverity = vscode.DiagnosticSeverity.Warning
     readonly defaultEnabled = true

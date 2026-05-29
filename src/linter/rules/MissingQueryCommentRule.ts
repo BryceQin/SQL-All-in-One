@@ -9,7 +9,7 @@ import { getConfigManager } from '../../core/configManager'
 export class MissingQueryCommentRule extends BaseRule {
     readonly id = 'missing_query_comment'
     readonly applicableTypes = ['select']
-    readonly name = 'Missing Query Comment'
+    readonly name = 'linter.complexQueryComment.name'
     readonly description = 'linter.complexQueryComment.description'
     readonly category = 'best-practices'
     readonly defaultSeverity = vscode.DiagnosticSeverity.Warning

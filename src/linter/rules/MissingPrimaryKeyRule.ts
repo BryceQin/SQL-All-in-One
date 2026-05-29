@@ -8,7 +8,7 @@ import type { AstNode, AstLocation } from '../../parser/astTypes'
 export class MissingPrimaryKeyRule extends BaseRule {
     readonly id = 'missing_primary_key'
     readonly applicableTypes = ['create']
-    readonly name = 'Missing Primary Key'
+    readonly name = 'linter.createTableWithoutPK.name'
     readonly description = 'linter.createTableWithoutPK.description'
     readonly category = 'best-practices'
     readonly defaultSeverity = vscode.DiagnosticSeverity.Warning

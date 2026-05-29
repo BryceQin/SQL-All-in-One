@@ -6,8 +6,8 @@ import { getConfigManager } from '../../core/configManager'
 export class LongQueryLineRule extends BaseRule {
     readonly id = 'long_query_line'
     readonly applicableTypes: string[] = []
-    readonly name = 'Long Query Line'
-    readonly description = 'Avoid excessively long single-line queries'
+    readonly name = 'linter.longSingleLine.name'
+    readonly description = 'linter.longSingleLine.description'
     readonly category = 'code-style'
     readonly defaultSeverity = vscode.DiagnosticSeverity.Information
     readonly defaultEnabled = false

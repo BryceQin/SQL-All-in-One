@@ -11,8 +11,8 @@ const DATE_FUNCTION_NAMES = new Set(['date_add', 'date_sub', 'now', 'sysdate'])
 export class DateFunctionUsageRule extends BaseRule {
     readonly id = 'date_function_usage'
     readonly applicableTypes = ['select']
-    readonly name = 'Date Function Usage'
-    readonly description = 'enhanced.dateFunctionHint'
+    readonly name = 'linter.dateFunctionUsage.name'
+    readonly description = 'linter.dateFunctionUsage.description'
     readonly category = 'best-practices'
     readonly defaultSeverity = vscode.DiagnosticSeverity.Information
     readonly defaultEnabled = true

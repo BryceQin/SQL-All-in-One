@@ -7,7 +7,7 @@ import { getConfigManager } from '../../core/configManager'
 export class ExpiredTodoRule extends BaseRule {
     readonly id = 'expired_todo'
     readonly applicableTypes: string[] = []
-    readonly name = 'Expired TODO'
+    readonly name = 'linter.expiredTodo.name'
     readonly description = 'linter.expiredTodo.description'
     readonly category = 'best-practices'
     readonly defaultSeverity = vscode.DiagnosticSeverity.Information
