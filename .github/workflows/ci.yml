@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, dev-bryceqin]
   pull_request:
-    branches: [main, master]
+    branches: [main, master, dev-bryceqin]
 
 jobs:
   build:
@@ -24,3 +24,11 @@ jobs:
       - run: npm run compile
       - run: npm run lint
       - run: xvfb-run -a npm test
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          files: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
