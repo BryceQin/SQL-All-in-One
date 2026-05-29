@@ -14,6 +14,7 @@ import { registerConnectionCommands } from './commands/ConnectionCommands';
 import { registerQueryCommands } from './commands/QueryCommands';
 import { registerExportCommands } from './commands/ExportCommands';
 import { registerSchemaCommands } from './commands/SchemaCommands';
+import { getContainer, Tokens } from '../core/diContainer';
 
 export class DatabaseModule {
   private context: vscode.ExtensionContext;
@@ -43,11 +44,12 @@ export class DatabaseModule {
       showCollapseAll: true,
     });
 
-    this.queryExecutor = new QueryExecutor();
-    this.safeQueryGuard = new SafeQueryGuard();
-    this.queryHistory = new QueryHistory();
+    const container = getContainer();
+    this.queryExecutor = container.get<QueryExecutor>(Tokens.QueryExecutor);
+    this.safeQueryGuard = container.get<SafeQueryGuard>(Tokens.SafeQueryGuard);
+    this.queryHistory = container.get<QueryHistory>(Tokens.QueryHistory);
     this.queryHistory.initialize(this.context);
-    this.statementDetector = new SqlStatementDetector();
+    this.statementDetector = container.get<SqlStatementDetector>(Tokens.SqlStatementDetector);
     this.outputChannel = vscode.window.createOutputChannel('SQL All in One');
 
     this.setupSchemaCacheListeners();
