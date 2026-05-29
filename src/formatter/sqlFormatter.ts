@@ -120,8 +120,95 @@ export const format = (
     })
 }
 
-// AstFormatter 缓存：按方言缓存实例，避免每次 format 调用都重新创建格式化器
-const formatterCache = new Map<string, { optionsKey: string; formatter: AstFormatter }>()
+// AstFormatter 缓存：按方言和配置哈希缓存实例
+const formatterCache = new Map<string, AstFormatter>()
+
+function getFormatterCacheKey(dialect: string, options: FormatOptions): string {
+    // 只包含会影响格式化行为的配置项
+    const relevantOptions = {
+        tabWidth: options.tabWidth,
+        useTabs: options.useTabs,
+        keywordCase: options.keywordCase,
+        identifierCase: options.identifierCase,
+        dataTypeCase: options.dataTypeCase,
+        functionCase: options.functionCase,
+        indentStyle: options.indentStyle,
+        logicalOperatorNewline: options.logicalOperatorNewline,
+        expressionWidth: options.expressionWidth,
+        linesBetweenQueries: options.linesBetweenQueries,
+        denseOperators: options.denseOperators,
+        newlineBeforeSemicolon: options.newlineBeforeSemicolon,
+        commaPosition: options.commaPosition,
+        alignColumnDefinitions: options.alignColumnDefinitions,
+        newlineAfterSelect: options.newlineAfterSelect,
+        newlineAfterFrom: options.newlineAfterFrom,
+        newlineBeforeWhere: options.newlineBeforeWhere,
+        newlineAfterWhere: options.newlineAfterWhere,
+        newlineBeforeOrderBy: options.newlineBeforeOrderBy,
+        newlineBeforeGroupBy: options.newlineBeforeGroupBy,
+        newlineBeforeHaving: options.newlineBeforeHaving,
+        newlineBeforeLimit: options.newlineBeforeLimit,
+        maxLineLength: options.maxLineLength,
+        tabulateAlias: options.tabulateAlias,
+        reservedKeywordCase: options.reservedKeywordCase,
+        builtinFunctionCase: options.builtinFunctionCase,
+        newlineBeforeJoin: options.newlineBeforeJoin,
+        newlineAfterComma: options.newlineAfterComma,
+        alignWhereClauses: options.alignWhereClauses,
+        alignCaseStatements: options.alignCaseStatements,
+        breakAfterSelectItem: options.breakAfterSelectItem,
+        breakAfterFromItem: options.breakAfterFromItem,
+        spaceBeforeComma: options.spaceBeforeComma,
+        spaceInsideParentheses: options.spaceInsideParentheses,
+        trimTrailingSpaces: options.trimTrailingSpaces,
+        semicolonAtEnd: options.semicolonAtEnd,
+        singleLineMaxLength: options.singleLineMaxLength,
+        nullCase: options.nullCase,
+        booleanCase: options.booleanCase,
+        newlineAfterGroupBy: options.newlineAfterGroupBy,
+        newlineAfterHaving: options.newlineAfterHaving,
+        newlineAfterOrderBy: options.newlineAfterOrderBy,
+        newlineAfterLimit: options.newlineAfterLimit,
+        newlineAfterJoin: options.newlineAfterJoin,
+        newlineBeforeSetOperation: options.newlineBeforeSetOperation,
+        newlineAfterSetOperation: options.newlineAfterSetOperation,
+        newlineBeforeOn: options.newlineBeforeOn,
+        newlineBeforeUsing: options.newlineBeforeUsing,
+        newlineBeforeWith: options.newlineBeforeWith,
+        newlineAfterWith: options.newlineAfterWith,
+        indentCteBody: options.indentCteBody,
+        newlineBetweenCtes: options.newlineBetweenCtes,
+        cteCommaPosition: options.cteCommaPosition,
+        newlineAfterOver: options.newlineAfterOver,
+        newlineBeforePartitionBy: options.newlineBeforePartitionBy,
+        newlineAfterPartitionBy: options.newlineAfterPartitionBy,
+        newlineBeforeOrderByInWindow: options.newlineBeforeOrderByInWindow,
+        indentJoinConditions: options.indentJoinConditions,
+        alignOnClauses: options.alignOnClauses,
+        alignInsertColumns: options.alignInsertColumns,
+        alignInsertValuesGroups: options.alignInsertValuesGroups,
+        newlineAfterInsert: options.newlineAfterInsert,
+        newlineAfterInsertColumns: options.newlineAfterInsertColumns,
+        newlineBetweenValuesGroups: options.newlineBetweenValuesGroups,
+        newlineAfterCase: options.newlineAfterCase,
+        newlineAfterWhen: options.newlineAfterWhen,
+        newlineAfterThen: options.newlineAfterThen,
+        newlineAfterElse: options.newlineAfterElse,
+        indentWhen: options.indentWhen,
+        indentThen: options.indentThen,
+        newlineAfterIn: options.newlineAfterIn,
+        maxItemsInlineList: options.maxItemsInlineList,
+        subqueryParenStyle: options.subqueryParenStyle,
+        commentPosition: options.commentPosition,
+        blankLinesBeforeSetOperation: options.blankLinesBeforeSetOperation,
+        blankLinesAfterSetOperation: options.blankLinesAfterSetOperation,
+        newlineBeforeLateralView: options.newlineBeforeLateralView,
+        newlineBeforeDistributeBy: options.newlineBeforeDistributeBy,
+        newlineBeforeClusterBy: options.newlineBeforeClusterBy,
+        newlineBeforeSortBy: options.newlineBeforeSortBy
+    }
+    return `${dialect}:${JSON.stringify(relevantOptions)}`
+}
 
 export const formatDialect = (
     query: string,
@@ -139,14 +226,14 @@ export const formatDialect = (
         ...cfg,
     })
 
-    const optionsKey = JSON.stringify(options)
-    const cached = formatterCache.get(dialect)
-    if (cached && cached.optionsKey === optionsKey) {
-        return cached.formatter.format(query)
+    const cacheKey = getFormatterCacheKey(dialect, options)
+    let formatter = formatterCache.get(cacheKey)
+    
+    if (!formatter) {
+        formatter = new AstFormatter(options, dialect)
+        formatterCache.set(cacheKey, formatter)
     }
-
-    const formatter = new AstFormatter(options, dialect)
-    formatterCache.set(dialect, { optionsKey, formatter })
+    
     return formatter.format(query)
 }
 
