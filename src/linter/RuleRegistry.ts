@@ -92,6 +92,16 @@ export function getRuleRegistry(): RuleRegistry {
 
 export function resetRuleRegistry(): void {
     cachedRegistry = null
+    const container = getContainer()
+    if (container.has(Tokens.RuleRegistry)) {
+        try {
+            const registry = container.get<RuleRegistry>(Tokens.RuleRegistry)
+            if ((registry as any)._reset) {
+                (registry as any)._reset()
+            }
+        } catch {}
+        container.unregister(Tokens.RuleRegistry)
+    }
 }
 
 export function createRuleRegistry(): RuleRegistry {

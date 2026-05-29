@@ -1,5 +1,7 @@
 import * as vscode from 'vscode'
 import { t } from '../i18n'
+import { Tokens } from './diContainer'
+import { getSingleton } from './singleton'
 
 export enum ErrorLevel {
   DEBUG = 'debug',
@@ -178,8 +180,8 @@ export class ErrorHandler {
     for (const listener of this.listeners) {
       try {
         listener(error);
-      } catch {
-        // Ignore listener errors
+      } catch (listenerError) {
+        console.warn('[SQL All in One] Error in listener:', listenerError)
       }
     }
   }
@@ -205,13 +207,11 @@ export class ErrorHandler {
   }
 }
 
-let instance: ErrorHandler | null = null;
+// eslint-disable-next-line prefer-const
+let _errorHandlerInstance: ErrorHandler | null = null
 
 export function getErrorHandler(): ErrorHandler {
-  if (!instance) {
-    instance = new ErrorHandler();
-  }
-  return instance;
+    return getSingleton(Tokens.ErrorHandler, () => new ErrorHandler(), { current: _errorHandlerInstance })
 }
 
 export function handleError(error: unknown, context: string, category: ErrorCategory): void {

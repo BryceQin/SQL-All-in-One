@@ -5,6 +5,7 @@ import type { SqlDialect } from './dialectMapper';
 import type { ParseError } from './ParseError';
 import { LRUCache } from '../utils/lruCache';
 import { getPerformanceMonitor } from '../core/performanceMonitor';
+import { getContainer, Tokens } from '../core/diContainer';
 
 interface CacheEntry {
   version: number;
@@ -36,7 +37,7 @@ export class DocumentAstCache {
     error: ParseError | null;
   } {
     return this.perfMonitor.measure('DocumentAstCache.getOrParse', () => {
-      const key = document.uri.toString();
+      const key = `${document.uri.toString()}::${dialect}`;
       const version = document.version;
       const cached = this.cache.get(key);
 
@@ -73,7 +74,13 @@ let instance: DocumentAstCache | null = null;
 
 export function getDocumentAstCache(): DocumentAstCache {
   if (!instance) {
-    instance = new DocumentAstCache();
+    const container = getContainer();
+    if (container.hasInstance(Tokens.DocumentAstCache)) {
+      instance = container.get<DocumentAstCache>(Tokens.DocumentAstCache);
+    } else {
+      instance = new DocumentAstCache();
+      container.register(Tokens.DocumentAstCache, instance);
+    }
   }
   return instance
 }

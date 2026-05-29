@@ -3,8 +3,9 @@ import {
     SqlLanguage,
     FormatOptionsWithLanguage,
 } from "../formatter/sqlFormatter"
+import type { FormatOptions } from "../formatter/FormatOptions"
 
-const configMappings = [
+const configMappings: readonly (keyof FormatOptions)[] = [
     'keywordCase', 'dataTypeCase', 'functionCase', 'identifierCase',
     'indentStyle', 'logicalOperatorNewline', 'expressionWidth',
     'linesBetweenQueries', 'denseOperators', 'newlineBeforeSemicolon',
@@ -16,7 +17,7 @@ const configMappings = [
     'newlineAfterComma', 'alignWhereClauses', 'alignCaseStatements',
     'breakAfterSelectItem', 'breakAfterFromItem', 'spaceBeforeComma',
     'spaceInsideParentheses', 'trimTrailingSpaces', 'semicolonAtEnd',
-    'singleLineMaxLength', 'paramTypes', 'nullCase', 'booleanCase',
+    'singleLineMaxLength', 'nullCase', 'booleanCase',
     'newlineAfterGroupBy', 'newlineAfterHaving', 'newlineAfterOrderBy',
     'newlineAfterLimit', 'newlineAfterJoin', 'newlineBeforeSetOperation',
     'newlineAfterSetOperation', 'newlineBeforeOn', 'newlineBeforeUsing',
@@ -32,7 +33,7 @@ const configMappings = [
     'blankLinesBeforeSetOperation', 'blankLinesAfterSetOperation',
     'newlineBeforeLateralView', 'newlineBeforeDistributeBy',
     'newlineBeforeClusterBy', 'newlineBeforeSortBy',
-] as const
+]
 
 export const createConfig = (
     extensionSettings: vscode.WorkspaceConfiguration,
@@ -61,7 +62,7 @@ export const createConfig = (
 const createIndentationConfig = (
     extensionSettings: vscode.WorkspaceConfiguration,
     formattingOptions: vscode.FormattingOptions,
-): FormatOptionsWithLanguage => {
+): Pick<FormatOptions, 'tabWidth' | 'useTabs'> => {
     if (extensionSettings.get<boolean>("ignoreTabSettings")) {
         const tabSizeOverride = extensionSettings.get<number>("tabSizeOverride")
         return {

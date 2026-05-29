@@ -10,12 +10,23 @@ export class DIContainer {
     this.factories.set(token, factory);
   }
 
+  registerSingleton<T>(token: string, factory: () => T): void {
+    this.factories.set(token, () => {
+      if (this.services.has(token)) {
+        return this.services.get(token) as T;
+      }
+      const instance = factory();
+      this.services.set(token, instance);
+      return instance as T;
+    });
+  }
+
   get<T>(token: string): T {
     if (this.services.has(token)) {
       return this.services.get(token) as T;
     }
     if (this.factories.has(token)) {
-      const factory = this.factories.get(token)!;
+      const factory = this.factories.get(token) as () => T;
       const instance = factory();
       this.services.set(token, instance);
       return instance as T;
@@ -25,6 +36,23 @@ export class DIContainer {
 
   has(token: string): boolean {
     return this.services.has(token) || this.factories.has(token);
+  }
+
+  hasInstance(token: string): boolean {
+    return this.services.has(token);
+  }
+
+  tryGet<T>(token: string): T | undefined {
+    if (this.services.has(token)) {
+      return this.services.get(token) as T;
+    }
+    if (this.factories.has(token)) {
+      const factory = this.factories.get(token) as () => T;
+      const instance = factory();
+      this.services.set(token, instance);
+      return instance as T;
+    }
+    return undefined;
   }
 
   disposeAll(): void {
@@ -44,32 +72,44 @@ export class DIContainer {
   clear(): void {
     this.services.clear();
   }
+
+  unregister(token: string): void {
+    this.services.delete(token);
+  }
 }
 
 const container = new DIContainer();
 
 export const Tokens = {
-  ConfigManager: 'ConfigManager',
-  ParserEngine: 'ParserEngine',
-  DocumentAstCache: 'DocumentAstCache',
-  ErrorHandler: 'ErrorHandler',
-  PerformanceMonitor: 'PerformanceMonitor',
-  SqlDiagnosticsProvider: 'SqlDiagnosticsProvider',
-  StatusBarProvider: 'StatusBarProvider',
-  ParameterHighlighter: 'ParameterHighlighter',
-  CompletionProvider: 'CompletionProvider',
-  CodeActionProvider: 'CodeActionProvider',
-  FoldingRangeProvider: 'FoldingRangeProvider',
-  OutlineProvider: 'OutlineProvider',
-  HoverProvider: 'HoverProvider',
-  AstNavigator: 'AstNavigator',
-  DefinitionProvider: 'DefinitionProvider',
-  ReferenceProvider: 'ReferenceProvider',
-  RenameProvider: 'RenameProvider',
-  SqlLinter: 'SqlLinter',
-  AstDiagnosticsProvider: 'AstDiagnosticsProvider',
-  AstConverter: 'AstConverter',
-  RuleRegistry: 'RuleRegistry',
+    ConfigManager: 'ConfigManager',
+    ParserEngine: 'ParserEngine',
+    DocumentAstCache: 'DocumentAstCache',
+    ErrorHandler: 'ErrorHandler',
+    PerformanceMonitor: 'PerformanceMonitor',
+    SqlDiagnosticsProvider: 'SqlDiagnosticsProvider',
+    StatusBarProvider: 'StatusBarProvider',
+    ParameterHighlighter: 'ParameterHighlighter',
+    CompletionProvider: 'CompletionProvider',
+    CodeActionProvider: 'CodeActionProvider',
+    FoldingRangeProvider: 'FoldingRangeProvider',
+    OutlineProvider: 'OutlineProvider',
+    HoverProvider: 'HoverProvider',
+    AstNavigator: 'AstNavigator',
+    DefinitionProvider: 'DefinitionProvider',
+    ReferenceProvider: 'ReferenceProvider',
+    RenameProvider: 'RenameProvider',
+    SqlLinter: 'SqlLinter',
+    AstDiagnosticsProvider: 'AstDiagnosticsProvider',
+    AstConverter: 'AstConverter',
+    RuleRegistry: 'RuleRegistry',
+    ConnectionManager: 'ConnectionManager',
+    ConnectionStore: 'ConnectionStore',
+    QueryExecutor: 'QueryExecutor',
+    SafeQueryGuard: 'SafeQueryGuard',
+    QueryHistory: 'QueryHistory',
+    SqlStatementDetector: 'SqlStatementDetector',
+    SchemaProvider: 'SchemaProvider',
+    SchemaCache: 'SchemaCache',
 } as const;
 
 export type Token = typeof Tokens[keyof typeof Tokens];

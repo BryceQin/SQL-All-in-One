@@ -12,8 +12,8 @@ import { Lazy, lazy } from "./utils/lazy"
 import { getErrorHandler, ErrorLevel, ErrorCategory } from "./core/errorHandler"
 import { getPerformanceMonitor } from "./core/performanceMonitor"
 import { getContainer, Tokens } from "./core/diContainer"
-import { createParserEngine } from "./parser/SqlParserEngine"
-import { createRuleRegistry } from "./linter/RuleRegistry"
+import { createParserEngine, resetParserEngine } from "./parser/SqlParserEngine"
+import { createRuleRegistry, resetRuleRegistry } from "./linter/RuleRegistry"
 import { SqlCodeActionProvider } from "./providers/SqlCodeActionProvider"
 import { SqlDiagnosticsProvider } from "./providers/SqlDiagnosticsProvider"
 import { StatusBarProvider } from "./providers/StatusBarProvider"
@@ -26,10 +26,19 @@ import { AstNavigator } from "./navigation/AstNavigator"
 import { SqlDefinitionProvider } from "./navigation/SqlDefinitionProvider"
 import { SqlReferenceProvider } from "./navigation/SqlReferenceProvider"
 import { SqlRenameProvider } from "./navigation/SqlRenameProvider"
+import { DatabaseModule } from "./database/DatabaseModule"
+import { ConnectionManager } from "./database/connection/ConnectionManager"
+import { ConnectionStore } from "./database/connection/ConnectionStore"
+import { SchemaCache } from "./database/schema/SchemaCache"
+import { SchemaProvider } from "./database/schema/SchemaProvider"
+import { QueryExecutor } from "./database/query/QueryExecutor"
+import { SafeQueryGuard } from "./database/query/SafeQueryGuard"
+import { QueryHistory } from "./database/history/QueryHistory"
+import { SqlStatementDetector } from "./database/query/SqlStatementDetector"
 
 interface ExtensionModule {
   name: string
-  register: (context: vscode.ExtensionContext) => void
+  register: (context: vscode.ExtensionContext) => void | Promise<void>
 }
 
 interface ProviderMap {
@@ -79,11 +88,19 @@ function createLazyProviders(extensionPath: string): ProviderMap {
 const errorHandler = getErrorHandler()
 const perfMonitor = getPerformanceMonitor()
 
-function safeRegister(label: string, fn: () => void): void {
+function _safeRegister(label: string, fn: () => void): void {
   errorHandler.try(fn, label, {
     level: ErrorLevel.ERROR,
     category: ErrorCategory.CRITICAL,
   })
+}
+
+async function safeRegisterAsync(label: string, fn: () => void | Promise<void>): Promise<void> {
+  try {
+    await fn()
+  } catch (e) {
+    errorHandler.handle(e, label, ErrorLevel.ERROR, ErrorCategory.CRITICAL)
+  }
 }
 
 function registerCommands(context: vscode.ExtensionContext): void {
@@ -226,6 +243,17 @@ function registerServicesToContainer(): void {
   container.registerFactory(Tokens.ConfigManager, createConfigManager)
   container.registerFactory(Tokens.ParserEngine, createParserEngine)
   container.registerFactory(Tokens.RuleRegistry, createRuleRegistry)
+  container.registerFactory(Tokens.ErrorHandler, () => getErrorHandler())
+  container.registerFactory(Tokens.PerformanceMonitor, () => getPerformanceMonitor())
+  container.registerFactory(Tokens.DocumentAstCache, () => getDocumentAstCache())
+  container.registerFactory(Tokens.ConnectionManager, () => ConnectionManager.getInstance())
+  container.registerFactory(Tokens.ConnectionStore, () => ConnectionStore.getInstance())
+  container.registerFactory(Tokens.SchemaProvider, () => SchemaProvider.getInstance())
+  container.registerFactory(Tokens.SchemaCache, () => SchemaCache.getInstance())
+  container.registerFactory(Tokens.QueryExecutor, () => new QueryExecutor())
+  container.registerFactory(Tokens.SafeQueryGuard, () => new SafeQueryGuard())
+  container.registerFactory(Tokens.QueryHistory, () => new QueryHistory())
+  container.registerFactory(Tokens.SqlStatementDetector, () => new SqlStatementDetector())
 }
 
 function createModules(): ExtensionModule[] {
@@ -257,19 +285,26 @@ function createModules(): ExtensionModule[] {
         if (statusBar) ctx.subscriptions.push(statusBar)
       }
     }},
+    { name: 'database', register: async (ctx) => {
+      const dbModule = new DatabaseModule(ctx)
+      await dbModule.initialize()
+      ctx.subscriptions.push({
+        dispose: async () => await dbModule.dispose()
+      })
+    }},
   ]
 }
 
-export function activate(context: vscode.ExtensionContext): void {
+export async function activate(context: vscode.ExtensionContext): Promise<void> {
   lazyProviders = createLazyProviders(context.extensionPath)
 
-  perfMonitor.measure('Extension.activate', () => {
+  await perfMonitor.measureAsync('Extension.activate', async () => {
     console.log('SQL All in One: activating...')
 
     try {
       const modules = createModules()
       for (const mod of modules) {
-        safeRegister('register ' + mod.name, () => mod.register(context))
+        await safeRegisterAsync('register ' + mod.name, () => mod.register(context))
       }
 
       context.subscriptions.push(getConfigManager())
@@ -285,4 +320,10 @@ export function activate(context: vscode.ExtensionContext): void {
 export function deactivate(): void {
   getContainer().disposeAll()
   lazyProviders = null
+  resetParserEngine()
+  resetRuleRegistry()
+  SchemaCache.resetInstance()
+  SchemaProvider.resetInstance()
+  ConnectionManager.resetInstance()
+  ConnectionStore.resetInstance()
 }

@@ -1,3 +1,6 @@
+import { Tokens } from './diContainer';
+import { getSingleton } from './singleton';
+
 interface AggregateStats {
   count: number;
   totalDuration: number;
@@ -98,11 +101,9 @@ export class PerformanceMonitor {
   }
 }
 
-let instance: PerformanceMonitor | null = null;
+// eslint-disable-next-line prefer-const
+let _perfMonitorInstance: PerformanceMonitor | null = null
 
 export function getPerformanceMonitor(): PerformanceMonitor {
-  if (!instance) {
-    instance = new PerformanceMonitor();
-  }
-  return instance;
+    return getSingleton(Tokens.PerformanceMonitor, () => new PerformanceMonitor(), { current: _perfMonitorInstance })
 }

@@ -3,6 +3,7 @@ import { SqlLanguage } from "../formatter/sqlFormatter"
 import { createConfig } from "../core/config"
 import { formatEditorText } from "../utils/formatEditorText"
 import { handleError, ErrorCategory } from "../core/errorHandler"
+import { getPerformanceMonitor } from '../core/performanceMonitor'
 
 export class SqlFormattingProvider
     implements vscode.DocumentFormattingEditProvider
@@ -13,21 +14,23 @@ export class SqlFormattingProvider
         document: vscode.TextDocument,
         formattingOptions: vscode.FormattingOptions,
     ): vscode.TextEdit[] {
-        try {
-            return [
-                vscode.TextEdit.replace(
-                    this.fullDocumentRange(document),
-                    this.formatText(
-                        this.getAllText(document),
-                        formattingOptions,
-                        document.uri,
+        return getPerformanceMonitor().measure('SqlFormattingProvider.provideDocumentFormattingEdits', () => {
+            try {
+                return [
+                    vscode.TextEdit.replace(
+                        this.fullDocumentRange(document),
+                        this.formatText(
+                            this.getAllText(document),
+                            formattingOptions,
+                            document.uri,
+                        ),
                     ),
-                ),
-            ]
-        } catch (e) {
-            handleError(e, 'format document', ErrorCategory.CRITICAL)
-            return []
-        }
+                ]
+            } catch (e) {
+                handleError(e, 'format document', ErrorCategory.CRITICAL)
+                return []
+            }
+        })
     }
 
     private getAllText(document: vscode.TextDocument) {

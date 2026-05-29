@@ -27,13 +27,12 @@ export function walkAst(
     _key?: string | null,
 ): void {
     const stack: WalkTask[] = [{ node, parent: _parent ?? null, key: _key ?? null, phase: 'enter' }]
-    let depth = 0
 
     while (stack.length > 0) {
         const task = stack.pop()
         if (!task) break
 
-        if (depth > MAX_AST_DEPTH) {
+        if (stack.length > 10000) {
             console.warn('SQL All in One: AST depth exceeded maximum, stopping traversal')
             return
         }
@@ -42,7 +41,6 @@ export function walkAst(
             if (isAstNode(task.node)) {
                 visitor.leave?.(task.node, task.parent, task.key)
             }
-            depth--
             continue
         }
 
@@ -64,7 +62,6 @@ export function walkAst(
         }
 
         visitor.enter?.(task.node, task.parent, task.key)
-        depth++
 
         stack.push({ node: task.node, parent: task.parent, key: task.key, phase: 'leave' })
 

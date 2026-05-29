@@ -1,5 +1,5 @@
 {
-    "name": "hive-formatter",
+    "name": "sql-all-in-one",
     "displayName": "SQL All in One",
     "description": "SQL All in One - 强大的 SQL 格式化、智能补全、语法检查、DDL 转换 VSCode 插件，支持 Hive、MySQL、SparkSQL、FlinkSQL、PostgreSQL、BigQuery、SQLite 等多种 SQL 方言",
     "version": "1.11.0",
@@ -22,7 +22,33 @@
     "categories": [
         "Formatters",
         "Snippets",
-        "Other"
+        "Other",
+        "Databases"
+    ],
+    "viewsContainers": {
+        "activitybar": [
+            {
+                "id": "sql-all-in-one",
+                "title": "SQL All in One",
+                "icon": "resources/database-icon.svg"
+            }
+        ]
+    },
+    "views": {
+        "activitybar": [
+            {
+                "id": "sql-all-in-one.databaseExplorer",
+                "name": "Database Explorer",
+                "icon": "resources/database-icon.svg",
+                "when": "true"
+            }
+        ]
+    },
+    "viewsWelcome": [
+        {
+            "view": "sql-all-in-one.databaseExplorer",
+            "contents": "No database connections yet.\n[Add Connection](command:sql-all-in-one.addConnection)"
+        }
     ],
     "keywords": [
         "sql",
@@ -229,13 +255,125 @@
             {
                 "command": "sql-all-in-one.toggleAdvancedComment",
                 "title": "切换高级注释 (SQL All in One)"
+            },
+            {
+                "command": "sql-all-in-one.addConnection",
+                "title": "Add Database Connection"
+            },
+            {
+                "command": "sql-all-in-one.editConnection",
+                "title": "Edit Connection"
+            },
+            {
+                "command": "sql-all-in-one.removeConnection",
+                "title": "Remove Connection"
+            },
+            {
+                "command": "sql-all-in-one.connect",
+                "title": "Connect to Database"
+            },
+            {
+                "command": "sql-all-in-one.disconnect",
+                "title": "Disconnect from Database"
+            },
+            {
+                "command": "sql-all-in-one.testConnection",
+                "title": "Test Connection"
+            },
+            {
+                "command": "sql-all-in-one.refreshSchema",
+                "title": "Refresh Schema"
+            },
+            {
+                "command": "sql-all-in-one.viewTableData",
+                "title": "View Data"
+            },
+            {
+                "command": "sql-all-in-one.viewTableDDL",
+                "title": "View DDL"
+            },
+            {
+                "command": "sql-all-in-one.newQuery",
+                "title": "New Query"
+            },
+            {
+                "command": "sql-all-in-one.copyColumnName",
+                "title": "Copy Column Name"
+            },
+            {
+                "command": "sql-all-in-one.addToFavorites",
+                "title": "Add to Favorites"
+            },
+            {
+                "command": "sql-all-in-one.removeFromFavorites",
+                "title": "Remove from Favorites"
+            },
+            {
+                "command": "sql-all-in-one.revealInExplorer",
+                "title": "Reveal in Explorer"
+            },
+            {
+                "command": "sql-all-in-one.setDefaultDatabase",
+                "title": "Set as Default Database"
+            },
+            {
+                "command": "sql-all-in-one.executeQuery",
+                "title": "Execute SQL"
+            },
+            {
+                "command": "sql-all-in-one.executeSelection",
+                "title": "Execute Selected SQL"
+            },
+            {
+                "command": "sql-all-in-one.cancelQuery",
+                "title": "Cancel Running Query"
+            },
+            {
+                "command": "sql-all-in-one.showQueryHistory",
+                "title": "Show Query History"
+            },
+            {
+                "command": "sql-all-in-one.clearQueryHistory",
+                "title": "Clear Query History"
+            },
+            {
+                "command": "sql-all-in-one.exportCsv",
+                "title": "Export Result to CSV"
+            },
+            {
+                "command": "sql-all-in-one.exportJson",
+                "title": "Export Result to JSON"
+            },
+            {
+                "command": "sql-all-in-one.exportInsert",
+                "title": "Export Result to SQL INSERT"
+            },
+            {
+                "command": "sql-all-in-one.exportDdl",
+                "title": "Export Table DDL"
+            },
+            {
+                "command": "sql-all-in-one.designTable",
+                "title": "Design Table"
+            },
+            {
+                "command": "sql-all-in-one.editTable",
+                "title": "Edit Table Design"
+            },
+            {
+                "command": "sql-all-in-one.explainQuery",
+                "title": "Explain Query Execution Plan"
+            },
+            {
+                "command": "sql-all-in-one.importData",
+                "title": "Import Data"
             }
         ],
         "keybindings": [
             {
                 "command": "sql-all-in-one.replaceParameter",
-                "key": "ctrl+shift+r",
-                "mac": "cmd+shift+r",
+                "key": "ctrl+shift+p",
+                "mac": "cmd+shift+p",
                 "when": "editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite/"
             },
             {
@@ -248,6 +386,18 @@
                 "command": "sql-all-in-one.toggleAdvancedComment",
                 "key": "ctrl+shift+/",
                 "mac": "cmd+shift+/",
+                "when": "editorTextFocus && editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite/"
+            },
+            {
+                "command": "sql-all-in-one.executeQuery",
+                "key": "ctrl+r",
+                "mac": "cmd+r",
+                "when": "editorTextFocus && editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite/"
+            },
+            {
+                "command": "sql-all-in-one.executeSelection",
+                "key": "ctrl+shift+r",
+                "mac": "cmd+shift+r",
                 "when": "editorTextFocus && editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite/"
             }
         ],
@@ -808,6 +958,45 @@
                     "default": true,
                     "markdownDescription": "%sql-all-in-one.config.completion.commentSnippets.markdownDescription%"
                 },
+                "SQL-All-in-One.completion.schema": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "%sql-all-in-one.config.completion.schema.markdownDescription%"
+                },
+                "SQL-All-in-One.schemaCache.databaseTtl": {
+                    "type": "number",
+                    "default": 600,
+                    "minimum": 0,
+                    "markdownDescription": "%sql-all-in-one.config.schemaCache.databaseTtl.markdownDescription%"
+                },
+                "SQL-All-in-One.schemaCache.tableTtl": {
+                    "type": "number",
+                    "default": 300,
+                    "minimum": 0,
+                    "markdownDescription": "%sql-all-in-one.config.schemaCache.tableTtl.markdownDescription%"
+                },
+                "SQL-All-in-One.schemaCache.columnTtl": {
+                    "type": "number",
+                    "default": 120,
+                    "minimum": 0,
+                    "markdownDescription": "%sql-all-in-one.config.schemaCache.columnTtl.markdownDescription%"
+                },
+                "SQL-All-in-One.schemaCache.functionTtl": {
+                    "type": "number",
+                    "default": 600,
+                    "minimum": 0,
+                    "markdownDescription": "%sql-all-in-one.config.schemaCache.functionTtl.markdownDescription%"
+                },
+                "SQL-All-in-One.schemaCache.refreshOnDDL": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "%sql-all-in-one.config.schemaCache.refreshOnDDL.markdownDescription%"
+                },
+                "SQL-All-in-One.schemaCache.prefetchOnConnect": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "%sql-all-in-one.config.schemaCache.prefetchOnConnect.markdownDescription%"
+                },
                 "SQL-All-in-One.lint.missing_query_comment": {
                     "type": "object",
                     "default": {
@@ -1242,6 +1431,206 @@
                     "type": "boolean",
                     "default": true,
                     "markdownDescription": "%sql-all-in-one.config.newlineBeforeSortBy.markdownDescription%"
+                },
+                "SQL-All-in-One.query.maxRows": {
+                    "type": "number",
+                    "default": 1000,
+                    "minimum": 1,
+                    "description": "Maximum number of rows returned by query execution"
+                },
+                "SQL-All-in-One.query.timeout": {
+                    "type": "number",
+                    "default": 30000,
+                    "minimum": 1000,
+                    "description": "Query execution timeout in milliseconds"
+                },
+                "SQL-All-in-One.safetyGuard.level": {
+                    "type": "string",
+                    "enum": [
+                        "strict",
+                        "moderate",
+                        "off"
+                    ],
+                    "enumDescriptions": [
+                        "Intercept all rules (warnings + confirmations require confirmation)",
+                        "Only intercept confirmation-level operations (default)",
+                        "No interception"
+                    ],
+                    "default": "moderate",
+                    "description": "Safety guard level for dangerous SQL operations"
+                },
+                "SQL-All-in-One.history.maxEntries": {
+                    "type": "number",
+                    "default": 500,
+                    "minimum": 10,
+                    "maximum": 10000,
+                    "description": "Maximum number of query history entries"
+                },
+                "SQL-All-in-One.execution.batchMode": {
+                    "type": "string",
+                    "enum": [
+                        "sequential",
+                        "transaction"
+                    ],
+                    "default": "sequential",
+                    "description": "Batch execution mode: sequential or transaction"
+                },
+                "SQL-All-in-One.execution.onError": {
+                    "type": "string",
+                    "enum": [
+                        "stop",
+                        "continue"
+                    ],
+                    "default": "stop",
+                    "description": "Error handling strategy for batch execution"
+                },
+                "SQL-All-in-One.execution.saveProgress": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Save batch execution progress for resumption"
+                },
+                "SQL-All-in-One.execution.cancelRetries": {
+                    "type": "number",
+                    "default": 3,
+                    "minimum": 0,
+                    "maximum": 10,
+                    "description": "Number of retry attempts when cancelling a query"
+                },
+                "SQL-All-in-One.execution.cancelRetryDelay": {
+                    "type": "number",
+                    "default": 500,
+                    "minimum": 100,
+                    "description": "Delay between cancel retry attempts in milliseconds"
+                },
+                "SQL-All-in-One.query.pageSize": {
+                    "type": "number",
+                    "default": 100,
+                    "minimum": 10,
+                    "maximum": 1000,
+                    "description": "Number of rows per page in the query result panel"
+                },
+                "SQL-All-in-One.export.defaultFormat": {
+                    "type": "string",
+                    "enum": [
+                        "csv",
+                        "json",
+                        "insert",
+                        "ddl"
+                    ],
+                    "default": "csv",
+                    "description": "Default export format"
+                },
+                "SQL-All-in-One.export.csvDelimiter": {
+                    "type": "string",
+                    "default": ",",
+                    "description": "CSV delimiter character"
+                },
+                "SQL-All-in-One.export.csvEncoding": {
+                    "type": "string",
+                    "default": "utf-8",
+                    "description": "CSV file encoding"
+                },
+                "SQL-All-in-One.export.includeHeaders": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Include column headers in export"
+                },
+                "SQL-All-in-One.query.nullPlaceholder": {
+                    "type": "string",
+                    "default": "(NULL)",
+                    "description": "Display text for NULL values in the result panel"
+                },
+                "SQL-All-in-One.results.enablePreload": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable scroll preloading for large result sets"
+                },
+                "SQL-All-in-One.results.jsonPrettyPrint": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Auto-format JSON values in the result panel"
+                },
+                "SQL-All-in-One.results.dateFormat": {
+                    "type": "string",
+                    "enum": [
+                        "local",
+                        "utc",
+                        "relative"
+                    ],
+                    "default": "local",
+                    "description": "Date display format in the result panel"
+                },
+                "SQL-All-in-One.results.longTextThreshold": {
+                    "type": "number",
+                    "default": 200,
+                    "minimum": 50,
+                    "description": "Character threshold for truncating long text in the result panel"
+                },
+                "SQL-All-in-One.dataEditor.editMode": {
+                    "type": "string",
+                    "enum": [
+                        "readonly",
+                        "editable"
+                    ],
+                    "default": "readonly",
+                    "description": "Result panel edit mode (readonly or editable)"
+                },
+                "SQL-All-in-One.dataEditor.autoCommit": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Auto commit mode for data editor changes"
+                },
+                "SQL-All-in-One.dataEditor.defaultView": {
+                    "type": "string",
+                    "enum": [
+                        "grid",
+                        "form"
+                    ],
+                    "default": "grid",
+                    "description": "Default view mode for result panel (grid or form)"
+                },
+                "SQL-All-in-One.dataEditor.optimisticLocking": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enable optimistic locking for concurrent edit control"
+                },
+                "SQL-All-in-One.dataEditor.maxBlobPreviewSize": {
+                    "type": "number",
+                    "default": 5242880,
+                    "minimum": 0,
+                    "description": "Maximum BLOB preview size in bytes (default 5MB)"
+                },
+                "SQL-All-in-One.dataEditor.blobTextPreviewSize": {
+                    "type": "number",
+                    "default": 1048576,
+                    "minimum": 0,
+                    "description": "Maximum BLOB text preview size in bytes (default 1MB)"
+                },
+                "SQL-All-in-One.dataEditor.longTransactionWarning": {
+                    "type": "number",
+                    "default": 300,
+                    "minimum": 0,
+                    "description": "Long transaction warning threshold in seconds"
+                },
+                "SQL-All-in-One.dataEditor.showTransactionStatus": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Show transaction status in the status bar"
+                },
+                "SQL-All-in-One.dataEditor.enableValidation": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable data validation in the editor"
+                },
+                "SQL-All-in-One.dataEditor.validateOnEdit": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Validate data in real-time during editing"
+                },
+                "SQL-All-in-One.dataEditor.validateForeignKeys": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Validate foreign key references (may impact performance)"
                 }
             }
         },
@@ -1257,6 +1646,90 @@
                     "when": "editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite/",
                     "group": "1_comment@2"
                 }
+            ],
+            "view/title": [
+                {
+                    "command": "sql-all-in-one.refreshSchema",
+                    "when": "view == sql-all-in-one.databaseExplorer",
+                    "group": "navigation"
+                }
+            ],
+            "view/item/context": [
+                {
+                    "command": "sql-all-in-one.connect",
+                    "when": "view == sql-all-in-one.databaseExplorer && viewItem == connectionDisconnected",
+                    "group": "1_connection@1"
+                },
+                {
+                    "command": "sql-all-in-one.disconnect",
+                    "when": "view == sql-all-in-one.databaseExplorer && viewItem == connectionConnected",
+                    "group": "1_connection@1"
+                },
+                {
+                    "command": "sql-all-in-one.editConnection",
+                    "when": "view == sql-all-in-one.databaseExplorer && viewItem =~ /connection/",
+                    "group": "2_manage@1"
+                },
+                {
+                    "command": "sql-all-in-one.removeConnection",
+                    "when": "view == sql-all-in-one.databaseExplorer && viewItem =~ /connection/",
+                    "group": "2_manage@2"
+                },
+                {
+                    "command": "sql-all-in-one.viewTableData",
+                    "when": "view == sql-all-in-one.databaseExplorer && viewItem == table",
+                    "group": "3_table@1"
+                },
+                {
+                    "command": "sql-all-in-one.viewTableDDL",
+                    "when": "view == sql-all-in-one.databaseExplorer && viewItem == table",
+                    "group": "3_table@2"
+                },
+                {
+                    "command": "sql-all-in-one.editTable",
+                    "when": "view == sql-all-in-one.databaseExplorer && viewItem == table",
+                    "group": "3_table@3"
+                },
+                {
+                    "command": "sql-all-in-one.viewTableData",
+                    "when": "view == sql-all-in-one.databaseExplorer && viewItem == view",
+                    "group": "3_table@1"
+                },
+                {
+                    "command": "sql-all-in-one.newQuery",
+                    "when": "view == sql-all-in-one.databaseExplorer && viewItem =~ /database|connectionConnected/",
+                    "group": "4_query@1"
+                },
+                {
+                    "command": "sql-all-in-one.designTable",
+                    "when": "view == sql-all-in-one.databaseExplorer && viewItem =~ /database|connectionConnected/",
+                    "group": "4_query@2"
+                },
+                {
+                    "command": "sql-all-in-one.addToFavorites",
+                    "when": "view == sql-all-in-one.databaseExplorer && viewItem =~ /table|view/",
+                    "group": "5_favorites@1"
+                },
+                {
+                    "command": "sql-all-in-one.removeFromFavorites",
+                    "when": "view == sql-all-in-one.databaseExplorer && (viewItem == table || viewItem == view)",
+                    "group": "5_favorites@1"
+                },
+                {
+                    "command": "sql-all-in-one.copyColumnName",
+                    "when": "view == sql-all-in-one.databaseExplorer && viewItem == column",
+                    "group": "6_column@1"
+                },
+                {
+                    "command": "sql-all-in-one.setDefaultDatabase",
+                    "when": "view == sql-all-in-one.databaseExplorer && viewItem == database",
+                    "group": "7_database@1"
+                },
+                {
+                    "command": "sql-all-in-one.refreshSchema",
+                    "when": "view == sql-all-in-one.databaseExplorer && viewItem =~ /database|objectGroup|connectionConnected/",
+                    "group": "8_refresh@1"
+                }
             ]
         }
     },
@@ -1271,6 +1744,7 @@
     "devDependencies": {
         "@types/mocha": "^10.0.10",
         "@types/node": "22.x",
+        "@types/ssh2": "^1.15.5",
         "@types/vscode": "^1.85.0",
         "@vscode/test-cli": "^0.0.12",
         "@vscode/test-electron": "^2.5.2",
@@ -1282,6 +1756,7 @@
         "typescript-eslint": "^8.52.0"
     },
     "dependencies": {
-        "node-sql-parser": "^5.4.0"
+        "node-sql-parser": "^5.4.0",
+        "ssh2": "^1.17.0"
     }
 }

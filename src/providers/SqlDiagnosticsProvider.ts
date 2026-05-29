@@ -7,6 +7,7 @@ import { SqlLinter } from "./SqlLinter"
 import { AstDiagnosticsProvider } from "./AstDiagnosticsProvider"
 import { getDocumentAstCache } from "../parser/DocumentAstCache"
 import { getConfigManager } from "../core/configManager"
+import { getPerformanceMonitor } from '../core/performanceMonitor'
 
 export class SqlDiagnosticsProvider {
     private diagnosticCollection: vscode.DiagnosticCollection
@@ -52,54 +53,56 @@ export class SqlDiagnosticsProvider {
     }
 
     public provideDiagnostics(document: vscode.TextDocument, token?: vscode.CancellationToken): void {
-        const cfg = getConfigManager().getSectionKeys('', ['enableLinter', 'showErrorLevel', 'showWarningLevel', 'showInfoLevel'], {
-            enableLinter: true,
-            showErrorLevel: true,
-            showWarningLevel: true,
-            showInfoLevel: true,
-        })
-        const diagnostics: vscode.Diagnostic[] = []
-        const text = document.getText()
+        getPerformanceMonitor().measure('SqlDiagnosticsProvider.provideDiagnostics', () => {
+            const cfg = getConfigManager().getSectionKeys('', ['enableLinter', 'showErrorLevel', 'showWarningLevel', 'showInfoLevel'], {
+                enableLinter: true,
+                showErrorLevel: true,
+                showWarningLevel: true,
+                showInfoLevel: true,
+            })
+            const diagnostics: vscode.Diagnostic[] = []
+            const text = document.getText()
 
-        if (!text.trim()) {
-            this.diagnosticCollection.set(document.uri, [])
-            return
-        }
+            if (!text.trim()) {
+                this.diagnosticCollection.set(document.uri, [])
+                return
+            }
 
-        try {
-            const sqlDialect = toSqlDialect(document.languageId)
+            try {
+                const sqlDialect = toSqlDialect(document.languageId)
 
-            const parseResult = getDocumentAstCache().getOrParse(document, sqlDialect)
-            const astList = (parseResult.success && parseResult.ast)
-                ? (Array.isArray(parseResult.ast) ? parseResult.ast : [parseResult.ast])
-                : []
+                const parseResult = getDocumentAstCache().getOrParse(document, sqlDialect)
+                const astList = (parseResult.success && parseResult.ast)
+                    ? (Array.isArray(parseResult.ast) ? parseResult.ast : [parseResult.ast])
+                    : []
 
-            const astDiagnostics = this.astDiagnosticsProvider.check(text, sqlDialect, astList)
-            diagnostics.push(...astDiagnostics)
+                const astDiagnostics = this.astDiagnosticsProvider.check(text, sqlDialect, astList)
+                diagnostics.push(...astDiagnostics)
+
+                if (token?.isCancellationRequested) {
+                    return
+                }
+
+                if (cfg.enableLinter) {
+                    const lintDiagnostics = this.linter.lint(text, document, astList)
+                    const filteredLintDiagnostics = this.filterBySeverity(lintDiagnostics, cfg)
+                    diagnostics.push(...filteredLintDiagnostics)
+                }
+            } catch (error) {
+                if (cfg.showErrorLevel) {
+                    const diagnostic = this.createDiagnosticFromError(error, text, document)
+                    if (diagnostic) {
+                        diagnostics.push(diagnostic)
+                    }
+                }
+            }
 
             if (token?.isCancellationRequested) {
                 return
             }
 
-            if (cfg.enableLinter) {
-                const lintDiagnostics = this.linter.lint(text, document, astList)
-                const filteredLintDiagnostics = this.filterBySeverity(lintDiagnostics, cfg)
-                diagnostics.push(...filteredLintDiagnostics)
-            }
-        } catch (error) {
-            if (cfg.showErrorLevel) {
-                const diagnostic = this.createDiagnosticFromError(error, text, document)
-                if (diagnostic) {
-                    diagnostics.push(diagnostic)
-                }
-            }
-        }
-
-        if (token?.isCancellationRequested) {
-            return
-        }
-
-        this.diagnosticCollection.set(document.uri, diagnostics)
+            this.diagnosticCollection.set(document.uri, diagnostics)
+        })
     }
 
     private filterBySeverity(diagnostics: vscode.Diagnostic[], cfg: Record<string, boolean>): vscode.Diagnostic[] {

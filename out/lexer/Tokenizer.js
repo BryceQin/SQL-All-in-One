@@ -47,6 +47,9 @@ class Tokenizer {
     rulesBeforeParams;
     // 缓存：仅依赖 TokenizerOptions 的后置规则（无需每次 tokenize 重新构建）
     rulesAfterParams;
+    // 缓存：参数规则（基于 paramTypes 构建，按需缓存）
+    cachedParamRules = null;
+    cachedParamTypes;
     cfg;
     dialectName;
     constructor(cfg, dialectName) {
@@ -270,6 +273,33 @@ class Tokenizer {
     }
     // 优先使用 paramTypesOverrides（动态覆盖），其次使用 cfg.paramTypes（默认配置），最后兜底为空数组 /undefined，确保灵活性
     buildParamRules(cfg, paramTypesOverrides) {
+        const paramTypes = {
+            named: paramTypesOverrides?.named || cfg.paramTypes?.named || [],
+            quoted: paramTypesOverrides?.quoted || cfg.paramTypes?.quoted || [],
+            numbered: paramTypesOverrides?.numbered || cfg.paramTypes?.numbered || [],
+            positional: typeof paramTypesOverrides?.positional === 'boolean'
+                ? paramTypesOverrides.positional
+                : cfg.paramTypes?.positional,
+            custom: paramTypesOverrides?.custom || cfg.paramTypes?.custom || [],
+        };
+        if (this.cachedParamRules &&
+            this.cachedParamTypes &&
+            this.paramTypesEqual(this.cachedParamTypes, paramTypes)) {
+            return this.cachedParamRules;
+        }
+        this.cachedParamRules = this.buildParamRulesImpl(cfg, paramTypesOverrides);
+        this.cachedParamTypes = paramTypes;
+        return this.cachedParamRules;
+    }
+    paramTypesEqual(a, b) {
+        return (arraysEqual(a.named ?? [], b.named ?? []) &&
+            arraysEqual(a.quoted ?? [], b.quoted ?? []) &&
+            arraysEqual(a.numbered ?? [], b.numbered ?? []) &&
+            a.positional === b.positional &&
+            arraysEqual(a.custom ?? [], b.custom ?? []));
+    }
+    // 优先使用 paramTypesOverrides（动态覆盖），其次使用 cfg.paramTypes（默认配置），最后兜底为空数组 /undefined，确保灵活性
+    buildParamRulesImpl(cfg, paramTypesOverrides) {
         // Each dialect has its own default parameter types (if any),
         // but these can be overriden by the user of the library.
         const paramTypes = {
@@ -329,5 +359,14 @@ exports.default = Tokenizer;
 // SQL 关键字规范化处理，消除大小写差异和多余空格的影响
 function toCanonical(word) {
     return (0, utils_1.equalizeWhitespace)(word.toUpperCase());
+}
+function arraysEqual(a, b) {
+    if (a.length !== b.length)
+        return false;
+    for (let i = 0; i < a.length; i++) {
+        if (a[i] !== b[i])
+            return false;
+    }
+    return true;
 }
 //# sourceMappingURL=Tokenizer.js.map

@@ -7,7 +7,7 @@ export interface HoverResolver {
         dialect: SqlLanguage,
         document: vscode.TextDocument,
         position: vscode.Position
-    ): vscode.Hover | null
+    ): vscode.Hover | null | Promise<vscode.Hover | null>
 }
 
 export type KeywordCategory =

@@ -25,14 +25,16 @@ import { IncompleteCaseRule } from './IncompleteCaseRule'
 import { RedundantDistinctRule } from './RedundantDistinctRule'
 import { DateFunctionUsageRule } from './DateFunctionUsageRule'
 import { WildcardInUpdateRule } from './WildcardInUpdateRule'
+import { UppercaseKeywordsRule } from './UppercaseKeywordsRule'
+import { ConsistentAliasingRule } from './ConsistentAliasingRule'
+import { ExplicitColumnAliasingRule } from './ExplicitColumnAliasingRule'
+import { LongQueryLineRule } from './LongQueryLineRule'
 import type { LintRule } from './LintRule'
 import type { LintRuleConfig } from '../lintRules'
 
-export interface RuleConstructor {
-  new (config: LintRuleConfig): LintRule;
-}
+export type RuleConstructor = new (config: LintRuleConfig) => LintRule;
 
-export const RULES: { [key: string]: RuleConstructor } = {
+export const RULES: Record<string, RuleConstructor> = {
   'avoid_select_star': AvoidSelectStarRule,
   'explicit_join_type': ExplicitJoinTypeRule,
   'limit_with_order_by': LimitWithOrderByRule,
@@ -60,6 +62,10 @@ export const RULES: { [key: string]: RuleConstructor } = {
   'redundant_distinct': RedundantDistinctRule,
   'date_function_usage': DateFunctionUsageRule,
   'wildcard_in_update': WildcardInUpdateRule,
+  'uppercase_keywords': UppercaseKeywordsRule,
+  'consistent_aliasing': ConsistentAliasingRule,
+  'explicit_column_aliasing': ExplicitColumnAliasingRule,
+  'long_query_line': LongQueryLineRule,
 } as const;
 
 export type RuleKey = keyof typeof RULES;
