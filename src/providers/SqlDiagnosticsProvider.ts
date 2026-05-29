@@ -25,12 +25,15 @@ export class SqlDiagnosticsProvider {
         this.linter = new SqlLinter()
 
         this.configChangeDisposable = getConfigManager().onConfigChange(() => {
-            this.linter.resetConfig()
-            vscode.workspace.textDocuments.forEach((doc) => {
-                if (isSqlDocument(doc)) {
-                    this.provideDiagnostics(doc)
-                }
-            })
+            const configManager = getConfigManager()
+            if (configManager.checkLinterConfigChanged()) {
+                this.linter.resetConfig()
+                vscode.workspace.textDocuments.forEach((doc) => {
+                    if (isSqlDocument(doc)) {
+                        this.provideDiagnostics(doc)
+                    }
+                })
+            }
         })
     }
 
