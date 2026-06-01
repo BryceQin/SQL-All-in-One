@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline' {{CSP_SOURCE}}; script-src 'unsafe-inline' {{CSP_SOURCE}}; img-src data: {{CSP_SOURCE}}; font-src {{CSP_SOURCE}};">
   <title>Table Designer</title>
   <link rel="stylesheet" href="{{CSS_URI}}">
   {{CONFIG_INJECT}}
@@ -15,28 +16,28 @@
         <span id="headerTableName">Table Designer</span>
       </div>
       <div class="header-actions">
-        <button class="btn btn-primary" id="btnSave" onclick="handleSave()">Save</button>
-        <button class="btn btn-secondary" id="btnClose" onclick="handleClose()">&#10005;</button>
+        <button class="btn btn-primary" id="btnSave" data-action="handleSave">Save</button>
+        <button class="btn btn-secondary" id="btnClose" data-action="handleClose">&#10005;</button>
       </div>
     </div>
 
     <div class="tab-bar">
-      <button class="tab-btn active" data-tab="fields" onclick="switchTab('fields')">Fields</button>
-      <button class="tab-btn" data-tab="indexes" onclick="switchTab('indexes')">Indexes</button>
-      <button class="tab-btn" data-tab="foreignKeys" onclick="switchTab('foreignKeys')">Foreign Keys</button>
-      <button class="tab-btn" data-tab="triggers" onclick="switchTab('triggers')">Triggers</button>
-      <button class="tab-btn" data-tab="options" onclick="switchTab('options')">Options</button>
-      <button class="tab-btn" data-tab="sql" onclick="switchTab('sql')">SQL</button>
+      <button class="tab-btn active" data-tab="fields" data-action="switchTab" data-action-arg="fields">Fields</button>
+      <button class="tab-btn" data-tab="indexes" data-action="switchTab" data-action-arg="indexes">Indexes</button>
+      <button class="tab-btn" data-tab="foreignKeys" data-action="switchTab" data-action-arg="foreignKeys">Foreign Keys</button>
+      <button class="tab-btn" data-tab="triggers" data-action="switchTab" data-action-arg="triggers">Triggers</button>
+      <button class="tab-btn" data-tab="options" data-action="switchTab" data-action-arg="options">Options</button>
+      <button class="tab-btn" data-tab="sql" data-action="switchTab" data-action-arg="sql">SQL</button>
     </div>
 
     <div class="tab-content">
       <div class="tab-page active" id="pageFields">
         <div class="table-name-row">
           <label class="table-name-label">Table Name</label>
-          <input type="text" class="table-name-input" id="tableNameInput" oninput="updateTableName(this.value)">
+          <input type="text" class="table-name-input" id="tableNameInput" data-action="updateTableName">
         </div>
         <div class="fields-toolbar">
-          <button class="btn btn-secondary btn-add" onclick="addColumn()">+ Add Field</button>
+          <button class="btn btn-secondary btn-add" data-action="addColumn">+ Add Field</button>
         </div>
         <div class="fields-table-wrapper">
           <table class="design-table fields-table">
@@ -60,7 +61,7 @@
 
       <div class="tab-page" id="pageIndexes">
         <div class="fields-toolbar">
-          <button class="btn btn-secondary btn-add" onclick="addIndex()">+ Add Index</button>
+          <button class="btn btn-secondary btn-add" data-action="addIndex">+ Add Index</button>
         </div>
         <div class="fields-table-wrapper">
           <table class="design-table indexes-table">
@@ -80,7 +81,7 @@
 
       <div class="tab-page" id="pageForeignKeys">
         <div class="fields-toolbar">
-          <button class="btn btn-secondary btn-add" onclick="addForeignKey()">+ Add Foreign Key</button>
+          <button class="btn btn-secondary btn-add" data-action="addForeignKey">+ Add Foreign Key</button>
         </div>
         <div class="fields-table-wrapper">
           <table class="design-table fk-table">
@@ -102,7 +103,7 @@
 
       <div class="tab-page" id="pageTriggers">
         <div class="fields-toolbar">
-          <button class="btn btn-secondary btn-add" onclick="addTrigger()">+ Add Trigger</button>
+          <button class="btn btn-secondary btn-add" data-action="addTrigger">+ Add Trigger</button>
         </div>
         <div class="fields-table-wrapper">
           <table class="design-table triggers-table">
@@ -124,7 +125,7 @@
         <div class="options-form">
           <div class="option-row">
             <label class="option-label">Engine</label>
-            <select class="option-select" id="optEngine" onchange="updateOption('engine', this.value)">
+            <select class="option-select" id="optEngine" data-action="updateOption" data-action-arg="engine">
               <option value="InnoDB">InnoDB</option>
               <option value="MyISAM">MyISAM</option>
               <option value="MEMORY">MEMORY</option>
@@ -138,7 +139,7 @@
           </div>
           <div class="option-row">
             <label class="option-label">Charset</label>
-            <select class="option-select" id="optCharset" onchange="updateOption('charset', this.value)">
+            <select class="option-select" id="optCharset" data-action="updateOption" data-action-arg="charset">
               <option value="utf8mb4">utf8mb4</option>
               <option value="utf8">utf8</option>
               <option value="latin1">latin1</option>
@@ -153,7 +154,7 @@
           </div>
           <div class="option-row">
             <label class="option-label">Collation</label>
-            <select class="option-select" id="optCollation" onchange="updateOption('collation', this.value)">
+            <select class="option-select" id="optCollation" data-action="updateOption" data-action-arg="collation">
               <option value="utf8mb4_general_ci">utf8mb4_general_ci</option>
               <option value="utf8mb4_unicode_ci">utf8mb4_unicode_ci</option>
               <option value="utf8mb4_bin">utf8mb4_bin</option>
@@ -167,11 +168,11 @@
           </div>
           <div class="option-row">
             <label class="option-label">Auto Increment</label>
-            <input type="number" class="option-input" id="optAutoIncrement" oninput="updateOption('autoIncrement', this.value)">
+            <input type="number" class="option-input" id="optAutoIncrement" data-action="updateOption" data-action-arg="autoIncrement">
           </div>
           <div class="option-row">
             <label class="option-label">Table Comment</label>
-            <input type="text" class="option-input" id="optComment" oninput="updateOption('comment', this.value)">
+            <input type="text" class="option-input" id="optComment" data-action="updateOption" data-action-arg="comment">
           </div>
         </div>
       </div>
@@ -194,9 +195,9 @@
           <pre class="dialog-sql" id="saveSqlPreview"></pre>
         </div>
         <div class="dialog-footer">
-          <button class="btn btn-primary" onclick="confirmSave()">Execute</button>
-          <button class="btn btn-secondary" onclick="exportSqlOnly()">Export SQL Only</button>
-          <button class="btn btn-secondary" onclick="cancelSave()">Cancel</button>
+          <button class="btn btn-primary" data-action="confirmSave">Execute</button>
+          <button class="btn btn-secondary" data-action="exportSqlOnly">Export SQL Only</button>
+          <button class="btn btn-secondary" data-action="cancelSave">Cancel</button>
         </div>
       </div>
     </div>
@@ -208,9 +209,9 @@
           <div class="dialog-warning">Column order changes will rebuild the table, which may be slow for large tables. Consider exporting SQL and executing manually.</div>
         </div>
         <div class="dialog-footer">
-          <button class="btn btn-primary" onclick="confirmReorder()">Continue</button>
-          <button class="btn btn-secondary" onclick="exportReorderSql()">Export SQL Only</button>
-          <button class="btn btn-secondary" onclick="cancelReorder()">Cancel</button>
+          <button class="btn btn-primary" data-action="confirmReorder">Continue</button>
+          <button class="btn btn-secondary" data-action="exportReorderSql">Export SQL Only</button>
+          <button class="btn btn-secondary" data-action="cancelReorder">Cancel</button>
         </div>
       </div>
     </div>

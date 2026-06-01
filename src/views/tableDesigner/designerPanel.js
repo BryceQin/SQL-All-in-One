@@ -1042,26 +1042,68 @@ function escapeString(str) {
 }
 
 function highlightSql(sql) {
-    let keywords = ['CREATE', 'TABLE', 'ALTER', 'ADD', 'DROP', 'COLUMN', 'MODIFY', 'CHANGE', 'INDEX', 'UNIQUE', 'KEY', 'CONSTRAINT', 'FOREIGN', 'REFERENCES', 'ON', 'DELETE', 'UPDATE', 'CASCADE', 'RESTRICT', 'SET', 'NULL', 'NOT', 'NULL', 'DEFAULT', 'AUTO_INCREMENT', 'COMMENT', 'ENGINE', 'CHARSET', 'COLLATE', 'PRIMARY', 'TRIGGER', 'BEFORE', 'AFTER', 'INSERT', 'FOR', 'EACH', 'ROW', 'BEGIN', 'END', 'NO', 'ACTION', 'IF', 'EXISTS'];
+    let keywords = ['CREATE', 'TABLE', 'ALTER', 'ADD', 'DROP', 'COLUMN', 'MODIFY', 'CHANGE', 'INDEX', 'UNIQUE', 'KEY', 'CONSTRAINT', 'FOREIGN', 'REFERENCES', 'ON', 'DELETE', 'UPDATE', 'CASCADE', 'RESTRICT', 'SET', 'NULL', 'NOT', 'DEFAULT', 'AUTO_INCREMENT', 'COMMENT', 'ENGINE', 'CHARSET', 'COLLATE', 'PRIMARY', 'TRIGGER', 'BEFORE', 'AFTER', 'INSERT', 'FOR', 'EACH', 'ROW', 'BEGIN', 'END', 'NO', 'ACTION', 'IF', 'EXISTS'];
     let types = ['INT', 'INTEGER', 'TINYINT', 'SMALLINT', 'MEDIUMINT', 'BIGINT', 'FLOAT', 'DOUBLE', 'DECIMAL', 'NUMERIC', 'VARCHAR', 'CHAR', 'TEXT', 'TINYTEXT', 'MEDIUMTEXT', 'LONGTEXT', 'BLOB', 'TINYBLOB', 'MEDIUMBLOB', 'LONGBLOB', 'DATE', 'DATETIME', 'TIMESTAMP', 'TIME', 'YEAR', 'ENUM', 'SET', 'BOOLEAN', 'BOOL', 'BINARY', 'VARBINARY', 'JSON', 'GEOMETRY', 'POINT', 'LINESTRING', 'POLYGON'];
 
-    let escaped = sql.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    let keywordSet = {};
+    for (let i = 0; i < keywords.length; i++) keywordSet[keywords[i].toUpperCase()] = true;
+    let typeSet = {};
+    for (let i = 0; i < types.length; i++) typeSet[types[i].toUpperCase()] = true;
 
-    escaped = escaped.replace(/'([^']*)'/g, '<span class="sql-string">\'$1\'</span>');
+    let tokens = [];
+    let i = 0;
+    while (i < sql.length) {
+        if (sql[i] === "'") {
+            let end = sql.indexOf("'", i + 1);
+            if (end === -1) end = sql.length - 1;
+            tokens.push({ type: 'string', value: sql.substring(i, end + 1) });
+            i = end + 1;
+        } else if (sql[i] === '-' && sql[i + 1] === '-') {
+            let end = sql.indexOf('\n', i);
+            if (end === -1) end = sql.length;
+            tokens.push({ type: 'comment', value: sql.substring(i, end) });
+            i = end;
+        } else if (/[a-zA-Z_]/.test(sql[i])) {
+            let start = i;
+            while (i < sql.length && /[a-zA-Z0-9_]/.test(sql[i])) i++;
+            let word = sql.substring(start, i);
+            let upper = word.toUpperCase();
+            if (keywordSet[upper]) {
+                tokens.push({ type: 'keyword', value: word });
+            } else if (typeSet[upper]) {
+                tokens.push({ type: 'type', value: word });
+            } else {
+                tokens.push({ type: 'text', value: word });
+            }
+        } else {
+            let start = i;
+            while (i < sql.length && !/[a-zA-Z_']/.test(sql[i]) && !(sql[i] === '-' && sql[i + 1] === '-')) i++;
+            tokens.push({ type: 'text', value: sql.substring(start, i) });
+        }
+    }
 
-    let keywordRegex = new RegExp('\\b(' + keywords.join('|') + ')\\b', 'gi');
-    escaped = escaped.replace(keywordRegex, function(match) {
-        if (match.indexOf('sql-') !== -1) return match;
-        return '<span class="sql-keyword">' + match + '</span>';
-    });
+    function escapeHtml(str) {
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
 
-    let typeRegex = new RegExp('\\b(' + types.join('|') + ')\\b', 'gi');
-    escaped = escaped.replace(typeRegex, function(match) {
-        if (match.indexOf('sql-') !== -1) return match;
-        return '<span class="sql-type">' + match + '</span>';
-    });
+    let result = '';
+    for (let j = 0; j < tokens.length; j++) {
+        let tok = tokens[j];
+        let escaped = escapeHtml(tok.value);
+        if (tok.type === 'keyword') {
+            result += '<span class="sql-keyword">' + escaped + '</span>';
+        } else if (tok.type === 'type') {
+            result += '<span class="sql-type">' + escaped + '</span>';
+        } else if (tok.type === 'string') {
+            result += '<span class="sql-string">' + escaped + '</span>';
+        } else if (tok.type === 'comment') {
+            result += '<span class="sql-comment">' + escaped + '</span>';
+        } else {
+            result += escaped;
+        }
+    }
 
-    return escaped;
+    return result;
 }
 
 function validate() {
@@ -1333,4 +1375,46 @@ function handleColumnList(message) {
     if (state.activeTab === 'foreignKeys') renderForeignKeys();
 }
 
+function bindActions() {
+    document.querySelectorAll('[data-action]').forEach(function(el) {
+        var action = el.getAttribute('data-action');
+        var arg = el.getAttribute('data-action-arg');
+        if (action && typeof window[action] === 'function') {
+            if (el.tagName === 'SELECT') {
+                el.addEventListener('change', function() {
+                    if (action === 'updateOption') {
+                        window[action](arg, el.value);
+                    } else if (arg !== null) {
+                        window[action](arg);
+                    } else {
+                        window[action](el.value);
+                    }
+                });
+            } else if (el.tagName === 'INPUT' && (el.type === 'text' || el.type === 'number')) {
+                el.addEventListener('input', function() {
+                    if (action === 'updateOption') {
+                        window[action](arg, el.value);
+                    } else if (arg !== null) {
+                        window[action](arg);
+                    } else {
+                        window[action](el.value);
+                    }
+                });
+            } else {
+                el.addEventListener('click', function(e) {
+                    if (arg !== null) {
+                        var numArg = Number(arg);
+                        window[action](isNaN(numArg) || arg.trim() === '' ? arg : numArg);
+                    } else {
+                        window[action]();
+                    }
+                });
+            }
+        }
+        el.removeAttribute('data-action');
+        el.removeAttribute('data-action-arg');
+    });
+}
+
+bindActions();
 init();

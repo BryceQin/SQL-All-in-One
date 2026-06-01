@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline' {{CSP_SOURCE}}; script-src 'unsafe-inline' {{CSP_SOURCE}}; img-src data: {{CSP_SOURCE}}; font-src {{CSP_SOURCE}};">
   <title data-i18n="resultPanel.title">Query Result</title>
   <link rel="stylesheet" href="{{CSS_URI}}">
   {{CONFIG_INJECT}}
@@ -18,40 +19,40 @@
         <span class="header-time" id="headerTime"></span>
       </div>
       <div class="toolbar">
-        <button class="tb-btn" id="btnExecute" onclick="handleExecute()" data-i18n="resultPanel.execute" title="Execute">▶</button>
-        <button class="tb-btn" id="btnCancel" onclick="handleCancel()" data-i18n="resultPanel.cancel" title="Cancel">⏹</button>
-        <button class="tb-btn" id="btnRefresh" onclick="handleRefresh()" data-i18n="resultPanel.refresh" title="Refresh">🔄</button>
+        <button class="tb-btn" id="btnExecute" data-action="handleExecute" data-i18n="resultPanel.execute" title="Execute">▶</button>
+        <button class="tb-btn" id="btnCancel" data-action="handleCancel" data-i18n="resultPanel.cancel" title="Cancel">⏹</button>
+        <button class="tb-btn" id="btnRefresh" data-action="handleRefresh" data-i18n="resultPanel.refresh" title="Refresh">🔄</button>
         <div class="tb-dropdown" id="exportDropdown">
-          <button class="tb-btn" onclick="toggleExportMenu()" data-i18n="resultPanel.export" title="Export">📥▼</button>
+          <button class="tb-btn" data-action="toggleExportMenu" data-i18n="resultPanel.export" title="Export">📥▼</button>
           <div class="tb-dropdown-menu" id="exportMenu">
-            <div class="tb-dropdown-item" onclick="handleExport('csv')">CSV</div>
-            <div class="tb-dropdown-item" onclick="handleExport('json')">JSON</div>
-            <div class="tb-dropdown-item" onclick="handleExport('sql_insert')">SQL INSERT</div>
-            <div class="tb-dropdown-item" onclick="handleExport('ddl')">DDL</div>
+            <div class="tb-dropdown-item" data-action="handleExport" data-action-arg="csv">CSV</div>
+            <div class="tb-dropdown-item" data-action="handleExport" data-action-arg="json">JSON</div>
+            <div class="tb-dropdown-item" data-action="handleExport" data-action-arg="sql_insert">SQL INSERT</div>
+            <div class="tb-dropdown-item" data-action="handleExport" data-action-arg="ddl">DDL</div>
           </div>
         </div>
-        <button class="tb-btn" id="btnFilter" onclick="toggleFilterBar()" data-i18n="resultPanel.filter" title="Filter">🔍</button>
+        <button class="tb-btn" id="btnFilter" data-action="toggleFilterBar" data-i18n="resultPanel.filter" title="Filter">🔍</button>
         <span class="tb-separator"></span>
-        <button class="tb-btn" id="btnEditMode" onclick="toggleEditMode()" title="Toggle Edit Mode">🔒</button>
-        <button class="tb-btn" id="btnAddRow" onclick="addRow()" title="Add Row" disabled>＋</button>
-        <button class="tb-btn" id="btnDeleteRow" onclick="deleteRow()" title="Delete Row" disabled>🗑</button>
-        <button class="tb-btn" id="btnCommit" onclick="commitChanges()" title="Commit Changes" disabled>✅</button>
-        <button class="tb-btn" id="btnRollback" onclick="rollbackChanges()" title="Rollback Changes" disabled>↩</button>
+        <button class="tb-btn" id="btnEditMode" data-action="toggleEditMode" title="Toggle Edit Mode">🔒</button>
+        <button class="tb-btn" id="btnAddRow" data-action="addRow" title="Add Row" disabled>＋</button>
+        <button class="tb-btn" id="btnDeleteRow" data-action="deleteRow" title="Delete Row" disabled>🗑</button>
+        <button class="tb-btn" id="btnCommit" data-action="commitChanges" title="Commit Changes" disabled>✅</button>
+        <button class="tb-btn" id="btnRollback" data-action="rollbackChanges" title="Rollback Changes" disabled>↩</button>
         <span class="tb-separator"></span>
-        <button class="tb-btn" id="btnBeginTx" onclick="beginTransaction()" title="Begin Transaction" disabled>🔒</button>
-        <button class="tb-btn" id="btnSavepoint" onclick="createSavepoint()" title="Create Savepoint" disabled>💾</button>
-        <button class="tb-btn" id="btnRollbackToSp" onclick="rollbackToSavepoint()" title="Rollback to Savepoint" disabled>↪️</button>
+        <button class="tb-btn" id="btnBeginTx" data-action="beginTransaction" title="Begin Transaction" disabled>🔒</button>
+        <button class="tb-btn" id="btnSavepoint" data-action="createSavepoint" title="Create Savepoint" disabled>💾</button>
+        <button class="tb-btn" id="btnRollbackToSp" data-action="rollbackToSavepoint" title="Rollback to Savepoint" disabled>↪️</button>
         <span class="tb-separator"></span>
-        <button class="tb-btn" id="btnGridView" onclick="switchView('grid')" title="Grid View">📊</button>
-        <button class="tb-btn" id="btnFormView" onclick="switchView('form')" title="Form View">📋</button>
+        <button class="tb-btn" id="btnGridView" data-action="switchView" data-action-arg="grid" title="Grid View">📊</button>
+        <button class="tb-btn" id="btnFormView" data-action="switchView" data-action-arg="form" title="Form View">📋</button>
       </div>
     </div>
 
     <div class="filter-bar" id="filterBar">
       <div class="filter-conditions" id="filterConditions">
         <div class="filter-row" data-index="0">
-          <select class="filter-col" onchange="onFilterColChange(this, 0)"></select>
-          <select class="filter-op" onchange="onFilterOpChange(this, 0)">
+          <select class="filter-col" data-action="onFilterColChange" data-action-arg="0"></select>
+          <select class="filter-op" data-action="onFilterOpChange" data-action-arg="0">
             <option value="=">=</option>
             <option value="!=">!=</option>
             <option value=">">&gt;</option>
@@ -67,12 +68,12 @@
             <option value="BETWEEN">BETWEEN</option>
           </select>
           <input type="text" class="filter-val" placeholder="Value">
-          <button class="filter-remove-btn" onclick="removeFilterCondition(0)">✕</button>
+          <button class="filter-remove-btn" data-action="removeFilterCondition" data-action-arg="0">✕</button>
         </div>
       </div>
       <div class="filter-actions">
-        <button class="btn btn-secondary" onclick="addFilterCondition()" data-i18n="resultPanel.addCondition">+ Add Condition</button>
-        <button class="btn btn-primary" onclick="applyFilter()" data-i18n="resultPanel.applyFilter">Apply</button>
+        <button class="btn btn-secondary" data-action="addFilterCondition" data-i18n="resultPanel.addCondition">+ Add Condition</button>
+        <button class="btn btn-primary" data-action="applyFilter" data-i18n="resultPanel.applyFilter">Apply</button>
       </div>
     </div>
 
@@ -95,9 +96,9 @@
         </div>
         <div class="form-container" id="formContainer" style="display:none;">
             <div class="form-nav">
-                <button class="form-nav-btn" id="btnPrevRecord" onclick="navigateRecord(-1)">◀</button>
+                <button class="form-nav-btn" id="btnPrevRecord" data-action="navigateRecord" data-action-arg="-1">◀</button>
                 <span class="form-record-info" id="formRecordInfo">0/0</span>
-                <button class="form-nav-btn" id="btnNextRecord" onclick="navigateRecord(1)">▶</button>
+                <button class="form-nav-btn" id="btnNextRecord" data-action="navigateRecord" data-action-arg="1">▶</button>
             </div>
             <div class="form-fields" id="formFields"></div>
         </div>
@@ -118,20 +119,20 @@
 
     <div class="bottom-bar">
       <div class="tab-bar">
-        <button class="tab-btn active" data-tab="pageResult" onclick="switchTab('pageResult')" data-i18n="resultPanel.resultSet">结果集</button>
-        <button class="tab-btn" data-tab="pageMessages" onclick="switchTab('pageMessages')" data-i18n="resultPanel.messages">消息</button>
-        <button class="tab-btn" data-tab="pageHistory" onclick="switchTab('pageHistory')" data-i18n="resultPanel.history">历史</button>
+        <button class="tab-btn active" data-tab="pageResult" data-action="switchTab" data-action-arg="pageResult" data-i18n="resultPanel.resultSet">结果集</button>
+        <button class="tab-btn" data-tab="pageMessages" data-action="switchTab" data-action-arg="pageMessages" data-i18n="resultPanel.messages">消息</button>
+        <button class="tab-btn" data-tab="pageHistory" data-action="switchTab" data-action-arg="pageHistory" data-i18n="resultPanel.history">历史</button>
       </div>
       <div class="status-bar">
         <span class="status-info" id="statusInfo"></span>
         <span class="edit-status" id="editStatus"></span>
         <span class="transaction-status" id="transactionStatus"></span>
         <div class="pagination" id="pagination">
-          <button class="page-btn" id="btnPrevPage" onclick="changePage(-1)">◀</button>
+          <button class="page-btn" id="btnPrevPage" data-action="changePage" data-action-arg="-1">◀</button>
           <span class="page-info" id="pageInfo"></span>
-          <button class="page-btn" id="btnNextPage" onclick="changePage(1)">▶</button>
-          <input type="number" class="page-jump" id="pageJump" min="1" onchange="jumpToPage(this.value)">
-          <button class="page-btn" onclick="jumpToPage(document.getElementById('pageJump').value)" data-i18n="resultPanel.go">Go</button>
+          <button class="page-btn" id="btnNextPage" data-action="changePage" data-action-arg="1">▶</button>
+          <input type="number" class="page-jump" id="pageJump" min="1" data-action="jumpToPage">
+          <button class="page-btn" data-action="jumpToPage" data-i18n="resultPanel.go">Go</button>
         </div>
       </div>
     </div>
@@ -144,8 +145,8 @@
                 <div class="dialog-summary" id="commitSummary"></div>
             </div>
             <div class="dialog-footer">
-                <button class="btn btn-primary" onclick="confirmCommit()">执行</button>
-                <button class="btn btn-secondary" onclick="cancelCommit()">取消</button>
+                <button class="btn btn-primary" data-action="confirmCommit">执行</button>
+                <button class="btn btn-secondary" data-action="cancelCommit">取消</button>
             </div>
         </div>
     </div>
@@ -154,14 +155,14 @@
             <div class="dialog-header">BLOB 预览</div>
             <div class="dialog-body">
                 <div class="blob-tabs">
-                    <button class="blob-tab active" onclick="switchBlobTab('text')">文本</button>
-                    <button class="blob-tab" onclick="switchBlobTab('hex')">十六进制</button>
-                    <button class="blob-tab" onclick="switchBlobTab('image')">图片</button>
+                    <button class="blob-tab active" data-action="switchBlobTab" data-action-arg="text">文本</button>
+                    <button class="blob-tab" data-action="switchBlobTab" data-action-arg="hex">十六进制</button>
+                    <button class="blob-tab" data-action="switchBlobTab" data-action-arg="image">图片</button>
                 </div>
                 <div class="blob-content" id="blobContent"></div>
             </div>
             <div class="dialog-footer">
-                <button class="btn btn-secondary" onclick="closeBlobDialog()">关闭</button>
+                <button class="btn btn-secondary" data-action="closeBlobDialog">关闭</button>
             </div>
         </div>
     </div>

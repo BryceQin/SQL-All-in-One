@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline' {{CSP_SOURCE}}; script-src 'unsafe-inline' {{CSP_SOURCE}}; img-src data: {{CSP_SOURCE}}; font-src {{CSP_SOURCE}};">
   <title>EXPLAIN Plan</title>
   <link rel="stylesheet" href="{{CSS_URI}}">
 </head>
@@ -16,11 +17,11 @@
         <span class="header-sql" id="headerSql" title=""></span>
       </div>
       <div class="toolbar">
-        <button class="tb-btn active" id="btnVisual" onclick="switchView('visual')" title="Visual Tree">&#x1F333; Visual</button>
-        <button class="tb-btn" id="btnTable" onclick="switchView('table')" title="Table View">&#x1F4CB; Table</button>
-        <button class="tb-btn" id="btnJson" onclick="switchView('json')" title="JSON View">{ } JSON</button>
+        <button class="tb-btn active" id="btnVisual" data-action="switchView" data-action-arg="visual" title="Visual Tree">&#x1F333; Visual</button>
+        <button class="tb-btn" id="btnTable" data-action="switchView" data-action-arg="table" title="Table View">&#x1F4CB; Table</button>
+        <button class="tb-btn" id="btnJson" data-action="switchView" data-action-arg="json" title="JSON View">{ } JSON</button>
         <div class="tb-sep"></div>
-        <button class="tb-btn" id="btnAnalyze" onclick="runAnalyze()" title="Run EXPLAIN ANALYZE">&#x26A1; Analyze</button>
+        <button class="tb-btn" id="btnAnalyze" data-action="runAnalyze" title="Run EXPLAIN ANALYZE">&#x26A1; Analyze</button>
       </div>
     </div>
 

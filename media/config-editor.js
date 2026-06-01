@@ -1,7 +1,10 @@
-        (function() {
-    var dict = window.__I18N__ || {};
-    applyI18nDict(dict);
-})();
+        var i18nData = { zh: {}, en: {}, lang: 'zh' };
+
+function getI18nDict() {
+    return i18nData.lang === 'en' ? i18nData.en : i18nData.zh;
+}
+
+applyI18nDict(getI18nDict());
 
 function applyI18nDict(dict) {
     if (!dict) return;
@@ -24,15 +27,8 @@ function applyI18nDict(dict) {
 }
 
 function changeLanguage(lang) {
-    var dict;
-    if (lang === 'en') {
-        dict = window.__I18N_EN__ || {};
-    } else {
-        dict = window.__I18N_ZH__ || {};
-    }
-    window.__I18N__ = dict;
-    window.__LANG__ = lang;
-    applyI18nDict(dict);
+    i18nData.lang = lang;
+    applyI18nDict(getI18nDict());
     document.documentElement.lang = lang;
     vscode.postMessage({ command: 'changeLanguage', lang: lang });
 }
@@ -165,7 +161,7 @@ function changeLanguage(lang) {
                 lintCommentedOutCodeEnabled: true,
                 lintCommentedOutCodeSeverity: 'information',
                 lintExpiredTodoEnabled: true,
-                lintExpiredTodoSeverity: 'information'
+                lintExpiredTodoSeverity: 'information',
                 lintHavingWithoutGroupByEnabled: true,
                 lintHavingWithoutGroupBySeverity: 'warning',
                 lintLimitInvalidValueEnabled: true,
@@ -312,7 +308,7 @@ function changeLanguage(lang) {
                 lintCommentedOutCodeEnabled: false,
                 lintCommentedOutCodeSeverity: 'information',
                 lintExpiredTodoEnabled: false,
-                lintExpiredTodoSeverity: 'warning'
+                lintExpiredTodoSeverity: 'warning',
                 lintHavingWithoutGroupByEnabled: false,
                 lintHavingWithoutGroupBySeverity: 'warning',
                 lintLimitInvalidValueEnabled: false,
@@ -459,7 +455,7 @@ function changeLanguage(lang) {
                 lintCommentedOutCodeEnabled: false,
                 lintCommentedOutCodeSeverity: 'information',
                 lintExpiredTodoEnabled: false,
-                lintExpiredTodoSeverity: 'warning'
+                lintExpiredTodoSeverity: 'warning',
                 lintHavingWithoutGroupByEnabled: false,
                 lintHavingWithoutGroupBySeverity: 'warning',
                 lintLimitInvalidValueEnabled: false,
@@ -606,7 +602,7 @@ function changeLanguage(lang) {
                 lintCommentedOutCodeEnabled: false,
                 lintCommentedOutCodeSeverity: 'information',
                 lintExpiredTodoEnabled: false,
-                lintExpiredTodoSeverity: 'warning'
+                lintExpiredTodoSeverity: 'warning',
                 lintHavingWithoutGroupByEnabled: false,
                 lintHavingWithoutGroupBySeverity: 'warning',
                 lintLimitInvalidValueEnabled: false,
@@ -722,7 +718,7 @@ function changeLanguage(lang) {
                 lintCommentedOutCodeEnabled: false,
                 lintCommentedOutCodeSeverity: 'information',
                 lintExpiredTodoEnabled: false,
-                lintExpiredTodoSeverity: 'warning'
+                lintExpiredTodoSeverity: 'warning',
                 lintHavingWithoutGroupByEnabled: false,
                 lintHavingWithoutGroupBySeverity: 'warning',
                 lintLimitInvalidValueEnabled: false,
@@ -838,7 +834,7 @@ function changeLanguage(lang) {
                 lintCommentedOutCodeEnabled: false,
                 lintCommentedOutCodeSeverity: 'information',
                 lintExpiredTodoEnabled: false,
-                lintExpiredTodoSeverity: 'warning'
+                lintExpiredTodoSeverity: 'warning',
                 lintHavingWithoutGroupByEnabled: false,
                 lintHavingWithoutGroupBySeverity: 'warning',
                 lintLimitInvalidValueEnabled: false,
@@ -954,7 +950,7 @@ function changeLanguage(lang) {
                 lintCommentedOutCodeEnabled: false,
                 lintCommentedOutCodeSeverity: 'information',
                 lintExpiredTodoEnabled: false,
-                lintExpiredTodoSeverity: 'warning'
+                lintExpiredTodoSeverity: 'warning',
                 lintHavingWithoutGroupByEnabled: false,
                 lintHavingWithoutGroupBySeverity: 'warning',
                 lintLimitInvalidValueEnabled: false,
@@ -994,10 +990,18 @@ function changeLanguage(lang) {
                     break;
                 case 'saveResult':
                     if (message.success) {
-                        showToast(window.__I18N__['configEditor.toast.configSaved'] || '配置已保存', 'success');
+                        showToast(getI18nDict()['configEditor.toast.configSaved'] || '配置已保存', 'success');
                     } else {
-                        showToast(window.__I18N__['configEditor.toast.saveFailed'] || '保存失败，请重试', 'error');
+                        showToast(getI18nDict()['configEditor.toast.saveFailed'] || '保存失败，请重试', 'error');
                     }
+                    break;
+                case 'initI18n':
+                    if (message.zh) i18nData.zh = message.zh;
+                    if (message.en) i18nData.en = message.en;
+                    if (message.lang) i18nData.lang = message.lang;
+                    applyI18nDict(getI18nDict());
+                    var langSelect = document.getElementById('langSelect');
+                    if (langSelect) langSelect.value = i18nData.lang;
                     break;
             }
         });
@@ -1019,7 +1023,7 @@ function changeLanguage(lang) {
             updateTabOverrideGroup();
             var langSelect = document.getElementById('langSelect');
             if (langSelect) {
-                langSelect.value = window.__LANG__ || 'zh';
+                langSelect.value = i18nData.lang || 'zh';
             }
         }
         
@@ -1263,4 +1267,45 @@ function changeLanguage(lang) {
         });
 
         const vscode = acquireVsCodeApi();
+
+        function bindActions() {
+            document.querySelectorAll('[data-action]').forEach(function(el) {
+                var action = el.getAttribute('data-action');
+                var arg = el.getAttribute('data-action-arg');
+                if (action && typeof window[action] === 'function') {
+                    if (el.tagName === 'SELECT') {
+                        el.addEventListener('change', function() {
+                            if (arg !== null) {
+                                window[action](arg);
+                            } else {
+                                window[action](el.value);
+                            }
+                        });
+                    } else if (el.tagName === 'INPUT' && (el.type === 'text' || el.type === 'number')) {
+                        el.addEventListener('input', function() {
+                            if (arg !== null) {
+                                window[action](arg);
+                            } else {
+                                window[action](el.value);
+                            }
+                        });
+                    } else {
+                        el.addEventListener('click', function(e) {
+                            if (action === 'toggleGroup') {
+                                window[action](el);
+                            } else if (arg !== null) {
+                                var numArg = Number(arg);
+                                window[action](isNaN(numArg) || arg.trim() === '' ? arg : numArg);
+                            } else {
+                                window[action]();
+                            }
+                        });
+                    }
+                }
+                el.removeAttribute('data-action');
+                el.removeAttribute('data-action-arg');
+            });
+        }
+
+        bindActions();
         vscode.postMessage({ command: 'getCurrentConfig' });

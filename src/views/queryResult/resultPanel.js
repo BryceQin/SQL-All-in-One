@@ -663,30 +663,46 @@ function addFilterCondition() {
     row.className = 'filter-row';
     row.setAttribute('data-index', idx);
 
-    let colOptions = '';
+    let colSelect = document.createElement('select');
+    colSelect.className = 'filter-col';
+    (function(i) {
+        colSelect.addEventListener('change', function() { onFilterColChange(colSelect, i); });
+    })(idx);
     state.columns.forEach(col => {
-        colOptions += '<option value="' + col.name + '">' + col.name + (col.type ? ' (' + col.type + ')' : '') + '</option>';
+        var opt = document.createElement('option');
+        opt.value = col.name;
+        opt.textContent = col.name + (col.type ? ' (' + col.type + ')' : '');
+        colSelect.appendChild(opt);
     });
 
-    row.innerHTML =
-        '<select class="filter-col" onchange="onFilterColChange(this, ' + idx + ')">' + colOptions + '</select>' +
-        '<select class="filter-op" onchange="onFilterOpChange(this, ' + idx + ')">' +
-        '<option value="=">=</option>' +
-        '<option value="!=">!=</option>' +
-        '<option value=">">&gt;</option>' +
-        '<option value="<">&lt;</option>' +
-        '<option value=">=">&gt;=</option>' +
-        '<option value="<=">&lt;=</option>' +
-        '<option value="LIKE">LIKE</option>' +
-        '<option value="NOT LIKE">NOT LIKE</option>' +
-        '<option value="IN">IN</option>' +
-        '<option value="NOT IN">NOT IN</option>' +
-        '<option value="IS NULL">IS NULL</option>' +
-        '<option value="IS NOT NULL">IS NOT NULL</option>' +
-        '<option value="BETWEEN">BETWEEN</option>' +
-        '</select>' +
-        '<input type="text" class="filter-val" placeholder="Value">' +
-        '<button class="filter-remove-btn" onclick="removeFilterCondition(' + idx + ')">✕</button>';
+    let opSelect = document.createElement('select');
+    opSelect.className = 'filter-op';
+    (function(i) {
+        opSelect.addEventListener('change', function() { onFilterOpChange(opSelect, i); });
+    })(idx);
+    ['=', '!=', '>', '<', '>=', '<=', 'LIKE', 'NOT LIKE', 'IN', 'NOT IN', 'IS NULL', 'IS NOT NULL', 'BETWEEN'].forEach(function(op) {
+        var opt = document.createElement('option');
+        opt.value = op;
+        opt.textContent = op;
+        opSelect.appendChild(opt);
+    });
+
+    let valInput = document.createElement('input');
+    valInput.type = 'text';
+    valInput.className = 'filter-val';
+    valInput.placeholder = 'Value';
+
+    let removeBtn = document.createElement('button');
+    removeBtn.className = 'filter-remove-btn';
+    (function(i) {
+        removeBtn.addEventListener('click', function() { removeFilterCondition(i); });
+    })(idx);
+    removeBtn.textContent = '✕';
+
+    row.appendChild(colSelect);
+    row.appendChild(opSelect);
+    row.appendChild(valInput);
+    row.appendChild(removeBtn);
 
     container.appendChild(row);
     state.filterConditions.push({ column: '', operator: '=', value: '' });
@@ -1584,9 +1600,21 @@ function renderFormView() {
     });
 }
 
+function createBlobImage(mimeType, base64Data) {
+    var allowedTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/bmp', 'image/webp', 'image/svg+xml'];
+    if (!allowedTypes.includes(mimeType)) {
+        mimeType = 'image/png';
+    }
+    var img = document.createElement('img');
+    img.src = 'data:' + mimeType + ';base64,' + base64Data;
+    return img;
+}
+
 function switchBlobTab(mode) {
     document.querySelectorAll('.blob-tab').forEach(function(t) { t.classList.remove('active'); });
-    event.target.classList.add('active');
+    var tabs = document.querySelectorAll('.blob-tab');
+    var modeIndex = { text: 0, hex: 1, image: 2 };
+    if (tabs[modeIndex[mode]]) tabs[modeIndex[mode]].classList.add('active');
 
     var content = document.getElementById('blobContent');
     if (mode === 'text' && state._blobText) {
@@ -1594,7 +1622,8 @@ function switchBlobTab(mode) {
     } else if (mode === 'hex' && state._blobHex) {
         content.textContent = state._blobHex;
     } else if (mode === 'image' && state._blobImage) {
-        content.innerHTML = '<img src="data:' + state._blobMimeType + ';base64,' + state._blobImage + '" />';
+        content.textContent = '';
+        content.appendChild(createBlobImage(state._blobMimeType, state._blobImage));
     }
 }
 
@@ -1682,8 +1711,9 @@ function handleBlobPreview(data) {
     } else if (data.mode === 'image') {
         state._blobImage = data.content;
         state._blobMimeType = data.mimeType;
-        document.getElementById('blobContent').innerHTML =
-            '<img src="data:' + data.mimeType + ';base64,' + data.content + '" />';
+        var blobContent = document.getElementById('blobContent');
+        blobContent.textContent = '';
+        blobContent.appendChild(createBlobImage(data.mimeType, data.content));
     } else if (data.mode === 'text') {
         state._blobText = data.content;
         state._blobHex = null;
@@ -1699,4 +1729,55 @@ function handleBlobPreview(data) {
 
 window.addEventListener('message', handleMessage);
 
+function bindActions() {
+    document.querySelectorAll('[data-action]').forEach(function(el) {
+        var action = el.getAttribute('data-action');
+        var arg = el.getAttribute('data-action-arg');
+        if (action && typeof window[action] === 'function') {
+            if (el.tagName === 'SELECT') {
+                el.addEventListener('change', function() {
+                    if (action === 'onFilterColChange' || action === 'onFilterOpChange') {
+                        var numArg = Number(arg);
+                        window[action](el, isNaN(numArg) ? arg : numArg);
+                    } else if (arg !== null) {
+                        window[action](arg);
+                    } else {
+                        window[action](el.value);
+                    }
+                });
+            } else if (el.tagName === 'INPUT' && (el.type === 'text' || el.type === 'number')) {
+                el.addEventListener('change', function() {
+                    if (arg !== null) {
+                        window[action](arg);
+                    } else {
+                        window[action](el.value);
+                    }
+                });
+                el.addEventListener('input', function() {
+                    if (arg !== null) {
+                        window[action](arg);
+                    } else {
+                        window[action](el.value);
+                    }
+                });
+            } else {
+                el.addEventListener('click', function(e) {
+                    if (action === 'jumpToPage') {
+                        var pageJumpInput = document.getElementById('pageJump');
+                        window[action](pageJumpInput.value);
+                    } else if (arg !== null) {
+                        var numArg = Number(arg);
+                        window[action](isNaN(numArg) || arg.trim() === '' ? arg : numArg);
+                    } else {
+                        window[action]();
+                    }
+                });
+            }
+        }
+        el.removeAttribute('data-action');
+        el.removeAttribute('data-action-arg');
+    });
+}
+
+bindActions();
 init();

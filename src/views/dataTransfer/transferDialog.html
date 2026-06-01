@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline' {{CSP_SOURCE}}; script-src 'unsafe-inline' {{CSP_SOURCE}}; img-src data: {{CSP_SOURCE}}; font-src {{CSP_SOURCE}};">
   <title>Data Transfer</title>
   <link rel="stylesheet" href="{{CSS_URI}}">
 </head>
@@ -49,12 +50,12 @@
           <label class="form-label">File Path</label>
           <div class="file-input-group">
             <input type="text" id="filePath" class="form-input" placeholder="Select a data file..." readonly>
-            <button class="btn btn-secondary" id="btnBrowse" onclick="selectFile()">Browse</button>
+            <button class="btn btn-secondary" id="btnBrowse" data-action="selectFile">Browse</button>
           </div>
         </div>
         <div class="form-group">
           <label class="form-label">Format</label>
-          <select id="fileFormat" class="form-select" onchange="updateCsvOptionsVisibility()">
+          <select id="fileFormat" class="form-select" data-action="updateCsvOptionsVisibility">
             <option value="auto">Auto Detect</option>
             <option value="csv">CSV</option>
             <option value="json">JSON</option>
@@ -70,7 +71,7 @@
       <div class="step-page" id="step2">
         <div class="form-group">
           <label class="form-label">Target Table</label>
-          <select id="targetTable" class="form-select" onchange="onTargetTableChange()">
+          <select id="targetTable" class="form-select" data-action="onTargetTableChange">
             <option value="">-- Select a table --</option>
           </select>
         </div>
@@ -157,9 +158,9 @@
     </div>
 
     <div class="footer-bar">
-      <button class="btn btn-secondary" id="btnPrev" onclick="prevStep()" disabled>Previous</button>
-      <button class="btn btn-primary" id="btnNext" onclick="nextStep()">Next</button>
-      <button class="btn btn-primary" id="btnStartImport" onclick="startImport()" style="display:none;">Start Import</button>
+      <button class="btn btn-secondary" id="btnPrev" data-action="prevStep" disabled>Previous</button>
+      <button class="btn btn-primary" id="btnNext" data-action="nextStep">Next</button>
+      <button class="btn btn-primary" id="btnStartImport" data-action="startImport" style="display:none;">Start Import</button>
     </div>
   </div>
   <script src="{{JS_URI}}"></script>

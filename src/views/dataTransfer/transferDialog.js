@@ -363,13 +363,7 @@ window.addEventListener('message', function(event) {
             updateCsvOptionsVisibility();
 
             if (message.format === 'csv') {
-                var firstLine = '';
-                try {
-                    var content = require('fs').readFileSync(message.filePath, 'utf-8');
-                    firstLine = content.split(/\r?\n/)[0] || '';
-                } catch (e) {
-                    // Ignore - delimiter detection will happen server-side
-                }
+                vscode.postMessage({ command: 'readFilePreview', firstLineFilePath: message.filePath });
             }
             break;
 
@@ -417,6 +411,9 @@ window.addEventListener('message', function(event) {
             var btnStartImport = document.getElementById('btnStartImport');
             if (btnStartImport) btnStartImport.disabled = false;
             break;
+
+        case 'filePreview':
+            break;
     }
 });
 
@@ -433,3 +430,42 @@ document.getElementById('fileFormat').addEventListener('change', function() {
     importConfig.format = this.value;
     updateCsvOptionsVisibility();
 });
+
+function bindActions() {
+    document.querySelectorAll('[data-action]').forEach(function(el) {
+        var action = el.getAttribute('data-action');
+        var arg = el.getAttribute('data-action-arg');
+        if (action && typeof window[action] === 'function') {
+            if (el.tagName === 'SELECT') {
+                el.addEventListener('change', function() {
+                    if (arg !== null) {
+                        window[action](arg);
+                    } else {
+                        window[action]();
+                    }
+                });
+            } else if (el.tagName === 'INPUT' && (el.type === 'text' || el.type === 'number')) {
+                el.addEventListener('input', function() {
+                    if (arg !== null) {
+                        window[action](arg);
+                    } else {
+                        window[action](el.value);
+                    }
+                });
+            } else {
+                el.addEventListener('click', function(e) {
+                    if (arg !== null) {
+                        var numArg = Number(arg);
+                        window[action](isNaN(numArg) || arg.trim() === '' ? arg : numArg);
+                    } else {
+                        window[action]();
+                    }
+                });
+            }
+        }
+        el.removeAttribute('data-action');
+        el.removeAttribute('data-action-arg');
+    });
+}
+
+bindActions();
