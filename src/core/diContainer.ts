@@ -2,6 +2,7 @@ export class DIContainer {
     private services = new Map<string, unknown>();
     private factories = new Map<string, () => unknown>();
     private singletons = new Map<string, () => unknown>();
+    private creating = new Set<string>();
 
     register<T>(token: string, service: T): void {
         this.services.set(token, service);
@@ -22,11 +23,16 @@ export class DIContainer {
         }
 
         // 检查是否是单例
-        if (this.singletons.has(token)) {
-            const factory = this.singletons.get(token) as () => T;
-            const instance = factory();
-            this.services.set(token, instance);
-            return instance;
+        if (this.singletons.has(token) && !this.creating.has(token)) {
+            this.creating.add(token);
+            try {
+                const factory = this.singletons.get(token) as () => T;
+                const instance = factory();
+                this.services.set(token, instance);
+                return instance;
+            } finally {
+                this.creating.delete(token);
+            }
         }
 
         // 检查是否有工厂函数
@@ -78,10 +84,36 @@ export class DIContainer {
     }
 
     clear(): void {
+        for (const service of this.services.values()) {
+            if (
+                service !== null &&
+                service !== undefined &&
+                typeof (service as Record<string, unknown>).dispose === 'function'
+            ) {
+                try {
+                    (service as { dispose: () => void }).dispose();
+                } catch {
+                    // ignore dispose errors
+                }
+            }
+        }
         this.services.clear();
+        this.creating.clear();
     }
 
     unregister(token: string): void {
+        const service = this.services.get(token);
+        if (
+            service !== null &&
+            service !== undefined &&
+            typeof (service as Record<string, unknown>).dispose === 'function'
+        ) {
+            try {
+                (service as { dispose: () => void }).dispose();
+            } catch {
+                // ignore dispose errors
+            }
+        }
         this.services.delete(token);
     }
 }

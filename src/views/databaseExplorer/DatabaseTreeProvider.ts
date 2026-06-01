@@ -21,6 +21,7 @@ import { ConnectionConfig } from '../../database/adapters/IDatabaseAdapter';
 import { SchemaCache, getSchemaCache } from '../../database/schema/SchemaCache';
 import { getConfigManager } from '../../core/configManager';
 import { handleError, ErrorCategory } from '../../core/errorHandler';
+import { LRUCache } from '../../utils/lruCache';
 
 interface FavoriteItem {
     connectionId: string;
@@ -37,7 +38,7 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
     private context: vscode.ExtensionContext;
     private connectionManager: ConnectionManager;
     private schemaCache: SchemaCache;
-    private nodeCache = new Map<string, ITreeNode[]>();
+    private nodeCache = new LRUCache<string, ITreeNode[]>({ maxSize: 200, maxAge: 60000 });
     private favorites: FavoriteItem[] = [];
     private readonly FAVORITES_KEY = 'sql-all-in-one.favorites';
 

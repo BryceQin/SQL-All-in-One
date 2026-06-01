@@ -15,7 +15,7 @@ export const BASE_RESERVED_PHRASES = expandPhrases(['{ROWS | RANGE} BETWEEN'])
 export const makeFormatOptions = (
     standardOnelineClauses: string[],
     tabularOnelineClauses: string[]
-) => ({
+): { onelineClauses: string[]; tabularOnelineClauses: string[] } => ({
     onelineClauses: [...standardOnelineClauses, ...tabularOnelineClauses],
     tabularOnelineClauses,
 })

@@ -196,10 +196,17 @@ export class DocumentAstCache {
         // Build the symbol index
         const symbolIndex = buildIndex(result.ast, document);
 
-        // Update the cache entry with the symbol index
+        // Update the cache entry with the symbol index, handling potential LRU eviction
         const entry = this.cache.get(key);
-        if (entry) {
+        if (entry && entry.version === version) {
             entry.symbolIndex = symbolIndex;
+        } else {
+            this.cache.set(key, {
+                version,
+                ast: result.ast,
+                timestamp: Date.now(),
+                symbolIndex,
+            });
         }
 
         return symbolIndex;
@@ -212,7 +219,7 @@ export class DocumentAstCache {
 
     dispose(): void {
         this.cache.clear();
-        this.disposables.forEach((d) => d.dispose());
+        this.disposables.forEach((d) => { d.dispose(); });
     }
 }
 

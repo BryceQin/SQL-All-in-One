@@ -64,6 +64,13 @@ interface TableDesignData {
     originalStructure?: TableStructure;
 }
 
+interface DesignerMessage {
+    command: string;
+    data?: TableDesignData;
+    table?: string;
+    sql?: string;
+}
+
 export class TableDesignerPanel {
     public static currentPanel: TableDesignerPanel | undefined;
     public static readonly viewType = 'sqlAllInOneTableDesigner';
@@ -120,19 +127,23 @@ export class TableDesignerPanel {
         this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
 
         this._panel.webview.onDidReceiveMessage(
-            async (message) => {
+            async (message: DesignerMessage) => {
                 switch (message.command) {
                     case 'save':
-                        await this._handleSave(message.data as TableDesignData);
+                        if (message.data) {
+                            await this._handleSave(message.data);
+                        }
                         break;
                     case 'requestTableList':
                         await this._handleRequestTableList();
                         break;
                     case 'requestColumnList':
-                        await this._handleRequestColumnList(message.table);
+                        await this._handleRequestColumnList(message.table ?? '');
                         break;
                     case 'exportSql':
-                        await this._handleExportSql(message.sql);
+                        if (message.sql) {
+                            await this._handleExportSql(message.sql);
+                        }
                         break;
                     case 'close':
                         this.dispose();
@@ -290,10 +301,12 @@ export class TableDesignerPanel {
     }
 
     private _update(): void {
-        this._panel.webview.html = this._getHtmlForWebview();
+        this._getHtmlForWebview().then(html => {
+            this._panel.webview.html = html;
+        });
     }
 
-    private _getHtmlForWebview(): string {
+    private async _getHtmlForWebview(): Promise<string> {
         try {
             const htmlPath = path.join(
                 this._extensionUri.fsPath,
@@ -302,7 +315,7 @@ export class TableDesignerPanel {
                 'tableDesigner',
                 'designerPanel.html'
             );
-            let html = fs.readFileSync(htmlPath, 'utf-8');
+            let html = await fs.promises.readFile(htmlPath, 'utf-8');
 
             const cssUri = this._panel.webview.asWebviewUri(
                 vscode.Uri.joinPath(this._extensionUri, 'src', 'views', 'tableDesigner', 'designerPanel.css')

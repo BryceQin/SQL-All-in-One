@@ -55,7 +55,8 @@ export class MissingColumnCommentRule extends BaseRule {
             return diagnostics
         }
 
-        const aggregate = getConfigManager().get<boolean>('lint.missing_column_comment_aggregate', true)
+        const ruleConfig = getConfigManager().get<{ enabled?: boolean; severity?: string; aggregate?: boolean; externalTableExempt?: boolean }>('lint.missing_column_comment', { enabled: true, severity: 'warning', aggregate: true, externalTableExempt: false })
+        const aggregate = ruleConfig.aggregate ?? true
 
         if (aggregate && missingColumns.length > 1) {
             const loc = getNodeLocation(node)

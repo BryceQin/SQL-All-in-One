@@ -2,6 +2,10 @@ import * as assert from 'assert';
 import { ExplainPlan } from '../database/query/ExplainPlan';
 import type { ExplainResult, ExplainNode } from '../database/adapters/IDatabaseAdapter';
 
+interface ExplainPlanInternal {
+    detectOperation(block: unknown): string;
+};
+
 suite('ExplainPlan - parseMysqlExplain', () => {
 
     suite('JSON format parsing', () => {
@@ -178,45 +182,45 @@ suite('ExplainPlan - detectOperation', () => {
 
     test('should detect TABLE SCAN for access_type ALL', () => {
         const block = { table: { access_type: 'ALL' } };
-        assert.strictEqual((ExplainPlan as any).detectOperation(block), 'TABLE SCAN');
+        assert.strictEqual((ExplainPlan as unknown as ExplainPlanInternal).detectOperation(block), 'TABLE SCAN');
     });
 
     test('should detect TABLE SCAN for full_scan', () => {
         const block = { table: { full_scan: true } };
-        assert.strictEqual((ExplainPlan as any).detectOperation(block), 'TABLE SCAN');
+        assert.strictEqual((ExplainPlan as unknown as ExplainPlanInternal).detectOperation(block), 'TABLE SCAN');
     });
 
     test('should detect INDEX SCAN for access_type range', () => {
         const block = { table: { access_type: 'range' } };
-        assert.strictEqual((ExplainPlan as any).detectOperation(block), 'INDEX SCAN');
+        assert.strictEqual((ExplainPlan as unknown as ExplainPlanInternal).detectOperation(block), 'INDEX SCAN');
     });
 
     test('should detect INDEX SCAN for access_type index', () => {
         const block = { table: { access_type: 'index' } };
-        assert.strictEqual((ExplainPlan as any).detectOperation(block), 'INDEX SCAN');
+        assert.strictEqual((ExplainPlan as unknown as ExplainPlanInternal).detectOperation(block), 'INDEX SCAN');
     });
 
     test('should detect INDEX SEEK for access_type eq_ref', () => {
         const block = { table: { access_type: 'eq_ref' } };
-        assert.strictEqual((ExplainPlan as any).detectOperation(block), 'INDEX SEEK');
+        assert.strictEqual((ExplainPlan as unknown as ExplainPlanInternal).detectOperation(block), 'INDEX SEEK');
     });
 
     test('should detect INDEX SEEK for access_type const', () => {
         const block = { table: { access_type: 'const' } };
-        assert.strictEqual((ExplainPlan as any).detectOperation(block), 'INDEX SEEK');
+        assert.strictEqual((ExplainPlan as unknown as ExplainPlanInternal).detectOperation(block), 'INDEX SEEK');
     });
 
     test('should detect INDEX SEEK for access_type ref', () => {
         const block = { table: { access_type: 'ref' } };
-        assert.strictEqual((ExplainPlan as any).detectOperation(block), 'INDEX SEEK');
+        assert.strictEqual((ExplainPlan as unknown as ExplainPlanInternal).detectOperation(block), 'INDEX SEEK');
     });
 
     test('should return UNKNOWN for null block', () => {
-        assert.strictEqual((ExplainPlan as any).detectOperation(null), 'UNKNOWN');
+        assert.strictEqual((ExplainPlan as unknown as ExplainPlanInternal).detectOperation(null), 'UNKNOWN');
     });
 
     test('should return UNKNOWN for block without table', () => {
-        assert.strictEqual((ExplainPlan as any).detectOperation({}), 'UNKNOWN');
+        assert.strictEqual((ExplainPlan as unknown as ExplainPlanInternal).detectOperation({}), 'UNKNOWN');
     });
 });
 

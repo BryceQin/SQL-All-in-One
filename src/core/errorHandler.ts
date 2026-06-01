@@ -32,6 +32,8 @@ export interface FormatterError {
 export class ErrorHandler {
     private listeners: ((error: FormatterError) => void)[] = [];
     private errorHistory: FormatterError[] = [];
+    private historyStart = 0;
+    private historyCount = 0;
     private maxHistorySize = 100;
     private showNotifications = true;
     private outputChannel: vscode.OutputChannel | undefined
@@ -134,11 +136,18 @@ export class ErrorHandler {
     }
 
     getHistory(): FormatterError[] {
-        return [...this.errorHistory];
+        const result: FormatterError[] = [];
+        for (let i = 0; i < this.historyCount; i++) {
+            const idx = (this.historyStart + i) % this.errorHistory.length;
+            result.push(this.errorHistory[idx]);
+        }
+        return result;
     }
 
     clearHistory(): void {
-        this.errorHistory = [];
+        this.errorHistory.length = 0;
+        this.historyStart = 0;
+        this.historyCount = 0;
     }
 
     private normalizeError(
@@ -195,8 +204,10 @@ export class ErrorHandler {
         }
 
         this.errorHistory.push(error);
-        if (this.errorHistory.length > this.maxHistorySize) {
-            this.errorHistory.shift();
+        this.historyCount++;
+        if (this.historyCount > this.maxHistorySize) {
+            this.historyStart = (this.historyStart + 1) % this.errorHistory.length;
+            this.historyCount = this.maxHistorySize;
         }
     }
 
@@ -238,12 +249,25 @@ export class ErrorHandler {
         }
     }
 
+    showOutputChannel(): void {
+        if (!this.outputChannel) {
+            this.outputChannel = vscode.window.createOutputChannel('SQL All in One Errors');
+        }
+        this.outputChannel.show(true);
+    }
+
+    getOutputChannel(): vscode.OutputChannel | undefined {
+        return this.outputChannel;
+    }
+
     dispose(): void {
         if (this.outputChannel) {
             this.outputChannel.dispose()
         }
         this.listeners.length = 0
         this.errorHistory.length = 0
+        this.historyStart = 0
+        this.historyCount = 0
     }
 }
 

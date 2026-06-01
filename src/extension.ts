@@ -59,6 +59,9 @@ function registerCommands(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('sql-all-in-one.mysql-to-hive', convertMysqlToHiveCommand),
     vscode.commands.registerCommand('sql-all-in-one.hive-to-mysql', convertHiveToMysqlCommand),
     vscode.commands.registerCommand('sql-all-in-one.open-config-editor', () => openConfigEditorCommand(context.extensionUri)),
+    vscode.commands.registerCommand('sql-all-in-one.showErrorLog', () => {
+      getErrorHandler().showOutputChannel();
+    }),
   );
 }
 
@@ -214,7 +217,7 @@ function createModules(): ExtensionModule[] {
     { name: 'providers', register: (ctx) => registerProviders(ctx) },
     { name: 'completion', register: (ctx) => registerCompletion(ctx) },
     { name: 'parameterHighlighter', register: (ctx) => registerParameterHighlighter(ctx) },
-    { name: 'astNavigatorEvents', register: (ctx) => {
+    { name: 'astNavigatorEvents', register: (ctx): void => {
       const container = getContainer();
       const navigator = container.get<AstNavigator>(Tokens.AstNavigator);
       if (navigator) {
@@ -226,14 +229,14 @@ function createModules(): ExtensionModule[] {
         );
       }
     }},
-    { name: 'statusBar', register: (ctx) => {
+    { name: 'statusBar', register: (ctx): void => {
       const container = getContainer();
       if (vscode.workspace.textDocuments.some(isSqlDocument)) {
         const statusBar = container.get<StatusBarProvider>(Tokens.StatusBarProvider);
         if (statusBar) ctx.subscriptions.push(statusBar);
       }
     }},
-    { name: 'database', register: async (ctx) => {
+    { name: 'database', register: async (ctx): Promise<void> => {
       const dbModule = new DatabaseModule(ctx);
       await dbModule.initialize();
       ctx.subscriptions.push({

@@ -2,6 +2,7 @@ import type { FormatOptions } from '../FormatOptions';
 import Indentation from '../Indentation';
 import Layout, { WS } from '../Layout';
 import { formatKeyword } from './CommonFormatter';
+import type { AstNode } from '../../parser/astTypes';
 
 export class CommonLayoutHelper {
     constructor(
@@ -31,10 +32,10 @@ export class CommonLayoutHelper {
         this.indent.decreaseTopLevel();
     }
 
-    formatTableName(item: any, exprFmt: { format(expr: unknown): string }): string {
+    formatTableName(item: AstNode, exprFmt: { format(expr: unknown): string }): string {
         if (typeof item === 'string') return item;
         let result = '';
-        if (item.db) result += item.db + '.';
+        if (item.db) result += String(item.db) + '.';
         if (typeof item.table === 'object' && item.table !== null) {
             result += exprFmt.format(item.table);
         } else {

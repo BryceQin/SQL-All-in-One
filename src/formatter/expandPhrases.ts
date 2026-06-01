@@ -29,7 +29,7 @@ export const expandSinglePhrase = (phrase: string): string[] =>
 // 空格清理
 // 正则/ +/g：匹配 1 个及以上空格，替换为单个空格
 // .trim()：去除首尾空格
-const stripExtraWhitespace = (text: string) => text.replace(/ +/g, ' ').trim();
+const stripExtraWhitespace = (text: string): string => text.replace(/ +/g, ' ').trim();
 
 // 将输入字符串解析为 AST（由Phrase类型节点组成）
 const parsePhrase = (text: string): Phrase => ({

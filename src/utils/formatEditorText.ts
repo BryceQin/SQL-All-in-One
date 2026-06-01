@@ -58,4 +58,4 @@ function formatWithFallback(
     }
 }
 
-const endsWithNewline = (text: string) => /\n$/.test(text)
+const endsWithNewline = (text: string): boolean => /\n$/.test(text)

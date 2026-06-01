@@ -18,6 +18,15 @@ export type {
     ConnectionGroup,
 }
 
+export interface IPoolStatus {
+    totalConnections: number;
+    activeConnections: number;
+    idleConnections: number;
+    waitingRequests: number;
+    connectionLimit: number;
+    acquireTimeout: number;
+}
+
 export interface IConnectionAdapter {
     connect(config: ConnectionConfig): Promise<void>;
     disconnect(): Promise<void>;
@@ -25,6 +34,7 @@ export interface IConnectionAdapter {
     testConnection(config: ConnectionConfig): Promise<TestConnectionResult>;
     checkConnectionHealth(): Promise<boolean>;
     getConnectionId(): string;
+    getPoolStatus(): IPoolStatus;
 }
 
 export interface IQueryAdapter {

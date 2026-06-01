@@ -28,7 +28,7 @@ export class SqlFoldingRangeProvider implements vscode.FoldingRangeProvider {
         const ranges: vscode.FoldingRange[] = []
         const seen = new Set<string>()
 
-        const addRange = (range: vscode.FoldingRange | null) => {
+        const addRange = (range: vscode.FoldingRange | null): void => {
             if (range && !seen.has(`${range.start}-${range.end}`)) {
                 seen.add(`${range.start}-${range.end}`)
                 ranges.push(range)

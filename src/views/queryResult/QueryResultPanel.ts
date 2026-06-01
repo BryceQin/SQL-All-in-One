@@ -24,6 +24,22 @@ export interface ForeignKeyOption {
     displayText: string;
 }
 
+type WebviewMessage =
+    | { command: 'executeQuery'; sql: string }
+    | { command: 'cancelQuery' }
+    | { command: 'requestExport'; format: string; options?: Record<string, unknown> }
+    | { command: 'requestSort'; column: string; direction: string }
+    | { command: 'requestFilter'; conditions: FilterCondition[] }
+    | { command: 'requestPage'; page: number }
+    | { command: 'commitChanges'; changes: PendingChange[]; tableName: string; database: string }
+    | { command: 'requestForeignKeyOptions'; column: string; referencedTable: string; database: string }
+    | { command: 'beginTransaction' }
+    | { command: 'commitTransaction' }
+    | { command: 'rollbackTransaction' }
+    | { command: 'createSavepoint'; name: string }
+    | { command: 'rollbackToSavepoint'; name: string }
+    | { command: 'requestBlobPreview'; rowIndex: number; colIndex: number };
+
 export class QueryResultPanel {
     public static currentPanel: QueryResultPanel | undefined;
     public static readonly viewType = 'sqlAllInOneQueryResult';
@@ -90,7 +106,7 @@ export class QueryResultPanel {
         this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
 
         this._panel.webview.onDidReceiveMessage(
-            async (message) => {
+            async (message: WebviewMessage) => {
                 switch (message.command) {
                     case 'executeQuery':
                         if (message.sql && this.onExecuteQuery) {
@@ -112,7 +128,7 @@ export class QueryResultPanel {
                         break;
                     case 'requestFilter':
                         if (message.conditions && this.onRequestFilter) {
-                            this.onRequestFilter(message.conditions as FilterCondition[]);
+                            this.onRequestFilter(message.conditions);
                         }
                         break;
                     case 'requestPage':
@@ -123,7 +139,7 @@ export class QueryResultPanel {
                     case 'commitChanges':
                         if (message.changes && this.onCommitChanges) {
                             const result = await this.onCommitChanges(
-                                message.changes as PendingChange[],
+                                message.changes,
                                 message.tableName || '',
                                 message.database || ''
                             );
@@ -241,10 +257,12 @@ export class QueryResultPanel {
     }
 
     private _update(): void {
-        this._panel.webview.html = this._getHtmlForWebview();
+        this._getHtmlForWebview().then(html => {
+            this._panel.webview.html = html;
+        });
     }
 
-    private _getHtmlForWebview(): string {
+    private async _getHtmlForWebview(): Promise<string> {
         try {
             const htmlPath = path.join(
                 this._extensionUri.fsPath,
@@ -253,7 +271,7 @@ export class QueryResultPanel {
                 'queryResult',
                 'resultPanel.html'
             );
-            let html = fs.readFileSync(htmlPath, 'utf-8');
+            let html = await fs.promises.readFile(htmlPath, 'utf-8');
 
             const cssUri = this._panel.webview.asWebviewUri(
                 vscode.Uri.joinPath(this._extensionUri, 'src', 'views', 'queryResult', 'resultPanel.css')

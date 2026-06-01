@@ -18,6 +18,7 @@ export interface LintRuleDefinition {
     defaultSeverity: string
     enabledKey: string
     severityKey: string
+    subOptions?: Record<string, { type: 'number' | 'boolean'; default: unknown; configKey: string }>
 }
 
 // NOTE: Default values here should match src/formatter/sqlFormatter.ts defaultOptions
@@ -127,10 +128,10 @@ export const LINT_RULES: LintRuleDefinition[] = [
     { ruleId: 'explicitColumnAliasing', configKey: 'lint.explicit_column_aliasing', label: 'Explicit Column Aliasing', defaultEnabled: false, defaultSeverity: 'information', enabledKey: 'lintExplicitColumnAliasingEnabled', severityKey: 'lintExplicitColumnAliasingSeverity' },
     { ruleId: 'avoidCorrelatedSubqueries', configKey: 'lint.avoid_correlated_subqueries', label: 'Avoid Correlated Subqueries', defaultEnabled: false, defaultSeverity: 'warning', enabledKey: 'lintAvoidCorrelatedSubqueriesEnabled', severityKey: 'lintAvoidCorrelatedSubqueriesSeverity' },
     { ruleId: 'longQueryLine', configKey: 'lint.long_query_line', label: 'Long Query Line', defaultEnabled: false, defaultSeverity: 'information', enabledKey: 'lintLongQueryLineEnabled', severityKey: 'lintLongQueryLineSeverity' },
-    { ruleId: 'missingQueryComment', configKey: 'lint.missing_query_comment', label: 'Missing Query Comment', defaultEnabled: true, defaultSeverity: 'warning', enabledKey: 'lintMissingQueryCommentEnabled', severityKey: 'lintMissingQueryCommentSeverity' },
-    { ruleId: 'missingColumnComment', configKey: 'lint.missing_column_comment', label: 'Missing Column Comment', defaultEnabled: true, defaultSeverity: 'warning', enabledKey: 'lintMissingColumnCommentEnabled', severityKey: 'lintMissingColumnCommentSeverity' },
-    { ruleId: 'commentedOutCode', configKey: 'lint.commented_out_code', label: 'Commented Out Code', defaultEnabled: true, defaultSeverity: 'information', enabledKey: 'lintCommentedOutCodeEnabled', severityKey: 'lintCommentedOutCodeSeverity' },
-    { ruleId: 'expiredTodo', configKey: 'lint.expired_todo', label: 'Expired TODO', defaultEnabled: true, defaultSeverity: 'information', enabledKey: 'lintExpiredTodoEnabled', severityKey: 'lintExpiredTodoSeverity' },
+    { ruleId: 'missingQueryComment', configKey: 'lint.missing_query_comment', label: 'Missing Query Comment', defaultEnabled: true, defaultSeverity: 'warning', enabledKey: 'lintMissingQueryCommentEnabled', severityKey: 'lintMissingQueryCommentSeverity', subOptions: { thresholdLineCount: { type: 'number', default: 20, configKey: 'lint.missing_query_comment.thresholdLineCount' }, thresholdJoinCount: { type: 'number', default: 3, configKey: 'lint.missing_query_comment.thresholdJoinCount' }, thresholdSubqueryCount: { type: 'number', default: 2, configKey: 'lint.missing_query_comment.thresholdSubqueryCount' } } },
+    { ruleId: 'missingColumnComment', configKey: 'lint.missing_column_comment', label: 'Missing Column Comment', defaultEnabled: true, defaultSeverity: 'warning', enabledKey: 'lintMissingColumnCommentEnabled', severityKey: 'lintMissingColumnCommentSeverity', subOptions: { aggregate: { type: 'boolean', default: true, configKey: 'lint.missing_column_comment.aggregate' }, externalTableExempt: { type: 'boolean', default: false, configKey: 'lint.missing_column_comment.externalTableExempt' } } },
+    { ruleId: 'commentedOutCode', configKey: 'lint.commented_out_code', label: 'Commented Out Code', defaultEnabled: true, defaultSeverity: 'information', enabledKey: 'lintCommentedOutCodeEnabled', severityKey: 'lintCommentedOutCodeSeverity', subOptions: { thresholdLines: { type: 'number', default: 3, configKey: 'lint.commented_out_code.thresholdLines' } } },
+    { ruleId: 'expiredTodo', configKey: 'lint.expired_todo', label: 'Expired TODO', defaultEnabled: true, defaultSeverity: 'information', enabledKey: 'lintExpiredTodoEnabled', severityKey: 'lintExpiredTodoSeverity', subOptions: { gracePeriodDays: { type: 'number', default: 7, configKey: 'lint.expired_todo.gracePeriodDays' } } },
 
     // Migrated from AstEnhancedChecker
     { ruleId: 'havingWithoutGroupBy', configKey: 'lint.having_without_group_by', label: 'HAVING Without GROUP BY', defaultEnabled: true, defaultSeverity: 'warning', enabledKey: 'lintHavingWithoutGroupByEnabled', severityKey: 'lintHavingWithoutGroupBySeverity' },
@@ -160,6 +161,11 @@ export function getDefaultConfig(): Record<string, unknown> {
     for (const rule of LINT_RULES) {
         defaults[rule.enabledKey] = rule.defaultEnabled
         defaults[rule.severityKey] = rule.defaultSeverity
+        if (rule.subOptions) {
+            for (const [key, opt] of Object.entries(rule.subOptions)) {
+                defaults[key] = opt.default
+            }
+        }
     }
 
     return defaults

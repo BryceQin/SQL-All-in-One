@@ -3,6 +3,7 @@ import type { SqlDialect, SqlLanguage } from "../core/dialectRegistry"
 import { getDialectEntries } from "../core/dialectRegistry"
 import { AstFormatter } from "./AstFormatter"
 import { ConfigError, validateConfig } from "./validateConfig"
+import { t } from "../i18n"
 
 export type { SqlLanguage }
 
@@ -109,7 +110,7 @@ export const format = (
         typeof cfg.language === "string" &&
         !supportedDialects.includes(cfg.language)
     ) {
-        throw new ConfigError(`不支持的SQL方言: ${cfg.language}`)
+        throw new ConfigError(t('validate.unsupportedDialect', cfg.language || ''))
     }
 
     const sqlDialectName = (cfg.language || "sql") as SqlDialect
@@ -122,6 +123,7 @@ export const format = (
 
 // AstFormatter 缓存：按方言和配置哈希缓存实例
 const formatterCache = new Map<string, AstFormatter>()
+const MAX_FORMATTER_CACHE_SIZE = 50
 
 function getFormatterCacheKey(dialect: string, options: FormatOptions): string {
     // 只包含会影响格式化行为的配置项
@@ -216,8 +218,7 @@ export const formatDialect = (
 ): string => {
     if (typeof query !== "string") {
         throw new Error(
-            "无效的查询语句入参，参数类型应为字符串，实际传入的类型是 " +
-                typeof query,
+            t('validate.invalidQueryType', typeof query),
         )
     }
 
@@ -230,6 +231,12 @@ export const formatDialect = (
     let formatter = formatterCache.get(cacheKey)
     
     if (!formatter) {
+        if (formatterCache.size >= MAX_FORMATTER_CACHE_SIZE) {
+            const firstKey = formatterCache.keys().next().value
+            if (firstKey !== undefined) {
+                formatterCache.delete(firstKey)
+            }
+        }
         formatter = new AstFormatter(options, dialect)
         formatterCache.set(cacheKey, formatter)
     }

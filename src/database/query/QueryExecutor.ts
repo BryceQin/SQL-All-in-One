@@ -52,8 +52,8 @@ export class QueryExecutor {
             if (mergedOptions.database) {
                 try {
                     await adapter.execute(`USE ${adapter.quoteIdentifier(mergedOptions.database)}`);
-                } catch {
-                    // ignore USE failure
+                } catch (e) {
+                    console.warn(`Failed to switch to database ${mergedOptions.database}:`, e);
                 }
             }
 
@@ -150,7 +150,7 @@ export class QueryExecutor {
         sql: string,
         options: QueryOptions,
         token: vscode.CancellationToken,
-        _queryId: string
+        queryId: string
     ): Promise<QueryResult> {
         return new Promise<QueryResult>((resolve, reject) => {
             let timer: ReturnType<typeof setTimeout> | undefined;
@@ -167,13 +167,26 @@ export class QueryExecutor {
                 }
             };
 
+            const attemptCancel = async (): Promise<void> => {
+                try {
+                    const capabilities = adapter.getDialectCapabilities();
+                    if (capabilities.supportsCancel) {
+                        await adapter.cancelQuery(queryId);
+                    }
+                } catch {
+                    // best effort
+                }
+            };
+
             timer = setTimeout(() => {
                 cleanup();
+                attemptCancel();
                 reject(new Error(`Query timed out after ${options.timeout}ms`));
             }, options.timeout);
 
             cancellationDisposable = token.onCancellationRequested(() => {
                 cleanup();
+                attemptCancel();
                 reject(new Error('Query was cancelled'));
             });
 

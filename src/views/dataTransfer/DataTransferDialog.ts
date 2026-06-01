@@ -13,6 +13,28 @@ import {
     type JsonImportOptions,
 } from '../../database/transfer/DataImporter';
 
+interface DataTransferMessage {
+    command: string;
+    tableName?: string;
+    filePath?: string;
+    format?: string;
+    previewRows?: number;
+    delimiter?: string;
+    config?: {
+        filePath: string;
+        format: string;
+        tableName: string;
+        newTableName?: string;
+        mapping?: Record<string, string>;
+        onError: 'skip' | 'abort';
+        dedupStrategy: 'ignore' | 'skip' | 'update';
+        batchSize: number;
+        delimiter?: string;
+        encoding?: string;
+    };
+    firstLineFilePath?: string;
+}
+
 export class DataTransferDialog {
     public static currentPanel: DataTransferDialog | undefined;
     public static readonly viewType = 'sqlAllInOneDataTransfer';
@@ -65,7 +87,7 @@ export class DataTransferDialog {
         this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
 
         this._panel.webview.onDidReceiveMessage(
-            async (message) => {
+            async (message: DataTransferMessage) => {
                 switch (message.command) {
                     case 'selectFile':
                         await this._handleSelectFile();
@@ -74,13 +96,18 @@ export class DataTransferDialog {
                         await this._handleRequestTables();
                         break;
                     case 'requestColumns':
-                        await this._handleRequestColumns(message.tableName);
+                        await this._handleRequestColumns(message.tableName ?? '');
                         break;
                     case 'requestPreview':
-                        await this._handleRequestPreview(message.filePath, message.format, message.previewRows, message.delimiter);
+                        await this._handleRequestPreview(message.filePath ?? '', message.format ?? '', message.previewRows ?? 10, message.delimiter);
                         break;
                     case 'startImport':
-                        await this._handleStartImport(message.config);
+                        if (message.config) {
+                            await this._handleStartImport(message.config);
+                        }
+                        break;
+                    case 'readFilePreview':
+                        await this._handleReadFilePreview(message.firstLineFilePath ?? '');
                         break;
                 }
             },
@@ -102,10 +129,12 @@ export class DataTransferDialog {
     }
 
     private _update(): void {
-        this._panel.webview.html = this._getHtmlForWebview();
+        this._getHtmlForWebview().then(html => {
+            this._panel.webview.html = html;
+        });
     }
 
-    private _getHtmlForWebview(): string {
+    private async _getHtmlForWebview(): Promise<string> {
         try {
             const htmlPath = path.join(
                 this._extensionUri.fsPath,
@@ -114,7 +143,7 @@ export class DataTransferDialog {
                 'dataTransfer',
                 'transferDialog.html'
             );
-            let html = fs.readFileSync(htmlPath, 'utf-8');
+            let html = await fs.promises.readFile(htmlPath, 'utf-8');
 
             const cssUri = this._panel.webview.asWebviewUri(
                 vscode.Uri.joinPath(this._extensionUri, 'src', 'views', 'dataTransfer', 'transferDialog.css')
@@ -129,6 +158,39 @@ export class DataTransferDialog {
             return html;
         } catch {
             return '<html><body><h2>Failed to load Data Transfer dialog</h2><p>Please reinstall the extension.</p></body></html>';
+        }
+    }
+
+    private async _handleReadFilePreview(filePath: string): Promise<void> {
+        if (!filePath) {
+            this._panel.webview.postMessage({
+                type: 'filePreview',
+                error: 'No file path provided.',
+            });
+            return;
+        }
+
+        try {
+            if (!fs.existsSync(filePath)) {
+                this._panel.webview.postMessage({
+                    type: 'filePreview',
+                    error: 'File not found: ' + filePath,
+                });
+                return;
+            }
+
+            const content = await fs.promises.readFile(filePath, 'utf-8');
+            const firstLine = content.split(/\r?\n/)[0] || '';
+
+            this._panel.webview.postMessage({
+                type: 'filePreview',
+                firstLine,
+            });
+        } catch (error: unknown) {
+            this._panel.webview.postMessage({
+                type: 'filePreview',
+                error: error instanceof Error ? error.message : String(error),
+            });
         }
     }
 
@@ -275,7 +337,7 @@ export class DataTransferDialog {
             const rowCount = previewRows || 10;
 
             if (format === 'csv') {
-                const content = fs.readFileSync(filePath, 'utf-8');
+                const content = await fs.promises.readFile(filePath, 'utf-8');
                 const lines = content.split(/\r?\n/).filter((l) => l.trim() !== '');
                 if (lines.length === 0) {
                     this._panel.webview.postMessage({
@@ -303,8 +365,8 @@ export class DataTransferDialog {
                     format: 'csv',
                 });
             } else if (format === 'json') {
-                const content = fs.readFileSync(filePath, 'utf-8');
-                const records = JSON.parse(content);
+                const content = await fs.promises.readFile(filePath, 'utf-8');
+                const records = JSON.parse(content) as unknown[];
                 if (!Array.isArray(records) || records.length === 0) {
                     this._panel.webview.postMessage({
                         type: 'previewError',
@@ -313,10 +375,11 @@ export class DataTransferDialog {
                     return;
                 }
 
-                const headers = Object.keys(records[0]);
-                const rows = records.slice(0, rowCount).map((r: Record<string, unknown>) =>
-                    headers.map((h) => String(r[h] ?? ''))
-                );
+                const headers = Object.keys(records[0] as Record<string, unknown>);
+                const rows = records.slice(0, rowCount).map((r: unknown) => {
+                    const record = r as Record<string, unknown>;
+                    return headers.map((h) => String(record[h] ?? ''));
+                });
 
                 this._panel.webview.postMessage({
                     type: 'preview',
@@ -325,7 +388,7 @@ export class DataTransferDialog {
                     format: 'json',
                 });
             } else if (format === 'sql') {
-                const content = fs.readFileSync(filePath, 'utf-8');
+                const content = await fs.promises.readFile(filePath, 'utf-8');
                 const statements = content
                     .split(';')
                     .map((s) => s.trim())

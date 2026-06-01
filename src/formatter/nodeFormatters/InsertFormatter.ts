@@ -4,6 +4,7 @@ import Layout, { WS } from '../Layout';
 import { formatKeyword } from './CommonFormatter';
 import { ExpressionFormatter } from './ExpressionFormatter';
 import { SelectFormatter } from './SelectFormatter';
+import type { AstNode } from '../../parser/astTypes';
 
 export class InsertFormatter {
     private cfg: FormatOptions;
@@ -15,45 +16,45 @@ export class InsertFormatter {
         this.cfg = cfg;
         this.indent = indent;
         this.layout = new Layout(indent);
-        this.exprFmt = new ExpressionFormatter(cfg, indent, (expr) => {
+        this.exprFmt = new ExpressionFormatter(cfg, indent, (expr: unknown): string => {
             const selectFmt = new SelectFormatter(this.cfg, this.indent);
             return selectFmt.format(expr);
         });
     }
 
-    public format(stmt: any): string {
+    public format(stmt: AstNode): string {
         this.layout.clear();
         const kw = stmt.type === 'replace' ? 'REPLACE' : 'INSERT';
         this.layout.add(formatKeyword(kw, this.cfg.keywordCase));
 
         if (stmt.prefix) {
-            this.layout.add(WS.SPACE, formatKeyword(stmt.prefix.toUpperCase(), this.cfg.keywordCase));
+            this.layout.add(WS.SPACE, formatKeyword(String(stmt.prefix).toUpperCase(), this.cfg.keywordCase));
         }
 
         this.formatTableRef(stmt.table);
 
-        if (stmt.columns && Array.isArray(stmt.columns) && stmt.columns.length > 0) {
-            this.formatColumns(stmt.columns);
+        if (stmt.columns && Array.isArray(stmt.columns) && (stmt.columns as AstNode[]).length > 0) {
+            this.formatColumns(stmt.columns as AstNode[]);
         }
 
         if (stmt.values) {
-            this.formatValues(stmt.values);
+            this.formatValues(stmt.values as Record<string, unknown>);
         }
 
         if (stmt.on_duplicate_update) {
-            this.formatOnDuplicateUpdate(stmt.on_duplicate_update);
+            this.formatOnDuplicateUpdate(stmt.on_duplicate_update as Record<string, unknown>);
         }
 
         if (stmt.returning) {
-            this.formatReturning(stmt.returning);
+            this.formatReturning(stmt.returning as Record<string, unknown>);
         }
 
         return this.layout.toString().trimEnd();
     }
 
-    private formatTableRef(table: any): void {
+    private formatTableRef(table: unknown): void {
         if (Array.isArray(table)) {
-            table.forEach((t: any, i: number) => {
+            (table as AstNode[]).forEach((t: AstNode, i: number): void => {
                 if (i > 0) {
                     this.layout.add(WS.NO_SPACE, ',', WS.SPACE);
                 }
@@ -62,14 +63,14 @@ export class InsertFormatter {
         } else if (typeof table === 'string') {
             this.layout.add(WS.SPACE, table);
         } else if (table && typeof table === 'object') {
-            this.formatSingleTableRef(table);
+            this.formatSingleTableRef(table as AstNode);
         }
     }
 
-    private formatSingleTableRef(table: any): void {
+    private formatSingleTableRef(table: AstNode): void {
         let tableStr = '';
         if (table.db) {
-            tableStr += table.db + '.';
+            tableStr += String(table.db) + '.';
         }
         if (typeof table.table === 'object' && table.table !== null) {
             tableStr += this.exprFmt.format(table.table);
@@ -79,7 +80,7 @@ export class InsertFormatter {
         this.layout.add(WS.SPACE, tableStr);
     }
 
-    private formatColumns(columns: any[]): void {
+    private formatColumns(columns: AstNode[]): void {
         if (this.cfg.newlineAfterInsertColumns) {
             this.layout.add(WS.NEWLINE, WS.INDENT, '(');
             this.indent.increaseBlockLevel();
@@ -88,16 +89,16 @@ export class InsertFormatter {
             this.layout.add(WS.SPACE, '(');
         }
 
-        const colStrs = columns.map((c: any) => {
+        const colStrs = columns.map((c: AstNode): string => {
             if (typeof c === 'object' && c !== null) {
                 if ('column' in c) return this.exprFmt.format(c);
-                if ('value' in c) return String(c.value);
+                if ('value' in c) return String((c as unknown as { value: unknown }).value);
                 return String(c);
             }
             return String(c);
         });
 
-        colStrs.forEach((col, i) => {
+        colStrs.forEach((col: string, i: number): void => {
             if (i > 0) {
                 if (this.cfg.commaPosition === 'before') {
                     this.layout.add(WS.NEWLINE, WS.INDENT, ',', WS.SPACE);
@@ -116,12 +117,12 @@ export class InsertFormatter {
         }
     }
 
-    private formatValues(values: any): void {
+    private formatValues(values: Record<string, unknown>): void {
         this.layout.add(WS.NEWLINE, WS.INDENT, formatKeyword('VALUES', this.cfg.keywordCase));
 
         if (values.type === 'values') {
-            const valueGroups = values.values || [];
-            valueGroups.forEach((group: any, gi: number) => {
+            const valueGroups = (values.values || []) as AstNode[];
+            valueGroups.forEach((group: AstNode, gi: number): void => {
                 if (gi > 0) {
                     if (this.cfg.newlineBetweenValuesGroups) {
                         this.layout.add(WS.NO_SPACE, ',', WS.NEWLINE, WS.INDENT);
@@ -134,7 +135,7 @@ export class InsertFormatter {
                 }
 
                 if (group.type === 'expr_list') {
-                    const exprStrs = (group.value || []).map((v: any) => this.exprFmt.format(v));
+                    const exprStrs = ((group.value || []) as AstNode[]).map((v: AstNode): string => this.exprFmt.format(v));
                     this.layout.add('(' + exprStrs.join(', ') + ')');
                 } else {
                     this.layout.add(this.exprFmt.format(group));
@@ -148,31 +149,31 @@ export class InsertFormatter {
         }
     }
 
-    private formatOnDuplicateUpdate(odu: any): void {
+    private formatOnDuplicateUpdate(odu: Record<string, unknown>): void {
         this.layout.add(WS.NEWLINE, WS.INDENT, formatKeyword('ON DUPLICATE KEY UPDATE', this.cfg.keywordCase));
         this.indent.increaseTopLevel();
         this.layout.add(WS.NEWLINE, WS.INDENT);
 
-        const sets = odu.set || [];
-        sets.forEach((s: any, i: number) => {
+        const sets = (odu.set || []) as { column?: unknown; value?: unknown }[];
+        sets.forEach((s: { column?: unknown; value?: unknown }, i: number): void => {
             if (i > 0) {
                 this.layout.add(WS.NO_SPACE, ',', WS.NEWLINE, WS.INDENT);
             }
             const col = s.column || '';
             const val = this.exprFmt.format(s.value);
-            this.layout.add(col + ' = ' + val);
+            this.layout.add(String(col) + ' = ' + val);
         });
 
         this.indent.decreaseTopLevel();
     }
 
-    private formatReturning(returning: any): void {
+    private formatReturning(returning: Record<string, unknown>): void {
         this.layout.add(WS.NEWLINE, WS.INDENT, formatKeyword('RETURNING', this.cfg.keywordCase));
         this.layout.add(WS.SPACE);
 
         if (returning.columns) {
             if (Array.isArray(returning.columns)) {
-                const colStrs = returning.columns.map((c: any) => this.exprFmt.format(c));
+                const colStrs = (returning.columns as AstNode[]).map((c: AstNode): string => this.exprFmt.format(c));
                 this.layout.add(colStrs.join(', '));
             } else {
                 this.layout.add(this.exprFmt.format(returning.columns));

@@ -3,7 +3,7 @@ import * as assert from 'assert'
 
 const EXTENSION_IDS = ['bryce-qin.sql-all-in-one', 'bryce-qin.hive-formatter']
 
-function findExtension(): vscode.Extension<any> | undefined {
+function findExtension(): vscode.Extension<unknown> | undefined {
     for (const id of EXTENSION_IDS) {
         const ext = vscode.extensions.getExtension(id)
         if (ext) return ext

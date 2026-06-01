@@ -2,6 +2,7 @@ import type { FormatOptions } from '../FormatOptions';
 import Indentation from '../Indentation';
 import { formatKeyword, formatFunctionName, hasProperty, isLogicalOperator } from './CommonFormatter';
 import { AstNodeType } from '../AstNodeTypes';
+import type { AstNode } from '../../parser/astTypes';
 
 export type SubqueryFormatter = (expr: unknown) => string;
 
@@ -23,49 +24,50 @@ export class ExpressionFormatter {
         if (typeof expr === 'boolean') return String(expr).toUpperCase();
         if (!hasProperty(expr, 'type')) return String(expr);
 
-        const type = (expr as any).type;
+        const node = expr as AstNode;
+        const type = node.type;
         switch (type) {
             case AstNodeType.COLUMN_REF:
-                return this.formatColumnRef(expr);
+                return this.formatColumnRef(node);
             case AstNodeType.BINARY_EXPR:
-                return this.formatBinaryExpr(expr);
+                return this.formatBinaryExpr(node);
             case AstNodeType.STRING:
             case AstNodeType.SINGLE_QUOTE_STRING:
             case AstNodeType.DOUBLE_QUOTE_STRING:
-                return "'" + (expr as any).value + "'";
+                return "'" + String(node.value) + "'";
             case AstNodeType.NUMBER:
-                return String((expr as any).value);
+                return String(node.value);
             case AstNodeType.BIGINT:
-                return String((expr as any).value);
+                return String(node.value);
             case AstNodeType.BOOLEAN:
-                return formatKeyword(String((expr as any).value), this.cfg.booleanCase ?? this.cfg.keywordCase);
+                return formatKeyword(String(node.value), this.cfg.booleanCase ?? this.cfg.keywordCase);
             case AstNodeType.NULL:
                 return formatKeyword('NULL', this.cfg.nullCase ?? this.cfg.keywordCase);
             case AstNodeType.STAR:
                 return '*';
             case AstNodeType.FUNCTION:
-                return this.formatFunction(expr);
+                return this.formatFunction(node);
             case AstNodeType.AGGR_FUNC:
-                return this.formatAggrFunc(expr);
+                return this.formatAggrFunc(node);
             case AstNodeType.EXPR_LIST:
-                return this.formatExprList(expr);
+                return this.formatExprList(node);
             case AstNodeType.CASE:
-                return this.formatCase(expr);
+                return this.formatCase(node);
             case AstNodeType.CAST:
-                return this.formatCast(expr);
+                return this.formatCast(node);
             case AstNodeType.INTERVAL:
-                return this.formatInterval(expr);
+                return this.formatInterval(node);
             case AstNodeType.PARAM:
-                return this.formatParam(expr);
+                return this.formatParam(node);
             case AstNodeType.UNARY_EXPR:
-                return this.formatUnaryExpr(expr);
+                return this.formatUnaryExpr(node);
             case AstNodeType.TERNARY_EXPR:
-                return this.formatTernaryExpr(expr);
+                return this.formatTernaryExpr(node);
             case AstNodeType.SELECT:
             case AstNodeType.UNION:
-                return '(' + this.formatSubquery(expr) + ')';
+                return '(' + this.formatSubquery(node) + ')';
             case AstNodeType.ORIGIN:
-                return String((expr as any).value);
+                return String(node.value);
             case AstNodeType.DEFAULT:
                 return formatKeyword('DEFAULT', this.cfg.keywordCase);
             default:
@@ -73,29 +75,29 @@ export class ExpressionFormatter {
         }
     }
 
-    private formatColumnRef(expr: any): string {
+    private formatColumnRef(expr: AstNode): string {
         const table = expr.table;
         const column = expr.column;
         let colStr: string;
         if (typeof column === 'object' && column !== null) {
-            if ('expr' in column) {
-                colStr = this.format(column.expr);
+            if ('expr' in (column as Record<string, unknown>)) {
+                colStr = this.format((column as Record<string, unknown>).expr);
             } else {
-                colStr = String(column.value ?? column);
+                colStr = String((column as { value?: unknown }).value ?? column);
             }
         } else {
             colStr = String(column);
         }
         if (table) {
-            return table + '.' + colStr;
+            return String(table) + '.' + colStr;
         }
         return colStr;
     }
 
-    private formatBinaryExpr(expr: any): string {
-        const left = this.formatWithParentheses(expr.left);
-        const right = this.formatWithParentheses(expr.right);
-        const op = expr.operator;
+    private formatBinaryExpr(expr: AstNode): string {
+        const left = this.formatWithParentheses(expr.left as unknown);
+        const right = this.formatWithParentheses(expr.right as unknown);
+        const op = String(expr.operator);
         const upperOp = op.toUpperCase();
 
         if (isLogicalOperator(op)) {
@@ -113,9 +115,9 @@ export class ExpressionFormatter {
         return left + ' ' + op + ' ' + right;
     }
 
-    private formatWithParentheses(expr: any): string {
+    private formatWithParentheses(expr: unknown): string {
         const result = this.format(expr);
-        if (expr && typeof expr === 'object' && expr.parentheses) {
+        if (expr && typeof expr === 'object' && 'parentheses' in expr) {
             return '(' + result + ')';
         }
         return result;
@@ -130,7 +132,7 @@ export class ExpressionFormatter {
         }
     }
 
-    private formatFunction(expr: any): string {
+    private formatFunction(expr: AstNode): string {
         const name = this.extractFunctionName(expr.name);
         const formattedName = formatFunctionName(name, this.cfg.functionCase);
         const args = this.formatFunctionArgs(expr.args);
@@ -147,10 +149,10 @@ export class ExpressionFormatter {
         return result;
     }
 
-    private formatAggrFunc(expr: any): string {
+    private formatAggrFunc(expr: AstNode): string {
         const name = String(expr.name);
         const formattedName = formatFunctionName(name, this.cfg.functionCase);
-        const args = expr.args;
+        const args = expr.args as { distinct?: unknown; expr?: unknown } | undefined;
         let inner = '';
 
         if (args) {
@@ -171,34 +173,35 @@ export class ExpressionFormatter {
         return result;
     }
 
-    private formatOver(over: any): string {
+    private formatOver(over: unknown): string {
         let result = ' ' + formatKeyword('OVER', this.cfg.keywordCase) + ' (';
 
         if (typeof over === 'string') {
             result += over;
         } else if (over && typeof over === 'object') {
-            const spec = over.window_specification || over;
+            const overObj = over as Record<string, unknown>;
+            const spec = (overObj.window_specification || over) as Record<string, unknown>;
             const parts: string[] = [];
 
-            if (spec.partitionby && spec.partitionby.length > 0) {
-                const partitionExprs = spec.partitionby.map((p: any) => {
-                    if (p.expr) return p.expr.map((e: any) => this.format(e)).join(', ');
+            if (spec.partitionby && Array.isArray(spec.partitionby) && spec.partitionby.length > 0) {
+                const partitionExprs = (spec.partitionby as AstNode[]).map((p: AstNode): string => {
+                    if (p.expr) return ((p.expr as AstNode[]).map((e: AstNode): string => this.format(e)).join(', '));
                     return this.format(p);
                 });
                 parts.push(formatKeyword('PARTITION BY', this.cfg.keywordCase) + ' ' + partitionExprs.join(', '));
             }
 
-            if (spec.orderby && spec.orderby.length > 0) {
-                const orderExprs = spec.orderby.map((o: any) => {
+            if (spec.orderby && Array.isArray(spec.orderby) && spec.orderby.length > 0) {
+                const orderExprs = (spec.orderby as AstNode[]).map((o: AstNode): string => {
                     const exprStr = this.format(o.expr);
-                    const type = o.type ? ' ' + o.type : '';
+                    const type = o.type ? ' ' + String(o.type) : '';
                     return exprStr + type;
                 });
                 parts.push(formatKeyword('ORDER BY', this.cfg.keywordCase) + ' ' + orderExprs.join(', '));
             }
 
             if (spec.window_frame_clause) {
-                parts.push(spec.window_frame_clause);
+                parts.push(String(spec.window_frame_clause));
             }
 
             result += parts.join(' ');
@@ -208,58 +211,60 @@ export class ExpressionFormatter {
         return result;
     }
 
-    private extractFunctionName(name: any): string {
+    private extractFunctionName(name: unknown): string {
         if (typeof name === 'string') return name;
         if (Array.isArray(name)) {
-            return name.map((n: any) => {
+            return name.map((n: unknown): string => {
                 if (typeof n === 'string') return n;
-                if (n && typeof n === 'object' && 'value' in n) return String(n.value);
+                if (n && typeof n === 'object' && 'value' in (n as Record<string, unknown>)) return String((n as { value: unknown }).value);
                 return String(n);
             }).join('');
         }
         if (name && typeof name === 'object') {
-            if ('name' in name) {
-                return this.extractFunctionName(name.name);
+            const nameObj = name as Record<string, unknown>;
+            if ('name' in nameObj) {
+                return this.extractFunctionName(nameObj.name);
             }
-            if ('value' in name) return String(name.value);
+            if ('value' in nameObj) return String(nameObj.value);
         }
         return String(name);
     }
 
-    private formatFunctionArgs(args: any): string {
+    private formatFunctionArgs(args: unknown): string {
         if (args == null) return '';
         if (typeof args === 'string') return args;
 
-        if (args.type === 'expr_list') {
-            return this.formatExprListValues(args.value);
+        if (typeof args === 'object' && 'type' in (args as Record<string, unknown>) && (args as AstNode).type === 'expr_list') {
+            return this.formatExprListValues((args as AstNode).value as AstNode[]);
         }
 
         if (Array.isArray(args)) {
-            return this.formatExprListValues(args);
+            return this.formatExprListValues(args as AstNode[]);
         }
 
-        if (typeof args === 'object' && 'value' in args) {
-            if (Array.isArray(args.value)) {
-                return this.formatExprListValues(args.value);
+        if (typeof args === 'object' && 'value' in (args as Record<string, unknown>)) {
+            const argsObj = args as { value: unknown };
+            if (Array.isArray(argsObj.value)) {
+                return this.formatExprListValues(argsObj.value as AstNode[]);
             }
-            return this.format(args.value);
+            return this.format(argsObj.value);
         }
 
         return this.format(args);
     }
 
-    private formatExprListValues(values: any[]): string {
-        return values.map((v: any) => this.format(v)).join(', ');
+    private formatExprListValues(values: AstNode[]): string {
+        return values.map((v: AstNode): string => this.format(v)).join(', ');
     }
 
-    private formatExprList(expr: any): string {
+    private formatExprList(expr: AstNode): string {
         if (expr.parentheses) {
-            return '(' + this.formatExprListValues(expr.value) + ')';
+            return '(' + this.formatExprListValues(expr.value as AstNode[]) + ')';
         }
-        return this.formatExprListValues(expr.value);
+        return this.formatExprListValues(expr.value as AstNode[]);
     }
 
-    private formatCase(expr: any): string {
+    private formatCase(expr: AstNode): string {
         const parts: string[] = [formatKeyword('CASE', this.cfg.keywordCase)];
 
         if (expr.expr) {
@@ -267,7 +272,7 @@ export class ExpressionFormatter {
         }
 
         if (expr.args) {
-            for (const arg of expr.args) {
+            for (const arg of expr.args as AstNode[]) {
                 if (arg.type === 'when') {
                     parts.push(formatKeyword('WHEN', this.cfg.keywordCase));
                     parts.push(this.format(arg.cond));
@@ -284,30 +289,34 @@ export class ExpressionFormatter {
         return parts.join(' ');
     }
 
-    private formatCast(expr: any): string {
+    private formatCast(expr: AstNode): string {
         const inner = this.format(expr.expr);
-        const target = expr.target;
+        const target = expr.target as unknown;
         let targetStr = '';
         if (Array.isArray(target)) {
-            targetStr = target.map((t: any) => t.dataType || String(t)).join(' ');
+            targetStr = target.map((t: unknown): string => {
+                const tNode = t as Record<string, unknown>;
+                return String(tNode.dataType ?? t);
+            }).join(' ');
         } else if (target) {
-            targetStr = target.dataType || String(target);
+            const targetObj = target as Record<string, unknown>;
+            targetStr = String(targetObj.dataType ?? target);
         }
         return formatKeyword('CAST', this.cfg.functionCase) + '(' + inner + ' ' + formatKeyword('AS', this.cfg.keywordCase) + ' ' + targetStr + ')';
     }
 
-    private formatInterval(expr: any): string {
-        const unit = expr.unit;
+    private formatInterval(expr: AstNode): string {
+        const unit = String(expr.unit);
         const value = this.format(expr.expr);
         return formatKeyword('INTERVAL', this.cfg.keywordCase) + ' ' + value + ' ' + unit;
     }
 
-    private formatParam(expr: any): string {
+    private formatParam(expr: AstNode): string {
         return String(expr.value);
     }
 
-    private formatUnaryExpr(expr: any): string {
-        const op = expr.operator;
+    private formatUnaryExpr(expr: AstNode): string {
+        const op = String(expr.operator);
         const operand = this.format(expr.expr);
         if (op === 'NOT') {
             return formatKeyword('NOT', this.cfg.keywordCase) + ' ' + operand;
@@ -315,8 +324,8 @@ export class ExpressionFormatter {
         return op + operand;
     }
 
-    private formatTernaryExpr(expr: any): string {
-        const op = expr.operator;
+    private formatTernaryExpr(expr: AstNode): string {
+        const op = String(expr.operator);
         if (op.toUpperCase() === 'BETWEEN') {
             return this.format(expr.left) + ' ' + formatKeyword('BETWEEN', this.cfg.keywordCase) + ' ' +
                 this.format(expr.right) + ' ' + formatKeyword('AND', this.cfg.keywordCase) + ' ' +
@@ -325,14 +334,14 @@ export class ExpressionFormatter {
         return this.format(expr.left) + ' ' + op + ' ' + this.format(expr.right) + ' ' + String(expr.right2);
     }
 
-    private formatSubquery(expr: any): string {
+    private formatSubquery(expr: AstNode): string {
         if (this.formatSubqueryFn) {
             return '(' + this.formatSubqueryFn(expr) + ')';
         }
         return '(' + JSON.stringify(expr) + ')';
     }
 
-    private formatUnknown(expr: any): string {
+    private formatUnknown(expr: unknown): string {
         if (typeof expr === 'string') return expr;
         try {
             return JSON.stringify(expr);

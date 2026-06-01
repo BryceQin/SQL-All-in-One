@@ -21,45 +21,52 @@ export class ConnectionStore {
     constructor() {
         this.configDir = path.join(os.homedir(), '.sql-all-in-one');
         this.configFilePath = path.join(this.configDir, 'connections.json');
-        this.initConfigDir();
+    }
+
+    async init(): Promise<void> {
+        await this.initConfigDir();
     }
 
     setSecretStorage(secretStorage: vscode.SecretStorage): void {
         this.secretStorage = secretStorage;
     }
 
-    private initConfigDir(): void {
-        if (!fs.existsSync(this.configDir)) {
-            fs.mkdirSync(this.configDir, { recursive: true });
-            this.writeDefaultConfig();
+    private async initConfigDir(): Promise<void> {
+        try {
+            await fs.promises.access(this.configDir);
+        } catch {
+            await fs.promises.mkdir(this.configDir, { recursive: true });
+            await this.writeDefaultConfig();
         }
     }
 
-    private writeDefaultConfig(): void {
+    private async writeDefaultConfig(): Promise<void> {
         const defaultConfig: ConnectionsFile = {
             version: 1,
             groups: [],
             connections: [],
         };
-        this.saveToFile(defaultConfig);
+        await this.saveToFile(defaultConfig);
     }
 
-    private saveToFile(data: ConnectionsFile): void {
+    private async saveToFile(data: ConnectionsFile): Promise<void> {
         const dataStr = JSON.stringify(data, null, 2);
-        fs.writeFileSync(this.configFilePath, dataStr, 'utf8');
+        await fs.promises.writeFile(this.configFilePath, dataStr, 'utf8');
         try {
-            fs.chmodSync(this.configFilePath, 0o600);
+            await fs.promises.chmod(this.configFilePath, 0o600);
         } catch {
             console.warn('Could not set file permissions for connections.json');
         }
     }
 
-    private loadFromFile(): ConnectionsFile {
-        if (!fs.existsSync(this.configFilePath)) {
-            this.writeDefaultConfig();
+    private async loadFromFile(): Promise<ConnectionsFile> {
+        try {
+            await fs.promises.access(this.configFilePath);
+        } catch {
+            await this.writeDefaultConfig();
         }
         try {
-            const content = fs.readFileSync(this.configFilePath, 'utf8');
+            const content = await fs.promises.readFile(this.configFilePath, 'utf8');
             const data = JSON.parse(content) as ConnectionsFile;
             return data;
         } catch (e) {
@@ -73,7 +80,7 @@ export class ConnectionStore {
     }
 
     async load(): Promise<void> {
-        const data = this.loadFromFile();
+        const data = await this.loadFromFile();
         this.groups.clear();
         data.groups.forEach((group) => {
             this.groups.set(group.name, group);
@@ -93,11 +100,10 @@ export class ConnectionStore {
                 password: undefined,
             })),
         };
-        this.saveToFile(data);
+        await this.saveToFile(data);
     }
 
     async addConnection(config: ConnectionConfig, password?: string): Promise<void> {
-        this.connections.set(config.id, config);
         if (password && this.secretStorage) {
             await this.secretStorage.store(
                 `sql-all-in-one.password.${config.id}`,
@@ -116,6 +122,11 @@ export class ConnectionStore {
                 config.ssh.passphrase
             );
         }
+        const safeConfig = { ...config, password: undefined };
+        if (safeConfig.ssh) {
+            safeConfig.ssh = { ...safeConfig.ssh, password: undefined, passphrase: undefined };
+        }
+        this.connections.set(config.id, safeConfig);
         await this.save();
     }
 
@@ -130,7 +141,6 @@ export class ConnectionStore {
     }
 
     async updateConnection(id: string, config: ConnectionConfig, password?: string): Promise<void> {
-        this.connections.set(id, config);
         if (password !== undefined && this.secretStorage) {
             if (password) {
                 await this.secretStorage.store(
@@ -161,6 +171,11 @@ export class ConnectionStore {
                 await this.secretStorage.delete(`sql-all-in-one.ssh.passphrase.${id}`);
             }
         }
+        const safeConfig = { ...config, password: undefined };
+        if (safeConfig.ssh) {
+            safeConfig.ssh = { ...safeConfig.ssh, password: undefined, passphrase: undefined };
+        }
+        this.connections.set(id, safeConfig);
         await this.save();
     }
 
@@ -224,16 +239,92 @@ export class ConnectionStore {
             data.connections = data.connections.map((conn) => ({
                 ...conn,
                 password: undefined,
+                ssh: conn.ssh ? {
+                    ...conn.ssh,
+                    password: undefined,
+                    passphrase: undefined,
+                } : undefined,
             }));
         }
 
-        fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
+        await fs.promises.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8');
+        if (process.platform !== 'win32') {
+            try {
+                await fs.promises.chmod(filePath, 0o600);
+            } catch {
+                console.warn('Could not set file permissions for exported connections file');
+            }
+        }
+    }
+
+    private validateImportData(data: unknown): { valid: boolean; data: ConnectionsFile | null; errors: string[] } {
+        const errors: string[] = [];
+
+        if (!data || typeof data !== 'object') {
+            return { valid: false, data: null, errors: ['Imported data is not a valid object'] };
+        }
+
+        const obj = data as Record<string, unknown>;
+
+        if (typeof obj.version !== 'number') {
+            errors.push('Missing or invalid "version" field');
+        }
+
+        if (!Array.isArray(obj.groups)) {
+            errors.push('Missing or invalid "groups" field');
+        } else {
+            for (const group of obj.groups) {
+                if (!group || typeof group !== 'object') {
+                    errors.push('Invalid group entry');
+                    continue;
+                }
+                const g = group as Record<string, unknown>;
+                if (typeof g.name !== 'string' || typeof g.color !== 'string') {
+                    errors.push(`Invalid group: missing "name" or "color"`);
+                }
+            }
+        }
+
+        if (!Array.isArray(obj.connections)) {
+            errors.push('Missing or invalid "connections" field');
+        } else {
+            for (const conn of obj.connections) {
+                if (!conn || typeof conn !== 'object') {
+                    errors.push('Invalid connection entry');
+                    continue;
+                }
+                const c = conn as Record<string, unknown>;
+                if (typeof c.id !== 'string' || typeof c.name !== 'string' || typeof c.dialect !== 'string') {
+                    errors.push(`Invalid connection "${c.name || c.id || 'unknown'}": missing required fields (id, name, dialect)`);
+                }
+                if (typeof c.host !== 'string' || typeof c.port !== 'number' || typeof c.username !== 'string') {
+                    errors.push(`Invalid connection "${c.name || c.id || 'unknown'}": missing required fields (host, port, username)`);
+                }
+            }
+        }
+
+        if (errors.length > 0) {
+            return { valid: false, data: null, errors };
+        }
+
+        return { valid: true, data: obj as unknown as ConnectionsFile, errors: [] };
     }
 
     async importConnections(filePath: string): Promise<{ added: number; skipped: number }> {
-        const content = fs.readFileSync(filePath, 'utf8');
-        const data = JSON.parse(content) as ConnectionsFile;
+        const content = await fs.promises.readFile(filePath, 'utf8');
+        let parsed: unknown;
+        try {
+            parsed = JSON.parse(content);
+        } catch (_e) {
+            throw new Error('Failed to parse connections file: invalid JSON');
+        }
 
+        const validation = this.validateImportData(parsed);
+        if (!validation.valid || !validation.data) {
+            throw new Error(`Invalid connections file format:\n${validation.errors.join('\n')}`);
+        }
+
+        const data = validation.data;
         let added = 0;
         let skipped = 0;
 

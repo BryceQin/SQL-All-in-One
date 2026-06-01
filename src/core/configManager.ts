@@ -9,7 +9,7 @@ export class ConfigManager {
     private disposables: vscode.Disposable[] = [];
     private listeners: ConfigListener[] = [];
     private validators = new Map<string, (value: unknown) => boolean>();
-    private lastConfigSnapshot: Map<string, unknown> = new Map();
+    private lastConfigSnapshot = new Map<string, unknown>();
     private lintRuleKeys: string[] = [];
 
     /**
@@ -75,7 +75,7 @@ export class ConfigManager {
     }
 
     getSectionKeys<T extends Record<string, unknown>>(prefix: string, keys: string[], defaults: T): T {
-        const cacheKey = `__sectionKeys::${prefix}::${keys.join(',')}`;
+        const cacheKey = `__sectionKeys::${prefix}::${keys.slice().sort().join(',')}`;
         const cached = this.cache.get(cacheKey);
         if (cached !== undefined) {
             return cached as T;
@@ -93,7 +93,7 @@ export class ConfigManager {
     onConfigChange(listener: ConfigListener): vscode.Disposable {
         this.listeners.push(listener);
         return {
-            dispose: () => {
+            dispose: (): void => {
                 const idx = this.listeners.indexOf(listener);
                 if (idx >= 0) {
                     this.listeners.splice(idx, 1);
@@ -112,13 +112,6 @@ export class ConfigManager {
             'showErrorLevel',
             'showWarningLevel',
             'showInfoLevel',
-            'lint.missing_query_comment_threshold_line_count',
-            'lint.missing_query_comment_threshold_join_count',
-            'lint.missing_query_comment_threshold_subquery_count',
-            'lint.missing_column_comment_aggregate',
-            'lint.missing_column_comment_external_table_exempt',
-            'lint.commented_out_code_threshold_lines',
-            'lint.expired_todo_grace_period_days',
         ];
 
         const allKeys = [...fixedKeys, ...this.lintRuleKeys];
@@ -162,7 +155,7 @@ export class ConfigManager {
     }
 
     dispose(): void {
-        this.disposables.forEach((d) => d.dispose());
+        this.disposables.forEach((d) => { d.dispose(); });
         this.listeners.length = 0;
     }
 }

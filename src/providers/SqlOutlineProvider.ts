@@ -263,7 +263,7 @@ export class SqlOutlineProvider implements vscode.DocumentSymbolProvider {
         const from = node.from
         if (!Array.isArray(from) || from.length === 0) return null
 
-        const first = from[0]
+        const first: unknown = from[0]
         if (first == null || typeof first !== 'object') return null
         const fromEntry = first as Record<string, unknown>
 
@@ -291,7 +291,7 @@ export class SqlOutlineProvider implements vscode.DocumentSymbolProvider {
             return null
         }
 
-        const first = table[0]
+        const first: unknown = table[0]
         if (first == null || typeof first !== 'object') return null
         return extractTableName(first as Record<string, unknown>)
     }
@@ -479,8 +479,8 @@ export class SqlOutlineProvider implements vscode.DocumentSymbolProvider {
         clauseName: string
     ): vscode.DocumentSymbol | null {
         if (Array.isArray(items) && items.length > 0) {
-            const firstItem = items[0]
-            const lastItem = items[items.length - 1]
+            const firstItem: unknown = items[0]
+            const lastItem: unknown = items[items.length - 1]
             const firstLoc = this.getLocFromEntry(firstItem)
             const lastLoc = this.getLocFromEntry(lastItem)
             if (!firstLoc) return null

@@ -8,6 +8,14 @@ import messagesEn from '../i18n/messages.en.json'
 import messagesZh from '../i18n/messages.zh.json'
 import { ALL_CONFIG_ITEMS, LINT_RULES, getDefaultConfig, getConfigKey } from '../config/configDefinitions'
 
+interface ConfigEditorMessage {
+    command: string;
+    data?: Record<string, unknown>;
+    sql?: string;
+    config?: Record<string, unknown>;
+    lang?: string;
+}
+
 export class ConfigEditorPanel {
     public static currentPanel: ConfigEditorPanel | undefined
     public static readonly viewType = 'SQLAllInOneConfig'
@@ -16,7 +24,7 @@ export class ConfigEditorPanel {
     private readonly _extensionUri: vscode.Uri
     private _disposables: vscode.Disposable[] = []
 
-    public static createOrShow(extensionUri: vscode.Uri) {
+    public static createOrShow(extensionUri: vscode.Uri): void {
         const column = vscode.window.activeTextEditor
             ? vscode.window.activeTextEditor.viewColumn
             : undefined
@@ -50,11 +58,13 @@ export class ConfigEditorPanel {
         this._panel.onDidDispose(() => this.dispose(), null, this._disposables)
 
         this._panel.webview.onDidReceiveMessage(
-            async (message) => {
+            async (message: ConfigEditorMessage) => {
                 switch (message.command) {
                     case 'updateConfig':
                         try {
-                            await this._updateConfig(message.data)
+                            if (message.data) {
+                                await this._updateConfig(message.data)
+                            }
                             this._panel.webview.postMessage({ command: 'saveResult', success: true })
                         } catch {
                             this._panel.webview.postMessage({ command: 'saveResult', success: false })
@@ -64,7 +74,7 @@ export class ConfigEditorPanel {
                         await this._resetConfig()
                         break
                     case 'previewFormat':
-                        await this._previewFormat(message.sql, message.config)
+                        await this._previewFormat(message.sql ?? '', message.config)
                         break
                     case 'getCurrentConfig':
                         await this._sendCurrentConfig()
@@ -74,6 +84,10 @@ export class ConfigEditorPanel {
                             const config = vscode.workspace.getConfiguration('SQL-All-in-One')
                             await config.update('displayLanguage', message.lang, vscode.ConfigurationTarget.Global)
                         }
+                        this._sendI18nData()
+                        break
+                    case 'requestI18n':
+                        this._sendI18nData()
                         break
                 }
             },
@@ -82,7 +96,7 @@ export class ConfigEditorPanel {
         )
     }
 
-    public dispose() {
+    public dispose(): void {
         ConfigEditorPanel.currentPanel = undefined
         this._panel.dispose()
 
@@ -94,15 +108,16 @@ export class ConfigEditorPanel {
         }
     }
 
-    private async _update() {
-        this._panel.webview.html = this._getHtmlForWebview()
+    private async _update(): Promise<void> {
+        this._panel.webview.html = await this._getHtmlForWebview()
         await this._sendCurrentConfig()
+        this._sendI18nData()
     }
 
-    private _getHtmlForWebview(): string {
+    private async _getHtmlForWebview(): Promise<string> {
         try {
             const htmlPath = path.join(this._extensionUri.fsPath, 'media', 'config-editor.html')
-            let html = fs.readFileSync(htmlPath, 'utf-8')
+            let html = await fs.promises.readFile(htmlPath, 'utf-8')
 
             const cssUri = this._panel.webview.asWebviewUri(
                 vscode.Uri.joinPath(this._extensionUri, 'media', 'config-editor.css')
@@ -113,11 +128,6 @@ export class ConfigEditorPanel {
 
             html = html.replace('{{CSS_URI}}', cssUri.toString())
             html = html.replace('{{JS_URI}}', jsUri.toString())
-
-            const i18nDicts = this._getConfigEditorI18n()
-            const currentLang = getLanguage()
-            const i18nScript = '<script>window.__I18N_ZH__ = ' + JSON.stringify(i18nDicts.zh) + '; window.__I18N_EN__ = ' + JSON.stringify(i18nDicts.en) + '; window.__LANG__ = "' + currentLang + '"; window.__I18N__ = window.__LANG__ === "en" ? window.__I18N_EN__ : window.__I18N_ZH__;</script>'
-            html = html.replace('{{I18N_INJECT}}', i18nScript)
 
             return html
         } catch {
@@ -132,13 +142,24 @@ export class ConfigEditorPanel {
         }
     }
 
-    private async _sendCurrentConfig() {
+    private _sendI18nData(): void {
+        const i18nDicts = this._getConfigEditorI18n()
+        const currentLang = getLanguage()
+        this._panel.webview.postMessage({
+            command: 'initI18n',
+            zh: i18nDicts.zh,
+            en: i18nDicts.en,
+            lang: currentLang,
+        })
+    }
+
+    private async _sendCurrentConfig(): Promise<void> {
         const config = vscode.workspace.getConfiguration('SQL-All-in-One')
         const data: Record<string, unknown> = {}
 
         for (const item of ALL_CONFIG_ITEMS) {
             const configKey = getConfigKey(item)
-            data[item.key] = config.get(configKey, item.defaultValue as any)
+            data[item.key] = config.get(configKey, item.defaultValue as boolean | string | number)
         }
 
         for (const rule of LINT_RULES) {
@@ -153,7 +174,7 @@ export class ConfigEditorPanel {
         })
     }
 
-    private async _updateConfig(data: Record<string, unknown>) {
+    private async _updateConfig(data: Record<string, unknown>): Promise<void> {
         const config = vscode.workspace.getConfiguration('SQL-All-in-One')
 
         for (const item of ALL_CONFIG_ITEMS) {
@@ -176,13 +197,13 @@ export class ConfigEditorPanel {
         vscode.window.showInformationMessage(t('notification.configSaved'))
     }
 
-    private async _resetConfig() {
+    private async _resetConfig(): Promise<void> {
         const defaults = getDefaultConfig()
         await this._updateConfig(defaults)
         await this._sendCurrentConfig()
     }
 
-    private async _previewFormat(sql: string, webviewConfig?: Record<string, unknown>) {
+    private async _previewFormat(sql: string, webviewConfig?: Record<string, unknown>): Promise<void> {
         try {
             const config = vscode.workspace.getConfiguration('SQL-All-in-One')
             const get = <T>(key: string, defaultValue: T): T => {
@@ -215,6 +236,6 @@ export class ConfigEditorPanel {
     }
 }
 
-export function openConfigEditorCommand(extensionUri: vscode.Uri) {
+export function openConfigEditorCommand(extensionUri: vscode.Uri): void {
     ConfigEditorPanel.createOrShow(extensionUri)
 }

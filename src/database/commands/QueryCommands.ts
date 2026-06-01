@@ -53,7 +53,7 @@ export function registerQueryCommands(
     const disposables: vscode.Disposable[] = [];
     let queryResultPanel: QueryResultPanel | undefined;
 
-    const getQueryResultPanel = () => queryResultPanel;
+    const getQueryResultPanel = (): QueryResultPanel | undefined => queryResultPanel;
 
     disposables.push(
         vscode.commands.registerCommand('sql-all-in-one.executeQuery', async () => {
@@ -116,26 +116,26 @@ export function registerQueryCommands(
                     context.extensionUri,
                     context
                 );
-                queryResultPanel.onExecuteQuery = (_sql: string) => {
+                queryResultPanel.onExecuteQuery = (_sql: string): void => {
                     vscode.commands.executeCommand('sql-all-in-one.executeQuery');
                 };
-                queryResultPanel.onCancelQuery = () => {
+                queryResultPanel.onCancelQuery = (): void => {
                     vscode.commands.executeCommand('sql-all-in-one.cancelQuery');
                 };
-                queryResultPanel.onRequestSort = (_column: string, _direction: string) => {
+                queryResultPanel.onRequestSort = (_column: string, _direction: string): void => {
                     vscode.commands.executeCommand('sql-all-in-one.executeQuery');
                 };
-                queryResultPanel.onRequestFilter = (_conditions: FilterCondition[]) => {
+                queryResultPanel.onRequestFilter = (_conditions: FilterCondition[]): void => {
                     vscode.commands.executeCommand('sql-all-in-one.executeQuery');
                 };
-                queryResultPanel.onRequestPage = (_page: number) => {
+                queryResultPanel.onRequestPage = (_page: number): void => {
                     vscode.commands.executeCommand('sql-all-in-one.executeQuery');
                 };
             } else {
                 queryResultPanel.showLoading(statement.sql);
             }
 
-            queryResultPanel.onCommitChanges = async (changes, tableName, _database) => {
+            queryResultPanel.onCommitChanges = async (changes, tableName, _database): Promise<{ success: boolean; errors?: string[] }> => {
                 try {
                     const adapter = getActiveAdapter();
                     if (!adapter) {
@@ -161,7 +161,7 @@ export function registerQueryCommands(
                 }
             };
 
-            queryResultPanel.onRequestForeignKeyOptions = async (_column, referencedTable, database) => {
+            queryResultPanel.onRequestForeignKeyOptions = async (_column, referencedTable, database): Promise<import('../../views/queryResult/QueryResultPanel').ForeignKeyOption[]> => {
                 try {
                     const adapter = getActiveAdapter();
                     if (!adapter) return [];
@@ -190,29 +190,39 @@ export function registerQueryCommands(
                 }
             };
 
-            queryResultPanel.onBeginTransaction = async () => {
+            queryResultPanel.onBeginTransaction = async (): Promise<void> => {
                 const adapter = getActiveAdapter();
                 if (adapter) await adapter.beginTransaction();
             };
 
-            queryResultPanel.onCommitTransaction = async () => {
+            queryResultPanel.onCommitTransaction = async (): Promise<void> => {
                 const adapter = getActiveAdapter();
                 if (adapter) await adapter.commit();
             };
 
-            queryResultPanel.onRollbackTransaction = async () => {
+            queryResultPanel.onRollbackTransaction = async (): Promise<void> => {
                 const adapter = getActiveAdapter();
                 if (adapter) await adapter.rollback();
             };
 
-            queryResultPanel.onCreateSavepoint = async (name: string) => {
+            queryResultPanel.onCreateSavepoint = async (name: string): Promise<void> => {
                 const adapter = getActiveAdapter();
-                if (adapter) await adapter.execute(`SAVEPOINT ${name}`);
+                if (adapter) {
+                    if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
+                        throw new Error(`Invalid savepoint name: ${name}`);
+                    }
+                    await adapter.execute(`SAVEPOINT ${name}`);
+                }
             };
 
-            queryResultPanel.onRollbackToSavepoint = async (name: string) => {
+            queryResultPanel.onRollbackToSavepoint = async (name: string): Promise<void> => {
                 const adapter = getActiveAdapter();
-                if (adapter) await adapter.execute(`ROLLBACK TO SAVEPOINT ${name}`);
+                if (adapter) {
+                    if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
+                        throw new Error(`Invalid savepoint name: ${name}`);
+                    }
+                    await adapter.execute(`ROLLBACK TO SAVEPOINT ${name}`);
+                }
             };
 
             const activeConfig = connectionManager.getActiveConnection();

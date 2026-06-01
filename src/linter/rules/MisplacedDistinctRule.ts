@@ -29,7 +29,7 @@ export class MisplacedDistinctRule extends BaseRule {
         }
 
         for (let i = 1; i < columns.length; i++) {
-            const col = columns[i]
+            const col: unknown = columns[i]
             if (!isAstNode(col)) {
                 continue
             }

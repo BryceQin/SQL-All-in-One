@@ -106,10 +106,11 @@ export function parseCsvLine(line: string, delimiter: string): string[] {
 
 /**
  * Formats a JavaScript value for inclusion in a SQL statement.
- * - null / undefined  -> NULL
- * - number            -> literal number
- * - boolean           -> 1 / 0
- * - string            -> single-quoted with escaped inner quotes
+ * - null / undefined  -\> NULL
+ * - number            -\> literal number
+ * - boolean           -\> 1 / 0
+ * - Date              -\> ISO string, single-quoted
+ * - string            -\> single-quoted with escaped inner quotes
  */
 export function formatSqlValue(value: unknown): string {
     if (value === null || value === undefined) {
@@ -395,7 +396,7 @@ export async function importFromJson(
     let skippedRows = 0;
 
     const raw = await fs.promises.readFile(filePath, 'utf-8');
-    const records: unknown[] = JSON.parse(raw);
+    const records = JSON.parse(raw) as unknown[];
 
     if (!Array.isArray(records)) {
         return {

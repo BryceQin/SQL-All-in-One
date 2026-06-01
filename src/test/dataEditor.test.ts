@@ -2,14 +2,14 @@ import * as assert from 'assert';
 
 suite('Data Editor - SQL Generation', () => {
 
-    function formatSqlVal(val: any): string {
+    function formatSqlVal(val: unknown): string {
         if (val === null || val === undefined) return 'NULL';
         if (typeof val === 'number') return String(val);
         if (typeof val === 'boolean') return String(val);
         return "'" + String(val).replace(/'/g, "''") + "'";
     }
 
-    function generateUpdateSql(tableName: string, primaryKey: Record<string, any>, changes: Record<string, { old: any; new: any }>): string {
+    function generateUpdateSql(tableName: string, primaryKey: Record<string, unknown>, changes: Record<string, { old: unknown; new: unknown }>): string {
         const setClauses = Object.entries(changes)
             .map(([k, v]) => '`' + k + '` = ' + formatSqlVal(v.new))
             .join(', ');
@@ -19,14 +19,14 @@ suite('Data Editor - SQL Generation', () => {
         return 'UPDATE `' + tableName + '` SET ' + setClauses + ' WHERE ' + where;
     }
 
-    function generateDeleteSql(tableName: string, primaryKey: Record<string, any>): string {
+    function generateDeleteSql(tableName: string, primaryKey: Record<string, unknown>): string {
         const where = Object.entries(primaryKey)
             .map(([k, v]) => '`' + k + '` = ' + formatSqlVal(v))
             .join(' AND ');
         return 'DELETE FROM `' + tableName + '` WHERE ' + where;
     }
 
-    function generateInsertSql(tableName: string, colNames: string[], values: any[]): string {
+    function generateInsertSql(tableName: string, colNames: string[], values: unknown[]): string {
         const cols = colNames.map(c => '`' + c + '`').join(', ');
         const vals = values.map(v => formatSqlVal(v)).join(', ');
         return 'INSERT INTO `' + tableName + '` (' + cols + ') VALUES (' + vals + ')';
@@ -96,7 +96,7 @@ suite('Data Editor - SQL Generation', () => {
 
 suite('Data Editor - formatSqlVal', () => {
 
-    function formatSqlVal(val: any): string {
+    function formatSqlVal(val: unknown): string {
         if (val === null || val === undefined) return 'NULL';
         if (typeof val === 'number') return String(val);
         if (typeof val === 'boolean') return String(val);
@@ -138,7 +138,7 @@ suite('Data Editor - formatSqlVal', () => {
 
 suite('Data Editor - Validation', () => {
 
-    function validateCell(col: { nullable: boolean; type: string; isEnum: boolean; enumValues?: string[] }, value: any): string | null {
+    function validateCell(col: { nullable: boolean; type: string; isEnum: boolean; enumValues?: string[] }, value: unknown): string | null {
         if (value === null || value === undefined || value === '') {
             if (!col.nullable) return 'NOT NULL violation';
             return null;
@@ -157,7 +157,7 @@ suite('Data Editor - Validation', () => {
             if (value.length > maxLen) return 'Length exceeded: max ' + maxLen;
         }
 
-        if (col.isEnum && col.enumValues && !col.enumValues.includes(value)) {
+        if (col.isEnum && col.enumValues && !col.enumValues.includes(value as string)) {
             return 'Invalid enum value';
         }
 

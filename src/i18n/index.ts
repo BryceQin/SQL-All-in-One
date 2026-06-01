@@ -42,6 +42,9 @@ export function initI18nForTest(lang: Language = 'zh'): void {
 export function t(key: MessageKey, ...args: string[]): string {
     let template = messages[key];
     if (template === undefined) {
+        template = messageBundles.en[key];  // fallback to English
+    }
+    if (template === undefined) {
         console.warn(`[i18n] Missing translation key: ${key}`);
         return key;
     }
@@ -51,8 +54,15 @@ export function t(key: MessageKey, ...args: string[]): string {
     return template;
 }
 
+/**
+ * @deprecated Use `t()` with a valid MessageKey instead.
+ * If you need dynamic keys, add them to messages.en.json first.
+ */
 export function tAny(key: string, ...args: string[]): string {
     let template = (messages as Record<string, string>)[key];
+    if (template === undefined) {
+        template = (messageBundles.en as Record<string, string>)[key];  // fallback to English
+    }
     if (template === undefined) {
         console.warn(`[i18n] Missing translation key: ${key}`);
         return key;

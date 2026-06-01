@@ -10,6 +10,7 @@ interface AggregateStats {
 export class PerformanceMonitor {
   private aggregateStats = new Map<string, AggregateStats>();
   private slowThreshold = 100;
+  private static readonly MAX_STATS_ENTRIES = 200;
 
   measure<T>(name: string, fn: () => T): T {
     const start = performance.now();
@@ -32,6 +33,13 @@ export class PerformanceMonitor {
   }
 
   private recordMeasurement(name: string, duration: number): void {
+    if (this.aggregateStats.size >= PerformanceMonitor.MAX_STATS_ENTRIES && !this.aggregateStats.has(name)) {
+      const firstKey = this.aggregateStats.keys().next().value;
+      if (firstKey !== undefined) {
+        this.aggregateStats.delete(firstKey);
+      }
+    }
+
     const existing = this.aggregateStats.get(name);
     if (existing) {
       existing.count += 1;

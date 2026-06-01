@@ -15,7 +15,8 @@ export class ExpiredTodoRule extends BaseRule {
 
     check(context: RuleContext): vscode.Diagnostic[] {
         const diagnostics: vscode.Diagnostic[] = []
-        const gracePeriod = getConfigManager().get<number>('lint.expired_todo_grace_period_days', 7)
+        const ruleConfig = getConfigManager().get<{ enabled?: boolean; severity?: string; gracePeriodDays?: number }>('lint.expired_todo', { enabled: true, severity: 'information', gracePeriodDays: 7 })
+        const gracePeriod = ruleConfig.gracePeriodDays ?? 7
 
         const patterns = [
             /--\s*(TODO|FIXME)\s*\(\s*(\d{4}[-/]\d{2}[-/]\d{2})\s*\):?\s*.*/gi,

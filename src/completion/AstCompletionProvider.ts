@@ -129,7 +129,7 @@ function determineSelectClauseContext(selectNode: AstNode, pos: AstLocation): Co
 
     if (Array.isArray(from)) {
         for (let i = from.length - 1; i >= 0; i--) {
-            const entry = from[i]
+            const entry: unknown = from[i]
             if (entry == null || typeof entry !== 'object') continue
             const fromEntry = entry as Record<string, unknown>
             const join = fromEntry.join

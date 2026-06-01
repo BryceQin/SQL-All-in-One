@@ -33,7 +33,7 @@ export class SqlFormattingProvider
         })
     }
 
-    private getAllText(document: vscode.TextDocument) {
+    private getAllText(document: vscode.TextDocument): string {
         return document.getText()
     }
 
@@ -48,7 +48,7 @@ export class SqlFormattingProvider
         text: string,
         formattingOptions: vscode.FormattingOptions,
         uri: vscode.Uri,
-    ) {
+    ): string {
         const extensionSettings = vscode.workspace.getConfiguration(
             "SQL-All-in-One",
             uri,

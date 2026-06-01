@@ -63,7 +63,7 @@ interface ColumnInfo {
     type: string;
     length?: number;
     nullable: boolean;
-    defaultValue?: any;
+    defaultValue?: unknown;
     isPrimaryKey: boolean;
     isAutoIncrement: boolean;
     isUnique: boolean;

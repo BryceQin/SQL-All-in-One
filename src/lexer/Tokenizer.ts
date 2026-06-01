@@ -342,8 +342,8 @@ export default class Tokenizer {
                     regex.stringPattern(cfg.identTypes),
                 ),
                 // 去除引号并还原转义字符，提取核心参数名
-                key: (v) =>
-                    (({ tokenKey, quoteChar }) =>
+                key: (v): string =>
+                    (({ tokenKey, quoteChar }: { tokenKey: string; quoteChar: string }): string =>
                         tokenKey.replace(
                             new RegExp(escapeRegExp("\\" + quoteChar), "gu"),
                             quoteChar,
@@ -369,7 +369,7 @@ export default class Tokenizer {
                 (customParam): TokenRule => ({
                     type: TokenType.CUSTOM_PARAMETER,
                     regex: patternToRegex(customParam.regex),
-                    key: customParam.key ?? ((v) => v),
+                    key: customParam.key ?? ((v): string => v),
                 }),
             ),
         ])

@@ -6,7 +6,6 @@ export interface CreateTableInfo {
   startIndex: number
 }
 
-// eslint-disable-next-line @typescript-eslint/no-extraneous-class
 export class SqlParser {
   static findCreateTable(sql: string): CreateTableInfo | null {
     const createStart = sql.search(/CREATE\s+TABLE/i)

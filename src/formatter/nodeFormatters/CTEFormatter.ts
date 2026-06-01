@@ -2,26 +2,23 @@ import type { FormatOptions } from '../FormatOptions';
 import Indentation from '../Indentation';
 import Layout, { WS } from '../Layout';
 import { formatKeyword } from './CommonFormatter';
-// import { ExpressionFormatter } from './ExpressionFormatter';
+import type { AstNode } from '../../parser/astTypes';
 
 export class CTEFormatter {
     private cfg: FormatOptions;
     private indent: Indentation;
     private layout: Layout;
-    // No longer used
-    // private _exprFmt: ExpressionFormatter;
-    private subqueryFormatter: (stmt: any) => string;
+    private subqueryFormatter: (stmt: unknown) => string;
 
-    constructor(cfg: FormatOptions, indent: Indentation, subqueryFormatter: (stmt: any) => string) {
+    constructor(cfg: FormatOptions, indent: Indentation, subqueryFormatter: (stmt: unknown) => string) {
         this.cfg = cfg;
         this.indent = indent;
         this.layout = new Layout(new Indentation(indent.getSingleIndent()));
         this.layout.indentation = indent;
-        // this._exprFmt = new ExpressionFormatter(cfg, indent);
         this.subqueryFormatter = subqueryFormatter;
     }
 
-    public format(withClause: any[]): string {
+    public format(withClause: AstNode[]): string {
         if (this.cfg.newlineBeforeWith !== false) {
             this.layout.add(WS.INDENT);
         }
@@ -36,7 +33,7 @@ export class CTEFormatter {
 
         this.indent.increaseTopLevel();
 
-        withClause.forEach((cte, i) => {
+        withClause.forEach((cte: AstNode, i: number): void => {
             if (i > 0) {
                 if (this.cfg.cteCommaPosition === 'before') {
                     this.layout.add(WS.NEWLINE, WS.INDENT, ',', WS.SPACE);
@@ -58,15 +55,15 @@ export class CTEFormatter {
         return this.layout.toString().trimEnd();
     }
 
-    private formatCTE(cte: any): void {
+    private formatCTE(cte: AstNode): void {
         const name = cte.name;
-        const nameStr = typeof name === 'object' && 'value' in name ? String(name.value) : String(name);
+        const nameStr = typeof name === 'object' && name !== null && 'value' in (name as Record<string, unknown>) ? String((name as { value: unknown }).value) : String(name);
 
         this.layout.add(nameStr);
 
-        if (cte.columns && Array.isArray(cte.columns) && cte.columns.length > 0) {
-            const colStrs = cte.columns.map((c: any) => {
-                if (typeof c === 'object' && 'value' in c) return String(c.value);
+        if (cte.columns && Array.isArray(cte.columns) && (cte.columns as AstNode[]).length > 0) {
+            const colStrs = (cte.columns as AstNode[]).map((c: AstNode): string => {
+                if (typeof c === 'object' && c !== null && 'value' in c) return String((c as unknown as { value: unknown }).value);
                 return String(c);
             });
             this.layout.add(' (' + colStrs.join(', ') + ')');
@@ -81,7 +78,7 @@ export class CTEFormatter {
             this.layout.add(WS.SPACE);
         }
 
-        const stmt = cte.stmt;
+        const stmt = cte.stmt as { ast?: unknown } | undefined;
         if (stmt && stmt.ast) {
             this.layout.add(this.subqueryFormatter(stmt.ast));
         }

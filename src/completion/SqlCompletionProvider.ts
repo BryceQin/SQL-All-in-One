@@ -2,7 +2,7 @@ import * as vscode from 'vscode'
 import * as fs from 'fs'
 import * as path from 'path'
 import { sqlDialects } from '../core/sqlDialects'
-import { createDialect, type Dialect } from '../languages/dialect'
+import { createDialect, type Dialect, type DialectOptions } from '../languages/dialect'
 import * as allDialects from '../languages/allDialects'
 import { getKeywordItems } from './keywordCompletion'
 import { getFunctionItems } from './functionCompletion'
@@ -109,7 +109,7 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
         const dName = sqlDialects[langId as keyof typeof sqlDialects] || 'hive'
         if (cached) return { dialect: cached, dName }
         const dc = allDialects[dName as keyof typeof allDialects]
-        const dialect = createDialect(dc as any)
+        const dialect = createDialect((dc ?? allDialects.hive) as DialectOptions)
         this.dialectCache.set(langId, dialect)
         return { dialect, dName }
     }

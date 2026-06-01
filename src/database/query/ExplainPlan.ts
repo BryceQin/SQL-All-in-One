@@ -6,17 +6,76 @@ export interface OptimizationSuggestion {
     table?: string;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-extraneous-class
+interface MysqlExplainTableInfo {
+    table_name?: string;
+    rows_examined?: number;
+    rows_produced_per_join?: number;
+    rows?: number;
+    read_cost?: number;
+    eval_cost?: number;
+    prefix_cost?: number;
+    key?: string;
+    best_key?: string;
+    used_columns?: string;
+    insert?: string;
+    using_filesort?: boolean;
+    using_temporary_table?: boolean;
+    using_index?: boolean;
+    full_scan?: boolean;
+    range_scan?: boolean;
+    access_type?: string;
+}
+
+interface MysqlExplainQueryBlock {
+    table?: MysqlExplainTableInfo;
+    nested_loop?: MysqlExplainNestedLoopItem[];
+    ordering_operation?: MysqlExplainQueryBlock & { using_filesort?: boolean };
+    grouping_operation?: MysqlExplainQueryBlock & { using_temporary_table?: boolean };
+    subqueries?: { query_block: MysqlExplainQueryBlock }[];
+    union_result?: { table_name?: string };
+    table_name?: string;
+    rows?: number;
+    cost?: number;
+    key?: string;
+    Extra?: string;
+    select_id?: number;
+    cost_info?: { rows_examined_per_scan?: number; query_cost?: string };
+}
+
+interface MysqlExplainNestedLoopItem {
+    table?: MysqlExplainTableInfo;
+    nested_loop?: MysqlExplainNestedLoopItem[];
+    ordering_operation?: MysqlExplainQueryBlock & { using_filesort?: boolean };
+    grouping_operation?: MysqlExplainQueryBlock & { using_temporary_table?: boolean };
+    subqueries?: { query_block: MysqlExplainQueryBlock }[];
+    union_result?: { table_name?: string };
+}
+
+interface MysqlExplainTableRow {
+    id?: number;
+    table?: string;
+    rows?: number | string;
+    key?: string;
+    Extra?: string;
+    extra?: string;
+    type?: string;
+    access_type?: string;
+}
+
+interface MysqlExplainJsonRoot {
+    query_block?: MysqlExplainQueryBlock;
+}
+
 export class ExplainPlan {
     // eslint-disable-next-line @typescript-eslint/no-empty-function
     private constructor() {}
 
-    static parseMysqlExplain(raw: any): ExplainResult {
+    static parseMysqlExplain(raw: unknown): ExplainResult {
         // JSON format: raw is a string containing JSON, or already-parsed object
         if (typeof raw === 'string') {
             try {
-                const parsed = JSON.parse(raw);
-                return ExplainPlan.parseMysqlJsonExplain(parsed);
+                const parsed: unknown = JSON.parse(raw);
+                return ExplainPlan.parseMysqlJsonExplain(parsed as MysqlExplainJsonRoot | MysqlExplainJsonRoot[]);
             } catch {
                 // Not valid JSON, treat as raw text
                 return { format: 'mysql', raw: raw, nodes: [] };
@@ -25,13 +84,14 @@ export class ExplainPlan {
 
         // Already a parsed object — could be JSON EXPLAIN or table-format rows
         if (Array.isArray(raw)) {
-            return ExplainPlan.parseMysqlTableExplain(raw);
+            return ExplainPlan.parseMysqlTableExplain(raw as MysqlExplainTableRow[]);
         }
 
         if (typeof raw === 'object' && raw !== null) {
+            const obj = raw as MysqlExplainJsonRoot;
             // JSON EXPLAIN result (has query_block)
-            if (raw.query_block) {
-                return ExplainPlan.parseMysqlJsonExplain(raw);
+            if (obj.query_block) {
+                return ExplainPlan.parseMysqlJsonExplain(obj);
             }
             // Could be wrapped in an array at top level of FORMAT=JSON
             // e.g. [{ query_block: ... }]
@@ -44,7 +104,7 @@ export class ExplainPlan {
     /**
      * Recursively parse a query_block from MySQL JSON EXPLAIN output.
      */
-    private static parseQueryBlock(block: any, parentId?: string): ExplainNode[] {
+    private static parseQueryBlock(block: MysqlExplainQueryBlock | MysqlExplainNestedLoopItem, parentId?: string): ExplainNode[] {
         if (!block || typeof block !== 'object') {
             return [];
         }
@@ -57,7 +117,7 @@ export class ExplainPlan {
 
         if (block.nested_loop) {
             // nested_loop contains an array of join tables
-            const joinNodes = block.nested_loop.map((item: any, index: number) => {
+            const joinNodes = block.nested_loop.map((item: MysqlExplainNestedLoopItem, index: number) => {
                 const childNodes = ExplainPlan.parseQueryBlock(item, `${id}-nl${index}`);
                 return childNodes;
             }).flat();
@@ -94,30 +154,32 @@ export class ExplainPlan {
 
         // Handle ordering_operation
         if (block.ordering_operation) {
+            const orderBlock = block.ordering_operation;
             const orderNode: ExplainNode = {
                 id: `${id}-sort`,
                 operation: 'SORT',
                 children: [],
             };
-            if (block.ordering_operation.using_filesort) {
+            if ('using_filesort' in orderBlock && orderBlock.using_filesort) {
                 orderNode.extra = 'Using filesort';
             }
-            const childNodes = ExplainPlan.parseQueryBlock(block.ordering_operation, `${id}-sort`);
+            const childNodes = ExplainPlan.parseQueryBlock(orderBlock, `${id}-sort`);
             orderNode.children = childNodes;
             nodes.push(orderNode);
         }
 
         // Handle grouping_operation
         if (block.grouping_operation) {
+            const groupBlock = block.grouping_operation;
             const groupNode: ExplainNode = {
                 id: `${id}-group`,
                 operation: 'TEMPORARY',
                 children: [],
             };
-            if (block.grouping_operation.using_temporary_table) {
+            if ('using_temporary_table' in groupBlock && groupBlock.using_temporary_table) {
                 groupNode.extra = 'Using temporary';
             }
-            const childNodes = ExplainPlan.parseQueryBlock(block.grouping_operation, `${id}-group`);
+            const childNodes = ExplainPlan.parseQueryBlock(groupBlock, `${id}-group`);
             groupNode.children = childNodes;
             nodes.push(groupNode);
         }
@@ -144,15 +206,16 @@ export class ExplainPlan {
         }
 
         // If no specific structure found but block has a table_name directly
-        if (!block.table && !block.nested_loop && !block.ordering_operation && !block.grouping_operation && block.table_name) {
+        if (!block.table && !block.nested_loop && !block.ordering_operation && !block.grouping_operation && 'table_name' in block && block.table_name) {
+            const directBlock = block as MysqlExplainQueryBlock;
             nodes.push({
                 id: parentId ?? id,
                 operation: 'TABLE SCAN',
-                table: block.table_name,
-                rows: block.rows,
-                cost: block.cost,
-                key: block.key,
-                extra: block.Extra,
+                table: directBlock.table_name,
+                rows: directBlock.rows,
+                cost: directBlock.cost,
+                key: directBlock.key,
+                extra: directBlock.Extra,
                 children: [],
             });
         }
@@ -163,7 +226,7 @@ export class ExplainPlan {
     /**
      * Detect the operation type from a query block.
      */
-    private static detectOperation(block: any): string {
+    private static detectOperation(block: MysqlExplainQueryBlock | MysqlExplainNestedLoopItem): string {
         if (!block || typeof block !== 'object') {
             return 'UNKNOWN';
         }
@@ -218,7 +281,7 @@ export class ExplainPlan {
         const suggestions: OptimizationSuggestion[] = [];
         const seen = new Set<string>();
 
-        const addSuggestion = (suggestion: OptimizationSuggestion) => {
+        const addSuggestion = (suggestion: OptimizationSuggestion): void => {
             const key = `${suggestion.severity}:${suggestion.message}:${suggestion.table ?? ''}`;
             if (!seen.has(key)) {
                 seen.add(key);
@@ -226,7 +289,7 @@ export class ExplainPlan {
             }
         };
 
-        const analyzeNode = (node: ExplainNode) => {
+        const analyzeNode = (node: ExplainNode): void => {
             // TABLE SCAN → critical
             if (node.operation === 'TABLE SCAN') {
                 addSuggestion({
@@ -290,11 +353,11 @@ export class ExplainPlan {
 
     // --- Private helpers for different input formats ---
 
-    private static parseMysqlJsonExplain(parsed: any): ExplainResult {
+    private static parseMysqlJsonExplain(parsed: MysqlExplainJsonRoot | MysqlExplainJsonRoot[]): ExplainResult {
         const raw = JSON.stringify(parsed);
 
         // FORMAT=JSON output may be wrapped: [{ query_block: ... }] or { query_block: ... }
-        let root = parsed;
+        let root: MysqlExplainJsonRoot = parsed as MysqlExplainJsonRoot;
         if (Array.isArray(parsed) && parsed.length > 0) {
             root = parsed[0];
         }
@@ -307,9 +370,9 @@ export class ExplainPlan {
         return { format: 'mysql', raw, nodes };
     }
 
-    private static parseMysqlTableExplain(rows: any[]): ExplainResult {
+    private static parseMysqlTableExplain(rows: MysqlExplainTableRow[]): ExplainResult {
         const raw = JSON.stringify(rows);
-        const nodes: ExplainNode[] = rows.map((row: any, index: number) => {
+        const nodes: ExplainNode[] = rows.map((row: MysqlExplainTableRow, index: number) => {
             const id = String(row.id ?? index);
             const operation = ExplainPlan.detectOperationFromTableRow(row);
             const node: ExplainNode = {
@@ -329,7 +392,7 @@ export class ExplainPlan {
         return { format: 'mysql', raw, nodes: rootNodes };
     }
 
-    private static detectOperationFromTableRow(row: any): string {
+    private static detectOperationFromTableRow(row: MysqlExplainTableRow): string {
         const type = (row.type ?? row.access_type ?? '').toUpperCase();
         const extra = (row.Extra ?? row.extra ?? '').toLowerCase();
 

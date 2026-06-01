@@ -9,6 +9,7 @@ import { SchemaHoverResolver } from '../hover/SchemaHoverResolver'
 import { extractWordAtPosition } from '../hover/hoverUtils'
 import { getConfigManager } from '../core/configManager'
 import { getConnectionManager } from '../database/connection/ConnectionManager'
+import { getPerformanceMonitor } from '../core/performanceMonitor'
 
 export class SqlHoverProvider implements vscode.HoverProvider {
     private docResolvers: HoverResolver[]
@@ -31,32 +32,34 @@ export class SqlHoverProvider implements vscode.HoverProvider {
         position: vscode.Position,
         token: vscode.CancellationToken,
     ): Promise<vscode.Hover | null> {
-        if (!getConfigManager().get<boolean>('enableHover', true)) return null
-        if (token.isCancellationRequested) return null
+        return getPerformanceMonitor().measureAsync('SqlHoverProvider.provideHover', async () => {
+            if (!getConfigManager().get<boolean>('enableHover', true)) return null
+            if (token.isCancellationRequested) return null
 
-        const dialectName = sqlDialects[document.languageId as keyof typeof sqlDialects]
-        if (!dialectName) return null
+            const dialectName = sqlDialects[document.languageId as keyof typeof sqlDialects]
+            if (!dialectName) return null
 
-        const word = extractWordAtPosition(document, position)
-        if (!word) return null
+            const word = extractWordAtPosition(document, position)
+            if (!word) return null
 
-        for (const resolver of this.docResolvers) {
-            const result = resolver.resolve(word, dialectName as SqlLanguage, document, position)
-            if (result) return result
-        }
+            for (const resolver of this.docResolvers) {
+                const result = resolver.resolve(word, dialectName as SqlLanguage, document, position)
+                if (result) return result
+            }
 
-        const activeConn = getConnectionManager().getActiveConnection()
-        if (activeConn) {
-            try {
-                const schemaResult = await this.schemaResolver.resolve(word, dialectName as SqlLanguage, document, position)
-                if (schemaResult) return schemaResult
-            } catch { /* schema hover failed, fallback */ }
-        }
+            const activeConn = getConnectionManager().getActiveConnection()
+            if (activeConn) {
+                try {
+                    const schemaResult = await this.schemaResolver.resolve(word, dialectName as SqlLanguage, document, position)
+                    if (schemaResult) return schemaResult
+                } catch { /* schema hover failed, fallback */ }
+            }
 
-        for (const resolver of this.staticResolvers) {
-            const result = resolver.resolve(word, dialectName as SqlLanguage, document, position)
-            if (result) return result
-        }
-        return null
+            for (const resolver of this.staticResolvers) {
+                const result = resolver.resolve(word, dialectName as SqlLanguage, document, position)
+                if (result) return result
+            }
+            return null
+        })
     }
 }

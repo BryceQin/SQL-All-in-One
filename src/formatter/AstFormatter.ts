@@ -4,6 +4,7 @@ import { getParserEngine } from '../parser/SqlParserEngine';
 import type { AST } from 'node-sql-parser';
 import type { SqlDialect } from '../parser/dialectMapper';
 import { isAstNode } from '../parser/AstVisitor';
+import type { AstNode } from '../parser/astTypes';
 import Layout, { WS } from './Layout';
 import Indentation from './Indentation';
 import { SelectFormatter } from './nodeFormatters/SelectFormatter';
@@ -56,10 +57,10 @@ export class AstFormatter {
         const type = stmt.type as string;
         switch (type) {
             case AstNodeType.SELECT:
-                return this.selectFormatter.format(stmt);
+                return this.selectFormatter.format(stmt as AstNode);
             case AstNodeType.INSERT:
             case AstNodeType.REPLACE:
-                return this.insertFormatter.format(stmt);
+                return this.insertFormatter.format(stmt as AstNode);
             case AstNodeType.UPDATE:
                 return this.formatUpdate(stmt);
             case AstNodeType.DELETE:
@@ -67,7 +68,7 @@ export class AstFormatter {
             case AstNodeType.CREATE:
             case AstNodeType.ALTER:
             case AstNodeType.DROP:
-                return this.ddlFormatter.format(stmt);
+                return this.ddlFormatter.format(stmt as AstNode);
             case AstNodeType.USE:
                 return this.formatUse(stmt);
             default:
@@ -176,8 +177,12 @@ export class AstFormatter {
         return layout.toString().trimEnd();
     }
 
+    private quoteIdentifier(name: string): string {
+        return '`' + name.replace(/`/g, '``') + '`';
+    }
+
     private formatUse(stmt: Record<string, unknown>): string {
-        return formatKeyword('USE', this.cfg.keywordCase) + ' ' + String(stmt.db);
+        return formatKeyword('USE', this.cfg.keywordCase) + ' ' + this.quoteIdentifier(String(stmt.db));
     }
 
     private formatUnknown(stmt: Record<string, unknown>): string {
@@ -185,7 +190,8 @@ export class AstFormatter {
         try {
             return engine.sqlify(stmt as unknown as AST, this.dialect);
         } catch {
-            return JSON.stringify(stmt);
+            const type = String((stmt as Record<string, unknown>).type || ((stmt as Record<string, unknown>).ast as Record<string, unknown> | undefined)?.['type'] || 'unknown');
+            return `/* unsupported: ${type} */`;
         }
     }
 }

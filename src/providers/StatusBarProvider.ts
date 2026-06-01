@@ -30,7 +30,7 @@ export class StatusBarProvider {
         )
     }
 
-    private updateStatusBar() {
+    private updateStatusBar(): void {
         const dialect = getConfigManager().get<string>('dialect', 'hive')
         const activeEditor = vscode.window.activeTextEditor
 
@@ -68,10 +68,10 @@ export class StatusBarProvider {
         }, 2000)
     }
 
-    public dispose() {
+    public dispose(): void {
         if (StatusBarProvider.tempTimeout) clearTimeout(StatusBarProvider.tempTimeout)
         if (StatusBarProvider.tempItem) StatusBarProvider.tempItem.dispose()
         this.statusBarItem.dispose()
-        this.disposables.forEach(d => d.dispose())
+        this.disposables.forEach(d => { d.dispose(); })
     }
 }

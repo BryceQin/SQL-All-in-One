@@ -1,7 +1,19 @@
 import * as net from 'net';
 import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
 import { Client, ClientChannel } from 'ssh2';
 import type { SshConfig } from './ConnectionConfig';
+
+export interface SshConnectOptions {
+    host: string;
+    port: number;
+    username: string | undefined;
+    password?: string;
+    privateKey?: Buffer | string;
+    passphrase?: string;
+    readyTimeout: number;
+}
 
 export interface TunnelResult {
     localHost: string;
@@ -13,6 +25,7 @@ export class SshTunnel {
     private server: net.Server | null = null;
     private _localPort = 0;
     private _isOpen = false;
+    private activeSockets = new Set<net.Socket>();
 
     async open(
         sshConfig: SshConfig,
@@ -25,15 +38,16 @@ export class SshTunnel {
 
         const client = new Client();
 
-        const connectOptions: any = {
-            host: sshConfig.host,
+        const connectOptions: SshConnectOptions = {
+            host: sshConfig.host!,
             port: sshConfig.port || 22,
             username: sshConfig.username,
-            readyTimeout: 10000,
+            readyTimeout: 15000,
         };
 
         if (sshConfig.authentication === 'privateKey' && sshConfig.privateKey) {
-            connectOptions.privateKey = fs.readFileSync(sshConfig.privateKey);
+            const validatedPath = this.validateKeyPath(sshConfig.privateKey);
+            connectOptions.privateKey = await fs.promises.readFile(validatedPath);
             if (sshConfig.passphrase) {
                 connectOptions.passphrase = sshConfig.passphrase;
             }
@@ -42,17 +56,7 @@ export class SshTunnel {
         }
 
         await new Promise<void>((resolve, reject) => {
-            const timeout = setTimeout(() => {
-                reject(new Error('SSH connection timeout. Check SSH server address and port.'));
-            }, 15000);
-
-            client.on('ready', () => {
-                clearTimeout(timeout);
-                resolve();
-            });
-
-            client.on('error', (err) => {
-                clearTimeout(timeout);
+            const onError = (err: Error): void => {
                 if (err.message.includes('ECONNREFUSED')) {
                     reject(new Error('SSH connection refused. Check SSH server address and port.'));
                 } else if (
@@ -65,7 +69,14 @@ export class SshTunnel {
                 } else {
                     reject(new Error(`SSH connection error: ${err.message}`));
                 }
+            };
+
+            client.on('ready', () => {
+                client.removeListener('error', onError);
+                resolve();
             });
+
+            client.on('error', onError);
 
             client.connect(connectOptions);
         });
@@ -73,6 +84,9 @@ export class SshTunnel {
         this.client = client;
 
         const server = net.createServer((socket) => {
+            this.activeSockets.add(socket);
+            socket.on('close', () => this.activeSockets.delete(socket));
+
             client.forwardOut(
                 socket.remoteAddress || '127.0.0.1',
                 socket.remotePort || 0,
@@ -111,6 +125,11 @@ export class SshTunnel {
     }
 
     async close(): Promise<void> {
+        for (const socket of this.activeSockets) {
+            socket.destroy();
+        }
+        this.activeSockets.clear();
+
         if (this.server) {
             await new Promise<void>((resolve) => {
                 if (this.server) {
@@ -133,6 +152,21 @@ export class SshTunnel {
 
     getLocalPort(): number {
         return this._localPort;
+    }
+
+    private validateKeyPath(keyPath: string): string {
+        const resolved = path.resolve(keyPath);
+        const homeDir = os.homedir();
+        const allowedDirs = [
+            homeDir,
+            path.join(homeDir, '.ssh'),
+            '/etc/ssh',
+        ];
+        const isAllowed = allowedDirs.some(dir => resolved.startsWith(dir));
+        if (!isAllowed) {
+            throw new Error(`SSH private key path not allowed: ${keyPath}. Key must be located in your home directory, .ssh folder, or /etc/ssh.`);
+        }
+        return resolved;
     }
 
     isOpen(): boolean {

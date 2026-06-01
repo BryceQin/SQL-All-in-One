@@ -7,7 +7,7 @@ import { EOF_TOKEN, isToken, TokenType } from "../../lexer/token"
 
 // Shared functionality used by all MariaDB-like SQL dialects.
 
-export function postProcess(tokens: Token[]) {
+export function postProcess(tokens: Token[]): Token[] {
     return tokens.map((token, i) => {
         const nextToken = tokens[i + 1] || EOF_TOKEN
         if (isToken.SET(token) && nextToken.text === "(") {

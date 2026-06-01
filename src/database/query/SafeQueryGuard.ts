@@ -17,7 +17,7 @@ export class SafeQueryGuard {
             if (activeConn?.dialect) {
                 return activeConn.dialect as SqlDialect;
             }
-        } catch { /* ignore */ }
+        } catch (e) { console.warn('Failed to infer dialect:', e); }
         return 'sql';
     }
 
@@ -87,7 +87,8 @@ export class SafeQueryGuard {
                     }
                 }
             }
-        } catch {
+        } catch (e) {
+            console.warn('AST parsing failed, falling back to regex:', e);
             return this.analyzeWithRegex(sql, level, warnings, confirmations);
         }
 

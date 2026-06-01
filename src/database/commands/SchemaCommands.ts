@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { getConnectionManager } from '../connection/ConnectionManager';
+import { ConnectionConfig } from '../connection/ConnectionConfig';
 import { DatabaseTreeProvider } from '../../views/databaseExplorer/DatabaseTreeProvider';
 import {
     ConnectionTreeNode,
@@ -35,7 +36,12 @@ export function registerSchemaCommands(
         vscode.commands.registerCommand('sql-all-in-one.viewTableData', async (node?: TableTreeNode | ViewTreeNode) => {
             if (node) {
                 const name = node instanceof TableTreeNode ? node.tableName : node.viewName;
-                vscode.window.showInformationMessage(`View data for ${name} coming soon`);
+                const sql = `SELECT * FROM \`${name}\` LIMIT 100;`;
+                const document = await vscode.workspace.openTextDocument({
+                    content: sql,
+                    language: 'sql'
+                });
+                await vscode.window.showTextDocument(document);
             }
         })
     );
@@ -123,7 +129,9 @@ export function registerSchemaCommands(
     disposables.push(
         vscode.commands.registerCommand('sql-all-in-one.revealInExplorer', async (node?: FavoriteTreeNode) => {
             if (node) {
-                vscode.window.showInformationMessage('Reveal in explorer coming soon');
+                vscode.window.showInformationMessage(
+                    `${node.objectType}: ${node.objectName} | Connection: ${node.connectionName} | Database: ${node.databaseName}`
+                );
             }
         })
     );
@@ -131,7 +139,25 @@ export function registerSchemaCommands(
     disposables.push(
         vscode.commands.registerCommand('sql-all-in-one.setDefaultDatabase', async (node?: DatabaseTreeNode) => {
             if (node) {
-                vscode.window.showInformationMessage('Set as default database coming soon');
+                const manager = getConnectionManager();
+                const currentConfig = manager.getAllConnections().find(c => c.id === node.connectionId);
+                if (!currentConfig) {
+                    vscode.window.showErrorMessage('Connection not found');
+                    return;
+                }
+
+                const updatedConfig: ConnectionConfig = {
+                    ...currentConfig,
+                    database: node.databaseName
+                };
+
+                try {
+                    await manager.updateConnection(node.connectionId, updatedConfig);
+                    treeProvider.refresh();
+                    vscode.window.showInformationMessage(`Default database set to "${node.databaseName}"`);
+                } catch (error) {
+                    vscode.window.showErrorMessage(`Failed to set default database: ${error}`);
+                }
             }
         })
     );
