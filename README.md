@@ -8,6 +8,8 @@
 
 一个强大的 SQL 格式化 VSCode 插件，支持 Hive、MySQL、SparkSQL、FlinkSQL、PostgreSQL、BigQuery、SQLite 等多种 SQL 方言，提供丰富的自定义配置选项。
 
+> **v2.0.0 上线前问题修复** — 安全加固：SAVEPOINT SQL 注入防护、SSH 密钥路径白名单、BLOB 预览 XSS 修复、CSP 策略添加；架构优化：AST 缓存 TOCTOU 竞态修复、DI 容器单例竞态修复、ConnectionManager 资源泄漏修复；国际化：格式化器错误消息 i18n、配置编辑器消息机制替代全局变量；Webview 安全：inline onclick 迁移至 addEventListener、SQL 高亮改为 token-based 方式、导入数据运行时校验、Lint 规则配置格式统一。
+
 > **v1.11.0 架构优化** -- DI 容器增强、核心服务集成、RuleRegistry 重构简化（规则注册代码从 44 行重复代码缩减至 8 行）、DocumentAstCache LRU 验证。
 
 > **v1.10.0 Lint 架构重构** -- AstLinter 规则体系模块化：策略模式 + 规则注册机制，14 个独立规则类实现统一 LintRule 接口，AstLinter 从 877 行缩减至 64 行，支持独立测试和开闭原则扩展。
@@ -352,6 +354,8 @@ MIT License
 ## English
 
 A powerful SQL formatting VSCode extension supporting Hive, MySQL, SparkSQL, FlinkSQL, PostgreSQL, BigQuery, SQLite and more. Designed with extensive customization options and AST-driven architecture.
+
+> **v2.0.0 Pre-release Fixes** — Security hardening: SAVEPOINT SQL injection prevention, SSH key path whitelist, BLOB preview XSS fix, CSP policy added; Architecture: AST cache TOCTOU race fix, DI container singleton race fix, ConnectionManager resource leak fix; i18n: formatter error messages i18n, config editor message mechanism replacing global variables; Webview security: inline onclick migrated to addEventListener, SQL highlight changed to token-based approach, import data runtime validation, Lint rule config format unified.
 
 > **v1.8.0 Comprehensive Optimization** -- Full i18n overhaul (Settings UI follows VS Code language), bilingual README & CHANGELOG, config editor multilingual, unified dialect registry, memory leak fixes, architecture improvements.
 
