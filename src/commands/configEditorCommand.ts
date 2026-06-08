@@ -7,6 +7,7 @@ import { t, getLanguage } from '../i18n'
 import messagesEn from '../i18n/messages.en.json'
 import messagesZh from '../i18n/messages.zh.json'
 import { ALL_CONFIG_ITEMS, LINT_RULES, getDefaultConfig, getConfigKey } from '../config/configDefinitions'
+import { ConnectionConfig } from '../database/connection/ConnectionConfig'
 
 interface ConfigEditorMessage {
     command: string;
@@ -14,6 +15,7 @@ interface ConfigEditorMessage {
     sql?: string;
     config?: Record<string, unknown>;
     lang?: string;
+    id?: string;
 }
 
 export class ConfigEditorPanel {
@@ -88,6 +90,39 @@ export class ConfigEditorPanel {
                         break
                     case 'requestI18n':
                         this._sendI18nData()
+                        break
+                    case 'getConnections':
+                        await this._sendConnectionsList()
+                        break
+                    case 'getConnectionDetail':
+                        if (message.id) {
+                            await this._sendConnectionDetail(message.id)
+                        }
+                        break
+                    case 'addConnection':
+                        if (message.data) {
+                            await this._handleAddConnection(message.data)
+                        }
+                        break
+                    case 'updateConnection':
+                        if (message.data) {
+                            await this._handleUpdateConnection(message.data)
+                        }
+                        break
+                    case 'deleteConnection':
+                        if (message.id) {
+                            await this._handleDeleteConnection(message.id)
+                        }
+                        break
+                    case 'testConnection':
+                        if (message.data) {
+                            await this._handleTestConnection(message.data)
+                        }
+                        break
+                    case 'testExistingConnection':
+                        if (message.id) {
+                            await this._handleTestExistingConnection(message.id)
+                        }
                         break
                 }
             },
@@ -233,6 +268,174 @@ export class ConfigEditorPanel {
             })
         } catch (error) {
             vscode.window.showErrorMessage(t('notification.formatPreviewError', (error as Error).message))
+        }
+    }
+
+    private async _getConnectionStore(): Promise<import('../database/connection/ConnectionStore').ConnectionStore> {
+        const { getConnectionStore } = await import('../database/connection/ConnectionStore.js')
+        const store = getConnectionStore()
+        await store.load()
+        return store
+    }
+
+    private async _getConnectionManager(): Promise<import('../database/connection/ConnectionManager').ConnectionManager> {
+        const { getConnectionManager } = await import('../database/connection/ConnectionManager.js')
+        return getConnectionManager()
+    }
+
+    private async _sendConnectionsList(): Promise<void> {
+        try {
+            const store = await this._getConnectionStore()
+            const connections = store.getConnections()
+            const groups = store.getGroups()
+            this._panel.webview.postMessage({
+                command: 'connectionsList',
+                connections,
+                groups
+            })
+        } catch {
+            this._panel.webview.postMessage({
+                command: 'connectionsList',
+                connections: [],
+                groups: []
+            })
+        }
+    }
+
+    private async _sendConnectionDetail(id: string): Promise<void> {
+        try {
+            const store = await this._getConnectionStore()
+            const conn = store.getConnection(id)
+            if (conn) {
+                const connWithPassword = { ...conn, password: await store.getPassword(id) ? '••••••••' : '' }
+                if (conn.ssh?.enabled) {
+                    connWithPassword.ssh = {
+                        ...conn.ssh,
+                        password: await store.getSshPassword(id) ? '••••••••' : '',
+                        passphrase: await store.getSshPassphrase(id) ? '••••••••' : ''
+                    }
+                }
+                this._panel.webview.postMessage({
+                    command: 'editConnectionDetail',
+                    connection: connWithPassword,
+                    groups: store.getGroups()
+                })
+            }
+        } catch {
+            // ignore
+        }
+    }
+
+    private async _handleAddConnection(data: Record<string, unknown>): Promise<void> {
+        try {
+            const manager = await this._getConnectionManager()
+            const id = Date.now().toString(36) + Math.random().toString(36).substr(2)
+            const config = { ...data, id } as unknown as ConnectionConfig
+            const password = data.password as string | undefined
+            await manager.addConnection(config, password)
+            this._panel.webview.postMessage({ command: 'connectionSaveResult', success: true })
+        } catch (error) {
+            this._panel.webview.postMessage({
+                command: 'connectionSaveResult',
+                success: false,
+                error: (error as Error).message
+            })
+        }
+    }
+
+    private async _handleUpdateConnection(data: Record<string, unknown>): Promise<void> {
+        try {
+            const manager = await this._getConnectionManager()
+            const id = data.id as string
+            if (!id) {
+                this._panel.webview.postMessage({ command: 'connectionSaveResult', success: false, error: 'Missing connection ID' })
+                return
+            }
+            const config = data as unknown as ConnectionConfig
+            const password = data.password as string | undefined
+            await manager.updateConnection(id, config, password)
+            this._panel.webview.postMessage({ command: 'connectionSaveResult', success: true })
+        } catch (error) {
+            this._panel.webview.postMessage({
+                command: 'connectionSaveResult',
+                success: false,
+                error: (error as Error).message
+            })
+        }
+    }
+
+    private async _handleDeleteConnection(id: string): Promise<void> {
+        try {
+            const manager = await this._getConnectionManager()
+            await manager.removeConnection(id)
+            this._panel.webview.postMessage({ command: 'connectionDeleteResult', success: true })
+        } catch (error) {
+            this._panel.webview.postMessage({
+                command: 'connectionDeleteResult',
+                success: false,
+                error: (error as Error).message
+            })
+        }
+    }
+
+    private async _handleTestConnection(data: Record<string, unknown>): Promise<void> {
+        try {
+            const manager = await this._getConnectionManager()
+            const config = data as unknown as ConnectionConfig
+            const password = data.password as string | undefined
+            const result = await manager.testConnection(config, password)
+            this._panel.webview.postMessage({
+                command: 'connectionTestResult',
+                success: result.success,
+                serverVersion: result.serverVersion,
+                latency: result.latency,
+                error: result.error
+            })
+        } catch (error) {
+            this._panel.webview.postMessage({
+                command: 'connectionTestResult',
+                success: false,
+                error: (error as Error).message
+            })
+        }
+    }
+
+    private async _handleTestExistingConnection(id: string): Promise<void> {
+        try {
+            const store = await this._getConnectionStore()
+            const conn = store.getConnection(id)
+            if (!conn) {
+                this._panel.webview.postMessage({
+                    command: 'connectionTestResult',
+                    success: false,
+                    error: 'Connection not found'
+                })
+                return
+            }
+            const manager = await this._getConnectionManager()
+            const password = await store.getPassword(id)
+            const testConfig = { ...conn }
+            if (conn.ssh?.enabled) {
+                testConfig.ssh = {
+                    ...conn.ssh,
+                    password: await store.getSshPassword(id),
+                    passphrase: await store.getSshPassphrase(id)
+                }
+            }
+            const result = await manager.testConnection(testConfig, password)
+            this._panel.webview.postMessage({
+                command: 'connectionTestResult',
+                success: result.success,
+                serverVersion: result.serverVersion,
+                latency: result.latency,
+                error: result.error
+            })
+        } catch (error) {
+            this._panel.webview.postMessage({
+                command: 'connectionTestResult',
+                success: false,
+                error: (error as Error).message
+            })
         }
     }
 }
