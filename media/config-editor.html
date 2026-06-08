@@ -28,17 +28,40 @@
             </div>
         </div>
 
-        <div class="presets-bar">
-            <span class="presets-bar-label" data-i18n="configEditor.presets">Quick Presets</span>
-            <div class="presets-row">
-                <button class="preset-chip active" data-action="applyPreset" data-action-arg="default" data-i18n="configEditor.presetDefault">Default</button>
-                <button class="preset-chip" data-action="applyPreset" data-action-arg="hive" data-i18n="configEditor.presetHive">Hive</button>
-                <button class="preset-chip" data-action="applyPreset" data-action-arg="mysql" data-i18n="configEditor.presetMySQL">MySQL</button>
-                <button class="preset-chip" data-action="applyPreset" data-action-arg="compact" data-i18n="configEditor.presetCompact">Compact</button>
+        <div class="toolbar">
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="searchInput" data-i18n-ph="configEditor.searchPlaceholder" placeholder="搜索配置项..." data-action="searchConfig">
+                <button class="search-clear" id="searchClear" style="display:none" data-action="clearSearch">✕</button>
+            </div>
+            <div class="presets-bar">
+                <span class="presets-bar-label" data-i18n="configEditor.presets">Quick Presets</span>
+                <div class="presets-row">
+                    <button class="preset-chip active" data-action="applyPreset" data-action-arg="default" data-i18n="configEditor.presetDefault">Default</button>
+                    <button class="preset-chip" data-action="applyPreset" data-action-arg="hive" data-i18n="configEditor.presetHive">Hive</button>
+                    <button class="preset-chip" data-action="applyPreset" data-action-arg="mysql" data-i18n="configEditor.presetMySQL">MySQL</button>
+                    <button class="preset-chip" data-action="applyPreset" data-action-arg="compact" data-i18n="configEditor.presetCompact">Compact</button>
+                </div>
             </div>
         </div>
 
-        <div class="main-content">
+        <div class="tab-bar">
+            <button class="tab-btn active" data-action="switchTab" data-action-arg="formatting">
+                <span class="tab-icon">✨</span>
+                <span class="tab-label" data-i18n="configEditor.tab.formatting">格式化</span>
+            </button>
+            <button class="tab-btn" data-action="switchTab" data-action-arg="editor">
+                <span class="tab-icon">📝</span>
+                <span class="tab-label" data-i18n="configEditor.tab.editor">编辑器</span>
+            </button>
+            <button class="tab-btn" data-action="switchTab" data-action-arg="database">
+                <span class="tab-icon">🗄️</span>
+                <span class="tab-label" data-i18n="configEditor.tab.database">数据库</span>
+            </button>
+        </div>
+
+        <!-- ═══ Tab: 格式化 ═══ -->
+        <div class="tab-content active" id="tab-formatting">
             <div class="preview-panel">
                 <div class="section-header">
                     <span class="section-header-icon">👁️</span>
@@ -58,21 +81,16 @@
                     </div>
                 </div>
             </div>
-            <div class="resize-handle" id="resizeHandle"></div>
             <div class="config-section">
-                <div class="section-header">
-                    <span class="section-header-icon">⚙️</span>
-                    <h2 data-i18n="configEditor.formattingOptions">Formatting Options</h2>
-                </div>
                 <div class="section-body">
                     <!-- 基础设置 -->
-                    <div class="config-group">
+                    <div class="config-group" data-tab="formatting">
                         <div class="cg-header" data-action="toggleGroup">
-                            <span class="cg-arrow open">▶</span>
+                            <span class="cg-arrow">▶</span>
                             <span class="cg-icon">📐</span>
                             <span class="cg-title" data-i18n="configEditor.cg.basicSettings">基础设置</span>
                         </div>
-                        <div class="cg-body open">
+                        <div class="cg-body">
                             <div class="config-item">
                                 <div class="ci-label"><span class="ci-label-text" data-i18n="configEditor.lbl.dialect">SQL 方言</span></div>
                                 <select class="config-select" id="dialect">
@@ -90,349 +108,14 @@
                         </div>
                     </div>
 
-                    <!-- 功能开关 -->
-                    <div class="config-group">
-                        <div class="cg-header" data-action="toggleGroup">
-                            <span class="cg-arrow open">▶</span>
-                            <span class="cg-icon">🔌</span>
-                            <span class="cg-title" data-i18n="configEditor.cg.featureToggles">功能开关</span>
-                            <span class="cg-badge">11</span>
-                        </div>
-                        <div class="cg-body open">
-                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.enableLinter">启用 SQL Lint 功能</span><label class="toggle"><input type="checkbox" id="enableLinter"><span class="toggle-slider"></span></label></div>
-                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.showErrorLevel">显示错误级别诊断</span><label class="toggle"><input type="checkbox" id="showErrorLevel"><span class="toggle-slider"></span></label></div>
-                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.showWarningLevel">显示警告级别诊断</span><label class="toggle"><input type="checkbox" id="showWarningLevel"><span class="toggle-slider"></span></label></div>
-                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.showInfoLevel">显示信息级别提示</span><label class="toggle"><input type="checkbox" id="showInfoLevel"><span class="toggle-slider"></span></label></div>
-                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.enableCodeFolding">启用代码折叠</span><label class="toggle"><input type="checkbox" id="enableCodeFolding"><span class="toggle-slider"></span></label></div>
-                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.enableOutlineView">启用大纲视图</span><label class="toggle"><input type="checkbox" id="enableOutlineView"><span class="toggle-slider"></span></label></div>
-                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.enableStatusBar">启用状态栏</span><label class="toggle"><input type="checkbox" id="enableStatusBar"><span class="toggle-slider"></span></label></div>
-                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.enableParameterHighlight">启用参数高亮</span><label class="toggle"><input type="checkbox" id="enableParameterHighlight"><span class="toggle-slider"></span></label></div>
-                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.enableSnippets">启用代码片段</span><label class="toggle"><input type="checkbox" id="enableSnippets"><span class="toggle-slider"></span></label></div>
-                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.enableQuickFix">启用快速修复</span><label class="toggle"><input type="checkbox" id="enableQuickFix"><span class="toggle-slider"></span></label></div>
-                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.enableSmartCommentToggle">启用智能注释切换</span><label class="toggle"><input type="checkbox" id="enableSmartCommentToggle"><span class="toggle-slider"></span></label></div>
-                        </div>
-                    </div>
-
-                    <!-- 注释设置 -->
-                    <div class="config-group">
-                        <div class="cg-header" data-action="toggleGroup">
-                            <span class="cg-arrow open">▶</span>
-                            <span class="cg-icon">💬</span>
-                            <span class="cg-title" data-i18n="configEditor.cg.commentSettings">注释设置</span>
-                            <span class="cg-badge">3</span>
-                        </div>
-                        <div class="cg-body open">
-                            <div class="config-item">
-                                <div class="ci-label"><span class="ci-label-text" data-i18n="configEditor.lbl.headerAuthor">注释模板作者</span><span class="ci-label-hint" data-i18n="configEditor.hint.forHeaderSnippet">header Snippet 使用</span></div>
-                                <input type="text" class="config-input" id="headerAuthor" placeholder="留空则插入时手动输入" data-i18n-ph="configEditor.ph.headerAuthor">
-                            </div>
-                            <div class="config-item">
-                                <div class="ci-label"><span class="ci-label-text" data-i18n="configEditor.lbl.headerModifier">注释模板修改人</span><span class="ci-label-hint" data-i18n="configEditor.hint.fallbackToAuthor">为空时回退取作者</span></div>
-                                <input type="text" class="config-input" id="headerModifier" placeholder="留空则使用作者名" data-i18n-ph="configEditor.ph.headerModifier">
-                            </div>
-                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.completionCommentSnippets">注释模板补全</span><label class="toggle"><input type="checkbox" id="completionCommentSnippets"><span class="toggle-slider"></span></label></div>
-                        </div>
-                    </div>
-
-                    <!-- Lint 规则 -->
-                    <div class="config-group">
-                        <div class="cg-header" data-action="toggleGroup">
-                            <span class="cg-arrow open">▶</span>
-                            <span class="cg-icon">🔍</span>
-                            <span class="cg-title" data-i18n="configEditor.cg.lintRules">Lint 规则</span>
-                            <span class="cg-badge">31</span>
-                        </div>
-                        <div class="cg-body open">
-                            <div class="lint-rule">
-                                <span class="lint-rule-name" data-i18n="configEditor.lint.avoidSelectStar">避免 SELECT *</span>
-                                <select class="config-select lint-rule-severity" id="lintAvoidSelectStarSeverity">
-                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
-                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
-                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
-                                </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintAvoidSelectStarEnabled"><span class="toggle-slider"></span></label>
-                            </div>
-                            <div class="lint-rule">
-                                <span class="lint-rule-name" data-i18n="configEditor.lint.explicitJoinType">显式 JOIN 类型</span>
-                                <select class="config-select lint-rule-severity" id="lintExplicitJoinTypeSeverity">
-                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
-                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
-                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
-                                </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintExplicitJoinTypeEnabled"><span class="toggle-slider"></span></label>
-                            </div>
-                            <div class="lint-rule">
-                                <span class="lint-rule-name" data-i18n="configEditor.lint.limitWithOrderBy">LIMIT 配合 ORDER BY</span>
-                                <select class="config-select lint-rule-severity" id="lintLimitWithOrderBySeverity">
-                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
-                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
-                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
-                                </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintLimitWithOrderByEnabled"><span class="toggle-slider"></span></label>
-                            </div>
-                            <div class="lint-rule">
-                                <span class="lint-rule-name" data-i18n="configEditor.lint.columnCountMismatch">列数不匹配检测</span>
-                                <select class="config-select lint-rule-severity" id="lintAvoidColumnCountMismatchSeverity">
-                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
-                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
-                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
-                                </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintAvoidColumnCountMismatchEnabled"><span class="toggle-slider"></span></label>
-                            </div>
-                            <div class="lint-rule">
-                                <span class="lint-rule-name" data-i18n="configEditor.lint.missingPrimaryKey">缺失主键检测</span>
-                                <select class="config-select lint-rule-severity" id="lintMissingPrimaryKeySeverity">
-                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
-                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
-                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
-                                </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintMissingPrimaryKeyEnabled"><span class="toggle-slider"></span></label>
-                            </div>
-                            <div class="lint-rule">
-                                <span class="lint-rule-name" data-i18n="configEditor.lint.useCurrentTimestamp">使用 CURRENT_TIMESTAMP</span>
-                                <select class="config-select lint-rule-severity" id="lintUseCurrentTimestampSeverity">
-                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
-                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
-                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
-                                </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintUseCurrentTimestampEnabled"><span class="toggle-slider"></span></label>
-                            </div>
-                            <div class="lint-rule">
-                                <span class="lint-rule-name" data-i18n="configEditor.lint.avoidSelectInInsert">避免 INSERT 中的 SELECT</span>
-                                <select class="config-select lint-rule-severity" id="lintAvoidSelectInInsertSeverity">
-                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
-                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
-                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
-                                </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintAvoidSelectInInsertEnabled"><span class="toggle-slider"></span></label>
-                            </div>
-                            <div class="lint-rule">
-                                <span class="lint-rule-name" data-i18n="configEditor.lint.duplicateColumnAliases">重复列别名检测</span>
-                                <select class="config-select lint-rule-severity" id="lintDuplicateColumnAliasesSeverity">
-                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
-                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
-                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
-                                </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintDuplicateColumnAliasesEnabled"><span class="toggle-slider"></span></label>
-                            </div>
-                            <div class="lint-rule">
-                                <span class="lint-rule-name" data-i18n="configEditor.lint.uppercaseKeywords">关键字大写</span>
-                                <select class="config-select lint-rule-severity" id="lintUppercaseKeywordsSeverity">
-                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
-                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
-                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
-                                </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintUppercaseKeywordsEnabled"><span class="toggle-slider"></span></label>
-                            </div>
-                            <div class="lint-rule">
-                                <span class="lint-rule-name" data-i18n="configEditor.lint.consistentAliasing">一致的别名</span>
-                                <select class="config-select lint-rule-severity" id="lintConsistentAliasingSeverity">
-                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
-                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
-                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
-                                </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintConsistentAliasingEnabled"><span class="toggle-slider"></span></label>
-                            </div>
-                            <div class="lint-rule">
-                                <span class="lint-rule-name" data-i18n="configEditor.lint.useCoalesceOverIsnull">使用 COALESCE 而非 ISNULL</span>
-                                <select class="config-select lint-rule-severity" id="lintUseCoalesceOverIsnullSeverity">
-                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
-                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
-                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
-                                </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintUseCoalesceOverIsnullEnabled"><span class="toggle-slider"></span></label>
-                            </div>
-                            <div class="lint-rule">
-                                <span class="lint-rule-name" data-i18n="configEditor.lint.explicitColumnAliasing">显式列别名</span>
-                                <select class="config-select lint-rule-severity" id="lintExplicitColumnAliasingSeverity">
-                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
-                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
-                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
-                                </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintExplicitColumnAliasingEnabled"><span class="toggle-slider"></span></label>
-                            </div>
-                            <div class="lint-rule">
-                                <span class="lint-rule-name" data-i18n="configEditor.lint.avoidCorrelatedSubqueries">避免关联子查询</span>
-                                <select class="config-select lint-rule-severity" id="lintAvoidCorrelatedSubqueriesSeverity">
-                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
-                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
-                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
-                                </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintAvoidCorrelatedSubqueriesEnabled"><span class="toggle-slider"></span></label>
-                            </div>
-                            <div class="lint-rule">
-                                <span class="lint-rule-name" data-i18n="configEditor.lint.longQueryLine">长查询行检测</span>
-                                <select class="config-select lint-rule-severity" id="lintLongQueryLineSeverity">
-                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
-                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
-                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
-                                </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintLongQueryLineEnabled"><span class="toggle-slider"></span></label>
-                            </div>
-                            <div class="lint-rule">
-                                <span class="lint-rule-name" data-i18n="configEditor.lint.missingQueryComment">复杂查询缺注释</span>
-                                <select class="config-select lint-rule-severity" id="lintMissingQueryCommentSeverity">
-                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
-                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
-                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
-                                </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintMissingQueryCommentEnabled"><span class="toggle-slider"></span></label>
-                            </div>
-                            <div class="lint-rule">
-                                <span class="lint-rule-name" data-i18n="configEditor.lint.missingColumnComment">DDL 列缺 COMMENT</span>
-                                <select class="config-select lint-rule-severity" id="lintMissingColumnCommentSeverity">
-                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
-                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
-                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
-                                </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintMissingColumnCommentEnabled"><span class="toggle-slider"></span></label>
-                            </div>
-                            <div class="lint-rule">
-                                <span class="lint-rule-name" data-i18n="configEditor.lint.commentedOutCode">注释掉的代码</span>
-                                <select class="config-select lint-rule-severity" id="lintCommentedOutCodeSeverity">
-                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
-                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
-                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
-                                </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintCommentedOutCodeEnabled"><span class="toggle-slider"></span></label>
-                            </div>
-                            <div class="lint-rule">
-                                <span class="lint-rule-name" data-i18n="configEditor.lint.expiredTodo">过期 TODO/FIXME</span>
-                                <select class="config-select lint-rule-severity" id="lintExpiredTodoSeverity">
-                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
-                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
-                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
-                                </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintExpiredTodoEnabled"><span class="toggle-slider"></span></label>
-                            </div>
-                            <div class="lint-rule">
-                                <span class="lint-rule-name" data-i18n="configEditor.lint.havingWithoutGroupBy">HAVING 缺少 GROUP BY</span>
-                                <select class="config-select lint-rule-severity" id="lintHavingWithoutGroupBySeverity">
-                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
-                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
-                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
-                                </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintHavingWithoutGroupByEnabled"><span class="toggle-slider"></span></label>
-                            </div>
-                            <div class="lint-rule">
-                                <span class="lint-rule-name" data-i18n="configEditor.lint.limitInvalidValue">LIMIT 值无效</span>
-                                <select class="config-select lint-rule-severity" id="lintLimitInvalidValueSeverity">
-                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
-                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
-                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
-                                </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintLimitInvalidValueEnabled"><span class="toggle-slider"></span></label>
-                            </div>
-                            <div class="lint-rule">
-                                <span class="lint-rule-name" data-i18n="configEditor.lint.reservedWordIdentifier">保留字作标识符</span>
-                                <select class="config-select lint-rule-severity" id="lintReservedWordIdentifierSeverity">
-                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
-                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
-                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
-                                </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintReservedWordIdentifierEnabled"><span class="toggle-slider"></span></label>
-                            </div>
-                            <div class="lint-rule">
-                                <span class="lint-rule-name" data-i18n="configEditor.lint.joinMissingOn">JOIN 缺少 ON</span>
-                                <select class="config-select lint-rule-severity" id="lintJoinMissingOnSeverity">
-                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
-                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
-                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
-                                </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintJoinMissingOnEnabled"><span class="toggle-slider"></span></label>
-                            </div>
-                            <div class="lint-rule">
-                                <span class="lint-rule-name" data-i18n="configEditor.lint.selectWithoutFrom">SELECT 缺少 FROM</span>
-                                <select class="config-select lint-rule-severity" id="lintSelectWithoutFromSeverity">
-                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
-                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
-                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
-                                </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintSelectWithoutFromEnabled"><span class="toggle-slider"></span></label>
-                            </div>
-                            <div class="lint-rule">
-                                <span class="lint-rule-name" data-i18n="configEditor.lint.misplacedDistinct">DISTINCT 位置错误</span>
-                                <select class="config-select lint-rule-severity" id="lintMisplacedDistinctSeverity">
-                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
-                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
-                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
-                                </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintMisplacedDistinctEnabled"><span class="toggle-slider"></span></label>
-                            </div>
-                            <div class="lint-rule">
-                                <span class="lint-rule-name" data-i18n="configEditor.lint.aggregateInWhere">WHERE 中使用聚合函数</span>
-                                <select class="config-select lint-rule-severity" id="lintAggregateInWhereSeverity">
-                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
-                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
-                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
-                                </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintAggregateInWhereEnabled"><span class="toggle-slider"></span></label>
-                            </div>
-                            <div class="lint-rule">
-                                <span class="lint-rule-name" data-i18n="configEditor.lint.subqueryWithoutAlias">子查询缺少别名</span>
-                                <select class="config-select lint-rule-severity" id="lintSubqueryWithoutAliasSeverity">
-                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
-                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
-                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
-                                </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintSubqueryWithoutAliasEnabled"><span class="toggle-slider"></span></label>
-                            </div>
-                            <div class="lint-rule">
-                                <span class="lint-rule-name" data-i18n="configEditor.lint.suspiciousNullComparison">可疑的 NULL 比较</span>
-                                <select class="config-select lint-rule-severity" id="lintSuspiciousNullComparisonSeverity">
-                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
-                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
-                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
-                                </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintSuspiciousNullComparisonEnabled"><span class="toggle-slider"></span></label>
-                            </div>
-                            <div class="lint-rule">
-                                <span class="lint-rule-name" data-i18n="configEditor.lint.incompleteCase">不完整的 CASE</span>
-                                <select class="config-select lint-rule-severity" id="lintIncompleteCaseSeverity">
-                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
-                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
-                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
-                                </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintIncompleteCaseEnabled"><span class="toggle-slider"></span></label>
-                            </div>
-                            <div class="lint-rule">
-                                <span class="lint-rule-name" data-i18n="configEditor.lint.redundantDistinct">冗余的 DISTINCT</span>
-                                <select class="config-select lint-rule-severity" id="lintRedundantDistinctSeverity">
-                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
-                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
-                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
-                                </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintRedundantDistinctEnabled"><span class="toggle-slider"></span></label>
-                            </div>
-                            <div class="lint-rule">
-                                <span class="lint-rule-name" data-i18n="configEditor.lint.dateFunctionUsage">日期函数使用提示</span>
-                                <select class="config-select lint-rule-severity" id="lintDateFunctionUsageSeverity">
-                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
-                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
-                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
-                                </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintDateFunctionUsageEnabled"><span class="toggle-slider"></span></label>
-                            </div>
-                            <div class="lint-rule">
-                                <span class="lint-rule-name" data-i18n="configEditor.lint.wildcardInUpdate">UPDATE 中使用通配符</span>
-                                <select class="config-select lint-rule-severity" id="lintWildcardInUpdateSeverity">
-                                    <option value="error" data-i18n="configEditor.severity.error">错误</option>
-                                    <option value="warning" data-i18n="configEditor.severity.warning">警告</option>
-                                    <option value="information" data-i18n="configEditor.severity.information">信息</option>
-                                </select>
-                                <label class="toggle lint-rule-toggle"><input type="checkbox" id="lintWildcardInUpdateEnabled"><span class="toggle-slider"></span></label>
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- 大小写设置 -->
-                    <div class="config-group">
+                    <div class="config-group" data-tab="formatting">
                         <div class="cg-header" data-action="toggleGroup">
-                            <span class="cg-arrow open">▶</span>
+                            <span class="cg-arrow">▶</span>
                             <span class="cg-icon">🔤</span>
                             <span class="cg-title" data-i18n="configEditor.cg.caseSettings">大小写设置</span>
                         </div>
-                        <div class="cg-body open">
+                        <div class="cg-body">
                             <div class="config-item">
                                 <div class="ci-label"><span class="ci-label-text" data-i18n="configEditor.lbl.keywordCase">关键字大小写</span></div>
                                 <select class="config-select" id="keywordCase">
@@ -485,13 +168,13 @@
                     </div>
 
                     <!-- 缩进与格式 -->
-                    <div class="config-group">
+                    <div class="config-group" data-tab="formatting">
                         <div class="cg-header" data-action="toggleGroup">
-                            <span class="cg-arrow open">▶</span>
+                            <span class="cg-arrow">▶</span>
                             <span class="cg-icon">↹</span>
                             <span class="cg-title" data-i18n="configEditor.cg.indentFormat">缩进与格式</span>
                         </div>
-                        <div class="cg-body open">
+                        <div class="cg-body">
                             <div class="config-item">
                                 <div class="ci-label"><span class="ci-label-text" data-i18n="configEditor.lbl.indentStyle">缩进风格</span></div>
                                 <select class="config-select" id="indentStyle">
@@ -519,13 +202,13 @@
                     </div>
 
                     <!-- 逗号和对齐 -->
-                    <div class="config-group">
+                    <div class="config-group" data-tab="formatting">
                         <div class="cg-header" data-action="toggleGroup">
-                            <span class="cg-arrow open">▶</span>
+                            <span class="cg-arrow">▶</span>
                             <span class="cg-icon">⫶</span>
                             <span class="cg-title" data-i18n="configEditor.cg.commaAlignment">逗号和对齐</span>
                         </div>
-                        <div class="cg-body open">
+                        <div class="cg-body">
                             <div class="config-item">
                                 <div class="ci-label"><span class="ci-label-text" data-i18n="configEditor.lbl.commaPosition">逗号位置</span></div>
                                 <select class="config-select" id="commaPosition">
@@ -539,13 +222,13 @@
                     </div>
 
                     <!-- 换行设置 -->
-                    <div class="config-group">
+                    <div class="config-group" data-tab="formatting">
                         <div class="cg-header" data-action="toggleGroup">
-                            <span class="cg-arrow open">▶</span>
+                            <span class="cg-arrow">▶</span>
                             <span class="cg-icon">↵</span>
                             <span class="cg-title" data-i18n="configEditor.cg.newlineSettings">换行设置</span>
                         </div>
-                        <div class="cg-body open">
+                        <div class="cg-body">
                             <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.newlineAfterSelect">SELECT 后换行</span><label class="toggle"><input type="checkbox" id="newlineAfterSelect"><span class="toggle-slider"></span></label></div>
                             <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.newlineAfterFrom">FROM 后换行</span><label class="toggle"><input type="checkbox" id="newlineAfterFrom"><span class="toggle-slider"></span></label></div>
                             <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.newlineBeforeWhere">WHERE 前换行</span><label class="toggle"><input type="checkbox" id="newlineBeforeWhere"><span class="toggle-slider"></span></label></div>
@@ -558,6 +241,7 @@
                             <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.newlineAfterHaving">HAVING 后换行</span><label class="toggle"><input type="checkbox" id="newlineAfterHaving"><span class="toggle-slider"></span></label></div>
                             <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.newlineAfterOrderBy">ORDER BY 后换行</span><label class="toggle"><input type="checkbox" id="newlineAfterOrderBy"><span class="toggle-slider"></span></label></div>
                             <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.newlineAfterLimit">LIMIT 后换行</span><label class="toggle"><input type="checkbox" id="newlineAfterLimit"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.newlineBeforeJoin">JOIN 前换行</span><label class="toggle"><input type="checkbox" id="newlineBeforeJoin"><span class="toggle-slider"></span></label></div>
                             <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.newlineAfterJoin">JOIN 后换行</span><label class="toggle"><input type="checkbox" id="newlineAfterJoin"><span class="toggle-slider"></span></label></div>
                             <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.newlineBeforeOn">ON 前换行</span><label class="toggle"><input type="checkbox" id="newlineBeforeOn"><span class="toggle-slider"></span></label></div>
                             <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.newlineBeforeUnion">UNION 前换行</span><label class="toggle"><input type="checkbox" id="newlineBeforeSetOperation"><span class="toggle-slider"></span></label></div>
@@ -566,37 +250,22 @@
                             <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.newlineAfterThen">THEN 后换行</span><label class="toggle"><input type="checkbox" id="newlineAfterThen"><span class="toggle-slider"></span></label></div>
                             <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.newlineAfterElse">ELSE 后换行</span><label class="toggle"><input type="checkbox" id="newlineAfterElse"><span class="toggle-slider"></span></label></div>
                             <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.newlineAfterIn">IN 后换行</span><label class="toggle"><input type="checkbox" id="newlineAfterIn"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.newlineBeforeSemicolon">分号另起一行</span><label class="toggle"><input type="checkbox" id="newlineBeforeSemicolon"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.newlineBeforeLateralView">LATERAL VIEW 前换行</span><label class="toggle"><input type="checkbox" id="newlineBeforeLateralView"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.newlineBeforeDistributeBy">DISTRIBUTE BY 前换行</span><label class="toggle"><input type="checkbox" id="newlineBeforeDistributeBy"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.newlineBeforeClusterBy">CLUSTER BY 前换行</span><label class="toggle"><input type="checkbox" id="newlineBeforeClusterBy"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.newlineBeforeSortBy">SORT BY 前换行</span><label class="toggle"><input type="checkbox" id="newlineBeforeSortBy"><span class="toggle-slider"></span></label></div>
                         </div>
                     </div>
 
                     <!-- 高级选项 -->
-                    <div class="config-group">
+                    <div class="config-group" data-tab="formatting">
                         <div class="cg-header" data-action="toggleGroup">
                             <span class="cg-arrow">▶</span>
                             <span class="cg-icon">⚡</span>
                             <span class="cg-title" data-i18n="configEditor.cg.advancedOptions">高级选项</span>
                         </div>
                         <div class="cg-body">
-                            <div class="config-item">
-                                <div class="ci-label"><span class="ci-label-text" data-i18n="configEditor.lbl.reservedKeywordCase">保留关键字大小写</span></div>
-                                <select class="config-select" id="reservedKeywordCase">
-                                    <option value="preserve" data-i18n="configEditor.opt.preserve">保持原样</option>
-                                    <option value="upper" data-i18n="configEditor.opt.upper">大写</option>
-                                    <option value="lower" data-i18n="configEditor.opt.lower">小写</option>
-                                </select>
-                            </div>
-                            <div class="config-item">
-                                <div class="ci-label"><span class="ci-label-text" data-i18n="configEditor.lbl.builtinFunctionCase">内置函数大小写</span></div>
-                                <select class="config-select" id="builtinFunctionCase">
-                                    <option value="preserve" data-i18n="configEditor.opt.preserve">保持原样</option>
-                                    <option value="upper" data-i18n="configEditor.opt.upper">大写</option>
-                                    <option value="lower" data-i18n="configEditor.opt.lower">小写</option>
-                                </select>
-                            </div>
-                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.newlineBeforeJoin">JOIN 前换行</span><label class="toggle"><input type="checkbox" id="newlineBeforeJoin"><span class="toggle-slider"></span></label></div>
-                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.newlineAfterComma">逗号后换行</span><label class="toggle"><input type="checkbox" id="newlineAfterComma"><span class="toggle-slider"></span></label></div>
-                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.breakAfterSelectItem">每个 SELECT 项后换行</span><label class="toggle"><input type="checkbox" id="breakAfterSelectItem"><span class="toggle-slider"></span></label></div>
-                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.breakAfterFromItem">每个 FROM 项后换行</span><label class="toggle"><input type="checkbox" id="breakAfterFromItem"><span class="toggle-slider"></span></label></div>
                             <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.alignWhereClauses">对齐 WHERE 子句</span><label class="toggle"><input type="checkbox" id="alignWhereClauses"><span class="toggle-slider"></span></label></div>
                             <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.alignCaseStatements">对齐 CASE 语句</span><label class="toggle"><input type="checkbox" id="alignCaseStatements"><span class="toggle-slider"></span></label></div>
                             <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.spaceBeforeComma">逗号前加空格</span><label class="toggle"><input type="checkbox" id="spaceBeforeComma"><span class="toggle-slider"></span></label></div>
@@ -604,7 +273,6 @@
                             <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.trimTrailingSpaces">修剪尾部空格</span><label class="toggle"><input type="checkbox" id="trimTrailingSpaces"><span class="toggle-slider"></span></label></div>
                             <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.semicolonAtEnd">语句结尾添加分号</span><label class="toggle"><input type="checkbox" id="semicolonAtEnd"><span class="toggle-slider"></span></label></div>
                             <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.denseOperators">紧凑运算符</span><label class="toggle"><input type="checkbox" id="denseOperators"><span class="toggle-slider"></span></label></div>
-                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.newlineBeforeSemicolon">分号另起一行</span><label class="toggle"><input type="checkbox" id="newlineBeforeSemicolon"><span class="toggle-slider"></span></label></div>
                             <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.indentJoinConditions">JOIN 条件缩进</span><label class="toggle"><input type="checkbox" id="indentJoinConditions"><span class="toggle-slider"></span></label></div>
                             <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.indentWhen">WHEN 缩进</span><label class="toggle"><input type="checkbox" id="indentWhen"><span class="toggle-slider"></span></label></div>
                             <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.indentThen">THEN 缩进</span><label class="toggle"><input type="checkbox" id="indentThen"><span class="toggle-slider"></span></label></div>
@@ -646,10 +314,6 @@
                                 <div class="ci-label"><span class="ci-label-text" data-i18n="configEditor.lbl.blankLinesAfterUnion">UNION 后空行数</span></div>
                                 <input type="number" class="config-input" id="blankLinesAfterSetOperation" min="0" max="5">
                             </div>
-                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.newlineBeforeLateralView">LATERAL VIEW 前换行</span><label class="toggle"><input type="checkbox" id="newlineBeforeLateralView"><span class="toggle-slider"></span></label></div>
-                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.newlineBeforeDistributeBy">DISTRIBUTE BY 前换行</span><label class="toggle"><input type="checkbox" id="newlineBeforeDistributeBy"><span class="toggle-slider"></span></label></div>
-                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.newlineBeforeClusterBy">CLUSTER BY 前换行</span><label class="toggle"><input type="checkbox" id="newlineBeforeClusterBy"><span class="toggle-slider"></span></label></div>
-                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.newlineBeforeSortBy">SORT BY 前换行</span><label class="toggle"><input type="checkbox" id="newlineBeforeSortBy"><span class="toggle-slider"></span></label></div>
                             <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.ignoreTabSettings">忽略编辑器 Tab 设置</span><label class="toggle"><input type="checkbox" id="ignoreTabSettings"><span class="toggle-slider"></span></label></div>
                             <div class="config-item" id="tabOverrideGroup" style="display:none;">
                                 <div class="ci-label"><span class="ci-label-text" data-i18n="configEditor.lbl.tabSizeOverride">Tab 宽度覆盖</span></div>
@@ -659,17 +323,13 @@
                     </div>
 
                     <!-- 其他 -->
-                    <div class="config-group">
+                    <div class="config-group" data-tab="formatting">
                         <div class="cg-header" data-action="toggleGroup">
                             <span class="cg-arrow">▶</span>
                             <span class="cg-icon">📏</span>
                             <span class="cg-title" data-i18n="configEditor.cg.otherOptions">其他选项</span>
                         </div>
                         <div class="cg-body">
-                            <div class="config-item">
-                                <div class="ci-label"><span class="ci-label-text" data-i18n="configEditor.lbl.maxLineLength">最大行长度</span></div>
-                                <input type="number" class="config-input" id="maxLineLength" min="40" max="500">
-                            </div>
                             <div class="config-item">
                                 <div class="ci-label"><span class="ci-label-text" data-i18n="configEditor.lbl.singleLineMaxLength">单行查询最大长度</span></div>
                                 <input type="number" class="config-input" id="singleLineMaxLength" min="40" max="500">
@@ -679,8 +339,311 @@
                 </div>
             </div>
         </div>
+
+        <!-- ═══ Tab: 编辑器 ═══ -->
+        <div class="tab-content" id="tab-editor">
+            <div class="config-section">
+                <div class="section-body">
+                    <!-- 功能开关 -->
+                    <div class="config-group" data-tab="editor">
+                        <div class="cg-header" data-action="toggleGroup">
+                            <span class="cg-arrow open">▶</span>
+                            <span class="cg-icon">🔌</span>
+                            <span class="cg-title" data-i18n="configEditor.cg.featureToggles">功能开关</span>
+                            <span class="cg-badge">11</span>
+                        </div>
+                        <div class="cg-body open">
+                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.enableLinter">启用 SQL Lint 功能</span><label class="toggle"><input type="checkbox" id="enableLinter"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.showErrorLevel">显示错误级别诊断</span><label class="toggle"><input type="checkbox" id="showErrorLevel"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.showWarningLevel">显示警告级别诊断</span><label class="toggle"><input type="checkbox" id="showWarningLevel"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.showInfoLevel">显示信息级别提示</span><label class="toggle"><input type="checkbox" id="showInfoLevel"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.enableCodeFolding">启用代码折叠</span><label class="toggle"><input type="checkbox" id="enableCodeFolding"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.enableOutlineView">启用大纲视图</span><label class="toggle"><input type="checkbox" id="enableOutlineView"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.enableStatusBar">启用状态栏</span><label class="toggle"><input type="checkbox" id="enableStatusBar"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.enableParameterHighlight">启用参数高亮</span><label class="toggle"><input type="checkbox" id="enableParameterHighlight"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.enableSnippets">启用代码片段</span><label class="toggle"><input type="checkbox" id="enableSnippets"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.enableQuickFix">启用快速修复</span><label class="toggle"><input type="checkbox" id="enableQuickFix"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.enableSmartCommentToggle">启用智能注释切换</span><label class="toggle"><input type="checkbox" id="enableSmartCommentToggle"><span class="toggle-slider"></span></label></div>
+                        </div>
+                    </div>
+
+                    <!-- 注释设置 -->
+                    <div class="config-group" data-tab="editor">
+                        <div class="cg-header" data-action="toggleGroup">
+                            <span class="cg-arrow">▶</span>
+                            <span class="cg-icon">💬</span>
+                            <span class="cg-title" data-i18n="configEditor.cg.commentSettings">注释设置</span>
+                        </div>
+                        <div class="cg-body">
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text" data-i18n="configEditor.lbl.headerAuthor">注释模板作者</span><span class="ci-label-hint" data-i18n="configEditor.hint.forHeaderSnippet">header Snippet 使用</span></div>
+                                <input type="text" class="config-input" id="headerAuthor" placeholder="留空则插入时手动输入" data-i18n-ph="configEditor.ph.headerAuthor">
+                            </div>
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text" data-i18n="configEditor.lbl.headerModifier">注释模板修改人</span><span class="ci-label-hint" data-i18n="configEditor.hint.fallbackToAuthor">为空时回退取作者</span></div>
+                                <input type="text" class="config-input" id="headerModifier" placeholder="留空则使用作者名" data-i18n-ph="configEditor.ph.headerModifier">
+                            </div>
+                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.completionCommentSnippets">注释模板补全</span><label class="toggle"><input type="checkbox" id="completionCommentSnippets"><span class="toggle-slider"></span></label></div>
+                        </div>
+                    </div>
+
+                    <!-- Lint 规则 -->
+                    <div class="config-group" data-tab="editor">
+                        <div class="cg-header" data-action="toggleGroup">
+                            <span class="cg-arrow">▶</span>
+                            <span class="cg-icon">🔍</span>
+                            <span class="cg-title" data-i18n="configEditor.cg.lintRules">Lint 规则</span>
+                            <span class="cg-badge">31</span>
+                        </div>
+                        <div class="cg-body">
+                            <div class="lint-rule"><span class="lint-rule-name" data-i18n="configEditor.lint.avoidSelectStar">避免 SELECT *</span><select class="config-select lint-rule-severity" id="lintAvoidSelectStarSeverity"><option value="error" data-i18n="configEditor.severity.error">错误</option><option value="warning" data-i18n="configEditor.severity.warning">警告</option><option value="information" data-i18n="configEditor.severity.information">信息</option></select><label class="toggle lint-rule-toggle"><input type="checkbox" id="lintAvoidSelectStarEnabled"><span class="toggle-slider"></span></label></div>
+                            <div class="lint-rule"><span class="lint-rule-name" data-i18n="configEditor.lint.explicitJoinType">显式 JOIN 类型</span><select class="config-select lint-rule-severity" id="lintExplicitJoinTypeSeverity"><option value="error" data-i18n="configEditor.severity.error">错误</option><option value="warning" data-i18n="configEditor.severity.warning">警告</option><option value="information" data-i18n="configEditor.severity.information">信息</option></select><label class="toggle lint-rule-toggle"><input type="checkbox" id="lintExplicitJoinTypeEnabled"><span class="toggle-slider"></span></label></div>
+                            <div class="lint-rule"><span class="lint-rule-name" data-i18n="configEditor.lint.limitWithOrderBy">LIMIT 配合 ORDER BY</span><select class="config-select lint-rule-severity" id="lintLimitWithOrderBySeverity"><option value="error" data-i18n="configEditor.severity.error">错误</option><option value="warning" data-i18n="configEditor.severity.warning">警告</option><option value="information" data-i18n="configEditor.severity.information">信息</option></select><label class="toggle lint-rule-toggle"><input type="checkbox" id="lintLimitWithOrderByEnabled"><span class="toggle-slider"></span></label></div>
+                            <div class="lint-rule"><span class="lint-rule-name" data-i18n="configEditor.lint.columnCountMismatch">列数不匹配检测</span><select class="config-select lint-rule-severity" id="lintAvoidColumnCountMismatchSeverity"><option value="error" data-i18n="configEditor.severity.error">错误</option><option value="warning" data-i18n="configEditor.severity.warning">警告</option><option value="information" data-i18n="configEditor.severity.information">信息</option></select><label class="toggle lint-rule-toggle"><input type="checkbox" id="lintAvoidColumnCountMismatchEnabled"><span class="toggle-slider"></span></label></div>
+                            <div class="lint-rule"><span class="lint-rule-name" data-i18n="configEditor.lint.missingPrimaryKey">缺失主键检测</span><select class="config-select lint-rule-severity" id="lintMissingPrimaryKeySeverity"><option value="error" data-i18n="configEditor.severity.error">错误</option><option value="warning" data-i18n="configEditor.severity.warning">警告</option><option value="information" data-i18n="configEditor.severity.information">信息</option></select><label class="toggle lint-rule-toggle"><input type="checkbox" id="lintMissingPrimaryKeyEnabled"><span class="toggle-slider"></span></label></div>
+                            <div class="lint-rule"><span class="lint-rule-name" data-i18n="configEditor.lint.useCurrentTimestamp">使用 CURRENT_TIMESTAMP</span><select class="config-select lint-rule-severity" id="lintUseCurrentTimestampSeverity"><option value="error" data-i18n="configEditor.severity.error">错误</option><option value="warning" data-i18n="configEditor.severity.warning">警告</option><option value="information" data-i18n="configEditor.severity.information">信息</option></select><label class="toggle lint-rule-toggle"><input type="checkbox" id="lintUseCurrentTimestampEnabled"><span class="toggle-slider"></span></label></div>
+                            <div class="lint-rule"><span class="lint-rule-name" data-i18n="configEditor.lint.avoidSelectInInsert">避免 INSERT 中的 SELECT</span><select class="config-select lint-rule-severity" id="lintAvoidSelectInInsertSeverity"><option value="error" data-i18n="configEditor.severity.error">错误</option><option value="warning" data-i18n="configEditor.severity.warning">警告</option><option value="information" data-i18n="configEditor.severity.information">信息</option></select><label class="toggle lint-rule-toggle"><input type="checkbox" id="lintAvoidSelectInInsertEnabled"><span class="toggle-slider"></span></label></div>
+                            <div class="lint-rule"><span class="lint-rule-name" data-i18n="configEditor.lint.duplicateColumnAliases">重复列别名检测</span><select class="config-select lint-rule-severity" id="lintDuplicateColumnAliasesSeverity"><option value="error" data-i18n="configEditor.severity.error">错误</option><option value="warning" data-i18n="configEditor.severity.warning">警告</option><option value="information" data-i18n="configEditor.severity.information">信息</option></select><label class="toggle lint-rule-toggle"><input type="checkbox" id="lintDuplicateColumnAliasesEnabled"><span class="toggle-slider"></span></label></div>
+                            <div class="lint-rule"><span class="lint-rule-name" data-i18n="configEditor.lint.uppercaseKeywords">关键字大写</span><select class="config-select lint-rule-severity" id="lintUppercaseKeywordsSeverity"><option value="error" data-i18n="configEditor.severity.error">错误</option><option value="warning" data-i18n="configEditor.severity.warning">警告</option><option value="information" data-i18n="configEditor.severity.information">信息</option></select><label class="toggle lint-rule-toggle"><input type="checkbox" id="lintUppercaseKeywordsEnabled"><span class="toggle-slider"></span></label></div>
+                            <div class="lint-rule"><span class="lint-rule-name" data-i18n="configEditor.lint.consistentAliasing">一致的别名</span><select class="config-select lint-rule-severity" id="lintConsistentAliasingSeverity"><option value="error" data-i18n="configEditor.severity.error">错误</option><option value="warning" data-i18n="configEditor.severity.warning">警告</option><option value="information" data-i18n="configEditor.severity.information">信息</option></select><label class="toggle lint-rule-toggle"><input type="checkbox" id="lintConsistentAliasingEnabled"><span class="toggle-slider"></span></label></div>
+                            <div class="lint-rule"><span class="lint-rule-name" data-i18n="configEditor.lint.useCoalesceOverIsnull">使用 COALESCE 而非 ISNULL</span><select class="config-select lint-rule-severity" id="lintUseCoalesceOverIsnullSeverity"><option value="error" data-i18n="configEditor.severity.error">错误</option><option value="warning" data-i18n="configEditor.severity.warning">警告</option><option value="information" data-i18n="configEditor.severity.information">信息</option></select><label class="toggle lint-rule-toggle"><input type="checkbox" id="lintUseCoalesceOverIsnullEnabled"><span class="toggle-slider"></span></label></div>
+                            <div class="lint-rule"><span class="lint-rule-name" data-i18n="configEditor.lint.explicitColumnAliasing">显式列别名</span><select class="config-select lint-rule-severity" id="lintExplicitColumnAliasingSeverity"><option value="error" data-i18n="configEditor.severity.error">错误</option><option value="warning" data-i18n="configEditor.severity.warning">警告</option><option value="information" data-i18n="configEditor.severity.information">信息</option></select><label class="toggle lint-rule-toggle"><input type="checkbox" id="lintExplicitColumnAliasingEnabled"><span class="toggle-slider"></span></label></div>
+                            <div class="lint-rule"><span class="lint-rule-name" data-i18n="configEditor.lint.avoidCorrelatedSubqueries">避免关联子查询</span><select class="config-select lint-rule-severity" id="lintAvoidCorrelatedSubqueriesSeverity"><option value="error" data-i18n="configEditor.severity.error">错误</option><option value="warning" data-i18n="configEditor.severity.warning">警告</option><option value="information" data-i18n="configEditor.severity.information">信息</option></select><label class="toggle lint-rule-toggle"><input type="checkbox" id="lintAvoidCorrelatedSubqueriesEnabled"><span class="toggle-slider"></span></label></div>
+                            <div class="lint-rule"><span class="lint-rule-name" data-i18n="configEditor.lint.longQueryLine">长查询行检测</span><select class="config-select lint-rule-severity" id="lintLongQueryLineSeverity"><option value="error" data-i18n="configEditor.severity.error">错误</option><option value="warning" data-i18n="configEditor.severity.warning">警告</option><option value="information" data-i18n="configEditor.severity.information">信息</option></select><label class="toggle lint-rule-toggle"><input type="checkbox" id="lintLongQueryLineEnabled"><span class="toggle-slider"></span></label></div>
+                            <div class="lint-rule"><span class="lint-rule-name" data-i18n="configEditor.lint.missingQueryComment">复杂查询缺注释</span><select class="config-select lint-rule-severity" id="lintMissingQueryCommentSeverity"><option value="error" data-i18n="configEditor.severity.error">错误</option><option value="warning" data-i18n="configEditor.severity.warning">警告</option><option value="information" data-i18n="configEditor.severity.information">信息</option></select><label class="toggle lint-rule-toggle"><input type="checkbox" id="lintMissingQueryCommentEnabled"><span class="toggle-slider"></span></label></div>
+                            <div class="lint-rule"><span class="lint-rule-name" data-i18n="configEditor.lint.missingColumnComment">DDL 列缺 COMMENT</span><select class="config-select lint-rule-severity" id="lintMissingColumnCommentSeverity"><option value="error" data-i18n="configEditor.severity.error">错误</option><option value="warning" data-i18n="configEditor.severity.warning">警告</option><option value="information" data-i18n="configEditor.severity.information">信息</option></select><label class="toggle lint-rule-toggle"><input type="checkbox" id="lintMissingColumnCommentEnabled"><span class="toggle-slider"></span></label></div>
+                            <div class="lint-rule"><span class="lint-rule-name" data-i18n="configEditor.lint.commentedOutCode">注释掉的代码</span><select class="config-select lint-rule-severity" id="lintCommentedOutCodeSeverity"><option value="error" data-i18n="configEditor.severity.error">错误</option><option value="warning" data-i18n="configEditor.severity.warning">警告</option><option value="information" data-i18n="configEditor.severity.information">信息</option></select><label class="toggle lint-rule-toggle"><input type="checkbox" id="lintCommentedOutCodeEnabled"><span class="toggle-slider"></span></label></div>
+                            <div class="lint-rule"><span class="lint-rule-name" data-i18n="configEditor.lint.expiredTodo">过期 TODO/FIXME</span><select class="config-select lint-rule-severity" id="lintExpiredTodoSeverity"><option value="error" data-i18n="configEditor.severity.error">错误</option><option value="warning" data-i18n="configEditor.severity.warning">警告</option><option value="information" data-i18n="configEditor.severity.information">信息</option></select><label class="toggle lint-rule-toggle"><input type="checkbox" id="lintExpiredTodoEnabled"><span class="toggle-slider"></span></label></div>
+                            <div class="lint-rule"><span class="lint-rule-name" data-i18n="configEditor.lint.havingWithoutGroupBy">HAVING 缺少 GROUP BY</span><select class="config-select lint-rule-severity" id="lintHavingWithoutGroupBySeverity"><option value="error" data-i18n="configEditor.severity.error">错误</option><option value="warning" data-i18n="configEditor.severity.warning">警告</option><option value="information" data-i18n="configEditor.severity.information">信息</option></select><label class="toggle lint-rule-toggle"><input type="checkbox" id="lintHavingWithoutGroupByEnabled"><span class="toggle-slider"></span></label></div>
+                            <div class="lint-rule"><span class="lint-rule-name" data-i18n="configEditor.lint.limitInvalidValue">LIMIT 值无效</span><select class="config-select lint-rule-severity" id="lintLimitInvalidValueSeverity"><option value="error" data-i18n="configEditor.severity.error">错误</option><option value="warning" data-i18n="configEditor.severity.warning">警告</option><option value="information" data-i18n="configEditor.severity.information">信息</option></select><label class="toggle lint-rule-toggle"><input type="checkbox" id="lintLimitInvalidValueEnabled"><span class="toggle-slider"></span></label></div>
+                            <div class="lint-rule"><span class="lint-rule-name" data-i18n="configEditor.lint.reservedWordIdentifier">保留字作标识符</span><select class="config-select lint-rule-severity" id="lintReservedWordIdentifierSeverity"><option value="error" data-i18n="configEditor.severity.error">错误</option><option value="warning" data-i18n="configEditor.severity.warning">警告</option><option value="information" data-i18n="configEditor.severity.information">信息</option></select><label class="toggle lint-rule-toggle"><input type="checkbox" id="lintReservedWordIdentifierEnabled"><span class="toggle-slider"></span></label></div>
+                            <div class="lint-rule"><span class="lint-rule-name" data-i18n="configEditor.lint.joinMissingOn">JOIN 缺少 ON</span><select class="config-select lint-rule-severity" id="lintJoinMissingOnSeverity"><option value="error" data-i18n="configEditor.severity.error">错误</option><option value="warning" data-i18n="configEditor.severity.warning">警告</option><option value="information" data-i18n="configEditor.severity.information">信息</option></select><label class="toggle lint-rule-toggle"><input type="checkbox" id="lintJoinMissingOnEnabled"><span class="toggle-slider"></span></label></div>
+                            <div class="lint-rule"><span class="lint-rule-name" data-i18n="configEditor.lint.selectWithoutFrom">SELECT 缺少 FROM</span><select class="config-select lint-rule-severity" id="lintSelectWithoutFromSeverity"><option value="error" data-i18n="configEditor.severity.error">错误</option><option value="warning" data-i18n="configEditor.severity.warning">警告</option><option value="information" data-i18n="configEditor.severity.information">信息</option></select><label class="toggle lint-rule-toggle"><input type="checkbox" id="lintSelectWithoutFromEnabled"><span class="toggle-slider"></span></label></div>
+                            <div class="lint-rule"><span class="lint-rule-name" data-i18n="configEditor.lint.misplacedDistinct">DISTINCT 位置错误</span><select class="config-select lint-rule-severity" id="lintMisplacedDistinctSeverity"><option value="error" data-i18n="configEditor.severity.error">错误</option><option value="warning" data-i18n="configEditor.severity.warning">警告</option><option value="information" data-i18n="configEditor.severity.information">信息</option></select><label class="toggle lint-rule-toggle"><input type="checkbox" id="lintMisplacedDistinctEnabled"><span class="toggle-slider"></span></label></div>
+                            <div class="lint-rule"><span class="lint-rule-name" data-i18n="configEditor.lint.aggregateInWhere">WHERE 中使用聚合函数</span><select class="config-select lint-rule-severity" id="lintAggregateInWhereSeverity"><option value="error" data-i18n="configEditor.severity.error">错误</option><option value="warning" data-i18n="configEditor.severity.warning">警告</option><option value="information" data-i18n="configEditor.severity.information">信息</option></select><label class="toggle lint-rule-toggle"><input type="checkbox" id="lintAggregateInWhereEnabled"><span class="toggle-slider"></span></label></div>
+                            <div class="lint-rule"><span class="lint-rule-name" data-i18n="configEditor.lint.subqueryWithoutAlias">子查询缺少别名</span><select class="config-select lint-rule-severity" id="lintSubqueryWithoutAliasSeverity"><option value="error" data-i18n="configEditor.severity.error">错误</option><option value="warning" data-i18n="configEditor.severity.warning">警告</option><option value="information" data-i18n="configEditor.severity.information">信息</option></select><label class="toggle lint-rule-toggle"><input type="checkbox" id="lintSubqueryWithoutAliasEnabled"><span class="toggle-slider"></span></label></div>
+                            <div class="lint-rule"><span class="lint-rule-name" data-i18n="configEditor.lint.suspiciousNullComparison">可疑的 NULL 比较</span><select class="config-select lint-rule-severity" id="lintSuspiciousNullComparisonSeverity"><option value="error" data-i18n="configEditor.severity.error">错误</option><option value="warning" data-i18n="configEditor.severity.warning">警告</option><option value="information" data-i18n="configEditor.severity.information">信息</option></select><label class="toggle lint-rule-toggle"><input type="checkbox" id="lintSuspiciousNullComparisonEnabled"><span class="toggle-slider"></span></label></div>
+                            <div class="lint-rule"><span class="lint-rule-name" data-i18n="configEditor.lint.incompleteCase">不完整的 CASE</span><select class="config-select lint-rule-severity" id="lintIncompleteCaseSeverity"><option value="error" data-i18n="configEditor.severity.error">错误</option><option value="warning" data-i18n="configEditor.severity.warning">警告</option><option value="information" data-i18n="configEditor.severity.information">信息</option></select><label class="toggle lint-rule-toggle"><input type="checkbox" id="lintIncompleteCaseEnabled"><span class="toggle-slider"></span></label></div>
+                            <div class="lint-rule"><span class="lint-rule-name" data-i18n="configEditor.lint.redundantDistinct">冗余的 DISTINCT</span><select class="config-select lint-rule-severity" id="lintRedundantDistinctSeverity"><option value="error" data-i18n="configEditor.severity.error">错误</option><option value="warning" data-i18n="configEditor.severity.warning">警告</option><option value="information" data-i18n="configEditor.severity.information">信息</option></select><label class="toggle lint-rule-toggle"><input type="checkbox" id="lintRedundantDistinctEnabled"><span class="toggle-slider"></span></label></div>
+                            <div class="lint-rule"><span class="lint-rule-name" data-i18n="configEditor.lint.dateFunctionUsage">日期函数使用提示</span><select class="config-select lint-rule-severity" id="lintDateFunctionUsageSeverity"><option value="error" data-i18n="configEditor.severity.error">错误</option><option value="warning" data-i18n="configEditor.severity.warning">警告</option><option value="information" data-i18n="configEditor.severity.information">信息</option></select><label class="toggle lint-rule-toggle"><input type="checkbox" id="lintDateFunctionUsageEnabled"><span class="toggle-slider"></span></label></div>
+                            <div class="lint-rule"><span class="lint-rule-name" data-i18n="configEditor.lint.wildcardInUpdate">UPDATE 中使用通配符</span><select class="config-select lint-rule-severity" id="lintWildcardInUpdateSeverity"><option value="error" data-i18n="configEditor.severity.error">错误</option><option value="warning" data-i18n="configEditor.severity.warning">警告</option><option value="information" data-i18n="configEditor.severity.information">信息</option></select><label class="toggle lint-rule-toggle"><input type="checkbox" id="lintWildcardInUpdateEnabled"><span class="toggle-slider"></span></label></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ Tab: 数据库 ═══ -->
+        <div class="tab-content" id="tab-database">
+            <div class="config-section">
+                <div class="section-body">
+                    <!-- 数据库查询 -->
+                    <div class="config-group" data-tab="database">
+                        <div class="cg-header" data-action="toggleGroup">
+                            <span class="cg-arrow open">▶</span>
+                            <span class="cg-icon">🔍</span>
+                            <span class="cg-title" data-i18n="configEditor.cg.querySettings">数据库查询</span>
+                        </div>
+                        <div class="cg-body open">
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text" data-i18n="configEditor.lbl.queryMaxRows">最大返回行数</span></div>
+                                <input type="number" class="config-input" id="queryMaxRows" min="1">
+                            </div>
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text" data-i18n="configEditor.lbl.queryTimeout">查询超时(ms)</span></div>
+                                <input type="number" class="config-input" id="queryTimeout" min="1000">
+                            </div>
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text" data-i18n="configEditor.lbl.queryPageSize">每页行数</span></div>
+                                <input type="number" class="config-input" id="queryPageSize" min="10" max="1000">
+                            </div>
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text" data-i18n="configEditor.lbl.queryNullPlaceholder">NULL 显示文本</span></div>
+                                <input type="text" class="config-input" id="queryNullPlaceholder">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 安全防护 -->
+                    <div class="config-group" data-tab="database">
+                        <div class="cg-header" data-action="toggleGroup">
+                            <span class="cg-arrow">▶</span>
+                            <span class="cg-icon">🛡️</span>
+                            <span class="cg-title" data-i18n="configEditor.cg.safetyGuard">安全防护</span>
+                        </div>
+                        <div class="cg-body">
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text" data-i18n="configEditor.lbl.safetyGuardLevel">安全防护级别</span></div>
+                                <select class="config-select" id="safetyGuardLevel">
+                                    <option value="strict" data-i18n="configEditor.opt.strict">严格</option>
+                                    <option value="moderate" data-i18n="configEditor.opt.moderate">适中</option>
+                                    <option value="off" data-i18n="configEditor.opt.off">关闭</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 执行设置 -->
+                    <div class="config-group" data-tab="database">
+                        <div class="cg-header" data-action="toggleGroup">
+                            <span class="cg-arrow">▶</span>
+                            <span class="cg-icon">▶️</span>
+                            <span class="cg-title" data-i18n="configEditor.cg.executionSettings">执行设置</span>
+                        </div>
+                        <div class="cg-body">
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text" data-i18n="configEditor.lbl.executionBatchMode">批量执行模式</span></div>
+                                <select class="config-select" id="executionBatchMode">
+                                    <option value="sequential" data-i18n="configEditor.opt.sequential">顺序执行</option>
+                                    <option value="transaction" data-i18n="configEditor.opt.transaction">事务执行</option>
+                                </select>
+                            </div>
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text" data-i18n="configEditor.lbl.executionOnError">错误处理策略</span></div>
+                                <select class="config-select" id="executionOnError">
+                                    <option value="stop" data-i18n="configEditor.opt.stop">停止</option>
+                                    <option value="continue" data-i18n="configEditor.opt.continue">继续</option>
+                                </select>
+                            </div>
+                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.executionSaveProgress">保存批量执行进度</span><label class="toggle"><input type="checkbox" id="executionSaveProgress"><span class="toggle-slider"></span></label></div>
+                        </div>
+                    </div>
+
+                    <!-- 历史记录 -->
+                    <div class="config-group" data-tab="database">
+                        <div class="cg-header" data-action="toggleGroup">
+                            <span class="cg-arrow">▶</span>
+                            <span class="cg-icon">📋</span>
+                            <span class="cg-title" data-i18n="configEditor.cg.historySettings">历史记录</span>
+                        </div>
+                        <div class="cg-body">
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text" data-i18n="configEditor.lbl.historyMaxEntries">最大历史条数</span></div>
+                                <input type="number" class="config-input" id="historyMaxEntries" min="10" max="10000">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 导出设置 -->
+                    <div class="config-group" data-tab="database">
+                        <div class="cg-header" data-action="toggleGroup">
+                            <span class="cg-arrow">▶</span>
+                            <span class="cg-icon">📤</span>
+                            <span class="cg-title" data-i18n="configEditor.cg.exportSettings">导出设置</span>
+                        </div>
+                        <div class="cg-body">
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text" data-i18n="configEditor.lbl.exportDefaultFormat">默认导出格式</span></div>
+                                <select class="config-select" id="exportDefaultFormat">
+                                    <option value="csv">CSV</option>
+                                    <option value="json">JSON</option>
+                                    <option value="insert">SQL INSERT</option>
+                                    <option value="ddl">DDL</option>
+                                </select>
+                            </div>
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text" data-i18n="configEditor.lbl.exportCsvDelimiter">CSV 分隔符</span></div>
+                                <input type="text" class="config-input" id="exportCsvDelimiter">
+                            </div>
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text" data-i18n="configEditor.lbl.exportCsvEncoding">CSV 编码</span></div>
+                                <input type="text" class="config-input" id="exportCsvEncoding">
+                            </div>
+                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.exportIncludeHeaders">导出包含列头</span><label class="toggle"><input type="checkbox" id="exportIncludeHeaders"><span class="toggle-slider"></span></label></div>
+                        </div>
+                    </div>
+
+                    <!-- 结果面板 -->
+                    <div class="config-group" data-tab="database">
+                        <div class="cg-header" data-action="toggleGroup">
+                            <span class="cg-arrow">▶</span>
+                            <span class="cg-icon">📊</span>
+                            <span class="cg-title" data-i18n="configEditor.cg.resultsSettings">结果面板</span>
+                        </div>
+                        <div class="cg-body">
+                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.resultsEnablePreload">启用滚动预加载</span><label class="toggle"><input type="checkbox" id="resultsEnablePreload"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.resultsJsonPrettyPrint">自动格式化 JSON</span><label class="toggle"><input type="checkbox" id="resultsJsonPrettyPrint"><span class="toggle-slider"></span></label></div>
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text" data-i18n="configEditor.lbl.resultsDateFormat">日期显示格式</span></div>
+                                <select class="config-select" id="resultsDateFormat">
+                                    <option value="local" data-i18n="configEditor.opt.local">本地时间</option>
+                                    <option value="utc">UTC</option>
+                                    <option value="relative" data-i18n="configEditor.opt.relative">相对时间</option>
+                                </select>
+                            </div>
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text" data-i18n="configEditor.lbl.resultsLongTextThreshold">长文本截断阈值</span><span class="ci-label-hint" data-i18n="configEditor.hint.charThreshold">字符数</span></div>
+                                <input type="number" class="config-input" id="resultsLongTextThreshold" min="50">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 数据编辑器 -->
+                    <div class="config-group" data-tab="database">
+                        <div class="cg-header" data-action="toggleGroup">
+                            <span class="cg-arrow">▶</span>
+                            <span class="cg-icon">✏️</span>
+                            <span class="cg-title" data-i18n="configEditor.cg.dataEditorSettings">数据编辑器</span>
+                        </div>
+                        <div class="cg-body">
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text" data-i18n="configEditor.lbl.dataEditorEditMode">编辑模式</span></div>
+                                <select class="config-select" id="dataEditorEditMode">
+                                    <option value="readonly" data-i18n="configEditor.opt.readonly">只读</option>
+                                    <option value="editable" data-i18n="configEditor.opt.editable">可编辑</option>
+                                </select>
+                            </div>
+                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.dataEditorAutoCommit">自动提交</span><label class="toggle"><input type="checkbox" id="dataEditorAutoCommit"><span class="toggle-slider"></span></label></div>
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text" data-i18n="configEditor.lbl.dataEditorDefaultView">默认视图</span></div>
+                                <select class="config-select" id="dataEditorDefaultView">
+                                    <option value="grid" data-i18n="configEditor.opt.grid">表格</option>
+                                    <option value="form" data-i18n="configEditor.opt.form">表单</option>
+                                </select>
+                            </div>
+                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.dataEditorEnableValidation">启用数据验证</span><label class="toggle"><input type="checkbox" id="dataEditorEnableValidation"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.dataEditorValidateOnEdit">实时编辑验证</span><label class="toggle"><input type="checkbox" id="dataEditorValidateOnEdit"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.dataEditorValidateForeignKeys">验证外键引用</span><label class="toggle"><input type="checkbox" id="dataEditorValidateForeignKeys"><span class="toggle-slider"></span></label></div>
+                        </div>
+                    </div>
+
+                    <!-- Schema 缓存 -->
+                    <div class="config-group" data-tab="database">
+                        <div class="cg-header" data-action="toggleGroup">
+                            <span class="cg-arrow">▶</span>
+                            <span class="cg-icon">🗄️</span>
+                            <span class="cg-title" data-i18n="configEditor.cg.schemaCacheSettings">Schema 缓存</span>
+                        </div>
+                        <div class="cg-body">
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text" data-i18n="configEditor.lbl.schemaCacheDatabaseTtl">数据库缓存 TTL</span><span class="ci-label-hint" data-i18n="configEditor.hint.seconds">秒</span></div>
+                                <input type="number" class="config-input" id="schemaCacheDatabaseTtl" min="0">
+                            </div>
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text" data-i18n="configEditor.lbl.schemaCacheTableTtl">表缓存 TTL</span><span class="ci-label-hint" data-i18n="configEditor.hint.seconds">秒</span></div>
+                                <input type="number" class="config-input" id="schemaCacheTableTtl" min="0">
+                            </div>
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text" data-i18n="configEditor.lbl.schemaCacheColumnTtl">列缓存 TTL</span><span class="ci-label-hint" data-i18n="configEditor.hint.seconds">秒</span></div>
+                                <input type="number" class="config-input" id="schemaCacheColumnTtl" min="0">
+                            </div>
+                            <div class="config-item">
+                                <div class="ci-label"><span class="ci-label-text" data-i18n="configEditor.lbl.schemaCacheFunctionTtl">函数缓存 TTL</span><span class="ci-label-hint" data-i18n="configEditor.hint.seconds">秒</span></div>
+                                <input type="number" class="config-input" id="schemaCacheFunctionTtl" min="0">
+                            </div>
+                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.schemaCacheRefreshOnDDL">DDL 时刷新缓存</span><label class="toggle"><input type="checkbox" id="schemaCacheRefreshOnDDL"><span class="toggle-slider"></span></label></div>
+                            <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.toggle.schemaCachePrefetchOnConnect">连接时预加载</span><label class="toggle"><input type="checkbox" id="schemaCachePrefetchOnConnect"><span class="toggle-slider"></span></label></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
     <div class="toast" id="toast"></div>
+    <div class="search-empty" id="searchEmpty" style="display:none">
+        <div class="search-empty-icon">🔍</div>
+        <div class="search-empty-text" data-i18n="configEditor.searchEmpty">未找到匹配的配置项</div>
+    </div>
     <script src="{{JS_URI}}"></script>
 </body>
 </html>

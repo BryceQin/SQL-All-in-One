@@ -38,16 +38,10 @@ export interface FormatOptions {
     newlineBeforeGroupBy: boolean;
     newlineBeforeHaving: boolean;
     newlineBeforeLimit: boolean;
-    maxLineLength: number;
     tabulateAlias: boolean;
-    reservedKeywordCase: KeywordCase;
-    builtinFunctionCase: KeywordCase;
     newlineBeforeJoin: boolean;
-    newlineAfterComma: boolean;
     alignWhereClauses: boolean;
     alignCaseStatements: boolean;
-    breakAfterSelectItem: boolean;
-    breakAfterFromItem: boolean;
     spaceBeforeComma: boolean;
     spaceInsideParentheses: boolean;
     trimTrailingSpaces: boolean;
@@ -71,15 +65,10 @@ export interface FormatOptions {
     indentCteBody?: boolean
     newlineBetweenCtes?: boolean
     cteCommaPosition?: CteCommaPosition
-    newlineAfterOver?: boolean
-    newlineBeforePartitionBy?: boolean
-    newlineAfterPartitionBy?: boolean
-    newlineBeforeOrderByInWindow?: boolean
     indentJoinConditions?: boolean
     alignOnClauses?: boolean
     alignInsertColumns?: boolean
     alignInsertValuesGroups?: boolean
-    newlineAfterInsert?: boolean
     newlineAfterInsertColumns?: boolean
     newlineBetweenValuesGroups?: boolean
     newlineAfterCase?: boolean

@@ -7,6 +7,7 @@ export class LRUCache<K, V> {
   private cache = new Map<K, LRUCacheEntry<V>>();
   private maxSize: number;
   private maxAge: number;
+  private lastKey: K | undefined;
 
   constructor(options: { maxSize?: number; maxAge?: number } = {}) {
     this.maxSize = options.maxSize ?? 100;
@@ -25,6 +26,7 @@ export class LRUCache<K, V> {
       value,
       timestamp: Date.now(),
     });
+    this.lastKey = key;
   }
 
   get(key: K): V | undefined {
@@ -36,11 +38,15 @@ export class LRUCache<K, V> {
 
     if (Date.now() - entry.timestamp > this.maxAge) {
       this.cache.delete(key);
+      if (this.lastKey === key) this.lastKey = undefined;
       return undefined;
     }
 
-    this.cache.delete(key);
-    this.cache.set(key, entry);
+    if (this.lastKey !== key) {
+      this.cache.delete(key);
+      this.cache.set(key, entry);
+      this.lastKey = key;
+    }
     return entry.value;
   }
 
@@ -50,29 +56,54 @@ export class LRUCache<K, V> {
 
     if (Date.now() - entry.timestamp > this.maxAge) {
       this.cache.delete(key);
+      if (this.lastKey === key) this.lastKey = undefined;
       return false;
     }
 
-    // Update access order by delete+set, same as get()
-    this.cache.delete(key);
-    this.cache.set(key, entry);
+    if (this.lastKey !== key) {
+      this.cache.delete(key);
+      this.cache.set(key, entry);
+      this.lastKey = key;
+    }
     return true;
   }
 
   delete(key: K): void {
+    if (this.lastKey === key) this.lastKey = undefined;
     this.cache.delete(key);
   }
 
   deleteByPrefix(prefix: string): void {
-    for (const key of this.cache.keys()) {
+    const keys = [...this.cache.keys()];
+    for (const key of keys) {
       if (String(key).startsWith(prefix)) {
+        if (this.lastKey === key) this.lastKey = undefined;
         this.cache.delete(key);
+      }
+    }
+  }
+
+  *entries(): IterableIterator<[K, V]> {
+    const now = Date.now();
+    for (const [key, entry] of this.cache) {
+      if (now - entry.timestamp <= this.maxAge) {
+        yield [key, entry.value];
+      }
+    }
+  }
+
+  *values(): IterableIterator<V> {
+    const now = Date.now();
+    for (const entry of this.cache.values()) {
+      if (now - entry.timestamp <= this.maxAge) {
+        yield entry.value;
       }
     }
   }
 
   clear(): void {
     this.cache.clear();
+    this.lastKey = undefined;
   }
 
   size(): number {

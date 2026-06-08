@@ -103,30 +103,45 @@ export class ConnectionStore {
         await this.saveToFile(data);
     }
 
-    async addConnection(config: ConnectionConfig, password?: string): Promise<void> {
-        if (password && this.secretStorage) {
-            await this.secretStorage.store(
-                `sql-all-in-one.password.${config.id}`,
-                password
-            );
+    private async storeSecrets(id: string, config: ConnectionConfig, password?: string): Promise<void> {
+        if (!this.secretStorage) return;
+
+        if (password !== undefined) {
+            if (password) {
+                await this.secretStorage.store(`sql-all-in-one.password.${id}`, password);
+            } else {
+                await this.secretStorage.delete(`sql-all-in-one.password.${id}`);
+            }
         }
-        if (config.ssh?.password && this.secretStorage) {
-            await this.secretStorage.store(
-                `sql-all-in-one.ssh.password.${config.id}`,
-                config.ssh.password
-            );
+
+        if (config.ssh?.password !== undefined) {
+            if (config.ssh.password) {
+                await this.secretStorage.store(`sql-all-in-one.ssh.password.${id}`, config.ssh.password);
+            } else {
+                await this.secretStorage.delete(`sql-all-in-one.ssh.password.${id}`);
+            }
         }
-        if (config.ssh?.passphrase && this.secretStorage) {
-            await this.secretStorage.store(
-                `sql-all-in-one.ssh.passphrase.${config.id}`,
-                config.ssh.passphrase
-            );
+
+        if (config.ssh?.passphrase !== undefined) {
+            if (config.ssh.passphrase) {
+                await this.secretStorage.store(`sql-all-in-one.ssh.passphrase.${id}`, config.ssh.passphrase);
+            } else {
+                await this.secretStorage.delete(`sql-all-in-one.ssh.passphrase.${id}`);
+            }
         }
+    }
+
+    private sanitizeConfig(config: ConnectionConfig): ConnectionConfig {
         const safeConfig = { ...config, password: undefined };
         if (safeConfig.ssh) {
             safeConfig.ssh = { ...safeConfig.ssh, password: undefined, passphrase: undefined };
         }
-        this.connections.set(config.id, safeConfig);
+        return safeConfig;
+    }
+
+    async addConnection(config: ConnectionConfig, password?: string): Promise<void> {
+        await this.storeSecrets(config.id, config, password);
+        this.connections.set(config.id, this.sanitizeConfig(config));
         await this.save();
     }
 
@@ -141,41 +156,8 @@ export class ConnectionStore {
     }
 
     async updateConnection(id: string, config: ConnectionConfig, password?: string): Promise<void> {
-        if (password !== undefined && this.secretStorage) {
-            if (password) {
-                await this.secretStorage.store(
-                    `sql-all-in-one.password.${id}`,
-                    password
-                );
-            } else {
-                await this.secretStorage.delete(`sql-all-in-one.password.${id}`);
-            }
-        }
-        if (config.ssh?.password !== undefined && this.secretStorage) {
-            if (config.ssh.password) {
-                await this.secretStorage.store(
-                    `sql-all-in-one.ssh.password.${id}`,
-                    config.ssh.password
-                );
-            } else {
-                await this.secretStorage.delete(`sql-all-in-one.ssh.password.${id}`);
-            }
-        }
-        if (config.ssh?.passphrase !== undefined && this.secretStorage) {
-            if (config.ssh.passphrase) {
-                await this.secretStorage.store(
-                    `sql-all-in-one.ssh.passphrase.${id}`,
-                    config.ssh.passphrase
-                );
-            } else {
-                await this.secretStorage.delete(`sql-all-in-one.ssh.passphrase.${id}`);
-            }
-        }
-        const safeConfig = { ...config, password: undefined };
-        if (safeConfig.ssh) {
-            safeConfig.ssh = { ...safeConfig.ssh, password: undefined, passphrase: undefined };
-        }
-        this.connections.set(id, safeConfig);
+        await this.storeSecrets(id, config, password);
+        this.connections.set(id, this.sanitizeConfig(config));
         await this.save();
     }
 

@@ -2,7 +2,7 @@
     "name": "hive-formatter",
     "displayName": "SQL All in One",
     "description": "SQL All in One - 强大的 SQL 格式化、智能补全、语法检查、DDL 转换 VSCode 插件，支持 Hive、MySQL、SparkSQL、FlinkSQL、PostgreSQL、BigQuery、SQLite 等多种 SQL 方言",
-    "version": "2.0.0",
+    "version": "2.3.0",
     "publisher": "bryce-qin",
     "contributors": [
         "TalDu"
@@ -24,31 +24,6 @@
         "Snippets",
         "Other",
         "Databases"
-    ],
-    "viewsContainers": {
-        "activitybar": [
-            {
-                "id": "sql-all-in-one",
-                "title": "SQL All in One",
-                "icon": "resources/database-icon.svg"
-            }
-        ]
-    },
-    "views": {
-        "activitybar": [
-            {
-                "id": "sql-all-in-one.databaseExplorer",
-                "name": "Database Explorer",
-                "icon": "resources/database-icon.svg",
-                "when": "true"
-            }
-        ]
-    },
-    "viewsWelcome": [
-        {
-            "view": "sql-all-in-one.databaseExplorer",
-            "contents": "No database connections yet.\n[Add Connection](command:sql-all-in-one.addConnection)"
-        }
     ],
     "keywords": [
         "sql",
@@ -80,6 +55,31 @@
     "main": "./out/extension.js",
     "browser": "./out/extension.js",
     "contributes": {
+        "viewsContainers": {
+            "activitybar": [
+                {
+                    "id": "sql-all-in-one",
+                    "title": "SQL All in One",
+                    "icon": "resources/database-icon.svg"
+                }
+            ]
+        },
+        "views": {
+            "sql-all-in-one": [
+                {
+                    "id": "sql-all-in-one.databaseExplorer",
+                    "name": "Database Explorer",
+                    "icon": "resources/database-icon.svg",
+                    "when": "true"
+                }
+            ]
+        },
+        "viewsWelcome": [
+            {
+                "view": "sql-all-in-one.databaseExplorer",
+                "contents": "No database connections yet.\n[Add Connection](command:sql-all-in-one.addConnection)"
+            }
+        ],
         "languages": [
             {
                 "id": "sql",
@@ -258,7 +258,8 @@
             },
             {
                 "command": "sql-all-in-one.addConnection",
-                "title": "Add Database Connection"
+                "title": "Add Database Connection",
+                "icon": "$(add)"
             },
             {
                 "command": "sql-all-in-one.editConnection",
@@ -282,7 +283,8 @@
             },
             {
                 "command": "sql-all-in-one.refreshSchema",
-                "title": "Refresh Schema"
+                "title": "Refresh Schema",
+                "icon": "$(refresh)"
             },
             {
                 "command": "sql-all-in-one.viewTableData",
@@ -376,8 +378,8 @@
         "keybindings": [
             {
                 "command": "sql-all-in-one.replaceParameter",
-                "key": "ctrl+shift+p",
-                "mac": "cmd+shift+p",
+                "key": "ctrl+alt+p",
+                "mac": "cmd+alt+p",
                 "when": "editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite/"
             },
             {
@@ -659,63 +661,17 @@
                     "markdownDescription": "%sql-all-in-one.config.newlineBeforeLimit.markdownDescription%",
                     "order": 37
                 },
-                "SQL-All-in-One.maxLineLength": {
-                    "type": "integer",
-                    "default": 120,
-                    "minimum": 40,
-                    "maximum": 500,
-                    "markdownDescription": "%sql-all-in-one.config.maxLineLength.markdownDescription%",
-                    "order": 76
-                },
                 "SQL-All-in-One.tabulateAlias": {
                     "type": "boolean",
                     "default": false,
                     "markdownDescription": "%sql-all-in-one.config.tabulateAlias.markdownDescription%",
                     "order": 78
                 },
-                "SQL-All-in-One.reservedKeywordCase": {
-                    "type": "string",
-                    "enum": [
-                        "preserve",
-                        "upper",
-                        "lower"
-                    ],
-                    "enumDescriptions": [
-                        "%sql-all-in-one.config.reservedKeywordCase.enumDescriptions.preserve%",
-                        "%sql-all-in-one.config.reservedKeywordCase.enumDescriptions.upper%",
-                        "%sql-all-in-one.config.reservedKeywordCase.enumDescriptions.lower%"
-                    ],
-                    "default": "preserve",
-                    "markdownDescription": "%sql-all-in-one.config.reservedKeywordCase.markdownDescription%",
-                    "order": 16
-                },
-                "SQL-All-in-One.builtinFunctionCase": {
-                    "type": "string",
-                    "enum": [
-                        "preserve",
-                        "upper",
-                        "lower"
-                    ],
-                    "enumDescriptions": [
-                        "%sql-all-in-one.config.builtinFunctionCase.enumDescriptions.preserve%",
-                        "%sql-all-in-one.config.builtinFunctionCase.enumDescriptions.upper%",
-                        "%sql-all-in-one.config.builtinFunctionCase.enumDescriptions.lower%"
-                    ],
-                    "default": "preserve",
-                    "markdownDescription": "%sql-all-in-one.config.builtinFunctionCase.markdownDescription%",
-                    "order": 17
-                },
                 "SQL-All-in-One.newlineBeforeJoin": {
                     "type": "boolean",
                     "default": true,
                     "markdownDescription": "%sql-all-in-one.config.newlineBeforeJoin.markdownDescription%",
                     "order": 38
-                },
-                "SQL-All-in-One.newlineAfterComma": {
-                    "type": "boolean",
-                    "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineAfterComma.markdownDescription%",
-                    "order": 40
                 },
                 "SQL-All-in-One.alignWhereClauses": {
                     "type": "boolean",
@@ -728,18 +684,6 @@
                     "default": false,
                     "markdownDescription": "%sql-all-in-one.config.alignCaseStatements.markdownDescription%",
                     "order": 86
-                },
-                "SQL-All-in-One.breakAfterSelectItem": {
-                    "type": "boolean",
-                    "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.breakAfterSelectItem.markdownDescription%",
-                    "order": 83
-                },
-                "SQL-All-in-One.breakAfterFromItem": {
-                    "type": "boolean",
-                    "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.breakAfterFromItem.markdownDescription%",
-                    "order": 84
                 },
                 "SQL-All-in-One.spaceBeforeComma": {
                     "type": "boolean",
@@ -1367,30 +1311,6 @@
                     "markdownDescription": "%sql-all-in-one.config.cteCommaPosition.markdownDescription%",
                     "order": 88
                 },
-                "SQL-All-in-One.newlineAfterOver": {
-                    "type": "boolean",
-                    "default": false,
-                    "markdownDescription": "%sql-all-in-one.config.newlineAfterOver.markdownDescription%",
-                    "order": 59
-                },
-                "SQL-All-in-One.newlineBeforePartitionBy": {
-                    "type": "boolean",
-                    "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineBeforePartitionBy.markdownDescription%",
-                    "order": 60
-                },
-                "SQL-All-in-One.newlineAfterPartitionBy": {
-                    "type": "boolean",
-                    "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineAfterPartitionBy.markdownDescription%",
-                    "order": 61
-                },
-                "SQL-All-in-One.newlineBeforeOrderByInWindow": {
-                    "type": "boolean",
-                    "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeOrderByInWindow.markdownDescription%",
-                    "order": 62
-                },
                 "SQL-All-in-One.indentJoinConditions": {
                     "type": "boolean",
                     "default": true,
@@ -1414,12 +1334,6 @@
                     "default": false,
                     "markdownDescription": "%sql-all-in-one.config.alignInsertValuesGroups.markdownDescription%",
                     "order": 92
-                },
-                "SQL-All-in-One.newlineAfterInsert": {
-                    "type": "boolean",
-                    "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineAfterInsert.markdownDescription%",
-                    "order": 51
                 },
                 "SQL-All-in-One.newlineAfterInsertColumns": {
                     "type": "boolean",
@@ -1797,12 +1711,22 @@
             ],
             "view/title": [
                 {
+                    "command": "sql-all-in-one.addConnection",
+                    "when": "view == sql-all-in-one.databaseExplorer",
+                    "group": "navigation@1"
+                },
+                {
                     "command": "sql-all-in-one.refreshSchema",
                     "when": "view == sql-all-in-one.databaseExplorer",
-                    "group": "navigation"
+                    "group": "navigation@2"
                 }
             ],
             "view/item/context": [
+                {
+                    "command": "sql-all-in-one.addConnection",
+                    "when": "view == sql-all-in-one.databaseExplorer && viewItem =~ /^(favorites|group)$/",
+                    "group": "inline@1"
+                },
                 {
                     "command": "sql-all-in-one.connect",
                     "when": "view == sql-all-in-one.databaseExplorer && viewItem == connectionDisconnected",

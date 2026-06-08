@@ -154,7 +154,7 @@ function registerParameterHighlighter(context) {
     const parameterHighlighter = container.get(diContainer_1.Tokens.ParameterHighlighter);
     if (!parameterHighlighter)
         return;
-    SqlParameterHightlighter_1.SqlParameterReplaceCommand.register(context);
+    context.subscriptions.push(SqlParameterHightlighter_1.SqlParameterReplaceCommand.register(context));
     context.subscriptions.push(parameterHighlighter);
 }
 function registerServicesToContainer(extensionPath) {
@@ -235,15 +235,17 @@ function createModules() {
     ];
 }
 async function activate(context) {
-    // 首先注册所有服务到 DI 容器
     registerServicesToContainer(context.extensionPath);
     await (0, performanceMonitor_1.getPerformanceMonitor)().measureAsync('Extension.activate', async () => {
         console.log('SQL All in One: activating...');
         try {
             const modules = createModules();
-            for (const mod of modules) {
+            const asyncModules = modules.filter(m => m.register.constructor.name === 'AsyncFunction');
+            const syncModules = modules.filter(m => m.register.constructor.name !== 'AsyncFunction');
+            for (const mod of syncModules) {
                 await safeRegisterAsync('register ' + mod.name, () => mod.register(context));
             }
+            await Promise.all(asyncModules.map(mod => safeRegisterAsync('register ' + mod.name, () => mod.register(context))));
             context.subscriptions.push((0, configManager_1.getConfigManager)());
             context.subscriptions.push((0, DocumentAstCache_1.getDocumentAstCache)());
             console.log('SQL All in One: activation complete');

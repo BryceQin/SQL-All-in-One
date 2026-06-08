@@ -21,8 +21,6 @@ export interface LintRuleDefinition {
     subOptions?: Record<string, { type: 'number' | 'boolean'; default: unknown; configKey: string }>
 }
 
-// NOTE: Default values here should match src/formatter/sqlFormatter.ts defaultOptions
-// When adding new format options, add them to both this array and defaultOptions
 export const FORMAT_CONFIG_ITEMS: ConfigItemDefinition[] = [
     { key: 'dialect', type: 'enum', defaultValue: 'hive', group: 'basic', label: 'Dialect', enumValues: ['hive', 'spark', 'flinksql', 'mysql', 'postgresql', 'bigquery', 'sqlite', 'sql'] },
     { key: 'keywordCase', type: 'enum', defaultValue: 'preserve', group: 'basic', label: 'Keyword Case', enumValues: ['preserve', 'upper', 'lower'] },
@@ -50,21 +48,17 @@ export const FORMAT_CONFIG_ITEMS: ConfigItemDefinition[] = [
     { key: 'newlineAfterLimit', type: 'boolean', defaultValue: false, group: 'newline', label: 'Newline After LIMIT' },
     { key: 'newlineAfterJoin', type: 'boolean', defaultValue: true, group: 'newline', label: 'Newline After JOIN' },
     { key: 'newlineBeforeOn', type: 'boolean', defaultValue: true, group: 'newline', label: 'Newline Before ON' },
+    { key: 'newlineBeforeUsing', type: 'boolean', defaultValue: true, group: 'newline', label: 'Newline Before USING' },
     { key: 'newlineBeforeSetOperation', type: 'boolean', defaultValue: true, group: 'newline', label: 'Newline Before Set Operation' },
+    { key: 'newlineAfterSetOperation', type: 'boolean', defaultValue: true, group: 'newline', label: 'Newline After Set Operation' },
     { key: 'newlineAfterCase', type: 'boolean', defaultValue: true, group: 'newline', label: 'Newline After CASE' },
     { key: 'newlineAfterWhen', type: 'boolean', defaultValue: true, group: 'newline', label: 'Newline After WHEN' },
     { key: 'newlineAfterThen', type: 'boolean', defaultValue: false, group: 'newline', label: 'Newline After THEN' },
     { key: 'newlineAfterElse', type: 'boolean', defaultValue: false, group: 'newline', label: 'Newline After ELSE' },
     { key: 'newlineAfterIn', type: 'boolean', defaultValue: false, group: 'newline', label: 'Newline After IN' },
-    { key: 'maxLineLength', type: 'number', defaultValue: 120, group: 'line', label: 'Max Line Length' },
-    { key: 'reservedKeywordCase', type: 'enum', defaultValue: 'preserve', group: 'basic', label: 'Reserved Keyword Case', enumValues: ['preserve', 'upper', 'lower'] },
-    { key: 'builtinFunctionCase', type: 'enum', defaultValue: 'preserve', group: 'basic', label: 'Builtin Function Case', enumValues: ['preserve', 'upper', 'lower'] },
     { key: 'newlineBeforeJoin', type: 'boolean', defaultValue: true, group: 'newline', label: 'Newline Before JOIN' },
-    { key: 'newlineAfterComma', type: 'boolean', defaultValue: true, group: 'newline', label: 'Newline After Comma' },
     { key: 'alignWhereClauses', type: 'boolean', defaultValue: false, group: 'align', label: 'Align WHERE Clauses' },
     { key: 'alignCaseStatements', type: 'boolean', defaultValue: false, group: 'align', label: 'Align CASE Statements' },
-    { key: 'breakAfterSelectItem', type: 'boolean', defaultValue: true, group: 'newline', label: 'Break After SELECT Item' },
-    { key: 'breakAfterFromItem', type: 'boolean', defaultValue: true, group: 'newline', label: 'Break After FROM Item' },
     { key: 'spaceBeforeComma', type: 'boolean', defaultValue: false, group: 'space', label: 'Space Before Comma' },
     { key: 'spaceInsideParentheses', type: 'boolean', defaultValue: false, group: 'space', label: 'Space Inside Parentheses' },
     { key: 'trimTrailingSpaces', type: 'boolean', defaultValue: true, group: 'space', label: 'Trim Trailing Spaces' },
@@ -75,9 +69,14 @@ export const FORMAT_CONFIG_ITEMS: ConfigItemDefinition[] = [
     { key: 'indentWhen', type: 'boolean', defaultValue: true, group: 'indent', label: 'Indent WHEN' },
     { key: 'indentThen', type: 'boolean', defaultValue: true, group: 'indent', label: 'Indent THEN' },
     { key: 'indentCteBody', type: 'boolean', defaultValue: true, group: 'indent', label: 'Indent CTE Body' },
+    { key: 'newlineBeforeWith', type: 'boolean', defaultValue: true, group: 'newline', label: 'Newline Before WITH' },
+    { key: 'newlineAfterWith', type: 'boolean', defaultValue: true, group: 'newline', label: 'Newline After WITH' },
+    { key: 'newlineBetweenCtes', type: 'boolean', defaultValue: true, group: 'newline', label: 'Newline Between CTEs' },
     { key: 'alignOnClauses', type: 'boolean', defaultValue: false, group: 'align', label: 'Align ON Clauses' },
     { key: 'alignInsertColumns', type: 'boolean', defaultValue: false, group: 'align', label: 'Align INSERT Columns' },
     { key: 'alignInsertValuesGroups', type: 'boolean', defaultValue: false, group: 'align', label: 'Align INSERT Values Groups' },
+    { key: 'newlineAfterInsertColumns', type: 'boolean', defaultValue: true, group: 'newline', label: 'Newline After INSERT Columns' },
+    { key: 'newlineBetweenValuesGroups', type: 'boolean', defaultValue: true, group: 'newline', label: 'Newline Between Values Groups' },
     { key: 'maxItemsInlineList', type: 'number', defaultValue: 5, group: 'line', label: 'Max Items Inline List' },
     { key: 'cteCommaPosition', type: 'enum', defaultValue: 'before', group: 'comma', label: 'CTE Comma Position', enumValues: ['before', 'after'] },
     { key: 'subqueryParenStyle', type: 'enum', defaultValue: 'inline', group: 'paren', label: 'Subquery Paren Style', enumValues: ['inline', 'newline'] },
@@ -149,7 +148,39 @@ export const LINT_RULES: LintRuleDefinition[] = [
     { ruleId: 'wildcardInUpdate', configKey: 'lint.wildcard_in_update', label: 'Wildcard In UPDATE', defaultEnabled: true, defaultSeverity: 'error', enabledKey: 'lintWildcardInUpdateEnabled', severityKey: 'lintWildcardInUpdateSeverity' },
 ]
 
-export const ALL_CONFIG_ITEMS: ConfigItemDefinition[] = [...FORMAT_CONFIG_ITEMS, ...FEATURE_CONFIG_ITEMS]
+export const DATABASE_CONFIG_ITEMS: ConfigItemDefinition[] = [
+    { key: 'queryMaxRows', type: 'number', defaultValue: 1000, group: 'query', label: 'Query Max Rows', configKey: 'query.maxRows' },
+    { key: 'queryTimeout', type: 'number', defaultValue: 30000, group: 'query', label: 'Query Timeout', configKey: 'query.timeout' },
+    { key: 'queryPageSize', type: 'number', defaultValue: 100, group: 'query', label: 'Query Page Size', configKey: 'query.pageSize' },
+    { key: 'queryNullPlaceholder', type: 'string', defaultValue: '(NULL)', group: 'query', label: 'Query Null Placeholder', configKey: 'query.nullPlaceholder' },
+    { key: 'safetyGuardLevel', type: 'enum', defaultValue: 'moderate', group: 'safety', label: 'Safety Guard Level', enumValues: ['strict', 'moderate', 'off'], configKey: 'safetyGuard.level' },
+    { key: 'executionBatchMode', type: 'enum', defaultValue: 'sequential', group: 'execution', label: 'Execution Batch Mode', enumValues: ['sequential', 'transaction'], configKey: 'execution.batchMode' },
+    { key: 'executionOnError', type: 'enum', defaultValue: 'stop', group: 'execution', label: 'Execution On Error', enumValues: ['stop', 'continue'], configKey: 'execution.onError' },
+    { key: 'executionSaveProgress', type: 'boolean', defaultValue: true, group: 'execution', label: 'Execution Save Progress', configKey: 'execution.saveProgress' },
+    { key: 'historyMaxEntries', type: 'number', defaultValue: 500, group: 'history', label: 'History Max Entries', configKey: 'history.maxEntries' },
+    { key: 'exportDefaultFormat', type: 'enum', defaultValue: 'csv', group: 'export', label: 'Export Default Format', enumValues: ['csv', 'json', 'insert', 'ddl'], configKey: 'export.defaultFormat' },
+    { key: 'exportCsvDelimiter', type: 'string', defaultValue: ',', group: 'export', label: 'Export CSV Delimiter', configKey: 'export.csvDelimiter' },
+    { key: 'exportCsvEncoding', type: 'string', defaultValue: 'utf-8', group: 'export', label: 'Export CSV Encoding', configKey: 'export.csvEncoding' },
+    { key: 'exportIncludeHeaders', type: 'boolean', defaultValue: true, group: 'export', label: 'Export Include Headers', configKey: 'export.includeHeaders' },
+    { key: 'resultsEnablePreload', type: 'boolean', defaultValue: true, group: 'results', label: 'Results Enable Preload', configKey: 'results.enablePreload' },
+    { key: 'resultsJsonPrettyPrint', type: 'boolean', defaultValue: true, group: 'results', label: 'Results JSON Pretty Print', configKey: 'results.jsonPrettyPrint' },
+    { key: 'resultsDateFormat', type: 'enum', defaultValue: 'local', group: 'results', label: 'Results Date Format', enumValues: ['local', 'utc', 'relative'], configKey: 'results.dateFormat' },
+    { key: 'resultsLongTextThreshold', type: 'number', defaultValue: 200, group: 'results', label: 'Results Long Text Threshold', configKey: 'results.longTextThreshold' },
+    { key: 'dataEditorEditMode', type: 'enum', defaultValue: 'readonly', group: 'dataEditor', label: 'Data Editor Edit Mode', enumValues: ['readonly', 'editable'], configKey: 'dataEditor.editMode' },
+    { key: 'dataEditorAutoCommit', type: 'boolean', defaultValue: true, group: 'dataEditor', label: 'Data Editor Auto Commit', configKey: 'dataEditor.autoCommit' },
+    { key: 'dataEditorDefaultView', type: 'enum', defaultValue: 'grid', group: 'dataEditor', label: 'Data Editor Default View', enumValues: ['grid', 'form'], configKey: 'dataEditor.defaultView' },
+    { key: 'dataEditorEnableValidation', type: 'boolean', defaultValue: true, group: 'dataEditor', label: 'Data Editor Enable Validation', configKey: 'dataEditor.enableValidation' },
+    { key: 'dataEditorValidateOnEdit', type: 'boolean', defaultValue: true, group: 'dataEditor', label: 'Data Editor Validate On Edit', configKey: 'dataEditor.validateOnEdit' },
+    { key: 'dataEditorValidateForeignKeys', type: 'boolean', defaultValue: false, group: 'dataEditor', label: 'Data Editor Validate Foreign Keys', configKey: 'dataEditor.validateForeignKeys' },
+    { key: 'schemaCacheDatabaseTtl', type: 'number', defaultValue: 600, group: 'schemaCache', label: 'Schema Cache Database TTL', configKey: 'schemaCache.databaseTtl' },
+    { key: 'schemaCacheTableTtl', type: 'number', defaultValue: 300, group: 'schemaCache', label: 'Schema Cache Table TTL', configKey: 'schemaCache.tableTtl' },
+    { key: 'schemaCacheColumnTtl', type: 'number', defaultValue: 120, group: 'schemaCache', label: 'Schema Cache Column TTL', configKey: 'schemaCache.columnTtl' },
+    { key: 'schemaCacheFunctionTtl', type: 'number', defaultValue: 600, group: 'schemaCache', label: 'Schema Cache Function TTL', configKey: 'schemaCache.functionTtl' },
+    { key: 'schemaCacheRefreshOnDDL', type: 'boolean', defaultValue: true, group: 'schemaCache', label: 'Schema Cache Refresh On DDL', configKey: 'schemaCache.refreshOnDDL' },
+    { key: 'schemaCachePrefetchOnConnect', type: 'boolean', defaultValue: true, group: 'schemaCache', label: 'Schema Cache Prefetch On Connect', configKey: 'schemaCache.prefetchOnConnect' },
+]
+
+export const ALL_CONFIG_ITEMS: ConfigItemDefinition[] = [...FORMAT_CONFIG_ITEMS, ...FEATURE_CONFIG_ITEMS, ...DATABASE_CONFIG_ITEMS]
 
 export function getDefaultConfig(): Record<string, unknown> {
     const defaults: Record<string, unknown> = {}
@@ -175,9 +206,33 @@ export function getConfigKey(item: ConfigItemDefinition): string {
     return item.configKey ?? item.key
 }
 
+const FORMATTER_ONLY_DEFAULTS: Record<string, unknown> = {
+    tabWidth: 4,
+    useTabs: false,
+}
+
+const SKIP_FORMATTER_KEYS = new Set(['dialect'])
+
+export function getFormatterDefaultOptions(): Record<string, unknown> {
+    const defaults: Record<string, unknown> = { ...FORMATTER_ONLY_DEFAULTS }
+    for (const item of FORMAT_CONFIG_ITEMS) {
+        if (!SKIP_FORMATTER_KEYS.has(item.key)) {
+            defaults[item.key] = item.defaultValue
+        }
+    }
+    return defaults
+}
+
+export function getFormatterConfigKeys(): string[] {
+    return FORMAT_CONFIG_ITEMS
+        .filter(item => !SKIP_FORMATTER_KEYS.has(item.key))
+        .map(item => item.key)
+}
+
 export function validateConfigConsistency(formatterDefaults: Record<string, unknown>): string[] {
     const mismatches: string[] = []
     for (const item of FORMAT_CONFIG_ITEMS) {
+        if (SKIP_FORMATTER_KEYS.has(item.key)) continue
         const formatterValue = formatterDefaults[item.key]
         if (formatterValue !== undefined && formatterValue !== item.defaultValue) {
             mismatches.push(`Key '${item.key}': configDefinitions has ${JSON.stringify(item.defaultValue)}, formatter has ${JSON.stringify(formatterValue)}`)

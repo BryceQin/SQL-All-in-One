@@ -32,6 +32,7 @@ export function preprocessHiveSql(sql: string): { processedSql: string; state: H
     const sortResult = replaceSortDistributeCluster(result)
     result = sortResult.result
     result = replaceComplexTypes(result, slots, counter)
+    result = replaceInsertOverwriteTable(result)
 
     return {
         processedSql: result,
@@ -45,6 +46,7 @@ export function preprocessHiveSql(sql: string): { processedSql: string; state: H
 export function postprocessHiveSql(formatted: string, state: HiveAdapterState): string {
     let result = formatted
 
+    result = restoreInsertOverwriteTable(result)
     result = restoreComplexTypes(result, state.slots)
     result = restoreJsonStrings(result, state.slots)
     result = restoreSortDistributeCluster(result, state.keywordOccurrences)
@@ -59,14 +61,14 @@ function extractWholeStatements(sql: string, slots: ReplacementSlot[], counter: 
     const wholeStatementPatterns = [
         /\bMSCK\s+REPAIR\s+TABLE\b/gi,
         /\bANALYZE\s+TABLE\b/gi,
-        /\bSHOW\s+(?:DATABASES|SCHEMAS|TABLES|PARTITIONS|CREATE\s+TABLE|COLUMNS)\b/gi,
-        /\bDESCRIBE\s+(?:FORMATTED|EXTENDED)?\s*\w/gi,
+        /\bSHOW\s+(?:DATABASES|SCHEMAS|TABLES|PARTITIONS|CREATE\s+TABLE|COLUMNS|FUNCTIONS|INDEXES|VIEWS|LOCKS|COMPACTIONS|TRANSACTIONS|GRANT|ROLE|PRINCIPALS|ROLES|CURRENT\s+ROLES)\b/gi,
+        /\bDESCRIBE\s+(?:FORMATTED|EXTENDED|DATABASE)?\s*\w/gi,
         /\bEXPLAIN\b/gi,
         /\bSET\s+\w/gi,
         /\bUSE\s+DATABASE\b/gi,
-        /\bADD\s+JAR\b/gi,
+        /\bADD\s+(?:JAR|FILE|ARCHIVE)\b/gi,
         /\bEXPORT\s+TABLE\b/gi,
-        /\bIMPORT\s+TABLE\b/gi,
+        /\bIMPORT\s+(?:EXTERNAL\s+)?TABLE\b/gi,
         /\bLOAD\s+DATA\b/gi,
         /\bCREATE\s+(?:TEMPORARY\s+)?FUNCTION\b/gi,
         /\bDROP\s+(?:TEMPORARY\s+)?FUNCTION\b/gi,
@@ -74,8 +76,23 @@ function extractWholeStatements(sql: string, slots: ReplacementSlot[], counter: 
         /\bALTER\s+DATABASE\b/gi,
         /\bCREATE\s+DATABASE\b/gi,
         /\bFROM\s+\w+\s+INSERT\b/gi,
-        /\bINSERT\s+OVERWRITE\s+LOCAL\s+DIRECTORY\b/gi,
-        /\bALTER\s+TABLE\s+\w+\s+(?:ADD\s+COLUMNS|DROP\s+COLUMN|ADD\s+PARTITION|DROP\s+PARTITION|RENAME\s+TO|SET\s+TBLPROPERTIES|CHANGE\s+COLUMN)\b/gi,
+        /\bINSERT\s+OVERWRITE\s+(?:LOCAL\s+)?DIRECTORY\b/gi,
+        /\bALTER\s+TABLE\s+\w+\s+(?:ADD\s+COLUMNS|DROP\s+COLUMN|ADD\s+PARTITION|DROP\s+PARTITION|RENAME\s+TO|SET\s+TBLPROPERTIES|CHANGE\s+COLUMN|RECOVER\s+PARTITIONS|COMPACT|CONCATENATE|ARCHIVE|UNARCHIVE|TOUCH|SET\s+FILEFORMAT|CLUSTERED\s+BY|NOT\s+CLUSTERED|NOT\s+SORTED|SKEWED\s+BY|NOT\s+SKEWED|SET\s+SKEWED\s+LOCATION|EXCHANGE\s+PARTITION)\b/gi,
+        /\bTRUNCATE\s+TABLE?\b/gi,
+        /\bGRANT\b/gi,
+        /\bREVOKE\b/gi,
+        /\bCREATE\s+(?:TEMPORARY\s+)?MACRO\b/gi,
+        /\bDROP\s+(?:TEMPORARY\s+)?MACRO\b/gi,
+        /\bCREATE\s+ROLE\b/gi,
+        /\bDROP\s+ROLE\b/gi,
+        /\bSHOW\s+GRANT\b/gi,
+        /\bLOCK\s+TABLE\b/gi,
+        /\bUNLOCK\s+TABLE\b/gi,
+        /\bCOMPILE\b/gi,
+        /\bRESET\b/gi,
+        /\bDFS\b/gi,
+        /\bSOURCE\b/gi,
+        /\bKILL\s+QUERY\b/gi,
     ]
 
     let result = sql
@@ -146,10 +163,12 @@ function extractCreateTableClauses(sql: string, slots: ReplacementSlot[], counte
             /\bPARTITIONED\s+BY\s*\([^)]*(?:\([^)]*\))*[^)]*\)/gi,
             /\bCLUSTERED\s+BY\s*\([^)]*\)\s*(?:SORTED\s+BY\s*\([^)]*\)\s*)?INTO\s+\d+\s+BUCKETS/gi,
             /\bSKEWED\s+BY\s*\([^)]*\)\s+ON\s+\([^)]*\)(?:\s+STORED\s+AS\s+DIRECTORIES)?/gi,
-            /\bROW\s+FORMAT\s+DELIMITED(?:\s+FIELDS\s+TERMINATED\s+BY\s+'[^']*')?(?:\s+LINES\s+TERMINATED\s+BY\s+'[^']*')?/gi,
-            /\bSTORED\s+AS\s+\w+/gi,
+            /\bROW\s+FORMAT\s+DELIMITED(?:\s+FIELDS\s+TERMINATED\s+BY\s+'[^']*')?(?:\s+ESCAPED\s+BY\s+'[^']*')?(?:\s+LINES\s+TERMINATED\s+BY\s+'[^']*')?(?:\s+NULL\s+DEFINED\s+AS\s+'[^']*')?/gi,
+            /\bROW\s+FORMAT\s+SERDE\s+'[^']*'(?:\s+WITH\s+SERDEPROPERTIES\s*\(\s*(?:'[^']*'\s*=\s*'[^']*'(?:\s*,\s*'[^']*'\s*=\s*'[^']*')*)?\s*\))?/gi,
+            /\bSTORED\s+AS\s+(?:INPUTFORMAT\s+'[^']*'\s+OUTPUTFORMAT\s+'[^']*'|ORC|PARQUET|TEXTFILE|SEQUENCEFILE|RCFILE|AVRO|\w+)/gi,
             /\bLOCATION\s+'[^']*'/gi,
             /\bTBLPROPERTIES\s*\(\s*(?:'[^']*'\s*=\s*'[^']*'(?:\s*,\s*'[^']*'\s*=\s*'[^']*')*)?\s*\)/gi,
+            /\bSTORED\s+BY\s+'[^']*'(?:\s+WITH\s+COMPROPERTIES\s*\(\s*(?:'[^']*'\s*=\s*'[^']*'(?:\s*,\s*'[^']*'\s*=\s*'[^']*')*)?\s*\))?/gi,
         ]
 
         let modifiedAfter = afterCreateText
@@ -465,4 +484,14 @@ function restoreJsonStrings(formatted: string, slots: ReplacementSlot[]): string
     }
 
     return result
+}
+
+function replaceInsertOverwriteTable(sql: string): string {
+    return sql.replace(/\bINSERT\s+OVERWRITE\s+TABLE\b/gi, (match) => {
+        return match.replace(/\bTABLE\b/gi, '___HIVE_TABLE___')
+    })
+}
+
+function restoreInsertOverwriteTable(formatted: string): string {
+    return formatted.replace(/___HIVE_TABLE___/gi, 'TABLE')
 }

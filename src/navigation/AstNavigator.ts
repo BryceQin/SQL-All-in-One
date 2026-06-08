@@ -1,11 +1,10 @@
 import * as vscode from 'vscode'
 import { getDocumentAstCache } from '../parser/DocumentAstCache'
-// Re-export SymbolIndex from DocumentAstCache for backward compatibility
 export type { SymbolIndex } from '../parser/DocumentAstCache'
 import type { SymbolIndex } from '../parser/DocumentAstCache'
 import { toSqlDialect } from '../core/sqlDialects'
 import { walkAst, isAstNode } from '../parser/AstVisitor'
-import { extractName } from '../parser/astUtils'
+import { extractName, toVscodeLocationFromLoc } from '../parser/astUtils'
 import type { AstNode, AstLocation } from '../parser/astTypes'
 import { t } from '../i18n'
 
@@ -15,15 +14,6 @@ export interface SymbolReference {
 }
 
 export type SymbolType = 'cte' | 'tableAlias' | 'columnAlias'
-
-function toVscodeLocationFromLoc(loc: { start?: AstLocation; end?: AstLocation } | undefined, document: vscode.TextDocument): vscode.Location | null {
-    if (!loc?.start?.line || !loc?.start?.column) return null
-    const startPos = new vscode.Position(loc.start.line - 1, loc.start.column - 1)
-    const endPos = loc?.end?.line && loc?.end?.column
-        ? new vscode.Position(loc.end.line - 1, loc.end.column - 1)
-        : startPos
-    return new vscode.Location(document.uri, new vscode.Range(startPos, endPos))
-}
 
 function findColumnRefsInExpr(expr: unknown, nameLower: string, context: string, document: vscode.TextDocument, refs: SymbolReference[]): void {
     walkAst(expr, {

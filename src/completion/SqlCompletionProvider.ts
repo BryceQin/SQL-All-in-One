@@ -129,13 +129,27 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
             if (this.schemaDebounceTimer) {
                 clearTimeout(this.schemaDebounceTimer)
             }
+            let settled = false
+            const finish = (items: vscode.CompletionItem[]): void => {
+                if (settled) return
+                settled = true
+                resolve(items)
+            }
+            const disposable = token.onCancellationRequested(() => {
+                if (this.schemaDebounceTimer) {
+                    clearTimeout(this.schemaDebounceTimer)
+                    this.schemaDebounceTimer = null
+                }
+                finish([])
+            })
             this.schemaDebounceTimer = setTimeout(async () => {
                 this.schemaDebounceTimer = null
+                disposable.dispose()
                 try {
                     const items = await this.schemaCompletionProvider.provideCompletionItems(doc, pos, token)
-                    resolve(items)
+                    finish(items)
                 } catch {
-                    resolve([])
+                    finish([])
                 }
             }, this.SCHEMA_DEBOUNCE_MS)
         })
@@ -160,7 +174,7 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
                     commentSnippets: true,
                     schema: true,
                 })
-                const { dName } = this.getDialect(doc.languageId)
+                const { dName, dialect } = this.getDialect(doc.languageId)
                 const items: vscode.CompletionItem[] = []
 
                 if (cfg.schema && getConnectionManager().getActiveConnection()) {
@@ -207,7 +221,7 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
                 if (token.isCancellationRequested) return []
                 this.tryCollect(items, () => {
                     if (!cfg.identifiers || !doc.getText().trim()) return []
-                    return getIdentifierItems(doc, pos, this.getDialect(doc.languageId).dialect.tokenizer)
+                    return getIdentifierItems(doc, pos, dialect.tokenizer)
                 }, 'identifier completion')
                 if (token.isCancellationRequested) return []
                 this.tryCollect(items, () => {

@@ -434,6 +434,35 @@ export function findCursorContext(sql: string, position: AstLocation, dialect: S
     return 'unknown'
 }
 
+export function findCursorContextFromAst(ast: unknown, position: AstLocation): CompletionContext {
+    const astList = Array.isArray(ast) ? ast : [ast]
+
+    const astPos: AstLocation = {
+        line: position.line + 1,
+        column: position.column + 1,
+    }
+
+    for (const a of astList) {
+        if (!isAstNode(a)) continue
+        const node = a as AstNode
+
+        const loc = getNodeLoc(node)
+        if (loc && !isPosInRange(astPos, loc)) {
+            if (isAstNode(node._next)) {
+                continue
+            }
+            continue
+        }
+
+        const context = findContextInStatement(node, astPos)
+        if (context !== 'unknown') {
+            return context
+        }
+    }
+
+    return 'unknown'
+}
+
 function findContextInStatement(node: AstNode, pos: AstLocation): CompletionContext {
     if (node.type === 'select') {
         const withClause = node.with

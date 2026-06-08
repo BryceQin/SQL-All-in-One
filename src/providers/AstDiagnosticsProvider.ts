@@ -217,33 +217,20 @@ export class AstDiagnosticsProvider {
     private checkExtraCommasInText(sql: string, diagnostics: vscode.Diagnostic[]): void {
         const strippedRanges = this.getNonStringCommentRanges(sql)
 
-        const pattern1 = /,(\s*)\)/g
+        const pattern = /,\s*([);])/g
         let match: RegExpExecArray | null
-        while ((match = pattern1.exec(sql)) !== null) {
+        while ((match = pattern.exec(sql)) !== null) {
             if (this.isInRange(match.index, strippedRanges)) {
                 const lineCol = lineColFromIndex(sql, match.index)
+                const isParen = match[1] === ')'
                 diagnostics.push(
                     createDiagnostic(
                         { line: lineCol.line, column: lineCol.col },
                         1,
-                        'EXTRA_COMMA_PAREN',
-                        t('diagnostic.trailingCommaBeforeParen', String(lineCol.line)),
-                        vscode.DiagnosticSeverity.Warning,
-                    ),
-                )
-            }
-        }
-
-        const pattern2 = /,(\s*);/g
-        while ((match = pattern2.exec(sql)) !== null) {
-            if (this.isInRange(match.index, strippedRanges)) {
-                const lineCol = lineColFromIndex(sql, match.index)
-                diagnostics.push(
-                    createDiagnostic(
-                        { line: lineCol.line, column: lineCol.col },
-                        1,
-                        'EXTRA_COMMA_SEMI',
-                        t('diagnostic.trailingCommaBeforeEnd', String(lineCol.line)),
+                        isParen ? 'EXTRA_COMMA_PAREN' : 'EXTRA_COMMA_SEMI',
+                        isParen
+                            ? t('diagnostic.trailingCommaBeforeParen', String(lineCol.line))
+                            : t('diagnostic.trailingCommaBeforeEnd', String(lineCol.line)),
                         vscode.DiagnosticSeverity.Warning,
                     ),
                 )
@@ -313,8 +300,16 @@ export class AstDiagnosticsProvider {
     }
 
     private isInRange(index: number, ranges: [number, number][]): boolean {
-        for (const [start, end] of ranges) {
-            if (index >= start && index < end) {
+        let low = 0
+        let high = ranges.length - 1
+        while (low <= high) {
+            const mid = (low + high) >>> 1
+            const [start, end] = ranges[mid]
+            if (index < start) {
+                high = mid - 1
+            } else if (index >= end) {
+                low = mid + 1
+            } else {
                 return true
             }
         }

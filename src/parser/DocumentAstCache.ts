@@ -7,7 +7,7 @@ import { LRUCache } from '../utils/lruCache';
 import { getPerformanceMonitor } from '../core/performanceMonitor';
 import { getContainer, Tokens } from '../core/diContainer';
 import { isAstNode } from './AstVisitor';
-import { extractName } from './astUtils';
+import { extractName, toVscodeLocationFromLoc } from './astUtils';
 import type { AstNode, AstLocation } from './astTypes';
 
 export interface SymbolIndex {
@@ -21,15 +21,6 @@ interface CacheEntry {
     ast: AST[] | AST;
     timestamp: number;
     symbolIndex?: SymbolIndex;
-}
-
-function toVscodeLocationFromLoc(loc: { start?: AstLocation; end?: AstLocation } | undefined, document: vscode.TextDocument): vscode.Location | null {
-    if (!loc?.start?.line || !loc?.start?.column) return null;
-    const startPos = new vscode.Position(loc.start.line - 1, loc.start.column - 1);
-    const endPos = loc?.end?.line && loc?.end?.column
-        ? new vscode.Position(loc.end.line - 1, loc.end.column - 1)
-        : startPos;
-    return new vscode.Location(document.uri, new vscode.Range(startPos, endPos));
 }
 
 function buildIndex(ast: unknown[] | unknown, document: vscode.TextDocument): SymbolIndex {
@@ -148,32 +139,40 @@ export class DocumentAstCache {
         );
     }
 
+    private getOrParseInternal(document: vscode.TextDocument, dialect: SqlDialect): {
+        success: boolean;
+        ast: AST[] | AST | null;
+        error: ParseError | null;
+    } {
+        const key = `${document.uri.toString()}::${dialect}`;
+        const version = document.version;
+        const cached = this.cache.get(key);
+
+        if (cached && cached.version === version) {
+            return { success: true, ast: cached.ast, error: null };
+        }
+
+        const engine = getParserEngine();
+        const result = engine.tryAstify(document.getText(), dialect);
+
+        if (result.success && result.ast) {
+            this.cache.set(key, {
+                version,
+                ast: result.ast,
+                timestamp: Date.now(),
+            });
+        }
+
+        return result;
+    }
+
     getOrParse(document: vscode.TextDocument, dialect: SqlDialect): {
         success: boolean;
         ast: AST[] | AST | null;
         error: ParseError | null;
     } {
         return this.perfMonitor.measure('DocumentAstCache.getOrParse', () => {
-            const key = `${document.uri.toString()}::${dialect}`;
-            const version = document.version;
-            const cached = this.cache.get(key);
-
-            if (cached && cached.version === version) {
-                return { success: true, ast: cached.ast, error: null };
-            }
-
-            const engine = getParserEngine();
-            const result = engine.tryAstify(document.getText(), dialect);
-
-            if (result.success && result.ast) {
-                this.cache.set(key, {
-                    version,
-                    ast: result.ast,
-                    timestamp: Date.now(),
-                });
-            }
-
-            return result;
+            return this.getOrParseInternal(document, dialect);
         });
     }
 
@@ -181,32 +180,27 @@ export class DocumentAstCache {
         const key = `${document.uri.toString()}::${dialect}`;
         const version = document.version;
 
-        // Check cache for existing symbol index with matching version
         const cached = this.cache.get(key);
-        if (cached && cached.version === version && cached.symbolIndex) {
-            return cached.symbolIndex;
+        if (cached && cached.version === version) {
+            if (cached.symbolIndex) {
+                return cached.symbolIndex;
+            }
+            const symbolIndex = buildIndex(cached.ast, document);
+            cached.symbolIndex = symbolIndex;
+            return symbolIndex;
         }
 
-        // Get or parse the AST
-        const result = this.getOrParse(document, dialect);
+        const result = this.getOrParseInternal(document, dialect);
+
         if (!result.success || !result.ast) {
             return null;
         }
 
-        // Build the symbol index
         const symbolIndex = buildIndex(result.ast, document);
 
-        // Update the cache entry with the symbol index, handling potential LRU eviction
-        const entry = this.cache.get(key);
-        if (entry && entry.version === version) {
-            entry.symbolIndex = symbolIndex;
-        } else {
-            this.cache.set(key, {
-                version,
-                ast: result.ast,
-                timestamp: Date.now(),
-                symbolIndex,
-            });
+        const updatedCached = this.cache.get(key);
+        if (updatedCached && updatedCached.version === version) {
+            updatedCached.symbolIndex = symbolIndex;
         }
 
         return symbolIndex;

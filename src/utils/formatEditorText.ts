@@ -53,7 +53,8 @@ function formatWithFallback(
     try {
         return format(sql, config)
     } catch (e) {
-        handleError(e, 'formatWithFallback', ErrorCategory.CRITICAL)
+        const sqlPreview = sql.length > 200 ? sql.substring(0, 200) + '...' : sql
+        handleError(e, `formatWithFallback (sql: ${sqlPreview})`, ErrorCategory.FORMAT)
         return sql
     }
 }

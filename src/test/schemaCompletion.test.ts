@@ -1073,27 +1073,36 @@ suite('SchemaCache - Singleton', () => {
 suite('Edge Cases', () => {
 
     test('parseAliasMap handles deeply nested subqueries', () => {
+        const container = getContainer()
+        container.registerSingleton(Tokens.SchemaCache, createSchemaCache)
         const provider = new SchemaProvider()
         const sql = 'SELECT * FROM (SELECT * FROM (SELECT id FROM users) sub2) sub1'
         const result = provider.parseAliasMap(sql, 'mysql')
         assert.ok(result instanceof Map)
         provider.dispose()
+        container.unregister(Tokens.SchemaCache)
     })
 
     test('parseAliasMap handles UNION queries', () => {
+        const container = getContainer()
+        container.registerSingleton(Tokens.SchemaCache, createSchemaCache)
         const provider = new SchemaProvider()
         const sql = 'SELECT id FROM users UNION SELECT id FROM orders'
         const result = provider.parseAliasMap(sql, 'mysql')
         assert.ok(result instanceof Map)
         provider.dispose()
+        container.unregister(Tokens.SchemaCache)
     })
 
     test('parseAliasMap handles CTE with alias', () => {
+        const container = getContainer()
+        container.registerSingleton(Tokens.SchemaCache, createSchemaCache)
         const provider = new SchemaProvider()
         const sql = 'WITH active_users AS (SELECT * FROM users WHERE status = 1) SELECT * FROM active_users'
         const result = provider.parseAliasMap(sql, 'mysql')
         assert.ok(result instanceof Map)
         provider.dispose()
+        container.unregister(Tokens.SchemaCache)
     })
 
     test('extractTableNames handles DELETE statement', () => {

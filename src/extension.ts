@@ -159,7 +159,7 @@ function registerParameterHighlighter(context: vscode.ExtensionContext): void {
   const parameterHighlighter = container.get<SqlParameterHighlighter>(Tokens.ParameterHighlighter);
   if (!parameterHighlighter) return;
 
-  SqlParameterReplaceCommand.register(context);
+  context.subscriptions.push(SqlParameterReplaceCommand.register(context));
   context.subscriptions.push(parameterHighlighter);
 }
 
@@ -247,26 +247,34 @@ function createModules(): ExtensionModule[] {
 }
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
-  // 首先注册所有服务到 DI 容器
-  registerServicesToContainer(context.extensionPath);
+    registerServicesToContainer(context.extensionPath);
 
-  await getPerformanceMonitor().measureAsync('Extension.activate', async () => {
-    console.log('SQL All in One: activating...');
+    await getPerformanceMonitor().measureAsync('Extension.activate', async () => {
+        console.log('SQL All in One: activating...');
 
-    try {
-      const modules = createModules();
-      for (const mod of modules) {
-        await safeRegisterAsync('register ' + mod.name, () => mod.register(context));
-      }
+        try {
+            const modules = createModules();
+            const asyncModules = modules.filter(m => m.register.constructor.name === 'AsyncFunction');
+            const syncModules = modules.filter(m => m.register.constructor.name !== 'AsyncFunction');
 
-      context.subscriptions.push(getConfigManager());
-      context.subscriptions.push(getDocumentAstCache());
+            for (const mod of syncModules) {
+                await safeRegisterAsync('register ' + mod.name, () => mod.register(context));
+            }
 
-      console.log('SQL All in One: activation complete');
-    } catch (e) {
-      getErrorHandler().handle(e, 'Extension activation', ErrorLevel.FATAL, ErrorCategory.CRITICAL);
-    }
-  });
+            await Promise.all(
+                asyncModules.map(mod =>
+                    safeRegisterAsync('register ' + mod.name, () => mod.register(context))
+                )
+            );
+
+            context.subscriptions.push(getConfigManager());
+            context.subscriptions.push(getDocumentAstCache());
+
+            console.log('SQL All in One: activation complete');
+        } catch (e) {
+            getErrorHandler().handle(e, 'Extension activation', ErrorLevel.FATAL, ErrorCategory.CRITICAL);
+        }
+    });
 }
 
 export function deactivate(): void {

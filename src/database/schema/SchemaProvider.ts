@@ -6,6 +6,7 @@ import type { SqlDialect } from '../../parser/dialectMapper';
 import type { ColumnInfo } from '../adapters/IDatabaseAdapter';
 import { isAstNode } from '../../parser/AstVisitor';
 import type { AstNode } from '../../parser/astTypes';
+import type { AST } from 'node-sql-parser';
 import { handleError, ErrorCategory } from '../../core/errorHandler';
 import { getContainer, Tokens } from '../../core/diContainer';
 
@@ -93,6 +94,16 @@ export class SchemaProvider {
         for (const ast of astList) {
             if (!isAstNode(ast)) continue;
             this.collectAliasesFromNode(ast as AstNode, aliasMap);
+        }
+        return aliasMap;
+    }
+
+    parseAliasMapFromAst(ast: AST[] | AST): Map<string, string> {
+        const aliasMap = new Map<string, string>();
+        const astList = Array.isArray(ast) ? ast : [ast];
+        for (const a of astList) {
+            if (!isAstNode(a)) continue;
+            this.collectAliasesFromNode(a as AstNode, aliasMap);
         }
         return aliasMap;
     }

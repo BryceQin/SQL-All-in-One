@@ -1,4 +1,20 @@
-        var i18nData = { zh: {}, en: {}, lang: 'zh' };
+        var i18nData = {
+    zh: {
+        'configEditor.tab.formatting': '格式化',
+        'configEditor.tab.editor': '编辑器',
+        'configEditor.tab.database': '数据库',
+        'configEditor.searchPlaceholder': '搜索配置项...',
+        'configEditor.searchEmpty': '未找到匹配的配置项'
+    },
+    en: {
+        'configEditor.tab.formatting': 'Formatting',
+        'configEditor.tab.editor': 'Editor',
+        'configEditor.tab.database': 'Database',
+        'configEditor.searchPlaceholder': 'Search settings...',
+        'configEditor.searchEmpty': 'No matching settings found'
+    },
+    lang: 'zh'
+};
 
 function getI18nDict() {
     return i18nData.lang === 'en' ? i18nData.en : i18nData.zh;
@@ -39,7 +55,9 @@ function changeLanguage(lang) {
             headerModifier: '',
             completionCommentSnippets: true,
         };
-        
+
+        let currentActiveTab = 'formatting';
+
         const presets = {
             default: {
                 dialect: 'hive',
@@ -75,16 +93,10 @@ function changeLanguage(lang) {
             newlineAfterThen: false,
             newlineAfterElse: false,
             newlineAfterIn: false,
-                maxLineLength: 120,
                 tabulateAlias: false,
-                reservedKeywordCase: 'preserve',
-                builtinFunctionCase: 'preserve',
                 newlineBeforeJoin: true,
-                newlineAfterComma: true,
                 alignWhereClauses: false,
                 alignCaseStatements: false,
-                breakAfterSelectItem: true,
-                breakAfterFromItem: true,
                 spaceBeforeComma: false,
                 spaceInsideParentheses: false,
                 trimTrailingSpaces: true,
@@ -187,7 +199,37 @@ function changeLanguage(lang) {
                 lintDateFunctionUsageEnabled: true,
                 lintDateFunctionUsageSeverity: 'information',
                 lintWildcardInUpdateEnabled: true,
-                lintWildcardInUpdateSeverity: 'error'            },
+                lintWildcardInUpdateSeverity: 'error',
+                queryMaxRows: 1000,
+                queryTimeout: 30000,
+                queryPageSize: 100,
+                queryNullPlaceholder: '(NULL)',
+                safetyGuardLevel: 'moderate',
+                executionBatchMode: 'sequential',
+                executionOnError: 'stop',
+                executionSaveProgress: true,
+                historyMaxEntries: 500,
+                exportDefaultFormat: 'csv',
+                exportCsvDelimiter: ',',
+                exportCsvEncoding: 'utf-8',
+                exportIncludeHeaders: true,
+                resultsEnablePreload: true,
+                resultsJsonPrettyPrint: true,
+                resultsDateFormat: 'local',
+                resultsLongTextThreshold: 200,
+                dataEditorEditMode: 'readonly',
+                dataEditorAutoCommit: true,
+                dataEditorDefaultView: 'grid',
+                dataEditorEnableValidation: true,
+                dataEditorValidateOnEdit: true,
+                dataEditorValidateForeignKeys: false,
+                schemaCacheDatabaseTtl: 600,
+                schemaCacheTableTtl: 300,
+                schemaCacheColumnTtl: 120,
+                schemaCacheFunctionTtl: 600,
+                schemaCacheRefreshOnDDL: true,
+                schemaCachePrefetchOnConnect: true
+            },
             hive: {
                 dialect: 'hive',
                 keywordCase: 'upper',
@@ -222,16 +264,10 @@ function changeLanguage(lang) {
                 newlineAfterThen: false,
                 newlineAfterElse: false,
                 newlineAfterIn: false,
-                maxLineLength: 100,
                 tabulateAlias: true,
-                reservedKeywordCase: 'upper',
-                builtinFunctionCase: 'lower',
                 newlineBeforeJoin: true,
-                newlineAfterComma: true,
                 alignWhereClauses: false,
                 alignCaseStatements: false,
-                breakAfterSelectItem: true,
-                breakAfterFromItem: true,
                 spaceBeforeComma: false,
                 spaceInsideParentheses: false,
                 trimTrailingSpaces: true,
@@ -369,16 +405,10 @@ function changeLanguage(lang) {
                 newlineAfterThen: false,
                 newlineAfterElse: false,
                 newlineAfterIn: false,
-                maxLineLength: 120,
                 tabulateAlias: false,
-                reservedKeywordCase: 'upper',
-                builtinFunctionCase: 'preserve',
                 newlineBeforeJoin: true,
-                newlineAfterComma: true,
                 alignWhereClauses: false,
                 alignCaseStatements: false,
-                breakAfterSelectItem: true,
-                breakAfterFromItem: true,
                 spaceBeforeComma: false,
                 spaceInsideParentheses: false,
                 trimTrailingSpaces: true,
@@ -516,16 +546,10 @@ function changeLanguage(lang) {
                 newlineAfterThen: false,
                 newlineAfterElse: false,
                 newlineAfterIn: false,
-                maxLineLength: 150,
                 tabulateAlias: false,
-                reservedKeywordCase: 'preserve',
-                builtinFunctionCase: 'preserve',
                 newlineBeforeJoin: false,
-                newlineAfterComma: false,
                 alignWhereClauses: false,
                 alignCaseStatements: false,
-                breakAfterSelectItem: false,
-                breakAfterFromItem: false,
                 spaceBeforeComma: false,
                 spaceInsideParentheses: false,
                 trimTrailingSpaces: true,
@@ -651,16 +675,10 @@ function changeLanguage(lang) {
                 newlineBeforeGroupBy: true,
                 newlineBeforeHaving: true,
                 newlineBeforeLimit: true,
-                maxLineLength: 120,
                 tabulateAlias: false,
-                reservedKeywordCase: 'upper',
-                builtinFunctionCase: 'lower',
                 newlineBeforeJoin: true,
-                newlineAfterComma: true,
                 alignWhereClauses: false,
                 alignCaseStatements: false,
-                breakAfterSelectItem: true,
-                breakAfterFromItem: true,
                 spaceBeforeComma: false,
                 spaceInsideParentheses: false,
                 trimTrailingSpaces: true,
@@ -767,16 +785,10 @@ function changeLanguage(lang) {
                 newlineBeforeGroupBy: true,
                 newlineBeforeHaving: true,
                 newlineBeforeLimit: true,
-                maxLineLength: 120,
                 tabulateAlias: false,
-                reservedKeywordCase: 'upper',
-                builtinFunctionCase: 'lower',
                 newlineBeforeJoin: true,
-                newlineAfterComma: true,
                 alignWhereClauses: false,
                 alignCaseStatements: false,
-                breakAfterSelectItem: true,
-                breakAfterFromItem: true,
                 spaceBeforeComma: false,
                 spaceInsideParentheses: false,
                 trimTrailingSpaces: true,
@@ -883,16 +895,10 @@ function changeLanguage(lang) {
                 newlineBeforeGroupBy: true,
                 newlineBeforeHaving: true,
                 newlineBeforeLimit: true,
-                maxLineLength: 120,
                 tabulateAlias: false,
-                reservedKeywordCase: 'upper',
-                builtinFunctionCase: 'lower',
                 newlineBeforeJoin: true,
-                newlineAfterComma: true,
                 alignWhereClauses: false,
                 alignCaseStatements: false,
-                breakAfterSelectItem: true,
-                breakAfterFromItem: true,
                 spaceBeforeComma: false,
                 spaceInsideParentheses: false,
                 trimTrailingSpaces: true,
@@ -978,7 +984,7 @@ function changeLanguage(lang) {
                 lintWildcardInUpdateEnabled: false,
                 lintWildcardInUpdateSeverity: 'error'            }
         };
-        
+
         window.addEventListener('message', (event) => {
             const message = event.data;
             switch (message.command) {
@@ -1005,7 +1011,7 @@ function changeLanguage(lang) {
                     break;
             }
         });
-        
+
         function loadConfig(config) {
             currentConfig = { ...config };
             Object.keys(config).forEach(key => {
@@ -1026,7 +1032,7 @@ function changeLanguage(lang) {
                 langSelect.value = i18nData.lang || 'zh';
             }
         }
-        
+
         function collectConfig() {
             return {
                 dialect: document.getElementById('dialect').value,
@@ -1062,16 +1068,10 @@ function changeLanguage(lang) {
                 newlineAfterThen: document.getElementById('newlineAfterThen').checked,
                 newlineAfterElse: document.getElementById('newlineAfterElse').checked,
                 newlineAfterIn: document.getElementById('newlineAfterIn').checked,
-                maxLineLength: parseInt(document.getElementById('maxLineLength').value),
                 tabulateAlias: document.getElementById('tabulateAlias').checked,
-                reservedKeywordCase: document.getElementById('reservedKeywordCase').value,
-                builtinFunctionCase: document.getElementById('builtinFunctionCase').value,
                 newlineBeforeJoin: document.getElementById('newlineBeforeJoin').checked,
-                newlineAfterComma: document.getElementById('newlineAfterComma').checked,
                 alignWhereClauses: document.getElementById('alignWhereClauses').checked,
                 alignCaseStatements: document.getElementById('alignCaseStatements').checked,
-                breakAfterSelectItem: document.getElementById('breakAfterSelectItem').checked,
-                breakAfterFromItem: document.getElementById('breakAfterFromItem').checked,
                 spaceBeforeComma: document.getElementById('spaceBeforeComma').checked,
                 spaceInsideParentheses: document.getElementById('spaceInsideParentheses').checked,
                 trimTrailingSpaces: document.getElementById('trimTrailingSpaces').checked,
@@ -1174,22 +1174,51 @@ function changeLanguage(lang) {
                 lintDateFunctionUsageEnabled: document.getElementById('lintDateFunctionUsageEnabled').checked,
                 lintDateFunctionUsageSeverity: document.getElementById('lintDateFunctionUsageSeverity').value,
                 lintWildcardInUpdateEnabled: document.getElementById('lintWildcardInUpdateEnabled').checked,
-                lintWildcardInUpdateSeverity: document.getElementById('lintWildcardInUpdateSeverity').value
+                lintWildcardInUpdateSeverity: document.getElementById('lintWildcardInUpdateSeverity').value,
+                queryMaxRows: parseInt(document.getElementById('queryMaxRows').value),
+                queryTimeout: parseInt(document.getElementById('queryTimeout').value),
+                queryPageSize: parseInt(document.getElementById('queryPageSize').value),
+                queryNullPlaceholder: document.getElementById('queryNullPlaceholder').value,
+                safetyGuardLevel: document.getElementById('safetyGuardLevel').value,
+                executionBatchMode: document.getElementById('executionBatchMode').value,
+                executionOnError: document.getElementById('executionOnError').value,
+                executionSaveProgress: document.getElementById('executionSaveProgress').checked,
+                historyMaxEntries: parseInt(document.getElementById('historyMaxEntries').value),
+                exportDefaultFormat: document.getElementById('exportDefaultFormat').value,
+                exportCsvDelimiter: document.getElementById('exportCsvDelimiter').value,
+                exportCsvEncoding: document.getElementById('exportCsvEncoding').value,
+                exportIncludeHeaders: document.getElementById('exportIncludeHeaders').checked,
+                resultsEnablePreload: document.getElementById('resultsEnablePreload').checked,
+                resultsJsonPrettyPrint: document.getElementById('resultsJsonPrettyPrint').checked,
+                resultsDateFormat: document.getElementById('resultsDateFormat').value,
+                resultsLongTextThreshold: parseInt(document.getElementById('resultsLongTextThreshold').value),
+                dataEditorEditMode: document.getElementById('dataEditorEditMode').value,
+                dataEditorAutoCommit: document.getElementById('dataEditorAutoCommit').checked,
+                dataEditorDefaultView: document.getElementById('dataEditorDefaultView').value,
+                dataEditorEnableValidation: document.getElementById('dataEditorEnableValidation').checked,
+                dataEditorValidateOnEdit: document.getElementById('dataEditorValidateOnEdit').checked,
+                dataEditorValidateForeignKeys: document.getElementById('dataEditorValidateForeignKeys').checked,
+                schemaCacheDatabaseTtl: parseInt(document.getElementById('schemaCacheDatabaseTtl').value),
+                schemaCacheTableTtl: parseInt(document.getElementById('schemaCacheTableTtl').value),
+                schemaCacheColumnTtl: parseInt(document.getElementById('schemaCacheColumnTtl').value),
+                schemaCacheFunctionTtl: parseInt(document.getElementById('schemaCacheFunctionTtl').value),
+                schemaCacheRefreshOnDDL: document.getElementById('schemaCacheRefreshOnDDL').checked,
+                schemaCachePrefetchOnConnect: document.getElementById('schemaCachePrefetchOnConnect').checked
             };
         }
-        
+
         function saveConfig() {
             const config = collectConfig();
             vscode.postMessage({ command: 'updateConfig', data: config });
         }
-        
+
         function showToast(message, type) {
             const toast = document.getElementById('toast');
             toast.textContent = message;
             toast.className = 'toast ' + type + ' show';
             setTimeout(() => { toast.classList.remove('show'); }, 2000);
         }
-        
+
         function toggleGroup(header) {
             const arrow = header.querySelector('.cg-arrow');
             const body = header.nextElementSibling;
@@ -1202,23 +1231,23 @@ function changeLanguage(lang) {
                 body.classList.add('open');
             }
         }
-        
+
         function resetConfig() {
             applyPreset('default');
             saveConfig();
         }
-        
+
         function applyPreset(presetName) {
             const preset = presets[presetName];
             loadConfig({ ...presets.default, ...preset });
         }
-        
+
         function previewFormat() {
             const sql = document.getElementById('previewInput').value;
             const config = collectConfig();
             vscode.postMessage({ command: 'previewFormat', sql, config });
         }
-        
+
         function showPreviewResult(result) {
             const resultEl = document.getElementById('previewResult');
             resultEl.classList.remove('empty');
@@ -1226,45 +1255,133 @@ function changeLanguage(lang) {
             resultEl.textContent = result;
             setTimeout(() => { resultEl.classList.remove('success'); }, 1000);
         }
-        
+
         function updateTabOverrideGroup() {
             const group = document.getElementById('tabOverrideGroup');
             const checkbox = document.getElementById('ignoreTabSettings');
             group.style.display = checkbox.checked ? 'block' : 'none';
         }
-        
+
         document.getElementById('ignoreTabSettings').addEventListener('change', updateTabOverrideGroup);
 
-        const resizeHandle = document.getElementById('resizeHandle');
-        const previewBody = document.querySelector('.preview-body');
-        let isResizing = false;
-        let startY = 0;
-        let startHeight = 0;
-
-        resizeHandle.addEventListener('mousedown', (e) => {
-            isResizing = true;
-            startY = e.clientY;
-            startHeight = previewBody.offsetHeight;
-            document.body.style.cursor = 'ns-resize';
-            document.body.style.userSelect = 'none';
-            e.preventDefault();
-        });
-
-        document.addEventListener('mousemove', (e) => {
-            if (!isResizing) return;
-            const delta = e.clientY - startY;
-            const newHeight = Math.max(160, Math.min(600, startHeight + delta));
-            previewBody.style.maxHeight = newHeight + 'px';
-            previewBody.style.minHeight = newHeight + 'px';
-        });
-
-        document.addEventListener('mouseup', () => {
-            if (isResizing) {
-                isResizing = false;
-                document.body.style.cursor = '';
-                document.body.style.userSelect = '';
+        function switchTab(tabName) {
+            // Clear search and reset filtering when switching tabs
+            var searchInput = document.getElementById('configSearch');
+            if (searchInput && searchInput.value) {
+                searchInput.value = '';
+                searchConfig('');
             }
-        });
+
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(function(el) {
+                el.classList.remove('active');
+            });
+
+            // Show the target tab
+            var targetTab = document.getElementById('tab-' + tabName);
+            if (targetTab) {
+                targetTab.classList.add('active');
+            }
+
+            // Update tab button active state
+            document.querySelectorAll('.tab-btn').forEach(function(btn) {
+                btn.classList.remove('active');
+                if (btn.getAttribute('data-action-arg') === tabName) {
+                    btn.classList.add('active');
+                }
+            });
+
+            currentActiveTab = tabName;
+        }
+
+        function searchConfig(query) {
+            var searchEmpty = document.getElementById('searchEmpty');
+            var searchClear = document.getElementById('searchClear');
+
+            if (!query) {
+                // Show all groups/items
+                document.querySelectorAll('.search-hidden').forEach(function(el) {
+                    el.classList.remove('search-hidden');
+                });
+                if (searchEmpty) searchEmpty.style.display = 'none';
+                if (searchClear) searchClear.style.display = 'none';
+
+                // Restore tab visibility to current active tab
+                document.querySelectorAll('.tab-content').forEach(function(el) {
+                    el.classList.remove('active');
+                });
+                var activeTab = document.getElementById('tab-' + currentActiveTab);
+                if (activeTab) activeTab.classList.add('active');
+                return;
+            }
+
+            // Show clear button
+            if (searchClear) searchClear.style.display = '';
+
+            // Show all tab contents so search spans all tabs
+            document.querySelectorAll('.tab-content').forEach(function(el) {
+                el.classList.add('active');
+            });
+
+            var lowerQuery = query.toLowerCase();
+            var anyVisible = false;
+
+            // Iterate all config groups
+            document.querySelectorAll('.config-group').forEach(function(group) {
+                var groupText = group.textContent.toLowerCase();
+                var groupMatches = groupText.indexOf(lowerQuery) !== -1;
+
+                if (groupMatches) {
+                    // Show the group and expand it
+                    group.classList.remove('search-hidden');
+                    var arrow = group.querySelector('.cg-arrow');
+                    var body = group.querySelector('.cg-body') || group.querySelector('.config-group-body');
+                    // Try nextElementSibling as fallback for the body
+                    if (!body) {
+                        var header = group.querySelector('.cg-header');
+                        if (header) body = header.nextElementSibling;
+                    }
+                    if (arrow) arrow.classList.add('open');
+                    if (body) body.classList.add('open');
+
+                    // Filter individual items within the group
+                    var items = group.querySelectorAll('.config-item, .toggle-row, .lint-rule');
+                    var hasVisibleItem = false;
+                    items.forEach(function(item) {
+                        var itemText = item.textContent.toLowerCase();
+                        if (itemText.indexOf(lowerQuery) !== -1) {
+                            item.classList.remove('search-hidden');
+                            hasVisibleItem = true;
+                        } else {
+                            item.classList.add('search-hidden');
+                        }
+                    });
+
+                    // If no individual items matched but group header matched, show all items
+                    if (!hasVisibleItem && items.length > 0) {
+                        items.forEach(function(item) {
+                            item.classList.remove('search-hidden');
+                        });
+                    }
+
+                    anyVisible = true;
+                } else {
+                    // Hide the group
+                    group.classList.add('search-hidden');
+                }
+            });
+
+            // Show/hide search empty message
+            if (searchEmpty) {
+                searchEmpty.style.display = anyVisible ? 'none' : '';
+            }
+        }
+
+        function clearSearch() {
+            var searchInput = document.getElementById('configSearch');
+            if (searchInput) searchInput.value = '';
+            searchConfig('');
+        }
 
         const vscode = acquireVsCodeApi();
 

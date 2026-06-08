@@ -1,4 +1,5 @@
 import { getContainer, Tokens } from './diContainer';
+import { LRUCache } from '../utils/lruCache';
 
 interface AggregateStats {
   count: number;
@@ -8,57 +9,50 @@ interface AggregateStats {
 }
 
 export class PerformanceMonitor {
-  private aggregateStats = new Map<string, AggregateStats>();
-  private slowThreshold = 100;
-  private static readonly MAX_STATS_ENTRIES = 200;
+    private static readonly MAX_STATS_ENTRIES = 200;
+    private aggregateStats = new LRUCache<string, AggregateStats>({ maxSize: PerformanceMonitor.MAX_STATS_ENTRIES, maxAge: Infinity });
+    private slowThreshold = 100;
 
-  measure<T>(name: string, fn: () => T): T {
-    const start = performance.now();
-    try {
-      return fn();
-    } finally {
-      const duration = performance.now() - start;
-      this.recordMeasurement(name, duration);
-    }
-  }
-
-  async measureAsync<T>(name: string, fn: () => Promise<T>): Promise<T> {
-    const start = performance.now();
-    try {
-      return await fn();
-    } finally {
-      const duration = performance.now() - start;
-      this.recordMeasurement(name, duration);
-    }
-  }
-
-  private recordMeasurement(name: string, duration: number): void {
-    if (this.aggregateStats.size >= PerformanceMonitor.MAX_STATS_ENTRIES && !this.aggregateStats.has(name)) {
-      const firstKey = this.aggregateStats.keys().next().value;
-      if (firstKey !== undefined) {
-        this.aggregateStats.delete(firstKey);
-      }
+    measure<T>(name: string, fn: () => T): T {
+        const start = performance.now();
+        try {
+            return fn();
+        } finally {
+            const duration = performance.now() - start;
+            this.recordMeasurement(name, duration);
+        }
     }
 
-    const existing = this.aggregateStats.get(name);
-    if (existing) {
-      existing.count += 1;
-      existing.totalDuration += duration;
-      if (duration > existing.maxDuration) existing.maxDuration = duration;
-      if (duration < existing.minDuration) existing.minDuration = duration;
-    } else {
-      this.aggregateStats.set(name, {
-        count: 1,
-        totalDuration: duration,
-        maxDuration: duration,
-        minDuration: duration,
-      });
+    async measureAsync<T>(name: string, fn: () => Promise<T>): Promise<T> {
+        const start = performance.now();
+        try {
+            return await fn();
+        } finally {
+            const duration = performance.now() - start;
+            this.recordMeasurement(name, duration);
+        }
     }
 
-    if (duration > this.slowThreshold) {
-      console.warn(`[Performance] Slow operation: ${name} took ${duration.toFixed(2)}ms`);
+    private recordMeasurement(name: string, duration: number): void {
+        const existing = this.aggregateStats.get(name);
+        if (existing) {
+            existing.count += 1;
+            existing.totalDuration += duration;
+            if (duration > existing.maxDuration) existing.maxDuration = duration;
+            if (duration < existing.minDuration) existing.minDuration = duration;
+        } else {
+            this.aggregateStats.set(name, {
+                count: 1,
+                totalDuration: duration,
+                maxDuration: duration,
+                minDuration: duration,
+            });
+        }
+
+        if (duration > this.slowThreshold) {
+            console.warn(`[Performance] Slow operation: ${name} took ${duration.toFixed(2)}ms`);
+        }
     }
-  }
 
   getStats(name?: string): {
     count: number;
@@ -79,7 +73,7 @@ export class PerformanceMonitor {
       };
     }
 
-    if (this.aggregateStats.size === 0) {
+    if (this.aggregateStats.size() === 0) {
       return { count: 0, avgDuration: 0, maxDuration: 0, minDuration: 0 };
     }
 

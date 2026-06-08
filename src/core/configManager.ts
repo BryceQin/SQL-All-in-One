@@ -11,12 +11,31 @@ export class ConfigManager {
     private validators = new Map<string, (value: unknown) => boolean>();
     private lastConfigSnapshot = new Map<string, unknown>();
     private lintRuleKeys: string[] = [];
+    private config: vscode.WorkspaceConfiguration | undefined;
 
-    /**
-     * Register lint rule keys dynamically. Called by RuleRegistry during initialization
-     * to avoid hardcoding lint config keys and to avoid circular dependencies
-     * (ConfigManager in core/ should not import from linter/).
-     */
+    private getConfig(): vscode.WorkspaceConfiguration {
+        if (!this.config) {
+            this.config = vscode.workspace.getConfiguration('SQL-All-in-One');
+        }
+        return this.config;
+    }
+
+    private deepEqual(a: unknown, b: unknown, seen = new WeakSet()): boolean {
+        if (a === b) return true;
+        if (a === null || b === null || typeof a !== 'object' || typeof b !== 'object') return false;
+        if (seen.has(a as object) || seen.has(b as object)) return false;
+        seen.add(a as object);
+        seen.add(b as object);
+        const keysA = Object.keys(a as Record<string, unknown>);
+        const keysB = new Set(Object.keys(b as Record<string, unknown>));
+        if (keysA.length !== keysB.size) return false;
+        for (const key of keysA) {
+            if (!keysB.has(key)) return false;
+            if (!this.deepEqual((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key], seen)) return false;
+        }
+        return true;
+    }
+
     registerLintKeys(keys: string[]): void {
         this.lintRuleKeys = keys;
     }
@@ -26,6 +45,7 @@ export class ConfigManager {
             vscode.workspace.onDidChangeConfiguration((e) => {
                 if (e.affectsConfiguration('SQL-All-in-One')) {
                     this.cache.clear();
+                    this.config = undefined;
                     if (e.affectsConfiguration('SQL-All-in-One.displayLanguage')) {
                         try {
                             initI18n();
@@ -50,7 +70,7 @@ export class ConfigManager {
         if (cached !== undefined) {
             return cached as T;
         }
-        const config = vscode.workspace.getConfiguration('SQL-All-in-One');
+        const config = this.getConfig();
         let value = config.get<T>(section, defaultValue);
 
         const validator = this.validators.get(section);
@@ -68,7 +88,7 @@ export class ConfigManager {
         if (cached !== undefined) {
             return cached as T;
         }
-        const config = vscode.workspace.getConfiguration('SQL-All-in-One');
+        const config = this.getConfig();
         const value = config.get<T>(section, defaultValue);
         this.cache.set(section, value);
         return value;
@@ -80,7 +100,7 @@ export class ConfigManager {
         if (cached !== undefined) {
             return cached as T;
         }
-        const config = vscode.workspace.getConfiguration('SQL-All-in-One');
+        const config = this.getConfig();
         const result = {} as Record<string, unknown>;
         for (const key of keys) {
             const section = prefix ? `${prefix}.${key}` : key;
@@ -104,9 +124,8 @@ export class ConfigManager {
 
     private getConfigSnapshot(): Map<string, unknown> {
         const snapshot = new Map<string, unknown>();
-        const config = vscode.workspace.getConfiguration('SQL-All-in-One');
+        const config = this.getConfig();
 
-        // Fixed non-rule lint keys
         const fixedKeys = [
             'enableLinter',
             'showErrorLevel',
@@ -140,7 +159,7 @@ export class ConfigManager {
                 key === 'showInfoLevel'
             ) {
                 const oldValue = this.lastConfigSnapshot.get(key);
-                if (JSON.stringify(oldValue) !== JSON.stringify(value)) {
+                if (!this.deepEqual(oldValue, value)) {
                     this.lastConfigSnapshot = newSnapshot;
                     return true;
                 }

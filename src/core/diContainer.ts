@@ -17,25 +17,23 @@ export class DIContainer {
     }
 
     get<T>(token: string): T {
-        // 首先检查是否已有实例
         if (this.services.has(token)) {
             return this.services.get(token) as T;
         }
 
-        // 检查是否是单例
         if (this.singletons.has(token) && !this.creating.has(token)) {
             this.creating.add(token);
             try {
                 const factory = this.singletons.get(token) as () => T;
                 const instance = factory();
                 this.services.set(token, instance);
+                this.singletons.delete(token);
                 return instance;
             } finally {
                 this.creating.delete(token);
             }
         }
 
-        // 检查是否有工厂函数
         if (this.factories.has(token)) {
             const factory = this.factories.get(token) as () => T;
             return factory();
@@ -64,45 +62,7 @@ export class DIContainer {
         }
     }
 
-    disposeAll(): void {
-        for (const service of this.services.values()) {
-            if (
-                service !== null &&
-                service !== undefined &&
-                typeof (service as Record<string, unknown>).dispose === 'function'
-            ) {
-                try {
-                    (service as { dispose: () => void }).dispose();
-                } catch {
-                    // ignore dispose errors
-                }
-            }
-        }
-        this.services.clear();
-        this.factories.clear();
-        this.singletons.clear();
-    }
-
-    clear(): void {
-        for (const service of this.services.values()) {
-            if (
-                service !== null &&
-                service !== undefined &&
-                typeof (service as Record<string, unknown>).dispose === 'function'
-            ) {
-                try {
-                    (service as { dispose: () => void }).dispose();
-                } catch {
-                    // ignore dispose errors
-                }
-            }
-        }
-        this.services.clear();
-        this.creating.clear();
-    }
-
-    unregister(token: string): void {
-        const service = this.services.get(token);
+    private disposeService(service: unknown): void {
         if (
             service !== null &&
             service !== undefined &&
@@ -114,7 +74,28 @@ export class DIContainer {
                 // ignore dispose errors
             }
         }
+    }
+
+    disposeAll(): void {
+        for (const service of this.services.values()) {
+            this.disposeService(service);
+        }
+        this.services.clear();
+        this.factories.clear();
+        this.singletons.clear();
+    }
+
+    clear(): void {
+        this.services.clear();
+        this.creating.clear();
+    }
+
+    unregister(token: string): void {
+        const service = this.services.get(token);
+        this.disposeService(service);
         this.services.delete(token);
+        this.singletons.delete(token);
+        this.factories.delete(token);
     }
 }
 

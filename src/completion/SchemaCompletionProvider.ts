@@ -4,7 +4,8 @@ import { getConnectionManager } from '../database/connection/ConnectionManager'
 import { getConfigManager } from '../core/configManager'
 import { sqlDialects } from '../core/sqlDialects'
 import type { SqlDialect } from '../parser/dialectMapper'
-import { findCursorContext } from './AstCompletionProvider'
+import { getParserEngine } from '../parser/SqlParserEngine'
+import { findCursorContextFromAst } from './AstCompletionProvider'
 
 const clauseTypeMap: Record<string, ClauseType> = {
     select_columns: 'SELECT',
@@ -49,9 +50,13 @@ export class SchemaCompletionProvider {
         const lineText = document.lineAt(position.line).text
         const textBeforeCursor = lineText.substring(0, position.character)
 
-        const clauseType = this.determineClauseType(sql, position, dialectName as SqlDialect, textBeforeCursor)
+        const parseResult = getParserEngine().tryAstify(sql, dialectName as SqlDialect)
+
+        const clauseType = this.determineClauseTypeFromAst(parseResult, position, textBeforeCursor)
         const prefix = this.extractPrefix(textBeforeCursor)
-        const aliasMap = this.schemaProvider.parseAliasMap(sql, dialectName as SqlDialect)
+        const aliasMap = parseResult.success && parseResult.ast
+            ? this.schemaProvider.parseAliasMapFromAst(parseResult.ast)
+            : new Map<string, string>()
 
         const context: CompletionContext = {
             connectionId: activeConn.id,
@@ -69,10 +74,9 @@ export class SchemaCompletionProvider {
         }
     }
 
-    private determineClauseType(
-        sql: string,
+    private determineClauseTypeFromAst(
+        parseResult: { success: boolean; ast: unknown },
         position: vscode.Position,
-        dialect: SqlDialect,
         textBeforeCursor: string,
     ): ClauseType {
         const trimmed = textBeforeCursor.trim().toUpperCase()
@@ -90,9 +94,11 @@ export class SchemaCompletionProvider {
             return 'UPDATE'
         }
 
-        const astContext = findCursorContext(sql, { line: position.line, column: position.character }, dialect)
-        const mapped = clauseTypeMap[astContext]
-        if (mapped && mapped !== 'OTHER') return mapped
+        if (parseResult.success && parseResult.ast) {
+            const astContext = findCursorContextFromAst(parseResult.ast, { line: position.line, column: position.character })
+            const mapped = clauseTypeMap[astContext]
+            if (mapped && mapped !== 'OTHER') return mapped
+        }
 
         if (/\bFROM\s+$/i.test(textBeforeCursor)) return 'FROM'
         if (/\bJOIN\s+$/i.test(textBeforeCursor)) return 'JOIN'

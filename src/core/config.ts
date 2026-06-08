@@ -4,36 +4,7 @@ import {
     FormatOptionsWithLanguage,
 } from "../formatter/sqlFormatter"
 import type { FormatOptions } from "../formatter/FormatOptions"
-
-const configMappings: readonly (keyof FormatOptions)[] = [
-    'keywordCase', 'dataTypeCase', 'functionCase', 'identifierCase',
-    'indentStyle', 'logicalOperatorNewline', 'expressionWidth',
-    'linesBetweenQueries', 'denseOperators', 'newlineBeforeSemicolon',
-    'commaPosition', 'alignColumnDefinitions', 'newlineAfterSelect',
-    'newlineAfterFrom', 'newlineBeforeWhere', 'newlineAfterWhere',
-    'newlineBeforeOrderBy', 'newlineBeforeGroupBy', 'newlineBeforeHaving',
-    'newlineBeforeLimit', 'maxLineLength', 'tabulateAlias',
-    'reservedKeywordCase', 'builtinFunctionCase', 'newlineBeforeJoin',
-    'newlineAfterComma', 'alignWhereClauses', 'alignCaseStatements',
-    'breakAfterSelectItem', 'breakAfterFromItem', 'spaceBeforeComma',
-    'spaceInsideParentheses', 'trimTrailingSpaces', 'semicolonAtEnd',
-    'singleLineMaxLength', 'nullCase', 'booleanCase',
-    'newlineAfterGroupBy', 'newlineAfterHaving', 'newlineAfterOrderBy',
-    'newlineAfterLimit', 'newlineAfterJoin', 'newlineBeforeSetOperation',
-    'newlineAfterSetOperation', 'newlineBeforeOn', 'newlineBeforeUsing',
-    'newlineBeforeWith', 'newlineAfterWith', 'indentCteBody',
-    'newlineBetweenCtes', 'cteCommaPosition', 'newlineAfterOver',
-    'newlineBeforePartitionBy', 'newlineAfterPartitionBy',
-    'newlineBeforeOrderByInWindow', 'indentJoinConditions', 'alignOnClauses',
-    'alignInsertColumns', 'alignInsertValuesGroups', 'newlineAfterInsert',
-    'newlineAfterInsertColumns', 'newlineBetweenValuesGroups',
-    'newlineAfterCase', 'newlineAfterWhen', 'newlineAfterThen',
-    'newlineAfterElse', 'indentWhen', 'indentThen', 'newlineAfterIn',
-    'maxItemsInlineList', 'subqueryParenStyle', 'commentPosition',
-    'blankLinesBeforeSetOperation', 'blankLinesAfterSetOperation',
-    'newlineBeforeLateralView', 'newlineBeforeDistributeBy',
-    'newlineBeforeClusterBy', 'newlineBeforeSortBy',
-]
+import { getFormatterConfigKeys } from "../config/configDefinitions"
 
 export const createConfig = (
     extensionSettings: vscode.WorkspaceConfiguration,
@@ -52,7 +23,7 @@ export const createConfig = (
         ...createIndentationConfig(extensionSettings, formattingOptions),
     }
 
-    for (const key of configMappings) {
+    for (const key of getFormatterConfigKeys()) {
         cfg[key] = extensionSettings.get(key)
     }
 

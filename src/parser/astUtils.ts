@@ -117,6 +117,18 @@ export function getLocFromAny(obj: Record<string, unknown>): AstLocation | null 
     return null
 }
 
+export function toVscodeLocationFromLoc(
+    loc: { start?: AstLocation; end?: AstLocation } | undefined,
+    document: vscode.TextDocument,
+): vscode.Location | null {
+    if (!loc?.start?.line || !loc?.start?.column) return null
+    const startPos = new vscode.Position(loc.start.line - 1, loc.start.column - 1)
+    const endPos = loc?.end?.line && loc?.end?.column
+        ? new vscode.Position(loc.end.line - 1, loc.end.column - 1)
+        : startPos
+    return new vscode.Location(document.uri, new vscode.Range(startPos, endPos))
+}
+
 export function createDiagnostic(
     loc: AstLocation,
     length: number,

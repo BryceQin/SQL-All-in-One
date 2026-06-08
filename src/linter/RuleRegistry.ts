@@ -26,6 +26,10 @@ export class RuleRegistry {
     }
   }
 
+  getRuleById(ruleId: string): LintRule | undefined {
+    return this.rules.get(ruleId);
+  }
+
   getEnabledRulesForType(type: string): LintRule[] {
     const rules = this.rulesByType.get(type) || [];
     return rules.filter(r => r.isEnabled());
@@ -70,7 +74,6 @@ export class RuleRegistry {
   }
 
   registerAllRules(): void {
-    // Register lint rule keys with ConfigManager so it can build config snapshots dynamically
     const lintKeys = Object.keys(RULES).map(k => `lint.${k}`);
     getConfigManager().registerLintKeys(lintKeys);
 
@@ -80,6 +83,12 @@ export class RuleRegistry {
       const config = configs.get(key as string) ?? DEFAULT_CONFIG;
       this.register(new RuleClass(config));
     }
+  }
+
+  reloadConfig(): void {
+    this.rules.clear();
+    this.rulesByType.clear();
+    this.registerAllRules();
   }
 }
 

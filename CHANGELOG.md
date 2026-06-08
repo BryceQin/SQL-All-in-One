@@ -1,92 +1,335 @@
 # Changelog
 
-## [2.0.0] - 2026-06-01
+## [2.2] - 2026-06-05
 
-### Security
+### Features
 
-- **SAVEPOINT SQL 注入防护** — 对 SAVEPOINT 名称进行白名单验证，仅允许字母数字下划线 (#2)
-- **SSH 密钥路径白名单** — 验证私钥路径必须位于用户主目录、`.ssh` 目录或 `/etc/ssh` 下，防止路径遍历攻击 (#32)
-- **BLOB 预览 XSS 修复** — 对 mimeType 进行白名单验证，使用 DOM API 替代 innerHTML 拼接 (#7)
-- **CSP 策略添加** — 所有 5 个 Webview HTML 文件添加 Content-Security-Policy meta 标签 (#5)
-- **导出连接密码泄露修复** — `includePasswords = false` 时同时清除 SSH 密码和 passphrase，导出文件设置 0600 权限 (#3)
-- **SQL 高亮正则替换风险修复** — designerPanel.js 中 SQL 高亮改为基于 token 的方式，消除正则替换破坏 HTML 实体的风险 (#22)
-- **导入数据运行时校验** — ConnectionStore.importConnections 添加 validateImportData 方法，防止恶意或损坏文件导致运行时异常 (#20)
-- **Webview inline onclick 迁移** — 所有 5 个 HTML 文件中的 inline onclick/onchange/oninput 替换为 addEventListener 绑定 (#27)
-- **i18n 全局变量注入替换** — 配置编辑器中 `window.__I18N__` 全局变量替换为 WebView 消息机制 (#29)
+- 全新插件图标 — 蓝→青渐变背景 + 数据库圆柱 + "SQL" 粗体字，体现全面的 SQL 开发工具包定位
+
+- New plugin icon — blue-to-cyan gradient background with database cylinder and bold "SQL" text, reflecting the comprehensive SQL development toolkit positioning
 
 ### Architecture
 
-- **AST 缓存 TOCTOU 竞态修复** — getOrBuildSymbolIndex 原子性写入 symbolIndex，处理 LRU 淘汰和版本不匹配情况 (#11)
-- **DI 容器单例竞态修复** — 添加 creating 中间状态标记，防止工厂函数被并发调用 (#10)
-- **ConnectionManager 资源泄漏修复** — dispose() 正确清理 retryTimers、healthCheckTimers、idleCheckTimers 和事件发射器 (#6)
-- **disconnectAll 并行断开** — 使用 Promise.allSettled() 并行断开连接，避免单个连接挂起阻塞后续 (#9)
-- **SSH 隧道双重超时冲突修复** — 统一超时机制，确保应用级超时清理 SSH 客户端 (#16)
-- **SSH 隧道 close() 关闭活跃 socket** — 追踪并销毁所有活跃 socket 转发连接 (#17)
+- 格式化器默认选项整合 — 移除 sqlFormatter.ts 中的重复默认值，统一使用 configDefinitions.ts 中的 getFormatterDefaultOptions（单一数据源）
 
-### i18n
+- Formatter default options consolidation — removed duplicate defaults from sqlFormatter.ts, now using getFormatterDefaultOptions from configDefinitions.ts (single source of truth)
 
-- **格式化器错误消息 i18n** — sqlFormatter.ts 中两处中文硬编码错误消息替换为 i18n 函数调用 (#19)
+- 配置编辑器 UI 改进（CSS、HTML、JS 重构）
+
+- Config editor UI improvements (CSS, HTML, JS refactoring)
+
+- HiveSqlAdapter 格式化改进
+
+- HiveSqlAdapter formatting improvements
+
+- 配置定义重构
+
+- Config definitions refactoring
 
 ### Bug Fixes
 
-- **config-editor.js 语法错误** — 7 个预设配置对象中 lintExpiredTodoSeverity 后缺少逗号，导致配置编辑器完全不可用 (#1)
-- **testConnection SSH 密码逻辑错误** — 数据库密码被错误赋给 SSH 配置的 password 字段 (#8)
-- **transferDialog.js Node.js API** — Webview 中使用 require('fs') 改为消息机制请求文件内容 (#4)
-- **formatUnknown 回退输出优化** — 移除 JSON.stringify 输出，只保留类型注释 (#31)
+- i18n 消息更新
 
-### Configuration
-
-- **Lint 规则配置格式统一** — 将分散的阈值/子选项配置整合到规则对象中，删除 7 个独立配置键 (#28)
-
-### Verification
-
-- **formatUse 已验证** — 已确认使用 quoteIdentifier 包裹数据库名，无需修改 (#30)
+- i18n message updates
 
 ---
 
-## [1.11.0] - 2026-05-25
+## [2.1] - 2026-06-05
+
+### Features
+
+- 全新图形化连接对话框 — 用基于 Webview 的对话框替代逐步 InputBox，支持一次性填写所有连接参数（ConnectionDialog.ts, dialog.html, dialog.css, dialog.js）
+
+- New graphical Connection Dialog — replaced step-by-step InputBox with webview-based dialog for filling all connection parameters at once (ConnectionDialog.ts, dialog.html, dialog.css, dialog.js)
+
+---
+
+## [2.0] - 2026-06-01
+
+### Features
+
+- 数据库连接与管理模块（DatabaseModule, ConnectionManager, ConnectionStore）
+
+- Database Connection & Management module (DatabaseModule, ConnectionManager, ConnectionStore)
+
+- MySQL 适配器，支持连接池与 SSL（MysqlAdapter）
+
+- MySQL adapter with connection pool and SSL support (MysqlAdapter)
+
+- SSH 隧道支持（SshTunnel，基于 ssh2）
+
+- SSH tunnel support (SshTunnel via ssh2)
+
+- 查询执行引擎（QueryExecutor），支持超时、取消、最大行数限制
+
+- Query execution engine (QueryExecutor) with timeout, cancellation, and max rows
+
+- 安全查询守卫 — 危险 SQL 拦截（SafeQueryGuard），支持 strict/moderate/off 三级模式
+
+- Safe query guard — dangerous SQL interception (SafeQueryGuard) with strict/moderate/off levels
+
+- 查询历史记录（QueryHistory）
+
+- Query history (QueryHistory)
+
+- SQL 语句检测器（SqlStatementDetector）
+
+- SQL statement detection (SqlStatementDetector)
+
+- 数据库浏览器侧边栏（DatabaseTreeProvider + 树节点）
+
+- Database Explorer sidebar (DatabaseTreeProvider with tree nodes)
+
+- Schema 提供者与缓存（SchemaProvider, SchemaCache），支持可配置 TTL
+
+- Schema provider and cache (SchemaProvider, SchemaCache) with configurable TTL
+
+- 数据导出（CSV、JSON、INSERT、DDL）via DataExporter
+
+- Data export (CSV, JSON, INSERT, DDL) via DataExporter
+
+- 数据导入 via DataImporter
+
+- Data import via DataImporter
+
+- 执行计划可视化（ExplainPlan, ExplainPlanPanel）
+
+- Execution plan visualization (ExplainPlan, ExplainPlanPanel)
+
+- 表设计器（TableDesignerPanel）
+
+- Table designer (TableDesignerPanel)
+
+- 查询结果面板（QueryResultPanel），支持分页、网格/表单视图
+
+- Query result panel (QueryResultPanel) with pagination and grid/form views
+
+- 数据传输对话框（DataTransferDialog）
+
+- Data transfer dialog (DataTransferDialog)
+
+- Schema 感知智能补全（SchemaCompletionProvider）
+
+- Schema-aware completion (SchemaCompletionProvider)
+
+- Schema 悬停信息（SchemaHoverResolver）
+
+- Schema hover information (SchemaHoverResolver)
+
+- 4 条新 Lint 规则：consistent_aliasing、explicit_column_aliasing、long_query_line、uppercase_keywords
+
+- 4 new lint rules: consistent_aliasing, explicit_column_aliasing, long_query_line, uppercase_keywords
+
+- 数据编辑服务，含校验功能
+
+- Data editor service with validation
+
+- BLOB 预览，含 MIME 类型白名单
+
+- BLOB preview with MIME type whitelist
+
+- 批量执行模式（顺序/事务）
+
+- Batch execution mode (sequential/transaction)
+
+- 执行进度保存
+
+- Execution progress saving
+
+- 取消重试机制
+
+- Cancel retry mechanism
+
+- 结果面板增强：滚动预加载、JSON 美化、日期格式化、长文本截断、NULL 占位符
+
+- Result panel features: scroll preloading, JSON pretty print, date format, long text truncation, NULL placeholder
+
+- 80+ 配置项，覆盖格式化、Lint、数据库、导出、数据编辑、结果、历史等类别
+
+- 80+ configuration options across formatting, lint, database, export, data editor, results, and history categories
+
+### Security
+
+- SAVEPOINT SQL 注入防护 — 对名称进行白名单验证，仅允许字母数字下划线
+
+- SAVEPOINT SQL injection prevention — whitelist validation for names, allowing only alphanumeric and underscore
+
+- SSH 密钥路径白名单 — 验证私钥路径必须位于用户主目录、`.ssh` 目录或 `/etc/ssh` 下，防止路径遍历攻击
+
+- SSH key path whitelist — validate private key paths must be under user home, `.ssh` directory, or `/etc/ssh`, preventing path traversal attacks
+
+- BLOB 预览 XSS 修复 — MIME 类型白名单验证，使用 DOM API 替代 innerHTML 拼接
+
+- BLOB preview XSS fix — MIME type whitelist validation, using DOM API instead of innerHTML concatenation
+
+- CSP 策略 — 所有 5 个 Webview HTML 文件添加 Content-Security-Policy meta 标签
+
+- CSP policy — added Content-Security-Policy meta tags to all 5 Webview HTML files
+
+- 导出连接密码泄露修复 — `includePasswords = false` 时同时清除 SSH 密码和 passphrase，导出文件设置 0600 权限
+
+- Export connection password leak fix — clear SSH password and passphrase when `includePasswords = false`, set exported file permissions to 0600
+
+- SQL 高亮正则替换风险修复 — 改为基于 token 的方式，消除正则替换破坏 HTML 实体的风险
+
+- SQL highlight regex replacement risk fix — switched to token-based approach, eliminating risk of regex breaking HTML entities
+
+- 导入数据运行时校验 — ConnectionStore.importConnections 添加 validateImportData 方法
+
+- Import data runtime validation — added validateImportData method to ConnectionStore.importConnections
+
+- Webview inline onclick 迁移 — 所有 HTML 文件中 inline 事件替换为 addEventListener 绑定
+
+- Webview inline onclick migration — replaced inline event handlers with addEventListener in all HTML files
+
+- i18n 全局变量注入替换 — 配置编辑器中 `window.__I18N__` 替换为 WebView 消息机制
+
+- i18n global variable injection replaced — `window.__I18N__` in config editor replaced with WebView message mechanism
+
+### Architecture
+
+- AST 缓存 TOCTOU 竞态修复 — getOrBuildSymbolIndex 原子性写入 symbolIndex，处理 LRU 淘汰与版本不匹配
+
+- AST cache TOCTOU race fix — atomic symbolIndex write in getOrBuildSymbolIndex, handle LRU eviction and version mismatch
+
+- DI 容器单例竞态修复 — 添加 creating 中间状态标记，防止工厂函数被并发调用
+
+- DI container singleton race fix — added creating intermediate state to prevent concurrent factory invocations
+
+- ConnectionManager 资源泄漏修复 — dispose() 正确清理 retryTimers、healthCheckTimers、idleCheckTimers 和事件发射器
+
+- ConnectionManager resource leak fix — dispose() properly cleans retryTimers, healthCheckTimers, idleCheckTimers, and event emitters
+
+- disconnectAll 并行断开 — 使用 Promise.allSettled() 并行断开连接，避免单个连接挂起阻塞后续
+
+- disconnectAll parallel disconnect — use Promise.allSettled() for parallel disconnection, preventing single hung connection from blocking others
+
+- SSH 隧道双重超时冲突修复 — 统一超时机制，确保应用级超时清理 SSH 客户端
+
+- SSH tunnel double timeout conflict fix — unified timeout mechanism, ensuring application-level timeout cleans up SSH client
+
+- SSH 隧道 close() 关闭活跃 socket — 追踪并销毁所有活跃 socket 转发连接
+
+- SSH tunnel close() closes active sockets — track and destroy all active socket forwarding connections
+
+### Bug Fixes
+
+- config-editor.js 语法错误 — 预设配置对象中缺少逗号，导致配置编辑器完全不可用
+
+- config-editor.js syntax error — missing commas in preset config objects, causing config editor to be completely unusable
+
+- testConnection SSH 密码逻辑错误 — 数据库密码被错误赋给 SSH 配置的 password 字段
+
+- testConnection SSH password logic error — database password was incorrectly assigned to SSH config's password field
+
+- transferDialog.js Node.js API 误用 — Webview 中 require('fs') 改为消息机制请求文件内容
+
+- transferDialog.js Node.js API misuse — replaced require('fs') in Webview with message mechanism for file content
+
+- formatUnknown 回退输出优化 — 移除 JSON.stringify 输出，只保留类型注释
+
+- formatUnknown fallback output optimization — removed JSON.stringify output, keeping only type annotation
+
+### Configuration
+
+- Lint 规则配置格式统一 — 将分散的阈值/子选项配置整合到规则对象中，删除 7 个独立配置键
+
+- Lint rule config format unified — consolidated scattered threshold/sub-options into rule objects, removed 7 independent config keys
+
+---
+
+## [1.11] - 2026-05-25
 
 ### Architecture
 
 - DI 容器增强、核心服务集成
-- RuleRegistry 重构简化（规则注册代码从 44 行重复代码缩减至 8 行）
+
+- DI container enhancement, core service integration
+
+- RuleRegistry 重构简化 — 规则注册代码从 44 行缩减至 8 行
+
+- RuleRegistry refactoring — rule registration code reduced from 44 lines to 8 lines
+
 - DocumentAstCache LRU 验证
+
+- DocumentAstCache LRU validation
 
 ---
 
-## [1.10.0] - 2026-05-18
+## [1.10] - 2026-05-18
 
 ### Architecture
 
-- AstLinter 规则体系模块化：策略模式 + 规则注册机制
+- AstLinter 规则体系模块化 — 策略模式 + 规则注册机制
+
+- AstLinter rule system modularization — Strategy Pattern + RuleRegistry
+
 - 14 个独立规则类实现统一 LintRule 接口
+
+- 14 independent rule classes implementing unified LintRule interface
+
 - AstLinter 从 877 行缩减至 64 行
+
+- AstLinter reduced from 877 lines to 64 lines
+
 - 支持独立测试和开闭原则扩展
+
+- Supports independent testing and Open-Closed Principle extension
 
 ---
 
-## [1.8.0] - 2026-05-04
+## [1.8] - 2026-05-04
 
 ### Features
 
-- 国际化全面改造（设置界面跟随 VS Code 语言切换）
+- 国际化全面改造 — 设置界面跟随 VS Code 语言切换
+
+- Full i18n overhaul — settings UI follows VSCode language
+
 - README/CHANGELOG 双语化
-- 配置编辑器多语言
+
+- Bilingual README & CHANGELOG
+
+- 配置编辑器多语言支持
+
+- Config editor multilingual support
+
 - 统一方言注册中心
+
+- Unified dialect registry
 
 ### Bug Fixes
 
 - 修复内存泄漏
+
+- Memory leak fixes
+
 - 架构优化
+
+- Architecture improvements
 
 ---
 
-## [1.7.0] - 2026-04-20
+## [1.7] - 2026-04-20
 
 ### Features
 
-- Go to Definition（CTE/表别名/列别名）
+- Go to Definition — CTE、表别名、列别名跳转定义
+
+- Go to Definition — CTE, table alias, and column alias navigation
+
+- Find All References — 查找所有引用
+
 - Find All References
-- Rename Symbol（含保留字/冲突校验）
+
+- Rename Symbol — 重命名符号，含保留字与命名冲突校验
+
+- Rename Symbol — with reserved word and naming conflict checks
+
 - Breadcrumb 子句级导航
+
+- Breadcrumb clause-level navigation
+
 - AstNavigator 共享导航引擎
+
+- AstNavigator shared navigation engine

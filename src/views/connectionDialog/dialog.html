@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline' {{CSP_SOURCE}}; script-src 'unsafe-inline' {{CSP_SOURCE}}; img-src data: {{CSP_SOURCE}}; font-src {{CSP_SOURCE}};">
+  <title>Connection Dialog</title>
+  <link rel="stylesheet" href="{{CSS_URI}}">
+  {{CONFIG_INJECT}}
+</head>
+<body>
+  <div class="dialog-panel">
+    <div class="header-bar">
+      <div class="header-title">
+        <span id="headerTitle">New Connection</span>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-secondary" id="btnClose" data-action="handleClose">&#10005;</button>
+      </div>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="general" data-action="switchTab" data-action-arg="general">General</button>
+      <button class="tab-btn" data-tab="ssh" data-action="switchTab" data-action-arg="SSH">SSH</button>
+      <button class="tab-btn" data-tab="ssl" data-action="switchTab" data-action-arg="SSL">SSL</button>
+      <button class="tab-btn" data-tab="advanced" data-action="switchTab" data-action-arg="Advanced">Advanced</button>
+    </div>
+
+    <div class="tab-content">
+      <div class="tab-page active" id="pageGeneral">
+        <div class="form-section">
+          <div class="form-row">
+            <label class="form-label">Connection Name</label>
+            <input type="text" class="form-input" id="connName" data-action="updateField" data-action-arg="name" placeholder="My Database">
+          </div>
+          <div class="form-row">
+            <label class="form-label">Dialect</label>
+            <select class="form-select" id="connDialect" data-action="updateDialect">
+              <option value="mysql">MySQL</option>
+              <option value="hive">Hive</option>
+              <option value="spark">Spark</option>
+              <option value="flinksql">FlinkSQL</option>
+              <option value="postgresql">PostgreSQL</option>
+              <option value="bigquery">BigQuery</option>
+              <option value="sqlite">SQLite</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label class="form-label">Group</label>
+            <div class="form-combo">
+              <select class="form-select combo-select" id="connGroup" data-action="updateField" data-action-arg="group">
+                <option value="">-- None --</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <label class="form-label">Color</label>
+            <div class="color-picker" id="colorPicker"></div>
+          </div>
+        </div>
+
+        <div class="form-section" id="hostSection">
+          <div class="form-row-inline">
+            <div class="form-field-flex">
+              <label class="form-label">Host</label>
+              <input type="text" class="form-input" id="connHost" data-action="updateField" data-action-arg="host" value="127.0.0.1" placeholder="127.0.0.1">
+            </div>
+            <div class="form-field-fixed">
+              <label class="form-label">Port</label>
+              <input type="number" class="form-input" id="connPort" data-action="updateField" data-action-arg="port" value="3306" min="0" max="65535">
+            </div>
+          </div>
+          <div class="form-row">
+            <label class="form-label">Username</label>
+            <input type="text" class="form-input" id="connUsername" data-action="updateField" data-action-arg="username" value="root" placeholder="root">
+          </div>
+          <div class="form-row">
+            <label class="form-label">Password</label>
+            <div class="password-wrapper">
+              <input type="password" class="form-input" id="connPassword" data-action="updateField" data-action-arg="password" placeholder="Enter password">
+              <button class="btn-icon" id="togglePassword" data-action="togglePasswordVisibility" title="Show/Hide password">&#128065;</button>
+            </div>
+          </div>
+          <div class="form-row">
+            <label class="form-label">Database</label>
+            <input type="text" class="form-input" id="connDatabase" data-action="updateField" data-action-arg="database" placeholder="mydb">
+          </div>
+        </div>
+
+        <div class="form-section" id="sqliteSection" style="display:none;">
+          <div class="form-row">
+            <label class="form-label">Database File</label>
+            <div class="file-input-wrapper">
+              <input type="text" class="form-input" id="connSqliteFile" data-action="updateField" data-action-arg="database" placeholder="/path/to/database.db">
+              <button class="btn btn-secondary btn-browse" data-action="browseFile" data-action-arg="sqliteFile">Browse...</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-page" id="pageSsh">
+        <div class="form-section">
+          <div class="form-row">
+            <label class="form-label">Use SSH Tunnel</label>
+            <div class="form-checkbox">
+              <input type="checkbox" id="sshEnabled" data-action="updateField" data-action-arg="ssh.enabled">
+            </div>
+          </div>
+        </div>
+        <div class="ssh-fields" id="sshFields">
+          <div class="form-section">
+            <div class="form-row-inline">
+              <div class="form-field-flex">
+                <label class="form-label">Host</label>
+                <input type="text" class="form-input" id="sshHost" data-action="updateField" data-action-arg="ssh.host" placeholder="ssh.example.com">
+              </div>
+              <div class="form-field-fixed">
+                <label class="form-label">Port</label>
+                <input type="number" class="form-input" id="sshPort" data-action="updateField" data-action-arg="ssh.port" value="22" min="1" max="65535">
+              </div>
+            </div>
+            <div class="form-row">
+              <label class="form-label">Username</label>
+              <input type="text" class="form-input" id="sshUsername" data-action="updateField" data-action-arg="ssh.username" placeholder="user">
+            </div>
+            <div class="form-row">
+              <label class="form-label">Authentication</label>
+              <select class="form-select" id="sshAuthMethod" data-action="updateField" data-action-arg="ssh.authentication">
+                <option value="password">Password</option>
+                <option value="privateKey">Private Key</option>
+              </select>
+            </div>
+            <div class="form-row" id="sshPasswordRow">
+              <label class="form-label">Password</label>
+              <input type="password" class="form-input" id="sshPassword" data-action="updateField" data-action-arg="ssh.password" placeholder="SSH password">
+            </div>
+            <div class="form-row" id="sshKeyRow" style="display:none;">
+              <label class="form-label">Private Key</label>
+              <div class="file-input-wrapper">
+                <input type="text" class="form-input" id="sshPrivateKey" data-action="updateField" data-action-arg="ssh.privateKey" placeholder="~/.ssh/id_rsa">
+                <button class="btn btn-secondary btn-browse" data-action="browseFile" data-action-arg="sshPrivateKey">Browse...</button>
+              </div>
+            </div>
+            <div class="form-row">
+              <label class="form-label">Passphrase</label>
+              <input type="password" class="form-input" id="sshPassphrase" data-action="updateField" data-action-arg="ssh.passphrase" placeholder="Optional passphrase for private key">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-page" id="pageSsl">
+        <div class="form-section">
+          <div class="form-row">
+            <label class="form-label">Use SSL</label>
+            <div class="form-checkbox">
+              <input type="checkbox" id="sslEnabled" data-action="updateField" data-action-arg="ssl.enabled">
+            </div>
+          </div>
+        </div>
+        <div class="ssl-fields" id="sslFields">
+          <div class="form-section">
+            <div class="form-row">
+              <label class="form-label">CA Certificate</label>
+              <div class="file-input-wrapper">
+                <input type="text" class="form-input" id="sslCa" data-action="updateField" data-action-arg="ssl.ca" placeholder="CA certificate path">
+                <button class="btn btn-secondary btn-browse" data-action="browseFile" data-action-arg="sslCa">Browse...</button>
+              </div>
+            </div>
+            <div class="form-row">
+              <label class="form-label">Client Certificate</label>
+              <div class="file-input-wrapper">
+                <input type="text" class="form-input" id="sslCert" data-action="updateField" data-action-arg="ssl.cert" placeholder="Client certificate path">
+                <button class="btn btn-secondary btn-browse" data-action="browseFile" data-action-arg="sslCert">Browse...</button>
+              </div>
+            </div>
+            <div class="form-row">
+              <label class="form-label">Client Key</label>
+              <div class="file-input-wrapper">
+                <input type="text" class="form-input" id="sslKey" data-action="updateField" data-action-arg="ssl.key" placeholder="Client key path">
+                <button class="btn btn-secondary btn-browse" data-action="browseFile" data-action-arg="sslKey">Browse...</button>
+              </div>
+            </div>
+            <div class="form-row">
+              <label class="form-label">Verify Server Certificate</label>
+              <div class="form-checkbox">
+                <input type="checkbox" id="sslRejectUnauthorized" data-action="updateField" data-action-arg="ssl.rejectUnauthorized" checked>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-page" id="pageAdvanced">
+        <div class="form-section">
+          <div class="form-row">
+            <label class="form-label">Connect Timeout (ms)</label>
+            <input type="number" class="form-input" id="connTimeout" data-action="updateField" data-action-arg="connectTimeout" value="10000" min="0">
+          </div>
+          <div class="form-row">
+            <label class="form-label">Pool Size</label>
+            <input type="number" class="form-input" id="poolSize" data-action="updateField" data-action-arg="poolConfig.maxConnections" value="5" min="1" max="100">
+          </div>
+          <div class="form-row">
+            <label class="form-label">Charset</label>
+            <select class="form-select" id="connCharset" data-action="updateField" data-action-arg="options.charset">
+              <option value="utf8mb4">utf8mb4</option>
+              <option value="utf8">utf8</option>
+              <option value="latin1">latin1</option>
+              <option value="ascii">ascii</option>
+              <option value="binary">binary</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label class="form-label">Timezone</label>
+            <select class="form-select" id="connTimezone" data-action="updateField" data-action-arg="options.timezone">
+              <option value="local">Local</option>
+              <option value="+00:00">UTC (+00:00)</option>
+              <option value="+08:00">CST (+08:00)</option>
+              <option value="-05:00">EST (-05:00)</option>
+              <option value="-08:00">PST (-08:00)</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label class="form-label">Initial SQL</label>
+            <input type="text" class="form-input" id="connInitSql" data-action="updateField" data-action-arg="options.initSql" placeholder="SET NAMES utf8mb4;">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-bar">
+      <div class="test-result" id="testResult"></div>
+      <div class="footer-actions">
+        <button class="btn btn-secondary" id="btnTest" data-action="handleTestConnection">Test Connection</button>
+        <button class="btn btn-secondary" id="btnCancel" data-action="handleClose">Cancel</button>
+        <button class="btn btn-primary" id="btnSave" data-action="handleSave">Save</button>
+      </div>
+    </div>
+  </div>
+  <script src="{{JS_URI}}"></script>
+</body>
+</html>

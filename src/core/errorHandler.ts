@@ -31,23 +31,32 @@ export interface FormatterError {
 
 export class ErrorHandler {
     private listeners: ((error: FormatterError) => void)[] = [];
-    private errorHistory: FormatterError[] = [];
+    private errorHistory: FormatterError[];
     private historyStart = 0;
     private historyCount = 0;
-    private maxHistorySize = 100;
+    private readonly maxHistorySize = 100;
     private showNotifications = true;
-    private outputChannel: vscode.OutputChannel | undefined
+    private outputChannel: vscode.OutputChannel | undefined;
+
+    constructor() {
+        this.errorHistory = new Array<FormatterError>(this.maxHistorySize);
+    }
+
+    private getOrCreateOutputChannel(): vscode.OutputChannel {
+        if (!this.outputChannel) {
+            this.outputChannel = vscode.window.createOutputChannel('SQL All in One Errors');
+        }
+        return this.outputChannel;
+    }
 
     private logToOutputChannel(error: FormatterError): void {
-        if (!this.outputChannel) {
-            this.outputChannel = vscode.window.createOutputChannel('SQL All in One Errors')
-        }
-        const timestamp = new Date(error.timestamp).toISOString()
-        const level = error.level.toUpperCase()
-        const category = error.category.toUpperCase()
-        this.outputChannel.appendLine(`[${timestamp}] [${level}] [${category}] ${error.context}: ${error.message}`)
+        const channel = this.getOrCreateOutputChannel();
+        const timestamp = new Date(error.timestamp).toISOString();
+        const level = error.level.toUpperCase();
+        const category = error.category.toUpperCase();
+        channel.appendLine(`[${timestamp}] [${level}] [${category}] ${error.context}: ${error.message}`);
         if (error.stack) {
-            this.outputChannel.appendLine(error.stack)
+            channel.appendLine(error.stack);
         }
     }
 
@@ -138,14 +147,13 @@ export class ErrorHandler {
     getHistory(): FormatterError[] {
         const result: FormatterError[] = [];
         for (let i = 0; i < this.historyCount; i++) {
-            const idx = (this.historyStart + i) % this.errorHistory.length;
+            const idx = (this.historyStart + i) % this.maxHistorySize;
             result.push(this.errorHistory[idx]);
         }
         return result;
     }
 
     clearHistory(): void {
-        this.errorHistory.length = 0;
         this.historyStart = 0;
         this.historyCount = 0;
     }
@@ -203,11 +211,12 @@ export class ErrorHandler {
                 break;
         }
 
-        this.errorHistory.push(error);
-        this.historyCount++;
-        if (this.historyCount > this.maxHistorySize) {
-            this.historyStart = (this.historyStart + 1) % this.errorHistory.length;
-            this.historyCount = this.maxHistorySize;
+        const writeIdx = (this.historyStart + this.historyCount) % this.maxHistorySize;
+        this.errorHistory[writeIdx] = error;
+        if (this.historyCount < this.maxHistorySize) {
+            this.historyCount++;
+        } else {
+            this.historyStart = (this.historyStart + 1) % this.maxHistorySize;
         }
     }
 
@@ -250,10 +259,7 @@ export class ErrorHandler {
     }
 
     showOutputChannel(): void {
-        if (!this.outputChannel) {
-            this.outputChannel = vscode.window.createOutputChannel('SQL All in One Errors');
-        }
-        this.outputChannel.show(true);
+        this.getOrCreateOutputChannel().show(true);
     }
 
     getOutputChannel(): vscode.OutputChannel | undefined {
@@ -262,12 +268,12 @@ export class ErrorHandler {
 
     dispose(): void {
         if (this.outputChannel) {
-            this.outputChannel.dispose()
+            this.outputChannel.dispose();
         }
-        this.listeners.length = 0
-        this.errorHistory.length = 0
-        this.historyStart = 0
-        this.historyCount = 0
+        this.listeners.length = 0;
+        this.errorHistory = new Array<FormatterError>(this.maxHistorySize);
+        this.historyStart = 0;
+        this.historyCount = 0;
     }
 }
 

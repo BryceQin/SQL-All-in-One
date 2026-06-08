@@ -1,3 +1,4 @@
+import * as vscode from 'vscode';
 import type { DatabaseInfo, TableInfo, ColumnInfo, FunctionInfo, ProcedureInfo } from '../adapters/IDatabaseAdapter';
 import { getConnectionManager } from '../connection/ConnectionManager';
 import { getConfigManager } from '../../core/configManager';
@@ -17,18 +18,28 @@ export class SchemaCache {
     private functionCache = new Map<string, CacheEntry<FunctionInfo[]>>();
     private procedureCache = new Map<string, CacheEntry<ProcedureInfo[]>>();
     private pendingRequests = new Map<string, Promise<unknown>>();
+    private cachedTtls: Record<string, number> = {};
+    private ttlConfigDisposable: vscode.Disposable | undefined;
+
+    constructor() {
+        this.loadTtls();
+        this.ttlConfigDisposable = getConfigManager().onConfigChange(() => {
+            this.loadTtls();
+        });
+    }
+
+    private loadTtls(): void {
+        const cfgMgr = getConfigManager();
+        this.cachedTtls = {
+            database: cfgMgr.get<number>('schemaCache.databaseTtl', 600),
+            table: cfgMgr.get<number>('schemaCache.tableTtl', 300),
+            column: cfgMgr.get<number>('schemaCache.columnTtl', 120),
+            function: cfgMgr.get<number>('schemaCache.functionTtl', 600),
+        };
+    }
 
     private getTtl(type: string): number {
-        const cfgMgr = getConfigManager();
-        const ttlMap: Record<string, string> = {
-            database: 'schemaCache.databaseTtl',
-            table: 'schemaCache.tableTtl',
-            column: 'schemaCache.columnTtl',
-            function: 'schemaCache.functionTtl',
-        };
-        const key = ttlMap[type];
-        if (!key) return 300;
-        return cfgMgr.get<number>(key, type === 'database' ? 600 : type === 'column' ? 120 : 300);
+        return this.cachedTtls[type] ?? 300;
     }
 
     private isExpired<T>(entry: CacheEntry<T> | undefined): entry is undefined {
@@ -167,7 +178,7 @@ export class SchemaCache {
     }
 
     private invalidateByPrefix(cache: Map<string, CacheEntry<unknown>>, prefix: string): void {
-        for (const key of cache.keys()) {
+        for (const key of [...cache.keys()]) {
             if (key === prefix || key.startsWith(prefix + ':')) {
                 cache.delete(key);
             }
@@ -191,6 +202,7 @@ export class SchemaCache {
     }
 
     dispose(): void {
+        this.ttlConfigDisposable?.dispose();
         this.databaseCache.clear();
         this.tableCache.clear();
         this.columnCache.clear();
