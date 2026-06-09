@@ -1,8 +1,9 @@
 import * as vscode from 'vscode';
 import { getConnectionManager } from '../connection/ConnectionManager';
+import { getConnectionStore } from '../connection/ConnectionStore';
 import { DatabaseTreeProvider } from '../../views/databaseExplorer/DatabaseTreeProvider';
 import { ConnectionTreeNode } from '../../views/databaseExplorer/treeNodes';
-import { ConnectionDialog } from '../../views/connectionDialog/ConnectionDialog';
+import { openConfigEditorCommand } from '../../commands/configEditorCommand';
 
 export function registerConnectionCommands(
     context: vscode.ExtensionContext,
@@ -12,24 +13,17 @@ export function registerConnectionCommands(
 
     disposables.push(
         vscode.commands.registerCommand('sql-all-in-one.addConnection', async () => {
-            await ConnectionDialog.show(
-                context.extensionUri,
-                {
-                    mode: 'create',
-                    treeProvider
-                }
-            );
+            openConfigEditorCommand(context.extensionUri, {
+                initialTab: 'database',
+                autoAddConnection: true
+            });
         })
     );
 
     disposables.push(
         vscode.commands.registerCommand('sql-all-in-one.editConnection', async (node?: ConnectionTreeNode) => {
-            const manager = getConnectionManager();
-            let connectionId: string | undefined;
-
-            if (node) {
-                connectionId = node.connectionId;
-            } else {
+            if (!node) {
+                const manager = getConnectionManager();
                 const connections = manager.getAllConnections();
                 if (connections.length === 0) {
                     vscode.window.showInformationMessage('No connections available');
@@ -42,17 +36,11 @@ export function registerConnectionCommands(
                 if (!picked) {
                     return;
                 }
-                connectionId = picked.id;
             }
 
-            await ConnectionDialog.show(
-                context.extensionUri,
-                {
-                    mode: 'edit',
-                    connectionId,
-                    treeProvider
-                }
-            );
+            openConfigEditorCommand(context.extensionUri, {
+                initialTab: 'database'
+            });
         })
     );
 
@@ -172,6 +160,51 @@ export function registerConnectionCommands(
                 }
             } catch (error) {
                 vscode.window.showErrorMessage(`Test connection failed: ${error}`);
+            }
+        })
+    );
+
+    disposables.push(
+        vscode.commands.registerCommand('sql-all-in-one.exportConnections', async () => {
+            const uri = await vscode.window.showSaveDialog({
+                defaultUri: vscode.Uri.file('connections.json'),
+                filters: { 'JSON': ['json'] }
+            });
+            if (!uri) return;
+            try {
+                const store = getConnectionStore();
+                const includePasswords = await vscode.window.showQuickPick(
+                    ['Without passwords (recommended)', 'With passwords'],
+                    { placeHolder: 'Export options' }
+                );
+                if (!includePasswords) return;
+                await store.exportConnections(
+                    uri.fsPath,
+                    includePasswords === 'With passwords'
+                );
+                vscode.window.showInformationMessage(`Connections exported to ${uri.fsPath}`);
+            } catch (error) {
+                vscode.window.showErrorMessage(`Export failed: ${error}`);
+            }
+        })
+    );
+
+    disposables.push(
+        vscode.commands.registerCommand('sql-all-in-one.importConnections', async () => {
+            const uris = await vscode.window.showOpenDialog({
+                filters: { 'JSON': ['json'] },
+                canSelectMany: false
+            });
+            if (!uris || uris.length === 0) return;
+            try {
+                const store = getConnectionStore();
+                const result = await store.importConnections(uris[0].fsPath);
+                vscode.window.showInformationMessage(
+                    `Imported ${result.added} connections (${result.skipped} skipped)`
+                );
+                treeProvider.refresh();
+            } catch (error) {
+                vscode.window.showErrorMessage(`Import failed: ${error}`);
             }
         })
     );

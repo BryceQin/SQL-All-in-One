@@ -1,5 +1,6 @@
 import * as vscode from 'vscode'
 import { StatusBarProvider } from '../providers/StatusBarProvider'
+import { getContainer, Tokens } from '../core/diContainer'
 import { t } from '../i18n'
 
 export function toggleComment(): void {
@@ -62,7 +63,7 @@ function addBlockComment(editor: vscode.TextEditor, selection: vscode.Selection)
     const newText = `/* ${selectedText.replace(/\n/g, `\n   `)} */`
     edit.replace(editor.document.uri, selection, newText)
     vscode.workspace.applyEdit(edit).then(success => {
-        if (success) StatusBarProvider.showTemporaryMessage(t('notification.commentAdded'))
+        if (success) getContainer().get<StatusBarProvider>(Tokens.StatusBarProvider)?.showTemporaryMessage(t('notification.commentAdded'))
     })
 }
 
@@ -75,7 +76,7 @@ function removeBlockComment(editor: vscode.TextEditor, selection: vscode.Selecti
     cleaned = cleaned.trim()
     edit.replace(editor.document.uri, selection, cleaned)
     vscode.workspace.applyEdit(edit).then(success => {
-        if (success) StatusBarProvider.showTemporaryMessage(t('notification.commentRemoved'))
+        if (success) getContainer().get<StatusBarProvider>(Tokens.StatusBarProvider)?.showTemporaryMessage(t('notification.commentRemoved'))
     })
 }
 
@@ -145,7 +146,7 @@ function addColumnComment(editor: vscode.TextEditor): void {
                     quoteEnd
                 )
             }
-            StatusBarProvider.showTemporaryMessage(t('notification.ddlCommentAdded'))
+            getContainer().get<StatusBarProvider>(Tokens.StatusBarProvider)?.showTemporaryMessage(t('notification.ddlCommentAdded'))
         }
     })
 }
@@ -157,6 +158,6 @@ function wrapWithFormatterDisable(editor: vscode.TextEditor): void {
     edit.insert(editor.document.uri, selection.start, `/* sql-formatter-disable */\n${linePrefix}`)
     edit.insert(editor.document.uri, selection.end, `\n${linePrefix}/* sql-formatter-enable */`)
     vscode.workspace.applyEdit(edit).then(success => {
-        if (success) StatusBarProvider.showTemporaryMessage(t('notification.formatDisabledMarkAdded'))
+        if (success) getContainer().get<StatusBarProvider>(Tokens.StatusBarProvider)?.showTemporaryMessage(t('notification.formatDisabledMarkAdded'))
     })
 }

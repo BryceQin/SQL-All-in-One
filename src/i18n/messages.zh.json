@@ -482,6 +482,9 @@
     "safety.continue": "继续",
     "safety.dropDetected": "检测到 DROP 操作",
     "safety.truncateDetected": "检测到 TRUNCATE 操作",
+    "safety.grantStatement": "检测到 GRANT 操作",
+    "safety.revokeStatement": "检测到 REVOKE 操作",
+    "safety.alterStatement": "检测到 ALTER 操作",
 
     "configEditor.cg.querySettings": "数据库查询",
     "configEditor.cg.safetyGuard": "安全防护",

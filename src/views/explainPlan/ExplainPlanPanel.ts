@@ -32,7 +32,6 @@ export class ExplainPlanPanel {
                 enableScripts: true,
                 localResourceRoots: [
                     vscode.Uri.joinPath(extensionUri, 'media'),
-                    vscode.Uri.joinPath(extensionUri, 'src', 'views', 'explainPlan'),
                 ],
                 retainContextWhenHidden: true,
             }
@@ -166,25 +165,24 @@ export class ExplainPlanPanel {
         try {
             const htmlPath = path.join(
                 this._extensionUri.fsPath,
-                'src',
-                'views',
-                'explainPlan',
-                'explainPanel.html'
+                'media',
+                'explain-panel.html'
             );
             let html = await fs.promises.readFile(htmlPath, 'utf-8');
 
             const cssUri = this._panel.webview.asWebviewUri(
-                vscode.Uri.joinPath(this._extensionUri, 'src', 'views', 'explainPlan', 'explainPanel.css')
+                vscode.Uri.joinPath(this._extensionUri, 'media', 'explain-panel.css')
             );
             const jsUri = this._panel.webview.asWebviewUri(
-                vscode.Uri.joinPath(this._extensionUri, 'src', 'views', 'explainPlan', 'explainPanel.js')
+                vscode.Uri.joinPath(this._extensionUri, 'media', 'explain-panel.js')
             );
 
             html = html.replace('{{CSS_URI}}', cssUri.toString());
             html = html.replace('{{JS_URI}}', jsUri.toString());
 
             return html;
-        } catch {
+        } catch (error) {
+            console.error('Failed to load EXPLAIN Plan panel HTML:', error);
             return '<html><body><h2>Failed to load EXPLAIN Plan panel</h2><p>Please reinstall the extension.</p></body></html>';
         }
     }

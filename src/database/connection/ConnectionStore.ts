@@ -211,6 +211,17 @@ export class ConnectionStore {
     }
 
     async exportConnections(filePath: string, includePasswords = false): Promise<void> {
+        if (includePasswords) {
+            const confirm = await vscode.window.showWarningMessage(
+                'You are about to export connection passwords in plaintext. This is a security risk. Continue?',
+                { modal: true },
+                'Export'
+            );
+            if (confirm !== 'Export') {
+                return;
+            }
+        }
+
         const data: ConnectionsFile = {
             version: 1,
             groups: Array.from(this.groups.values()),

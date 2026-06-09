@@ -156,17 +156,26 @@ export class SshTunnel {
 
     private validateKeyPath(keyPath: string): string {
         const resolved = path.resolve(keyPath);
+        let realPath: string;
+        try {
+            realPath = fs.realpathSync(resolved);
+        } catch {
+            throw new Error(`SSH private key path does not exist: ${keyPath}`);
+        }
         const homeDir = os.homedir();
         const allowedDirs = [
             homeDir,
             path.join(homeDir, '.ssh'),
             '/etc/ssh',
         ];
-        const isAllowed = allowedDirs.some(dir => resolved.startsWith(dir));
+        const realAllowedDirs = allowedDirs.map(dir => {
+            try { return fs.realpathSync(dir); } catch { return dir; }
+        });
+        const isAllowed = realAllowedDirs.some(dir => realPath.startsWith(dir));
         if (!isAllowed) {
             throw new Error(`SSH private key path not allowed: ${keyPath}. Key must be located in your home directory, .ssh folder, or /etc/ssh.`);
         }
-        return resolved;
+        return realPath;
     }
 
     isOpen(): boolean {

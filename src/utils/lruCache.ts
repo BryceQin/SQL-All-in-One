@@ -7,7 +7,6 @@ export class LRUCache<K, V> {
   private cache = new Map<K, LRUCacheEntry<V>>();
   private maxSize: number;
   private maxAge: number;
-  private lastKey: K | undefined;
 
   constructor(options: { maxSize?: number; maxAge?: number } = {}) {
     this.maxSize = options.maxSize ?? 100;
@@ -26,7 +25,6 @@ export class LRUCache<K, V> {
       value,
       timestamp: Date.now(),
     });
-    this.lastKey = key;
   }
 
   get(key: K): V | undefined {
@@ -38,15 +36,11 @@ export class LRUCache<K, V> {
 
     if (Date.now() - entry.timestamp > this.maxAge) {
       this.cache.delete(key);
-      if (this.lastKey === key) this.lastKey = undefined;
       return undefined;
     }
 
-    if (this.lastKey !== key) {
-      this.cache.delete(key);
-      this.cache.set(key, entry);
-      this.lastKey = key;
-    }
+    this.cache.delete(key);
+    this.cache.set(key, entry);
     return entry.value;
   }
 
@@ -56,31 +50,32 @@ export class LRUCache<K, V> {
 
     if (Date.now() - entry.timestamp > this.maxAge) {
       this.cache.delete(key);
-      if (this.lastKey === key) this.lastKey = undefined;
       return false;
     }
 
-    if (this.lastKey !== key) {
-      this.cache.delete(key);
-      this.cache.set(key, entry);
-      this.lastKey = key;
-    }
     return true;
+}
+
+  peek(key: K): V | undefined {
+    const entry = this.cache.get(key);
+    if (!entry) return undefined;
+    if (Date.now() - entry.timestamp > this.maxAge) {
+      this.cache.delete(key);
+      return undefined;
+    }
+    return entry.value;
   }
 
   delete(key: K): void {
-    if (this.lastKey === key) this.lastKey = undefined;
     this.cache.delete(key);
   }
 
   deleteByPrefix(prefix: string): void {
-    const keys = [...this.cache.keys()];
-    for (const key of keys) {
+    this.cache.forEach((_, key) => {
       if (String(key).startsWith(prefix)) {
-        if (this.lastKey === key) this.lastKey = undefined;
         this.cache.delete(key);
       }
-    }
+    });
   }
 
   *entries(): IterableIterator<[K, V]> {
@@ -103,7 +98,6 @@ export class LRUCache<K, V> {
 
   clear(): void {
     this.cache.clear();
-    this.lastKey = undefined;
   }
 
   size(): number {

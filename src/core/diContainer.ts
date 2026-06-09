@@ -35,8 +35,16 @@ export class DIContainer {
         }
 
         if (this.factories.has(token)) {
-            const factory = this.factories.get(token) as () => T;
-            return factory();
+            if (this.creating.has(token)) {
+                throw new Error(`Circular dependency detected: ${token}`);
+            }
+            this.creating.add(token);
+            try {
+                const factory = this.factories.get(token) as () => T;
+                return factory();
+            } finally {
+                this.creating.delete(token);
+            }
         }
 
         throw new Error(`Service not registered: ${token}`);
@@ -77,7 +85,9 @@ export class DIContainer {
     }
 
     disposeAll(): void {
-        for (const service of this.services.values()) {
+        const disposeOrder = Array.from(this.services.keys()).reverse();
+        for (const key of disposeOrder) {
+            const service = this.services.get(key);
             this.disposeService(service);
         }
         this.services.clear();

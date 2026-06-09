@@ -106,6 +106,10 @@
           <div class="empty-state-icon">📊</div>
           <div data-i18n="resultPanel.noData">No query results</div>
         </div>
+        <div class="loading-state" id="loadingState">
+          <div class="loading-spinner-lg"></div>
+          <div class="loading-text" data-i18n="resultPanel.queryRunning">查询执行中...</div>
+        </div>
       </div>
 
       <div class="tab-page" id="pageMessages">
@@ -166,6 +170,7 @@
             </div>
         </div>
     </div>
+    <div class="toast-container" id="toastContainer"></div>
   </div>
   <script src="{{JS_URI}}"></script>
 </body>

@@ -50,6 +50,9 @@ class Tokenizer {
     // 缓存：参数规则（基于 paramTypes 构建，按需缓存）
     cachedParamRules = null;
     cachedParamTypes;
+    // 缓存：完整的规则数组（前置 + 参数 + 后置），避免每次 tokenize 重新拼接
+    cachedFullRules = null;
+    cachedFullRulesParamTypes;
     cfg;
     dialectName;
     constructor(cfg, dialectName) {
@@ -59,18 +62,20 @@ class Tokenizer {
         this.rulesAfterParams = this.buildRulesAfterParams(cfg);
     }
     tokenize(input, paramTypesOverrides) {
-        // 1. 整合三部分规则（按优先级：前置 > 参数 > 后置）
-        const rules = [
-            // 前置规则（注释、关键字、数字等，优先级最高）
-            ...this.rulesBeforeParams,
-            // 参数规则（动态构建，优先级中等）
-            ...this.buildParamRules(this.cfg, paramTypesOverrides),
-            // 后置规则（标识符、字符串、操作符等，优先级最低）
-            ...this.rulesAfterParams,
-        ];
-        // 2. 实例化底层 TokenizerEngine，执行分词
-        const tokens = new TokenizerEngine_1.default(rules, this.dialectName).tokenize(input);
-        // 3. 可选后置处理：若配置了 postProcess 函数，执行后返回，否则直接返回原始 Token 数组
+        // 1. 解析当前参数类型（合并覆盖与默认配置）
+        const paramTypes = this.resolveParamTypes(paramTypesOverrides);
+        // 2. 当参数类型未变化时，复用缓存的完整规则数组，避免每次重新拼接
+        if (!this.cachedFullRules || !this.cachedFullRulesParamTypes || !this.paramTypesEqual(this.cachedFullRulesParamTypes, paramTypes)) {
+            this.cachedFullRules = [
+                ...this.rulesBeforeParams,
+                ...this.buildParamRules(this.cfg, paramTypesOverrides),
+                ...this.rulesAfterParams,
+            ];
+            this.cachedFullRulesParamTypes = paramTypes;
+        }
+        // 3. 实例化底层 TokenizerEngine，执行分词
+        const tokens = new TokenizerEngine_1.default(this.cachedFullRules, this.dialectName).tokenize(input);
+        // 4. 可选后置处理：若配置了 postProcess 函数，执行后返回，否则直接返回原始 Token 数组
         return this.cfg.postProcess ? this.cfg.postProcess(tokens) : tokens;
     }
     // 构建前置规则（缓存复用）,负责构建「不依赖参数、仅依赖方言配置」的高优先级规则，这些规则会被缓存，无需重复构建。
@@ -270,6 +275,18 @@ class Tokenizer {
                 ]),
             },
         ]);
+    }
+    // 解析参数类型：优先使用 paramTypesOverrides（动态覆盖），其次使用 cfg.paramTypes（默认配置），最后兜底为空数组/undefined
+    resolveParamTypes(paramTypesOverrides) {
+        return {
+            named: paramTypesOverrides?.named || this.cfg.paramTypes?.named || [],
+            quoted: paramTypesOverrides?.quoted || this.cfg.paramTypes?.quoted || [],
+            numbered: paramTypesOverrides?.numbered || this.cfg.paramTypes?.numbered || [],
+            positional: typeof paramTypesOverrides?.positional === 'boolean'
+                ? paramTypesOverrides.positional
+                : this.cfg.paramTypes?.positional,
+            custom: paramTypesOverrides?.custom || this.cfg.paramTypes?.custom || [],
+        };
     }
     // 优先使用 paramTypesOverrides（动态覆盖），其次使用 cfg.paramTypes（默认配置），最后兜底为空数组 /undefined，确保灵活性
     buildParamRules(cfg, paramTypesOverrides) {

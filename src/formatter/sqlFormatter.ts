@@ -43,8 +43,16 @@ export const format = (
 const formatterCache = new Map<string, AstFormatter>()
 const MAX_FORMATTER_CACHE_SIZE = 50
 
+let lastOptionsRef: WeakRef<object> | undefined;
+let lastCacheKey: string | undefined;
+
 function getFormatterCacheKey(dialect: string, options: FormatOptions): string {
-    // 只包含会影响格式化行为的配置项
+    if (lastOptionsRef) {
+        const cached = lastOptionsRef.deref();
+        if (cached === options && lastCacheKey) {
+            return lastCacheKey;
+        }
+    }
     const relevantOptions = {
         tabWidth: options.tabWidth,
         useTabs: options.useTabs,
@@ -116,7 +124,10 @@ function getFormatterCacheKey(dialect: string, options: FormatOptions): string {
         newlineBeforeClusterBy: options.newlineBeforeClusterBy,
         newlineBeforeSortBy: options.newlineBeforeSortBy
     }
-    return `${dialect}:${JSON.stringify(relevantOptions)}`
+    const key = `${dialect}:${JSON.stringify(relevantOptions)}`;
+    lastOptionsRef = new WeakRef(options as object);
+    lastCacheKey = key;
+    return key;
 }
 
 export const formatDialect = (

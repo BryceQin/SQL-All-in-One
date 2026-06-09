@@ -32,8 +32,6 @@ export class ConnectionManager {
     private retryTimers = new Map<string, ReturnType<typeof setTimeout>>();
     private sshTunnels = new Map<string, SshTunnel>();
     private healthCheckTimers = new Map<string, ReturnType<typeof setInterval>>();
-    private idleCheckTimers = new Map<string, ReturnType<typeof setInterval>>();
-    private connectionLastActivity = new Map<string, number>();
     private consecutiveHealthFailures = new Map<string, number>();
 
     private readonly _onDidChangeConnections = new EventEmitter<ConnectionEvent>();
@@ -129,8 +127,6 @@ export class ConnectionManager {
             this.retryAttempts.delete(id);
 
             this.startHealthCheck(id, fullConfig);
-            this.startIdleCheck(id, fullConfig);
-            this.connectionLastActivity.set(id, Date.now());
 
             if (!this.activeConnectionId) {
                 this.setActiveConnection(id);
@@ -154,8 +150,6 @@ export class ConnectionManager {
     async disconnect(id: string): Promise<void> {
         const oldState = this.connectionStates.get(id) || 'disconnected';
         this.stopHealthCheck(id);
-        this.stopIdleCheck(id);
-        this.connectionLastActivity.delete(id);
         if (oldState === 'disconnected') {
             return;
         }
@@ -200,20 +194,6 @@ export class ConnectionManager {
                 console.error('Failed to disconnect:', result.reason);
             }
         }
-        for (const [_id, timer] of this.healthCheckTimers) {
-            clearInterval(timer);
-        }
-        this.healthCheckTimers.clear();
-        for (const [_id, timer] of this.idleCheckTimers) {
-            clearInterval(timer);
-        }
-        this.idleCheckTimers.clear();
-        this.connectionLastActivity.clear();
-        this.consecutiveHealthFailures.clear();
-        for (const [_id, timer] of this.retryTimers) {
-            clearTimeout(timer);
-        }
-        this.retryTimers.clear();
     }
 
     async testConnection(id: string): Promise<TestConnectionResult>;
@@ -358,7 +338,6 @@ export class ConnectionManager {
                 const healthy = await adapter.checkConnectionHealth();
                 if (healthy) {
                     this.consecutiveHealthFailures.set(id, 0);
-                    this.connectionLastActivity.set(id, Date.now());
                 } else {
                     const failures = (this.consecutiveHealthFailures.get(id) ?? 0) + 1;
                     this.consecutiveHealthFailures.set(id, failures);
@@ -389,36 +368,6 @@ export class ConnectionManager {
         this.consecutiveHealthFailures.delete(id);
     }
 
-    private startIdleCheck(id: string, config: ConnectionConfig): void {
-        this.stopIdleCheck(id);
-        const idleTimeout = config.poolConfig?.idleTimeout ?? 300000;
-        if (idleTimeout <= 0) return;
-        const checkInterval = config.poolConfig?.reapInterval ?? 60000;
-        const timer = setInterval(async () => {
-            const lastActivity = this.connectionLastActivity.get(id);
-            if (lastActivity === undefined) return;
-            const now = Date.now();
-            if (now - lastActivity > idleTimeout) {
-                const adapter = this.adapters.get(id);
-                if (adapter) {
-                    const status = adapter.getPoolStatus();
-                    if (status.activeConnections === 0) {
-                        await this.disconnect(id);
-                    }
-                }
-            }
-        }, checkInterval);
-        this.idleCheckTimers.set(id, timer);
-    }
-
-    private stopIdleCheck(id: string): void {
-        const timer = this.idleCheckTimers.get(id);
-        if (timer) {
-            clearInterval(timer);
-            this.idleCheckTimers.delete(id);
-        }
-    }
-
     dispose(): void {
         for (const timer of this.retryTimers.values()) {
             clearTimeout(timer);
@@ -426,9 +375,6 @@ export class ConnectionManager {
         this.retryTimers.clear();
 
         for (const timer of this.healthCheckTimers.values()) {
-            clearInterval(timer);
-        }
-        for (const timer of this.idleCheckTimers.values()) {
             clearInterval(timer);
         }
 

@@ -1,5 +1,123 @@
 # Changelog
 
+## [2.9.0] - 2026-06-09
+
+### Performance
+
+- 移除 `onStartupFinished` 激活事件，改为仅在打开 SQL 文件时激活插件，避免不使用 SQL 时的无谓加载
+
+- Removed `onStartupFinished` activation event, extension now activates only when SQL files are opened, avoiding unnecessary loading when SQL is not used
+
+- Provider 延迟实例化 — 所有语言 Provider（Diagnostics、CodeAction、FoldingRange、Outline、Hover、Definition、Reference、Rename、Completion）改为 lazy getter 模式，仅在 VSCode 首次调用时才实例化，消除激活时的级联 DI 实例化开销
+
+- Lazy Provider instantiation — all language providers now use lazy getter pattern, instantiated only on first VSCode invocation, eliminating cascading DI instantiation overhead during activation
+
+- 数据库模块非阻塞初始化 — `DatabaseModule.initialize()` 不再阻塞 `activate()`，改为后台异步执行，激活时间不再受 SecretStorage I/O 和查询历史加载影响
+
+- Non-blocking database initialization — `DatabaseModule.initialize()` no longer blocks `activate()`, runs in background, activation time no longer affected by SecretStorage I/O and query history loading
+
+- SqlParserEngine 延迟创建 Parser — `new Parser()` 从构造函数移至首次调用时创建，避免激活时加载 `node-sql-parser` 解析器
+
+- SqlParserEngine lazy Parser creation — `new Parser()` moved from constructor to first invocation, avoiding loading `node-sql-parser` parser during activation
+
+- SqlCompletionProvider 延迟加载 Snippet — Snippet JSON 文件从构造函数同步读取改为首次触发补全时异步加载
+
+- SqlCompletionProvider lazy Snippet loading — Snippet JSON files changed from synchronous reading in constructor to async loading on first completion trigger
+
+- 已打开文档诊断延迟执行 — 激活时对已打开 SQL 文件的诊断改为 `queueMicrotask` 延迟执行，不阻塞激活流程
+
+- Deferred diagnostics for open documents — diagnostics for already-open SQL files deferred via `queueMicrotask`, no longer blocking activation
+
+- 激活时间从 ~140ms 优化至 ~20-40ms
+
+- Activation time optimized from ~140ms to ~20-40ms
+
+---
+
+## [2.5.0] - 2026-06-09
+
+### Performance
+
+- LRU Cache 移除伪优化 lastKey 字段，简化为标准 Map LRU 实现，修复 deleteByPrefix 潜在 bug
+
+- LRU Cache removed broken lastKey optimization, simplified to standard Map LRU, fixed deleteByPrefix potential bug
+
+- 同步模块注册改为 Promise.all 并行执行，加速插件激活
+
+- Sync module registration changed to Promise.all parallel execution, faster extension activation
+
+- SqlDiagnosticsProvider.provideDiagnostics 改为异步，lint 前让步事件循环，避免大文件阻塞 UI
+
+- SqlDiagnosticsProvider.provideDiagnostics made async, yields to event loop before lint, preventing UI freeze on large files
+
+- SqlCompletionProvider 移除有问题的自定义 schema 补全 debounce，改用 VS Code 框架内置取消机制
+
+- SqlCompletionProvider removed broken custom schema completion debounce, now uses VS Code framework's built-in cancellation
+
+### Security
+
+- SafeQueryGuard 新增 GRANT、REVOKE、ALTER 危险操作检测
+
+- SafeQueryGuard added GRANT, REVOKE, ALTER dangerous operation detection
+
+- ConnectionStore.exportConnections 导出密码时弹出模态确认框，防止误操作
+
+- ConnectionStore.exportConnections shows modal confirmation when exporting with passwords, preventing accidental exposure
+
+### Bug Fixes
+
+- MysqlAdapter.cancelQuery 使用正确的连接线程 ID，避免误杀其他查询
+
+- MysqlAdapter.cancelQuery now uses correct connection thread ID, preventing accidental kill of other queries
+
+- QueryExecutor.execute 移除 USE database 语句，修复连接池环境下数据库切换无效的问题
+
+- QueryExecutor.execute removed USE database statement, fixing ineffective database switching in connection pool environment
+
+- ConnectionManager 移除与 MysqlAdapter 重复的空闲检测逻辑，避免连接异常断开
+
+- ConnectionManager removed duplicate idle check logic that conflicted with MysqlAdapter, preventing unexpected disconnections
+
+- PerformanceMonitor.getStats() 修复 LRU 缓存条目过期后除零错误
+
+- PerformanceMonitor.getStats() fixed division by zero when LRU cache entries are expired
+
+- DI 容器 factory 路径添加循环依赖检测，防止栈溢出无友好提示
+
+- DI container added circular dependency detection for factory path, preventing silent stack overflow
+
+- ErrorHandler 通知添加 5 秒限流去重，防止错误风暴
+
+- ErrorHandler notifications added 5-second throttle/dedup, preventing notification storms
+
+- viewsWelcome 条件从 `true` 改为 `connectionCount == 0`，有连接时不再显示欢迎信息
+
+- viewsWelcome condition changed from `true` to `connectionCount == 0`, no longer shows welcome when connections exist
+
+### Architecture
+
+- MysqlAdapter 提取 createPoolOptions 方法，消除 3 处连接池配置重复
+
+- MysqlAdapter extracted createPoolOptions method, eliminating 3 duplicate pool config constructions
+
+### Features
+
+- SQLite 专属代码片段（13 个）：ATTACH/DETACH DATABASE、PRAGMA 系列、CREATE VIRTUAL TABLE/FTS5、INSERT OR REPLACE/IGNORE 等
+
+- SQLite-specific snippets (13): ATTACH/DETACH DATABASE, PRAGMA series, CREATE VIRTUAL TABLE/FTS5, INSERT OR REPLACE/IGNORE, etc.
+
+- 连接导入/导出命令注册到命令面板和数据库浏览器菜单
+
+- Connection import/export commands registered in Command Palette and Database Explorer menu
+
+### Changed
+
+- 执行 SQL 快捷键从 `Ctrl+R` / `Cmd+R` 改为 `Ctrl+Shift+E` / `Cmd+Shift+E`，避免与 VS Code 内置快捷键冲突
+
+- Execute SQL shortcut changed from `Ctrl+R` / `Cmd+R` to `Ctrl+Shift+E` / `Cmd+Shift+E`, avoiding conflict with VS Code built-in shortcuts
+
+---
+
 ## [2.2] - 2026-06-05
 
 ### Features

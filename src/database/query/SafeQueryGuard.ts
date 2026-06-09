@@ -135,6 +135,30 @@ export class SafeQueryGuard {
             });
         }
 
+        if (/^\s*GRANT\s+/i.test(sql)) {
+            confirmations.push({
+                rule: 'grant_statement',
+                message: t('safety.grantStatement'),
+                sql,
+            });
+        }
+
+        if (/^\s*REVOKE\s+/i.test(sql)) {
+            confirmations.push({
+                rule: 'revoke_statement',
+                message: t('safety.revokeStatement'),
+                sql,
+            });
+        }
+
+        if (/^\s*ALTER\s+/i.test(sql)) {
+            confirmations.push({
+                rule: 'alter_statement',
+                message: t('safety.alterStatement'),
+                sql,
+            });
+        }
+
         return this.buildResult(level, warnings, confirmations);
     }
 

@@ -103,7 +103,6 @@ export class TableDesignerPanel {
                 enableScripts: true,
                 localResourceRoots: [
                     vscode.Uri.joinPath(extensionUri, 'media'),
-                    vscode.Uri.joinPath(extensionUri, 'src', 'views', 'tableDesigner'),
                 ],
                 retainContextWhenHidden: true,
             }
@@ -310,18 +309,16 @@ export class TableDesignerPanel {
         try {
             const htmlPath = path.join(
                 this._extensionUri.fsPath,
-                'src',
-                'views',
-                'tableDesigner',
-                'designerPanel.html'
+                'media',
+                'table-designer.html'
             );
             let html = await fs.promises.readFile(htmlPath, 'utf-8');
 
             const cssUri = this._panel.webview.asWebviewUri(
-                vscode.Uri.joinPath(this._extensionUri, 'src', 'views', 'tableDesigner', 'designerPanel.css')
+                vscode.Uri.joinPath(this._extensionUri, 'media', 'table-designer.css')
             );
             const jsUri = this._panel.webview.asWebviewUri(
-                vscode.Uri.joinPath(this._extensionUri, 'src', 'views', 'tableDesigner', 'designerPanel.js')
+                vscode.Uri.joinPath(this._extensionUri, 'media', 'table-designer.js')
             );
 
             html = html.replace('{{CSS_URI}}', cssUri.toString());
@@ -336,7 +333,8 @@ export class TableDesignerPanel {
             html = html.replace('{{CONFIG_INJECT}}', configScript);
 
             return html;
-        } catch {
+        } catch (error) {
+            console.error('Failed to load Table Designer panel HTML:', error);
             return '<html><body><h2>Failed to load Table Designer panel</h2><p>Please reinstall the extension.</p></body></html>';
         }
     }

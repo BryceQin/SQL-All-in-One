@@ -206,13 +206,17 @@ export class SchemaProvider {
 
             const aliasMap = context.aliasMap;
             if (aliasMap.size > 0) {
-                for (const [, tableName] of aliasMap) {
-                    await this.addColumnsForTable(items, context, tableName, prefix);
-                }
+                await Promise.all(
+                    Array.from(aliasMap.values()).map(tableName =>
+                        this.addColumnsForTable(items, context, tableName, prefix)
+                    )
+                );
             } else {
-                for (const tbl of tables) {
-                    await this.addColumnsForTable(items, context, tbl.name, prefix);
-                }
+                await Promise.all(
+                    tables.map(tbl =>
+                        this.addColumnsForTable(items, context, tbl.name, prefix)
+                    )
+                );
             }
         } catch (e) { handleError(e, 'SchemaProvider.addColumnItems', ErrorCategory.FEATURE); }
     }

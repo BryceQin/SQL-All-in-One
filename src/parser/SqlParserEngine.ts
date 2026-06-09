@@ -12,15 +12,18 @@ export interface ParseResult {
 }
 
 export class SqlParserEngine {
-    private parser: Parser;
+    private parser: Parser | null = null;
 
-    constructor() {
-        this.parser = new Parser();
+    private getParser(): Parser {
+        if (!this.parser) {
+            this.parser = new Parser();
+        }
+        return this.parser;
     }
 
     astify(sql: string, dialect: SqlDialect): AST[] | AST {
         try {
-            return this.parser.astify(sql, {
+            return this.getParser().astify(sql, {
                 database: toNodeSqlParserDialect(dialect),
                 parseOptions: { includeLocations: true },
             });
@@ -30,14 +33,14 @@ export class SqlParserEngine {
     }
 
     sqlify(ast: AST[] | AST, dialect: SqlDialect): string {
-        return this.parser.sqlify(ast, {
+        return this.getParser().sqlify(ast, {
             database: toNodeSqlParserDialect(dialect),
         });
     }
 
     parse(sql: string, dialect: SqlDialect): ParseResult {
         try {
-            const result: TableColumnAst = this.parser.parse(sql, {
+            const result: TableColumnAst = this.getParser().parse(sql, {
                 database: toNodeSqlParserDialect(dialect),
                 parseOptions: { includeLocations: true },
             });

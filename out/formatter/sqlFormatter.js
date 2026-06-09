@@ -23,8 +23,15 @@ exports.format = format;
 // AstFormatter 缓存：按方言和配置哈希缓存实例
 const formatterCache = new Map();
 const MAX_FORMATTER_CACHE_SIZE = 50;
+let lastOptionsRef;
+let lastCacheKey;
 function getFormatterCacheKey(dialect, options) {
-    // 只包含会影响格式化行为的配置项
+    if (lastOptionsRef) {
+        const cached = lastOptionsRef.deref();
+        if (cached === options && lastCacheKey) {
+            return lastCacheKey;
+        }
+    }
     const relevantOptions = {
         tabWidth: options.tabWidth,
         useTabs: options.useTabs,
@@ -96,7 +103,10 @@ function getFormatterCacheKey(dialect, options) {
         newlineBeforeClusterBy: options.newlineBeforeClusterBy,
         newlineBeforeSortBy: options.newlineBeforeSortBy
     };
-    return `${dialect}:${JSON.stringify(relevantOptions)}`;
+    const key = `${dialect}:${JSON.stringify(relevantOptions)}`;
+    lastOptionsRef = new WeakRef(options);
+    lastCacheKey = key;
+    return key;
 }
 const formatDialect = (query, { dialect, ...cfg }) => {
     if (typeof query !== "string") {

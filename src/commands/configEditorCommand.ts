@@ -18,6 +18,11 @@ interface ConfigEditorMessage {
     id?: string;
 }
 
+export interface ConfigEditorOptions {
+    initialTab?: string;
+    autoAddConnection?: boolean;
+}
+
 export class ConfigEditorPanel {
     public static currentPanel: ConfigEditorPanel | undefined
     public static readonly viewType = 'SQLAllInOneConfig'
@@ -25,14 +30,18 @@ export class ConfigEditorPanel {
     private readonly _panel: vscode.WebviewPanel
     private readonly _extensionUri: vscode.Uri
     private _disposables: vscode.Disposable[] = []
+    private _pendingNavigation: ConfigEditorOptions | undefined
 
-    public static createOrShow(extensionUri: vscode.Uri): void {
+    public static createOrShow(extensionUri: vscode.Uri, options?: ConfigEditorOptions): void {
         const column = vscode.window.activeTextEditor
             ? vscode.window.activeTextEditor.viewColumn
             : undefined
 
         if (ConfigEditorPanel.currentPanel) {
             ConfigEditorPanel.currentPanel._panel.reveal(column)
+            if (options) {
+                ConfigEditorPanel.currentPanel._navigateTo(options)
+            }
             return
         }
 
@@ -48,12 +57,13 @@ export class ConfigEditorPanel {
             }
         )
 
-        ConfigEditorPanel.currentPanel = new ConfigEditorPanel(panel, extensionUri)
+        ConfigEditorPanel.currentPanel = new ConfigEditorPanel(panel, extensionUri, options)
     }
 
-    private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri) {
+    private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, options?: ConfigEditorOptions) {
         this._panel = panel
         this._extensionUri = extensionUri
+        this._pendingNavigation = options
 
         this._update()
 
@@ -147,6 +157,23 @@ export class ConfigEditorPanel {
         this._panel.webview.html = await this._getHtmlForWebview()
         await this._sendCurrentConfig()
         this._sendI18nData()
+
+        if (this._pendingNavigation) {
+            const nav = this._pendingNavigation
+            this._pendingNavigation = undefined
+            setTimeout(() => this._navigateTo(nav), 300)
+        }
+    }
+
+    private _navigateTo(options: ConfigEditorOptions): void {
+        const message: Record<string, unknown> = { command: 'navigateTo' }
+        if (options.initialTab) {
+            message.tab = options.initialTab
+        }
+        if (options.autoAddConnection) {
+            message.autoAddConnection = true
+        }
+        this._panel.webview.postMessage(message)
     }
 
     private async _getHtmlForWebview(): Promise<string> {
@@ -440,6 +467,6 @@ export class ConfigEditorPanel {
     }
 }
 
-export function openConfigEditorCommand(extensionUri: vscode.Uri): void {
-    ConfigEditorPanel.createOrShow(extensionUri)
+export function openConfigEditorCommand(extensionUri: vscode.Uri, options?: ConfigEditorOptions): void {
+    ConfigEditorPanel.createOrShow(extensionUri, options)
 }

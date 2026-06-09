@@ -37,6 +37,7 @@ export class DatabaseModule {
 
     const connectionManager = getConnectionManager();
     await connectionManager.initialize();
+    vscode.commands.executeCommand('setContext', 'sql-all-in-one.connectionCount', connectionManager.getAllConnections().length);
 
     this.treeProvider = new DatabaseTreeProvider(this.context);
     vscode.window.createTreeView('sql-all-in-one.databaseExplorer', {
@@ -68,10 +69,12 @@ export class DatabaseModule {
           schemaCache.prefetchOnConnect(event.connectionId, config.database).catch(() => {
             /* ignore prefetch error */
           });
+          vscode.commands.executeCommand('setContext', 'sql-all-in-one.connectionCount', connectionManager.getAllConnections().length);
         }
       }
       if (event.newState === 'disconnected') {
         schemaCache.invalidate(event.connectionId);
+        vscode.commands.executeCommand('setContext', 'sql-all-in-one.connectionCount', connectionManager.getAllConnections().length);
       }
     });
   }

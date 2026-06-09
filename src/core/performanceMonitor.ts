@@ -11,9 +11,15 @@ interface AggregateStats {
 export class PerformanceMonitor {
     private static readonly MAX_STATS_ENTRIES = 200;
     private aggregateStats = new LRUCache<string, AggregateStats>({ maxSize: PerformanceMonitor.MAX_STATS_ENTRIES, maxAge: Infinity });
+    private enabled = false;
     private slowThreshold = 100;
 
+    setEnabled(enabled: boolean): void { this.enabled = enabled; }
+
+    isEnabled(): boolean { return this.enabled; }
+
     measure<T>(name: string, fn: () => T): T {
+        if (!this.enabled) return fn();
         const start = performance.now();
         try {
             return fn();
@@ -24,6 +30,7 @@ export class PerformanceMonitor {
     }
 
     async measureAsync<T>(name: string, fn: () => Promise<T>): Promise<T> {
+        if (!this.enabled) return fn();
         const start = performance.now();
         try {
             return await fn();
@@ -89,6 +96,10 @@ export class PerformanceMonitor {
       if (stats.minDuration < minDuration) minDuration = stats.minDuration;
     }
 
+    if (totalCount === 0) {
+      return { count: 0, avgDuration: 0, maxDuration: 0, minDuration: 0 };
+    }
+
     return {
       count: totalCount,
       avgDuration: totalDuration / totalCount,
@@ -98,6 +109,10 @@ export class PerformanceMonitor {
   }
 
   clear(): void {
+    this.aggregateStats.clear();
+  }
+
+  dispose(): void {
     this.aggregateStats.clear();
   }
 }

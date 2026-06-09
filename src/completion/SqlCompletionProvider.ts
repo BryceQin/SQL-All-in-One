@@ -1,14 +1,14 @@
 import * as vscode from 'vscode'
 import * as fs from 'fs'
 import * as path from 'path'
-import { sqlDialects } from '../core/sqlDialects'
+import { sqlDialects, toSqlDialect } from '../core/sqlDialects'
 import { createDialect, type Dialect, type DialectOptions } from '../languages/dialect'
 import * as allDialects from '../languages/allDialects'
 import { getKeywordItems } from './keywordCompletion'
 import { getFunctionItems } from './functionCompletion'
 import type { FunctionSignature } from './functionSignatures'
 import { getSnippetItems } from './snippetCompletion'
-import { getCTEItems } from './cteCompletion'
+import { getCTEItemsFromAst } from './cteCompletion'
 import { getIdentifierItems } from './identifierCompletion'
 import { getCommentCompletionItems } from './commentCompletion'
 import { handleError, ErrorCategory } from '../core/errorHandler'
@@ -16,6 +16,8 @@ import { getConfigManager } from '../core/configManager'
 import { getPerformanceMonitor } from '../core/performanceMonitor'
 import { SchemaCompletionProvider } from './SchemaCompletionProvider'
 import { getConnectionManager } from '../database/connection/ConnectionManager'
+import { getDocumentAstCache } from '../parser/DocumentAstCache'
+import type { SqlDialect } from '../parser/dialectMapper'
 
 interface SnippetDef { prefix: string; body: string[]; description: string }
 
@@ -42,24 +44,33 @@ const functionSigMap: Record<string, FunctionSignature[]> = {
 }
 
 export class SqlCompletionProvider implements vscode.CompletionItemProvider {
+    private extensionPath: string
     private dialectCache = new Map<string, Dialect>()
     private snippetItemsMap = new Map<string, vscode.CompletionItem[]>()
-    // No longer used
-    // private _snippetsLoaded: Promise<void>
     private keywordItemsCache = new Map<string, vscode.CompletionItem[]>()
     private functionItemsCache = new Map<string, vscode.CompletionItem[]>()
     private schemaCompletionProvider: SchemaCompletionProvider
     private configChangeDisposable: vscode.Disposable
-    private schemaDebounceTimer: ReturnType<typeof setTimeout> | null = null
-    private readonly SCHEMA_DEBOUNCE_MS = 200
+    private snippetsLoaded = false
+    private snippetsLoading: Promise<void> | null = null
 
     constructor(extensionPath: string) {
-        this.loadSnippets(extensionPath)
+        this.extensionPath = extensionPath
         this.schemaCompletionProvider = new SchemaCompletionProvider()
         this.configChangeDisposable = getConfigManager().onConfigChange(() => {
             this.keywordItemsCache.clear()
             this.functionItemsCache.clear()
         })
+    }
+
+    private async ensureSnippetsLoaded(): Promise<void> {
+        if (this.snippetsLoaded) return
+        if (!this.snippetsLoading) {
+            this.snippetsLoading = this.loadSnippets(this.extensionPath).then(() => {
+                this.snippetsLoaded = true
+            })
+        }
+        await this.snippetsLoading
     }
 
     private async loadSnippets(extensionPath: string): Promise<void> {
@@ -120,41 +131,6 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
         } catch (e) { handleError(e, context, ErrorCategory.SUB_ITEM) }
     }
 
-    private provideSchemaItems(
-        doc: vscode.TextDocument,
-        pos: vscode.Position,
-        token: vscode.CancellationToken,
-    ): Promise<vscode.CompletionItem[]> {
-        return new Promise<vscode.CompletionItem[]>((resolve) => {
-            if (this.schemaDebounceTimer) {
-                clearTimeout(this.schemaDebounceTimer)
-            }
-            let settled = false
-            const finish = (items: vscode.CompletionItem[]): void => {
-                if (settled) return
-                settled = true
-                resolve(items)
-            }
-            const disposable = token.onCancellationRequested(() => {
-                if (this.schemaDebounceTimer) {
-                    clearTimeout(this.schemaDebounceTimer)
-                    this.schemaDebounceTimer = null
-                }
-                finish([])
-            })
-            this.schemaDebounceTimer = setTimeout(async () => {
-                this.schemaDebounceTimer = null
-                disposable.dispose()
-                try {
-                    const items = await this.schemaCompletionProvider.provideCompletionItems(doc, pos, token)
-                    finish(items)
-                } catch {
-                    finish([])
-                }
-            }, this.SCHEMA_DEBOUNCE_MS)
-        })
-    }
-
     async provideCompletionItems(
         doc: vscode.TextDocument,
         pos: vscode.Position,
@@ -162,6 +138,7 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
     ): Promise<vscode.CompletionItem[] | null | undefined> {
         return getPerformanceMonitor().measureAsync('SqlCompletionProvider.provideCompletionItems', async () => {
             try {
+                await this.ensureSnippetsLoaded()
                 const cfgMgr = getConfigManager()
                 if (!cfgMgr.get('enableCompletion', true)) return []
                 if (token.isCancellationRequested) return []
@@ -177,10 +154,13 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
                 const { dName, dialect } = this.getDialect(doc.languageId)
                 const items: vscode.CompletionItem[] = []
 
+                const sqlDialect = toSqlDialect(doc.languageId) as SqlDialect
+                const parseResult = getDocumentAstCache().getOrParse(doc, sqlDialect)
+
                 if (cfg.schema && getConnectionManager().getActiveConnection()) {
                     try {
-                        const schemaItems = await this.provideSchemaItems(doc, pos, token)
-                        items.push(...schemaItems)
+                        const schemaItems = await this.schemaCompletionProvider.provideCompletionItems(doc, pos, token, parseResult)
+                        if (schemaItems) items.push(...schemaItems)
                     } catch (e) { handleError(e, 'schema completion', ErrorCategory.SUB_ITEM) }
                 }
                 if (token.isCancellationRequested) return []
@@ -197,6 +177,8 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
                     }
                     return kwItems || []
                 }, 'keyword completion')
+                if (token.isCancellationRequested) return []
+
                 this.tryCollect(items, () => {
                     if (!cfg.functions) return []
                     let fnItems = this.functionItemsCache.get(dName)
@@ -209,21 +191,30 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
                     }
                     return fnItems || []
                 }, 'function completion')
+                if (token.isCancellationRequested) return []
+
                 this.tryCollect(items, () => {
                     if (!cfg.snippets) return []
                     const snippets = this.snippetItemsMap.get(dName)
                     return snippets || []
                 }, 'snippet completion')
+                if (token.isCancellationRequested) return []
+
                 this.tryCollect(items, () => {
                     if (!cfg.cteNames || !doc.getText().trim()) return []
-                    return getCTEItems(doc, pos)
+                    if (parseResult.success && parseResult.ast) {
+                        return getCTEItemsFromAst(parseResult.ast)
+                    }
+                    return []
                 }, 'CTE completion')
                 if (token.isCancellationRequested) return []
+
                 this.tryCollect(items, () => {
                     if (!cfg.identifiers || !doc.getText().trim()) return []
                     return getIdentifierItems(doc, pos, dialect.tokenizer)
                 }, 'identifier completion')
                 if (token.isCancellationRequested) return []
+
                 this.tryCollect(items, () => {
                     if (!cfg.commentSnippets) return []
                     return getCommentCompletionItems(doc, pos)

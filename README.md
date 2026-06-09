@@ -11,7 +11,7 @@
 | | |
 |---|---|
 | **发布者** | bryce-qin |
-| **版本** | 2.2.0 |
+| **版本** | 2.9.0 |
 | **许可证** | MIT |
 | **仓库** | [GitHub](https://github.com/BryceQin/SQL-All-in-One) |
 | **VSCode 引擎** | ^1.85.0 |
@@ -53,11 +53,11 @@
 - 自动重试，指数退避（最多 3 次）
 - 活动连接管理（单活动连接模式）
 - SecretStorage 密码安全存储
-- 连接导入/导出（支持密码保护）
+- 连接导入/导出（支持密码保护，导出密码时需确认）
 
 #### 2. 查询执行与结果
 
-- 执行 SQL（`Ctrl+R` / `Cmd+R`）和执行选中 SQL（`Ctrl+Shift+R` / `Cmd+Shift+R`）
+- 执行 SQL（`Ctrl+Shift+E` / `Cmd+Shift+E`）和执行选中 SQL（`Ctrl+Shift+R` / `Cmd+Shift+R`）
 - 查询超时控制（可配置）
 - 查询取消支持（CancellationToken + KILL QUERY）
 - 最大行数限制
@@ -618,7 +618,7 @@ MIT License
 | | |
 |---|---|
 | **Publisher** | bryce-qin |
-| **Version** | 2.1.2 |
+| **Version** | 2.9.0 |
 | **License** | MIT |
 | **Repository** | [GitHub](https://github.com/BryceQin/SQL-All-in-One) |
 | **VSCode Engine** | ^1.85.0 |
@@ -1066,7 +1066,7 @@ Shared AstNavigator navigation engine.
 | Replace Parameter | `Ctrl+Alt+P` | `Cmd+Alt+P` |
 | Toggle Comment | `Ctrl+/` | `Cmd+/` |
 | Advanced Comment | `Ctrl+Shift+/` | `Cmd+Shift+/` |
-| Execute SQL | `Ctrl+R` | `Cmd+R` |
+| Execute SQL | `Ctrl+Shift+E` | `Cmd+Shift+E` |
 | Execute Selected SQL | `Ctrl+Shift+R` | `Cmd+Shift+R` |
 | Format Document | `Shift+Alt+F` | `Shift+Option+F` |
 

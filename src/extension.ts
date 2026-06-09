@@ -9,14 +9,14 @@ import { initI18n } from './i18n';
 import { getConfigManager, createConfigManager } from './core/configManager';
 import { getDocumentAstCache, createDocumentAstCache } from './parser/DocumentAstCache';
 import { getErrorHandler, createErrorHandler, ErrorLevel, ErrorCategory } from './core/errorHandler';
-import { getPerformanceMonitor, createPerformanceMonitor } from './core/performanceMonitor';
+import { createPerformanceMonitor } from './core/performanceMonitor';
 import { getContainer, Tokens } from './core/diContainer';
 import { createParserEngine } from './parser/SqlParserEngine';
 import { createRuleRegistry } from './linter/RuleRegistry';
 import { SqlCodeActionProvider } from './providers/SqlCodeActionProvider';
 import { SqlDiagnosticsProvider } from './providers/SqlDiagnosticsProvider';
 import { StatusBarProvider } from './providers/StatusBarProvider';
-import { SqlParameterHighlighter, SqlParameterReplaceCommand } from './providers/SqlParameterHightlighter';
+import { SqlParameterHighlighter, SqlParameterReplaceCommand } from './providers/SqlParameterHighlighter';
 import { SqlCompletionProvider } from './completion';
 import { SqlFoldingRangeProvider } from './providers/SqlFoldingRangeProvider';
 import { SqlOutlineProvider } from './providers/SqlOutlineProvider';
@@ -34,22 +34,6 @@ import { QueryExecutor } from './database/query/QueryExecutor';
 import { SafeQueryGuard } from './database/query/SafeQueryGuard';
 import { QueryHistory } from './database/history/QueryHistory';
 import { SqlStatementDetector } from './database/query/SqlStatementDetector';
-
-interface ExtensionModule {
-  name: string;
-  register: (context: vscode.ExtensionContext) => void | Promise<void>;
-}
-
-async function safeRegisterAsync(
-  label: string,
-  fn: () => void | Promise<void>
-): Promise<void> {
-  try {
-    await fn();
-  } catch (e) {
-    getErrorHandler().handle(e, label, ErrorLevel.ERROR, ErrorCategory.CRITICAL);
-  }
-}
 
 function registerCommands(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
@@ -75,98 +59,177 @@ function registerFormattingProviders(context: vscode.ExtensionContext): void {
 
 function registerDiagnostics(context: vscode.ExtensionContext): void {
   const container = getContainer();
-  const dp = container.get<SqlDiagnosticsProvider>(Tokens.SqlDiagnosticsProvider);
-  if (!dp) return;
+  let dp: SqlDiagnosticsProvider | undefined;
+  const getDp = () => {
+    if (!dp) {
+      dp = container.get<SqlDiagnosticsProvider>(Tokens.SqlDiagnosticsProvider);
+      if (dp) context.subscriptions.push(dp);
+    }
+    return dp;
+  };
 
   context.subscriptions.push(
     vscode.workspace.onDidChangeTextDocument((event) => {
       if (isSqlDocument(event.document)) {
-        dp.debouncedProvideDiagnostics(event.document);
+        getDp()?.debouncedProvideDiagnostics(event.document);
       }
     }),
     vscode.workspace.onDidOpenTextDocument((document) => {
-      if (isSqlDocument(document)) dp.provideDiagnostics(document);
+      if (isSqlDocument(document)) getDp()?.provideDiagnostics(document);
     }),
     vscode.workspace.onDidSaveTextDocument((document) => {
-      if (isSqlDocument(document)) dp.provideDiagnostics(document);
+      if (isSqlDocument(document)) getDp()?.provideDiagnostics(document);
     }),
-    dp,
   );
 
-  vscode.workspace.textDocuments.forEach((document) => {
-    if (isSqlDocument(document)) dp.provideDiagnostics(document);
-  });
+  const openSqlDocs = vscode.workspace.textDocuments.filter(isSqlDocument);
+  if (openSqlDocs.length > 0) {
+    queueMicrotask(() => openSqlDocs.forEach(doc => getDp()?.provideDiagnostics(doc)));
+  }
 }
 
 function registerProviders(context: vscode.ExtensionContext): void {
   const container = getContainer();
   const sqlLanguages = getSqlLanguageIds();
 
-  const codeActionProvider = container.get<SqlCodeActionProvider>(Tokens.CodeActionProvider);
-  const foldingRangeProvider = container.get<SqlFoldingRangeProvider>(Tokens.FoldingRangeProvider);
-  const outlineProvider = container.get<SqlOutlineProvider>(Tokens.OutlineProvider);
-  const hoverProvider = container.get<SqlHoverProvider>(Tokens.HoverProvider);
-  const definitionProvider = container.get<SqlDefinitionProvider>(Tokens.DefinitionProvider);
-  const referenceProvider = container.get<SqlReferenceProvider>(Tokens.ReferenceProvider);
-  const renameProvider = container.get<SqlRenameProvider>(Tokens.RenameProvider);
+  let codeActionProvider: SqlCodeActionProvider | undefined;
+  let foldingRangeProvider: SqlFoldingRangeProvider | undefined;
+  let outlineProvider: SqlOutlineProvider | undefined;
+  let hoverProvider: SqlHoverProvider | undefined;
+  let definitionProvider: SqlDefinitionProvider | undefined;
+  let referenceProvider: SqlReferenceProvider | undefined;
+  let renameProvider: SqlRenameProvider | undefined;
+
+  const lazyCodeAction = () => codeActionProvider ??= container.get<SqlCodeActionProvider>(Tokens.CodeActionProvider);
+  const lazyFoldingRange = () => foldingRangeProvider ??= container.get<SqlFoldingRangeProvider>(Tokens.FoldingRangeProvider);
+  const lazyOutline = () => outlineProvider ??= container.get<SqlOutlineProvider>(Tokens.OutlineProvider);
+  const lazyHover = () => hoverProvider ??= container.get<SqlHoverProvider>(Tokens.HoverProvider);
+  const lazyDefinition = () => definitionProvider ??= container.get<SqlDefinitionProvider>(Tokens.DefinitionProvider);
+  const lazyReference = () => referenceProvider ??= container.get<SqlReferenceProvider>(Tokens.ReferenceProvider);
+  const lazyRename = () => renameProvider ??= container.get<SqlRenameProvider>(Tokens.RenameProvider);
 
   for (const lang of sqlLanguages) {
     const selector = { language: lang };
 
     context.subscriptions.push(
-      vscode.languages.registerCodeActionsProvider(selector, codeActionProvider, {
+      vscode.languages.registerCodeActionsProvider(selector, {
+        provideCodeActions: (...args) => lazyCodeAction().provideCodeActions(...args),
+      }, {
         providedCodeActionKinds: SqlCodeActionProvider.providedCodeActionKinds,
       }),
     );
 
-    context.subscriptions.push(vscode.languages.registerFoldingRangeProvider(selector, foldingRangeProvider));
-    context.subscriptions.push(vscode.languages.registerDocumentSymbolProvider(selector, outlineProvider));
-    context.subscriptions.push(vscode.languages.registerHoverProvider(selector, hoverProvider));
+    context.subscriptions.push(
+      vscode.languages.registerFoldingRangeProvider(selector, {
+        provideFoldingRanges: (...args) => lazyFoldingRange().provideFoldingRanges(...args),
+      }),
+    );
 
-    if (definitionProvider) {
-      context.subscriptions.push(vscode.languages.registerDefinitionProvider(selector, definitionProvider));
-    }
+    context.subscriptions.push(
+      vscode.languages.registerDocumentSymbolProvider(selector, {
+        provideDocumentSymbols: (...args) => lazyOutline().provideDocumentSymbols(...args),
+      }),
+    );
 
-    if (referenceProvider) {
-      context.subscriptions.push(vscode.languages.registerReferenceProvider(selector, referenceProvider));
-    }
+    context.subscriptions.push(
+      vscode.languages.registerHoverProvider(selector, {
+        provideHover: (...args) => lazyHover().provideHover(...args),
+      }),
+    );
 
-    if (renameProvider) {
-      context.subscriptions.push(vscode.languages.registerRenameProvider(selector, renameProvider));
-    }
+    context.subscriptions.push(
+      vscode.languages.registerDefinitionProvider(selector, {
+        provideDefinition: (...args) => lazyDefinition().provideDefinition(...args),
+      }),
+    );
+
+    context.subscriptions.push(
+      vscode.languages.registerReferenceProvider(selector, {
+        provideReferences: (...args) => lazyReference().provideReferences(...args),
+      }),
+    );
+
+    context.subscriptions.push(
+      vscode.languages.registerRenameProvider(selector, {
+        provideRenameEdits: (...args) => lazyRename().provideRenameEdits(...args),
+        prepareRename: (...args) => lazyRename().prepareRename(...args),
+      }),
+    );
   }
 }
 
 function registerCompletion(context: vscode.ExtensionContext): void {
   const container = getContainer();
-  const completionProvider = container.get<SqlCompletionProvider>(Tokens.CompletionProvider);
-  if (!completionProvider) return;
-
   const sqlLanguages = getSqlLanguageIds();
   const triggerChars: string[] = ['.', ' ', '('];
 
+  let provider: SqlCompletionProvider | undefined;
+  const getProvider = () => {
+    if (!provider) {
+      provider = container.get<SqlCompletionProvider>(Tokens.CompletionProvider);
+      if (provider) context.subscriptions.push(provider);
+    }
+    return provider;
+  };
+
+  const lazyProvider: vscode.CompletionItemProvider = {
+    provideCompletionItems: (doc, pos, token, _ctx) =>
+      getProvider()?.provideCompletionItems(doc, pos, token),
+  };
+
   for (const lang of sqlLanguages) {
     context.subscriptions.push(
-      vscode.languages.registerCompletionItemProvider({ language: lang }, completionProvider, ...triggerChars),
+      vscode.languages.registerCompletionItemProvider({ language: lang }, lazyProvider, ...triggerChars),
     );
   }
-
-  context.subscriptions.push(completionProvider);
 }
 
 function registerParameterHighlighter(context: vscode.ExtensionContext): void {
   const container = getContainer();
-  const parameterHighlighter = container.get<SqlParameterHighlighter>(Tokens.ParameterHighlighter);
-  if (!parameterHighlighter) return;
+  let highlighter: SqlParameterHighlighter | undefined;
+  const getHighlighter = () => {
+    if (!highlighter) {
+      highlighter = container.get<SqlParameterHighlighter>(Tokens.ParameterHighlighter);
+      if (highlighter) context.subscriptions.push(highlighter);
+    }
+    return highlighter;
+  };
 
   context.subscriptions.push(SqlParameterReplaceCommand.register(context));
-  context.subscriptions.push(parameterHighlighter);
+  getHighlighter();
+}
+
+function registerAstNavigatorEvents(context: vscode.ExtensionContext): void {
+  const container = getContainer();
+  let navigator: AstNavigator | undefined;
+  const getNavigator = () => navigator ??= container.get<AstNavigator>(Tokens.AstNavigator);
+
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeTextDocument(e => {
+      if (isSqlDocument(e.document)) getNavigator()?.invalidate(e.document);
+    }),
+    vscode.workspace.onDidCloseTextDocument(doc => getNavigator()?.invalidate(doc)),
+  );
+}
+
+function registerStatusBar(context: vscode.ExtensionContext): void {
+  if (!vscode.workspace.textDocuments.some(isSqlDocument)) return;
+
+  const container = getContainer();
+  let statusBar: StatusBarProvider | undefined;
+  const getStatusBar = () => {
+    if (!statusBar) {
+      statusBar = container.get<StatusBarProvider>(Tokens.StatusBarProvider);
+      if (statusBar) context.subscriptions.push(statusBar);
+    }
+    return statusBar;
+  };
+  getStatusBar();
 }
 
 function registerServicesToContainer(extensionPath: string): void {
   const container = getContainer();
 
-  // Core services
   container.registerSingleton(Tokens.ConfigManager, createConfigManager);
   container.registerSingleton(Tokens.ParserEngine, createParserEngine);
   container.registerSingleton(Tokens.RuleRegistry, createRuleRegistry);
@@ -178,13 +241,11 @@ function registerServicesToContainer(extensionPath: string): void {
   container.registerSingleton(Tokens.SchemaProvider, createSchemaProvider);
   container.registerSingleton(Tokens.SchemaCache, createSchemaCache);
 
-  // Database services
   container.registerSingleton(Tokens.QueryExecutor, () => new QueryExecutor());
   container.registerSingleton(Tokens.SafeQueryGuard, () => new SafeQueryGuard());
   container.registerSingleton(Tokens.QueryHistory, () => new QueryHistory());
   container.registerSingleton(Tokens.SqlStatementDetector, () => new SqlStatementDetector());
 
-  // Providers
   container.registerSingleton(Tokens.SqlDiagnosticsProvider, () => new SqlDiagnosticsProvider());
   container.registerSingleton(Tokens.StatusBarProvider, () => new StatusBarProvider());
   container.registerSingleton(Tokens.ParameterHighlighter, () => new SqlParameterHighlighter());
@@ -208,75 +269,33 @@ function registerServicesToContainer(extensionPath: string): void {
   });
 }
 
-function createModules(): ExtensionModule[] {
-  return [
-    { name: 'i18n', register: () => initI18n() },
-    { name: 'commands', register: (ctx) => registerCommands(ctx) },
-    { name: 'formatting', register: (ctx) => registerFormattingProviders(ctx) },
-    { name: 'diagnostics', register: (ctx) => registerDiagnostics(ctx) },
-    { name: 'providers', register: (ctx) => registerProviders(ctx) },
-    { name: 'completion', register: (ctx) => registerCompletion(ctx) },
-    { name: 'parameterHighlighter', register: (ctx) => registerParameterHighlighter(ctx) },
-    { name: 'astNavigatorEvents', register: (ctx): void => {
-      const container = getContainer();
-      const navigator = container.get<AstNavigator>(Tokens.AstNavigator);
-      if (navigator) {
-        ctx.subscriptions.push(
-          vscode.workspace.onDidChangeTextDocument(e => {
-            if (isSqlDocument(e.document)) navigator.invalidate(e.document);
-          }),
-          vscode.workspace.onDidCloseTextDocument(doc => navigator.invalidate(doc)),
-        );
-      }
-    }},
-    { name: 'statusBar', register: (ctx): void => {
-      const container = getContainer();
-      if (vscode.workspace.textDocuments.some(isSqlDocument)) {
-        const statusBar = container.get<StatusBarProvider>(Tokens.StatusBarProvider);
-        if (statusBar) ctx.subscriptions.push(statusBar);
-      }
-    }},
-    { name: 'database', register: async (ctx): Promise<void> => {
-      const dbModule = new DatabaseModule(ctx);
-      await dbModule.initialize();
-      ctx.subscriptions.push({
-        dispose: async () => await dbModule.dispose(),
-      });
-    }},
-  ];
-}
-
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
     registerServicesToContainer(context.extensionPath);
 
-    await getPerformanceMonitor().measureAsync('Extension.activate', async () => {
-        console.log('SQL All in One: activating...');
+    try {
+        initI18n();
+        registerCommands(context);
+        registerFormattingProviders(context);
+        registerDiagnostics(context);
+        registerProviders(context);
+        registerCompletion(context);
+        registerParameterHighlighter(context);
+        registerAstNavigatorEvents(context);
+        registerStatusBar(context);
 
-        try {
-            const modules = createModules();
-            const asyncModules = modules.filter(m => m.register.constructor.name === 'AsyncFunction');
-            const syncModules = modules.filter(m => m.register.constructor.name !== 'AsyncFunction');
+        const dbModule = new DatabaseModule(context);
+        dbModule.initialize().catch(e => {
+            getErrorHandler().handle(e, 'Database initialization', ErrorLevel.ERROR, ErrorCategory.CRITICAL);
+        });
+        context.subscriptions.push({ dispose: async () => { await dbModule.dispose(); } });
 
-            for (const mod of syncModules) {
-                await safeRegisterAsync('register ' + mod.name, () => mod.register(context));
-            }
-
-            await Promise.all(
-                asyncModules.map(mod =>
-                    safeRegisterAsync('register ' + mod.name, () => mod.register(context))
-                )
-            );
-
-            context.subscriptions.push(getConfigManager());
-            context.subscriptions.push(getDocumentAstCache());
-
-            console.log('SQL All in One: activation complete');
-        } catch (e) {
-            getErrorHandler().handle(e, 'Extension activation', ErrorLevel.FATAL, ErrorCategory.CRITICAL);
-        }
-    });
+        context.subscriptions.push(getConfigManager());
+        context.subscriptions.push(getDocumentAstCache());
+    } catch (e) {
+        getErrorHandler().handle(e, 'Extension activation', ErrorLevel.FATAL, ErrorCategory.CRITICAL);
+    }
 }
 
-export function deactivate(): void {
-  getContainer().disposeAll();
+export function deactivate(): Thenable<void> {
+  return Promise.resolve(getContainer().disposeAll());
 }

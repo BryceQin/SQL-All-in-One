@@ -4,7 +4,7 @@ import { getConnectionManager } from '../database/connection/ConnectionManager'
 import { getConfigManager } from '../core/configManager'
 import { sqlDialects } from '../core/sqlDialects'
 import type { SqlDialect } from '../parser/dialectMapper'
-import { getParserEngine } from '../parser/SqlParserEngine'
+import { getDocumentAstCache } from '../parser/DocumentAstCache'
 import { findCursorContextFromAst } from './AstCompletionProvider'
 
 const clauseTypeMap: Record<string, ClauseType> = {
@@ -33,6 +33,7 @@ export class SchemaCompletionProvider {
         document: vscode.TextDocument,
         position: vscode.Position,
         _token: vscode.CancellationToken,
+        preParsedResult?: { success: boolean; ast: unknown },
     ): Promise<vscode.CompletionItem[]> {
         const cfgMgr = getConfigManager()
         if (!cfgMgr.get('enableCompletion', true)) return []
@@ -46,16 +47,15 @@ export class SchemaCompletionProvider {
         if (!adapter || !adapter.isConnected()) return []
 
         const dialectName = sqlDialects[document.languageId as keyof typeof sqlDialects] || 'mysql'
-        const sql = document.getText()
         const lineText = document.lineAt(position.line).text
         const textBeforeCursor = lineText.substring(0, position.character)
 
-        const parseResult = getParserEngine().tryAstify(sql, dialectName as SqlDialect)
+        const parseResult = preParsedResult ?? getDocumentAstCache().getOrParse(document, dialectName as SqlDialect)
 
         const clauseType = this.determineClauseTypeFromAst(parseResult, position, textBeforeCursor)
         const prefix = this.extractPrefix(textBeforeCursor)
         const aliasMap = parseResult.success && parseResult.ast
-            ? this.schemaProvider.parseAliasMapFromAst(parseResult.ast)
+            ? this.schemaProvider.parseAliasMapFromAst(parseResult.ast as import('node-sql-parser').AST[] | import('node-sql-parser').AST)
             : new Map<string, string>()
 
         const context: CompletionContext = {

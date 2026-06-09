@@ -8,6 +8,7 @@ export class MysqlAdapter implements IDatabaseAdapter {
     private transactionConnection: PoolConnection | null = null;
     private lastActivityTime = 0;
     private reapTimer: ReturnType<typeof setInterval> | null = null;
+    private activeQueryThreadIds = new Map<string, number>();
 
     constructor(config: ConnectionConfig) {
         this.config = config;
@@ -29,28 +30,7 @@ export class MysqlAdapter implements IDatabaseAdapter {
 
         this.config = config;
 
-        const poolOptions: PoolOptions = {
-            host: config.host,
-            port: config.port,
-            user: config.username,
-            password: config.password,
-            database: config.database,
-            connectionLimit: config.poolConfig?.maxConnections ?? 5,
-            waitForConnections: true,
-            queueLimit: 0,
-            connectTimeout: config.connectTimeout ?? 10000,
-            enableKeepAlive: config.poolConfig?.enableKeepAlive ?? true,
-            keepAliveInitialDelay: config.poolConfig?.keepAliveInterval ?? 30000,
-        };
-
-        if (config.ssl?.enabled) {
-            poolOptions.ssl = {
-                rejectUnauthorized: config.ssl.rejectUnauthorized,
-                ca: config.ssl.ca,
-                cert: config.ssl.cert,
-                key: config.ssl.key,
-            };
-        }
+        const poolOptions = this.createPoolOptions(config);
 
         const mysql = await import('mysql2/promise');
         this.pool = mysql.createPool(poolOptions);
@@ -101,24 +81,7 @@ export class MysqlAdapter implements IDatabaseAdapter {
 
         try {
             const mysql = await import('mysql2/promise');
-            const poolOptions: PoolOptions = {
-                host: config.host,
-                port: config.port,
-                user: config.username,
-                password: config.password,
-                database: config.database,
-                connectionLimit: 1,
-                connectTimeout: config.connectTimeout ?? 10000,
-            };
-
-            if (config.ssl?.enabled) {
-                poolOptions.ssl = {
-                    rejectUnauthorized: config.ssl.rejectUnauthorized,
-                    ca: config.ssl.ca,
-                    cert: config.ssl.cert,
-                    key: config.ssl.key,
-                };
-            }
+            const poolOptions = this.createPoolOptions(config, 1);
 
             tempPool = mysql.createPool(poolOptions);
             const conn = await tempPool.getConnection();
@@ -195,6 +158,7 @@ export class MysqlAdapter implements IDatabaseAdapter {
             if (!this.transactionConnection && this.pool) {
                 acquiredConn = await this.acquireConnectionWithTimeout(acquireTimeout);
                 queryConn = acquiredConn;
+                this.activeQueryThreadIds.set(queryId, (acquiredConn as unknown as { threadId: number }).threadId);
             }
 
             try {
@@ -243,6 +207,7 @@ export class MysqlAdapter implements IDatabaseAdapter {
                 if (acquiredConn) {
                     acquiredConn.release();
                 }
+                this.activeQueryThreadIds.delete(queryId);
             }
         } catch (error: unknown) {
             const executionTime = Date.now() - startTime;
@@ -315,14 +280,15 @@ export class MysqlAdapter implements IDatabaseAdapter {
             return;
         }
 
+        const threadId = this.activeQueryThreadIds.get(_queryId);
+        if (!threadId) {
+            return;
+        }
+
         try {
             const conn = await this.pool.getConnection();
             try {
-                const [rows] = await conn.query<RowDataPacket[]>('SELECT CONNECTION_ID() AS id');
-                const threadId = (rows[0] as Record<string, unknown>)?.id as number | undefined;
-                if (threadId) {
-                    await conn.query(`KILL QUERY ${threadId}`);
-                }
+                await conn.query(`KILL QUERY ${threadId}`);
             } finally {
                 conn.release();
             }
@@ -778,6 +744,33 @@ export class MysqlAdapter implements IDatabaseAdapter {
         ];
     }
 
+    private createPoolOptions(config: ConnectionConfig, connectionLimitOverride?: number): PoolOptions {
+        const poolOptions: PoolOptions = {
+            host: config.host,
+            port: config.port,
+            user: config.username,
+            password: config.password,
+            database: config.database,
+            connectionLimit: connectionLimitOverride ?? config.poolConfig?.maxConnections ?? 5,
+            waitForConnections: true,
+            queueLimit: 0,
+            connectTimeout: config.connectTimeout ?? 10000,
+            enableKeepAlive: config.poolConfig?.enableKeepAlive ?? true,
+            keepAliveInitialDelay: config.poolConfig?.keepAliveInterval ?? 30000,
+        };
+
+        if (config.ssl?.enabled) {
+            poolOptions.ssl = {
+                rejectUnauthorized: config.ssl.rejectUnauthorized ?? true,
+                ca: config.ssl.ca,
+                cert: config.ssl.cert,
+                key: config.ssl.key,
+            };
+        }
+
+        return poolOptions;
+    }
+
     private async acquireConnectionWithTimeout(timeout: number): Promise<PoolConnection> {
         return new Promise<PoolConnection>((resolve, reject) => {
             const timer = setTimeout(() => {
@@ -823,27 +816,7 @@ export class MysqlAdapter implements IDatabaseAdapter {
                     const config = this.config!;
                     await this.pool.end();
                     const mysql = await import('mysql2/promise');
-                    const poolOptions: PoolOptions = {
-                        host: config.host,
-                        port: config.port,
-                        user: config.username,
-                        password: config.password,
-                        database: config.database,
-                        connectionLimit: config.poolConfig?.maxConnections ?? 5,
-                        waitForConnections: true,
-                        queueLimit: 0,
-                        connectTimeout: config.connectTimeout ?? 10000,
-                        enableKeepAlive: config.poolConfig?.enableKeepAlive ?? true,
-                        keepAliveInitialDelay: config.poolConfig?.keepAliveInterval ?? 30000,
-                    };
-                    if (config.ssl?.enabled) {
-                        poolOptions.ssl = {
-                            rejectUnauthorized: config.ssl.rejectUnauthorized,
-                            ca: config.ssl.ca,
-                            cert: config.ssl.cert,
-                            key: config.ssl.key,
-                        };
-                    }
+                    const poolOptions = this.createPoolOptions(config);
                     this.pool = mysql.createPool(poolOptions);
                     this.lastActivityTime = Date.now();
                 } catch {

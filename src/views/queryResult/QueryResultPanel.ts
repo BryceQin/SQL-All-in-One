@@ -82,7 +82,6 @@ export class QueryResultPanel {
                 enableScripts: true,
                 localResourceRoots: [
                     vscode.Uri.joinPath(extensionUri, 'media'),
-                    vscode.Uri.joinPath(extensionUri, 'src', 'views', 'queryResult'),
                 ],
                 retainContextWhenHidden: true,
             }
@@ -266,18 +265,16 @@ export class QueryResultPanel {
         try {
             const htmlPath = path.join(
                 this._extensionUri.fsPath,
-                'src',
-                'views',
-                'queryResult',
-                'resultPanel.html'
+                'media',
+                'query-result.html'
             );
             let html = await fs.promises.readFile(htmlPath, 'utf-8');
 
             const cssUri = this._panel.webview.asWebviewUri(
-                vscode.Uri.joinPath(this._extensionUri, 'src', 'views', 'queryResult', 'resultPanel.css')
+                vscode.Uri.joinPath(this._extensionUri, 'media', 'query-result.css')
             );
             const jsUri = this._panel.webview.asWebviewUri(
-                vscode.Uri.joinPath(this._extensionUri, 'src', 'views', 'queryResult', 'resultPanel.js')
+                vscode.Uri.joinPath(this._extensionUri, 'media', 'query-result.js')
             );
 
             html = html.replace('{{CSS_URI}}', cssUri.toString());
@@ -307,7 +304,8 @@ export class QueryResultPanel {
             html = html.replace('{{CONFIG_INJECT}}', configScript);
 
             return html;
-        } catch {
+        } catch (error) {
+            console.error('Failed to load Query Result panel HTML:', error);
             return '<html><body><h2>Failed to load Query Result panel</h2><p>Please reinstall the extension.</p></body></html>';
         }
     }

@@ -63,7 +63,6 @@ export class DataTransferDialog {
                 enableScripts: true,
                 localResourceRoots: [
                     vscode.Uri.joinPath(extensionUri, 'media'),
-                    vscode.Uri.joinPath(extensionUri, 'src', 'views', 'dataTransfer'),
                 ],
                 retainContextWhenHidden: true,
             }
@@ -138,25 +137,24 @@ export class DataTransferDialog {
         try {
             const htmlPath = path.join(
                 this._extensionUri.fsPath,
-                'src',
-                'views',
-                'dataTransfer',
-                'transferDialog.html'
+                'media',
+                'data-transfer.html'
             );
             let html = await fs.promises.readFile(htmlPath, 'utf-8');
 
             const cssUri = this._panel.webview.asWebviewUri(
-                vscode.Uri.joinPath(this._extensionUri, 'src', 'views', 'dataTransfer', 'transferDialog.css')
+                vscode.Uri.joinPath(this._extensionUri, 'media', 'data-transfer.css')
             );
             const jsUri = this._panel.webview.asWebviewUri(
-                vscode.Uri.joinPath(this._extensionUri, 'src', 'views', 'dataTransfer', 'transferDialog.js')
+                vscode.Uri.joinPath(this._extensionUri, 'media', 'data-transfer.js')
             );
 
             html = html.replace('{{CSS_URI}}', cssUri.toString());
             html = html.replace('{{JS_URI}}', jsUri.toString());
 
             return html;
-        } catch {
+        } catch (error) {
+            console.error('Failed to load Data Transfer dialog HTML:', error);
             return '<html><body><h2>Failed to load Data Transfer dialog</h2><p>Please reinstall the extension.</p></body></html>';
         }
     }

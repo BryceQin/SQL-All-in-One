@@ -2,7 +2,7 @@
     "name": "hive-formatter",
     "displayName": "SQL All in One",
     "description": "SQL All in One - 强大的 SQL 格式化、智能补全、语法检查、DDL 转换 VSCode 插件，支持 Hive、MySQL、SparkSQL、FlinkSQL、PostgreSQL、BigQuery、SQLite 等多种 SQL 方言",
-    "version": "2.4.1",
+    "version": "2.9.0",
     "publisher": "bryce-qin",
     "contributors": [
         "TalDu"
@@ -42,7 +42,6 @@
         "intellisense"
     ],
     "activationEvents": [
-        "onStartupFinished",
         "onLanguage:sql",
         "onLanguage:hive",
         "onLanguage:mysql",
@@ -79,7 +78,8 @@
         "viewsWelcome": [
             {
                 "view": "sql-all-in-one.databaseExplorer",
-                "contents": "No database connections yet.\n[Add Connection](command:sql-all-in-one.addConnection)"
+                "contents": "No database connections yet.\n[Add Connection](command:sql-all-in-one.addConnection)",
+                "when": "sql-all-in-one.connectionCount == 0"
             }
         ],
         "languages": [
@@ -222,6 +222,10 @@
             {
                 "language": "sqlite",
                 "path": "./snippets/common.json"
+            },
+            {
+                "language": "sqlite",
+                "path": "./snippets/sqlite.json"
             }
         ],
         "commands": [
@@ -375,6 +379,14 @@
             {
                 "command": "sql-all-in-one.showErrorLog",
                 "title": "Show Error Log (SQL All in One)"
+            },
+            {
+                "command": "sql-all-in-one.exportConnections",
+                "title": "Export Connections"
+            },
+            {
+                "command": "sql-all-in-one.importConnections",
+                "title": "Import Connections"
             }
         ],
         "keybindings": [
@@ -398,8 +410,8 @@
             },
             {
                 "command": "sql-all-in-one.executeQuery",
-                "key": "ctrl+r",
-                "mac": "cmd+r",
+                "key": "ctrl+shift+e",
+                "mac": "cmd+shift+e",
                 "when": "editorTextFocus && editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite/"
             },
             {
@@ -1721,6 +1733,14 @@
                     "command": "sql-all-in-one.refreshSchema",
                     "when": "view == sql-all-in-one.databaseExplorer",
                     "group": "navigation@2"
+                },
+                {
+                    "command": "sql-all-in-one.exportConnections",
+                    "when": "view == sql-all-in-one.databaseExplorer"
+                },
+                {
+                    "command": "sql-all-in-one.importConnections",
+                    "when": "view == sql-all-in-one.databaseExplorer"
                 }
             ],
             "view/item/context": [

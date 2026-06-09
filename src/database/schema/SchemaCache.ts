@@ -35,6 +35,7 @@ export class SchemaCache {
             table: cfgMgr.get<number>('schemaCache.tableTtl', 300),
             column: cfgMgr.get<number>('schemaCache.columnTtl', 120),
             function: cfgMgr.get<number>('schemaCache.functionTtl', 600),
+            procedure: cfgMgr.get<number>('schemaCache.procedureTtl', 600),
         };
     }
 
@@ -131,7 +132,7 @@ export class SchemaCache {
         return this.cachedFetch(
             this.procedureCache,
             this.makeKey(connectionId, database),
-            'function',
+            'procedure',
             async () => {
                 const adapter = getConnectionManager().getAdapter(connectionId);
                 return adapter ? await adapter.listProcedures(database) : [];

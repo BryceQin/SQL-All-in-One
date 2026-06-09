@@ -482,6 +482,9 @@
     "safety.continue": "Continue",
     "safety.dropDetected": "DROP operation detected",
     "safety.truncateDetected": "TRUNCATE operation detected",
+    "safety.grantStatement": "GRANT operation detected",
+    "safety.revokeStatement": "REVOKE operation detected",
+    "safety.alterStatement": "ALTER operation detected",
 
     "configEditor.cg.querySettings": "Database Query",
     "configEditor.cg.safetyGuard": "Safety Guard",

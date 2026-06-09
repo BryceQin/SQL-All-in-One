@@ -37,6 +37,8 @@ export class ErrorHandler {
     private readonly maxHistorySize = 100;
     private showNotifications = true;
     private outputChannel: vscode.OutputChannel | undefined;
+    private lastNotificationTime = new Map<string, number>();
+    private readonly NOTIFICATION_THROTTLE_MS = 5000;
 
     constructor() {
         this.errorHistory = new Array<FormatterError>(this.maxHistorySize);
@@ -235,6 +237,20 @@ export class ErrorHandler {
             return;
         }
 
+        const key = error.context + error.message;
+        const now = Date.now();
+        const lastTime = this.lastNotificationTime.get(key);
+        if (lastTime !== undefined && now - lastTime < this.NOTIFICATION_THROTTLE_MS) {
+            return;
+        }
+        this.lastNotificationTime.set(key, now);
+        if (this.lastNotificationTime.size > 200) {
+            const oldestKey = this.lastNotificationTime.keys().next().value;
+            if (oldestKey !== undefined) {
+                this.lastNotificationTime.delete(oldestKey);
+            }
+        }
+
         switch (error.level) {
             case ErrorLevel.FATAL:
                 vscode.window.showErrorMessage(
@@ -274,6 +290,7 @@ export class ErrorHandler {
         this.errorHistory = new Array<FormatterError>(this.maxHistorySize);
         this.historyStart = 0;
         this.historyCount = 0;
+        this.lastNotificationTime.clear();
     }
 }
 

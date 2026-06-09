@@ -1045,6 +1045,14 @@ function changeLanguage(lang) {
                 case 'editConnectionDetail':
                     handleEditConnectionDetail(message);
                     break;
+                case 'navigateTo':
+                    if (message.tab) {
+                        switchTab(message.tab);
+                    }
+                    if (message.autoAddConnection) {
+                        setTimeout(function() { addConnection(); }, 100);
+                    }
+                    break;
             }
         });
 

@@ -49,14 +49,6 @@ export class QueryExecutor {
         });
 
         try {
-            if (mergedOptions.database) {
-                try {
-                    await adapter.execute(`USE ${adapter.quoteIdentifier(mergedOptions.database)}`);
-                } catch (e) {
-                    console.warn(`Failed to switch to database ${mergedOptions.database}:`, e);
-                }
-            }
-
             const result = await this.raceExecution(
                 adapter,
                 sql,

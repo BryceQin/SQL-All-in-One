@@ -6,8 +6,8 @@ import { getConfigManager } from '../core/configManager'
 export class StatusBarProvider {
     private statusBarItem: vscode.StatusBarItem
     private disposables: vscode.Disposable[] = []
-    private static tempItem: vscode.StatusBarItem | undefined
-    private static tempTimeout: ReturnType<typeof setTimeout> | undefined
+    private tempItem: vscode.StatusBarItem | undefined
+    private tempTimeout: ReturnType<typeof setTimeout> | undefined
 
     constructor() {
         this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100)
@@ -50,27 +50,27 @@ export class StatusBarProvider {
         }
     }
 
-    public static showTemporaryMessage(message: string): void {
-        if (StatusBarProvider.tempItem) {
-            StatusBarProvider.tempItem.dispose()
+    public showTemporaryMessage(message: string): void {
+        if (this.tempItem) {
+            this.tempItem.dispose()
         }
-        if (StatusBarProvider.tempTimeout) {
-            clearTimeout(StatusBarProvider.tempTimeout)
+        if (this.tempTimeout) {
+            clearTimeout(this.tempTimeout)
         }
-        StatusBarProvider.tempItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 99)
-        StatusBarProvider.tempItem.text = `$(check) ${message}`
-        StatusBarProvider.tempItem.show()
-        StatusBarProvider.tempTimeout = setTimeout(() => {
-            if (StatusBarProvider.tempItem) {
-                StatusBarProvider.tempItem.dispose()
-                StatusBarProvider.tempItem = undefined
+        this.tempItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 99)
+        this.tempItem.text = `$(check) ${message}`
+        this.tempItem.show()
+        this.tempTimeout = setTimeout(() => {
+            if (this.tempItem) {
+                this.tempItem.dispose()
+                this.tempItem = undefined
             }
         }, 2000)
     }
 
     public dispose(): void {
-        if (StatusBarProvider.tempTimeout) clearTimeout(StatusBarProvider.tempTimeout)
-        if (StatusBarProvider.tempItem) StatusBarProvider.tempItem.dispose()
+        if (this.tempTimeout) clearTimeout(this.tempTimeout)
+        if (this.tempItem) this.tempItem.dispose()
         this.statusBarItem.dispose()
         this.disposables.forEach(d => { d.dispose(); })
     }

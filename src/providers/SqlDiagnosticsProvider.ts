@@ -28,8 +28,13 @@ export class SqlDiagnosticsProvider {
             const configManager = getConfigManager()
             if (configManager.checkLinterConfigChanged()) {
                 this.linter.resetConfig()
+                const visibleUris = new Set(
+                    vscode.window.visibleTextEditors
+                        .filter(ed => isSqlDocument(ed.document))
+                        .map(ed => ed.document.uri.toString())
+                )
                 vscode.workspace.textDocuments.forEach((doc) => {
-                    if (isSqlDocument(doc)) {
+                    if (isSqlDocument(doc) && visibleUris.has(doc.uri.toString())) {
                         this.provideDiagnostics(doc)
                     }
                 })
@@ -55,8 +60,8 @@ export class SqlDiagnosticsProvider {
         }, this.DEBOUNCE_MS)
     }
 
-    public provideDiagnostics(document: vscode.TextDocument, token?: vscode.CancellationToken): void {
-        getPerformanceMonitor().measure('SqlDiagnosticsProvider.provideDiagnostics', () => {
+    public async provideDiagnostics(document: vscode.TextDocument, token?: vscode.CancellationToken): Promise<void> {
+        await getPerformanceMonitor().measureAsync('SqlDiagnosticsProvider.provideDiagnostics', async () => {
             const cfg = getConfigManager().getSectionKeys('', ['enableLinter', 'showErrorLevel', 'showWarningLevel', 'showInfoLevel'], {
                 enableLinter: true,
                 showErrorLevel: true,
@@ -87,6 +92,7 @@ export class SqlDiagnosticsProvider {
                 }
 
                 if (cfg.enableLinter) {
+                    await Promise.resolve()
                     const lintDiagnostics = this.linter.lint(text, document, astList)
                     const filteredLintDiagnostics = this.filterBySeverity(lintDiagnostics, cfg)
                     diagnostics.push(...filteredLintDiagnostics)
