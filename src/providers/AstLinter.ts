@@ -3,11 +3,13 @@ import { walkAst, isAstNode } from '../parser/AstVisitor'
 import { resolveAstList } from '../parser/astUtils'
 import type { AstNode } from '../parser/astTypes'
 import type { SqlDialect } from '../parser/dialectMapper'
-import { getRuleRegistry } from '../linter/RuleRegistry'
+import { getRuleRegistry, type RuleRegistry } from '../linter/RuleRegistry'
 import type { RuleContext } from '../linter/rules/LintRule'
 
 export class AstLinter {
-    private registry = getRuleRegistry()
+    private get registry(): RuleRegistry {
+        return getRuleRegistry();
+    }
 
     lint(sql: string, dialect: SqlDialect, document?: vscode.TextDocument, preParsedAst?: unknown[]): vscode.Diagnostic[] {
         const diagnostics: vscode.Diagnostic[] = []

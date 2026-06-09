@@ -60,10 +60,13 @@ export class LazyAsync<T> {
     }
 
     this.promise = this.factory();
-    this.instance = await this.promise;
-    this.initialized = true;
-    this.promise = null;
-    return this.instance;
+    try {
+      this.instance = await this.promise;
+      this.initialized = true;
+      return this.instance;
+    } finally {
+      this.promise = null;
+    }
   }
 
   get isInitialized(): boolean {

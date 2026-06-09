@@ -18,9 +18,9 @@ const RESERVED_WORDS = new Set([
 export class ReservedWordIdentifierRule extends BaseRule {
     readonly id = 'reserved_word_identifier'
     readonly applicableTypes = ['select']
-    readonly name = 'Reserved Word Identifier'
-    readonly description = 'enhanced.reservedWordIdentifier'
-    readonly category = 'best-practices'
+    readonly name = 'linter.reservedWordIdentifier.name'
+    readonly description = 'linter.reservedWordIdentifier.description'
+    readonly category = 'code-style'
     readonly defaultSeverity = vscode.DiagnosticSeverity.Warning
     readonly defaultEnabled = true
 

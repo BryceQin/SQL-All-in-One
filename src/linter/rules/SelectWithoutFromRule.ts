@@ -13,9 +13,9 @@ const NO_FROM_FUNCTIONS = new Set([
 export class SelectWithoutFromRule extends BaseRule {
     readonly id = 'select_without_from'
     readonly applicableTypes = ['select']
-    readonly name = 'SELECT Without FROM'
-    readonly description = 'enhanced.selectWithoutFrom'
-    readonly category = 'error-check'
+    readonly name = 'linter.selectWithoutFrom.name'
+    readonly description = 'linter.selectWithoutFrom.description'
+    readonly category = 'best-practices'
     readonly defaultSeverity = vscode.DiagnosticSeverity.Warning
     readonly defaultEnabled = true
 

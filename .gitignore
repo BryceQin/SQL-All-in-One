@@ -7,7 +7,6 @@ coverage
 src/parser/grammar.ts
 hive-formatter-*.vsix
 vsc-extension-quickstart.md
-docs/
 
 .vscode-test/**
 

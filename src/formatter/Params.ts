@@ -39,7 +39,7 @@ export default class Params {
     /**
      * 修改位置参数当前索引.
      */
-    public setPositionalParameterIndex(i: number) {
+    public setPositionalParameterIndex(i: number): void {
         this.index = i;
     }
 }

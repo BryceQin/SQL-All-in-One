@@ -9,7 +9,7 @@ import { getConfigManager } from '../../core/configManager'
 export class MissingQueryCommentRule extends BaseRule {
     readonly id = 'missing_query_comment'
     readonly applicableTypes = ['select']
-    readonly name = 'Missing Query Comment'
+    readonly name = 'linter.complexQueryComment.name'
     readonly description = 'linter.complexQueryComment.description'
     readonly category = 'best-practices'
     readonly defaultSeverity = vscode.DiagnosticSeverity.Warning
@@ -24,9 +24,10 @@ export class MissingQueryCommentRule extends BaseRule {
         }
 
         const cfgMgr = getConfigManager()
-        const thresholdLines = cfgMgr.get<number>('lint.missing_query_comment_threshold_line_count', 20)
-        const thresholdJoins = cfgMgr.get<number>('lint.missing_query_comment_threshold_join_count', 3)
-        const thresholdSubqueries = cfgMgr.get<number>('lint.missing_query_comment_threshold_subquery_count', 2)
+        const ruleConfig = cfgMgr.get<{ enabled?: boolean; severity?: string; thresholdLineCount?: number; thresholdJoinCount?: number; thresholdSubqueryCount?: number }>('lint.missing_query_comment', { enabled: true, severity: 'warning', thresholdLineCount: 20, thresholdJoinCount: 3, thresholdSubqueryCount: 2 })
+        const thresholdLines = ruleConfig.thresholdLineCount ?? 20
+        const thresholdJoins = ruleConfig.thresholdJoinCount ?? 3
+        const thresholdSubqueries = ruleConfig.thresholdSubqueryCount ?? 2
 
         const loc = getNodeLocation(node)
         if (!loc) {

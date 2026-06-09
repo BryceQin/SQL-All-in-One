@@ -1,8 +1,8 @@
 {
-    "name": "sql-all-in-one",
+    "name": "hive-formatter",
     "displayName": "SQL All in One",
     "description": "SQL All in One - 强大的 SQL 格式化、智能补全、语法检查、DDL 转换 VSCode 插件，支持 Hive、MySQL、SparkSQL、FlinkSQL、PostgreSQL、BigQuery、SQLite 等多种 SQL 方言",
-    "version": "1.10.0",
+    "version": "2.9.0",
     "publisher": "bryce-qin",
     "contributors": [
         "TalDu"
@@ -22,7 +22,8 @@
     "categories": [
         "Formatters",
         "Snippets",
-        "Other"
+        "Other",
+        "Databases"
     ],
     "keywords": [
         "sql",
@@ -41,7 +42,6 @@
         "intellisense"
     ],
     "activationEvents": [
-        "onStartupFinished",
         "onLanguage:sql",
         "onLanguage:hive",
         "onLanguage:mysql",
@@ -52,8 +52,36 @@
         "onLanguage:sqlite"
     ],
     "main": "./out/extension.js",
-    "browser": "./out/extension.js",
+    "extensionKind": [
+        "workspace"
+    ],
     "contributes": {
+        "viewsContainers": {
+            "activitybar": [
+                {
+                    "id": "sql-all-in-one",
+                    "title": "SQL All in One",
+                    "icon": "resources/database-icon.svg"
+                }
+            ]
+        },
+        "views": {
+            "sql-all-in-one": [
+                {
+                    "id": "sql-all-in-one.databaseExplorer",
+                    "name": "Database Explorer",
+                    "icon": "resources/database-icon.svg",
+                    "when": "true"
+                }
+            ]
+        },
+        "viewsWelcome": [
+            {
+                "view": "sql-all-in-one.databaseExplorer",
+                "contents": "No database connections yet.\n[Add Connection](command:sql-all-in-one.addConnection)",
+                "when": "sql-all-in-one.connectionCount == 0"
+            }
+        ],
         "languages": [
             {
                 "id": "sql",
@@ -194,6 +222,10 @@
             {
                 "language": "sqlite",
                 "path": "./snippets/common.json"
+            },
+            {
+                "language": "sqlite",
+                "path": "./snippets/sqlite.json"
             }
         ],
         "commands": [
@@ -229,13 +261,139 @@
             {
                 "command": "sql-all-in-one.toggleAdvancedComment",
                 "title": "切换高级注释 (SQL All in One)"
+            },
+            {
+                "command": "sql-all-in-one.addConnection",
+                "title": "Add Database Connection",
+                "icon": "$(add)"
+            },
+            {
+                "command": "sql-all-in-one.editConnection",
+                "title": "Edit Connection"
+            },
+            {
+                "command": "sql-all-in-one.removeConnection",
+                "title": "Remove Connection"
+            },
+            {
+                "command": "sql-all-in-one.connect",
+                "title": "Connect to Database"
+            },
+            {
+                "command": "sql-all-in-one.disconnect",
+                "title": "Disconnect from Database"
+            },
+            {
+                "command": "sql-all-in-one.testConnection",
+                "title": "Test Connection"
+            },
+            {
+                "command": "sql-all-in-one.refreshSchema",
+                "title": "Refresh Schema",
+                "icon": "$(refresh)"
+            },
+            {
+                "command": "sql-all-in-one.viewTableData",
+                "title": "View Data"
+            },
+            {
+                "command": "sql-all-in-one.viewTableDDL",
+                "title": "View DDL"
+            },
+            {
+                "command": "sql-all-in-one.newQuery",
+                "title": "New Query"
+            },
+            {
+                "command": "sql-all-in-one.copyColumnName",
+                "title": "Copy Column Name"
+            },
+            {
+                "command": "sql-all-in-one.addToFavorites",
+                "title": "Add to Favorites"
+            },
+            {
+                "command": "sql-all-in-one.removeFromFavorites",
+                "title": "Remove from Favorites"
+            },
+            {
+                "command": "sql-all-in-one.revealInExplorer",
+                "title": "Reveal in Explorer"
+            },
+            {
+                "command": "sql-all-in-one.setDefaultDatabase",
+                "title": "Set as Default Database"
+            },
+            {
+                "command": "sql-all-in-one.executeQuery",
+                "title": "Execute SQL"
+            },
+            {
+                "command": "sql-all-in-one.executeSelection",
+                "title": "Execute Selected SQL"
+            },
+            {
+                "command": "sql-all-in-one.cancelQuery",
+                "title": "Cancel Running Query"
+            },
+            {
+                "command": "sql-all-in-one.showQueryHistory",
+                "title": "Show Query History"
+            },
+            {
+                "command": "sql-all-in-one.clearQueryHistory",
+                "title": "Clear Query History"
+            },
+            {
+                "command": "sql-all-in-one.exportCsv",
+                "title": "Export Result to CSV"
+            },
+            {
+                "command": "sql-all-in-one.exportJson",
+                "title": "Export Result to JSON"
+            },
+            {
+                "command": "sql-all-in-one.exportInsert",
+                "title": "Export Result to SQL INSERT"
+            },
+            {
+                "command": "sql-all-in-one.exportDdl",
+                "title": "Export Table DDL"
+            },
+            {
+                "command": "sql-all-in-one.designTable",
+                "title": "Design Table"
+            },
+            {
+                "command": "sql-all-in-one.editTable",
+                "title": "Edit Table Design"
+            },
+            {
+                "command": "sql-all-in-one.explainQuery",
+                "title": "Explain Query Execution Plan"
+            },
+            {
+                "command": "sql-all-in-one.importData",
+                "title": "Import Data"
+            },
+            {
+                "command": "sql-all-in-one.showErrorLog",
+                "title": "Show Error Log (SQL All in One)"
+            },
+            {
+                "command": "sql-all-in-one.exportConnections",
+                "title": "Export Connections"
+            },
+            {
+                "command": "sql-all-in-one.importConnections",
+                "title": "Import Connections"
             }
         ],
         "keybindings": [
             {
                 "command": "sql-all-in-one.replaceParameter",
-                "key": "ctrl+shift+r",
-                "mac": "cmd+shift+r",
+                "key": "ctrl+alt+p",
+                "mac": "cmd+alt+p",
                 "when": "editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite/"
             },
             {
@@ -248,6 +406,18 @@
                 "command": "sql-all-in-one.toggleAdvancedComment",
                 "key": "ctrl+shift+/",
                 "mac": "cmd+shift+/",
+                "when": "editorTextFocus && editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite/"
+            },
+            {
+                "command": "sql-all-in-one.executeQuery",
+                "key": "ctrl+shift+e",
+                "mac": "cmd+shift+e",
+                "when": "editorTextFocus && editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite/"
+            },
+            {
+                "command": "sql-all-in-one.executeSelection",
+                "key": "ctrl+shift+r",
+                "mac": "cmd+shift+r",
                 "when": "editorTextFocus && editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite/"
             }
         ],
@@ -279,7 +449,8 @@
                         "%sql-all-in-one.config.dialect.enumDescriptions.sqlite%"
                     ],
                     "default": "hive",
-                    "markdownDescription": "%sql-all-in-one.config.dialect.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.dialect.markdownDescription%",
+                    "order": 2
                 },
                 "SQL-All-in-One.displayLanguage": {
                     "type": "string",
@@ -300,18 +471,21 @@
                 "SQL-All-in-One.ignoreTabSettings": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "%sql-all-in-one.config.ignoreTabSettings.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.ignoreTabSettings.markdownDescription%",
+                    "order": 23
                 },
                 "SQL-All-in-One.tabSizeOverride": {
                     "type": "number",
                     "default": 2,
                     "minimum": 1,
-                    "markdownDescription": "%sql-all-in-one.config.tabSizeOverride.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.tabSizeOverride.markdownDescription%",
+                    "order": 21
                 },
                 "SQL-All-in-One.insertSpacesOverride": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.insertSpacesOverride.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.insertSpacesOverride.markdownDescription%",
+                    "order": 22
                 },
                 "SQL-All-in-One.keywordCase": {
                     "type": "string",
@@ -326,7 +500,8 @@
                         "%sql-all-in-one.config.keywordCase.enumDescriptions.lower%"
                     ],
                     "default": "preserve",
-                    "markdownDescription": "%sql-all-in-one.config.keywordCase.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.keywordCase.markdownDescription%",
+                    "order": 10
                 },
                 "SQL-All-in-One.dataTypeCase": {
                     "type": "string",
@@ -341,7 +516,8 @@
                         "%sql-all-in-one.config.dataTypeCase.enumDescriptions.lower%"
                     ],
                     "default": "preserve",
-                    "markdownDescription": "%sql-all-in-one.config.dataTypeCase.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.dataTypeCase.markdownDescription%",
+                    "order": 11
                 },
                 "SQL-All-in-One.functionCase": {
                     "type": "string",
@@ -356,7 +532,8 @@
                         "%sql-all-in-one.config.functionCase.enumDescriptions.lower%"
                     ],
                     "default": "preserve",
-                    "markdownDescription": "%sql-all-in-one.config.functionCase.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.functionCase.markdownDescription%",
+                    "order": 12
                 },
                 "SQL-All-in-One.identifierCase": {
                     "type": "string",
@@ -371,7 +548,8 @@
                         "%sql-all-in-one.config.identifierCase.enumDescriptions.lower%"
                     ],
                     "default": "preserve",
-                    "markdownDescription": "%sql-all-in-one.config.identifierCase.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.identifierCase.markdownDescription%",
+                    "order": 13
                 },
                 "SQL-All-in-One.indentStyle": {
                     "type": "string",
@@ -386,7 +564,8 @@
                         "%sql-all-in-one.config.indentStyle.enumDescriptions.tabularRight%"
                     ],
                     "default": "standard",
-                    "markdownDescription": "%sql-all-in-one.config.indentStyle.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.indentStyle.markdownDescription%",
+                    "order": 20
                 },
                 "SQL-All-in-One.logicalOperatorNewline": {
                     "type": "string",
@@ -399,29 +578,34 @@
                         "%sql-all-in-one.config.logicalOperatorNewline.enumDescriptions.after%"
                     ],
                     "default": "before",
-                    "markdownDescription": "%sql-all-in-one.config.logicalOperatorNewline.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.logicalOperatorNewline.markdownDescription%",
+                    "order": 68
                 },
                 "SQL-All-in-One.expressionWidth": {
                     "type": "integer",
                     "default": 50,
                     "minimum": 0,
-                    "markdownDescription": "%sql-all-in-one.config.expressionWidth.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.expressionWidth.markdownDescription%",
+                    "order": 70
                 },
                 "SQL-All-in-One.linesBetweenQueries": {
                     "type": "integer",
                     "default": 1,
                     "minimum": 0,
-                    "markdownDescription": "%sql-all-in-one.config.linesBetweenQueries.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.linesBetweenQueries.markdownDescription%",
+                    "order": 71
                 },
                 "SQL-All-in-One.denseOperators": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "%sql-all-in-one.config.denseOperators.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.denseOperators.markdownDescription%",
+                    "order": 72
                 },
                 "SQL-All-in-One.newlineBeforeSemicolon": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeSemicolon.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeSemicolon.markdownDescription%",
+                    "order": 73
                 },
                 "SQL-All-in-One.commaPosition": {
                     "type": "string",
@@ -434,176 +618,148 @@
                         "%sql-all-in-one.config.commaPosition.enumDescriptions.after%"
                     ],
                     "default": "after",
-                    "markdownDescription": "%sql-all-in-one.config.commaPosition.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.commaPosition.markdownDescription%",
+                    "order": 74
                 },
                 "SQL-All-in-One.alignColumnDefinitions": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "%sql-all-in-one.config.alignColumnDefinitions.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.alignColumnDefinitions.markdownDescription%",
+                    "order": 75
                 },
                 "SQL-All-in-One.newlineAfterSelect": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineAfterSelect.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.newlineAfterSelect.markdownDescription%",
+                    "order": 30
                 },
                 "SQL-All-in-One.newlineAfterFrom": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineAfterFrom.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.newlineAfterFrom.markdownDescription%",
+                    "order": 31
                 },
                 "SQL-All-in-One.newlineBeforeWhere": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeWhere.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeWhere.markdownDescription%",
+                    "order": 32
                 },
                 "SQL-All-in-One.newlineAfterWhere": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineAfterWhere.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.newlineAfterWhere.markdownDescription%",
+                    "order": 33
                 },
                 "SQL-All-in-One.newlineBeforeOrderBy": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeOrderBy.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeOrderBy.markdownDescription%",
+                    "order": 34
                 },
                 "SQL-All-in-One.newlineBeforeGroupBy": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeGroupBy.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeGroupBy.markdownDescription%",
+                    "order": 35
                 },
                 "SQL-All-in-One.newlineBeforeHaving": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeHaving.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeHaving.markdownDescription%",
+                    "order": 36
                 },
                 "SQL-All-in-One.newlineBeforeLimit": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeLimit.markdownDescription%"
-                },
-                "SQL-All-in-One.maxLineLength": {
-                    "type": "integer",
-                    "default": 120,
-                    "minimum": 40,
-                    "maximum": 500,
-                    "markdownDescription": "%sql-all-in-one.config.maxLineLength.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeLimit.markdownDescription%",
+                    "order": 37
                 },
                 "SQL-All-in-One.tabulateAlias": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "%sql-all-in-one.config.tabulateAlias.markdownDescription%"
-                },
-                "SQL-All-in-One.reservedKeywordCase": {
-                    "type": "string",
-                    "enum": [
-                        "preserve",
-                        "upper",
-                        "lower"
-                    ],
-                    "enumDescriptions": [
-                        "%sql-all-in-one.config.reservedKeywordCase.enumDescriptions.preserve%",
-                        "%sql-all-in-one.config.reservedKeywordCase.enumDescriptions.upper%",
-                        "%sql-all-in-one.config.reservedKeywordCase.enumDescriptions.lower%"
-                    ],
-                    "default": "preserve",
-                    "markdownDescription": "%sql-all-in-one.config.reservedKeywordCase.markdownDescription%"
-                },
-                "SQL-All-in-One.builtinFunctionCase": {
-                    "type": "string",
-                    "enum": [
-                        "preserve",
-                        "upper",
-                        "lower"
-                    ],
-                    "enumDescriptions": [
-                        "%sql-all-in-one.config.builtinFunctionCase.enumDescriptions.preserve%",
-                        "%sql-all-in-one.config.builtinFunctionCase.enumDescriptions.upper%",
-                        "%sql-all-in-one.config.builtinFunctionCase.enumDescriptions.lower%"
-                    ],
-                    "default": "preserve",
-                    "markdownDescription": "%sql-all-in-one.config.builtinFunctionCase.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.tabulateAlias.markdownDescription%",
+                    "order": 78
                 },
                 "SQL-All-in-One.newlineBeforeJoin": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeJoin.markdownDescription%"
-                },
-                "SQL-All-in-One.newlineAfterComma": {
-                    "type": "boolean",
-                    "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineAfterComma.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeJoin.markdownDescription%",
+                    "order": 38
                 },
                 "SQL-All-in-One.alignWhereClauses": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "%sql-all-in-one.config.alignWhereClauses.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.alignWhereClauses.markdownDescription%",
+                    "order": 85
                 },
                 "SQL-All-in-One.alignCaseStatements": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "%sql-all-in-one.config.alignCaseStatements.markdownDescription%"
-                },
-                "SQL-All-in-One.breakAfterSelectItem": {
-                    "type": "boolean",
-                    "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.breakAfterSelectItem.markdownDescription%"
-                },
-                "SQL-All-in-One.breakAfterFromItem": {
-                    "type": "boolean",
-                    "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.breakAfterFromItem.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.alignCaseStatements.markdownDescription%",
+                    "order": 86
                 },
                 "SQL-All-in-One.spaceBeforeComma": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "%sql-all-in-one.config.spaceBeforeComma.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.spaceBeforeComma.markdownDescription%",
+                    "order": 79
                 },
                 "SQL-All-in-One.spaceInsideParentheses": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "%sql-all-in-one.config.spaceInsideParentheses.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.spaceInsideParentheses.markdownDescription%",
+                    "order": 80
                 },
                 "SQL-All-in-One.trimTrailingSpaces": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.trimTrailingSpaces.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.trimTrailingSpaces.markdownDescription%",
+                    "order": 81
                 },
                 "SQL-All-in-One.semicolonAtEnd": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.semicolonAtEnd.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.semicolonAtEnd.markdownDescription%",
+                    "order": 82
                 },
                 "SQL-All-in-One.singleLineMaxLength": {
                     "type": "integer",
                     "default": 80,
                     "minimum": 40,
                     "maximum": 500,
-                    "markdownDescription": "%sql-all-in-one.config.singleLineMaxLength.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.singleLineMaxLength.markdownDescription%",
+                    "order": 77
                 },
                 "SQL-All-in-One.paramTypes": {
                     "type": "object",
                     "default": {},
-                    "markdownDescription": "%sql-all-in-one.config.paramTypes.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.paramTypes.markdownDescription%",
+                    "order": 240
                 },
                 "SQL-All-in-One.showErrorLevel": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.showErrorLevel.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.showErrorLevel.markdownDescription%",
+                    "order": 101
                 },
                 "SQL-All-in-One.showWarningLevel": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.showWarningLevel.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.showWarningLevel.markdownDescription%",
+                    "order": 102
                 },
                 "SQL-All-in-One.showInfoLevel": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.showInfoLevel.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.showInfoLevel.markdownDescription%",
+                    "order": 103
                 },
                 "SQL-All-in-One.enableLinter": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.enableLinter.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.enableLinter.markdownDescription%",
+                    "order": 100
                 },
                 "SQL-All-in-One.lint.avoid_select_star": {
                     "type": "object",
@@ -611,7 +767,8 @@
                         "enabled": true,
                         "severity": "warning"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.avoid_select_star.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.lint.avoid_select_star.markdownDescription%",
+                    "order": 110
                 },
                 "SQL-All-in-One.lint.explicit_join_type": {
                     "type": "object",
@@ -619,7 +776,8 @@
                         "enabled": true,
                         "severity": "information"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.explicit_join_type.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.lint.explicit_join_type.markdownDescription%",
+                    "order": 111
                 },
                 "SQL-All-in-One.lint.limit_with_order_by": {
                     "type": "object",
@@ -627,7 +785,8 @@
                         "enabled": true,
                         "severity": "warning"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.limit_with_order_by.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.lint.limit_with_order_by.markdownDescription%",
+                    "order": 112
                 },
                 "SQL-All-in-One.lint.avoid_column_count_mismatch": {
                     "type": "object",
@@ -635,7 +794,8 @@
                         "enabled": true,
                         "severity": "error"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.avoid_column_count_mismatch.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.lint.avoid_column_count_mismatch.markdownDescription%",
+                    "order": 113
                 },
                 "SQL-All-in-One.lint.missing_primary_key": {
                     "type": "object",
@@ -643,7 +803,8 @@
                         "enabled": true,
                         "severity": "warning"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.missing_primary_key.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.lint.missing_primary_key.markdownDescription%",
+                    "order": 114
                 },
                 "SQL-All-in-One.lint.use_current_timestamp": {
                     "type": "object",
@@ -651,7 +812,8 @@
                         "enabled": true,
                         "severity": "information"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.use_current_timestamp.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.lint.use_current_timestamp.markdownDescription%",
+                    "order": 115
                 },
                 "SQL-All-in-One.lint.avoid_select_in_insert": {
                     "type": "object",
@@ -659,7 +821,8 @@
                         "enabled": true,
                         "severity": "warning"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.avoid_select_in_insert.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.lint.avoid_select_in_insert.markdownDescription%",
+                    "order": 116
                 },
                 "SQL-All-in-One.lint.duplicate_column_aliases": {
                     "type": "object",
@@ -667,7 +830,8 @@
                         "enabled": true,
                         "severity": "warning"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.duplicate_column_aliases.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.lint.duplicate_column_aliases.markdownDescription%",
+                    "order": 117
                 },
                 "SQL-All-in-One.lint.uppercase_keywords": {
                     "type": "object",
@@ -675,7 +839,8 @@
                         "enabled": false,
                         "severity": "information"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.uppercase_keywords.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.lint.uppercase_keywords.markdownDescription%",
+                    "order": 118
                 },
                 "SQL-All-in-One.lint.consistent_aliasing": {
                     "type": "object",
@@ -683,7 +848,8 @@
                         "enabled": false,
                         "severity": "information"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.consistent_aliasing.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.lint.consistent_aliasing.markdownDescription%",
+                    "order": 119
                 },
                 "SQL-All-in-One.lint.use_coalesce_over_isnull": {
                     "type": "object",
@@ -691,7 +857,8 @@
                         "enabled": false,
                         "severity": "information"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.use_coalesce_over_isnull.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.lint.use_coalesce_over_isnull.markdownDescription%",
+                    "order": 120
                 },
                 "SQL-All-in-One.lint.explicit_column_aliasing": {
                     "type": "object",
@@ -699,7 +866,8 @@
                         "enabled": false,
                         "severity": "information"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.explicit_column_aliasing.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.lint.explicit_column_aliasing.markdownDescription%",
+                    "order": 121
                 },
                 "SQL-All-in-One.lint.avoid_correlated_subqueries": {
                     "type": "object",
@@ -707,7 +875,8 @@
                         "enabled": false,
                         "severity": "warning"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.avoid_correlated_subqueries.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.lint.avoid_correlated_subqueries.markdownDescription%",
+                    "order": 122
                 },
                 "SQL-All-in-One.lint.long_query_line": {
                     "type": "object",
@@ -715,165 +884,205 @@
                         "enabled": false,
                         "severity": "information"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.long_query_line.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.lint.long_query_line.markdownDescription%",
+                    "order": 123
                 },
                 "SQL-All-in-One.enableCodeFolding": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.enableCodeFolding.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.enableCodeFolding.markdownDescription%",
+                    "order": 150
                 },
                 "SQL-All-in-One.enableOutlineView": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.enableOutlineView.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.enableOutlineView.markdownDescription%",
+                    "order": 151
                 },
                 "SQL-All-in-One.enableStatusBar": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.enableStatusBar.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.enableStatusBar.markdownDescription%",
+                    "order": 152
                 },
                 "SQL-All-in-One.enableParameterHighlight": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.enableParameterHighlight.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.enableParameterHighlight.markdownDescription%",
+                    "order": 153
                 },
                 "SQL-All-in-One.enableSnippets": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.enableSnippets.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.enableSnippets.markdownDescription%",
+                    "order": 154
                 },
                 "SQL-All-in-One.enableQuickFix": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.enableQuickFix.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.enableQuickFix.markdownDescription%",
+                    "order": 155
                 },
                 "SQL-All-in-One.enableHover": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.enableHover.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.enableHover.markdownDescription%",
+                    "order": 156
                 },
                 "SQL-All-in-One.enableNavigation": {
                     "type": "boolean",
                     "default": true,
                     "markdownDescription": "%sql-all-in-one.config.enableNavigation.markdownDescription%",
-                    "order": 105
+                    "order": 157
                 },
                 "SQL-All-in-One.enableCompletion": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.enableCompletion.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.enableCompletion.markdownDescription%",
+                    "order": 158
                 },
                 "SQL-All-in-One.completion.keywords": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.completion.keywords.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.completion.keywords.markdownDescription%",
+                    "order": 160
                 },
                 "SQL-All-in-One.completion.functions": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.completion.functions.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.completion.functions.markdownDescription%",
+                    "order": 161
                 },
                 "SQL-All-in-One.completion.snippets": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "%sql-all-in-one.config.completion.snippets.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.completion.snippets.markdownDescription%",
+                    "order": 162
                 },
                 "SQL-All-in-One.completion.cteNames": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.completion.cteNames.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.completion.cteNames.markdownDescription%",
+                    "order": 163
                 },
                 "SQL-All-in-One.completion.identifiers": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.completion.identifiers.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.completion.identifiers.markdownDescription%",
+                    "order": 164
                 },
                 "SQL-All-in-One.enableSmartCommentToggle": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.enableSmartCommentToggle.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.enableSmartCommentToggle.markdownDescription%",
+                    "order": 159
                 },
                 "SQL-All-in-One.headerAuthor": {
                     "type": "string",
                     "default": "",
-                    "markdownDescription": "%sql-all-in-one.config.headerAuthor.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.headerAuthor.markdownDescription%",
+                    "order": 241
                 },
                 "SQL-All-in-One.headerModifier": {
                     "type": "string",
                     "default": "",
-                    "markdownDescription": "%sql-all-in-one.config.headerModifier.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.headerModifier.markdownDescription%",
+                    "order": 242
                 },
                 "SQL-All-in-One.completion.commentSnippets": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.completion.commentSnippets.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.completion.commentSnippets.markdownDescription%",
+                    "order": 165
+                },
+                "SQL-All-in-One.completion.schema": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "%sql-all-in-one.config.completion.schema.markdownDescription%",
+                    "order": 166
+                },
+                "SQL-All-in-One.schemaCache.databaseTtl": {
+                    "type": "number",
+                    "default": 600,
+                    "minimum": 0,
+                    "markdownDescription": "%sql-all-in-one.config.schemaCache.databaseTtl.markdownDescription%",
+                    "order": 170
+                },
+                "SQL-All-in-One.schemaCache.tableTtl": {
+                    "type": "number",
+                    "default": 300,
+                    "minimum": 0,
+                    "markdownDescription": "%sql-all-in-one.config.schemaCache.tableTtl.markdownDescription%",
+                    "order": 171
+                },
+                "SQL-All-in-One.schemaCache.columnTtl": {
+                    "type": "number",
+                    "default": 120,
+                    "minimum": 0,
+                    "markdownDescription": "%sql-all-in-one.config.schemaCache.columnTtl.markdownDescription%",
+                    "order": 172
+                },
+                "SQL-All-in-One.schemaCache.functionTtl": {
+                    "type": "number",
+                    "default": 600,
+                    "minimum": 0,
+                    "markdownDescription": "%sql-all-in-one.config.schemaCache.functionTtl.markdownDescription%",
+                    "order": 173
+                },
+                "SQL-All-in-One.schemaCache.refreshOnDDL": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "%sql-all-in-one.config.schemaCache.refreshOnDDL.markdownDescription%",
+                    "order": 174
+                },
+                "SQL-All-in-One.schemaCache.prefetchOnConnect": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "%sql-all-in-one.config.schemaCache.prefetchOnConnect.markdownDescription%",
+                    "order": 175
                 },
                 "SQL-All-in-One.lint.missing_query_comment": {
                     "type": "object",
                     "default": {
                         "enabled": true,
-                        "severity": "warning"
+                        "severity": "warning",
+                        "thresholdLineCount": 20,
+                        "thresholdJoinCount": 3,
+                        "thresholdSubqueryCount": 2
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.missing_query_comment.markdownDescription%"
-                },
-                "SQL-All-in-One.lint.missing_query_comment_threshold_line_count": {
-                    "type": "number",
-                    "default": 20,
-                    "markdownDescription": "%sql-all-in-one.config.lint.missing_query_comment_threshold_line_count.markdownDescription%"
-                },
-                "SQL-All-in-One.lint.missing_query_comment_threshold_join_count": {
-                    "type": "number",
-                    "default": 3,
-                    "markdownDescription": "%sql-all-in-one.config.lint.missing_query_comment_threshold_join_count.markdownDescription%"
-                },
-                "SQL-All-in-One.lint.missing_query_comment_threshold_subquery_count": {
-                    "type": "number",
-                    "default": 2,
-                    "markdownDescription": "%sql-all-in-one.config.lint.missing_query_comment_threshold_subquery_count.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.lint.missing_query_comment.markdownDescription%",
+                    "order": 124
                 },
                 "SQL-All-in-One.lint.missing_column_comment": {
                     "type": "object",
                     "default": {
                         "enabled": true,
-                        "severity": "warning"
+                        "severity": "warning",
+                        "aggregate": true,
+                        "externalTableExempt": false
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.missing_column_comment.markdownDescription%"
-                },
-                "SQL-All-in-One.lint.missing_column_comment_aggregate": {
-                    "type": "boolean",
-                    "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.lint.missing_column_comment_aggregate.markdownDescription%"
-                },
-                "SQL-All-in-One.lint.missing_column_comment_external_table_exempt": {
-                    "type": "boolean",
-                    "default": false,
-                    "markdownDescription": "%sql-all-in-one.config.lint.missing_column_comment_external_table_exempt.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.lint.missing_column_comment.markdownDescription%",
+                    "order": 128
                 },
                 "SQL-All-in-One.lint.commented_out_code": {
                     "type": "object",
                     "default": {
                         "enabled": true,
-                        "severity": "information"
+                        "severity": "information",
+                        "thresholdLines": 3
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.commented_out_code.markdownDescription%"
-                },
-                "SQL-All-in-One.lint.commented_out_code_threshold_lines": {
-                    "type": "number",
-                    "default": 3,
-                    "markdownDescription": "%sql-all-in-one.config.lint.commented_out_code_threshold_lines.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.lint.commented_out_code.markdownDescription%",
+                    "order": 131
                 },
                 "SQL-All-in-One.lint.expired_todo": {
                     "type": "object",
                     "default": {
                         "enabled": true,
-                        "severity": "information"
+                        "severity": "information",
+                        "gracePeriodDays": 7
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.expired_todo.markdownDescription%"
-                },
-                "SQL-All-in-One.lint.expired_todo_grace_period_days": {
-                    "type": "number",
-                    "default": 7,
-                    "markdownDescription": "%sql-all-in-one.config.lint.expired_todo_grace_period_days.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.lint.expired_todo.markdownDescription%",
+                    "order": 133
                 },
                 "SQL-All-in-One.lint.having_without_group_by": {
                     "type": "object",
@@ -881,7 +1090,8 @@
                         "enabled": true,
                         "severity": "warning"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.having_without_group_by.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.lint.having_without_group_by.markdownDescription%",
+                    "order": 135
                 },
                 "SQL-All-in-One.lint.limit_invalid_value": {
                     "type": "object",
@@ -889,7 +1099,8 @@
                         "enabled": true,
                         "severity": "error"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.limit_invalid_value.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.lint.limit_invalid_value.markdownDescription%",
+                    "order": 136
                 },
                 "SQL-All-in-One.lint.reserved_word_identifier": {
                     "type": "object",
@@ -897,7 +1108,8 @@
                         "enabled": true,
                         "severity": "warning"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.reserved_word_identifier.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.lint.reserved_word_identifier.markdownDescription%",
+                    "order": 137
                 },
                 "SQL-All-in-One.lint.join_missing_on": {
                     "type": "object",
@@ -905,7 +1117,8 @@
                         "enabled": true,
                         "severity": "warning"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.join_missing_on.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.lint.join_missing_on.markdownDescription%",
+                    "order": 138
                 },
                 "SQL-All-in-One.lint.select_without_from": {
                     "type": "object",
@@ -913,7 +1126,8 @@
                         "enabled": true,
                         "severity": "warning"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.select_without_from.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.lint.select_without_from.markdownDescription%",
+                    "order": 139
                 },
                 "SQL-All-in-One.lint.misplaced_distinct": {
                     "type": "object",
@@ -921,7 +1135,8 @@
                         "enabled": true,
                         "severity": "error"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.misplaced_distinct.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.lint.misplaced_distinct.markdownDescription%",
+                    "order": 140
                 },
                 "SQL-All-in-One.lint.aggregate_in_where": {
                     "type": "object",
@@ -929,7 +1144,8 @@
                         "enabled": true,
                         "severity": "error"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.aggregate_in_where.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.lint.aggregate_in_where.markdownDescription%",
+                    "order": 141
                 },
                 "SQL-All-in-One.lint.subquery_without_alias": {
                     "type": "object",
@@ -937,7 +1153,8 @@
                         "enabled": true,
                         "severity": "warning"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.subquery_without_alias.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.lint.subquery_without_alias.markdownDescription%",
+                    "order": 142
                 },
                 "SQL-All-in-One.lint.suspicious_null_comparison": {
                     "type": "object",
@@ -945,7 +1162,8 @@
                         "enabled": true,
                         "severity": "warning"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.suspicious_null_comparison.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.lint.suspicious_null_comparison.markdownDescription%",
+                    "order": 143
                 },
                 "SQL-All-in-One.lint.incomplete_case": {
                     "type": "object",
@@ -953,7 +1171,8 @@
                         "enabled": true,
                         "severity": "error"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.incomplete_case.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.lint.incomplete_case.markdownDescription%",
+                    "order": 144
                 },
                 "SQL-All-in-One.lint.redundant_distinct": {
                     "type": "object",
@@ -961,7 +1180,8 @@
                         "enabled": true,
                         "severity": "warning"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.redundant_distinct.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.lint.redundant_distinct.markdownDescription%",
+                    "order": 145
                 },
                 "SQL-All-in-One.lint.date_function_usage": {
                     "type": "object",
@@ -969,7 +1189,8 @@
                         "enabled": true,
                         "severity": "information"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.date_function_usage.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.lint.date_function_usage.markdownDescription%",
+                    "order": 146
                 },
                 "SQL-All-in-One.lint.wildcard_in_update": {
                     "type": "object",
@@ -977,7 +1198,8 @@
                         "enabled": true,
                         "severity": "error"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.wildcard_in_update.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.lint.wildcard_in_update.markdownDescription%",
+                    "order": 147
                 },
                 "SQL-All-in-One.nullCase": {
                     "type": "string",
@@ -992,7 +1214,8 @@
                         "%sql-all-in-one.config.nullCase.enumDescriptions.lower%"
                     ],
                     "default": "preserve",
-                    "markdownDescription": "%sql-all-in-one.config.nullCase.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.nullCase.markdownDescription%",
+                    "order": 14
                 },
                 "SQL-All-in-One.booleanCase": {
                     "type": "string",
@@ -1007,72 +1230,86 @@
                         "%sql-all-in-one.config.booleanCase.enumDescriptions.lower%"
                     ],
                     "default": "preserve",
-                    "markdownDescription": "%sql-all-in-one.config.booleanCase.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.booleanCase.markdownDescription%",
+                    "order": 15
                 },
                 "SQL-All-in-One.newlineAfterGroupBy": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineAfterGroupBy.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.newlineAfterGroupBy.markdownDescription%",
+                    "order": 41
                 },
                 "SQL-All-in-One.newlineAfterHaving": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineAfterHaving.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.newlineAfterHaving.markdownDescription%",
+                    "order": 42
                 },
                 "SQL-All-in-One.newlineAfterOrderBy": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineAfterOrderBy.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.newlineAfterOrderBy.markdownDescription%",
+                    "order": 43
                 },
                 "SQL-All-in-One.newlineAfterLimit": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "%sql-all-in-one.config.newlineAfterLimit.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.newlineAfterLimit.markdownDescription%",
+                    "order": 44
                 },
                 "SQL-All-in-One.newlineAfterJoin": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineAfterJoin.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.newlineAfterJoin.markdownDescription%",
+                    "order": 39
                 },
                 "SQL-All-in-One.newlineBeforeSetOperation": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeSetOperation.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeSetOperation.markdownDescription%",
+                    "order": 45
                 },
                 "SQL-All-in-One.newlineAfterSetOperation": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineAfterSetOperation.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.newlineAfterSetOperation.markdownDescription%",
+                    "order": 46
                 },
                 "SQL-All-in-One.newlineBeforeOn": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeOn.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeOn.markdownDescription%",
+                    "order": 47
                 },
                 "SQL-All-in-One.newlineBeforeUsing": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeUsing.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeUsing.markdownDescription%",
+                    "order": 48
                 },
                 "SQL-All-in-One.newlineBeforeWith": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeWith.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeWith.markdownDescription%",
+                    "order": 49
                 },
                 "SQL-All-in-One.newlineAfterWith": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineAfterWith.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.newlineAfterWith.markdownDescription%",
+                    "order": 50
                 },
                 "SQL-All-in-One.indentCteBody": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.indentCteBody.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.indentCteBody.markdownDescription%",
+                    "order": 87
                 },
                 "SQL-All-in-One.newlineBetweenCtes": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineBetweenCtes.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.newlineBetweenCtes.markdownDescription%",
+                    "order": 67
                 },
                 "SQL-All-in-One.cteCommaPosition": {
                     "type": "string",
@@ -1085,103 +1322,93 @@
                         "%sql-all-in-one.config.cteCommaPosition.enumDescriptions.after%"
                     ],
                     "default": "before",
-                    "markdownDescription": "%sql-all-in-one.config.cteCommaPosition.markdownDescription%"
-                },
-                "SQL-All-in-One.newlineAfterOver": {
-                    "type": "boolean",
-                    "default": false,
-                    "markdownDescription": "%sql-all-in-one.config.newlineAfterOver.markdownDescription%"
-                },
-                "SQL-All-in-One.newlineBeforePartitionBy": {
-                    "type": "boolean",
-                    "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineBeforePartitionBy.markdownDescription%"
-                },
-                "SQL-All-in-One.newlineAfterPartitionBy": {
-                    "type": "boolean",
-                    "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineAfterPartitionBy.markdownDescription%"
-                },
-                "SQL-All-in-One.newlineBeforeOrderByInWindow": {
-                    "type": "boolean",
-                    "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeOrderByInWindow.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.cteCommaPosition.markdownDescription%",
+                    "order": 88
                 },
                 "SQL-All-in-One.indentJoinConditions": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.indentJoinConditions.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.indentJoinConditions.markdownDescription%",
+                    "order": 89
                 },
                 "SQL-All-in-One.alignOnClauses": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "%sql-all-in-one.config.alignOnClauses.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.alignOnClauses.markdownDescription%",
+                    "order": 90
                 },
                 "SQL-All-in-One.alignInsertColumns": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "%sql-all-in-one.config.alignInsertColumns.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.alignInsertColumns.markdownDescription%",
+                    "order": 91
                 },
                 "SQL-All-in-One.alignInsertValuesGroups": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "%sql-all-in-one.config.alignInsertValuesGroups.markdownDescription%"
-                },
-                "SQL-All-in-One.newlineAfterInsert": {
-                    "type": "boolean",
-                    "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineAfterInsert.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.alignInsertValuesGroups.markdownDescription%",
+                    "order": 92
                 },
                 "SQL-All-in-One.newlineAfterInsertColumns": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineAfterInsertColumns.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.newlineAfterInsertColumns.markdownDescription%",
+                    "order": 52
                 },
                 "SQL-All-in-One.newlineBetweenValuesGroups": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineBetweenValuesGroups.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.newlineBetweenValuesGroups.markdownDescription%",
+                    "order": 53
                 },
                 "SQL-All-in-One.newlineAfterCase": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineAfterCase.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.newlineAfterCase.markdownDescription%",
+                    "order": 54
                 },
                 "SQL-All-in-One.newlineAfterWhen": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineAfterWhen.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.newlineAfterWhen.markdownDescription%",
+                    "order": 55
                 },
                 "SQL-All-in-One.newlineAfterThen": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "%sql-all-in-one.config.newlineAfterThen.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.newlineAfterThen.markdownDescription%",
+                    "order": 56
                 },
                 "SQL-All-in-One.newlineAfterElse": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "%sql-all-in-one.config.newlineAfterElse.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.newlineAfterElse.markdownDescription%",
+                    "order": 57
                 },
                 "SQL-All-in-One.indentWhen": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.indentWhen.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.indentWhen.markdownDescription%",
+                    "order": 93
                 },
                 "SQL-All-in-One.indentThen": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.indentThen.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.indentThen.markdownDescription%",
+                    "order": 94
                 },
                 "SQL-All-in-One.newlineAfterIn": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "%sql-all-in-one.config.newlineAfterIn.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.newlineAfterIn.markdownDescription%",
+                    "order": 58
                 },
                 "SQL-All-in-One.maxItemsInlineList": {
                     "type": "number",
                     "default": 5,
                     "minimum": 1,
-                    "markdownDescription": "%sql-all-in-one.config.maxItemsInlineList.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.maxItemsInlineList.markdownDescription%",
+                    "order": 95
                 },
                 "SQL-All-in-One.subqueryParenStyle": {
                     "type": "string",
@@ -1194,7 +1421,8 @@
                         "%sql-all-in-one.config.subqueryParenStyle.enumDescriptions.newline%"
                     ],
                     "default": "inline",
-                    "markdownDescription": "%sql-all-in-one.config.subqueryParenStyle.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.subqueryParenStyle.markdownDescription%",
+                    "order": 96
                 },
                 "SQL-All-in-One.commentPosition": {
                     "type": "string",
@@ -1209,39 +1437,276 @@
                         "%sql-all-in-one.config.commentPosition.enumDescriptions.inline%"
                     ],
                     "default": "preserve",
-                    "markdownDescription": "%sql-all-in-one.config.commentPosition.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.commentPosition.markdownDescription%",
+                    "order": 97
                 },
                 "SQL-All-in-One.blankLinesBeforeSetOperation": {
                     "type": "number",
                     "default": 1,
                     "minimum": 0,
-                    "markdownDescription": "%sql-all-in-one.config.blankLinesBeforeSetOperation.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.blankLinesBeforeSetOperation.markdownDescription%",
+                    "order": 98
                 },
                 "SQL-All-in-One.blankLinesAfterSetOperation": {
                     "type": "number",
                     "default": 0,
                     "minimum": 0,
-                    "markdownDescription": "%sql-all-in-one.config.blankLinesAfterSetOperation.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.blankLinesAfterSetOperation.markdownDescription%",
+                    "order": 99
                 },
                 "SQL-All-in-One.newlineBeforeLateralView": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeLateralView.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeLateralView.markdownDescription%",
+                    "order": 63
                 },
                 "SQL-All-in-One.newlineBeforeDistributeBy": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeDistributeBy.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeDistributeBy.markdownDescription%",
+                    "order": 64
                 },
                 "SQL-All-in-One.newlineBeforeClusterBy": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeClusterBy.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeClusterBy.markdownDescription%",
+                    "order": 65
                 },
                 "SQL-All-in-One.newlineBeforeSortBy": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeSortBy.markdownDescription%"
+                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeSortBy.markdownDescription%",
+                    "order": 66
+                },
+                "SQL-All-in-One.query.maxRows": {
+                    "type": "number",
+                    "default": 1000,
+                    "minimum": 1,
+                    "description": "Maximum number of rows returned by query execution",
+                    "order": 180
+                },
+                "SQL-All-in-One.query.timeout": {
+                    "type": "number",
+                    "default": 30000,
+                    "minimum": 1000,
+                    "description": "Query execution timeout in milliseconds",
+                    "order": 181
+                },
+                "SQL-All-in-One.safetyGuard.level": {
+                    "type": "string",
+                    "enum": [
+                        "strict",
+                        "moderate",
+                        "off"
+                    ],
+                    "enumDescriptions": [
+                        "Intercept all rules (warnings + confirmations require confirmation)",
+                        "Only intercept confirmation-level operations (default)",
+                        "No interception"
+                    ],
+                    "default": "moderate",
+                    "description": "Safety guard level for dangerous SQL operations",
+                    "order": 190
+                },
+                "SQL-All-in-One.history.maxEntries": {
+                    "type": "number",
+                    "default": 500,
+                    "minimum": 10,
+                    "maximum": 10000,
+                    "description": "Maximum number of query history entries",
+                    "order": 188
+                },
+                "SQL-All-in-One.execution.batchMode": {
+                    "type": "string",
+                    "enum": [
+                        "sequential",
+                        "transaction"
+                    ],
+                    "default": "sequential",
+                    "description": "Batch execution mode: sequential or transaction",
+                    "order": 191
+                },
+                "SQL-All-in-One.execution.onError": {
+                    "type": "string",
+                    "enum": [
+                        "stop",
+                        "continue"
+                    ],
+                    "default": "stop",
+                    "description": "Error handling strategy for batch execution",
+                    "order": 192
+                },
+                "SQL-All-in-One.execution.saveProgress": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Save batch execution progress for resumption",
+                    "order": 193
+                },
+                "SQL-All-in-One.execution.cancelRetries": {
+                    "type": "number",
+                    "default": 3,
+                    "minimum": 0,
+                    "maximum": 10,
+                    "description": "Number of retry attempts when cancelling a query",
+                    "order": 194
+                },
+                "SQL-All-in-One.execution.cancelRetryDelay": {
+                    "type": "number",
+                    "default": 500,
+                    "minimum": 100,
+                    "description": "Delay between cancel retry attempts in milliseconds",
+                    "order": 195
+                },
+                "SQL-All-in-One.query.pageSize": {
+                    "type": "number",
+                    "default": 100,
+                    "minimum": 10,
+                    "maximum": 1000,
+                    "description": "Number of rows per page in the query result panel",
+                    "order": 182
+                },
+                "SQL-All-in-One.export.defaultFormat": {
+                    "type": "string",
+                    "enum": [
+                        "csv",
+                        "json",
+                        "insert",
+                        "ddl"
+                    ],
+                    "default": "csv",
+                    "description": "Default export format",
+                    "order": 200
+                },
+                "SQL-All-in-One.export.csvDelimiter": {
+                    "type": "string",
+                    "default": ",",
+                    "description": "CSV delimiter character",
+                    "order": 201
+                },
+                "SQL-All-in-One.export.csvEncoding": {
+                    "type": "string",
+                    "default": "utf-8",
+                    "description": "CSV file encoding",
+                    "order": 202
+                },
+                "SQL-All-in-One.export.includeHeaders": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Include column headers in export",
+                    "order": 203
+                },
+                "SQL-All-in-One.query.nullPlaceholder": {
+                    "type": "string",
+                    "default": "(NULL)",
+                    "description": "Display text for NULL values in the result panel",
+                    "order": 183
+                },
+                "SQL-All-in-One.results.enablePreload": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable scroll preloading for large result sets",
+                    "order": 230
+                },
+                "SQL-All-in-One.results.jsonPrettyPrint": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Auto-format JSON values in the result panel",
+                    "order": 231
+                },
+                "SQL-All-in-One.results.dateFormat": {
+                    "type": "string",
+                    "enum": [
+                        "local",
+                        "utc",
+                        "relative"
+                    ],
+                    "default": "local",
+                    "description": "Date display format in the result panel",
+                    "order": 232
+                },
+                "SQL-All-in-One.results.longTextThreshold": {
+                    "type": "number",
+                    "default": 200,
+                    "minimum": 50,
+                    "description": "Character threshold for truncating long text in the result panel",
+                    "order": 233
+                },
+                "SQL-All-in-One.dataEditor.editMode": {
+                    "type": "string",
+                    "enum": [
+                        "readonly",
+                        "editable"
+                    ],
+                    "default": "readonly",
+                    "description": "Result panel edit mode (readonly or editable)",
+                    "order": 210
+                },
+                "SQL-All-in-One.dataEditor.autoCommit": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Auto commit mode for data editor changes",
+                    "order": 211
+                },
+                "SQL-All-in-One.dataEditor.defaultView": {
+                    "type": "string",
+                    "enum": [
+                        "grid",
+                        "form"
+                    ],
+                    "default": "grid",
+                    "description": "Default view mode for result panel (grid or form)",
+                    "order": 212
+                },
+                "SQL-All-in-One.dataEditor.optimisticLocking": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enable optimistic locking for concurrent edit control",
+                    "order": 213
+                },
+                "SQL-All-in-One.dataEditor.maxBlobPreviewSize": {
+                    "type": "number",
+                    "default": 5242880,
+                    "minimum": 0,
+                    "description": "Maximum BLOB preview size in bytes (default 5MB)",
+                    "order": 214
+                },
+                "SQL-All-in-One.dataEditor.blobTextPreviewSize": {
+                    "type": "number",
+                    "default": 1048576,
+                    "minimum": 0,
+                    "description": "Maximum BLOB text preview size in bytes (default 1MB)",
+                    "order": 215
+                },
+                "SQL-All-in-One.dataEditor.longTransactionWarning": {
+                    "type": "number",
+                    "default": 300,
+                    "minimum": 0,
+                    "description": "Long transaction warning threshold in seconds",
+                    "order": 216
+                },
+                "SQL-All-in-One.dataEditor.showTransactionStatus": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Show transaction status in the status bar",
+                    "order": 217
+                },
+                "SQL-All-in-One.dataEditor.enableValidation": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable data validation in the editor",
+                    "order": 218
+                },
+                "SQL-All-in-One.dataEditor.validateOnEdit": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Validate data in real-time during editing",
+                    "order": 219
+                },
+                "SQL-All-in-One.dataEditor.validateForeignKeys": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Validate foreign key references (may impact performance)",
+                    "order": 220
                 }
             }
         },
@@ -1257,24 +1722,147 @@
                     "when": "editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite/",
                     "group": "1_comment@2"
                 }
+            ],
+            "view/title": [
+                {
+                    "command": "sql-all-in-one.addConnection",
+                    "when": "view == sql-all-in-one.databaseExplorer",
+                    "group": "navigation@1"
+                },
+                {
+                    "command": "sql-all-in-one.refreshSchema",
+                    "when": "view == sql-all-in-one.databaseExplorer",
+                    "group": "navigation@2"
+                },
+                {
+                    "command": "sql-all-in-one.exportConnections",
+                    "when": "view == sql-all-in-one.databaseExplorer"
+                },
+                {
+                    "command": "sql-all-in-one.importConnections",
+                    "when": "view == sql-all-in-one.databaseExplorer"
+                }
+            ],
+            "view/item/context": [
+                {
+                    "command": "sql-all-in-one.addConnection",
+                    "when": "view == sql-all-in-one.databaseExplorer && viewItem =~ /^(favorites|group)$/",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "sql-all-in-one.connect",
+                    "when": "view == sql-all-in-one.databaseExplorer && viewItem == connectionDisconnected",
+                    "group": "1_connection@1"
+                },
+                {
+                    "command": "sql-all-in-one.disconnect",
+                    "when": "view == sql-all-in-one.databaseExplorer && viewItem == connectionConnected",
+                    "group": "1_connection@1"
+                },
+                {
+                    "command": "sql-all-in-one.editConnection",
+                    "when": "view == sql-all-in-one.databaseExplorer && viewItem =~ /connection/",
+                    "group": "2_manage@1"
+                },
+                {
+                    "command": "sql-all-in-one.removeConnection",
+                    "when": "view == sql-all-in-one.databaseExplorer && viewItem =~ /connection/",
+                    "group": "2_manage@2"
+                },
+                {
+                    "command": "sql-all-in-one.viewTableData",
+                    "when": "view == sql-all-in-one.databaseExplorer && viewItem == table",
+                    "group": "3_table@1"
+                },
+                {
+                    "command": "sql-all-in-one.viewTableDDL",
+                    "when": "view == sql-all-in-one.databaseExplorer && viewItem == table",
+                    "group": "3_table@2"
+                },
+                {
+                    "command": "sql-all-in-one.editTable",
+                    "when": "view == sql-all-in-one.databaseExplorer && viewItem == table",
+                    "group": "3_table@3"
+                },
+                {
+                    "command": "sql-all-in-one.viewTableData",
+                    "when": "view == sql-all-in-one.databaseExplorer && viewItem == view",
+                    "group": "3_table@1"
+                },
+                {
+                    "command": "sql-all-in-one.newQuery",
+                    "when": "view == sql-all-in-one.databaseExplorer && viewItem =~ /database|connectionConnected/",
+                    "group": "4_query@1"
+                },
+                {
+                    "command": "sql-all-in-one.designTable",
+                    "when": "view == sql-all-in-one.databaseExplorer && viewItem =~ /database|connectionConnected/",
+                    "group": "4_query@2"
+                },
+                {
+                    "command": "sql-all-in-one.addToFavorites",
+                    "when": "view == sql-all-in-one.databaseExplorer && viewItem =~ /table|view/",
+                    "group": "5_favorites@1"
+                },
+                {
+                    "command": "sql-all-in-one.removeFromFavorites",
+                    "when": "view == sql-all-in-one.databaseExplorer && (viewItem == table || viewItem == view)",
+                    "group": "5_favorites@1"
+                },
+                {
+                    "command": "sql-all-in-one.copyColumnName",
+                    "when": "view == sql-all-in-one.databaseExplorer && viewItem == column",
+                    "group": "6_column@1"
+                },
+                {
+                    "command": "sql-all-in-one.setDefaultDatabase",
+                    "when": "view == sql-all-in-one.databaseExplorer && viewItem == database",
+                    "group": "7_database@1"
+                },
+                {
+                    "command": "sql-all-in-one.refreshSchema",
+                    "when": "view == sql-all-in-one.databaseExplorer && viewItem =~ /database|objectGroup|connectionConnected/",
+                    "group": "8_refresh@1"
+                }
             ]
         }
     },
     "scripts": {
-        "vscode:prepublish": "npm run compile",
+        "vscode:prepublish": "node esbuild.js --minify",
+        "esbuild-base": "node esbuild.js",
+        "esbuild": "node esbuild.js",
         "compile": "tsc -p ./",
         "watch": "tsc -watch -p ./",
         "pretest": "npm run compile && npm run lint",
         "lint": "eslint src",
-        "test": "vscode-test"
+        "test": "vscode-test",
+        "test:coverage": "nyc npm test"
+    },
+    "nyc": {
+        "extension": [
+            ".ts"
+        ],
+        "exclude": [
+            "**/*.d.ts",
+            "**/*.test.ts",
+            "out/**"
+        ],
+        "reporter": [
+            "text",
+            "lcov",
+            "html"
+        ],
+        "all": true
     },
     "devDependencies": {
         "@types/mocha": "^10.0.10",
         "@types/node": "22.x",
+        "@types/ssh2": "^1.15.5",
         "@types/vscode": "^1.85.0",
         "@vscode/test-cli": "^0.0.12",
         "@vscode/test-electron": "^2.5.2",
         "@vscode/vsce": "^3.9.1",
+        "esbuild": "^0.25.12",
         "eslint": "^9.39.2",
         "eslint-plugin-tsdoc": "^0.5.0",
         "jiti": "^2.6.1",
@@ -1282,6 +1870,8 @@
         "typescript-eslint": "^8.52.0"
     },
     "dependencies": {
-        "node-sql-parser": "^5.4.0"
+        "mysql2": "^3.22.4",
+        "node-sql-parser": "^5.4.0",
+        "ssh2": "^1.17.0"
     }
 }

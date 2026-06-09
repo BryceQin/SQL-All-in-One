@@ -9,9 +9,9 @@ import { t } from '../../i18n'
 export class SuspiciousNullComparisonRule extends BaseRule {
     readonly id = 'suspicious_null_comparison'
     readonly applicableTypes = ['select']
-    readonly name = 'Suspicious NULL Comparison'
-    readonly description = 'enhanced.nullComparison'
-    readonly category = 'error-check'
+    readonly name = 'linter.suspiciousNullComparison.name'
+    readonly description = 'linter.suspiciousNullComparison.description'
+    readonly category = 'best-practices'
     readonly defaultSeverity = vscode.DiagnosticSeverity.Warning
     readonly defaultEnabled = true
 

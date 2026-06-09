@@ -9,10 +9,10 @@ import { t } from '../../i18n'
 export class MisplacedDistinctRule extends BaseRule {
     readonly id = 'misplaced_distinct'
     readonly applicableTypes = ['select']
-    readonly name = 'Misplaced DISTINCT'
-    readonly description = 'enhanced.distinctMisplaced'
+    readonly name = 'linter.misplacedDistinct.name'
+    readonly description = 'linter.misplacedDistinct.description'
     readonly category = 'error-check'
-    readonly defaultSeverity = vscode.DiagnosticSeverity.Warning
+    readonly defaultSeverity = vscode.DiagnosticSeverity.Error
     readonly defaultEnabled = true
 
     check(context: RuleContext): vscode.Diagnostic[] {
@@ -29,7 +29,7 @@ export class MisplacedDistinctRule extends BaseRule {
         }
 
         for (let i = 1; i < columns.length; i++) {
-            const col = columns[i]
+            const col: unknown = columns[i]
             if (!isAstNode(col)) {
                 continue
             }

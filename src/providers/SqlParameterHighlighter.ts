@@ -128,7 +128,6 @@ export class SqlParameterHighlighter {
     }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-extraneous-class
 export class SqlParameterReplaceCommand {
     public static register(_context: vscode.ExtensionContext): vscode.Disposable {
         return vscode.commands.registerCommand('sql-all-in-one.replaceParameter', async () => {

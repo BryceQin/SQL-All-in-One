@@ -182,7 +182,7 @@ function testDialectKeywords(
     keywords: string[],
     dataTypes: string[],
     dialectSpecificKeywords: string[],
-) {
+): void {
     suite(suiteName, () => {
 
         test('keywords export is a non-empty array of strings', () => {
@@ -258,7 +258,7 @@ function testDialectFunctions(
     suiteName: string,
     functions: string[],
     functionSignatures: { name: string; params: string[]; description: string }[],
-) {
+): void {
     suite(suiteName, () => {
 
         test('functions export is a non-empty array of strings', () => {
@@ -486,7 +486,7 @@ suite('keywords/index.ts', () => {
 // ============================================================================
 suite('Dialect Formatter Options', () => {
 
-    function testDialectOptions(dialectName: string, options: DialectOptions) {
+    function testDialectOptions(dialectName: string, options: DialectOptions): void {
         test(`${dialectName}.formatter has DialectOptions structure`, () => {
             assert.strictEqual(typeof options.name, 'string',
                 `${dialectName} options.name should be a string`)

@@ -5,6 +5,7 @@ import { formatKeyword } from './CommonFormatter';
 import { ExpressionFormatter } from './ExpressionFormatter';
 import { SelectFormatter } from './SelectFormatter';
 import { CommonLayoutHelper } from './CommonLayoutHelper';
+import type { AstNode } from '../../parser/astTypes';
 
 export class DDLFormatter {
     private cfg: FormatOptions;
@@ -17,14 +18,14 @@ export class DDLFormatter {
         this.cfg = cfg;
         this.indent = indent;
         this.layout = new Layout(indent);
-        this.exprFmt = new ExpressionFormatter(cfg, indent, (expr) => {
+        this.exprFmt = new ExpressionFormatter(cfg, indent, (expr: unknown): string => {
             const selectFmt = new SelectFormatter(this.cfg, this.indent);
             return selectFmt.format(expr);
         });
         this.helper = new CommonLayoutHelper(cfg, indent, this.layout);
     }
 
-    public format(stmt: any): string {
+    public format(stmt: AstNode): string {
         this.layout.clear();
         switch (stmt.type) {
             case 'create':
@@ -38,14 +39,14 @@ export class DDLFormatter {
         }
     }
 
-    private formatCreate(stmt: any): string {
+    private formatCreate(stmt: AstNode): string {
         this.layout.add(formatKeyword('CREATE', this.cfg.keywordCase));
 
         if (stmt.temporary) {
             this.layout.add(WS.SPACE, formatKeyword('TEMPORARY', this.cfg.keywordCase));
         }
 
-        const keyword = stmt.keyword ? stmt.keyword.toUpperCase() : 'TABLE';
+        const keyword = stmt.keyword ? String(stmt.keyword).toUpperCase() : 'TABLE';
         this.layout.add(WS.SPACE, formatKeyword(keyword, this.cfg.keywordCase));
 
         if (stmt.if_not_exists) {
@@ -55,17 +56,18 @@ export class DDLFormatter {
         this.formatCreateTarget(stmt);
 
         if (stmt.like) {
+            const likeObj = stmt.like as AstNode;
             this.layout.add(WS.SPACE, formatKeyword('LIKE', this.cfg.keywordCase), WS.SPACE);
-            this.layout.add(stmt.like.table);
+            this.layout.add(String(likeObj.table));
             return this.layout.toString().trimEnd();
         }
 
-        if (stmt.create_definitions && stmt.create_definitions.length > 0) {
-            this.formatCreateDefinitions(stmt.create_definitions);
+        if (stmt.create_definitions && Array.isArray(stmt.create_definitions) && (stmt.create_definitions as AstNode[]).length > 0) {
+            this.formatCreateDefinitions(stmt.create_definitions as AstNode[]);
         }
 
-        if (stmt.table_options && stmt.table_options.length > 0) {
-            this.formatTableOptions(stmt.table_options);
+        if (stmt.table_options && Array.isArray(stmt.table_options) && (stmt.table_options as AstNode[]).length > 0) {
+            this.formatTableOptions(stmt.table_options as Record<string, unknown>[]);
         }
 
         if (stmt.query_expr) {
@@ -78,22 +80,27 @@ export class DDLFormatter {
         return this.layout.toString().trimEnd();
     }
 
-    private formatCreateTarget(stmt: any): void {
+    private formatCreateTarget(stmt: AstNode): void {
         const table = stmt.table;
         if (table) {
             this.layout.add(WS.SPACE);
             if (Array.isArray(table)) {
-                const tableStrs = table.map((t: any) => this.formatTableName(t));
+                const tableStrs = (table as AstNode[]).map((t: AstNode): string => this.formatTableName(t));
                 this.layout.add(tableStrs.join(', '));
             } else {
-                this.layout.add(this.formatTableName(table));
+                this.layout.add(this.formatTableName(table as AstNode));
             }
         }
 
         if (stmt.index) {
             this.layout.add(WS.SPACE);
-            if (typeof stmt.index === 'object' && stmt.index.name) {
-                this.layout.add(stmt.index.name);
+            if (typeof stmt.index === 'object' && stmt.index !== null) {
+                const indexObj = stmt.index as Record<string, unknown>;
+                if (indexObj.name) {
+                    this.layout.add(String(indexObj.name));
+                } else {
+                    this.layout.add(String(stmt.index));
+                }
             } else {
                 this.layout.add(String(stmt.index));
             }
@@ -104,21 +111,21 @@ export class DDLFormatter {
         }
 
         if (stmt.index_columns) {
-            const colStrs = stmt.index_columns.map((c: any) => this.exprFmt.format(c));
+            const colStrs = (stmt.index_columns as AstNode[]).map((c: AstNode): string => this.exprFmt.format(c));
             this.layout.add('(' + colStrs.join(', ') + ')');
         }
     }
 
-    private formatTableName(table: any): string {
+    private formatTableName(table: AstNode): string {
         return this.helper.formatTableName(table, this.exprFmt);
     }
 
-    private formatCreateDefinitions(defs: any[]): void {
+    private formatCreateDefinitions(defs: AstNode[]): void {
         this.layout.add(WS.SPACE, '(');
         this.indent.increaseBlockLevel();
         this.layout.add(WS.NEWLINE, WS.INDENT);
 
-        defs.forEach((def, i) => {
+        defs.forEach((def: AstNode, i: number): void => {
             if (i > 0) {
                 this.layout.add(WS.NO_SPACE, ',', WS.NEWLINE, WS.INDENT);
             }
@@ -138,13 +145,14 @@ export class DDLFormatter {
         this.layout.add(WS.NEWLINE, WS.INDENT, ')');
     }
 
-    private formatColumnDefinition(def: any): void {
+    private formatColumnDefinition(def: AstNode): void {
         const colName = this.exprFmt.format(def.column);
-        const dataType = this.formatDataType(def.definition);
+        const dataType = this.formatDataType(def.definition as Record<string, unknown>);
         this.layout.add(colName, WS.SPACE, dataType);
 
         if (def.nullable) {
-            if (def.nullable.type === 'not null') {
+            const nullable = def.nullable as { type: string };
+            if (nullable.type === 'not null') {
                 this.layout.add(WS.SPACE, formatKeyword('NOT NULL', this.cfg.keywordCase));
             } else {
                 this.layout.add(WS.SPACE, formatKeyword('NULL', this.cfg.keywordCase));
@@ -152,8 +160,9 @@ export class DDLFormatter {
         }
 
         if (def.default_val) {
+            const defaultVal = def.default_val as { value: unknown };
             this.layout.add(WS.SPACE, formatKeyword('DEFAULT', this.cfg.keywordCase), WS.SPACE);
-            this.layout.add(this.exprFmt.format(def.default_val.value));
+            this.layout.add(this.exprFmt.format(defaultVal.value));
         }
 
         if (def.auto_increment) {
@@ -161,28 +170,29 @@ export class DDLFormatter {
         }
 
         if (def.unique) {
-            this.layout.add(WS.SPACE, formatKeyword(def.unique.toUpperCase(), this.cfg.keywordCase));
+            this.layout.add(WS.SPACE, formatKeyword(String(def.unique).toUpperCase(), this.cfg.keywordCase));
         }
 
         if (def.primary) {
-            this.layout.add(WS.SPACE, formatKeyword(def.primary.toUpperCase(), this.cfg.keywordCase));
+            this.layout.add(WS.SPACE, formatKeyword(String(def.primary).toUpperCase(), this.cfg.keywordCase));
         }
 
         if (def.comment) {
+            const comment = def.comment as { value: unknown };
             this.layout.add(WS.SPACE, formatKeyword('COMMENT', this.cfg.keywordCase), WS.SPACE);
-            this.layout.add("'" + def.comment.value + "'");
+            this.layout.add("'" + String(comment.value) + "'");
         }
     }
 
-    private formatDataType(def: any): string {
+    private formatDataType(def: Record<string, unknown>): string {
         if (typeof def === 'string') return formatKeyword(def, this.cfg.dataTypeCase);
 
-        let result = formatKeyword(def.dataType || '', this.cfg.dataTypeCase);
+        let result = formatKeyword(String(def.dataType || ''), this.cfg.dataTypeCase);
 
         if (def.length != null) {
-            result += '(' + def.length;
+            result += '(' + String(def.length);
             if (def.scale != null) {
-                result += ',' + def.scale;
+                result += ',' + String(def.scale);
             }
             result += ')';
         }
@@ -190,7 +200,7 @@ export class DDLFormatter {
         if (def.suffix) {
             if (Array.isArray(def.suffix)) {
                 if (def.suffix.length > 0) {
-                    result += ' ' + def.suffix.join(' ');
+                    result += ' ' + (def.suffix as unknown[]).join(' ');
                 }
             } else {
                 result += ' ' + String(def.suffix);
@@ -200,30 +210,30 @@ export class DDLFormatter {
         return result;
     }
 
-    private formatIndexDefinition(def: any): void {
+    private formatIndexDefinition(def: AstNode): void {
         if (def.keyword) {
-            this.layout.add(formatKeyword(def.keyword.toUpperCase(), this.cfg.keywordCase), WS.SPACE);
+            this.layout.add(formatKeyword(String(def.keyword).toUpperCase(), this.cfg.keywordCase), WS.SPACE);
         }
         if (def.index) {
-            this.layout.add(def.index, WS.SPACE);
+            this.layout.add(String(def.index), WS.SPACE);
         }
-        const colStrs = (def.definition || []).map((c: any) => this.exprFmt.format(c));
+        const colStrs = ((def.definition || []) as AstNode[]).map((c: AstNode): string => this.exprFmt.format(c));
         this.layout.add('(' + colStrs.join(', ') + ')');
     }
 
-    private formatConstraintDefinition(def: any): void {
+    private formatConstraintDefinition(def: AstNode): void {
         if (def.keyword === 'constraint' && def.constraint) {
-            this.layout.add(formatKeyword('CONSTRAINT', this.cfg.keywordCase), WS.SPACE, def.constraint, WS.SPACE);
+            this.layout.add(formatKeyword('CONSTRAINT', this.cfg.keywordCase), WS.SPACE, String(def.constraint), WS.SPACE);
         }
-        this.layout.add(formatKeyword(def.constraint_type.toUpperCase(), this.cfg.keywordCase));
+        this.layout.add(formatKeyword(String(def.constraint_type).toUpperCase(), this.cfg.keywordCase));
 
         if (def.definition) {
-            const colStrs = def.definition.map((c: any) => this.exprFmt.format(c));
+            const colStrs = (def.definition as AstNode[]).map((c: AstNode): string => this.exprFmt.format(c));
             this.layout.add(WS.SPACE, '(' + colStrs.join(', ') + ')');
         }
     }
 
-    private formatTableOptions(options: any[]): void {
+    private formatTableOptions(options: Record<string, unknown>[]): void {
         for (const opt of options) {
             this.layout.add(WS.SPACE);
             if (typeof opt === 'string') {
@@ -240,19 +250,19 @@ export class DDLFormatter {
         }
     }
 
-    private formatAlter(stmt: any): string {
+    private formatAlter(stmt: AstNode): string {
         this.layout.add(formatKeyword('ALTER', this.cfg.keywordCase), WS.SPACE, formatKeyword('TABLE', this.cfg.keywordCase));
 
         if (stmt.table) {
             const tables = Array.isArray(stmt.table) ? stmt.table : [stmt.table];
-            for (const t of tables) {
+            for (const t of tables as AstNode[]) {
                 this.layout.add(WS.SPACE, this.formatTableName(t));
             }
         }
 
         if (stmt.expr) {
             const exprs = Array.isArray(stmt.expr) ? stmt.expr : [stmt.expr];
-            for (const expr of exprs) {
+            for (const expr of exprs as AstNode[]) {
                 this.formatAlterExpression(expr);
             }
         }
@@ -260,13 +270,13 @@ export class DDLFormatter {
         return this.layout.toString().trimEnd();
     }
 
-    private formatAlterExpression(expr: any): void {
+    private formatAlterExpression(expr: AstNode): void {
         if (expr.action) {
-            this.layout.add(WS.SPACE, formatKeyword(expr.action.toUpperCase(), this.cfg.keywordCase));
+            this.layout.add(WS.SPACE, formatKeyword(String(expr.action).toUpperCase(), this.cfg.keywordCase));
         }
 
         if (expr.keyword) {
-            this.layout.add(WS.SPACE, formatKeyword(expr.keyword.toUpperCase(), this.cfg.keywordCase));
+            this.layout.add(WS.SPACE, formatKeyword(String(expr.keyword).toUpperCase(), this.cfg.keywordCase));
         }
 
         if (expr.resource === 'column') {
@@ -274,7 +284,7 @@ export class DDLFormatter {
                 this.layout.add(WS.SPACE, this.exprFmt.format(expr.column));
             }
             if (expr.definition) {
-                this.layout.add(WS.SPACE, this.formatDataType(expr.definition));
+                this.layout.add(WS.SPACE, this.formatDataType(expr.definition as Record<string, unknown>));
             }
         } else if (expr.resource === 'index') {
             if (expr.index) {
@@ -283,18 +293,18 @@ export class DDLFormatter {
         }
     }
 
-    private formatDrop(stmt: any): string {
+    private formatDrop(stmt: AstNode): string {
         this.layout.add(formatKeyword('DROP', this.cfg.keywordCase));
 
         if (stmt.keyword) {
-            this.layout.add(WS.SPACE, formatKeyword(stmt.keyword.toUpperCase(), this.cfg.keywordCase));
+            this.layout.add(WS.SPACE, formatKeyword(String(stmt.keyword).toUpperCase(), this.cfg.keywordCase));
         }
 
         if (stmt.name && Array.isArray(stmt.name)) {
-            const nameStrs = stmt.name.map((n: any) => {
+            const nameStrs = (stmt.name as AstNode[]).map((n: AstNode): string => {
                 if (typeof n === 'object' && n !== null) {
                     if ('table' in n) return this.formatTableName(n);
-                    if ('value' in n) return String(n.value);
+                    if ('value' in n) return String((n as unknown as { value: unknown }).value);
                     return JSON.stringify(n);
                 }
                 return String(n);
@@ -305,7 +315,7 @@ export class DDLFormatter {
         return this.layout.toString().trimEnd();
     }
 
-    private formatUnknown(stmt: any): string {
+    private formatUnknown(stmt: AstNode): string {
         return JSON.stringify(stmt);
     }
 }

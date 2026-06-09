@@ -32,15 +32,15 @@ export function addIndent(layout: Layout, indent: Indentation): void {
 
 export function formatAlias(as: unknown, cfg: FormatOptions): string {
     if (as == null) return '';
-    const aliasStr = typeof as === 'object' && 'value' in (as as any)
-        ? String((as as any).value)
+    const aliasStr = typeof as === 'object' && as !== null && 'value' in (as as Record<string, unknown>)
+        ? String((as as { value: unknown }).value)
         : String(as);
     if (!aliasStr) return '';
     return ' ' + formatKeyword('AS', cfg.keywordCase) + ' ' + aliasStr;
 }
 
 export function joinWithComma(items: string[], cfg: FormatOptions, layout: Layout, _indent: Indentation): void {
-    items.forEach((item, i) => {
+    items.forEach((item, i): void => {
         if (i > 0) {
             if (cfg.commaPosition === 'before') {
                 layout.add(WS.NEWLINE, WS.INDENT);
@@ -64,9 +64,9 @@ export function hasProperty<K extends string>(obj: unknown, prop: K): obj is Rec
 
 export function getStringValue(obj: unknown, prop: string): string | null {
     if (!hasProperty(obj, prop)) return null;
-    const val = (obj as any)[prop];
+    const val = obj[prop];
     if (val == null) return null;
-    if (typeof val === 'object' && 'value' in val) return String(val.value);
+    if (typeof val === 'object' && val !== null && 'value' in (val as Record<string, unknown>)) return String((val as { value: unknown }).value);
     return String(val);
 }
 

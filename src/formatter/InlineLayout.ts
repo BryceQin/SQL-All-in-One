@@ -16,7 +16,7 @@ export default class InlineLayout extends Layout {
         this.expressionWidth = expressionWidth
     }
 
-    public add(...items: (WS | string)[]) {
+    public add(...items: (WS | string)[]): void {
         // 先遍历所有项，通过 addToLength 计算长度；
         items.forEach((item) => this.addToLength(item))
         // 若长度超过 expressionWidth，抛出 InlineLayoutError
@@ -29,7 +29,7 @@ export default class InlineLayout extends Layout {
     }
 
     // 根据项的类型更新长度和尾随空格标记：
-    private addToLength(item: WS | string) {
+    private addToLength(item: WS | string): void {
         // 普通字符串：直接累加长度，重置尾随空格标记
         if (typeof item === "string") {
             this.length += item.length

@@ -11,13 +11,6 @@ export interface AstVisitor {
     leave?(node: Record<string, unknown>, parent: Record<string, unknown> | null, key: string | null): void
 }
 
-interface WalkTask {
-    node: unknown
-    parent: Record<string, unknown> | null
-    key: string | null
-    phase: 'enter' | 'leave'
-}
-
 export const MAX_AST_DEPTH = 1000
 
 export function walkAst(
@@ -26,49 +19,51 @@ export function walkAst(
     _parent?: Record<string, unknown> | null,
     _key?: string | null,
 ): void {
-    const stack: WalkTask[] = [{ node, parent: _parent ?? null, key: _key ?? null, phase: 'enter' }]
-    let depth = 0
+    // Flat array: each task uses 4 consecutive slots [node, parent, key, phase]
+    // phase: 0 = enter, 1 = leave
+    const stack: unknown[] = []
+    stack.push(node, _parent ?? null, _key ?? null, 0)
 
     while (stack.length > 0) {
-        const task = stack.pop()
-        if (!task) break
+        const phase = stack.pop() as number
+        const key = stack.pop()
+        const parent = stack.pop()
+        const currentNode = stack.pop()
 
-        if (depth > MAX_AST_DEPTH) {
+        if (stack.length / 4 > 10000) {
             console.warn('SQL All in One: AST depth exceeded maximum, stopping traversal')
             return
         }
 
-        if (task.phase === 'leave') {
-            if (isAstNode(task.node)) {
-                visitor.leave?.(task.node, task.parent, task.key)
+        if (phase === 1) {
+            if (isAstNode(currentNode)) {
+                visitor.leave?.(currentNode, parent as Record<string, unknown> | null, key as string | null)
             }
-            depth--
             continue
         }
 
-        if (!isAstNode(task.node)) {
-            if (isPlainObject(task.node)) {
-                const entries = Object.entries(task.node as Record<string, unknown>)
+        if (!isAstNode(currentNode)) {
+            if (isPlainObject(currentNode)) {
+                const entries = Object.entries(currentNode as Record<string, unknown>)
                 for (let i = entries.length - 1; i >= 0; i--) {
                     const [, childValue] = entries[i]
                     if (Array.isArray(childValue)) {
                         for (let j = childValue.length - 1; j >= 0; j--) {
-                            stack.push({ node: childValue[j], parent: task.node, key: task.key, phase: 'enter' })
+                            stack.push(childValue[j], currentNode, key, 0)
                         }
                     } else {
-                        stack.push({ node: childValue, parent: task.node, key: task.key, phase: 'enter' })
+                        stack.push(childValue, currentNode, key, 0)
                     }
                 }
             }
             continue
         }
 
-        visitor.enter?.(task.node, task.parent, task.key)
-        depth++
+        visitor.enter?.(currentNode, parent as Record<string, unknown> | null, key as string | null)
 
-        stack.push({ node: task.node, parent: task.parent, key: task.key, phase: 'leave' })
+        stack.push(currentNode, parent, key, 1)
 
-        const entries = Object.entries(task.node)
+        const entries = Object.entries(currentNode)
         for (let i = entries.length - 1; i >= 0; i--) {
             const [childKey, childValue] = entries[i]
             if (childKey === 'type' || childKey === 'loc') {
@@ -76,12 +71,12 @@ export function walkAst(
             }
             if (Array.isArray(childValue)) {
                 for (let j = childValue.length - 1; j >= 0; j--) {
-                    stack.push({ node: childValue[j], parent: task.node, key: childKey, phase: 'enter' })
+                    stack.push(childValue[j], currentNode, childKey, 0)
                 }
             } else if (isAstNode(childValue)) {
-                stack.push({ node: childValue, parent: task.node, key: childKey, phase: 'enter' })
+                stack.push(childValue, currentNode, childKey, 0)
             } else if (isPlainObject(childValue)) {
-                stack.push({ node: childValue, parent: task.node, key: childKey, phase: 'enter' })
+                stack.push(childValue, currentNode, childKey, 0)
             }
         }
     }

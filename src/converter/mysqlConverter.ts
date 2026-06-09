@@ -123,7 +123,7 @@ export class MysqlToHiveConverter {
   }
 
   private removeTypeLength(item: string): string {
-    return item.replace(/\b(STRING|VARCHAR|CHAR|TINYINT|SMALLINT|INT|INTEGER|BIGINT)\s*\(\s*\d+\s*\)/gi, (match, type) => {
+    return item.replace(/\b(STRING|VARCHAR|CHAR|TINYINT|SMALLINT|INT|INTEGER|BIGINT)\s*\(\s*\d+\s*\)/gi, (_match: string, type: string): string => {
       if (['STRING', 'VARCHAR', 'CHAR'].includes(type.toUpperCase())) {
         return 'STRING'
       }

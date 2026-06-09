@@ -4,6 +4,18 @@ import { extractCteNamesFromAst } from './AstCompletionProvider'
 import { toSqlDialect } from '../core/sqlDialects'
 import { getDocumentAstCache } from '../parser/DocumentAstCache'
 
+export function getCTEItemsFromAst(ast: unknown): vscode.CompletionItem[] {
+    const cteNames = extractCteNamesFromAst(ast)
+    if (cteNames.length === 0) return []
+
+    return cteNames.map((name) => {
+        const item = new vscode.CompletionItem(name, vscode.CompletionItemKind.Variable)
+        item.detail = t('completion.cteLabel')
+        item.sortText = `3_${name}`
+        return item
+    })
+}
+
 export function getCTEItems(
     document: vscode.TextDocument,
     position: vscode.Position

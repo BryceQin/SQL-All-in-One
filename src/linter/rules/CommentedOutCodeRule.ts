@@ -13,7 +13,7 @@ const SQL_KEYWORD_REGEXES = SQL_KEYWORDS_FOR_COMMENT_CHECK.map(kw => ({
 export class CommentedOutCodeRule extends BaseRule {
     readonly id = 'commented_out_code'
     readonly applicableTypes: string[] = []
-    readonly name = 'Commented Out Code'
+    readonly name = 'linter.commentedOutCode.name'
     readonly description = 'linter.commentedOutCode.description'
     readonly category = 'code-style'
     readonly defaultSeverity = vscode.DiagnosticSeverity.Information
@@ -22,7 +22,8 @@ export class CommentedOutCodeRule extends BaseRule {
     check(context: RuleContext): vscode.Diagnostic[] {
         const diagnostics: vscode.Diagnostic[] = []
         const sql = context.sql
-        const thresholdLines = getConfigManager().get<number>('lint.commented_out_code_threshold_lines', 3)
+        const ruleConfig = getConfigManager().get<{ enabled?: boolean; severity?: string; thresholdLines?: number }>('lint.commented_out_code', { enabled: true, severity: 'information', thresholdLines: 3 })
+        const thresholdLines = ruleConfig.thresholdLines ?? 3
 
         const blockCommentPattern = /\/\*([\s\S]*?)\*\//g
         let match

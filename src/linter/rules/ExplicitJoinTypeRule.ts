@@ -6,7 +6,7 @@ import { getLocFromAny } from '../../parser/astUtils'
 export class ExplicitJoinTypeRule extends BaseRule {
     readonly id = 'explicit_join_type'
     readonly applicableTypes = ['select']
-    readonly name = 'Explicit Join Type'
+    readonly name = 'linter.explicitJoinType.name'
     readonly description = 'linter.explicitJoinType.description'
     readonly category = 'code-style'
     readonly defaultSeverity = vscode.DiagnosticSeverity.Information

@@ -1,0 +1,28 @@
+const esbuild = require('esbuild');
+
+const nativePlugin = {
+    name: 'native-node',
+    setup(build) {
+        build.onResolve({ filter: /\.node$/ }, (args) => ({
+            path: args.path,
+            namespace: 'native-node',
+        }));
+        build.onLoad({ filter: /.*/, namespace: 'native-node' }, () => ({
+            contents: 'module.exports = {};',
+            loader: 'js',
+        }));
+    },
+};
+
+esbuild.build({
+    entryPoints: ['./src/extension.ts'],
+    bundle: true,
+    outfile: 'out/extension.js',
+    external: ['vscode'],
+    format: 'cjs',
+    platform: 'node',
+    target: 'node20',
+    plugins: [nativePlugin],
+    sourcemap: !process.argv.includes('--minify'),
+    minify: process.argv.includes('--minify'),
+}).catch(() => process.exit(1));

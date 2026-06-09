@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E3A8A"/>
+      <stop offset="40%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#06B6D4"/>
+    </linearGradient>
+    <linearGradient id="cylBody" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.22)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0.08)"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="rgba(0,0,0,0.35)"/>
+    </filter>
+    <clipPath id="roundClip">
+      <rect x="16" y="16" width="480" height="480" rx="96"/>
+    </clipPath>
+  </defs>
+
+  <rect x="16" y="16" width="480" height="480" rx="96" fill="url(#bg)"/>
+
+  <g clip-path="url(#roundClip)">
+    <ellipse cx="256" cy="130" rx="110" ry="36" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.3)" stroke-width="3"/>
+    <path d="M146 130 v80 a110 36 0 0 0 220 0 v-80" fill="url(#cylBody)" stroke="rgba(255,255,255,0.3)" stroke-width="3"/>
+    <ellipse cx="256" cy="176" rx="110" ry="36" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
+    <ellipse cx="256" cy="210" rx="110" ry="36" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1.5"/>
+
+    <text x="256" y="370" text-anchor="middle" font-family="'SF Pro Display','Segoe UI',Arial,Helvetica,sans-serif" font-weight="900" font-size="160" fill="white" filter="url(#shadow)" letter-spacing="-2">SQL</text>
+
+    <rect x="176" y="404" width="160" height="4" rx="2" fill="rgba(255,255,255,0.35)"/>
+    <rect x="216" y="420" width="80" height="4" rx="2" fill="rgba(255,255,255,0.2)"/>
+
+    <g opacity="0.5">
+      <path d="M80 440 L100 420 L120 440 L100 460 Z" fill="none" stroke="white" stroke-width="2.5" stroke-linejoin="round"/>
+    </g>
+    <g opacity="0.5">
+      <path d="M392 440 L412 420 L432 440 L412 460 Z" fill="none" stroke="white" stroke-width="2.5" stroke-linejoin="round"/>
+    </g>
+
+    <circle cx="60" cy="60" r="80" fill="rgba(255,255,255,0.03)"/>
+    <circle cx="452" cy="452" r="100" fill="rgba(255,255,255,0.03)"/>
+  </g>
+</svg>

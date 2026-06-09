@@ -4,7 +4,7 @@ import { getAstConverter } from '../converter/AstConverter'
 import type { SqlDialect } from '../parser/dialectMapper'
 import { t } from '../i18n'
 
-export async function convertMysqlToHiveCommand() {
+export async function convertMysqlToHiveCommand(): Promise<void> {
     const editor = vscode.window.activeTextEditor
     if (!editor) {
         vscode.window.showWarningMessage(t('notification.noActiveEditor'))
@@ -34,7 +34,7 @@ export async function convertMysqlToHiveCommand() {
     }
 }
 
-export async function convertHiveToMysqlCommand() {
+export async function convertHiveToMysqlCommand(): Promise<void> {
     const editor = vscode.window.activeTextEditor
     if (!editor) {
         vscode.window.showWarningMessage(t('notification.noActiveEditor'))
@@ -69,7 +69,7 @@ async function replaceEditorText(
     document: vscode.TextDocument,
     selection: vscode.Selection,
     newText: string
-) {
+): Promise<void> {
     if (selection.isEmpty) {
         const fullRange = new vscode.Range(
             document.positionAt(0),

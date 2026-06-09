@@ -3,6 +3,8 @@ import type { SqlDialect, SqlLanguage } from "../core/dialectRegistry"
 import { getDialectEntries } from "../core/dialectRegistry"
 import { AstFormatter } from "./AstFormatter"
 import { ConfigError, validateConfig } from "./validateConfig"
+import { t } from "../i18n"
+import { getFormatterDefaultOptions } from "../config/configDefinitions"
 
 export type { SqlLanguage }
 
@@ -16,90 +18,7 @@ export type FormatOptionsWithDialect = Partial<FormatOptions> & {
     dialect: SqlDialect
 }
 
-// NOTE: Default values here should match src/config/configDefinitions.ts FORMAT_CONFIG_ITEMS
-// When adding new format options, add them to both this object and FORMAT_CONFIG_ITEMS
-const defaultOptions: FormatOptions = {
-    tabWidth: 4,
-    useTabs: false,
-    keywordCase: 'preserve',
-    identifierCase: 'preserve',
-    dataTypeCase: 'preserve',
-    functionCase: 'preserve',
-    indentStyle: 'standard',
-    logicalOperatorNewline: 'before',
-    expressionWidth: 50,
-    linesBetweenQueries: 1,
-    denseOperators: false,
-    newlineBeforeSemicolon: false,
-    commaPosition: 'after',
-    alignColumnDefinitions: false,
-    newlineAfterSelect: true,
-    newlineAfterFrom: true,
-    newlineBeforeWhere: true,
-    newlineAfterWhere: true,
-    newlineBeforeOrderBy: true,
-    newlineBeforeGroupBy: true,
-    newlineBeforeHaving: true,
-    newlineBeforeLimit: true,
-    maxLineLength: 120,
-    tabulateAlias: false,
-    reservedKeywordCase: 'preserve',
-    builtinFunctionCase: 'preserve',
-    newlineBeforeJoin: true,
-    newlineAfterComma: true,
-    alignWhereClauses: false,
-    alignCaseStatements: false,
-    breakAfterSelectItem: true,
-    breakAfterFromItem: true,
-    spaceBeforeComma: false,
-    spaceInsideParentheses: false,
-    trimTrailingSpaces: true,
-    semicolonAtEnd: true,
-    singleLineMaxLength: 80,
-    nullCase: 'preserve',
-    booleanCase: 'preserve',
-    newlineAfterGroupBy: true,
-    newlineAfterHaving: true,
-    newlineAfterOrderBy: true,
-    newlineAfterLimit: false,
-    newlineAfterJoin: true,
-    newlineBeforeSetOperation: true,
-    newlineAfterSetOperation: true,
-    newlineBeforeOn: true,
-    newlineBeforeUsing: true,
-    newlineBeforeWith: true,
-    newlineAfterWith: true,
-    indentCteBody: true,
-    newlineBetweenCtes: true,
-    cteCommaPosition: 'before',
-    newlineAfterOver: false,
-    newlineBeforePartitionBy: true,
-    newlineAfterPartitionBy: true,
-    newlineBeforeOrderByInWindow: true,
-    indentJoinConditions: true,
-    alignOnClauses: false,
-    alignInsertColumns: false,
-    alignInsertValuesGroups: false,
-    newlineAfterInsert: true,
-    newlineAfterInsertColumns: true,
-    newlineBetweenValuesGroups: true,
-    newlineAfterCase: true,
-    newlineAfterWhen: true,
-    newlineAfterThen: false,
-    newlineAfterElse: false,
-    indentWhen: true,
-    indentThen: true,
-    newlineAfterIn: false,
-    maxItemsInlineList: 5,
-    subqueryParenStyle: 'inline',
-    commentPosition: 'preserve',
-    blankLinesBeforeSetOperation: 1,
-    blankLinesAfterSetOperation: 0,
-    newlineBeforeLateralView: true,
-    newlineBeforeDistributeBy: true,
-    newlineBeforeClusterBy: true,
-    newlineBeforeSortBy: true,
-}
+const defaultOptions = getFormatterDefaultOptions() as unknown as FormatOptions
 
 export const format = (
     query: string,
@@ -109,7 +28,7 @@ export const format = (
         typeof cfg.language === "string" &&
         !supportedDialects.includes(cfg.language)
     ) {
-        throw new ConfigError(`不支持的SQL方言: ${cfg.language}`)
+        throw new ConfigError(t('validate.unsupportedDialect', cfg.language || ''))
     }
 
     const sqlDialectName = (cfg.language || "sql") as SqlDialect
@@ -120,8 +39,96 @@ export const format = (
     })
 }
 
-// AstFormatter 缓存：按方言缓存实例，避免每次 format 调用都重新创建格式化器
-const formatterCache = new Map<string, { optionsKey: string; formatter: AstFormatter }>()
+// AstFormatter 缓存：按方言和配置哈希缓存实例
+const formatterCache = new Map<string, AstFormatter>()
+const MAX_FORMATTER_CACHE_SIZE = 50
+
+let lastOptionsRef: WeakRef<object> | undefined;
+let lastCacheKey: string | undefined;
+
+function getFormatterCacheKey(dialect: string, options: FormatOptions): string {
+    if (lastOptionsRef) {
+        const cached = lastOptionsRef.deref();
+        if (cached === options && lastCacheKey) {
+            return lastCacheKey;
+        }
+    }
+    const relevantOptions = {
+        tabWidth: options.tabWidth,
+        useTabs: options.useTabs,
+        keywordCase: options.keywordCase,
+        identifierCase: options.identifierCase,
+        dataTypeCase: options.dataTypeCase,
+        functionCase: options.functionCase,
+        indentStyle: options.indentStyle,
+        logicalOperatorNewline: options.logicalOperatorNewline,
+        expressionWidth: options.expressionWidth,
+        linesBetweenQueries: options.linesBetweenQueries,
+        denseOperators: options.denseOperators,
+        newlineBeforeSemicolon: options.newlineBeforeSemicolon,
+        commaPosition: options.commaPosition,
+        alignColumnDefinitions: options.alignColumnDefinitions,
+        newlineAfterSelect: options.newlineAfterSelect,
+        newlineAfterFrom: options.newlineAfterFrom,
+        newlineBeforeWhere: options.newlineBeforeWhere,
+        newlineAfterWhere: options.newlineAfterWhere,
+        newlineBeforeOrderBy: options.newlineBeforeOrderBy,
+        newlineBeforeGroupBy: options.newlineBeforeGroupBy,
+        newlineBeforeHaving: options.newlineBeforeHaving,
+        newlineBeforeLimit: options.newlineBeforeLimit,
+        tabulateAlias: options.tabulateAlias,
+        newlineBeforeJoin: options.newlineBeforeJoin,
+        alignWhereClauses: options.alignWhereClauses,
+        alignCaseStatements: options.alignCaseStatements,
+        spaceBeforeComma: options.spaceBeforeComma,
+        spaceInsideParentheses: options.spaceInsideParentheses,
+        trimTrailingSpaces: options.trimTrailingSpaces,
+        semicolonAtEnd: options.semicolonAtEnd,
+        singleLineMaxLength: options.singleLineMaxLength,
+        nullCase: options.nullCase,
+        booleanCase: options.booleanCase,
+        newlineAfterGroupBy: options.newlineAfterGroupBy,
+        newlineAfterHaving: options.newlineAfterHaving,
+        newlineAfterOrderBy: options.newlineAfterOrderBy,
+        newlineAfterLimit: options.newlineAfterLimit,
+        newlineAfterJoin: options.newlineAfterJoin,
+        newlineBeforeSetOperation: options.newlineBeforeSetOperation,
+        newlineAfterSetOperation: options.newlineAfterSetOperation,
+        newlineBeforeOn: options.newlineBeforeOn,
+        newlineBeforeUsing: options.newlineBeforeUsing,
+        newlineBeforeWith: options.newlineBeforeWith,
+        newlineAfterWith: options.newlineAfterWith,
+        indentCteBody: options.indentCteBody,
+        newlineBetweenCtes: options.newlineBetweenCtes,
+        cteCommaPosition: options.cteCommaPosition,
+        indentJoinConditions: options.indentJoinConditions,
+        alignOnClauses: options.alignOnClauses,
+        alignInsertColumns: options.alignInsertColumns,
+        alignInsertValuesGroups: options.alignInsertValuesGroups,
+        newlineAfterInsertColumns: options.newlineAfterInsertColumns,
+        newlineBetweenValuesGroups: options.newlineBetweenValuesGroups,
+        newlineAfterCase: options.newlineAfterCase,
+        newlineAfterWhen: options.newlineAfterWhen,
+        newlineAfterThen: options.newlineAfterThen,
+        newlineAfterElse: options.newlineAfterElse,
+        indentWhen: options.indentWhen,
+        indentThen: options.indentThen,
+        newlineAfterIn: options.newlineAfterIn,
+        maxItemsInlineList: options.maxItemsInlineList,
+        subqueryParenStyle: options.subqueryParenStyle,
+        commentPosition: options.commentPosition,
+        blankLinesBeforeSetOperation: options.blankLinesBeforeSetOperation,
+        blankLinesAfterSetOperation: options.blankLinesAfterSetOperation,
+        newlineBeforeLateralView: options.newlineBeforeLateralView,
+        newlineBeforeDistributeBy: options.newlineBeforeDistributeBy,
+        newlineBeforeClusterBy: options.newlineBeforeClusterBy,
+        newlineBeforeSortBy: options.newlineBeforeSortBy
+    }
+    const key = `${dialect}:${JSON.stringify(relevantOptions)}`;
+    lastOptionsRef = new WeakRef(options as object);
+    lastCacheKey = key;
+    return key;
+}
 
 export const formatDialect = (
     query: string,
@@ -129,8 +136,7 @@ export const formatDialect = (
 ): string => {
     if (typeof query !== "string") {
         throw new Error(
-            "无效的查询语句入参，参数类型应为字符串，实际传入的类型是 " +
-                typeof query,
+            t('validate.invalidQueryType', typeof query),
         )
     }
 
@@ -139,14 +145,20 @@ export const formatDialect = (
         ...cfg,
     })
 
-    const optionsKey = JSON.stringify(options)
-    const cached = formatterCache.get(dialect)
-    if (cached && cached.optionsKey === optionsKey) {
-        return cached.formatter.format(query)
+    const cacheKey = getFormatterCacheKey(dialect, options)
+    let formatter = formatterCache.get(cacheKey)
+    
+    if (!formatter) {
+        if (formatterCache.size >= MAX_FORMATTER_CACHE_SIZE) {
+            const firstKey = formatterCache.keys().next().value
+            if (firstKey !== undefined) {
+                formatterCache.delete(firstKey)
+            }
+        }
+        formatter = new AstFormatter(options, dialect)
+        formatterCache.set(cacheKey, formatter)
     }
-
-    const formatter = new AstFormatter(options, dialect)
-    formatterCache.set(dialect, { optionsKey, formatter })
+    
     return formatter.format(query)
 }
 

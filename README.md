@@ -6,302 +6,185 @@
 
 ## 中文
 
-一个强大的 SQL 格式化 VSCode 插件，支持 Hive、MySQL、SparkSQL、FlinkSQL、PostgreSQL、BigQuery、SQLite 等多种 SQL 方言，提供丰富的自定义配置选项。
+**SQL All in One** 是一款全面的 SQL 开发工具包 VSCode 扩展，集数据库连接管理、查询执行、数据导入导出、表设计器、执行计划、数据库浏览器、SQL 格式化、智能补全、语法检查、Lint 规则、快速修复、代码导航、DDL 转换、注释增强、悬停信息、代码折叠、可视化配置编辑器等功能于一体。
 
-> **v1.10.0 Lint 架构重构** -- AstLinter 规则体系模块化：策略模式 + 规则注册机制，14 个独立规则类实现统一 LintRule 接口，AstLinter 从 877 行缩减至 64 行，支持独立测试和开闭原则扩展。
+| | |
+|---|---|
+| **发布者** | bryce-qin |
+| **版本** | 2.9.0 |
+| **许可证** | MIT |
+| **仓库** | [GitHub](https://github.com/BryceQin/SQL-All-in-One) |
+| **VSCode 引擎** | ^1.85.0 |
+| **分类** | Formatters, Snippets, Other, Databases |
 
-> **v1.8.0 全面优化** -- 国际化全面改造（设置界面跟随 VS Code 语言切换）、README/CHANGELOG 双语化、配置编辑器多语言、统一方言注册中心、修复内存泄漏、架构优化。
+### 支持的 SQL 方言（8 种）
 
-> **v1.7.0 跳转与导航增强** -- Go to Definition（CTE/表别名/列别名）、Find All References、Rename Symbol（含保留字/冲突校验）、Breadcrumb 子句级导航、AstNavigator 共享导航引擎。
+| Language ID | 别名 | 扩展名 |
+|------------|------|--------|
+| `sql` | SQL | `.sql` |
+| `hive` | Hive, hive-sql | `.hql` |
+| `mysql` | MySQL | `.mysql` |
+| `spark` | SparkSQL, spark | `.sparksql` |
+| `flinksql` | FlinkSQL, flink-sql | `.flinksql` |
+| `postgresql` | PostgreSQL, postgres | `.psql`, `.pgsql` |
+| `bigquery` | BigQuery | `.bqsql` |
+| `sqlite` | SQLite | `.sqlite`, `.sqlt` |
 
-## 特性
+---
 
-区别于市场上多数仅提供单一格式化效果的 SQL 插件，本工具以个性化配置为核心设计理念，内置丰富的可配置项：
+### 快速开始
 
-- **多种 SQL 方言支持** - Hive、MySQL、SparkSQL、FlinkSQL、PostgreSQL、BigQuery、SQLite、通用 SQL
-- **AST 驱动架构** - 基于 node-sql-parser v5.x，所有核心功能（格式化、诊断、Lint、补全、转换）均基于 AST 实现
-- **丰富的格式化选项** - 关键字大小写、缩进风格、换行策略等 40+ 可配置项
-- **智能补全（IntelliSense）** - 关键字、函数签名、代码片段、CTE、标识符智能提示，基于 AST 上下文感知
-- **注释增强** - 智能注释切换、注释模板补全、注释 Lint 规则
-- **灵活的缩进配置** - 支持标准缩进和表格风格对齐
-- **可视化配置编辑器** - 现代化图形化配置界面，可折叠分组、Toggle 开关、实时预览格式化效果
-- **增强的语法检查** - 15+ 项语法和代码质量检查，智能提示，减少误报
-- **安全的参数处理** - 支持 JDBC `:?` 参数、正则注入防护、参数批量替换
-- **高度自定义** - 超过 40 项可配置项满足各种团队规范
-- **命令支持** - 提供"格式化选择"命令，支持部分格式化
-- **语法错误检测** - 基于 AST 解析实时检测 SQL 语法错误并提供友好的中文提示
-- **快速修复** - 配合语法检查提供一键修复功能
-- **状态栏显示** - 显示当前 SQL 方言和快捷操作入口
-- **代码片段** - 提供常用 SQL 代码片段，提升编写效率
-- **代码折叠** - 支持 CTE、子查询、函数块等代码块的折叠
-- **大纲视图** - 提供 SQL 文档的大纲视图，快速导航
-- **代码导航** - Go to Definition（F12）、Find All References（Shift+F12）、Rename Symbol（F2），支持 CTE/表别名/列别名
-- **Breadcrumb 导航** - 子句级面包屑导航，SELECT/FROM/WHERE/GROUP BY/HAVING/ORDER BY 一目了然
-- **参数化查询** - 支持变量高亮和批量替换功能（含 JDBC `:?` 参数支持）
-- **SQL Lint** - 内置 17+ 条 Lint 规则，支持自定义配置
-- **DDL 转换** - 基于 AST 的 MySQL <-> Hive CREATE TABLE 语句转换
-
-## 快速开始
-
-1. 安装插件后，打开任意 `.sql` 或 `.hql` 文件
+1. 安装插件后，打开任意 `.sql`、`.hql`、`.mysql` 等 SQL 文件
 2. 使用快捷键 `Shift+Alt+F`（Windows/Linux）或 `Shift+Option+F`（Mac）格式化文档
 3. 或右键选择"格式化文档"
-4. 或使用命令面板搜索"Format Selection (SQL All in One)"格式化选中内容
+4. 或使用命令面板搜索 "Format Selection (SQL All in One)" 格式化选中内容
+5. 点击侧边栏数据库图标，添加数据库连接，即可执行查询、浏览 Schema
 
-## 可视化配置编辑器
+---
 
-使用图形化配置界面轻松调整格式化选项：
+### 核心功能
 
-1. 按 `Cmd+Shift+P`（Mac）或 `Ctrl+Shift+P`（Windows/Linux）打开命令面板
-2. 搜索并选择 "SQL All in One Config"
-3. 在顶部预览区输入 SQL 并点击"格式化预览"查看效果
-4. 在底部配置区调整选项，多列流式布局自适应，无空白间隙
-5. 拖拽预览区和配置区之间的分割线可调整预览区高度
-6. 支持快速预设（默认、Hive、MySQL、紧凑）
-7. 点击"保存配置"应用更改
+#### 1. 数据库连接与管理
 
-## 增强的语法检查
+- MySQL 数据库连接，支持连接池、SSL、SSH 隧道
+- 图形化连接对话框（v2.1 新增，替代逐步输入框）
+- 连接生命周期管理（添加/编辑/删除/连接/断开）
+- 连接池健康检查、空闲检查、自动重连
+- 自动重试，指数退避（最多 3 次）
+- 活动连接管理（单活动连接模式）
+- SecretStorage 密码安全存储
+- 连接导入/导出（支持密码保护，导出密码时需确认）
 
-插件提供 15+ 项增强的语法和代码质量检查功能：
+#### 2. 查询执行与结果
 
-### 语法错误检查
-- HAVING 子句缺少 GROUP BY（正确检查 GROUP BY 在 HAVING 之前）
-- LIMIT 缺少数字参数（支持占位符和 ALL/OFFSET 语法）
-- JOIN 缺少 ON 或 USING 子句（支持 CROSS/NATURAL JOIN）
-- 错误的 DISTINCT 位置
-- WHERE 子句中使用聚合函数（排除子查询中的合法用法）
-- UPDATE 语句中使用 *
-- 不完整的 CASE 语句（正确处理嵌套 CASE，精确词边界匹配）
-- 括号不匹配（排除字符串和注释中的括号，支持 SQL '' 转义）
-- 未闭合的字符串（支持 SQL '' 转义引号）
-- 重复列别名（仅检查 AS 后的别名，正确处理子查询）
+- 执行 SQL（`Ctrl+Shift+E` / `Cmd+Shift+E`）和执行选中 SQL（`Ctrl+Shift+R` / `Cmd+Shift+R`）
+- 查询超时控制（可配置）
+- 查询取消支持（CancellationToken + KILL QUERY）
+- 最大行数限制
+- 结果面板：分页、滚动预加载
+- 网格视图和表单视图
+- JSON 美化输出
+- 日期格式显示（本地/UTC/相对时间）
+- 长文本截断（可配置阈值）
+- NULL 值占位符显示
+- 批量执行模式（顺序/事务）
+- 错误处理策略（停止/继续）
+- 批量执行进度保存
 
-### 代码质量建议
-- 重复的表别名
-- 使用保留字作为别名（仅检查 AS 后的别名，大幅减少误报）
-- SELECT 语句缺少 FROM 子句（特定函数除外）
-- INSERT 语句缺少列名
-- 冗余的 DISTINCT 用法
-- 子查询缺少别名（正确处理嵌套子查询）
-- 可疑的 NULL 比较（= NULL vs IS NULL）
+#### 3. 数据导入与导出
 
-### 方言提示
-- MySQL 日期函数在 Hive 中的差异提示
+- 导出为 CSV（可配置分隔符、编码、是否包含表头）
+- 导出为 JSON
+- 导出为 SQL INSERT 语句
+- 导出表 DDL
+- 从文件导入数据
+- 默认导出格式配置
 
-### 配置选项
-在设置中可以配置：
-- `enableEnhancedChecks`: 是否启用增强检查
-- `showErrorLevel`: 是否显示错误级别的诊断
-- `showWarningLevel`: 是否显示警告级别的诊断
-- `showInfoLevel`: 是否显示信息级别的提示
+#### 4. 表设计器
 
-## 快速修复功能
+- 可视化表设计/编辑
+- 列定义：类型、约束、注释
+- 数据编辑器：只读/可编辑模式
+- 自动提交模式
+- 乐观锁并发编辑
+- BLOB 预览（大小限制 + MIME 类型白名单）
+- 数据验证（实时验证，外键验证可选）
+- 事务状态显示
+- 长事务警告
 
-插件支持对检测到的问题提供一键快速修复：
+#### 5. 执行计划
 
-- 将 `= NULL` 自动修复为 `IS NULL`
-- 将 `!= NULL` / `<> NULL` 自动修复为 `IS NOT NULL`
-- 为保留字别名添加反引号包裹
-- 为子查询添加别名
-- 为 INSERT 语句添加列名占位符（修复插入位置错误）
-- 为 HAVING 子句添加 GROUP BY
+- `EXPLAIN FORMAT=JSON` 可视化
+- 可视化执行计划面板
 
-## 状态栏功能
+#### 6. 数据库浏览器（侧边栏）
 
-插件会在 VSCode 状态栏显示当前使用的 SQL 方言，点击可快速打开配置编辑器。
+- 树形视图：数据库、表、视图、列、函数、存储过程、触发器
+- 查看表数据、查看 DDL
+- 复制列名
+- 添加/移除收藏
+- 设置默认数据库
+- Schema 缓存（可配置 TTL：数据库/表/列/函数）
+- DDL 变更后自动刷新 Schema
+- 连接时预取 Schema
 
-- 只在 SQL 和 Hive 文件中显示
-- 实时更新配置变更
-- 快速访问配置入口
+#### 7. SQL 格式化
 
-## 代码片段
+基于 node-sql-parser v5.x 的 AST 驱动格式化引擎，提供 40+ 可配置选项：
 
-插件提供丰富的 SQL 代码片段，输入以下前缀即可快速插入：
+**大小写控制**
 
-| 前缀 | 说明 |
-|------|------|
-| `sel` | 基础 SELECT 语句 |
-| `seld` | SELECT DISTINCT |
-| `join` | JOIN 查询 |
-| `leftjoin` | LEFT JOIN 查询 |
-| `groupby` | GROUP BY 带聚合 |
-| `case` | CASE WHEN 语句 |
-| `insert` | INSERT INTO 语句 |
-| `insertsel` | INSERT ... SELECT 语句 |
-| `update` | UPDATE 语句 |
-| `delete` | DELETE 语句 |
-| `ct` | CREATE TABLE 语句 |
-| `ctas` | CREATE TABLE AS SELECT |
-| `with` | WITH 通用表表达式 |
-| `union` | UNION ALL |
-| `hivepart` | Hive 分区插入 |
-| `hiveselpart` | Hive 分区查询 |
-| `hiveext` | Hive 外部表 |
-| `flinkkafka` | FlinkSQL Kafka 建表 |
-| `flinkjdbc` | FlinkSQL JDBC 建表 |
-| `flinktumble` | FlinkSQL 滚动窗口 |
-| `flinkhop` | FlinkSQL 滑动窗口 |
-| `flinkcumulate` | FlinkSQL 累积窗口 |
-| `flinkwatermark` | FlinkSQL Watermark 定义 |
-| `flinktemporal` | FlinkSQL 时态关联 |
-| `flinkdedup` | FlinkSQL 去重查询 |
-| `header` | 文件头注释（配置作者后自动填充，自动检测表依赖） |
-| `todo` | TODO 注释（带责任人） |
-| `fixme` | FIXME 注释 |
-| `hack` | HACK 临时方案注释 |
-| `desc` | 查询说明注释块 |
-| `section` | 分区标题注释 |
-| `header` | 文件头注释（自动检测表依赖） |
-| `col` | 列 COMMENT |
-| `tbl` | 表 COMMENT |
-
-## 智能补全
-
-插件提供强大的智能补全功能，输入字符即可自动提示关键字、函数、代码片段等，大幅降低 SQL 编写的心智负担。
-
-### 补全类型
-
-| 补全类型 | 说明 | 示例 |
-|---------|------|------|
-| **关键字补全** | 输入 SEL → 提示 SELECT，覆盖多种方言的全部关键字和数据类型 | `SEL` → `SELECT` |
-| **函数补全** | 输入 SUB → 提示 SUBSTR(string, start, length)，展示签名、参数说明、返回值类型和中文分类 | `SUB` → `SUBSTR(string, start, length)` |
-| **代码片段补全** | 在补全列表中展示已有的 17 个 SQL 代码片段 | `sel` → 插入完整 SELECT 模板 |
-| **CTE 名称补全** | 定义 WITH 子句后，后续查询自动提示 CTE 名称 | `WITH cte_name AS (...) SELECT` → 提示 `cte_name` |
-| **标识符补全** | 根据当前 SQL 子句上下文，智能提示表名和列名 | FROM 子句中提示表名，SELECT 中提示列名 |
-
-### 函数签名库
-
-插件内置 580+ 函数签名，覆盖多种方言，每个函数包含：
-- 参数列表（带占位符提示）
-- 返回值类型
-- 中文描述
-- 函数分类标签（字符串/数学/日期/聚合/条件/窗口/集合/JSON/类型转换/加密/表生成/其他）
-
-### 配置选项
-
-在 VSCode 设置中搜索 "SQL All in One" 可以控制补全行为：
-
-| 配置项 | 说明 | 默认值 |
-|--------|------|--------|
-| `enableCompletion` | 是否启用智能补全功能 | `true` |
-| `completion.keywords` | 补全列表中是否包含关键字 | `true` |
-| `completion.functions` | 补全列表中是否包含函数 | `true` |
-| `completion.snippets` | 补全列表中是否包含代码片段 | `false` |
-| `completion.cteNames` | 是否提示 CTE 名称 | `true` |
-| `completion.identifiers` | 是否提示表名和列名 | `true` |
-| `completion.commentSnippets` | 补全列表中是否包含注释模板片段 | `true` |
-
-## 注释增强
-
-插件提供智能注释切换、注释模板补全和注释 Lint 规则三大注释增强功能。
-
-### 智能注释切换
-
-| 快捷键 | 功能 |
-|--------|------|
-| `Ctrl+/` / `Cmd+/` | 智能切换注释：单行用行注释，多行用块注释 |
-| `Ctrl+Shift+/` / `Cmd+Shift+/` | 高级注释：选中 SQL 语句包裹格式化禁用标记，DDL 列行添加 COMMENT，其他切换块注释 |
-
-### 注释模板补全
-
-输入前缀即可快速插入注释模板：
-
-| 前缀 | 说明 |
-|------|------|
-| `header` | 文件头注释（配置作者后自动填充作者和修改人，自动检测上下游表依赖） |
-| `col` | 列 COMMENT（智能处理逗号位置） |
-| `tbl` | 表 COMMENT |
-| `todo` | TODO 注释（带责任人） |
-| `fixme` | FIXME 注释 |
-| `hack` | HACK 临时方案注释 |
-| `desc` | 查询说明注释块 |
-| `section` | 分区标题注释 |
-
-### 注释配置
-
-| 配置项 | 说明 | 默认值 |
-|--------|------|--------|
-| `enableSmartCommentToggle` | 是否启用 SQL 感知的智能注释切换 | `true` |
-| `headerAuthor` | 文件头注释中的作者名 | `""` |
-| `headerModifier` | 文件头注释中的修改人（为空时回退取 headerAuthor） | `""` |
-
-## 扩展设置
-
-在 VSCode 设置中搜索 "SQL All in One" 进行配置：
-
-| 设置项 | 描述 | 默认值 |
-|--------|------|--------|
-| `dialect` | 选择使用的SQL方言（auto-detect/hive/mysql/spark/flinksql/sql/postgresql/bigquery/sqlite） | `hive` |
-| `ignoreTabSettings` | 是否忽略编辑器的 tabSize 和 insertSpaces 设置 | `false` |
-| `tabSizeOverride` | 覆盖 tabSize 设置（需要先启用 ignoreTabSettings） | `2` |
-| `insertSpacesOverride` | 覆盖 insertSpaces 设置（需要先启用 ignoreTabSettings） | `true` |
+| 选项 | 说明 | 默认值 |
+|------|------|--------|
 | `keywordCase` | 关键字大小写（preserve/upper/lower） | `preserve` |
 | `dataTypeCase` | 数据类型大小写（preserve/upper/lower） | `preserve` |
 | `functionCase` | 函数名大小写（preserve/upper/lower） | `preserve` |
 | `identifierCase` | 标识符大小写（preserve/upper/lower） | `preserve` |
+| `nullCase` | NULL 大小写（preserve/upper/lower） | `preserve` |
+| `booleanCase` | 布尔值大小写（preserve/upper/lower） | `preserve` |
+
+**缩进控制**
+
+| 选项 | 说明 | 默认值 |
+|------|------|--------|
 | `indentStyle` | 缩进风格（standard/tabularLeft/tabularRight） | `standard` |
-| `logicalOperatorNewline` | AND/OR 换行位置（before/after） | `before` |
-| `expressionWidth` | 表达式拆分为多行的字符阈值 | `50` |
-| `linesBetweenQueries` | 查询语句之间的空行数 | `1` |
-| `denseOperators` | 是否去除运算符周围的空格 | `false` |
-| `newlineBeforeSemicolon` | 分号是否另起一行 | `false` |
-| `paramTypes` | 指定支持的参数占位符类型 | - |
-| `enableNavigation` | 启用/禁用代码导航功能（跳转到定义、查找引用、重命名符号、面包屑导航） | `true` |
+| `tabWidth` | 缩进宽度 | `2` |
+| `useTabs` | 使用 Tab 缩进 | `false` |
 
-### 缩进风格说明
+**换行控制**（25+ 选项）
 
-- **standard**: 标准 SQL 格式，带有级联缩进
-- **tabularLeft**: 在关键字和参数之间保留空格列，使关键字左对齐
-- **tabularRight**: 在关键字和参数之间保留空格列，将关键字向右对齐
+SELECT、FROM、WHERE、GROUP BY、HAVING、ORDER BY、LIMIT、JOIN、ON、USING、WITH、CTE、CASE/WHEN/THEN/ELSE、IN、集合运算、Lateral View、DISTRIBUTE BY、CLUSTER BY、SORT BY、INSERT 列/值等子句的换行策略均可独立配置。
 
-## SQL Lint 功能
+**对齐控制**
 
-插件提供强大的 SQL Lint 功能，内置 17+ 条规则，支持自定义配置：
+| 选项 | 说明 | 默认值 |
+|------|------|--------|
+| `alignColumnDefinitions` | 对齐列定义 | `false` |
+| `alignWhereClauses` | 对齐 WHERE 条件 | `false` |
+| `alignCaseStatements` | 对齐 CASE 语句 | `false` |
+| `alignOnClauses` | 对齐 ON 条件 | `false` |
+| `alignInsertColumns` | 对齐 INSERT 列 | `false` |
+| `alignInsertValuesGroups` | 对齐 INSERT 值组 | `false` |
+| `tabulateAlias` | 表格化别名 | `false` |
 
-### Lint 规则列表
+**间距与其他**
 
-| 规则 ID | 说明 | 默认状态 | 默认级别 |
-|--------|------|--------|--------|
-| `avoid_select_star` | 避免使用 SELECT *，建议明确指定列名 | 启用 | Warning |
-| `explicit_join_type` | 建议显式指定 JOIN 类型（INNER/LEFT/RIGHT） | 启用 | Info |
-| `limit_with_order_by` | 使用 LIMIT 时建议同时使用 ORDER BY | 启用 | Warning |
-| `avoid_column_count_mismatch` | 检查 INSERT 语句列数和值数匹配 | 启用 | Error |
-| `missing_primary_key` | CREATE TABLE 建议定义主键 | 启用 | Warning |
-| `use_current_timestamp` | 建议使用 CURRENT_TIMESTAMP 获得更好兼容性 | 启用 | Info |
-| `avoid_select_in_insert` | INSERT 语句中建议明确指定列名 | 启用 | Warning |
-| `duplicate_column_aliases` | 检查重复的列别名 | 启用 | Warning |
-| `use_coalesce_over_isnull` | 建议使用 COALESCE 而不是 ISNULL/IFNULL | 禁用 | Info |
-| `avoid_correlated_subqueries` | 相关子查询可能影响性能 | 禁用 | Warning |
-| `long_query_line` | 建议将长查询多行格式化 | 禁用 | Info |
-| `explicit_column_aliasing` | 建议使用 AS 关键字明确指定列别名 | 禁用 | Info |
-| `uppercase_keywords` | 建议 SQL 关键字使用大写 | 禁用 | Info |
-| `missing_query_comment` | 复杂查询缺少说明注释 | 启用 | Warning |
-| `missing_column_comment` | DDL 列缺少 COMMENT | 启用 | Warning |
-| `commented_out_code` | 注释掉的代码 | 启用 | Info |
-| `expired_todo` | 过期的 TODO/FIXME | 启用 | Info |
+| 选项 | 说明 | 默认值 |
+|------|------|--------|
+| `denseOperators` | 去除运算符周围空格 | `false` |
+| `spaceBeforeComma` | 逗号前加空格 | `false` |
+| `spaceInsideParentheses` | 括号内加空格 | `false` |
+| `expressionWidth` | 表达式换行字符阈值 | `50` |
+| `linesBetweenQueries` | 查询间空行数 | `1` |
+| `newlineBeforeSemicolon` | 分号前换行 | `false` |
+| `commaPosition` | 逗号位置（after/before） | `after` |
+| `singleLineMaxLength` | 单行最大长度 | - |
+| `trimTrailingSpaces` | 去除行尾空格 | `true` |
+| `semicolonAtEnd` | 末尾加分号 | `true` |
+| `commentPosition` | 注释位置 | - |
+| `subqueryParenStyle` | 子查询括号风格 | - |
+| `maxItemsInlineList` | 行内列表最大项数 | - |
+| `indentCteBody` | 缩进 CTE 主体 | - |
+| `cteCommaPosition` | CTE 逗号位置 | - |
+| `newlineBetweenCtes` | CTE 之间换行 | - |
+| `indentJoinConditions` | 缩进 JOIN 条件 | - |
+| `indentWhen` | 缩进 WHEN | - |
+| `indentThen` | 缩进 THEN | - |
+| `blankLinesBeforeSetOperation` | 集合运算前空行 | - |
+| `blankLinesAfterSetOperation` | 集合运算后空行 | - |
 
-### 配置 Lint 规则
+其他：格式化选择命令、格式化器缓存（按方言+配置哈希，最多 50 实例）
 
-在 VSCode 设置中搜索 "SQL All in One"，可以：
-1. 通过 `SQL-All-in-One.enableLinter` 启用/禁用 Lint 功能
-2. 通过 `SQL-All-in-One.lint.<ruleId>` 配置每条规则的启用状态和严重级别
-3. 严重级别支持：`error`、`warning`、`information`、`hint`
+**格式化示例**
 
-## 支持的文件类型
+格式化前：
 
-- `.sql` - SQL 文件
-- `.hql` - HiveQL 文件
-- `.sparksql` - SparkSQL 文件
-- `.flinksql` - FlinkSQL 文件
-
-## 使用示例
-
-### 格式化前
 ```sql
 select id,name,email from users where age>18 and status='active' order by created_at desc limit 10;
 ```
 
-### 格式化后（standard 风格）
+格式化后（standard 风格）：
+
 ```sql
 SELECT
     id,
@@ -315,33 +198,414 @@ ORDER BY created_at DESC
 LIMIT 10;
 ```
 
-## 语法错误检测
+#### 8. 智能补全（IntelliSense）
 
-插件会基于 AST 解析实时检测 SQL 语法错误，并在编辑器中用红色波浪线高亮显示，同时在问题面板中提供详细的中文错误信息。
+7 种补全类型，每种可独立启用/禁用：
 
-### 支持检测的错误类型
+| 补全类型 | 说明 | 示例 |
+|---------|------|------|
+| **Schema 补全** | 来自已连接数据库的表名/列名（带防抖） | 输入表名前缀 → 提示表名及列 |
+| **关键字补全** | 方言特定的关键字和数据类型 | `SEL` → `SELECT` |
+| **函数补全** | 580+ 函数签名，含参数、返回类型、中文描述、分类标签 | `SUB` → `SUBSTR(string, start, length)` |
+| **代码片段补全** | 方言特定的代码片段 | `sel` → 插入 SELECT 模板 |
+| **CTE 名称补全** | WITH 子句中定义的 CTE 名称 | `WITH cte AS (...) SELECT` → 提示 `cte` |
+| **标识符补全** | 基于上下文的表名/列名建议 | FROM 子句中提示表名 |
+| **注释模板补全** | header、todo、fixme、hack、desc、section、col、tbl | `header` → 插入文件头注释 |
 
-- 逗号后面缺少列名（如 `select id, from ...`）
-- SELECT 后面缺少列名
-- FROM 后面缺少表名
-- 不匹配的括号（排除字符串和注释中的括号）
-- 未正确闭合的字符串（支持转义引号 `''`）
-- ORDER BY 后面缺少列名
-- WHERE 后面缺少条件
-- GROUP BY 后面缺少列名
-- 多余的逗号
+#### 9. 语法检查与诊断
 
-错误信息会明确指出问题所在的行号，方便快速定位和修复。
+- 防抖诊断（300ms），支持 CancellationToken
+- 双层检查：AST 诊断 + Lint 诊断
+- 严重级别过滤（Error/Warning/Info）
 
-## 反馈与贡献
+**语法错误检查**
 
-如果你有问题或者好的格式化配置建议，欢迎在 [GitHub Issues](https://github.com/BryceQin/SQL-All-in-One/issues) 反馈。
+- HAVING 缺少 GROUP BY
+- LIMIT 缺少数值
+- JOIN 缺少 ON
+- DISTINCT 位置错误
+- WHERE 中使用聚合函数
+- UPDATE 中使用 *
+- 不完整的 CASE 语句
+- 括号不匹配
+- 未闭合的字符串
+- 重复列别名
 
-## 更新日志
+**代码质量建议**
 
-请查看 [CHANGELOG.md](CHANGELOG.md) 文件了解详细的版本更新历史。
+- 重复表别名
+- 保留字作为标识符
+- SELECT 缺少 FROM
+- INSERT 缺少列名
+- 冗余 DISTINCT
+- 子查询缺少别名
+- 可疑的 NULL 比较
 
-## 许可证
+**方言提示**
+
+- MySQL 日期函数在 Hive 中的差异
+
+#### 10. SQL Lint（30 条规则）
+
+每条规则支持 `enabled` / `severity` 配置：
+
+| 规则 ID | 说明 | 默认启用 | 默认级别 |
+|--------|------|---------|---------|
+| `avoid_select_star` | 避免 SELECT * | ✅ | Warning |
+| `explicit_join_type` | 显式指定 JOIN 类型 | ✅ | Info |
+| `limit_with_order_by` | LIMIT 应搭配 ORDER BY | ✅ | Warning |
+| `avoid_column_count_mismatch` | INSERT 列数与值数不匹配 | ✅ | Error |
+| `missing_primary_key` | CREATE TABLE 缺少主键 | ✅ | Warning |
+| `use_current_timestamp` | 使用 CURRENT_TIMESTAMP | ✅ | Info |
+| `avoid_select_in_insert` | INSERT 中避免 SELECT | ✅ | Warning |
+| `duplicate_column_aliases` | 重复列别名 | ✅ | Warning |
+| `use_coalesce_over_isnull` | 使用 COALESCE 替代 ISNULL | ❌ | Info |
+| `avoid_correlated_subqueries` | 避免相关子查询 | ❌ | Warning |
+| `long_query_line` | 长查询行 | ❌ | Info |
+| `explicit_column_aliasing` | 显式列别名（使用 AS） | ❌ | Info |
+| `uppercase_keywords` | 关键字大写 | ❌ | Info |
+| `missing_query_comment` | 复杂查询缺少注释 | ✅ | Warning |
+| `missing_column_comment` | DDL 列缺少 COMMENT | ✅ | Warning |
+| `commented_out_code` | 注释掉的代码 | ✅ | Info |
+| `expired_todo` | 过期的 TODO/FIXME | ✅ | Info |
+| `having_without_group_by` | HAVING 缺少 GROUP BY | ✅ | Error |
+| `limit_invalid_value` | LIMIT 值无效 | ✅ | Error |
+| `reserved_word_identifier` | 保留字作为标识符 | ✅ | Warning |
+| `join_missing_on` | JOIN 缺少 ON | ✅ | Error |
+| `select_without_from` | SELECT 缺少 FROM | ✅ | Warning |
+| `misplaced_distinct` | DISTINCT 位置错误 | ✅ | Error |
+| `aggregate_in_where` | WHERE 中使用聚合函数 | ✅ | Error |
+| `subquery_without_alias` | 子查询缺少别名 | ✅ | Warning |
+| `suspicious_null_comparison` | 可疑的 NULL 比较 | ✅ | Warning |
+| `incomplete_case` | 不完整的 CASE | ✅ | Error |
+| `redundant_distinct` | 冗余 DISTINCT | ✅ | Warning |
+| `date_function_usage` | 日期函数用法提示 | ✅ | Info |
+| `wildcard_in_update` | UPDATE 中使用通配符 | ✅ | Error |
+
+部分规则支持子选项：
+
+- `missing_query_comment`：`thresholdLineCount`、`thresholdJoinCount`、`thresholdSubqueryCount`
+- `missing_column_comment`：`aggregate`、`externalTableExempt`
+- `commented_out_code`：`thresholdLines`
+- `expired_todo`：`gracePeriodDays`
+
+#### 11. 快速修复
+
+- `= NULL` → `IS NULL`
+- `!= NULL` / `<> NULL` → `IS NOT NULL`
+- 为保留字别名添加反引号包裹
+- 为子查询添加别名
+- 为 INSERT 添加列名占位符
+- 为 HAVING 添加 GROUP BY
+
+#### 12. 代码导航
+
+| 功能 | 快捷键 | 说明 |
+|------|--------|------|
+| 跳转到定义 | `F12` | CTE、表别名、列别名 |
+| 查找所有引用 | `Shift+F12` | 符号引用查找 |
+| 重命名符号 | `F2` | 含保留字/冲突校验 |
+| 面包屑导航 | - | 子句级导航（SELECT/FROM/WHERE/GROUP BY/HAVING/ORDER BY） |
+
+共享 AstNavigator 导航引擎。
+
+#### 13. DDL 转换
+
+- 基于 AST 的 MySQL ↔ Hive CREATE TABLE 转换
+- 数据类型映射
+- 表选项过滤
+- 列属性剥离
+- 约束过滤
+
+#### 14. 注释增强
+
+**智能注释切换**
+
+| 快捷键 | 功能 |
+|--------|------|
+| `Ctrl+/` / `Cmd+/` | 智能切换：单行用行注释，多行用块注释 |
+| `Ctrl+Shift+/` / `Cmd+Shift+/` | 高级注释：格式化禁用标记、DDL COMMENT、块注释 |
+
+**注释模板补全**
+
+| 前缀 | 说明 |
+|------|------|
+| `header` | 文件头注释（自动作者、自动表依赖） |
+| `col` | 列 COMMENT |
+| `tbl` | 表 COMMENT |
+| `todo` | TODO 注释 |
+| `fixme` | FIXME 注释 |
+| `hack` | HACK 注释 |
+| `desc` | 查询说明注释 |
+| `section` | 分区标题注释 |
+
+**注释 Lint 规则**：`missing_query_comment`、`missing_column_comment`、`commented_out_code`、`expired_todo`
+
+#### 15. 悬停信息
+
+4 层解析器链：
+
+1. 参数悬停
+2. 函数签名悬停
+3. Schema 悬停（来自已连接数据库）
+4. 关键字悬停
+
+#### 16. 代码折叠与大纲
+
+- 折叠 CTE、子查询、函数块
+- 文档大纲，快速导航
+
+#### 17. 可视化配置编辑器
+
+- 图形化配置界面
+- 可折叠分组、Toggle 开关
+- 实时格式化预览
+- 拖拽调整预览区大小
+- 快速预设（默认、Hive、MySQL、紧凑）
+- 保存配置按钮
+
+#### 18. 状态栏
+
+- 显示当前 SQL 方言
+- 快速访问配置编辑器
+- 仅在 SQL 文件中显示
+
+#### 19. 参数化查询
+
+- 变量高亮
+- 批量参数替换（`Ctrl+Alt+P` / `Cmd+Alt+P`）
+- JDBC `:?` 参数支持
+- 正则注入防护
+
+#### 20. 查询历史
+
+- 已执行查询的历史记录
+- 可配置最大条目数（默认 500）
+- 显示/清除历史命令
+
+#### 21. 安全守卫
+
+- 危险 SQL 拦截
+- 3 个级别：strict（所有规则）、moderate（仅确认级）、off
+- 防止误操作 DROP、TRUNCATE、无 WHERE 的 DELETE 等
+
+#### 22. 国际化
+
+- 中文（zh）和英文（en）
+- 自动跟随 VSCode 语言设置
+- `displayLanguage` 配置：auto/zh/en
+
+#### 23. 代码片段
+
+**通用 SQL**
+
+| 前缀 | 说明 |
+|------|------|
+| `sel` | 基础 SELECT |
+| `seld` | SELECT DISTINCT |
+| `join` | JOIN 查询 |
+| `leftjoin` | LEFT JOIN 查询 |
+| `groupby` | GROUP BY 聚合 |
+| `case` | CASE WHEN |
+| `insert` | INSERT INTO |
+| `insertsel` | INSERT ... SELECT |
+| `update` | UPDATE |
+| `delete` | DELETE |
+| `ct` | CREATE TABLE |
+| `ctas` | CREATE TABLE AS SELECT |
+| `with` | WITH CTE |
+| `union` | UNION ALL |
+
+**Hive**
+
+| 前缀 | 说明 |
+|------|------|
+| `hivepart` | Hive 分区插入 |
+| `hiveselpart` | Hive 分区查询 |
+| `hiveext` | Hive 外部表 |
+
+**FlinkSQL**
+
+| 前缀 | 说明 |
+|------|------|
+| `flinkkafka` | Kafka 建表 |
+| `flinkjdbc` | JDBC 建表 |
+| `flinktumble` | 滚动窗口 |
+| `flinkhop` | 滑动窗口 |
+| `flinkcumulate` | 累积窗口 |
+| `flinkwatermark` | Watermark 定义 |
+| `flinktemporal` | 时态关联 |
+| `flinkdedup` | 去重查询 |
+
+**注释**
+
+| 前缀 | 说明 |
+|------|------|
+| `header` | 文件头注释 |
+| `todo` | TODO 注释 |
+| `fixme` | FIXME 注释 |
+| `hack` | HACK 注释 |
+| `desc` | 查询说明注释 |
+| `section` | 分区标题注释 |
+| `col` | 列 COMMENT |
+| `tbl` | 表 COMMENT |
+
+---
+
+### 快捷键
+
+| 命令 | Windows/Linux | Mac |
+|------|--------------|-----|
+| 替换参数 | `Ctrl+Alt+P` | `Cmd+Alt+P` |
+| 切换注释 | `Ctrl+/` | `Cmd+/` |
+| 高级注释 | `Ctrl+Shift+/` | `Cmd+Shift+/` |
+| 执行 SQL | `Ctrl+R` | `Cmd+R` |
+| 执行选中 SQL | `Ctrl+Shift+R` | `Cmd+Shift+R` |
+| 格式化文档 | `Shift+Alt+F` | `Shift+Option+F` |
+
+---
+
+### 扩展设置
+
+在 VSCode 设置中搜索 "SQL All in One" 进行配置，80+ 项设置按以下类别组织：
+
+#### 1. 语言与方言
+
+| 设置项 | 说明 | 默认值 |
+|--------|------|--------|
+| `dialect` | SQL 方言（auto-detect/hive/mysql/spark/flinksql/sql/postgresql/bigquery/sqlite） | `hive` |
+| `displayLanguage` | 界面语言（auto/zh/en） | `auto` |
+
+#### 2. 格式化（40+ 选项）
+
+见 [SQL 格式化](#7-sql-格式化) 章节中的大小写、缩进、换行、对齐、间距等配置表。
+
+#### 3. Lint 规则（30 条）
+
+见 [SQL Lint](#10-sql-lint30-条规则) 章节。每条规则支持 `enabled` + `severity` 配置，部分规则支持子选项。
+
+#### 4. 功能开关
+
+| 设置项 | 说明 | 默认值 |
+|--------|------|--------|
+| `enableLinter` | 启用 Lint | `true` |
+| `enableCodeFolding` | 启用代码折叠 | `true` |
+| `enableOutlineView` | 启用大纲视图 | `true` |
+| `enableStatusBar` | 启用状态栏 | `true` |
+| `enableParameterHighlight` | 启用参数高亮 | `true` |
+| `enableSnippets` | 启用代码片段 | `true` |
+| `enableQuickFix` | 启用快速修复 | `true` |
+| `enableHover` | 启用悬停信息 | `true` |
+| `enableNavigation` | 启用代码导航 | `true` |
+| `enableCompletion` | 启用智能补全 | `true` |
+
+#### 5. 补全
+
+| 设置项 | 说明 | 默认值 |
+|--------|------|--------|
+| `completion.keywords` | 关键字补全 | `true` |
+| `completion.functions` | 函数补全 | `true` |
+| `completion.snippets` | 代码片段补全 | `false` |
+| `completion.cteNames` | CTE 名称补全 | `true` |
+| `completion.identifiers` | 标识符补全 | `true` |
+| `completion.commentSnippets` | 注释模板补全 | `true` |
+| `completion.schema` | Schema 感知补全 | `true` |
+
+#### 6. Schema 缓存
+
+| 设置项 | 说明 | 默认值 |
+|--------|------|--------|
+| `schemaCache.databaseTtl` | 数据库缓存 TTL（秒） | `600` |
+| `schemaCache.tableTtl` | 表缓存 TTL（秒） | `300` |
+| `schemaCache.columnTtl` | 列缓存 TTL（秒） | `120` |
+| `schemaCache.functionTtl` | 函数缓存 TTL（秒） | `600` |
+| `schemaCache.refreshOnDDL` | DDL 变更后刷新 | `true` |
+| `schemaCache.prefetchOnConnect` | 连接时预取 | `true` |
+
+#### 7. 查询执行
+
+| 设置项 | 说明 | 默认值 |
+|--------|------|--------|
+| `query.maxRows` | 最大行数 | `1000` |
+| `query.timeout` | 查询超时（毫秒） | `30000` |
+| `query.pageSize` | 分页大小 | `100` |
+| `query.nullPlaceholder` | NULL 占位符 | `(NULL)` |
+
+#### 8. 安全守卫
+
+| 设置项 | 说明 | 默认值 |
+|--------|------|--------|
+| `safetyGuard.level` | 安全级别（strict/moderate/off） | `moderate` |
+
+#### 9. 执行引擎
+
+| 设置项 | 说明 | 默认值 |
+|--------|------|--------|
+| `execution.batchMode` | 批量模式（sequential/transaction） | `sequential` |
+| `execution.onError` | 错误处理（stop/continue） | `stop` |
+| `execution.saveProgress` | 保存进度 | `true` |
+| `execution.cancelRetries` | 取消重试次数 | `3` |
+| `execution.cancelRetryDelay` | 取消重试延迟（ms） | `500` |
+
+#### 10. 导出
+
+| 设置项 | 说明 | 默认值 |
+|--------|------|--------|
+| `export.defaultFormat` | 默认导出格式 | `csv` |
+| `export.csvDelimiter` | CSV 分隔符 | `,` |
+| `export.csvEncoding` | CSV 编码 | `utf-8` |
+| `export.includeHeaders` | 包含表头 | `true` |
+
+#### 11. 数据编辑器
+
+| 设置项 | 说明 | 默认值 |
+|--------|------|--------|
+| `dataEditor.editMode` | 编辑模式（readonly/editable） | `readonly` |
+| `dataEditor.autoCommit` | 自动提交 | `true` |
+| `dataEditor.defaultView` | 默认视图（grid/form） | `grid` |
+| `dataEditor.optimisticLocking` | 乐观锁 | `false` |
+| `dataEditor.maxBlobPreviewSize` | BLOB 预览最大大小（字节） | `5242880` |
+| `dataEditor.blobTextPreviewSize` | BLOB 文本预览大小（字节） | `1048576` |
+| `dataEditor.longTransactionWarning` | 长事务警告阈值（秒） | `300` |
+| `dataEditor.showTransactionStatus` | 显示事务状态 | `true` |
+| `dataEditor.enableValidation` | 启用验证 | `true` |
+| `dataEditor.validateOnEdit` | 编辑时验证 | `true` |
+| `dataEditor.validateForeignKeys` | 外键验证 | `false` |
+
+#### 12. 结果面板
+
+| 设置项 | 说明 | 默认值 |
+|--------|------|--------|
+| `results.enablePreload` | 启用滚动预加载 | `true` |
+| `results.jsonPrettyPrint` | JSON 美化输出 | `true` |
+| `results.dateFormat` | 日期格式（local/utc/relative） | `local` |
+| `results.longTextThreshold` | 长文本截断阈值 | `200` |
+
+#### 13. 历史记录
+
+| 设置项 | 说明 | 默认值 |
+|--------|------|--------|
+| `history.maxEntries` | 最大历史条目数 | `500` |
+
+#### 14. 注释
+
+| 设置项 | 说明 | 默认值 |
+|--------|------|--------|
+| `enableSmartCommentToggle` | 智能注释切换 | `true` |
+| `headerAuthor` | 文件头作者 | `""` |
+| `headerModifier` | 文件头修改人 | `""` |
+
+---
+
+### 反馈与贡献
+
+如有问题或建议，欢迎在 [GitHub Issues](https://github.com/BryceQin/SQL-All-in-One/issues) 反馈。
+
+### 更新日志
+
+请查看 [CHANGELOG.md](CHANGELOG.md) 了解详细的版本更新历史。
+
+### 许可证
 
 MIT License
 
@@ -349,299 +613,185 @@ MIT License
 
 ## English
 
-A powerful SQL formatting VSCode extension supporting Hive, MySQL, SparkSQL, FlinkSQL, PostgreSQL, BigQuery, SQLite and more. Designed with extensive customization options and AST-driven architecture.
+**SQL All in One** is a comprehensive SQL development toolkit VSCode extension that integrates database connection management, query execution, data import/export, table designer, execution plans, database explorer, SQL formatting, smart completion, syntax checking, lint rules, quick fixes, code navigation, DDL conversion, comment enhancement, hover information, code folding, visual config editor, and more.
 
-> **v1.8.0 Comprehensive Optimization** -- Full i18n overhaul (Settings UI follows VS Code language), bilingual README & CHANGELOG, config editor multilingual, unified dialect registry, memory leak fixes, architecture improvements.
+| | |
+|---|---|
+| **Publisher** | bryce-qin |
+| **Version** | 2.9.0 |
+| **License** | MIT |
+| **Repository** | [GitHub](https://github.com/BryceQin/SQL-All-in-One) |
+| **VSCode Engine** | ^1.85.0 |
+| **Categories** | Formatters, Snippets, Other, Databases |
 
-> **v1.7.0 Navigation Enhancement** -- Go to Definition (CTE/table alias/column alias), Find All References, Rename Symbol (with reserved word/conflict checks), Breadcrumb clause-level navigation, AstNavigator shared navigation engine.
+### Supported SQL Dialects (8)
 
-### Features
+| Language ID | Aliases | Extensions |
+|------------|---------|------------|
+| `sql` | SQL | `.sql` |
+| `hive` | Hive, hive-sql | `.hql` |
+| `mysql` | MySQL | `.mysql` |
+| `spark` | SparkSQL, spark | `.sparksql` |
+| `flinksql` | FlinkSQL, flink-sql | `.flinksql` |
+| `postgresql` | PostgreSQL, postgres | `.psql`, `.pgsql` |
+| `bigquery` | BigQuery | `.bqsql` |
+| `sqlite` | SQLite | `.sqlite`, `.sqlt` |
 
-Unlike most SQL plugins on the market that offer only a single formatting style, this tool is built around the core philosophy of personalized configuration, with a rich set of customizable options:
-
-- **Multiple SQL Dialects** -- Hive, MySQL, SparkSQL, FlinkSQL, PostgreSQL, BigQuery, SQLite, Generic SQL
-- **AST-Driven Architecture** -- Based on node-sql-parser v5.x, all core features (formatting, diagnostics, linting, completion, conversion) are built on AST
-- **Rich Formatting Options** -- 40+ configurable options including keyword case, indentation style, newline strategies
-- **Smart IntelliSense** -- Keywords, function signatures, code snippets, CTE and identifier suggestions, AST context-aware
-- **Comment Enhancement** -- Smart comment toggling, comment template completion, comment lint rules
-- **Flexible Indentation** -- Standard indentation and tabular-style alignment
-- **Visual Config Editor** -- Modern graphical config interface with collapsible groups, toggle switches, live format preview
-- **Enhanced Syntax Checking** -- 15+ syntax and code quality checks with intelligent hints
-- **Safe Parameter Handling** -- JDBC `:?` parameter support, regex injection protection, batch parameter replacement
-- **Highly Customizable** -- 40+ options satisfying various team conventions
-- **Command Support** -- "Format Selection" command for partial formatting
-- **Syntax Error Detection** -- AST-based real-time SQL syntax error detection with friendly prompts
-- **Quick Fix** -- One-click fixes for syntax issues
-- **Status Bar Display** -- Shows current SQL dialect with quick access
-- **Code Snippets** -- Common SQL snippets for efficiency
-- **Code Folding** -- Fold CTE, subquery, function blocks
-- **Outline View** -- Document outline for quick navigation
-- **Code Navigation** -- Go to Definition (F12), Find All References (Shift+F12), Rename Symbol (F2) for CTE/table alias/column alias
-- **Breadcrumb Navigation** -- Clause-level breadcrumbs: SELECT/FROM/WHERE/GROUP BY/HAVING/ORDER BY
-- **Parameterized Queries** -- Variable highlighting and batch replacement (including JDBC `:?`)
-- **SQL Lint** -- 17+ built-in lint rules with custom configuration
-- **DDL Conversion** -- AST-based MySQL to/from Hive CREATE TABLE conversion
+---
 
 ### Quick Start
 
-1. After installing, open any `.sql` or `.hql` file
+1. After installing, open any `.sql`, `.hql`, `.mysql` or other SQL files
 2. Use `Shift+Alt+F` (Windows/Linux) or `Shift+Option+F` (Mac) to format
 3. Or right-click and select "Format Document"
 4. Or use Command Palette: "Format Selection (SQL All in One)"
+5. Click the database icon in the sidebar to add a connection, then execute queries and browse schema
 
-### Visual Config Editor
+---
 
-Use the graphical config interface to easily adjust formatting options:
+### Core Features
 
-1. Press `Cmd+Shift+P` (Mac) or `Ctrl+Shift+P` (Windows/Linux)
-2. Search for "SQL All in One Config"
-3. Enter SQL in the preview area and click "Format Preview"
-4. Adjust options in the config area below (multi-column flow layout, adaptive, no white gaps)
-5. Drag the divider between preview and config areas to resize
-6. Quick presets available: Default, Hive, MySQL, Compact
-7. Click "Save Config" to apply changes
+#### 1. Database Connection & Management
 
-### Enhanced Syntax Checking
+- MySQL database connection with connection pool, SSL support, SSH tunnel
+- Graphical connection dialog (new in v2.1, replaced step-by-step input boxes)
+- Connection lifecycle management (add/edit/remove/connect/disconnect)
+- Connection pool with health check, idle check, auto-reconnect
+- Auto-retry with exponential backoff (max 3 retries)
+- Active connection management (single active connection mode)
+- SecretStorage for password security
+- Connection import/export (with password protection)
 
-The plugin provides 15+ enhanced syntax and code quality checks:
+#### 2. Query Execution & Results
 
-#### Syntax Error Checks
-- HAVING clause missing GROUP BY (correctly checks GROUP BY before HAVING)
-- LIMIT missing numeric argument (supports placeholders and ALL/OFFSET syntax)
-- JOIN missing ON or USING clause (supports CROSS/NATURAL JOIN)
-- Incorrect DISTINCT placement
-- Aggregate functions in WHERE clause (excludes legitimate usage in subqueries)
-- Using * in UPDATE statements
-- Incomplete CASE statements (correctly handles nested CASE, precise word boundary matching)
-- Mismatched parentheses (excludes parentheses in strings and comments, supports SQL `''` escaping)
-- Unclosed strings (supports SQL `''` escape quotes)
-- Duplicate column aliases (only checks aliases after AS, correctly handles subqueries)
+- Execute SQL (`Ctrl+R` / `Cmd+R`) and Execute Selected SQL (`Ctrl+Shift+R` / `Cmd+Shift+R`)
+- Query timeout control (configurable)
+- Query cancellation support (CancellationToken + KILL QUERY)
+- Max rows limit
+- Result panel with pagination, scroll preloading
+- Grid view and form view
+- JSON pretty print in results
+- Date format display (local/utc/relative)
+- Long text truncation with threshold
+- NULL value placeholder display
+- Batch execution mode (sequential/transaction)
+- Error handling strategy (stop/continue)
+- Batch execution progress saving
 
-#### Code Quality Suggestions
-- Duplicate table aliases
-- Reserved words used as aliases (only checks aliases after AS, greatly reduces false positives)
-- SELECT statement missing FROM clause (except for specific functions)
-- INSERT statement missing column names
-- Redundant DISTINCT usage
-- Subquery missing alias (correctly handles nested subqueries)
-- Suspicious NULL comparison (= NULL vs IS NULL)
+#### 3. Data Import & Export
 
-#### Dialect Hints
-- MySQL date function differences in Hive
+- Export to CSV (configurable delimiter, encoding, include headers)
+- Export to JSON
+- Export to SQL INSERT statements
+- Export table DDL
+- Import data from files
+- Default export format configuration
 
-#### Configuration Options
-Configure in settings:
-- `enableEnhancedChecks`: Enable enhanced checks
-- `showErrorLevel`: Show error-level diagnostics
-- `showWarningLevel`: Show warning-level diagnostics
-- `showInfoLevel`: Show info-level hints
+#### 4. Table Designer
 
-### Quick Fix
+- Visual table design/edit
+- Column definition with types, constraints, comments
+- Data editor with readonly/editable modes
+- Auto commit mode
+- Optimistic locking for concurrent editing
+- BLOB preview (with size limit and MIME type whitelist)
+- Data validation (real-time, foreign key validation optional)
+- Transaction status display
+- Long transaction warning
 
-The plugin supports one-click quick fixes for detected issues:
+#### 5. Execution Plan
 
-- Fix `= NULL` to `IS NULL`
-- Fix `!= NULL` / `<> NULL` to `IS NOT NULL`
-- Wrap reserved word aliases with backticks
-- Add alias to subqueries
-- Add column name placeholders for INSERT statements
-- Add GROUP BY for HAVING clauses
+- `EXPLAIN FORMAT=JSON` visualization
+- Visual execution plan panel
 
-### Status Bar
+#### 6. Database Explorer (Sidebar)
 
-The plugin displays the current SQL dialect in the VS Code status bar. Click to quickly open the config editor.
+- Tree view of databases, tables, views, columns, functions, procedures, triggers
+- View table data, view DDL
+- Copy column name
+- Add/remove favorites
+- Set default database
+- Schema cache with configurable TTL (database/table/column/function)
+- Schema auto-refresh on DDL changes
+- Schema prefetch on connect
 
-- Only shown in SQL and Hive files
-- Real-time config change updates
-- Quick access to config entry point
+#### 7. SQL Formatting
 
-### Code Snippets
+AST-driven formatting engine based on node-sql-parser v5.x with 40+ configurable options:
 
-The plugin provides rich SQL code snippets. Enter the following prefixes to quickly insert:
+**Case Control**
 
-| Prefix | Description |
-|--------|-------------|
-| `sel` | Basic SELECT statement |
-| `seld` | SELECT DISTINCT |
-| `join` | JOIN query |
-| `leftjoin` | LEFT JOIN query |
-| `groupby` | GROUP BY with aggregation |
-| `case` | CASE WHEN statement |
-| `insert` | INSERT INTO statement |
-| `insertsel` | INSERT ... SELECT statement |
-| `update` | UPDATE statement |
-| `delete` | DELETE statement |
-| `ct` | CREATE TABLE statement |
-| `ctas` | CREATE TABLE AS SELECT |
-| `with` | WITH common table expression |
-| `union` | UNION ALL |
-| `hivepart` | Hive partition insert |
-| `hiveselpart` | Hive partition query |
-| `hiveext` | Hive external table |
-| `flinkkafka` | FlinkSQL Kafka table DDL |
-| `flinkjdbc` | FlinkSQL JDBC table DDL |
-| `flinktumble` | FlinkSQL tumbling window |
-| `flinkhop` | FlinkSQL hopping window |
-| `flinkcumulate` | FlinkSQL cumulative window |
-| `flinkwatermark` | FlinkSQL watermark definition |
-| `flinktemporal` | FlinkSQL temporal join |
-| `flinkdedup` | FlinkSQL dedup query |
-| `header` | File header comment (auto-fills author, auto-detects table dependencies) |
-| `todo` | TODO comment (with assignee) |
-| `fixme` | FIXME comment |
-| `hack` | HACK workaround comment |
-| `desc` | Query description comment block |
-| `section` | Section divider comment |
-| `col` | Column COMMENT |
-| `tbl` | Table COMMENT |
-
-### Smart Completion (IntelliSense)
-
-The plugin provides powerful intelligent completion. Just start typing to get automatic suggestions for keywords, functions, snippets, etc., greatly reducing the cognitive load of writing SQL.
-
-#### Completion Types
-
-| Type | Description | Example |
-|------|-------------|---------|
-| **Keyword Completion** | Type SEL -> suggests SELECT, covering keywords and data types across multiple dialects | `SEL` -> `SELECT` |
-| **Function Completion** | Type SUB -> suggests SUBSTR(string, start, length), showing signature, parameter descriptions, return type, and Chinese category | `SUB` -> `SUBSTR(string, start, length)` |
-| **Snippet Completion** | Shows the 17 existing SQL snippets in the completion list | `sel` -> inserts complete SELECT template |
-| **CTE Name Completion** | After defining a WITH clause, automatically suggests CTE names in subsequent queries | `WITH cte_name AS (...) SELECT` -> suggests `cte_name` |
-| **Identifier Completion** | Based on the current SQL clause context, intelligently suggests table names and column names | FROM clause suggests tables, SELECT suggests columns |
-
-#### Function Signature Library
-
-The plugin includes 580+ function signatures covering multiple dialects. Each function includes:
-- Parameter list (with placeholder hints)
-- Return value type
-- Chinese description
-- Function category tag (String/Math/Date/Aggregate/Conditional/Window/Set/JSON/Type Conversion/Encryption/Table-Generating/Other)
-
-#### Configuration Options
-
-Search "SQL All in One" in VS Code settings to control completion behavior:
-
-| Setting | Description | Default |
-|---------|-------------|---------|
-| `enableCompletion` | Enable intelligent completion | `true` |
-| `completion.keywords` | Include keywords in completion list | `true` |
-| `completion.functions` | Include functions in completion list | `true` |
-| `completion.snippets` | Include code snippets in completion list | `false` |
-| `completion.cteNames` | Suggest CTE names | `true` |
-| `completion.identifiers` | Suggest table and column names | `true` |
-| `completion.commentSnippets` | Include comment template snippets in completion list | `true` |
-
-### Comment Enhancement
-
-The plugin provides three major comment enhancement features: smart comment toggling, comment template completion, and comment lint rules.
-
-#### Smart Comment Toggling
-
-| Shortcut | Function |
-|----------|----------|
-| `Ctrl+/` / `Cmd+/` | Smart comment toggle: single line uses line comment, multi-line uses block comment |
-| `Ctrl+Shift+/` / `Cmd+Shift+/` | Advanced comment: selected SQL statement wraps with format-disable markers, DDL column lines add COMMENT, other cases toggle block comment |
-
-#### Comment Template Completion
-
-Enter prefixes to quickly insert comment templates:
-
-| Prefix | Description |
-|--------|-------------|
-| `header` | File header comment (auto-fills author and modifier, auto-detects upstream/downstream table dependencies) |
-| `col` | Column COMMENT (intelligently handles comma position) |
-| `tbl` | Table COMMENT |
-| `todo` | TODO comment (with assignee) |
-| `fixme` | FIXME comment |
-| `hack` | HACK workaround comment |
-| `desc` | Query description comment block |
-| `section` | Section divider comment |
-
-#### Comment Configuration
-
-| Setting | Description | Default |
-|---------|-------------|---------|
-| `enableSmartCommentToggle` | Enable SQL-aware smart comment toggling | `true` |
-| `headerAuthor` | Author name in file header comments | `""` |
-| `headerModifier` | Modifier name in file header comments (falls back to headerAuthor if empty) | `""` |
-
-### Extension Settings
-
-Search "SQL All in One" in VS Code settings to configure:
-
-| Setting | Description | Default |
-|---------|-------------|---------|
-| `dialect` | Select SQL dialect (auto-detect/hive/mysql/spark/flinksql/sql/postgresql/bigquery/sqlite) | `hive` |
-| `ignoreTabSettings` | Ignore editor tabSize and insertSpaces settings | `false` |
-| `tabSizeOverride` | Override tabSize setting (requires ignoreTabSettings enabled) | `2` |
-| `insertSpacesOverride` | Override insertSpaces setting (requires ignoreTabSettings enabled) | `true` |
+| Option | Description | Default |
+|--------|-------------|---------|
 | `keywordCase` | Keyword case (preserve/upper/lower) | `preserve` |
 | `dataTypeCase` | Data type case (preserve/upper/lower) | `preserve` |
 | `functionCase` | Function name case (preserve/upper/lower) | `preserve` |
 | `identifierCase` | Identifier case (preserve/upper/lower) | `preserve` |
-| `indentStyle` | Indentation style (standard/tabularLeft/tabularRight) | `standard` |
-| `logicalOperatorNewline` | AND/OR newline position (before/after) | `before` |
-| `expressionWidth` | Character threshold for splitting expressions into multiple lines | `50` |
-| `linesBetweenQueries` | Number of blank lines between query statements | `1` |
+| `nullCase` | NULL case (preserve/upper/lower) | `preserve` |
+| `booleanCase` | Boolean case (preserve/upper/lower) | `preserve` |
+
+**Indent Control**
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `indentStyle` | Indent style (standard/tabularLeft/tabularRight) | `standard` |
+| `tabWidth` | Indent width | `2` |
+| `useTabs` | Use tab indentation | `false` |
+
+**Newline Control** (25+ options)
+
+Newline strategies for SELECT, FROM, WHERE, GROUP BY, HAVING, ORDER BY, LIMIT, JOIN, ON, USING, WITH, CTE, CASE/WHEN/THEN/ELSE, IN, set operations, Lateral View, DISTRIBUTE BY, CLUSTER BY, SORT BY, INSERT columns/values can all be configured independently.
+
+**Alignment Control**
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `alignColumnDefinitions` | Align column definitions | `false` |
+| `alignWhereClauses` | Align WHERE conditions | `false` |
+| `alignCaseStatements` | Align CASE statements | `false` |
+| `alignOnClauses` | Align ON conditions | `false` |
+| `alignInsertColumns` | Align INSERT columns | `false` |
+| `alignInsertValuesGroups` | Align INSERT value groups | `false` |
+| `tabulateAlias` | Tabulate aliases | `false` |
+
+**Spacing & Other**
+
+| Option | Description | Default |
+|--------|-------------|---------|
 | `denseOperators` | Remove spaces around operators | `false` |
-| `newlineBeforeSemicolon` | Place semicolon on a new line | `false` |
-| `paramTypes` | Specify supported parameter placeholder types | - |
-| `enableNavigation` | Enable/disable code navigation features (Go to Definition, Find References, Rename Symbol, Breadcrumbs) | `true` |
+| `spaceBeforeComma` | Space before comma | `false` |
+| `spaceInsideParentheses` | Space inside parentheses | `false` |
+| `expressionWidth` | Expression wrap character threshold | `50` |
+| `linesBetweenQueries` | Blank lines between queries | `1` |
+| `newlineBeforeSemicolon` | Newline before semicolon | `false` |
+| `commaPosition` | Comma position (after/before) | `after` |
+| `singleLineMaxLength` | Single line max length | - |
+| `trimTrailingSpaces` | Trim trailing spaces | `true` |
+| `semicolonAtEnd` | Semicolon at end | `true` |
+| `commentPosition` | Comment position | - |
+| `subqueryParenStyle` | Subquery paren style | - |
+| `maxItemsInlineList` | Max items in inline list | - |
+| `indentCteBody` | Indent CTE body | - |
+| `cteCommaPosition` | CTE comma position | - |
+| `newlineBetweenCtes` | Newline between CTEs | - |
+| `indentJoinConditions` | Indent JOIN conditions | - |
+| `indentWhen` | Indent WHEN | - |
+| `indentThen` | Indent THEN | - |
+| `blankLinesBeforeSetOperation` | Blank lines before set operation | - |
+| `blankLinesAfterSetOperation` | Blank lines after set operation | - |
 
-#### Indentation Style Guide
+Also: Format Selection command, formatter cache (by dialect+config hash, max 50 instances)
 
-- **standard**: Standard SQL format with cascading indentation
-- **tabularLeft**: Keep space columns between keywords and arguments, left-align keywords
-- **tabularRight**: Keep space columns between keywords and arguments, right-align keywords
+**Formatting Example**
 
-### SQL Lint
+Before:
 
-The plugin provides powerful SQL linting with 17+ built-in rules and custom configuration:
-
-#### Lint Rules
-
-| Rule ID | Description | Default | Level |
-|---------|-------------|---------|-------|
-| `avoid_select_star` | Avoid SELECT *, specify column names explicitly | Enabled | Warning |
-| `explicit_join_type` | Suggest explicit JOIN type (INNER/LEFT/RIGHT) | Enabled | Info |
-| `limit_with_order_by` | Suggest ORDER BY when using LIMIT | Enabled | Warning |
-| `avoid_column_count_mismatch` | Check INSERT column count matches value count | Enabled | Error |
-| `missing_primary_key` | Suggest defining primary key in CREATE TABLE | Enabled | Warning |
-| `use_current_timestamp` | Suggest CURRENT_TIMESTAMP for better compatibility | Enabled | Info |
-| `avoid_select_in_insert` | Suggest explicit column names in INSERT | Enabled | Warning |
-| `duplicate_column_aliases` | Check for duplicate column aliases | Enabled | Warning |
-| `use_coalesce_over_isnull` | Suggest COALESCE instead of ISNULL/IFNULL | Disabled | Info |
-| `avoid_correlated_subqueries` | Correlated subqueries may impact performance | Disabled | Warning |
-| `long_query_line` | Suggest multi-line formatting for long queries | Disabled | Info |
-| `explicit_column_aliasing` | Suggest using AS keyword for column aliases | Disabled | Info |
-| `uppercase_keywords` | Suggest uppercase for SQL keywords | Disabled | Info |
-| `missing_query_comment` | Complex queries missing description comments | Enabled | Warning |
-| `missing_column_comment` | DDL columns missing COMMENT | Enabled | Warning |
-| `commented_out_code` | Commented-out code | Enabled | Info |
-| `expired_todo` | Expired TODO/FIXME | Enabled | Info |
-
-#### Configuring Lint Rules
-
-Search "SQL All in One" in VS Code settings to:
-1. Enable/disable linting via `SQL-All-in-One.enableLinter`
-2. Configure each rule's enabled status and severity via `SQL-All-in-One.lint.<ruleId>`
-3. Severity levels: `error`, `warning`, `information`, `hint`
-
-### Supported File Types
-
-- `.sql` - SQL files
-- `.hql` - HiveQL files
-- `.sparksql` - SparkSQL files
-- `.flinksql` - FlinkSQL files
-
-### Usage Example
-
-#### Before Formatting
 ```sql
 select id,name,email from users where age>18 and status='active' order by created_at desc limit 10;
 ```
 
-#### After Formatting (standard style)
+After (standard style):
+
 ```sql
 SELECT
     id,
@@ -655,36 +805,413 @@ ORDER BY created_at DESC
 LIMIT 10;
 ```
 
-### Syntax Error Detection
+#### 8. Smart Completion (IntelliSense)
 
-The plugin performs real-time AST-based SQL syntax error detection, highlighting errors with red squiggly lines in the editor and providing detailed error messages in the Problems panel.
+7 completion types, each independently toggleable:
 
-#### Supported Error Types
+| Type | Description | Example |
+|------|-------------|---------|
+| **Schema Completion** | Table/column names from connected database (with debounce) | Type table prefix → suggest table and columns |
+| **Keyword Completion** | Dialect-specific keywords and data types | `SEL` → `SELECT` |
+| **Function Completion** | 580+ function signatures with params, return type, Chinese description, category tags | `SUB` → `SUBSTR(string, start, length)` |
+| **Snippet Completion** | Dialect-specific code snippets | `sel` → insert SELECT template |
+| **CTE Name Completion** | CTE names defined in WITH clause | `WITH cte AS (...) SELECT` → suggests `cte` |
+| **Identifier Completion** | Context-aware table/column suggestions | FROM clause suggests table names |
+| **Comment Template Completion** | header, todo, fixme, hack, desc, section, col, tbl | `header` → insert file header comment |
 
-- Missing column name after comma (e.g. `select id, from ...`)
-- Missing column name after SELECT
-- Missing table name after FROM
-- Mismatched parentheses (excludes parentheses in strings and comments)
-- Unclosed strings (supports escaped quotes `''`)
-- Missing column name after ORDER BY
-- Missing condition after WHERE
-- Missing column name after GROUP BY
-- Trailing comma
+#### 9. Syntax Checking & Diagnostics
 
-Error messages include line numbers for quick location and fix.
+- Debounced diagnostics (300ms) with CancellationToken support
+- Two-layer checking: AST diagnostics + Lint diagnostics
+- Severity level filtering (Error/Warning/Info)
+
+**Syntax Error Checks**
+
+- HAVING without GROUP BY
+- LIMIT without value
+- JOIN without ON
+- Misplaced DISTINCT
+- Aggregate in WHERE
+- Wildcard in UPDATE
+- Incomplete CASE
+- Mismatched parentheses
+- Unclosed strings
+- Duplicate column aliases
+
+**Code Quality Suggestions**
+
+- Duplicate table aliases
+- Reserved words as identifiers
+- SELECT without FROM
+- INSERT without column names
+- Redundant DISTINCT
+- Subquery without alias
+- Suspicious NULL comparison
+
+**Dialect Hints**
+
+- MySQL date function differences in Hive
+
+#### 10. SQL Lint (30 Rules)
+
+Each rule supports `enabled` / `severity` configuration:
+
+| Rule ID | Description | Default Enabled | Default Level |
+|---------|-------------|----------------|---------------|
+| `avoid_select_star` | Avoid SELECT * | ✅ | Warning |
+| `explicit_join_type` | Explicit JOIN type | ✅ | Info |
+| `limit_with_order_by` | LIMIT should pair with ORDER BY | ✅ | Warning |
+| `avoid_column_count_mismatch` | INSERT column/value count mismatch | ✅ | Error |
+| `missing_primary_key` | CREATE TABLE missing primary key | ✅ | Warning |
+| `use_current_timestamp` | Use CURRENT_TIMESTAMP | ✅ | Info |
+| `avoid_select_in_insert` | Avoid SELECT in INSERT | ✅ | Warning |
+| `duplicate_column_aliases` | Duplicate column aliases | ✅ | Warning |
+| `use_coalesce_over_isnull` | Use COALESCE over ISNULL | ❌ | Info |
+| `avoid_correlated_subqueries` | Avoid correlated subqueries | ❌ | Warning |
+| `long_query_line` | Long query line | ❌ | Info |
+| `explicit_column_aliasing` | Explicit column aliasing (use AS) | ❌ | Info |
+| `uppercase_keywords` | Uppercase keywords | ❌ | Info |
+| `missing_query_comment` | Complex queries missing comments | ✅ | Warning |
+| `missing_column_comment` | DDL columns missing COMMENT | ✅ | Warning |
+| `commented_out_code` | Commented-out code | ✅ | Info |
+| `expired_todo` | Expired TODO/FIXME | ✅ | Info |
+| `having_without_group_by` | HAVING without GROUP BY | ✅ | Error |
+| `limit_invalid_value` | Invalid LIMIT value | ✅ | Error |
+| `reserved_word_identifier` | Reserved word as identifier | ✅ | Warning |
+| `join_missing_on` | JOIN missing ON | ✅ | Error |
+| `select_without_from` | SELECT without FROM | ✅ | Warning |
+| `misplaced_distinct` | Misplaced DISTINCT | ✅ | Error |
+| `aggregate_in_where` | Aggregate in WHERE | ✅ | Error |
+| `subquery_without_alias` | Subquery without alias | ✅ | Warning |
+| `suspicious_null_comparison` | Suspicious NULL comparison | ✅ | Warning |
+| `incomplete_case` | Incomplete CASE | ✅ | Error |
+| `redundant_distinct` | Redundant DISTINCT | ✅ | Warning |
+| `date_function_usage` | Date function usage hints | ✅ | Info |
+| `wildcard_in_update` | Wildcard in UPDATE | ✅ | Error |
+
+Some rules support sub-options:
+
+- `missing_query_comment`: `thresholdLineCount`, `thresholdJoinCount`, `thresholdSubqueryCount`
+- `missing_column_comment`: `aggregate`, `externalTableExempt`
+- `commented_out_code`: `thresholdLines`
+- `expired_todo`: `gracePeriodDays`
+
+#### 11. Quick Fix
+
+- `= NULL` → `IS NULL`
+- `!= NULL` / `<> NULL` → `IS NOT NULL`
+- Wrap reserved word aliases with backticks
+- Add alias to subqueries
+- Add column name placeholders for INSERT
+- Add GROUP BY for HAVING
+
+#### 12. Code Navigation
+
+| Feature | Shortcut | Description |
+|---------|----------|-------------|
+| Go to Definition | `F12` | CTE, table alias, column alias |
+| Find All References | `Shift+F12` | Find symbol references |
+| Rename Symbol | `F2` | With reserved word/conflict checks |
+| Breadcrumb Navigation | - | Clause-level (SELECT/FROM/WHERE/GROUP BY/HAVING/ORDER BY) |
+
+Shared AstNavigator navigation engine.
+
+#### 13. DDL Conversion
+
+- AST-based MySQL ↔ Hive CREATE TABLE conversion
+- Data type mapping
+- Table option filtering
+- Column attribute stripping
+- Constraint filtering
+
+#### 14. Comment Enhancement
+
+**Smart Comment Toggle**
+
+| Shortcut | Function |
+|----------|----------|
+| `Ctrl+/` / `Cmd+/` | Smart toggle: single line → line comment, multi-line → block comment |
+| `Ctrl+Shift+/` / `Cmd+Shift+/` | Advanced: format-disable markers, DDL COMMENT, block comment |
+
+**Comment Template Completion**
+
+| Prefix | Description |
+|--------|-------------|
+| `header` | File header comment (auto author, auto table dependencies) |
+| `col` | Column COMMENT |
+| `tbl` | Table COMMENT |
+| `todo` | TODO comment |
+| `fixme` | FIXME comment |
+| `hack` | HACK comment |
+| `desc` | Query description comment |
+| `section` | Section divider comment |
+
+**Comment Lint Rules**: `missing_query_comment`, `missing_column_comment`, `commented_out_code`, `expired_todo`
+
+#### 15. Hover Information
+
+4-layer resolver chain:
+
+1. Parameter hover
+2. Function signature hover
+3. Schema hover (from connected database)
+4. Keyword hover
+
+#### 16. Code Folding & Outline
+
+- Fold CTE, subquery, function blocks
+- Document outline for quick navigation
+
+#### 17. Visual Config Editor
+
+- Graphical configuration interface
+- Collapsible groups, toggle switches
+- Live format preview
+- Drag-to-resize preview area
+- Quick presets (Default, Hive, MySQL, Compact)
+- Save config button
+
+#### 18. Status Bar
+
+- Shows current SQL dialect
+- Quick access to config editor
+- Only shown in SQL files
+
+#### 19. Parameterized Queries
+
+- Variable highlighting
+- Batch parameter replacement (`Ctrl+Alt+P` / `Cmd+Alt+P`)
+- JDBC `:?` parameter support
+- Regex injection protection
+
+#### 20. Query History
+
+- History of executed queries
+- Configurable max entries (default 500)
+- Show/clear history commands
+
+#### 21. Safety Guard
+
+- Dangerous SQL interception
+- 3 levels: strict (all rules), moderate (confirmation-level only), off
+- Prevents accidental DROP, TRUNCATE, DELETE without WHERE, etc.
+
+#### 22. i18n
+
+- Chinese (zh) and English (en)
+- Auto-follows VSCode language setting
+- `displayLanguage` config: auto/zh/en
+
+#### 23. Code Snippets
+
+**Common SQL**
+
+| Prefix | Description |
+|--------|-------------|
+| `sel` | Basic SELECT |
+| `seld` | SELECT DISTINCT |
+| `join` | JOIN query |
+| `leftjoin` | LEFT JOIN query |
+| `groupby` | GROUP BY with aggregation |
+| `case` | CASE WHEN |
+| `insert` | INSERT INTO |
+| `insertsel` | INSERT ... SELECT |
+| `update` | UPDATE |
+| `delete` | DELETE |
+| `ct` | CREATE TABLE |
+| `ctas` | CREATE TABLE AS SELECT |
+| `with` | WITH CTE |
+| `union` | UNION ALL |
+
+**Hive**
+
+| Prefix | Description |
+|--------|-------------|
+| `hivepart` | Hive partition insert |
+| `hiveselpart` | Hive partition query |
+| `hiveext` | Hive external table |
+
+**FlinkSQL**
+
+| Prefix | Description |
+|--------|-------------|
+| `flinkkafka` | Kafka table DDL |
+| `flinkjdbc` | JDBC table DDL |
+| `flinktumble` | Tumbling window |
+| `flinkhop` | Hopping window |
+| `flinkcumulate` | Cumulative window |
+| `flinkwatermark` | Watermark definition |
+| `flinktemporal` | Temporal join |
+| `flinkdedup` | Dedup query |
+
+**Comments**
+
+| Prefix | Description |
+|--------|-------------|
+| `header` | File header comment |
+| `todo` | TODO comment |
+| `fixme` | FIXME comment |
+| `hack` | HACK comment |
+| `desc` | Query description comment |
+| `section` | Section divider comment |
+| `col` | Column COMMENT |
+| `tbl` | Table COMMENT |
+
+---
+
+### Keyboard Shortcuts
+
+| Command | Windows/Linux | Mac |
+|---------|--------------|-----|
+| Replace Parameter | `Ctrl+Alt+P` | `Cmd+Alt+P` |
+| Toggle Comment | `Ctrl+/` | `Cmd+/` |
+| Advanced Comment | `Ctrl+Shift+/` | `Cmd+Shift+/` |
+| Execute SQL | `Ctrl+Shift+E` | `Cmd+Shift+E` |
+| Execute Selected SQL | `Ctrl+Shift+R` | `Cmd+Shift+R` |
+| Format Document | `Shift+Alt+F` | `Shift+Option+F` |
+
+---
+
+### Extension Settings
+
+Search "SQL All in One" in VS Code settings to configure 80+ settings organized into the following categories:
+
+#### 1. Language & Dialect
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| `dialect` | SQL dialect (auto-detect/hive/mysql/spark/flinksql/sql/postgresql/bigquery/sqlite) | `hive` |
+| `displayLanguage` | UI language (auto/zh/en) | `auto` |
+
+#### 2. Formatting (40+ options)
+
+See the case, indent, newline, alignment, and spacing tables in the [SQL Formatting](#7-sql-formatting) section.
+
+#### 3. Lint Rules (30 rules)
+
+See the [SQL Lint](#10-sql-lint-30-rules) section. Each rule supports `enabled` + `severity` configuration, with some rules supporting sub-options.
+
+#### 4. Feature Toggles
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| `enableLinter` | Enable linting | `true` |
+| `enableCodeFolding` | Enable code folding | `true` |
+| `enableOutlineView` | Enable outline view | `true` |
+| `enableStatusBar` | Enable status bar | `true` |
+| `enableParameterHighlight` | Enable parameter highlighting | `true` |
+| `enableSnippets` | Enable code snippets | `true` |
+| `enableQuickFix` | Enable quick fix | `true` |
+| `enableHover` | Enable hover information | `true` |
+| `enableNavigation` | Enable code navigation | `true` |
+| `enableCompletion` | Enable smart completion | `true` |
+
+#### 5. Completion
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| `completion.keywords` | Keyword completion | `true` |
+| `completion.functions` | Function completion | `true` |
+| `completion.snippets` | Snippet completion | `false` |
+| `completion.cteNames` | CTE name completion | `true` |
+| `completion.identifiers` | Identifier completion | `true` |
+| `completion.commentSnippets` | Comment template completion | `true` |
+| `completion.schema` | Schema-aware completion | `true` |
+
+#### 6. Schema Cache
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| `schemaCache.databaseTtl` | Database cache TTL (seconds) | `600` |
+| `schemaCache.tableTtl` | Table cache TTL (seconds) | `300` |
+| `schemaCache.columnTtl` | Column cache TTL (seconds) | `120` |
+| `schemaCache.functionTtl` | Function cache TTL (seconds) | `600` |
+| `schemaCache.refreshOnDDL` | Refresh on DDL changes | `true` |
+| `schemaCache.prefetchOnConnect` | Prefetch on connect | `true` |
+
+#### 7. Query Execution
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| `query.maxRows` | Max rows | `1000` |
+| `query.timeout` | Query timeout (ms) | `30000` |
+| `query.pageSize` | Page size | `100` |
+| `query.nullPlaceholder` | NULL placeholder | `(NULL)` |
+
+#### 8. Safety Guard
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| `safetyGuard.level` | Safety level (strict/moderate/off) | `moderate` |
+
+#### 9. Execution Engine
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| `execution.batchMode` | Batch mode (sequential/transaction) | `sequential` |
+| `execution.onError` | Error handling (stop/continue) | `stop` |
+| `execution.saveProgress` | Save progress | `true` |
+| `execution.cancelRetries` | Cancel retries | `3` |
+| `execution.cancelRetryDelay` | Cancel retry delay (ms) | `500` |
+
+#### 10. Export
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| `export.defaultFormat` | Default export format | `csv` |
+| `export.csvDelimiter` | CSV delimiter | `,` |
+| `export.csvEncoding` | CSV encoding | `utf-8` |
+| `export.includeHeaders` | Include headers | `true` |
+
+#### 11. Data Editor
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| `dataEditor.editMode` | Edit mode (readonly/editable) | `readonly` |
+| `dataEditor.autoCommit` | Auto commit | `true` |
+| `dataEditor.defaultView` | Default view (grid/form) | `grid` |
+| `dataEditor.optimisticLocking` | Optimistic locking | `false` |
+| `dataEditor.maxBlobPreviewSize` | Max BLOB preview size (bytes) | `5242880` |
+| `dataEditor.blobTextPreviewSize` | BLOB text preview size (bytes) | `1048576` |
+| `dataEditor.longTransactionWarning` | Long transaction warning threshold (seconds) | `300` |
+| `dataEditor.showTransactionStatus` | Show transaction status | `true` |
+| `dataEditor.enableValidation` | Enable validation | `true` |
+| `dataEditor.validateOnEdit` | Validate on edit | `true` |
+| `dataEditor.validateForeignKeys` | Foreign key validation | `false` |
+
+#### 12. Results Panel
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| `results.enablePreload` | Enable scroll preloading | `true` |
+| `results.jsonPrettyPrint` | JSON pretty print | `true` |
+| `results.dateFormat` | Date format (local/utc/relative) | `local` |
+| `results.longTextThreshold` | Long text truncation threshold | `200` |
+
+#### 13. History
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| `history.maxEntries` | Max history entries | `500` |
+
+#### 14. Comment
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| `enableSmartCommentToggle` | Smart comment toggle | `true` |
+| `headerAuthor` | File header author | `""` |
+| `headerModifier` | File header modifier | `""` |
+
+---
 
 ### Feedback & Contributions
 
-If you have questions or good formatting configuration suggestions, please provide feedback on [GitHub Issues](https://github.com/BryceQin/SQL-All-in-One/issues).
+If you have questions or suggestions, please open an issue on [GitHub Issues](https://github.com/BryceQin/SQL-All-in-One/issues).
 
 ### Changelog
 
 See [CHANGELOG.md](CHANGELOG.md) for detailed version history.
 
-### Requirements
-
-- VS Code ^1.85.0
-
 ### License
 
-MIT
+MIT License

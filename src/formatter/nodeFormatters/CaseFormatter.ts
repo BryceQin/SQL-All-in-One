@@ -3,6 +3,7 @@ import Indentation from '../Indentation';
 import Layout, { WS } from '../Layout';
 import { formatKeyword } from './CommonFormatter';
 import { ExpressionFormatter } from './ExpressionFormatter';
+import type { AstNode } from '../../parser/astTypes';
 
 export class CaseFormatter {
     private cfg: FormatOptions;
@@ -18,7 +19,7 @@ export class CaseFormatter {
         this.exprFmt = new ExpressionFormatter(cfg, indent);
     }
 
-    public format(expr: any): string {
+    public format(expr: AstNode): string {
         this.layout.add(formatKeyword('CASE', this.cfg.keywordCase));
 
         if (expr.expr) {
@@ -30,7 +31,7 @@ export class CaseFormatter {
         }
 
         if (expr.args) {
-            for (const arg of expr.args) {
+            for (const arg of expr.args as AstNode[]) {
                 if (arg.type === 'when') {
                     this.formatWhen(arg);
                 } else if (arg.type === 'else') {
@@ -48,7 +49,7 @@ export class CaseFormatter {
         return this.layout.toString().trimEnd();
     }
 
-    private formatWhen(arg: any): void {
+    private formatWhen(arg: AstNode): void {
         if (this.cfg.indentWhen !== false) {
             this.layout.add(WS.NEWLINE, WS.INDENT);
         } else {
@@ -76,7 +77,7 @@ export class CaseFormatter {
         this.layout.add(this.exprFmt.format(arg.result));
     }
 
-    private formatElse(arg: any): void {
+    private formatElse(arg: AstNode): void {
         this.layout.add(WS.NEWLINE, WS.INDENT, formatKeyword('ELSE', this.cfg.keywordCase));
 
         if (this.cfg.newlineAfterElse) {

@@ -1,6 +1,7 @@
 import * as assert from 'assert'
-import { format, supportedDialects } from '../formatter/sqlFormatter'
+import { format, supportedDialects, type FormatOptionsWithLanguage } from '../formatter/sqlFormatter'
 import { ConfigError, validateConfig } from '../formatter/validateConfig'
+import type { FormatOptions } from '../formatter/FormatOptions'
 import { getParserEngine } from '../parser/SqlParserEngine'
 import { ParseError } from '../parser/ParseError'
 import { toNodeSqlParserDialect, SqlDialect } from '../parser/dialectMapper'
@@ -94,14 +95,14 @@ suite('SQL Formatter Core Tests', () => {
 
         test('throws ConfigError for unsupported dialect', () => {
             assert.throws(
-                () => format('SELECT 1', { language: 'unsupported_dialect' as any }),
+                () => format('SELECT 1', { language: 'unsupported_dialect' as 'sql' }),
                 ConfigError,
             )
         })
 
         test('throws error for non-string input', () => {
             assert.throws(
-                () => format(123 as any),
+                () => format(123 as unknown as string),
                 /无效的查询语句/,
             )
         })
@@ -399,7 +400,7 @@ suite('SQL Formatter Core Tests', () => {
                 tabWidth: 4,
                 useTabs: false,
                 keywordCase: 'lower',
-            } as any)
+            } as FormatOptionsWithLanguage)
             assert.ok(result.includes('-- a'), 'Should preserve the comment')
             const lines = result.split('\n')
             const commentLine = lines.find(l => l.includes('-- a'))
@@ -418,7 +419,7 @@ suite('SQL Formatter Core Tests', () => {
                 tabWidth: 4,
                 useTabs: false,
                 keywordCase: 'lower',
-            } as any)
+            } as FormatOptionsWithLanguage)
             assert.ok(result.includes('-- header comment'), 'Should preserve the after-semicolon comment')
             assert.ok(result.includes('select'), 'Should contain select keyword')
             assert.ok(result.includes('1'), 'Should contain the value 1')
@@ -433,7 +434,7 @@ suite('SQL Formatter Core Tests', () => {
                 tabWidth: 4,
                 useTabs: false,
                 keywordCase: 'lower',
-            } as any)
+            } as FormatOptionsWithLanguage)
             assert.ok(result.includes('/* header comment */'), 'Should preserve the after-semicolon block comment')
             assert.ok(result.includes('select'), 'Should contain select keyword')
             assert.ok(result.includes('1'), 'Should contain the value 1')
@@ -513,16 +514,10 @@ suite('ValidateConfig Tests', () => {
             newlineBeforeGroupBy: true,
             newlineBeforeHaving: true,
             newlineBeforeLimit: true,
-            maxLineLength: 120,
             tabulateAlias: false,
-            reservedKeywordCase: 'preserve' as const,
-            builtinFunctionCase: 'preserve' as const,
             newlineBeforeJoin: true,
-            newlineAfterComma: true,
             alignWhereClauses: false,
             alignCaseStatements: false,
-            breakAfterSelectItem: true,
-            breakAfterFromItem: true,
             spaceBeforeComma: false,
             spaceInsideParentheses: false,
             trimTrailingSpaces: true,
@@ -544,15 +539,10 @@ suite('ValidateConfig Tests', () => {
             indentCteBody: true,
             newlineBetweenCtes: true,
             cteCommaPosition: 'before' as const,
-            newlineAfterOver: false,
-            newlineBeforePartitionBy: true,
-            newlineAfterPartitionBy: true,
-            newlineBeforeOrderByInWindow: true,
             indentJoinConditions: true,
             alignOnClauses: false,
             alignInsertColumns: false,
             alignInsertValuesGroups: false,
-            newlineAfterInsert: true,
             newlineAfterInsertColumns: true,
             newlineBetweenValuesGroups: true,
             newlineAfterCase: true,
@@ -578,42 +568,42 @@ suite('ValidateConfig Tests', () => {
 
     test('throws ConfigError for deprecated option multilineLists', () => {
         assert.throws(
-            () => validateConfig({ multilineLists: 3 } as any),
+            () => validateConfig({ multilineLists: 3 } as unknown as FormatOptions),
             ConfigError,
         )
     })
 
     test('throws ConfigError for deprecated option newlineBeforeOpenParen', () => {
         assert.throws(
-            () => validateConfig({ newlineBeforeOpenParen: true } as any),
+            () => validateConfig({ newlineBeforeOpenParen: true } as unknown as FormatOptions),
             ConfigError,
         )
     })
 
     test('throws ConfigError for deprecated option newlineBeforeCloseParen', () => {
         assert.throws(
-            () => validateConfig({ newlineBeforeCloseParen: true } as any),
+            () => validateConfig({ newlineBeforeCloseParen: true } as unknown as FormatOptions),
             ConfigError,
         )
     })
 
     test('throws ConfigError for deprecated option aliasAs', () => {
         assert.throws(
-            () => validateConfig({ aliasAs: 'always' } as any),
+            () => validateConfig({ aliasAs: 'always' } as unknown as FormatOptions),
             ConfigError,
         )
     })
 
     test('throws ConfigError for expressionWidth <= 0', () => {
         assert.throws(
-            () => validateConfig({ expressionWidth: 0 } as any),
+            () => validateConfig({ expressionWidth: 0 } as unknown as FormatOptions),
             ConfigError,
         )
     })
 
     test('throws ConfigError for negative expressionWidth', () => {
         assert.throws(
-            () => validateConfig({ expressionWidth: -1 } as any),
+            () => validateConfig({ expressionWidth: -1 } as unknown as FormatOptions),
             ConfigError,
         )
     })
@@ -623,7 +613,7 @@ suite('ValidateConfig Tests', () => {
             () => validateConfig({
                 expressionWidth: 50,
                 paramTypes: { custom: [{ regex: '' }] },
-            } as any),
+            } as unknown as FormatOptions),
             ConfigError,
         )
     })
@@ -633,7 +623,7 @@ suite('ValidateConfig Tests', () => {
             () => validateConfig({
                 expressionWidth: 50,
                 paramTypes: { custom: [{ regex: '[invalid' }] },
-            } as any),
+            } as unknown as FormatOptions),
             ConfigError,
         )
     })
@@ -643,7 +633,7 @@ suite('ValidateConfig Tests', () => {
             expressionWidth: 50,
             paramTypes: { custom: [{ regex: '\\$\\d+' }] },
         }
-        const result = validateConfig(cfg as any)
+        const result = validateConfig(cfg as unknown as FormatOptions)
         assert.ok(result, 'Should pass for valid regex')
     })
 
@@ -652,7 +642,7 @@ suite('ValidateConfig Tests', () => {
             expressionWidth: 50,
             paramTypes: { named: [':'] },
         }
-        const result = validateConfig(cfg as any)
+        const result = validateConfig(cfg as unknown as FormatOptions)
         assert.ok(result, 'Should pass for paramTypes without custom')
     })
 })
@@ -932,20 +922,20 @@ suite('CommonFormatter Tests', () => {
 
     test('formatAlias with string', () => {
         const cfg = { keywordCase: 'upper' as const }
-        const result = formatAlias('alias_name', cfg as any)
+        const result = formatAlias('alias_name', cfg as unknown as FormatOptions)
         assert.ok(result.includes('AS'))
         assert.ok(result.includes('alias_name'))
     })
 
     test('formatAlias with null', () => {
         const cfg = { keywordCase: 'upper' as const }
-        const result = formatAlias(null, cfg as any)
+        const result = formatAlias(null, cfg as unknown as FormatOptions)
         assert.strictEqual(result, '')
     })
 
     test('formatAlias with object value', () => {
         const cfg = { keywordCase: 'upper' as const }
-        const result = formatAlias({ value: 'my_alias' }, cfg as any)
+        const result = formatAlias({ value: 'my_alias' }, cfg as unknown as FormatOptions)
         assert.ok(result.includes('my_alias'))
     })
 

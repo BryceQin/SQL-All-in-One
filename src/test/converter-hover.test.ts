@@ -17,22 +17,40 @@ import { initI18nForTest } from '../i18n/index'
 import type { FunctionSignature } from '../completion/functionSignatures'
 import type { KeywordInfo, KeywordCategory } from '../hover/HoverResolver'
 
+
+interface MarkdownStringInternal {
+    value: string;
+};
 // ---------------------------------------------------------------------------
 // Helpers: minimal vscode mocks for hover resolver tests
 // ---------------------------------------------------------------------------
 
-function createMockDocument(text: string) {
+function createMockDocument(text: string): import('vscode').TextDocument {
     const lines = text.split('\n')
     return {
         lineAt: (line: number) => ({ text: lines[line] || '' }),
         lineCount: lines.length,
         uri: { toString: () => 'test://document.sql' },
         version: 1,
-    } as any
+        fileName: 'test.sql',
+        isUntitled: false,
+        languageId: 'sql',
+        encoding: 'utf-8',
+        isDirty: false,
+        isClosed: false,
+        save: () => Promise.resolve(true),
+        eol: 1,
+        getWordRangeAtPosition: () => null,
+        validateRange: (r: unknown) => r,
+        validatePosition: (p: unknown) => p,
+        offsetAt: () => 0,
+        positionAt: () => ({ line: 0, character: 0 }),
+        getText: () => text,
+    } as unknown as import('vscode').TextDocument
 }
 
-function createMockPosition(line: number, character: number) {
-    return { line, character } as any
+function createMockPosition(line: number, character: number): import('vscode').Position {
+    return { line, character } as unknown as import('vscode').Position
 }
 
 // ---------------------------------------------------------------------------
@@ -512,7 +530,7 @@ suite('Converter and Hover Module Tests', () => {
                     category: 'math',
                 }
                 const md = buildFunctionMarkdown(sig)
-                const value = (md as any).value || ''
+                const value = (md as unknown as MarkdownStringInternal).value || ''
                 assert.ok(value.includes('ROUND'), 'Markdown should include function name')
             })
 
@@ -525,7 +543,7 @@ suite('Converter and Hover Module Tests', () => {
                     category: 'string',
                 }
                 const md = buildFunctionMarkdown(sig)
-                const value = (md as any).value || ''
+                const value = (md as unknown as MarkdownStringInternal).value || ''
                 assert.ok(value.includes('str'), 'Should include first param')
                 assert.ok(value.includes('start'), 'Should include second param')
             })
@@ -539,7 +557,7 @@ suite('Converter and Hover Module Tests', () => {
                     category: 'aggregate',
                 }
                 const md = buildFunctionMarkdown(sig)
-                const value = (md as any).value || ''
+                const value = (md as unknown as MarkdownStringInternal).value || ''
                 assert.ok(value.includes('bigint'), 'Should include return type')
             })
 
@@ -580,7 +598,7 @@ suite('Converter and Hover Module Tests', () => {
                     category: 'query',
                 }
                 const md = buildKeywordMarkdown(info)
-                const value = (md as any).value || ''
+                const value = (md as unknown as MarkdownStringInternal).value || ''
                 assert.ok(value.includes('WHERE'), 'Markdown should include keyword')
             })
 
@@ -592,7 +610,7 @@ suite('Converter and Hover Module Tests', () => {
                     category: 'join',
                 }
                 const md = buildKeywordMarkdown(info)
-                const value = (md as any).value || ''
+                const value = (md as unknown as MarkdownStringInternal).value || ''
                 assert.ok(value.includes('连接两个表'), 'Should include description')
             })
 
@@ -604,7 +622,7 @@ suite('Converter and Hover Module Tests', () => {
                     category: 'query',
                 }
                 const md = buildKeywordMarkdown(info)
-                const value = (md as any).value || ''
+                const value = (md as unknown as MarkdownStringInternal).value || ''
                 assert.ok(value.includes('LIMIT count'), 'Should include syntax')
             })
 
@@ -617,7 +635,7 @@ suite('Converter and Hover Module Tests', () => {
                     example: 'SELECT 1',
                 }
                 const md = buildKeywordMarkdown(info)
-                const value = (md as any).value || ''
+                const value = (md as unknown as MarkdownStringInternal).value || ''
                 assert.ok(value.includes('SELECT 1'), 'Should include example')
             })
 
@@ -649,7 +667,7 @@ suite('Converter and Hover Module Tests', () => {
                 const md = buildParameterMarkdown('myParam', [
                     { line: 1, context: 'SELECT ${myParam}' },
                 ])
-                const value = (md as any).value || ''
+                const value = (md as unknown as MarkdownStringInternal).value || ''
                 assert.ok(value.includes('myParam'), 'Should include param name')
             })
 
@@ -658,7 +676,7 @@ suite('Converter and Hover Module Tests', () => {
                     { line: 5, context: '${p}' },
                     { line: 12, context: 'WHERE x = ${p}' },
                 ])
-                const value = (md as any).value || ''
+                const value = (md as unknown as MarkdownStringInternal).value || ''
                 assert.ok(value.includes('5'), 'Should include line 5')
                 assert.ok(value.includes('12'), 'Should include line 12')
             })
@@ -667,7 +685,7 @@ suite('Converter and Hover Module Tests', () => {
                 const md = buildParameterMarkdown('param', [
                     { line: 3, context: 'WHERE id = ${param}' },
                 ])
-                const value = (md as any).value || ''
+                const value = (md as unknown as MarkdownStringInternal).value || ''
                 assert.ok(value.includes('WHERE id'), 'Should include context')
             })
 
@@ -677,7 +695,7 @@ suite('Converter and Hover Module Tests', () => {
                     context: `x = \${p} -- line ${i + 1}`,
                 }))
                 const md = buildParameterMarkdown('p', locations)
-                const value = (md as any).value || ''
+                const value = (md as unknown as MarkdownStringInternal).value || ''
                 assert.ok(value.includes('30'), 'Should show total count')
             })
 
@@ -719,7 +737,7 @@ suite('Converter and Hover Module Tests', () => {
             test('finds parameter at cursor position', () => {
                 const doc = createMockDocument('SELECT ${myParam} FROM users')
                 const pos = createMockPosition(0, 10) // inside ${myParam}
-                const result = extractParameterAtPosition(doc as any, pos as any)
+                const result = extractParameterAtPosition(doc, pos)
                 assert.ok(result !== null, 'Should find parameter')
                 assert.strictEqual(result.paramName, 'myParam')
             })
@@ -727,7 +745,7 @@ suite('Converter and Hover Module Tests', () => {
             test('returns null when not on a parameter', () => {
                 const doc = createMockDocument('SELECT id FROM users')
                 const pos = createMockPosition(0, 5)
-                const result = extractParameterAtPosition(doc as any, pos as any)
+                const result = extractParameterAtPosition(doc, pos)
                 assert.strictEqual(result, null)
             })
         })
@@ -743,22 +761,22 @@ suite('Converter and Hover Module Tests', () => {
             // HoverResolver is a TS interface (type-only, no runtime value)
             // Verify the interface shape by creating a conforming object
             const resolver: HoverResolver = {
-                resolve(_word: string, _dialect: any, _document: any, _position: any) {
+                resolve(_word: string, _dialect: string, _document: unknown, _position: unknown) {
                     return null
                 },
             }
             assert.strictEqual(typeof resolver.resolve, 'function',
                 'resolve should be a function')
-            assert.strictEqual(resolver.resolve('test', 'hive', {} as any, {} as any), null)
+            assert.strictEqual(resolver.resolve('test', 'hive', {} as unknown as import('vscode').TextDocument, {} as unknown as import('vscode').Position), null)
         })
 
         test('a HoverResolver instance can return non-null values', () => {
             const resolver: HoverResolver = {
                 resolve(_word, _dialect, _document, _position) {
-                    return {} as any  // simulating a valid Hover return
+                    return {} as unknown as import('vscode').Hover  // simulating a valid Hover return
                 },
             }
-            const result = resolver.resolve('SELECT', 'hive', {} as any, {} as any)
+            const result = resolver.resolve('SELECT', 'hive', {} as unknown as import('vscode').TextDocument, {} as unknown as import('vscode').Position)
             assert.ok(result !== null, 'Should be able to return non-null')
         })
     })
@@ -821,7 +839,7 @@ suite('Converter and Hover Module Tests', () => {
         test('resolve for unknown dialect returns null', () => {
             const mockDoc = createMockDocument('')
             const mockPos = createMockPosition(0, 0)
-            const result = resolver.resolve('ABS', 'unknown_dialect' as any, mockDoc, mockPos)
+            const result = resolver.resolve('ABS', 'unknown_dialect' as import('../formatter/sqlFormatter').SqlLanguage, mockDoc, mockPos)
             assert.strictEqual(result, null)
         })
 

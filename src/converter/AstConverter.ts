@@ -94,7 +94,7 @@ class AstConverter {
         }
 
         if (node.table_options) {
-            node.table_options = this.transformTableOptions(node.table_options, toDialect)
+            node.table_options = this.transformTableOptions(node.table_options as Record<string, unknown>[], toDialect)
         }
     }
 
@@ -202,7 +202,7 @@ class AstConverter {
             delete (col as Record<string, unknown>).nullable
         }
         if ('default_val' in col && col.default_val) {
-            const val = col.default_val.value
+            const val: unknown = col.default_val.value
             if (this.isDefaultValueNull(val)) {
                 delete (col as Record<string, unknown>).default_val
             }

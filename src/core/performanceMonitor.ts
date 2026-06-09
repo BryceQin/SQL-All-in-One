@@ -1,3 +1,6 @@
+import { getContainer, Tokens } from './diContainer';
+import { LRUCache } from '../utils/lruCache';
+
 interface AggregateStats {
   count: number;
   totalDuration: number;
@@ -6,49 +9,57 @@ interface AggregateStats {
 }
 
 export class PerformanceMonitor {
-  private aggregateStats = new Map<string, AggregateStats>();
-  private slowThreshold = 100;
+    private static readonly MAX_STATS_ENTRIES = 200;
+    private aggregateStats = new LRUCache<string, AggregateStats>({ maxSize: PerformanceMonitor.MAX_STATS_ENTRIES, maxAge: Infinity });
+    private enabled = false;
+    private slowThreshold = 100;
 
-  measure<T>(name: string, fn: () => T): T {
-    const start = performance.now();
-    try {
-      return fn();
-    } finally {
-      const duration = performance.now() - start;
-      this.recordMeasurement(name, duration);
-    }
-  }
+    setEnabled(enabled: boolean): void { this.enabled = enabled; }
 
-  async measureAsync<T>(name: string, fn: () => Promise<T>): Promise<T> {
-    const start = performance.now();
-    try {
-      return await fn();
-    } finally {
-      const duration = performance.now() - start;
-      this.recordMeasurement(name, duration);
-    }
-  }
+    isEnabled(): boolean { return this.enabled; }
 
-  private recordMeasurement(name: string, duration: number): void {
-    const existing = this.aggregateStats.get(name);
-    if (existing) {
-      existing.count += 1;
-      existing.totalDuration += duration;
-      if (duration > existing.maxDuration) existing.maxDuration = duration;
-      if (duration < existing.minDuration) existing.minDuration = duration;
-    } else {
-      this.aggregateStats.set(name, {
-        count: 1,
-        totalDuration: duration,
-        maxDuration: duration,
-        minDuration: duration,
-      });
+    measure<T>(name: string, fn: () => T): T {
+        if (!this.enabled) return fn();
+        const start = performance.now();
+        try {
+            return fn();
+        } finally {
+            const duration = performance.now() - start;
+            this.recordMeasurement(name, duration);
+        }
     }
 
-    if (duration > this.slowThreshold) {
-      console.warn(`[Performance] Slow operation: ${name} took ${duration.toFixed(2)}ms`);
+    async measureAsync<T>(name: string, fn: () => Promise<T>): Promise<T> {
+        if (!this.enabled) return fn();
+        const start = performance.now();
+        try {
+            return await fn();
+        } finally {
+            const duration = performance.now() - start;
+            this.recordMeasurement(name, duration);
+        }
     }
-  }
+
+    private recordMeasurement(name: string, duration: number): void {
+        const existing = this.aggregateStats.get(name);
+        if (existing) {
+            existing.count += 1;
+            existing.totalDuration += duration;
+            if (duration > existing.maxDuration) existing.maxDuration = duration;
+            if (duration < existing.minDuration) existing.minDuration = duration;
+        } else {
+            this.aggregateStats.set(name, {
+                count: 1,
+                totalDuration: duration,
+                maxDuration: duration,
+                minDuration: duration,
+            });
+        }
+
+        if (duration > this.slowThreshold) {
+            console.warn(`[Performance] Slow operation: ${name} took ${duration.toFixed(2)}ms`);
+        }
+    }
 
   getStats(name?: string): {
     count: number;
@@ -69,7 +80,7 @@ export class PerformanceMonitor {
       };
     }
 
-    if (this.aggregateStats.size === 0) {
+    if (this.aggregateStats.size() === 0) {
       return { count: 0, avgDuration: 0, maxDuration: 0, minDuration: 0 };
     }
 
@@ -85,6 +96,10 @@ export class PerformanceMonitor {
       if (stats.minDuration < minDuration) minDuration = stats.minDuration;
     }
 
+    if (totalCount === 0) {
+      return { count: 0, avgDuration: 0, maxDuration: 0, minDuration: 0 };
+    }
+
     return {
       count: totalCount,
       avgDuration: totalDuration / totalCount,
@@ -96,13 +111,16 @@ export class PerformanceMonitor {
   clear(): void {
     this.aggregateStats.clear();
   }
+
+  dispose(): void {
+    this.aggregateStats.clear();
+  }
 }
 
-let instance: PerformanceMonitor | null = null;
+export function createPerformanceMonitor(): PerformanceMonitor {
+  return new PerformanceMonitor();
+}
 
 export function getPerformanceMonitor(): PerformanceMonitor {
-  if (!instance) {
-    instance = new PerformanceMonitor();
-  }
-  return instance;
+  return getContainer().get<PerformanceMonitor>(Tokens.PerformanceMonitor);
 }

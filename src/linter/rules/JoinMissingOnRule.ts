@@ -9,10 +9,10 @@ import { t } from '../../i18n'
 export class JoinMissingOnRule extends BaseRule {
     readonly id = 'join_missing_on'
     readonly applicableTypes = ['select']
-    readonly name = 'JOIN Missing ON'
-    readonly description = 'enhanced.joinMissingOn'
+    readonly name = 'linter.joinMissingOn.name'
+    readonly description = 'linter.joinMissingOn.description'
     readonly category = 'error-check'
-    readonly defaultSeverity = vscode.DiagnosticSeverity.Error
+    readonly defaultSeverity = vscode.DiagnosticSeverity.Warning
     readonly defaultEnabled = true
 
     check(context: RuleContext): vscode.Diagnostic[] {

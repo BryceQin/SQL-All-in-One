@@ -160,7 +160,7 @@ export const spark: DialectOptions = {
     },
 }
 
-function postProcess(tokens: Token[]) {
+function postProcess(tokens: Token[]): Token[] {
     return tokens.map((token, i) => {
         const prevToken = tokens[i - 1] || EOF_TOKEN
         const nextToken = tokens[i + 1] || EOF_TOKEN

@@ -17,6 +17,12 @@ export default class Tokenizer {
     private rulesBeforeParams: TokenRule[]
     // 缓存：仅依赖 TokenizerOptions 的后置规则（无需每次 tokenize 重新构建）
     private rulesAfterParams: TokenRule[]
+    // 缓存：参数规则（基于 paramTypes 构建，按需缓存）
+    private cachedParamRules: ReturnType<typeof this.buildParamRulesImpl> | null = null
+    private cachedParamTypes: ParamTypes | undefined
+    // 缓存：完整的规则数组（前置 + 参数 + 后置），避免每次 tokenize 重新拼接
+    private cachedFullRules: TokenRule[] | null = null
+    private cachedFullRulesParamTypes: ParamTypes | undefined
 
     private cfg: TokenizerOptions
     private dialectName: string
@@ -29,22 +35,25 @@ export default class Tokenizer {
     }
 
     public tokenize(input: string, paramTypesOverrides?: ParamTypes): Token[] {
-        // 1. 整合三部分规则（按优先级：前置 > 参数 > 后置）
-        const rules = [
-            // 前置规则（注释、关键字、数字等，优先级最高）
-            ...this.rulesBeforeParams,
-            // 参数规则（动态构建，优先级中等）
-            ...this.buildParamRules(this.cfg, paramTypesOverrides),
-            // 后置规则（标识符、字符串、操作符等，优先级最低）
-            ...this.rulesAfterParams,
-        ]
+        // 1. 解析当前参数类型（合并覆盖与默认配置）
+        const paramTypes = this.resolveParamTypes(paramTypesOverrides)
 
-        // 2. 实例化底层 TokenizerEngine，执行分词
-        const tokens = new TokenizerEngine(rules, this.dialectName).tokenize(
+        // 2. 当参数类型未变化时，复用缓存的完整规则数组，避免每次重新拼接
+        if (!this.cachedFullRules || !this.cachedFullRulesParamTypes || !this.paramTypesEqual(this.cachedFullRulesParamTypes, paramTypes)) {
+            this.cachedFullRules = [
+                ...this.rulesBeforeParams,
+                ...this.buildParamRules(this.cfg, paramTypesOverrides),
+                ...this.rulesAfterParams,
+            ]
+            this.cachedFullRulesParamTypes = paramTypes
+        }
+
+        // 3. 实例化底层 TokenizerEngine，执行分词
+        const tokens = new TokenizerEngine(this.cachedFullRules, this.dialectName).tokenize(
             input,
         )
 
-        // 3. 可选后置处理：若配置了 postProcess 函数，执行后返回，否则直接返回原始 Token 数组
+        // 4. 可选后置处理：若配置了 postProcess 函数，执行后返回，否则直接返回原始 Token 数组
         return this.cfg.postProcess ? this.cfg.postProcess(tokens) : tokens
     }
     // 构建前置规则（缓存复用）,负责构建「不依赖参数、仅依赖方言配置」的高优先级规则，这些规则会被缓存，无需重复构建。
@@ -261,8 +270,61 @@ export default class Tokenizer {
         ])
     }
 
+    // 解析参数类型：优先使用 paramTypesOverrides（动态覆盖），其次使用 cfg.paramTypes（默认配置），最后兜底为空数组/undefined
+    private resolveParamTypes(paramTypesOverrides?: ParamTypes): ParamTypes {
+        return {
+            named: paramTypesOverrides?.named || this.cfg.paramTypes?.named || [],
+            quoted: paramTypesOverrides?.quoted || this.cfg.paramTypes?.quoted || [],
+            numbered: paramTypesOverrides?.numbered || this.cfg.paramTypes?.numbered || [],
+            positional: typeof paramTypesOverrides?.positional === 'boolean'
+                ? paramTypesOverrides.positional
+                : this.cfg.paramTypes?.positional,
+            custom: paramTypesOverrides?.custom || this.cfg.paramTypes?.custom || [],
+        }
+    }
+
     // 优先使用 paramTypesOverrides（动态覆盖），其次使用 cfg.paramTypes（默认配置），最后兜底为空数组 /undefined，确保灵活性
     private buildParamRules(
+        cfg: TokenizerOptions,
+        paramTypesOverrides?: ParamTypes,
+    ): TokenRule[] {
+        const paramTypes = {
+            named: paramTypesOverrides?.named || cfg.paramTypes?.named || [],
+            quoted: paramTypesOverrides?.quoted || cfg.paramTypes?.quoted || [],
+            numbered:
+                paramTypesOverrides?.numbered || cfg.paramTypes?.numbered || [],
+            positional:
+                typeof paramTypesOverrides?.positional === 'boolean'
+                    ? paramTypesOverrides.positional
+                    : cfg.paramTypes?.positional,
+            custom: paramTypesOverrides?.custom || cfg.paramTypes?.custom || [],
+        }
+
+        if (
+            this.cachedParamRules &&
+            this.cachedParamTypes &&
+            this.paramTypesEqual(this.cachedParamTypes, paramTypes)
+        ) {
+            return this.cachedParamRules
+        }
+
+        this.cachedParamRules = this.buildParamRulesImpl(cfg, paramTypesOverrides)
+        this.cachedParamTypes = paramTypes
+        return this.cachedParamRules
+    }
+
+    private paramTypesEqual(a: ParamTypes, b: ParamTypes): boolean {
+        return (
+            arraysEqual(a.named ?? [], b.named ?? []) &&
+            arraysEqual(a.quoted ?? [], b.quoted ?? []) &&
+            arraysEqual(a.numbered ?? [], b.numbered ?? []) &&
+            a.positional === b.positional &&
+            arraysEqual(a.custom ?? [], b.custom ?? [])
+        )
+    }
+
+    // 优先使用 paramTypesOverrides（动态覆盖），其次使用 cfg.paramTypes（默认配置），最后兜底为空数组 /undefined，确保灵活性
+    private buildParamRulesImpl(
         cfg: TokenizerOptions,
         paramTypesOverrides?: ParamTypes,
     ): TokenRule[] {
@@ -299,8 +361,8 @@ export default class Tokenizer {
                     regex.stringPattern(cfg.identTypes),
                 ),
                 // 去除引号并还原转义字符，提取核心参数名
-                key: (v) =>
-                    (({ tokenKey, quoteChar }) =>
+                key: (v): string =>
+                    (({ tokenKey, quoteChar }: { tokenKey: string; quoteChar: string }): string =>
                         tokenKey.replace(
                             new RegExp(escapeRegExp("\\" + quoteChar), "gu"),
                             quoteChar,
@@ -326,7 +388,7 @@ export default class Tokenizer {
                 (customParam): TokenRule => ({
                     type: TokenType.CUSTOM_PARAMETER,
                     regex: patternToRegex(customParam.regex),
-                    key: customParam.key ?? ((v) => v),
+                    key: customParam.key ?? ((v): string => v),
                 }),
             ),
         ])
@@ -342,4 +404,12 @@ export default class Tokenizer {
 // SQL 关键字规范化处理，消除大小写差异和多余空格的影响
 function toCanonical(word: string): string {
     return equalizeWhitespace(word.toUpperCase())
+}
+
+function arraysEqual(a: unknown[], b: unknown[]): boolean {
+    if (a.length !== b.length) return false
+    for (let i = 0; i < a.length; i++) {
+        if (a[i] !== b[i]) return false
+    }
+    return true
 }

@@ -30,8 +30,13 @@ export function findDialectByLangId(langId: string): DialectEntry | undefined {
     return dialectEntries.find(e => e.vscodeLangId === langId)
 }
 
+let _cachedLanguageIds: readonly string[] | null = null
+
 export function getSqlLanguageIds(): readonly string[] {
-    return [...new Set(dialectEntries.map(e => e.vscodeLangId))]
+    if (!_cachedLanguageIds) {
+        _cachedLanguageIds = [...new Set(dialectEntries.map(e => e.vscodeLangId))]
+    }
+    return _cachedLanguageIds
 }
 
 export function isSqlDocument(document: { languageId: string }): boolean {

@@ -129,7 +129,7 @@ function determineSelectClauseContext(selectNode: AstNode, pos: AstLocation): Co
 
     if (Array.isArray(from)) {
         for (let i = from.length - 1; i >= 0; i--) {
-            const entry = from[i]
+            const entry: unknown = from[i]
             if (entry == null || typeof entry !== 'object') continue
             const fromEntry = entry as Record<string, unknown>
             const join = fromEntry.join
@@ -192,7 +192,7 @@ function getColumnsLoc(selectNode: AstNode): LocRange | null {
     return null
 }
 
-function getFromLoc(selectNode: AstNode, from: unknown): LocRange | null {
+function getFromLoc(_selectNode: AstNode, from: unknown): LocRange | null {
     if (!Array.isArray(from) || from.length === 0) return null
 
     let earliestStart: AstLocation | null = null
@@ -242,7 +242,7 @@ function getLocFromAny(item: unknown): LocRange | null {
     return null
 }
 
-function getArrayClauseLoc(selectNode: AstNode, key: string, clause: unknown): LocRange | null {
+function getArrayClauseLoc(_selectNode: AstNode, _key: string, clause: unknown): LocRange | null {
     if (Array.isArray(clause) && clause.length > 0) {
         let earliestStart: AstLocation | null = null
         let latestEnd: AstLocation | null = null
@@ -290,7 +290,7 @@ function getArrayClauseLoc(selectNode: AstNode, key: string, clause: unknown): L
             }
         }
 
-        const selectNodeLoc = getNodeLoc(selectNode)
+        const selectNodeLoc = getNodeLoc(_selectNode)
         if (selectNodeLoc) {
             return selectNodeLoc
         }
@@ -416,6 +416,35 @@ export function findCursorContext(sql: string, position: AstLocation, dialect: S
     for (const ast of astList) {
         if (!isAstNode(ast)) continue
         const node = ast as AstNode
+
+        const loc = getNodeLoc(node)
+        if (loc && !isPosInRange(astPos, loc)) {
+            if (isAstNode(node._next)) {
+                continue
+            }
+            continue
+        }
+
+        const context = findContextInStatement(node, astPos)
+        if (context !== 'unknown') {
+            return context
+        }
+    }
+
+    return 'unknown'
+}
+
+export function findCursorContextFromAst(ast: unknown, position: AstLocation): CompletionContext {
+    const astList = Array.isArray(ast) ? ast : [ast]
+
+    const astPos: AstLocation = {
+        line: position.line + 1,
+        column: position.column + 1,
+    }
+
+    for (const a of astList) {
+        if (!isAstNode(a)) continue
+        const node = a as AstNode
 
         const loc = getNodeLoc(node)
         if (loc && !isPosInRange(astPos, loc)) {

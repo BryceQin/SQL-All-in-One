@@ -1,6 +1,5 @@
 import * as vscode from 'vscode'
 import Tokenizer from '../lexer/Tokenizer'
-import { TokenType } from '../lexer/token'
 import { t } from '../i18n'
 
 type ClauseContext = 'from' | 'select' | 'where' | 'unknown'
@@ -34,19 +33,22 @@ export function getIdentifierItems(
     return getCompletionForContext(ctx, text)
 }
 
-function getClauseContext(text: string, offset: number, tokenizer: Tokenizer): ClauseContext {
+function getClauseContext(text: string, offset: number, _tokenizer: Tokenizer): ClauseContext {
     try {
-        const tokens = tokenizer.tokenize(text, {})
-        for (let i = tokens.length - 1; i >= 0; i--) {
-            const t = tokens[i]
-            if (t.start > offset) continue
-            const relatedTypes: TokenType[] = [TokenType.RESERVED_CLAUSE, TokenType.RESERVED_SELECT, TokenType.RESERVED_KEYWORD]
-            if (relatedTypes.indexOf(t.type) === -1) continue
-            const kw = t.text.toUpperCase()
-            if (kw === 'FROM' || kw === 'JOIN') return 'from'
-            if (kw === 'SELECT') return 'select'
-            if (kw === 'WHERE') return 'where'
+        const textBeforeCursor = text.substring(0, offset)
+        const keywordPattern = /\b(FROM|JOIN|SELECT|WHERE|GROUP\s+BY|ORDER\s+BY|HAVING|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP)\b/gi
+        let lastMatch = ''
+        let m: RegExpExecArray | null
+        while ((m = keywordPattern.exec(textBeforeCursor)) !== null) {
+            lastMatch = m[1].toUpperCase().replace(/\s+/g, ' ')
         }
+
+        if (lastMatch === 'FROM' || lastMatch === 'JOIN') return 'from'
+        if (lastMatch === 'SELECT') return 'select'
+        if (lastMatch === 'WHERE' || lastMatch === 'HAVING') return 'where'
+        if (lastMatch === 'GROUP BY' || lastMatch === 'ORDER BY') return 'select'
+        if (lastMatch === 'INSERT' || lastMatch === 'UPDATE' || lastMatch === 'DELETE' ||
+            lastMatch === 'CREATE' || lastMatch === 'ALTER' || lastMatch === 'DROP') return 'unknown'
     } catch {
         return 'unknown'
     }

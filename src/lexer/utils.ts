@@ -1,5 +1,5 @@
 // 去除字符串数组中的重复元素
-export function dedupe(arr: string[]) {
+export function dedupe(arr: string[]): string[] {
     return [...new Set(arr)];
 };
 

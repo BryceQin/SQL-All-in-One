@@ -1,220 +1,308 @@
-import * as vscode from 'vscode'
-import { t } from '../i18n'
+import * as vscode from 'vscode';
+import { t } from '../i18n';
+import { getContainer, Tokens } from './diContainer';
 
 export enum ErrorLevel {
-  DEBUG = 'debug',
-  INFO = 'info',
-  WARNING = 'warning',
-  ERROR = 'error',
-  FATAL = 'fatal'
+    DEBUG = 'debug',
+    INFO = 'info',
+    WARNING = 'warning',
+    ERROR = 'error',
+    FATAL = 'fatal',
 }
 
 export enum ErrorCategory {
-  CRITICAL = 'critical',
-  FEATURE = 'feature',
-  SUB_ITEM = 'sub_item',
-  PARSE = 'parse',
-  FORMAT = 'format',
-  CONFIG = 'config',
+    CRITICAL = 'critical',
+    FEATURE = 'feature',
+    SUB_ITEM = 'sub_item',
+    PARSE = 'parse',
+    FORMAT = 'format',
+    CONFIG = 'config',
 }
 
 export interface FormatterError {
-  message: string;
-  originalError?: unknown;
-  context: string;
-  level: ErrorLevel;
-  category: ErrorCategory;
-  timestamp: number;
-  stack?: string;
+    message: string;
+    originalError?: unknown;
+    context: string;
+    level: ErrorLevel;
+    category: ErrorCategory;
+    timestamp: number;
+    stack?: string;
 }
 
 export class ErrorHandler {
-  private listeners: ((error: FormatterError) => void)[] = [];
-  private errorHistory: FormatterError[] = [];
-  private maxHistorySize = 100;
-  private showNotifications = true;
+    private listeners: ((error: FormatterError) => void)[] = [];
+    private errorHistory: FormatterError[];
+    private historyStart = 0;
+    private historyCount = 0;
+    private readonly maxHistorySize = 100;
+    private showNotifications = true;
+    private outputChannel: vscode.OutputChannel | undefined;
+    private lastNotificationTime = new Map<string, number>();
+    private readonly NOTIFICATION_THROTTLE_MS = 5000;
 
-  handle(
-    error: unknown,
-    context: string,
-    level: ErrorLevel = ErrorLevel.ERROR,
-    category: ErrorCategory = ErrorCategory.FEATURE
-  ): FormatterError {
-    const formattedError = this.normalizeError(error, context, level, category);
-    this.logError(formattedError);
-    this.notifyListeners(formattedError);
-    this.maybeShowNotification(formattedError);
-    return formattedError;
-  }
-
-  try<T>(
-    fn: () => T,
-    context: string,
-    options: {
-      fallback?: T;
-      level?: ErrorLevel;
-      category?: ErrorCategory;
-      rethrow?: boolean;
-    } = {}
-  ): T | undefined {
-    const { fallback, level = ErrorLevel.ERROR, category = ErrorCategory.FEATURE, rethrow = false } = options;
-
-    try {
-      return fn();
-    } catch (error) {
-      const formattedError = this.handle(error, context, level, category);
-      
-      if (rethrow) {
-        throw formattedError;
-      }
-      
-      return fallback;
-    }
-  }
-
-  async tryAsync<T>(
-    fn: () => Promise<T>,
-    context: string,
-    options: {
-      fallback?: T;
-      level?: ErrorLevel;
-      category?: ErrorCategory;
-      rethrow?: boolean;
-    } = {}
-  ): Promise<T | undefined> {
-    const { fallback, level = ErrorLevel.ERROR, category = ErrorCategory.FEATURE, rethrow = false } = options;
-
-    try {
-      return await fn();
-    } catch (error) {
-      const formattedError = this.handle(error, context, level, category);
-      
-      if (rethrow) {
-        throw formattedError;
-      }
-      
-      return fallback;
-    }
-  }
-
-  addListener(listener: (error: FormatterError) => void): () => void {
-    this.listeners.push(listener);
-    return () => {
-      const idx = this.listeners.indexOf(listener);
-      if (idx >= 0) {
-        this.listeners.splice(idx, 1);
-      }
-    };
-  }
-
-  getHistory(): FormatterError[] {
-    return [...this.errorHistory];
-  }
-
-  clearHistory(): void {
-    this.errorHistory = [];
-  }
-
-  private normalizeError(
-    error: unknown,
-    context: string,
-    level: ErrorLevel,
-    category: ErrorCategory
-  ): FormatterError {
-    let message = 'Unknown error';
-    let stack: string | undefined;
-
-    if (error instanceof Error) {
-      message = error.message;
-      stack = error.stack;
-    } else if (typeof error === 'string') {
-      message = error;
-    } else {
-      try {
-        message = JSON.stringify(error);
-      } catch {
-        message = String(error);
-      }
+    constructor() {
+        this.errorHistory = new Array<FormatterError>(this.maxHistorySize);
     }
 
-    return {
-      message,
-      originalError: error,
-      context,
-      level,
-      category,
-      timestamp: Date.now(),
-      stack,
-    };
-  }
-
-  private logError(error: FormatterError): void {
-    const logPrefix = `[SQL All in One] [${error.level.toUpperCase()}]`;
-    const logMessage = `${logPrefix} [${error.context}] ${error.message}`;
-
-    switch (error.level) {
-      case ErrorLevel.DEBUG:
-        console.debug(logMessage, error.originalError);
-        break;
-      case ErrorLevel.INFO:
-        console.info(logMessage, error.originalError);
-        break;
-      case ErrorLevel.WARNING:
-        console.warn(logMessage, error.originalError);
-        break;
-      case ErrorLevel.ERROR:
-      case ErrorLevel.FATAL:
-        console.error(logMessage, error.originalError);
-        break;
-    }
-
-    this.errorHistory.push(error);
-    if (this.errorHistory.length > this.maxHistorySize) {
-      this.errorHistory.shift();
-    }
-  }
-
-  private notifyListeners(error: FormatterError): void {
-    for (const listener of this.listeners) {
-      try {
-        listener(error);
-      } catch {
-        // Ignore listener errors
-      }
-    }
-  }
-
-  private maybeShowNotification(error: FormatterError): void {
-    if (!this.showNotifications) return;
-
-    switch (error.level) {
-      case ErrorLevel.FATAL:
-        vscode.window.showErrorMessage(t('notification.error', `${error.context}: ${error.message}`));
-        break;
-      case ErrorLevel.ERROR:
-        if (error.category === ErrorCategory.CRITICAL) {
-          vscode.window.showErrorMessage(t('notification.error', `${error.context}: ${error.message}`));
+    private getOrCreateOutputChannel(): vscode.OutputChannel {
+        if (!this.outputChannel) {
+            this.outputChannel = vscode.window.createOutputChannel('SQL All in One Errors');
         }
-        break;
-      case ErrorLevel.WARNING:
-        if (error.category === ErrorCategory.CRITICAL) {
-          vscode.window.showWarningMessage(t('notification.warning', `${error.context}: ${error.message}`));
-        }
-        break;
+        return this.outputChannel;
     }
-  }
+
+    private logToOutputChannel(error: FormatterError): void {
+        const channel = this.getOrCreateOutputChannel();
+        const timestamp = new Date(error.timestamp).toISOString();
+        const level = error.level.toUpperCase();
+        const category = error.category.toUpperCase();
+        channel.appendLine(`[${timestamp}] [${level}] [${category}] ${error.context}: ${error.message}`);
+        if (error.stack) {
+            channel.appendLine(error.stack);
+        }
+    }
+
+    handle(
+        error: unknown,
+        context: string,
+        level: ErrorLevel = ErrorLevel.ERROR,
+        category: ErrorCategory = ErrorCategory.FEATURE
+    ): FormatterError {
+        const formattedError = this.normalizeError(error, context, level, category);
+        this.logError(formattedError);
+        this.logToOutputChannel(formattedError);
+        this.notifyListeners(formattedError);
+        this.maybeShowNotification(formattedError);
+        return formattedError;
+    }
+
+    try<T>(
+        fn: () => T,
+        context: string,
+        options: {
+            fallback?: T;
+            level?: ErrorLevel;
+            category?: ErrorCategory;
+            rethrow?: boolean;
+        } = {}
+    ): T | undefined {
+        const {
+            fallback,
+            level = ErrorLevel.ERROR,
+            category = ErrorCategory.FEATURE,
+            rethrow = false,
+        } = options;
+
+        try {
+            return fn();
+        } catch (error) {
+            const formattedError = this.handle(error, context, level, category);
+
+            if (rethrow) {
+                throw formattedError;
+            }
+
+            return fallback;
+        }
+    }
+
+    async tryAsync<T>(
+        fn: () => Promise<T>,
+        context: string,
+        options: {
+            fallback?: T;
+            level?: ErrorLevel;
+            category?: ErrorCategory;
+            rethrow?: boolean;
+        } = {}
+    ): Promise<T | undefined> {
+        const {
+            fallback,
+            level = ErrorLevel.ERROR,
+            category = ErrorCategory.FEATURE,
+            rethrow = false,
+        } = options;
+
+        try {
+            return await fn();
+        } catch (error) {
+            const formattedError = this.handle(error, context, level, category);
+
+            if (rethrow) {
+                throw formattedError;
+            }
+
+            return fallback;
+        }
+    }
+
+    addListener(listener: (error: FormatterError) => void): () => void {
+        this.listeners.push(listener);
+        return () => {
+            const idx = this.listeners.indexOf(listener);
+            if (idx >= 0) {
+                this.listeners.splice(idx, 1);
+            }
+        };
+    }
+
+    getHistory(): FormatterError[] {
+        const result: FormatterError[] = [];
+        for (let i = 0; i < this.historyCount; i++) {
+            const idx = (this.historyStart + i) % this.maxHistorySize;
+            result.push(this.errorHistory[idx]);
+        }
+        return result;
+    }
+
+    clearHistory(): void {
+        this.historyStart = 0;
+        this.historyCount = 0;
+    }
+
+    private normalizeError(
+        error: unknown,
+        context: string,
+        level: ErrorLevel,
+        category: ErrorCategory
+    ): FormatterError {
+        let message = 'Unknown error';
+        let stack: string | undefined;
+
+        if (error instanceof Error) {
+            message = error.message;
+            stack = error.stack;
+        } else if (typeof error === 'string') {
+            message = error;
+        } else {
+            try {
+                message = JSON.stringify(error);
+            } catch {
+                message = String(error);
+            }
+        }
+
+        return {
+            message,
+            originalError: error,
+            context,
+            level,
+            category,
+            timestamp: Date.now(),
+            stack,
+        };
+    }
+
+    private logError(error: FormatterError): void {
+        const logPrefix = `[SQL All in One] [${error.level.toUpperCase()}]`;
+        const logMessage = `${logPrefix} [${error.context}] ${error.message}`;
+
+        switch (error.level) {
+            case ErrorLevel.DEBUG:
+                console.debug(logMessage, error.originalError);
+                break;
+            case ErrorLevel.INFO:
+                console.info(logMessage, error.originalError);
+                break;
+            case ErrorLevel.WARNING:
+                console.warn(logMessage, error.originalError);
+                break;
+            case ErrorLevel.ERROR:
+            case ErrorLevel.FATAL:
+                console.error(logMessage, error.originalError);
+                break;
+        }
+
+        const writeIdx = (this.historyStart + this.historyCount) % this.maxHistorySize;
+        this.errorHistory[writeIdx] = error;
+        if (this.historyCount < this.maxHistorySize) {
+            this.historyCount++;
+        } else {
+            this.historyStart = (this.historyStart + 1) % this.maxHistorySize;
+        }
+    }
+
+    private notifyListeners(error: FormatterError): void {
+        for (const listener of this.listeners) {
+            try {
+                listener(error);
+            } catch (listenerError) {
+                console.warn('[SQL All in One] Error in listener:', listenerError);
+            }
+        }
+    }
+
+    private maybeShowNotification(error: FormatterError): void {
+        if (!this.showNotifications) {
+            return;
+        }
+
+        const key = error.context + error.message;
+        const now = Date.now();
+        const lastTime = this.lastNotificationTime.get(key);
+        if (lastTime !== undefined && now - lastTime < this.NOTIFICATION_THROTTLE_MS) {
+            return;
+        }
+        this.lastNotificationTime.set(key, now);
+        if (this.lastNotificationTime.size > 200) {
+            const oldestKey = this.lastNotificationTime.keys().next().value;
+            if (oldestKey !== undefined) {
+                this.lastNotificationTime.delete(oldestKey);
+            }
+        }
+
+        switch (error.level) {
+            case ErrorLevel.FATAL:
+                vscode.window.showErrorMessage(
+                    t('notification.error', `${error.context}: ${error.message}`)
+                );
+                break;
+            case ErrorLevel.ERROR:
+                if (error.category === ErrorCategory.CRITICAL) {
+                    vscode.window.showErrorMessage(
+                        t('notification.error', `${error.context}: ${error.message}`)
+                    );
+                }
+                break;
+            case ErrorLevel.WARNING:
+                if (error.category === ErrorCategory.CRITICAL) {
+                    vscode.window.showWarningMessage(
+                        t('notification.warning', `${error.context}: ${error.message}`)
+                    );
+                }
+                break;
+        }
+    }
+
+    showOutputChannel(): void {
+        this.getOrCreateOutputChannel().show(true);
+    }
+
+    getOutputChannel(): vscode.OutputChannel | undefined {
+        return this.outputChannel;
+    }
+
+    dispose(): void {
+        if (this.outputChannel) {
+            this.outputChannel.dispose();
+        }
+        this.listeners.length = 0;
+        this.errorHistory = new Array<FormatterError>(this.maxHistorySize);
+        this.historyStart = 0;
+        this.historyCount = 0;
+        this.lastNotificationTime.clear();
+    }
 }
 
-let instance: ErrorHandler | null = null;
+export function createErrorHandler(): ErrorHandler {
+    return new ErrorHandler();
+}
 
 export function getErrorHandler(): ErrorHandler {
-  if (!instance) {
-    instance = new ErrorHandler();
-  }
-  return instance;
+    return getContainer().get<ErrorHandler>(Tokens.ErrorHandler);
 }
 
 export function handleError(error: unknown, context: string, category: ErrorCategory): void {
-  const level = category === ErrorCategory.CRITICAL ? ErrorLevel.ERROR : ErrorLevel.WARNING;
-  getErrorHandler().handle(error, context, level, category);
+    const level = category === ErrorCategory.CRITICAL ? ErrorLevel.ERROR : ErrorLevel.WARNING;
+    getErrorHandler().handle(error, context, level, category);
 }

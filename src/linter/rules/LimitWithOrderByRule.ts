@@ -6,7 +6,7 @@ import { getNodeLocation } from '../../parser/astUtils'
 export class LimitWithOrderByRule extends BaseRule {
     readonly id = 'limit_with_order_by'
     readonly applicableTypes = ['select']
-    readonly name = 'LIMIT Without ORDER BY'
+    readonly name = 'linter.limitWithoutOrderBy.name'
     readonly description = 'linter.limitWithoutOrderBy.description'
     readonly category = 'best-practices'
     readonly defaultSeverity = vscode.DiagnosticSeverity.Warning

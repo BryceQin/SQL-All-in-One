@@ -50,7 +50,7 @@ export default class Layout {
     }
 
     // Layout 类的核心入口，接收任意数量的「空白符指令」或「SQL 文本」，逐个处理并更新 items 数组
-    public add(...items: (WS | string)[]) {
+    public add(...items: (WS | string)[]): void {
         for (const item of items) {
             switch (item) {
                 case WS.SPACE:
@@ -83,14 +83,14 @@ export default class Layout {
     }
 
     // 移除前置水平空白
-    private trimHorizontalWhitespace() {
+    private trimHorizontalWhitespace(): void {
         while (isHorizontalWhitespace(last(this.items))) {
             this.items.pop()
         }
     }
 
     // 移除前置可移除空白
-    private trimWhitespace() {
+    private trimWhitespace(): void {
         while (isRemovableWhitespace(last(this.items))) {
             this.items.pop()
         }
@@ -99,7 +99,7 @@ export default class Layout {
     // 确保换行的唯一性，且强制换行不可被覆盖
     private addNewline(
         newline: (typeof WS)["NEWLINE"] | (typeof WS)["MANDATORY_NEWLINE"],
-    ) {
+    ): void {
         if (this.items.length > 0) {
             switch (last(this.items)) {
                 case WS.NEWLINE:
@@ -118,7 +118,7 @@ export default class Layout {
     }
 
     // 根据 Indentation 的当前层级，添加对应数量的 SINGLE_INDENT
-    private addIndentation() {
+    private addIndentation(): void {
         for (let i = 0; i < this.indentation.getLevel(); i++) {
             this.items.push(WS.SINGLE_INDENT)
         }
@@ -164,9 +164,9 @@ export default class Layout {
     }
 }
 // 判断是否为水平空白
-const isHorizontalWhitespace = (item: WS | string | undefined) =>
+const isHorizontalWhitespace = (item: WS | string | undefined): boolean =>
     item === WS.SPACE || item === WS.SINGLE_INDENT
 
 // 判断是否为可移除空白
-const isRemovableWhitespace = (item: WS | string | undefined) =>
+const isRemovableWhitespace = (item: WS | string | undefined): boolean =>
     item === WS.SPACE || item === WS.SINGLE_INDENT || item === WS.NEWLINE

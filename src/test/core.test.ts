@@ -348,7 +348,7 @@ suite('Lazy', () => {
         let disposed = false
         const obj = {
             data: 'test',
-            dispose: () => { disposed = true }
+            dispose: (): void => { disposed = true }
         }
         const lz = new Lazy(() => obj)
         lz.get() // initialize
@@ -370,7 +370,7 @@ suite('Lazy', () => {
     })
 
     test('dispose() does nothing when not initialized', () => {
-        const lz = new Lazy(() => ({ dispose: () => { throw new Error('should not be called') } }))
+        const lz = new Lazy(() => ({ dispose: (): never => { throw new Error('should not be called') } }))
         // should not throw - dispose is only called when initialized
         lz.dispose()
         assert.strictEqual(lz.isInitialized, false)
@@ -587,11 +587,11 @@ suite('DIContainer', () => {
         let disposed2 = false
         const svc1 = {
             name: 'svc1',
-            dispose: () => { disposed1 = true }
+            dispose: (): void => { disposed1 = true }
         }
         const svc2 = {
             name: 'svc2',
-            dispose: () => { disposed2 = true }
+            dispose: (): void => { disposed2 = true }
         }
 
         container.register('svc1', svc1)
@@ -628,7 +628,7 @@ suite('DIContainer', () => {
         let disposed = false
         const svc = {
             name: 'svc',
-            dispose: () => { disposed = true }
+            dispose: (): void => { disposed = true }
         }
 
         container.register('svc', svc)

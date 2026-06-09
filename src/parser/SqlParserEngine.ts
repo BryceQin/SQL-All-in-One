@@ -1,75 +1,74 @@
-import { Parser } from 'node-sql-parser'
-import type { AST, TableColumnAst } from 'node-sql-parser'
-import type { SqlDialect } from './dialectMapper'
-import { toNodeSqlParserDialect } from './dialectMapper'
-import { ParseError } from './ParseError'
+import { Parser } from 'node-sql-parser';
+import type { AST, TableColumnAst } from 'node-sql-parser';
+import type { SqlDialect } from './dialectMapper';
+import { toNodeSqlParserDialect } from './dialectMapper';
+import { ParseError } from './ParseError';
+import { getContainer, Tokens } from '../core/diContainer';
 
 export interface ParseResult {
-    ast: AST[] | AST
-    tableList: string[]
-    columnList: string[]
+    ast: AST[] | AST;
+    tableList: string[];
+    columnList: string[];
 }
 
 export class SqlParserEngine {
-    private parser: Parser
+    private parser: Parser | null = null;
 
-    constructor() {
-        this.parser = new Parser()
+    private getParser(): Parser {
+        if (!this.parser) {
+            this.parser = new Parser();
+        }
+        return this.parser;
     }
 
     astify(sql: string, dialect: SqlDialect): AST[] | AST {
         try {
-            return this.parser.astify(sql, {
+            return this.getParser().astify(sql, {
                 database: toNodeSqlParserDialect(dialect),
                 parseOptions: { includeLocations: true },
-            })
+            });
         } catch (e) {
-            throw new ParseError(dialect, sql, e)
+            throw new ParseError(dialect, sql, e);
         }
     }
 
     sqlify(ast: AST[] | AST, dialect: SqlDialect): string {
-        return this.parser.sqlify(ast, {
+        return this.getParser().sqlify(ast, {
             database: toNodeSqlParserDialect(dialect),
-        })
+        });
     }
 
     parse(sql: string, dialect: SqlDialect): ParseResult {
         try {
-            const result: TableColumnAst = this.parser.parse(sql, {
+            const result: TableColumnAst = this.getParser().parse(sql, {
                 database: toNodeSqlParserDialect(dialect),
                 parseOptions: { includeLocations: true },
-            })
+            });
             return {
                 ast: result.ast,
                 tableList: result.tableList,
                 columnList: result.columnList,
-            }
+            };
         } catch (e) {
-            throw new ParseError(dialect, sql, e)
+            throw new ParseError(dialect, sql, e);
         }
     }
 
     tryAstify(sql: string, dialect: SqlDialect): { success: boolean; ast: AST[] | AST | null; error: ParseError | null } {
         try {
-            const ast = this.astify(sql, dialect)
-            return { success: true, ast, error: null }
+            const ast = this.astify(sql, dialect);
+            return { success: true, ast, error: null };
         } catch (e) {
-            const error = e instanceof ParseError ? e : new ParseError(dialect, sql, e)
-            return { success: false, ast: null, error }
+            const error = e instanceof ParseError ? e : new ParseError(dialect, sql, e);
+            return { success: false, ast: null, error };
         }
     }
 }
 
-let engineInstance: SqlParserEngine | null = null
-
-export function getParserEngine(): SqlParserEngine {
-    if (!engineInstance) {
-        engineInstance = new SqlParserEngine()
-    }
-    return engineInstance
+export function createParserEngine(): SqlParserEngine {
+    return new SqlParserEngine();
 }
 
-export function resetParserEngine(): void {
-    engineInstance = null
+export function getParserEngine(): SqlParserEngine {
+    return getContainer().get<SqlParserEngine>(Tokens.ParserEngine);
 }

@@ -9,7 +9,7 @@ import { t } from '../../i18n'
 export class SelectInInsertRule extends BaseRule {
     readonly id = 'avoid_select_in_insert'
     readonly applicableTypes = ['insert']
-    readonly name = 'Avoid SELECT In INSERT'
+    readonly name = 'linter.insertWithoutColumns.name'
     readonly description = 'linter.insertWithoutColumns.description'
     readonly category = 'best-practices'
     readonly defaultSeverity = vscode.DiagnosticSeverity.Warning

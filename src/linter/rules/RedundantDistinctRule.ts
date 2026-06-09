@@ -9,9 +9,9 @@ import { t } from '../../i18n'
 export class RedundantDistinctRule extends BaseRule {
     readonly id = 'redundant_distinct'
     readonly applicableTypes = ['select']
-    readonly name = 'Redundant DISTINCT'
-    readonly description = 'enhanced.countDistinctStar'
-    readonly category = 'performance'
+    readonly name = 'linter.redundantDistinct.name'
+    readonly description = 'linter.redundantDistinct.description'
+    readonly category = 'best-practices'
     readonly defaultSeverity = vscode.DiagnosticSeverity.Warning
     readonly defaultEnabled = true
 
