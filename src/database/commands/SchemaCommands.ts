@@ -13,12 +13,18 @@ import {
 import { SqlStatementDetector } from '../query/SqlStatementDetector';
 import { getSchemaCache } from '../schema/SchemaCache';
 import { TableDesignerPanel } from '../../views/tableDesigner/TableDesignerPanel';
+import { QueryExecutor } from '../query/QueryExecutor';
+import { QueryResultPanel, FilterCondition } from '../../views/queryResult/QueryResultPanel';
+import type { QueryError } from '../adapters/IDatabaseAdapter';
+import { generateEditSql, executeInTransaction, getActiveAdapter } from '../query/DataEditService';
 
 
 export function registerSchemaCommands(
     context: vscode.ExtensionContext,
     treeProvider: DatabaseTreeProvider,
-    statementDetector: SqlStatementDetector
+    statementDetector: SqlStatementDetector,
+    queryExecutor: QueryExecutor,
+    outputChannel: vscode.OutputChannel
 ): vscode.Disposable[] {
     const disposables: vscode.Disposable[] = [];
 
@@ -32,16 +38,146 @@ export function registerSchemaCommands(
         })
     );
 
+    let queryResultPanel: QueryResultPanel | undefined;
+
     disposables.push(
         vscode.commands.registerCommand('sql-all-in-one.viewTableData', async (node?: TableTreeNode | ViewTreeNode) => {
-            if (node) {
+            try {
+                if (!node) {
+                    vscode.window.showErrorMessage('No table node selected. Please use the context menu from a table or view in the database explorer.');
+                    return;
+                }
+
+                const connectionManager = getConnectionManager();
+                const adapter = connectionManager.getAdapter(node.connectionId);
+                if (!adapter) {
+                    vscode.window.showWarningMessage('No active connection for the selected table. Please connect first.');
+                    return;
+                }
+
+                const conn = connectionManager.getAllConnections().find(c => c.id === node.connectionId);
                 const name = node instanceof TableTreeNode ? node.tableName : node.viewName;
-                const sql = `SELECT * FROM \`${name}\` LIMIT 100;`;
-                const document = await vscode.workspace.openTextDocument({
-                    content: sql,
-                    language: 'sql'
-                });
-                await vscode.window.showTextDocument(document);
+                const quotedName = adapter.quoteIdentifier(node.databaseName) + '.' + adapter.quoteIdentifier(name);
+                const sql = `SELECT * FROM ${quotedName} LIMIT 100;`;
+
+                if (!queryResultPanel) {
+                    queryResultPanel = QueryResultPanel.createOrShow(context.extensionUri, context);
+                    queryResultPanel.onExecuteQuery = (_sql: string): void => {
+                        vscode.commands.executeCommand('sql-all-in-one.executeQuery');
+                    };
+                    queryResultPanel.onCancelQuery = (): void => {
+                        vscode.commands.executeCommand('sql-all-in-one.cancelQuery');
+                    };
+                    queryResultPanel.onRequestSort = (_column: string, _direction: string): void => {
+                        vscode.commands.executeCommand('sql-all-in-one.executeQuery');
+                    };
+                    queryResultPanel.onRequestFilter = (_conditions: FilterCondition[]): void => {
+                        vscode.commands.executeCommand('sql-all-in-one.executeQuery');
+                    };
+                    queryResultPanel.onRequestPage = (_page: number): void => {
+                        vscode.commands.executeCommand('sql-all-in-one.executeQuery');
+                    };
+                    queryResultPanel.onCommitChanges = async (changes, tableName, _database): Promise<{ success: boolean; errors?: string[] }> => {
+                        try {
+                            const editAdapter = getActiveAdapter();
+                            if (!editAdapter) {
+                                return { success: false, errors: ['No active database connection'] };
+                            }
+                            const currentResult = queryResultPanel?.getCurrentResult();
+                            if (!currentResult) {
+                                return { success: false, errors: ['No current result data'] };
+                            }
+                            const statements = generateEditSql(
+                                changes,
+                                tableName,
+                                currentResult.columns,
+                                currentResult.rows,
+                                editAdapter.quoteIdentifier.bind(editAdapter)
+                            );
+                            return await executeInTransaction(editAdapter, statements);
+                        } catch (error) {
+                            return { success: false, errors: [(error as Error).message] };
+                        }
+                    };
+                    queryResultPanel.onRequestForeignKeyOptions = async (_column, referencedTable, database): Promise<import('../../views/queryResult/QueryResultPanel').ForeignKeyOption[]> => {
+                        try {
+                            const fkAdapter = getActiveAdapter();
+                            if (!fkAdapter) return [];
+                            const activeConfig = getConnectionManager().getActiveConnection();
+                            const structure = await fkAdapter.describeTable(database || activeConfig?.database || '', referencedTable);
+                            const pkCol = structure.columns.find(c => c.isPrimaryKey);
+                            let displayCol = structure.columns.find(c => c.comment && c.type.toUpperCase().includes('VARCHAR'));
+                            if (!displayCol) displayCol = structure.columns.find(c => !c.isPrimaryKey);
+                            if (!displayCol) displayCol = pkCol;
+                            if (!pkCol) return [];
+                            const q = fkAdapter.quoteIdentifier.bind(fkAdapter);
+                            const fkSql = `SELECT ${q(pkCol.name)}, ${q(displayCol?.name || pkCol.name)} FROM ${q(referencedTable)} LIMIT 100`;
+                            const result = await fkAdapter.execute(fkSql);
+                            return result.rows.map((row: Record<string, unknown>) => ({
+                                value: row[pkCol.name],
+                                displayText: row[displayCol?.name || pkCol.name] !== null && row[displayCol?.name || pkCol.name] !== undefined
+                                    ? String(row[pkCol.name]) + ' - ' + String(row[displayCol?.name || pkCol.name])
+                                    : String(row[pkCol.name]),
+                            }));
+                        } catch {
+                            return [];
+                        }
+                    };
+                    queryResultPanel.onBeginTransaction = async (): Promise<void> => {
+                        const txAdapter = getActiveAdapter();
+                        if (txAdapter) await txAdapter.beginTransaction();
+                    };
+                    queryResultPanel.onCommitTransaction = async (): Promise<void> => {
+                        const txAdapter = getActiveAdapter();
+                        if (txAdapter) await txAdapter.commit();
+                    };
+                    queryResultPanel.onRollbackTransaction = async (): Promise<void> => {
+                        const txAdapter = getActiveAdapter();
+                        if (txAdapter) await txAdapter.rollback();
+                    };
+                    queryResultPanel.onCreateSavepoint = async (name: string): Promise<void> => {
+                        const spAdapter = getActiveAdapter();
+                        if (spAdapter) {
+                            if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
+                                throw new Error(`Invalid savepoint name: ${name}`);
+                            }
+                            await spAdapter.execute(`SAVEPOINT ${name}`);
+                        }
+                    };
+                    queryResultPanel.onRollbackToSavepoint = async (name: string): Promise<void> => {
+                        const spAdapter = getActiveAdapter();
+                        if (spAdapter) {
+                            if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
+                                throw new Error(`Invalid savepoint name: ${name}`);
+                            }
+                            await spAdapter.execute(`ROLLBACK TO SAVEPOINT ${name}`);
+                        }
+                    };
+                } else {
+                    queryResultPanel.showLoading(sql);
+                }
+
+                const result = await queryExecutor.execute(
+                    adapter,
+                    sql,
+                    { database: node.databaseName },
+                    node.connectionId
+                );
+
+                if (result.status === 'error') {
+                    outputChannel.appendLine(`❌ Error: ${result.error?.message || 'Unknown error'}`);
+                    outputChannel.appendLine(`   SQL: ${sql}`);
+                    queryResultPanel.showError(result.error as QueryError);
+                } else {
+                    outputChannel.appendLine(`✅ Query executed successfully (${result.executionTime}ms, ${result.rowCount} rows)`);
+                    outputChannel.appendLine(`   SQL: ${sql}`);
+
+                    queryResultPanel.showResult(result, conn?.name, conn?.color, name);
+                }
+            } catch (error) {
+                const msg = error instanceof Error ? error.message : String(error);
+                vscode.window.showErrorMessage(`Failed to view table data: ${msg}`);
+                outputChannel.appendLine(`❌ viewTableData error: ${msg}`);
             }
         })
     );

@@ -148,12 +148,15 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
     }
 
     private getCommandForNode(element: ITreeNode): vscode.Command | undefined {
-        if (element instanceof TableTreeNode) {
-            return {
-                command: 'sql-all-in-one.viewTableData',
-                title: 'View Data',
-                arguments: [element]
-            };
+        if (element instanceof ConnectionTreeNode) {
+            if (element.connectionState === 'disconnected' || element.connectionState === 'error') {
+                return {
+                    command: 'sql-all-in-one.connect',
+                    title: 'Connect',
+                    arguments: [element]
+                };
+            }
+            return undefined;
         }
         if (element instanceof ViewTreeNode) {
             return {

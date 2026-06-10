@@ -23,6 +23,66 @@ export class MysqlAdapter implements IDatabaseAdapter {
         return this.pool !== null;
     }
 
+    private formatConnectionError(error: unknown, config: ConnectionConfig): Error {
+        const msg = error instanceof Error ? error.message : String(error);
+        const hostPort = `${config.host}:${config.port}`;
+
+        if (msg.includes('ECONNREFUSED')) {
+            return new Error(
+                `Connection refused to ${hostPort}. ` +
+                `Please check: 1) Database server is running; 2) Host and port are correct; 3) No firewall is blocking the connection.`
+            );
+        }
+        if (msg.includes('ETIMEDOUT') || msg.includes('connectTimeout')) {
+            return new Error(
+                `Connection timed out to ${hostPort}. ` +
+                `Please check: 1) Database server is reachable; 2) Network connectivity; 3) Increase connectTimeout in settings.`
+            );
+        }
+        if (msg.includes('EHOSTUNREACH')) {
+            return new Error(
+                `Host unreachable: ${hostPort}. Please check the host address and network connectivity.`
+            );
+        }
+        if (msg.includes('ENOTFOUND')) {
+            return new Error(
+                `Host not found: ${config.host}. Please check the host address is correct.`
+            );
+        }
+        if (msg.includes('ER_ACCESS_DENIED_ERROR') || msg.includes('Access denied')) {
+            return new Error(
+                `Access denied for user '${config.username}'@'${hostPort}'. Please check username and password.`
+            );
+        }
+        if (msg.includes('ER_DBACCESS_DENIED_ERROR') || msg.includes('denied to user')) {
+            return new Error(
+                `Database access denied for user '${config.username}' to database '${config.database || '(none)'}'. Please check user permissions.`
+            );
+        }
+        if (msg.includes('PROTOCOL_CONNECTION_LOST')) {
+            return new Error(
+                `Connection lost during handshake with ${hostPort}. Please check the database server is stable.`
+            );
+        }
+        if (msg.includes('ER_CON_COUNT_ERROR') || msg.includes('Too many connections')) {
+            return new Error(
+                `Too many connections to ${hostPort}. The database server has reached its connection limit.`
+            );
+        }
+        if (msg.includes('self signed certificate') || msg.includes('certificate') || msg.includes('SSL')) {
+            return new Error(
+                `SSL/TLS error connecting to ${hostPort}. Please check SSL configuration or set rejectUnauthorized to false.`
+            );
+        }
+        if (msg.includes('ER_BAD_DB_ERROR')) {
+            return new Error(
+                `Database '${config.database}' does not exist on ${hostPort}. Please check the database name.`
+            );
+        }
+
+        return error instanceof Error ? error : new Error(msg);
+    }
+
     async connect(config: ConnectionConfig): Promise<void> {
         if (this.pool) {
             await this.disconnect();
@@ -32,26 +92,31 @@ export class MysqlAdapter implements IDatabaseAdapter {
 
         const poolOptions = this.createPoolOptions(config);
 
-        const mysql = await import('mysql2/promise');
-        this.pool = mysql.createPool(poolOptions);
-
-        const conn = await this.pool.getConnection();
         try {
-            await conn.query<RowDataPacket[]>('SELECT 1');
-        } finally {
-            conn.release();
-        }
+            const mysql = await import('mysql2/promise');
+            this.pool = mysql.createPool(poolOptions);
 
-        const minConnections = config.poolConfig?.minConnections ?? 1;
-        const warmupPromises: Promise<void>[] = [];
-        for (let i = 0; i < minConnections; i++) {
-            warmupPromises.push(
-                this.pool!.getConnection().then(conn => conn.release())
-            );
+            const conn = await this.pool.getConnection();
+            try {
+                await conn.query<RowDataPacket[]>('SELECT 1');
+            } finally {
+                conn.release();
+            }
+
+            const minConnections = config.poolConfig?.minConnections ?? 1;
+            const warmupPromises: Promise<void>[] = [];
+            for (let i = 0; i < minConnections; i++) {
+                warmupPromises.push(
+                    this.pool!.getConnection().then(conn => conn.release())
+                );
+            }
+            await Promise.all(warmupPromises);
+            this.lastActivityTime = Date.now();
+            this.startReapTimer();
+        } catch (error: unknown) {
+            this.pool = null;
+            throw this.formatConnectionError(error, config);
         }
-        await Promise.all(warmupPromises);
-        this.lastActivityTime = Date.now();
-        this.startReapTimer();
     }
 
     async disconnect(): Promise<void> {
@@ -97,9 +162,10 @@ export class MysqlAdapter implements IDatabaseAdapter {
                 conn.release();
             }
         } catch (error: unknown) {
+            const formatted = this.formatConnectionError(error, config);
             return {
                 success: false,
-                error: error instanceof Error ? error.message : String(error),
+                error: formatted.message,
             };
         } finally {
             if (tempPool) {

@@ -6,37 +6,40 @@
 
 :root {
   --accent: var(--vscode-button-background, #4a9eff);
-  --accent-dim: rgba(74, 158, 255, 0.10);
-  --accent-glow: rgba(74, 158, 255, 0.25);
+  --accent-dim: var(--vscode-list-hoverBackground, rgba(74, 158, 255, 0.08));
+  --accent-glow: transparent;
   --bg: var(--vscode-editor-background, #1e1e2e);
   --surface: var(--vscode-panel-background, #252536);
   --surface2: var(--vscode-editorWidget-background, #2a2a3c);
   --text: var(--vscode-editor-foreground, #cdd6f4);
   --text-secondary: var(--vscode-descriptionForeground, #7c7f93);
-  --border: var(--vscode-panel-border, rgba(255,255,255,0.06));
+  --border: var(--vscode-panel-border, rgba(128,128,128,0.35));
   --input-bg: var(--vscode-input-background, #313145);
-  --input-border: var(--vscode-input-border, rgba(255,255,255,0.08));
+  --input-border: var(--vscode-input-border, rgba(128,128,128,0.35));
   --btn-bg: var(--vscode-button-background, #4a9eff);
   --btn-hover: var(--vscode-button-hoverBackground, #5caeff);
-  --btn-secondary-bg: var(--vscode-button-secondaryBackground, rgba(255,255,255,0.06));
-  --btn-secondary-hover: var(--vscode-button-secondaryHoverBackground, rgba(255,255,255,0.10));
+  --btn-secondary-bg: var(--vscode-button-secondaryBackground, rgba(128,128,128,0.15));
+  --btn-secondary-hover: var(--vscode-button-secondaryHoverBackground, rgba(128,128,128,0.25));
   --error-color: var(--vscode-errorForeground, #f44747);
   --warning-color: #e2b714;
   --success-color: #4ec9b0;
-  --radius-sm: 6px;
-  --radius: 8px;
-  --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  --row-height: 28px;
-  --row-num-width: 48px;
-  --header-height: 48px;
+  --radius-sm: 2px;
+  --radius: 3px;
+  --transition: none;
+  --row-height: 24px;
+  --row-num-width: 44px;
+  --header-height: 28px;
+  --zebra-bg: var(--vscode-list-hoverBackground, rgba(128,128,128,0.06));
+  --row-selected-bg: var(--vscode-list-activeSelectionBackground, rgba(74, 158, 255, 0.18));
+  --row-hover-bg: var(--vscode-list-hoverBackground, rgba(128,128,128,0.08));
 }
 
 body {
   font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text);
   background: var(--bg);
-  line-height: 1.5;
+  line-height: 1.4;
   overflow: hidden;
   height: 100vh;
   -webkit-font-smoothing: antialiased;
@@ -52,17 +55,18 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 12px;
+  padding: 4px 10px;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+  height: 30px;
 }
 
 .header-title {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
+  gap: 6px;
+  font-size: 12px;
   font-weight: 600;
   min-width: 0;
   overflow: hidden;
@@ -80,8 +84,8 @@ body {
 
 .header-dot {
   display: inline-block;
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: var(--success-color);
   flex-shrink: 0;
@@ -104,13 +108,13 @@ body {
 .header-time {
   color: var(--text-secondary);
   font-weight: 400;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .toolbar {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   flex-shrink: 0;
 }
 
@@ -118,24 +122,25 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 4px 10px;
-  border: none;
+  padding: 2px 6px;
+  border: 1px solid transparent;
   border-radius: var(--radius-sm);
-  background: var(--btn-secondary-bg);
-  color: var(--text);
+  background: transparent;
+  color: var(--text-secondary);
   cursor: pointer;
-  font-size: 13px;
-  transition: all var(--transition);
+  font-size: 12px;
+  transition: none;
   font-family: inherit;
   white-space: nowrap;
 }
 
 .tb-btn:hover {
   background: var(--btn-secondary-hover);
+  color: var(--text);
 }
 
 .tb-btn:active {
-  transform: scale(0.96);
+  background: var(--btn-secondary-bg);
 }
 
 .tb-btn:disabled {
@@ -152,11 +157,11 @@ body {
   position: absolute;
   top: 100%;
   right: 0;
-  margin-top: 4px;
+  margin-top: 2px;
   background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
   z-index: 100;
   min-width: 140px;
   overflow: hidden;
@@ -167,10 +172,10 @@ body {
 }
 
 .tb-dropdown-item {
-  padding: 8px 14px;
+  padding: 5px 12px;
   cursor: pointer;
   font-size: 12px;
-  transition: background var(--transition);
+  transition: none;
 }
 
 .tb-dropdown-item:hover {
@@ -180,7 +185,7 @@ body {
 
 .filter-bar {
   display: none;
-  padding: 8px 12px;
+  padding: 6px 10px;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
@@ -193,18 +198,18 @@ body {
 .filter-conditions {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .filter-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .filter-col,
 .filter-op {
-  padding: 4px 8px;
+  padding: 3px 6px;
   background: var(--input-bg);
   border: 1px solid var(--input-border);
   border-radius: var(--radius-sm);
@@ -217,17 +222,17 @@ body {
 }
 
 .filter-col {
-  min-width: 120px;
+  min-width: 110px;
 }
 
 .filter-op {
-  min-width: 110px;
+  min-width: 100px;
 }
 
 .filter-val {
   flex: 1;
   min-width: 100px;
-  padding: 4px 8px;
+  padding: 3px 6px;
   background: var(--input-bg);
   border: 1px solid var(--input-border);
   border-radius: var(--radius-sm);
@@ -241,7 +246,7 @@ body {
 .filter-op:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent-dim);
+  box-shadow: none;
 }
 
 .filter-val.hidden {
@@ -252,39 +257,39 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   border: none;
   border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
   font-size: 12px;
-  transition: all var(--transition);
+  transition: none;
 }
 
 .filter-remove-btn:hover {
-  background: rgba(244, 71, 71, 0.15);
+  background: rgba(244, 71, 71, 0.12);
   color: var(--error-color);
 }
 
 .filter-actions {
   display: flex;
-  gap: 8px;
-  margin-top: 8px;
+  gap: 6px;
+  margin-top: 6px;
 }
 
 .btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  border: none;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1px solid transparent;
   border-radius: var(--radius-sm);
   cursor: pointer;
   font-size: 12px;
   font-weight: 600;
-  transition: all var(--transition);
+  transition: none;
   white-space: nowrap;
   font-family: inherit;
 }
@@ -359,13 +364,14 @@ body {
 }
 
 .grid-header-table th {
-  padding: 0 10px;
+  padding: 0 6px;
   height: var(--header-height);
   text-align: left;
   font-size: 12px;
   font-weight: 600;
   color: var(--text);
   border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
   cursor: pointer;
   user-select: none;
   white-space: nowrap;
@@ -374,7 +380,7 @@ body {
 }
 
 .grid-header-table th:hover {
-  background: var(--accent-dim);
+  background: var(--row-hover-bg);
 }
 
 .grid-header-table th.row-num-header {
@@ -397,16 +403,12 @@ body {
 }
 
 .col-type {
-  display: block;
-  font-size: 10px;
-  font-weight: 400;
-  color: var(--text-secondary);
-  margin-top: 1px;
+  display: none;
 }
 
 .sort-indicator {
   position: absolute;
-  right: 6px;
+  right: 4px;
   top: 50%;
   transform: translateY(-50%);
   font-size: 10px;
@@ -420,15 +422,19 @@ body {
 }
 
 .grid-body-table td {
-  padding: 0 10px;
+  padding: 0 6px;
   height: var(--row-height);
   font-size: 12px;
   border-right: 1px solid var(--border);
-  border-bottom: 1px solid rgba(255,255,255,0.03);
+  border-bottom: 1px solid var(--border);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   cursor: default;
+}
+
+.grid-body-table tr:nth-child(even) td {
+  background: var(--zebra-bg);
 }
 
 .grid-body-table td.row-num {
@@ -442,18 +448,30 @@ body {
   border-right: 1px solid var(--border);
 }
 
+.grid-body-table tr:nth-child(even) td.row-num {
+  background: var(--surface);
+}
+
 .grid-body-table td.cell-null {
   color: var(--vscode-disabledForeground, #5a5d6e);
   font-style: italic;
 }
 
 .grid-body-table tr:hover td {
-  background: rgba(255,255,255,0.03);
+  background: var(--row-hover-bg);
+}
+
+.grid-body-table tr:hover td.row-num {
+  background: var(--surface);
 }
 
 .grid-body-table td.selected {
-  outline: 2px solid var(--accent);
-  outline-offset: -2px;
+  outline: none;
+  background: var(--row-selected-bg);
+}
+
+.grid-body-table tr.row-selected td {
+  background: var(--row-selected-bg);
 }
 
 .grid-body-table td:not(.row-num):not(.cell-null) {
@@ -471,7 +489,7 @@ body {
   justify-content: center;
   flex-direction: column;
   color: var(--text-secondary);
-  gap: 8px;
+  gap: 6px;
 }
 
 .empty-state.visible {
@@ -479,22 +497,22 @@ body {
 }
 
 .empty-state-icon {
-  font-size: 36px;
-  opacity: 0.5;
+  font-size: 28px;
+  opacity: 0.4;
 }
 
 .messages-container {
   flex: 1;
   overflow: auto;
-  padding: 12px 16px;
+  padding: 8px 12px;
   font-family: var(--vscode-editor-font-family, 'SF Mono', 'Fira Code', monospace);
   font-size: 12px;
-  line-height: 1.6;
+  line-height: 1.5;
 }
 
 .msg-item {
-  padding: 4px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.03);
+  padding: 2px 0;
+  border-bottom: 1px solid var(--border);
 }
 
 .msg-item.msg-error {
@@ -516,25 +534,25 @@ body {
 .msg-time {
   color: var(--text-secondary);
   font-size: 11px;
-  margin-right: 8px;
+  margin-right: 6px;
 }
 
 .history-container {
   flex: 1;
   overflow: auto;
-  padding: 8px;
+  padding: 6px;
 }
 
 .history-item {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 10px 12px;
+  gap: 2px;
+  padding: 6px 10px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   cursor: pointer;
-  transition: all var(--transition);
+  transition: none;
   background: var(--surface);
 }
 
@@ -554,7 +572,7 @@ body {
 
 .history-meta {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   font-size: 11px;
   color: var(--text-secondary);
 }
@@ -579,65 +597,67 @@ body {
   border-top: 1px solid var(--border);
   flex-shrink: 0;
   padding: 0 8px;
-  height: 36px;
+  height: 28px;
 }
 
 .tab-bar {
   display: flex;
-  gap: 2px;
+  gap: 0;
 }
 
 .tab-btn {
-  padding: 6px 14px;
+  padding: 5px 12px;
   border: none;
-  border-radius: var(--radius-sm);
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
   font-size: 12px;
   font-weight: 500;
-  transition: all var(--transition);
+  transition: none;
   font-family: inherit;
 }
 
 .tab-btn:hover {
   color: var(--text);
-  background: rgba(255,255,255,0.04);
+  background: transparent;
 }
 
 .tab-btn.active {
   color: var(--accent);
-  background: var(--accent-dim);
+  background: transparent;
   font-weight: 600;
+  border-bottom: 2px solid var(--accent);
 }
 
 .status-bar {
   display: flex;
   align-items: center;
-  gap: 16px;
-  font-size: 12px;
+  gap: 12px;
+  font-size: 11px;
   color: var(--text-secondary);
 }
 
 .pagination {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .page-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  border: none;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--btn-secondary-bg);
   color: var(--text);
   cursor: pointer;
   font-size: 11px;
-  transition: all var(--transition);
+  transition: none;
 }
 
 .page-btn:hover {
@@ -650,19 +670,19 @@ body {
 }
 
 .page-info {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-secondary);
   white-space: nowrap;
 }
 
 .page-jump {
-  width: 48px;
-  padding: 2px 6px;
+  width: 42px;
+  padding: 2px 4px;
   background: var(--input-bg);
   border: 1px solid var(--input-border);
   border-radius: var(--radius-sm);
   color: var(--text);
-  font-size: 12px;
+  font-size: 11px;
   text-align: center;
   font-family: inherit;
 }
@@ -673,416 +693,424 @@ body {
 }
 
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: var(--bg);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.08);
-  border-radius: 3px;
+  background: rgba(128,128,128,0.3);
+  border-radius: 0;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255,255,255,0.15);
+  background: rgba(128,128,128,0.5);
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--bg);
 }
 
 .tb-separator {
-    width: 1px;
-    height: 20px;
-    background: var(--border);
-    margin: 0 4px;
-    flex-shrink: 0;
+  width: 1px;
+  height: 16px;
+  background: var(--border);
+  margin: 0 3px;
+  flex-shrink: 0;
 }
 
 .grid-body-table td.cell-modified {
-    background: #FFF9C4 !important;
+  background: rgba(226, 183, 20, 0.15) !important;
 }
 
 .grid-body-table td.cell-new {
-    background: #E8F5E9 !important;
+  background: rgba(78, 201, 176, 0.12) !important;
 }
 
 .grid-body-table td.cell-deleted {
-    background: #FFEBEE !important;
-    text-decoration: line-through;
+  background: rgba(244, 71, 71, 0.12) !important;
+  text-decoration: line-through;
 }
 
 .grid-body-table tr.row-modified td.row-num::before {
-    content: '*';
-    color: var(--warning-color);
-    font-weight: bold;
-    margin-right: 2px;
+  content: '*';
+  color: var(--warning-color);
+  font-weight: bold;
+  margin-right: 2px;
 }
 
 .grid-body-table tr.row-new td.row-num {
-    background: #E8F5E9;
+  background: rgba(78, 201, 176, 0.12);
 }
 
 .grid-body-table tr.row-deleted td.row-num {
-    background: #FFEBEE;
-    text-decoration: line-through;
+  background: rgba(244, 71, 71, 0.12);
+  text-decoration: line-through;
 }
 
 .grid-body-table td.cell-editing {
-    padding: 0;
+  padding: 0;
 }
 
 .grid-body-table td.cell-editing input,
 .grid-body-table td.cell-editing select {
-    width: 100%;
-    height: 100%;
-    border: none;
-    outline: 2px solid var(--accent);
-    outline-offset: -2px;
-    background: var(--input-bg);
-    color: var(--text);
-    font-size: 12px;
-    font-family: inherit;
-    padding: 0 10px;
-    box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  border: none;
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+  background: var(--input-bg);
+  color: var(--text);
+  font-size: 12px;
+  font-family: inherit;
+  padding: 0 6px;
+  box-sizing: border-box;
 }
 
 .grid-body-table td.cell-editing select {
-    cursor: pointer;
-    -webkit-appearance: none;
-    appearance: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .grid-body-table td.cell-validation-error {
-    outline: 2px solid var(--error-color) !important;
-    outline-offset: -2px;
-    position: relative;
+  outline: 1px solid var(--error-color) !important;
+  outline-offset: -1px;
+  position: relative;
 }
 
 .grid-body-table td.cell-validation-error::after {
-    content: '⚠';
-    position: absolute;
-    top: 2px;
-    right: 4px;
-    font-size: 10px;
-    color: var(--error-color);
+  content: '!';
+  position: absolute;
+  top: 1px;
+  right: 3px;
+  font-size: 10px;
+  font-weight: bold;
+  color: var(--error-color);
 }
 
 .grid-body-table td.cell-null-editable {
-    color: var(--vscode-disabledForeground, #5a5d6e);
-    font-style: italic;
-    cursor: text;
+  color: var(--vscode-disabledForeground, #5a5d6e);
+  font-style: italic;
+  cursor: text;
 }
 
 .grid-body-table tr.row-placeholder td {
-    background: rgba(255,255,255,0.02);
-    color: var(--text-secondary);
-    font-style: italic;
+  background: rgba(128,128,128,0.04);
+  color: var(--text-secondary);
+  font-style: italic;
 }
 
 .form-container {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: auto;
-    padding: 16px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  padding: 12px;
 }
 
 .form-nav {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 16px;
-    flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 12px;
+  flex-shrink: 0;
 }
 
 .form-nav-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    border: none;
-    border-radius: var(--radius-sm);
-    background: var(--btn-secondary-bg);
-    color: var(--text);
-    cursor: pointer;
-    font-size: 14px;
-    transition: all var(--transition);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--btn-secondary-bg);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 12px;
+  transition: none;
 }
 
 .form-nav-btn:hover {
-    background: var(--btn-secondary-hover);
+  background: var(--btn-secondary-hover);
 }
 
 .form-nav-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .form-record-info {
-    font-size: 13px;
-    color: var(--text-secondary);
-    min-width: 60px;
-    text-align: center;
+  font-size: 12px;
+  color: var(--text-secondary);
+  min-width: 50px;
+  text-align: center;
 }
 
 .form-fields {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .form-field {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
 }
 
 .form-field-label {
-    min-width: 140px;
-    padding: 6px 0;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-secondary);
-    text-align: right;
-    flex-shrink: 0;
+  min-width: 130px;
+  padding: 4px 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: right;
+  flex-shrink: 0;
 }
 
 .form-field-label .field-type {
-    display: block;
-    font-weight: 400;
-    font-size: 10px;
-    color: var(--text-secondary);
-    opacity: 0.7;
-    margin-top: 2px;
+  display: block;
+  font-weight: 400;
+  font-size: 10px;
+  color: var(--text-secondary);
+  opacity: 0.7;
+  margin-top: 1px;
 }
 
 .form-field-value {
-    flex: 1;
-    min-width: 0;
+  flex: 1;
+  min-width: 0;
 }
 
 .form-field-value input,
 .form-field-value select {
-    width: 100%;
-    padding: 6px 10px;
-    background: var(--input-bg);
-    border: 1px solid var(--input-border);
-    border-radius: var(--radius-sm);
-    color: var(--text);
-    font-size: 12px;
-    font-family: inherit;
-    transition: border-color var(--transition);
+  width: 100%;
+  padding: 4px 6px;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 12px;
+  font-family: inherit;
+  transition: none;
 }
 
 .form-field-value input:focus,
 .form-field-value select:focus {
-    outline: none;
-    border-color: var(--accent);
-    box-shadow: 0 0 0 2px var(--accent-dim);
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: none;
 }
 
 .form-field-value input.field-null {
-    color: var(--vscode-disabledForeground, #5a5d6e);
-    font-style: italic;
+  color: var(--vscode-disabledForeground, #5a5d6e);
+  font-style: italic;
 }
 
 .form-field-value textarea {
-    width: 100%;
-    min-height: 80px;
-    padding: 6px 10px;
-    background: var(--input-bg);
-    border: 1px solid var(--input-border);
-    border-radius: var(--radius-sm);
-    color: var(--text);
-    font-size: 12px;
-    font-family: var(--vscode-editor-font-family, 'SF Mono', 'Fira Code', monospace);
-    resize: vertical;
+  width: 100%;
+  min-height: 60px;
+  padding: 4px 6px;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 12px;
+  font-family: var(--vscode-editor-font-family, 'SF Mono', 'Fira Code', monospace);
+  resize: vertical;
 }
 
 .form-field-value textarea:focus {
-    outline: none;
-    border-color: var(--accent);
-    box-shadow: 0 0 0 2px var(--accent-dim);
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: none;
 }
 
 .form-field-value .blob-preview-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    background: var(--btn-secondary-bg);
-    border: 1px solid var(--input-border);
-    border-radius: var(--radius-sm);
-    color: var(--text);
-    font-size: 12px;
-    cursor: pointer;
-    transition: all var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: var(--btn-secondary-bg);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+  transition: none;
 }
 
 .form-field-value .blob-preview-btn:hover {
-    background: var(--btn-secondary-hover);
-    border-color: var(--accent);
+  background: var(--btn-secondary-hover);
+  border-color: var(--accent);
 }
 
 .form-field-value .expand-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    border: none;
-    border-radius: var(--radius-sm);
-    background: var(--btn-secondary-bg);
-    color: var(--text-secondary);
-    cursor: pointer;
-    font-size: 11px;
-    margin-left: 4px;
-    transition: all var(--transition);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--btn-secondary-bg);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 11px;
+  margin-left: 2px;
+  transition: none;
 }
 
 .form-field-value .expand-btn:hover {
-    background: var(--btn-secondary-hover);
-    color: var(--text);
+  background: var(--btn-secondary-hover);
+  color: var(--text);
 }
 
 .dialog-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
 }
 
 .dialog {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-    width: 500px;
-    max-width: 90vw;
-    max-height: 80vh;
-    display: flex;
-    flex-direction: column;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  width: 500px;
+  max-width: 90vw;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .dialog-wide {
-    width: 700px;
+  width: 700px;
 }
 
 .dialog-header {
-    padding: 14px 18px;
-    font-size: 14px;
-    font-weight: 600;
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
 }
 
 .dialog-body {
-    padding: 16px 18px;
-    overflow: auto;
-    flex: 1;
+  padding: 12px 14px;
+  overflow: auto;
+  flex: 1;
 }
 
 .dialog-label {
-    font-size: 12px;
-    color: var(--text-secondary);
-    margin-bottom: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
 }
 
 .dialog-sql {
-    background: var(--input-bg);
-    border: 1px solid var(--input-border);
-    border-radius: var(--radius-sm);
-    padding: 10px 12px;
-    font-family: var(--vscode-editor-font-family, 'SF Mono', 'Fira Code', monospace);
-    font-size: 12px;
-    color: var(--text);
-    white-space: pre-wrap;
-    word-break: break-all;
-    max-height: 300px;
-    overflow: auto;
-    margin-bottom: 12px;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  font-family: var(--vscode-editor-font-family, 'SF Mono', 'Fira Code', monospace);
+  font-size: 12px;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 300px;
+  overflow: auto;
+  margin-bottom: 10px;
 }
 
 .dialog-summary {
-    font-size: 12px;
-    color: var(--text-secondary);
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 
 .dialog-footer {
-    padding: 12px 18px;
-    border-top: 1px solid var(--border);
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    flex-shrink: 0;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .blob-tabs {
-    display: flex;
-    gap: 2px;
-    margin-bottom: 12px;
+  display: flex;
+  gap: 0;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--border);
 }
 
 .blob-tab {
-    padding: 6px 14px;
-    border: none;
-    border-radius: var(--radius-sm);
-    background: transparent;
-    color: var(--text-secondary);
-    cursor: pointer;
-    font-size: 12px;
-    transition: all var(--transition);
+  padding: 5px 12px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 12px;
+  transition: none;
 }
 
 .blob-tab:hover {
-    color: var(--text);
-    background: rgba(255,255,255,0.04);
+  color: var(--text);
+  background: transparent;
 }
 
 .blob-tab.active {
-    color: var(--accent);
-    background: var(--accent-dim);
+  color: var(--accent);
+  background: transparent;
+  border-bottom: 2px solid var(--accent);
 }
 
 .blob-content {
-    background: var(--input-bg);
-    border: 1px solid var(--input-border);
-    border-radius: var(--radius-sm);
-    padding: 12px;
-    font-family: var(--vscode-editor-font-family, 'SF Mono', 'Fira Code', monospace);
-    font-size: 12px;
-    color: var(--text);
-    min-height: 200px;
-    max-height: 400px;
-    overflow: auto;
-    white-space: pre-wrap;
-    word-break: break-all;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  font-family: var(--vscode-editor-font-family, 'SF Mono', 'Fira Code', monospace);
+  font-size: 12px;
+  color: var(--text);
+  min-height: 200px;
+  max-height: 400px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
 }
 
 .blob-content img {
-    max-width: 100%;
-    max-height: 380px;
+  max-width: 100%;
+  max-height: 380px;
 }
 
 .edit-status {
-    font-size: 12px;
-    color: var(--warning-color);
-    font-weight: 500;
+  font-size: 11px;
+  color: var(--warning-color);
+  font-weight: 500;
 }
 
 .transaction-status {
-    font-size: 12px;
-    color: var(--accent);
-    font-weight: 500;
+  font-size: 11px;
+  color: var(--accent);
+  font-weight: 500;
 }
 
 .view-btn-active {
-    background: var(--accent-dim) !important;
-    color: var(--accent) !important;
+  background: var(--accent-dim) !important;
+  color: var(--accent) !important;
 }

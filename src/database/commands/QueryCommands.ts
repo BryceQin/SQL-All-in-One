@@ -233,9 +233,6 @@ export function registerQueryCommands(
                 activeConfig?.id
             );
 
-            outputChannel.show(true);
-            outputChannel.clear();
-
             if (result.status === 'error') {
                 outputChannel.appendLine(`❌ Error: ${result.error?.message || 'Unknown error'}`);
                 outputChannel.appendLine(`   SQL: ${statement.sql}`);
@@ -243,24 +240,9 @@ export function registerQueryCommands(
             } else {
                 outputChannel.appendLine(`✅ Query executed successfully (${result.executionTime}ms, ${result.rowCount} rows)`);
                 outputChannel.appendLine(`   SQL: ${statement.sql}`);
-                outputChannel.appendLine('');
 
-                if (result.columns.length > 0) {
-                    const header = result.columns.map((c) => c.name).join('\t');
-                    outputChannel.appendLine(header);
-                    const separator = result.columns.map(() => '---').join('\t');
-                    outputChannel.appendLine(separator);
-
-                    for (const row of result.rows) {
-                        const line = result.columns
-                            .map((c) => String(row[c.name] ?? 'NULL'))
-                            .join('\t');
-                        outputChannel.appendLine(line);
-                    }
-
-                    if (result.affectedRows !== undefined && result.affectedRows > 0) {
-                        outputChannel.appendLine(`\nAffected rows: ${result.affectedRows}`);
-                    }
+                if (result.affectedRows !== undefined && result.affectedRows > 0) {
+                    outputChannel.appendLine(`   Affected rows: ${result.affectedRows}`);
                 }
 
                 queryResultPanel.showResult(result, activeConfig?.name, activeConfig?.color);

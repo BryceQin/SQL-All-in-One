@@ -14,6 +14,7 @@ import { registerConnectionCommands } from './commands/ConnectionCommands';
 import { registerQueryCommands } from './commands/QueryCommands';
 import { registerExportCommands } from './commands/ExportCommands';
 import { registerSchemaCommands } from './commands/SchemaCommands';
+import { TableTreeNode } from '../views/databaseExplorer/treeNodes';
 import { getContainer, Tokens } from '../core/diContainer';
 
 export class DatabaseModule {
@@ -40,10 +41,11 @@ export class DatabaseModule {
     vscode.commands.executeCommand('setContext', 'sql-all-in-one.connectionCount', connectionManager.getAllConnections().length);
 
     this.treeProvider = new DatabaseTreeProvider(this.context);
-    vscode.window.createTreeView('sql-all-in-one.databaseExplorer', {
+    const treeView = vscode.window.createTreeView('sql-all-in-one.databaseExplorer', {
       treeDataProvider: this.treeProvider,
       showCollapseAll: true,
     });
+    this.setupDoubleClickHandler(treeView);
 
     const container = getContainer();
     this.queryExecutor = container.get<QueryExecutor>(Tokens.QueryExecutor);
@@ -79,6 +81,52 @@ export class DatabaseModule {
     });
   }
 
+  private setupDoubleClickHandler(treeView: vscode.TreeView<unknown>): void {
+    let lastSelectedNode: unknown = null;
+    let lastSelectedTime = 0;
+    let doubleClickNode: TableTreeNode | null = null;
+    const DOUBLE_CLICK_THRESHOLD = 500;
+
+    this.context.subscriptions.push(
+      treeView.onDidChangeSelection((e) => {
+        if (e.selection.length === 0) {
+          return;
+        }
+        const selectedNode = e.selection[0];
+        const now = Date.now();
+
+        if (
+          selectedNode instanceof TableTreeNode &&
+          selectedNode === lastSelectedNode &&
+          now - lastSelectedTime < DOUBLE_CLICK_THRESHOLD
+        ) {
+          doubleClickNode = selectedNode;
+          vscode.commands.executeCommand('sql-all-in-one.viewTableData', selectedNode);
+          lastSelectedNode = null;
+          lastSelectedTime = 0;
+          const node = selectedNode;
+          setTimeout(() => {
+            if (doubleClickNode === node) {
+              doubleClickNode = null;
+            }
+          }, 300);
+        } else {
+          lastSelectedNode = selectedNode;
+          lastSelectedTime = now;
+        }
+      })
+    );
+
+    this.context.subscriptions.push(
+      treeView.onDidCollapseElement((e) => {
+        if (doubleClickNode && e.element === doubleClickNode) {
+          doubleClickNode = null;
+          treeView.reveal(e.element, { expand: true }).then(undefined, () => {});
+        }
+      })
+    );
+  }
+
   private registerCommands(): void {
     const connectionDisposables = registerConnectionCommands(this.context, this.treeProvider);
     const { disposables: queryDisposables, getQueryResultPanel } = registerQueryCommands(
@@ -90,7 +138,7 @@ export class DatabaseModule {
       this.outputChannel,
     );
     const exportDisposables = registerExportCommands(getQueryResultPanel);
-    const schemaDisposables = registerSchemaCommands(this.context, this.treeProvider, this.statementDetector);
+    const schemaDisposables = registerSchemaCommands(this.context, this.treeProvider, this.statementDetector, this.queryExecutor, this.outputChannel);
 
     const allDisposables = [
       ...connectionDisposables,
