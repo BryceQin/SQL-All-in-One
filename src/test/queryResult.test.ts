@@ -1452,7 +1452,7 @@ suite('Number Formatting', () => {
 });
 
 suite('HTML Template Validation', () => {
-    const htmlPath = path.join(__dirname, '..', '..', 'src', 'views', 'queryResult', 'resultPanel.html');
+    const htmlPath = path.join(__dirname, '..', '..', 'media', 'query-result.html');
 
     test('HTML template file should exist', () => {
         assert.ok(fs.existsSync(htmlPath), 'resultPanel.html should exist');
@@ -1517,7 +1517,7 @@ suite('HTML Template Validation', () => {
 });
 
 suite('CSS File Validation', () => {
-    const cssPath = path.join(__dirname, '..', '..', 'src', 'views', 'queryResult', 'resultPanel.css');
+    const cssPath = path.join(__dirname, '..', '..', 'media', 'query-result.css');
 
     test('CSS file should exist', () => {
         assert.ok(fs.existsSync(cssPath), 'resultPanel.css should exist');
@@ -1547,10 +1547,17 @@ suite('CSS File Validation', () => {
         const css = fs.readFileSync(cssPath, 'utf-8');
         assert.ok(css.includes('grid-body-wrapper'), 'CSS should style grid-body-wrapper');
     });
+
+    test('CSS should include glassmorphism variables', () => {
+        const css = fs.readFileSync(cssPath, 'utf-8');
+        assert.ok(css.includes('backdrop-filter'), 'CSS should use backdrop-filter');
+        assert.ok(css.includes('--glass-blur'), 'CSS should define --glass-blur');
+        assert.ok(css.includes('--type-int'), 'CSS should define type color variables');
+    });
 });
 
 suite('JS File Validation', () => {
-    const jsPath = path.join(__dirname, '..', '..', 'src', 'views', 'queryResult', 'resultPanel.js');
+    const jsPath = path.join(__dirname, '..', '..', 'media', 'query-result.js');
 
     test('JS file should exist', () => {
         assert.ok(fs.existsSync(jsPath), 'resultPanel.js should exist');

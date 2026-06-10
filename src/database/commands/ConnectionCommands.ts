@@ -5,6 +5,22 @@ import { DatabaseTreeProvider } from '../../views/databaseExplorer/DatabaseTreeP
 import { ConnectionTreeNode } from '../../views/databaseExplorer/treeNodes';
 import { openConfigEditorCommand } from '../../commands/configEditorCommand';
 
+const connectionOutputChannel = vscode.window.createOutputChannel('SQL All in One - Connection');
+
+function showConnectionError(shortMessage: string, fullError: string): void {
+    if (shortMessage === fullError || fullError.length <= 80) {
+        vscode.window.showErrorMessage(shortMessage);
+        return;
+    }
+    vscode.window.showErrorMessage(shortMessage, 'Show Details').then(choice => {
+        if (choice === 'Show Details') {
+            connectionOutputChannel.clear();
+            connectionOutputChannel.appendLine(fullError);
+            connectionOutputChannel.show(true);
+        }
+    });
+}
+
 export function registerConnectionCommands(
     context: vscode.ExtensionContext,
     treeProvider: DatabaseTreeProvider
@@ -97,7 +113,11 @@ export function registerConnectionCommands(
                     vscode.window.showInformationMessage(`Connected to ${node.connectionName}`);
                     treeProvider.refresh();
                 } catch (error) {
-                    vscode.window.showErrorMessage(`Failed to connect: ${error}`);
+                    const fullError = error instanceof Error ? error.message : String(error);
+                    const shortMessage = fullError.length > 80
+                        ? fullError.substring(0, 80) + '...'
+                        : fullError;
+                    showConnectionError(`Failed to connect: ${shortMessage}`, fullError);
                 }
             } else {
                 vscode.window.showInformationMessage('Select a connection first');
@@ -156,10 +176,18 @@ export function registerConnectionCommands(
                     }
                     vscode.window.showInformationMessage(parts.join(' | '));
                 } else {
-                    vscode.window.showErrorMessage(`Connection failed: ${result.error || 'Unknown error'}`);
+                    const fullError = result.error || 'Unknown error';
+                    const shortMessage = fullError.length > 80
+                        ? fullError.substring(0, 80) + '...'
+                        : fullError;
+                    showConnectionError(`Connection failed: ${shortMessage}`, fullError);
                 }
             } catch (error) {
-                vscode.window.showErrorMessage(`Test connection failed: ${error}`);
+                const fullError = error instanceof Error ? error.message : String(error);
+                const shortMessage = fullError.length > 80
+                    ? fullError.substring(0, 80) + '...'
+                    : fullError;
+                showConnectionError(`Test connection failed: ${shortMessage}`, fullError);
             }
         })
     );

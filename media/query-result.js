@@ -69,11 +69,7 @@ const i18n = {
         'resultPanel.validationError': '校验错误',
         'resultPanel.notNullViolation': '此字段不能为空',
         'resultPanel.typeMismatch': '类型不匹配',
-        'resultPanel.lengthExceeded': '长度超限',
-        'resultPanel.copied': '已复制',
-        'resultPanel.queryRunning': '查询执行中...',
-        'resultPanel.exportStarted': '导出已开始',
-        'resultPanel.filterApplied': '筛选已应用'
+        'resultPanel.lengthExceeded': '长度超限'
     },
     en: {
         'resultPanel.title': 'Query Result',
@@ -143,11 +139,7 @@ const i18n = {
         'resultPanel.validationError': 'Validation error',
         'resultPanel.notNullViolation': 'This field cannot be null',
         'resultPanel.typeMismatch': 'Type mismatch',
-        'resultPanel.lengthExceeded': 'Length exceeded',
-        'resultPanel.copied': 'Copied',
-        'resultPanel.queryRunning': 'Query running...',
-        'resultPanel.exportStarted': 'Export started',
-        'resultPanel.filterApplied': 'Filter applied'
+        'resultPanel.lengthExceeded': 'Length exceeded'
     }
 };
 
@@ -196,6 +188,24 @@ const state = {
     validationErrors: {},
 };
 
+function getTypeColorInfo(type) {
+    if (!type) return null;
+    var t = type.toUpperCase();
+    if (t.match(/INT|BIGINT|SMALLINT|TINYINT|FLOAT|DOUBLE|DECIMAL|NUMERIC|BIT|BOOL/)) {
+        return { color: '#7cb8ff', bg: 'rgba(74,158,255,0.08)', border: 'rgba(74,158,255,0.12)' };
+    }
+    if (t.match(/CHAR|TEXT|CLOB|ENUM|SET|JSON/)) {
+        return { color: '#4ec9b0', bg: 'rgba(78,201,176,0.08)', border: 'rgba(78,201,176,0.12)' };
+    }
+    if (t.match(/DATE|TIME|TIMESTAMP|YEAR/)) {
+        return { color: '#dcdcaa', bg: 'rgba(220,220,170,0.08)', border: 'rgba(220,220,170,0.12)' };
+    }
+    if (t.match(/BLOB|BINARY|VARBINARY/)) {
+        return { color: '#ce9178', bg: 'rgba(206,145,120,0.08)', border: 'rgba(206,145,120,0.12)' };
+    }
+    return { color: '#4ec9b0', bg: 'rgba(78,201,176,0.08)', border: 'rgba(78,201,176,0.12)' };
+}
+
 const ROW_HEIGHT = 28;
 const HEADER_HEIGHT = 48;
 const BUFFER_ROWS = 5;
@@ -223,44 +233,6 @@ function onDocumentClick(e) {
 }
 
 function onKeyDown(e) {
-    if (state.selectedCell && !state.editingCell) {
-        if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            if (state.selectedCell.row > 0) selectCell(state.selectedCell.row - 1, state.selectedCell.col);
-        }
-        if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            if (state.selectedCell.row < state.rows.length - 1) selectCell(state.selectedCell.row + 1, state.selectedCell.col);
-        }
-        if (e.key === 'ArrowLeft') {
-            e.preventDefault();
-            if (state.selectedCell.col > 0) selectCell(state.selectedCell.row, state.selectedCell.col - 1);
-        }
-        if (e.key === 'ArrowRight') {
-            e.preventDefault();
-            if (state.selectedCell.col < state.columns.length - 1) selectCell(state.selectedCell.row, state.selectedCell.col + 1);
-        }
-        if (e.key === 'Enter' && state.editMode) {
-            e.preventDefault();
-            startCellEdit(state.selectedCell.row, state.selectedCell.col);
-        }
-        if (e.key === 'Tab' && !e.shiftKey && state.editMode) {
-            e.preventDefault();
-            if (state.selectedCell.col < state.columns.length - 1) {
-                selectCell(state.selectedCell.row, state.selectedCell.col + 1);
-            } else if (state.selectedCell.row < state.rows.length - 1) {
-                selectCell(state.selectedCell.row + 1, 0);
-            }
-        }
-        if (e.key === 'Tab' && e.shiftKey && state.editMode) {
-            e.preventDefault();
-            if (state.selectedCell.col > 0) {
-                selectCell(state.selectedCell.row, state.selectedCell.col - 1);
-            } else if (state.selectedCell.row > 0) {
-                selectCell(state.selectedCell.row - 1, state.columns.length - 1);
-            }
-        }
-    }
     if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
         copySelectedCell();
     }
@@ -302,7 +274,6 @@ function copySelectedCell() {
     } else {
         navigator.clipboard.writeText(String(val));
     }
-    showToast(t('resultPanel.copied') || 'Copied', 'success');
 }
 
 function handleMessage(event) {
@@ -362,8 +333,6 @@ function handleQueryResult(data) {
     state.editingCell = null;
     state.formCurrentIndex = 0;
 
-    hideLoading();
-
     var config = window.__CONFIG__ || {};
     if (config.editMode === 'editable') {
         state.editMode = true;
@@ -396,13 +365,11 @@ function handleQueryStart(data) {
     state.currentSql = data.sql || '';
     updateHeader();
     addMessage('info', t('resultPanel.queryStarted') + ': ' + (data.sql || '').substring(0, 200));
-    showLoading();
 }
 
 function handleQueryError(data) {
     state.status = 'error';
     state.error = data;
-    hideLoading();
     updateHeader();
     addMessage('error', t('resultPanel.queryFailed') + ': ' + (data.code || '') + ' ' + (data.message || ''));
     updateEmptyState();
@@ -458,6 +425,12 @@ function renderHeader() {
         const typeSpan = document.createElement('span');
         typeSpan.className = 'col-type';
         typeSpan.textContent = col.type || '';
+        var typeColorInfo = getTypeColorInfo(col.type);
+        if (typeColorInfo) {
+            typeSpan.style.color = typeColorInfo.color;
+            typeSpan.style.background = typeColorInfo.bg;
+            typeSpan.style.border = '1px solid ' + typeColorInfo.border;
+        }
 
         th.appendChild(nameSpan);
         th.appendChild(typeSpan);
@@ -671,12 +644,6 @@ function sortClientSide() {
 function toggleFilterBar() {
     const bar = document.getElementById('filterBar');
     bar.classList.toggle('open');
-    var btnFilter = document.getElementById('btnFilter');
-    if (bar.classList.contains('open')) {
-        btnFilter.classList.add('filter-active');
-    } else {
-        btnFilter.classList.remove('filter-active');
-    }
     if (bar.classList.contains('open')) {
         updateFilterColumnOptions();
     }
@@ -792,7 +759,6 @@ function applyFilter() {
         command: 'requestFilter',
         conditions: conditions
     });
-    showToast(t('resultPanel.filterApplied') || 'Filter applied', 'success');
 }
 
 function toggleExportMenu() {
@@ -806,7 +772,6 @@ function handleExport(format) {
         command: 'requestExport',
         format: format
     });
-    showToast(t('resultPanel.exportStarted') || 'Export started', 'info');
 }
 
 function handleExecute() {
@@ -1047,38 +1012,6 @@ function formatTime(ms) {
 
 function formatNumber(num) {
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-}
-
-function showToast(message, type) {
-    var container = document.getElementById('toastContainer');
-    if (!container) return;
-    var toast = document.createElement('div');
-    toast.className = 'toast toast-' + (type || 'info');
-    toast.textContent = message;
-    container.appendChild(toast);
-    requestAnimationFrame(function() {
-        toast.classList.add('show');
-    });
-    setTimeout(function() {
-        toast.classList.remove('show');
-        setTimeout(function() {
-            if (toast.parentNode) toast.parentNode.removeChild(toast);
-        }, 300);
-    }, 2000);
-}
-
-function showLoading() {
-    var loadingEl = document.getElementById('loadingState');
-    var gridContainer = document.getElementById('gridContainer');
-    var emptyState = document.getElementById('emptyState');
-    if (loadingEl) loadingEl.classList.add('visible');
-    if (gridContainer) gridContainer.style.display = 'none';
-    if (emptyState) emptyState.classList.remove('visible');
-}
-
-function hideLoading() {
-    var loadingEl = document.getElementById('loadingState');
-    if (loadingEl) loadingEl.classList.remove('visible');
 }
 
 function isBlobType(type) {
@@ -1359,19 +1292,11 @@ function commitChanges() {
 
     document.getElementById('commitSqlPreview').textContent = sqlStatements.join(';\n') + ';';
     document.getElementById('commitSummary').textContent = t('resultPanel.affect') + ': ' + summary;
-    var dialog = document.getElementById('commitDialog');
-    dialog.style.display = 'flex';
-    requestAnimationFrame(function() {
-        dialog.classList.add('visible');
-    });
+    document.getElementById('commitDialog').style.display = 'flex';
 }
 
 function confirmCommit() {
-    var dialog = document.getElementById('commitDialog');
-    dialog.classList.remove('visible');
-    setTimeout(function() {
-        dialog.style.display = 'none';
-    }, 200);
+    document.getElementById('commitDialog').style.display = 'none';
     vscode.postMessage({
         command: 'commitChanges',
         changes: state.pendingChanges,
@@ -1381,11 +1306,7 @@ function confirmCommit() {
 }
 
 function cancelCommit() {
-    var dialog = document.getElementById('commitDialog');
-    dialog.classList.remove('visible');
-    setTimeout(function() {
-        dialog.style.display = 'none';
-    }, 200);
+    document.getElementById('commitDialog').style.display = 'none';
 }
 
 function rollbackChanges() {
@@ -1475,7 +1396,7 @@ function updateTransactionStatus(active) {
             var config = window.__CONFIG__ || {};
             var warningThreshold = config.longTransactionWarning || 300;
             if (elapsed >= warningThreshold) {
-                statusEl.textContent += ' ⚠️ ' + t('resultPanel.longTxWarning');
+                statusEl.textContent += ' ⚠ ' + t('resultPanel.longTxWarning');
                 statusEl.style.color = 'var(--warning-color)';
             }
         }, 1000);
@@ -1567,6 +1488,12 @@ function renderFormView() {
         var typeSpan = document.createElement('span');
         typeSpan.className = 'field-type';
         typeSpan.textContent = col.type || '';
+        var typeColorInfo = getTypeColorInfo(col.type);
+        if (typeColorInfo) {
+            typeSpan.style.color = typeColorInfo.color;
+            typeSpan.style.background = typeColorInfo.bg;
+            typeSpan.style.border = '1px solid ' + typeColorInfo.border;
+        }
         labelDiv.appendChild(typeSpan);
 
         var valueDiv = document.createElement('div');
@@ -1731,11 +1658,7 @@ function switchBlobTab(mode) {
 }
 
 function closeBlobDialog() {
-    var dialog = document.getElementById('blobDialog');
-    dialog.classList.remove('visible');
-    setTimeout(function() {
-        dialog.style.display = 'none';
-    }, 200);
+    document.getElementById('blobDialog').style.display = 'none';
     state._blobText = null;
     state._blobHex = null;
     state._blobImage = null;
@@ -1831,11 +1754,7 @@ function handleBlobPreview(data) {
         document.getElementById('blobContent').textContent = data.content;
     }
 
-    var dialog = document.getElementById('blobDialog');
-    dialog.style.display = 'flex';
-    requestAnimationFrame(function() {
-        dialog.classList.add('visible');
-    });
+    document.getElementById('blobDialog').style.display = 'flex';
 }
 
 window.addEventListener('message', handleMessage);

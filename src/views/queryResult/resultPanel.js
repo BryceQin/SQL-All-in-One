@@ -1372,7 +1372,7 @@ function updateTransactionStatus(active) {
             var config = window.__CONFIG__ || {};
             var warningThreshold = config.longTransactionWarning || 300;
             if (elapsed >= warningThreshold) {
-                statusEl.textContent += ' ⚠️ ' + t('resultPanel.longTxWarning');
+                statusEl.textContent += ' ⚠ ' + t('resultPanel.longTxWarning');
                 statusEl.style.color = 'var(--warning-color)';
             }
         }, 1000);

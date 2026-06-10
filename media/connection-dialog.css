@@ -374,28 +374,44 @@ body {
 
 .conn-form-footer {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     margin-top: 16px;
     padding-top: 12px;
     border-top: 1px solid var(--border);
+    gap: 12px;
 }
 
 .conn-form-result {
     font-size: 12px;
     flex: 1;
     min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 6px;
+    line-height: 1.5;
 }
 
 .conn-form-result.success { color: var(--success-color); }
 .conn-form-result.error { color: var(--error-color); }
 .conn-form-result.loading { color: var(--text-secondary); }
+
+.conn-form-result-icon {
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.conn-form-result-text {
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+
+.conn-form-result.error .conn-form-result-text {
+    background: var(--error-dim);
+    border-radius: var(--radius-sm);
+    padding: 8px 10px;
+    width: 100%;
+}
 
 .conn-form-actions {
     display: flex;

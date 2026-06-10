@@ -1,5 +1,47 @@
 # Changelog
 
+## [2.11.0] - 2026-06-10
+
+### UI/UX
+
+- 查询结果面板和表设计器面板全面升级为现代玻璃拟态（Glassmorphism）设计风格
+- Query Result and Table Designer panels upgraded to modern Glassmorphism design style
+
+- 统一两套面板的 CSS 变量体系，建立一致的设计系统
+- Unified CSS variable system across both panels with a consistent design system
+
+- 毛玻璃容器效果：backdrop-filter 模糊 + 半透明背景 + 微妙边框和阴影，创造深度层次感
+- Glassmorphism container: backdrop-filter blur + semi-transparent background + subtle borders and shadows for depth
+
+- 列类型彩色标签：INT 蓝色、VARCHAR 绿色、DATE 黄色、BLOB 橙色，表头信息更丰富
+- Colored type labels in grid headers: INT blue, VARCHAR green, DATE yellow, BLOB orange
+
+- 按钮系统优化：主操作按钮渐变背景 + 投影发光，次要按钮半透明 + 微妙边框，hover/active 微交互动画
+- Button system: primary buttons with gradient + glow shadow, secondary buttons with semi-transparent + subtle border, hover/active micro-interactions
+
+- 输入框 focus 发光环效果（box-shadow: 0 0 0 2px accent-dim）
+- Input focus glow ring effect
+
+- 滚动条细化至 6px，半透明样式
+- Refined 6px semi-transparent scrollbar
+
+- 对话框毛玻璃效果
+- Dialog glassmorphism effect
+
+- 底部标签切换改为分段控件样式
+- Bottom tab switching redesigned as segmented control
+
+- 修复查询结果 Webview 面板显示问题：移除 outputChannel.show()，Webview 面板成为查询结果的主要展示方式
+- Fixed Query Result Webview panel display: removed outputChannel.show(), Webview panel is now the primary display for query results
+
+- OutputChannel 降级为辅助日志，仅记录执行状态信息，不再输出表格数据
+- OutputChannel downgraded to auxiliary log, only records execution status, no longer outputs table data
+
+- 测试文件路径修复（media/ 目录）
+- Fixed test file paths (media/ directory)
+
+---
+
 ## [2.9.0] - 2026-06-09
 
 ### Performance

@@ -484,14 +484,14 @@ function showTestResult(type, message) {
     let result = document.getElementById('testResult');
     result.className = 'conn-form-result ' + type;
     if (type === 'loading') {
-        result.innerHTML = '<span class="loading-spinner"></span>';
-        result.appendChild(document.createTextNode(message));
+        result.innerHTML = '<span class="loading-spinner conn-form-result-icon"></span><span class="conn-form-result-text"></span>';
+        result.querySelector('.conn-form-result-text').textContent = message;
     } else if (type === 'success') {
-        result.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16"><path d="M3 8l3 3 7-7" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg> ';
-        result.appendChild(document.createTextNode(message));
+        result.innerHTML = '<svg class="conn-form-result-icon" width="14" height="14" viewBox="0 0 16 16"><path d="M3 8l3 3 7-7" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="conn-form-result-text"></span>';
+        result.querySelector('.conn-form-result-text').textContent = message;
     } else {
-        result.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M8 4v5M8 11v1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg> ';
-        result.appendChild(document.createTextNode(message));
+        result.innerHTML = '<svg class="conn-form-result-icon" width="14" height="14" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M8 4v5M8 11v1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg><span class="conn-form-result-text"></span>';
+        result.querySelector('.conn-form-result-text').textContent = message;
     }
 }
 
