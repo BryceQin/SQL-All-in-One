@@ -225,6 +225,51 @@ export function registerQueryCommands(
                 }
             };
 
+            queryResultPanel.onExecutePanelSql = async (sql: string): Promise<void> => {
+                try {
+                    const connectionManager = getConnectionManager();
+                    const activeConn = connectionManager.getActiveConnection();
+                    const panelAdapter = activeConn
+                        ? connectionManager.getAdapter(activeConn.id)
+                        : undefined;
+
+                    if (!panelAdapter) {
+                        queryResultPanel?.showError({
+                            code: 'NO_CONNECTION',
+                            message: 'No active database connection',
+                            sql,
+                        });
+                        return;
+                    }
+
+                    queryResultPanel?.showLoading(sql);
+                    const result = await queryExecutor.execute(
+                        panelAdapter,
+                        sql,
+                        { database: activeConn?.database },
+                        activeConn?.id
+                    );
+
+                    if (result.status === 'error') {
+                        outputChannel.appendLine(`❌ Error: ${result.error?.message || 'Unknown error'}`);
+                        outputChannel.appendLine(`   SQL: ${sql}`);
+                        queryResultPanel?.showError(result.error as QueryError);
+                    } else {
+                        outputChannel.appendLine(`✅ Query executed successfully (${result.executionTime}ms, ${result.rowCount} rows)`);
+                        outputChannel.appendLine(`   SQL: ${sql}`);
+                        const activeConfig = connectionManager.getActiveConnection();
+                        queryResultPanel?.showResult(result, activeConfig?.name, activeConfig?.color);
+                    }
+                } catch (error) {
+                    const msg = error instanceof Error ? error.message : String(error);
+                    queryResultPanel?.showError({
+                        code: 'EXEC_ERROR',
+                        message: msg,
+                        sql,
+                    });
+                }
+            };
+
             const activeConfig = connectionManager.getActiveConnection();
             const result = await queryExecutor.execute(
                 adapter,

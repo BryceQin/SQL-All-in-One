@@ -157,6 +157,7 @@ export class ConnectionDialog {
 
             html = html.replace('{{CSS_URI}}', cssUri.toString());
             html = html.replace('{{JS_URI}}', jsUri.toString());
+            html = html.replace(/\{\{CSP_SOURCE\}\}/g, this._panel.webview.cspSource);
 
             const configScript = '<script>window.__CONNECTION_DIALOG_CONFIG__ = ' + JSON.stringify(config) + ';</script>';
             html = html.replace('{{CONFIG_INJECT}}', configScript);

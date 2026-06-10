@@ -151,6 +151,7 @@ export class DataTransferDialog {
 
             html = html.replace('{{CSS_URI}}', cssUri.toString());
             html = html.replace('{{JS_URI}}', jsUri.toString());
+            html = html.replace(/\{\{CSP_SOURCE\}\}/g, this._panel.webview.cspSource);
 
             return html;
         } catch (error) {

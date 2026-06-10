@@ -188,6 +188,27 @@ const state = {
     validationErrors: {},
 };
 
+var monacoEditor = null;
+var monacoLoaded = false;
+
+function getTypeColorInfo(type) {
+    if (!type) return null;
+    var t = type.toUpperCase();
+    if (t.match(/INT|BIGINT|SMALLINT|TINYINT|FLOAT|DOUBLE|DECIMAL|NUMERIC|BIT|BOOL/)) {
+        return { color: '#7cb8ff', bg: 'rgba(74,158,255,0.08)', border: 'rgba(74,158,255,0.12)' };
+    }
+    if (t.match(/CHAR|TEXT|CLOB|ENUM|SET|JSON/)) {
+        return { color: '#4ec9b0', bg: 'rgba(78,201,176,0.08)', border: 'rgba(78,201,176,0.12)' };
+    }
+    if (t.match(/DATE|TIME|TIMESTAMP|YEAR/)) {
+        return { color: '#dcdcaa', bg: 'rgba(220,220,170,0.08)', border: 'rgba(220,220,170,0.12)' };
+    }
+    if (t.match(/BLOB|BINARY|VARBINARY/)) {
+        return { color: '#ce9178', bg: 'rgba(206,145,120,0.08)', border: 'rgba(206,145,120,0.12)' };
+    }
+    return { color: '#4ec9b0', bg: 'rgba(78,201,176,0.08)', border: 'rgba(78,201,176,0.12)' };
+}
+
 const ROW_HEIGHT = 28;
 const HEADER_HEIGHT = 48;
 const BUFFER_ROWS = 5;
@@ -200,6 +221,160 @@ function init() {
     updateEmptyState();
     updateHeader();
     updateStatusBar();
+    initSplitter();
+}
+
+function initMonacoEditor(sql) {
+    var container = document.getElementById('sqlEditorContainer');
+    if (!container) return;
+
+    if (typeof require === 'function' && !monacoLoaded) {
+        require.config({ paths: { 'vs': state.monacoBasePath } });
+        require(['vs/editor/editor.main'], function(monaco) {
+            monacoLoaded = true;
+            createMonacoInstance(monaco, container, sql);
+        }, function() {
+            createFallbackEditor(container, sql);
+        });
+    } else if (monacoLoaded && typeof monaco !== 'undefined') {
+        createMonacoInstance(monaco, container, sql);
+    } else {
+        createFallbackEditor(container, sql);
+    }
+}
+
+function createMonacoInstance(monaco, container, sql) {
+    if (monacoEditor) {
+        monacoEditor.setValue(sql || '');
+        return;
+    }
+    var isDark = document.body.classList.contains('vscode-dark') ||
+                 document.querySelector('[data-vscode-theme-kind="vscode-dark"]') ||
+                 (window.__CONFIG__ && window.__CONFIG__.themeKind === 2);
+    monacoEditor = monaco.editor.create(container, {
+        value: sql || '',
+        language: 'sql',
+        theme: isDark ? 'vs-dark' : 'vs',
+        minimap: { enabled: false },
+        lineNumbers: 'on',
+        scrollBeyondLastLine: false,
+        fontSize: 13,
+        wordWrap: 'on',
+        automaticLayout: true,
+        overviewRulerLanes: 0,
+        folding: true,
+        renderLineHighlight: 'gutter',
+        contextmenu: true,
+        suggestOnTriggerCharacters: true,
+        scrollbar: {
+            verticalScrollbarSize: 8,
+            horizontalScrollbarSize: 8,
+        },
+        padding: { top: 4, bottom: 4 },
+    });
+
+    monacoEditor.addCommand(monaco.KeyMod.Cmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyE, function() {
+        executePanelSql();
+    });
+    monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyE, function() {
+        executePanelSql();
+    });
+
+    monacoEditor.focus();
+}
+
+function createFallbackEditor(container, sql) {
+    var textarea = document.createElement('textarea');
+    textarea.className = 'sql-editor-fallback';
+    textarea.value = sql || '';
+    container.appendChild(textarea);
+}
+
+function getEditorSql() {
+    if (monacoEditor) {
+        return monacoEditor.getValue();
+    }
+    var fallback = document.querySelector('.sql-editor-fallback');
+    if (fallback) {
+        return fallback.value;
+    }
+    return state.currentSql || '';
+}
+
+function setEditorSql(sql) {
+    if (monacoEditor) {
+        var fullRange = monacoEditor.getModel().getFullModelRange();
+        monacoEditor.executeEdits('setSql', [{
+            range: fullRange,
+            text: sql || '',
+        }]);
+        monacoEditor.pushUndoStop();
+    } else {
+        var fallback = document.querySelector('.sql-editor-fallback');
+        if (fallback) fallback.value = sql || '';
+    }
+    state.currentSql = sql || '';
+}
+
+function initSplitter() {
+    var splitter = document.getElementById('splitter');
+    var sqlSection = document.getElementById('sqlEditorSection');
+    var resultSection = document.getElementById('resultSection');
+    var panelSplit = document.getElementById('panelSplit');
+    var isDragging = false;
+
+    if (!splitter || !sqlSection || !resultSection || !panelSplit) return;
+
+    splitter.addEventListener('mousedown', function(e) {
+        isDragging = true;
+        document.body.style.cursor = 'row-resize';
+        document.body.style.userSelect = 'none';
+        e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', function(e) {
+        if (!isDragging) return;
+        var panelRect = panelSplit.getBoundingClientRect();
+        var ratio = (e.clientY - panelRect.top) / panelRect.height;
+        ratio = Math.max(0.1, Math.min(0.8, ratio));
+        sqlSection.style.height = (ratio * 100) + '%';
+        sqlSection.style.flex = 'none';
+        resultSection.style.flex = '1';
+    });
+
+    document.addEventListener('mouseup', function() {
+        if (!isDragging) return;
+        isDragging = false;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+    });
+}
+
+function executePanelSql() {
+    var sql = getEditorSql().trim();
+    if (!sql) return;
+    state.currentSql = sql;
+    vscode.postMessage({ command: 'executePanelSql', sql: sql });
+}
+
+function handleSetEditorSql(data) {
+    var sql = data.sql || '';
+    if (monacoEditor || document.querySelector('.sql-editor-fallback')) {
+        setEditorSql(sql);
+    } else {
+        initMonacoEditor(sql);
+    }
+    if (data.autoExecute) {
+        setTimeout(function() {
+            executePanelSql();
+        }, 100);
+    }
+}
+
+function handleThemeChange(data) {
+    if (!monacoEditor || typeof monaco === 'undefined') return;
+    var theme = data.kind === 2 || data.kind === 3 ? 'vs-dark' : 'vs';
+    monaco.editor.setTheme(theme);
 }
 
 function onGridScroll() {
@@ -289,6 +464,12 @@ function handleMessage(event) {
             break;
         case 'blobPreview':
             handleBlobPreview(message.data);
+            break;
+        case 'setEditorSql':
+            handleSetEditorSql(message.data);
+            break;
+        case 'themeChange':
+            handleThemeChange(message.data);
             break;
     }
 }
@@ -380,6 +561,7 @@ function handleConfig(data) {
     if (data.enableValidation !== undefined) state.enableValidation = data.enableValidation;
     if (data.validateOnEdit !== undefined) state.validateOnEdit = data.validateOnEdit;
     if (data.validateForeignKeys !== undefined) state.validateForeignKeys = data.validateForeignKeys;
+    if (data.monacoBasePath !== undefined) state.monacoBasePath = data.monacoBasePath;
 }
 
 function renderGrid() {
@@ -407,6 +589,12 @@ function renderHeader() {
         const typeSpan = document.createElement('span');
         typeSpan.className = 'col-type';
         typeSpan.textContent = col.type || '';
+        var typeColorInfo = getTypeColorInfo(col.type);
+        if (typeColorInfo) {
+            typeSpan.style.color = typeColorInfo.color;
+            typeSpan.style.background = typeColorInfo.bg;
+            typeSpan.style.border = '1px solid ' + typeColorInfo.border;
+        }
 
         th.appendChild(nameSpan);
         th.appendChild(typeSpan);
@@ -751,12 +939,7 @@ function handleExport(format) {
 }
 
 function handleExecute() {
-    if (state.currentSql) {
-        vscode.postMessage({
-            command: 'executeQuery',
-            sql: state.currentSql
-        });
-    }
+    executePanelSql();
 }
 
 function handleCancel() {
@@ -767,12 +950,7 @@ function handleCancel() {
 }
 
 function handleRefresh() {
-    if (state.currentSql) {
-        vscode.postMessage({
-            command: 'executeQuery',
-            sql: state.currentSql
-        });
-    }
+    executePanelSql();
 }
 
 function switchTab(tabId) {
@@ -1464,6 +1642,12 @@ function renderFormView() {
         var typeSpan = document.createElement('span');
         typeSpan.className = 'field-type';
         typeSpan.textContent = col.type || '';
+        var typeColorInfo = getTypeColorInfo(col.type);
+        if (typeColorInfo) {
+            typeSpan.style.color = typeColorInfo.color;
+            typeSpan.style.background = typeColorInfo.bg;
+            typeSpan.style.border = '1px solid ' + typeColorInfo.border;
+        }
         labelDiv.appendChild(typeSpan);
 
         var valueDiv = document.createElement('div');

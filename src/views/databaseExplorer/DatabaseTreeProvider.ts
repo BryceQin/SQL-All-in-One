@@ -165,6 +165,13 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
                 arguments: [element]
             };
         }
+        if (element instanceof TableTreeNode) {
+            return {
+                command: 'sql-all-in-one.viewTableData',
+                title: 'Query Data',
+                arguments: [element]
+            };
+        }
         if (element instanceof ColumnTreeNode) {
             return {
                 command: 'sql-all-in-one.copyColumnName',

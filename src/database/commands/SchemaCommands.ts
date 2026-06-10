@@ -55,7 +55,6 @@ export function registerSchemaCommands(
                     return;
                 }
 
-                const conn = connectionManager.getAllConnections().find(c => c.id === node.connectionId);
                 const name = node instanceof TableTreeNode ? node.tableName : node.viewName;
                 const quotedName = adapter.quoteIdentifier(node.databaseName) + '.' + adapter.quoteIdentifier(name);
                 const sql = `SELECT * FROM ${quotedName} LIMIT 100;`;
@@ -157,23 +156,31 @@ export function registerSchemaCommands(
                     queryResultPanel.showLoading(sql);
                 }
 
-                const result = await queryExecutor.execute(
-                    adapter,
-                    sql,
-                    { database: node.databaseName },
-                    node.connectionId
-                );
+                queryResultPanel!.onExecutePanelSql = async (panelSql: string): Promise<void> => {
+                    try {
+                        const panelConn = getConnectionManager().getAllConnections().find(c => c.id === node.connectionId);
+                        const panelAdapter = getConnectionManager().getAdapter(node.connectionId);
+                        if (!panelAdapter) {
+                            queryResultPanel?.showError({ code: 'NO_CONNECTION', message: 'No active connection', sql: panelSql });
+                            return;
+                        }
+                        queryResultPanel?.showLoading(panelSql);
+                        const panelResult = await queryExecutor.execute(panelAdapter, panelSql, { database: node.databaseName }, node.connectionId);
+                        if (panelResult.status === 'error') {
+                            outputChannel.appendLine(`❌ Error: ${panelResult.error?.message || 'Unknown error'}`);
+                            outputChannel.appendLine(`   SQL: ${panelSql}`);
+                            queryResultPanel?.showError(panelResult.error as QueryError);
+                        } else {
+                            outputChannel.appendLine(`✅ Query executed successfully (${panelResult.executionTime}ms, ${panelResult.rowCount} rows)`);
+                            outputChannel.appendLine(`   SQL: ${panelSql}`);
+                            queryResultPanel?.showResult(panelResult, panelConn?.name, panelConn?.color, name);
+                        }
+                    } catch (error) {
+                        queryResultPanel?.showError({ code: 'EXEC_ERROR', message: String(error), sql: panelSql });
+                    }
+                };
 
-                if (result.status === 'error') {
-                    outputChannel.appendLine(`❌ Error: ${result.error?.message || 'Unknown error'}`);
-                    outputChannel.appendLine(`   SQL: ${sql}`);
-                    queryResultPanel.showError(result.error as QueryError);
-                } else {
-                    outputChannel.appendLine(`✅ Query executed successfully (${result.executionTime}ms, ${result.rowCount} rows)`);
-                    outputChannel.appendLine(`   SQL: ${sql}`);
-
-                    queryResultPanel.showResult(result, conn?.name, conn?.color, name);
-                }
+                queryResultPanel!.setSqlAndExecute(sql);
             } catch (error) {
                 const msg = error instanceof Error ? error.message : String(error);
                 vscode.window.showErrorMessage(`Failed to view table data: ${msg}`);

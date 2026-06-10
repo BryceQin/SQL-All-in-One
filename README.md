@@ -11,7 +11,7 @@
 | | |
 |---|---|
 | **发布者** | bryce-qin |
-| **版本** | 2.11.0 |
+| **版本** | 2.12.0 |
 | **许可证** | MIT |
 | **仓库** | [GitHub](https://github.com/BryceQin/SQL-All-in-One) |
 | **VSCode 引擎** | ^1.85.0 |
@@ -61,6 +61,10 @@
 - 查询超时控制（可配置）
 - 查询取消支持（CancellationToken + KILL QUERY）
 - 最大行数限制
+- **查询数据面板（v2.12 新增）**：集成 Monaco SQL 编辑器，支持在结果面板中直接编写和执行 SQL
+- 可拖拽分割面板：SQL 编辑器与查询结果上下分栏，比例可调
+- Monaco 编辑器：SQL 语法高亮、智能提示、代码折叠，自动跟随 VS Code 主题
+- 从数据库浏览器点击表/视图节点，自动生成 `SELECT * FROM table LIMIT 200` 并执行
 - 结果面板：分页、滚动预加载
 - 网格视图和表单视图
 - JSON 美化输出
@@ -459,7 +463,7 @@ LIMIT 10;
 | 替换参数 | `Ctrl+Alt+P` | `Cmd+Alt+P` |
 | 切换注释 | `Ctrl+/` | `Cmd+/` |
 | 高级注释 | `Ctrl+Shift+/` | `Cmd+Shift+/` |
-| 执行 SQL | `Ctrl+R` | `Cmd+R` |
+| 执行 SQL | `Ctrl+Shift+E` | `Cmd+Shift+E` |
 | 执行选中 SQL | `Ctrl+Shift+R` | `Cmd+Shift+R` |
 | 格式化文档 | `Shift+Alt+F` | `Shift+Option+F` |
 
@@ -618,7 +622,7 @@ MIT License
 | | |
 |---|---|
 | **Publisher** | bryce-qin |
-| **Version** | 2.9.0 |
+| **Version** | 2.12.0 |
 | **License** | MIT |
 | **Repository** | [GitHub](https://github.com/BryceQin/SQL-All-in-One) |
 | **VSCode Engine** | ^1.85.0 |
@@ -664,10 +668,14 @@ MIT License
 
 #### 2. Query Execution & Results
 
-- Execute SQL (`Ctrl+R` / `Cmd+R`) and Execute Selected SQL (`Ctrl+Shift+R` / `Cmd+Shift+R`)
+- Execute SQL (`Ctrl+Shift+E` / `Cmd+Shift+E`) and Execute Selected SQL (`Ctrl+Shift+R` / `Cmd+Shift+R`)
 - Query timeout control (configurable)
 - Query cancellation support (CancellationToken + KILL QUERY)
 - Max rows limit
+- **Query Data Panel (new in v2.12)**: integrated Monaco SQL editor, write and execute SQL directly in the result panel
+- Draggable split panel: SQL editor and query results in vertical split layout, adjustable ratio
+- Monaco editor: SQL syntax highlighting, IntelliSense, code folding, auto-follows VS Code theme
+- Click table/view node in Database Explorer auto-generates `SELECT * FROM table LIMIT 200` and executes it
 - Result panel with pagination, scroll preloading
 - Grid view and form view
 - JSON pretty print in results

@@ -1,5 +1,38 @@
 # Changelog
 
+## [2.12.0] - 2026-06-10
+
+### Features
+
+- 查询数据面板 — 查询结果面板集成 Monaco SQL 编辑器，支持在结果面板中直接编写和执行 SQL
+- Query Data Panel — integrated Monaco SQL editor in the query result panel, supporting writing and executing SQL directly
+
+- Monaco Editor 集成：SQL 语法高亮、智能提示、代码折叠，支持 `Cmd/Ctrl+Shift+E` 快捷执行
+- Monaco Editor integration: SQL syntax highlighting, IntelliSense, code folding, with `Cmd/Ctrl+Shift+E` shortcut to execute
+
+- 可拖拽分割面板：SQL 编辑器与查询结果上下分栏，支持拖拽调整比例（10%~80%）
+- Draggable split panel: SQL editor and query results in a vertical split layout, with adjustable ratio (10%~80%)
+
+- VS Code 主题同步：Monaco 编辑器自动跟随 VS Code 明/暗主题切换
+- VS Code theme sync: Monaco editor automatically follows VS Code light/dark theme changes
+
+- 从数据库浏览器点击表/视图节点时，自动生成 `SELECT * FROM table LIMIT 200` 并执行
+- Clicking table/view node in Database Explorer auto-generates `SELECT * FROM table LIMIT 200` and executes it
+
+- 执行 SQL 命令也会将当前 SQL 同步到面板编辑器
+- Execute SQL command also syncs current SQL to the panel editor
+
+- 编辑器降级方案：Monaco 加载失败时自动回退到 textarea
+- Editor fallback: automatically falls back to textarea when Monaco fails to load
+
+- "View Data" 命令重命名为 "Query Data"，更准确反映功能
+- "View Data" command renamed to "Query Data", more accurately reflecting the functionality
+
+- 表节点默认点击操作改为 "Query Data"
+- Table node default click action changed to "Query Data"
+
+---
+
 ## [2.11.0] - 2026-06-10
 
 ### UI/UX

@@ -356,7 +356,6 @@ body {
 }
 
 .tab-content {
-  flex: 1;
   overflow: hidden;
   position: relative;
 }
@@ -1177,4 +1176,108 @@ body {
   background: rgba(74,158,255,0.12) !important;
   color: var(--accent) !important;
   border-color: rgba(74,158,255,0.2) !important;
+}
+
+.panel-split {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+}
+
+.sql-editor-section {
+    display: flex;
+    flex-direction: column;
+    height: 30%;
+    min-height: 60px;
+    overflow: hidden;
+    border-bottom: none;
+}
+
+.sql-editor-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 8px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    height: 26px;
+}
+
+.sql-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.sql-editor-container {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.sql-editor-fallback {
+    width: 100%;
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    border: none;
+    padding: 8px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    resize: none;
+    outline: none;
+    tab-size: 4;
+}
+
+.splitter {
+    height: 6px;
+    cursor: row-resize;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--border);
+    flex-shrink: 0;
+    transition: background var(--transition);
+}
+
+.splitter:hover {
+    background: var(--border-hover);
+}
+
+.splitter-handle {
+    width: 40px;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--text-secondary);
+    opacity: 0.4;
+    transition: opacity var(--transition), background var(--transition);
+}
+
+.splitter:hover .splitter-handle {
+    opacity: 1;
+    background: var(--focus-border);
+}
+
+.result-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 60px;
+}
+
+.result-section .tab-content {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+}
+
+.result-section .bottom-bar {
+    flex-shrink: 0;
 }

@@ -583,5 +583,9 @@
     "configEditor.searchPlaceholder": "Search settings...",
     "configEditor.searchEmpty": "No matching settings found",
     "configEditor.expandAll": "Expand All",
-    "configEditor.collapseAll": "Collapse All"
+    "configEditor.collapseAll": "Collapse All",
+    "resultPanel.queryData": "Query Data",
+    "resultPanel.sqlEditor": "SQL Editor",
+    "resultPanel.executePanel": "Execute",
+    "resultPanel.stopPanel": "Stop"
 }

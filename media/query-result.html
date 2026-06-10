@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:;">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline' {{CSP_SOURCE}}; script-src 'unsafe-inline' {{CSP_SOURCE}}; img-src data: {{CSP_SOURCE}}; worker-src blob: {{CSP_SOURCE}};">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title data-i18n="resultPanel.title">Query Result</title>
   <link rel="stylesheet" href="{{CSS_URI}}">
   {{CONFIG_INJECT}}
+  <script src="{{MONACO_LOADER_URI}}"></script>
 </head>
 <body>
   <div class="result-panel">
@@ -76,62 +77,74 @@
       </div>
     </div>
 
-    <div class="tab-content" id="tabContent">
-      <div class="tab-page active" id="pageResult">
-        <div class="grid-container" id="gridContainer">
-          <div class="grid-header-wrapper" id="gridHeaderWrapper">
-            <table class="grid-table grid-header-table" id="gridHeaderTable">
-              <thead>
-                <tr id="gridHeaderRow"></tr>
-              </thead>
-            </table>
-          </div>
-          <div class="grid-body-wrapper" id="gridBodyWrapper">
-            <div class="grid-spacer" id="gridSpacer"></div>
-            <table class="grid-table grid-body-table" id="gridBodyTable">
-              <tbody id="gridBody"></tbody>
-            </table>
-          </div>
+    <div class="panel-split" id="panelSplit">
+      <div class="sql-editor-section" id="sqlEditorSection">
+        <div class="sql-editor-toolbar">
+          <span class="sql-label">SQL</span>
         </div>
-        <div class="form-container" id="formContainer" style="display:none;">
-            <div class="form-nav">
-                <button class="form-nav-btn" id="btnPrevRecord" data-action="navigateRecord" data-action-arg="-1">‹</button>
-                <span class="form-record-info" id="formRecordInfo">0/0</span>
-                <button class="form-nav-btn" id="btnNextRecord" data-action="navigateRecord" data-action-arg="1">›</button>
+        <div class="sql-editor-container" id="sqlEditorContainer"></div>
+      </div>
+      <div class="splitter" id="splitter">
+        <div class="splitter-handle"></div>
+      </div>
+      <div class="result-section" id="resultSection">
+        <div class="tab-content" id="tabContent">
+          <div class="tab-page active" id="pageResult">
+            <div class="grid-container" id="gridContainer">
+              <div class="grid-header-wrapper" id="gridHeaderWrapper">
+                <table class="grid-table grid-header-table" id="gridHeaderTable">
+                  <thead>
+                    <tr id="gridHeaderRow"></tr>
+                  </thead>
+                </table>
+              </div>
+              <div class="grid-body-wrapper" id="gridBodyWrapper">
+                <div class="grid-spacer" id="gridSpacer"></div>
+                <table class="grid-table grid-body-table" id="gridBodyTable">
+                  <tbody id="gridBody"></tbody>
+                </table>
+              </div>
             </div>
-            <div class="form-fields" id="formFields"></div>
+            <div class="form-container" id="formContainer" style="display:none;">
+                <div class="form-nav">
+                    <button class="form-nav-btn" id="btnPrevRecord" data-action="navigateRecord" data-action-arg="-1">‹</button>
+                    <span class="form-record-info" id="formRecordInfo">0/0</span>
+                    <button class="form-nav-btn" id="btnNextRecord" data-action="navigateRecord" data-action-arg="1">›</button>
+                </div>
+                <div class="form-fields" id="formFields"></div>
+            </div>
+            <div class="empty-state" id="emptyState">
+              <div class="empty-state-icon">—</div>
+              <div data-i18n="resultPanel.noData">No query results</div>
+            </div>
+          </div>
+
+          <div class="tab-page" id="pageMessages">
+            <div class="messages-container" id="messagesContainer"></div>
+          </div>
+
+          <div class="tab-page" id="pageHistory">
+            <div class="history-container" id="historyContainer"></div>
+          </div>
         </div>
-        <div class="empty-state" id="emptyState">
-          <div class="empty-state-icon">—</div>
-          <div data-i18n="resultPanel.noData">No query results</div>
-        </div>
-      </div>
-
-      <div class="tab-page" id="pageMessages">
-        <div class="messages-container" id="messagesContainer"></div>
-      </div>
-
-      <div class="tab-page" id="pageHistory">
-        <div class="history-container" id="historyContainer"></div>
-      </div>
-    </div>
-
-    <div class="bottom-bar">
-      <div class="tab-bar">
-        <button class="tab-btn active" data-tab="pageResult" data-action="switchTab" data-action-arg="pageResult" data-i18n="resultPanel.resultSet">结果集</button>
-        <button class="tab-btn" data-tab="pageMessages" data-action="switchTab" data-action-arg="pageMessages" data-i18n="resultPanel.messages">消息</button>
-        <button class="tab-btn" data-tab="pageHistory" data-action="switchTab" data-action-arg="pageHistory" data-i18n="resultPanel.history">历史</button>
-      </div>
-      <div class="status-bar">
-        <span class="status-info" id="statusInfo"></span>
-        <span class="edit-status" id="editStatus"></span>
-        <span class="transaction-status" id="transactionStatus"></span>
-        <div class="pagination" id="pagination">
-          <button class="page-btn" id="btnPrevPage" data-action="changePage" data-action-arg="-1">‹</button>
-          <span class="page-info" id="pageInfo"></span>
-          <button class="page-btn" id="btnNextPage" data-action="changePage" data-action-arg="1">›</button>
-          <input type="number" class="page-jump" id="pageJump" min="1" data-action="jumpToPage">
-          <button class="page-btn" data-action="jumpToPage" data-i18n="resultPanel.go">Go</button>
+        <div class="bottom-bar">
+          <div class="tab-bar">
+            <button class="tab-btn active" data-tab="pageResult" data-action="switchTab" data-action-arg="pageResult" data-i18n="resultPanel.resultSet">结果集</button>
+            <button class="tab-btn" data-tab="pageMessages" data-action="switchTab" data-action-arg="pageMessages" data-i18n="resultPanel.messages">消息</button>
+            <button class="tab-btn" data-tab="pageHistory" data-action="switchTab" data-action-arg="pageHistory" data-i18n="resultPanel.history">历史</button>
+          </div>
+          <div class="status-bar">
+            <span class="status-info" id="statusInfo"></span>
+            <span class="edit-status" id="editStatus"></span>
+            <span class="transaction-status" id="transactionStatus"></span>
+            <div class="pagination" id="pagination">
+              <button class="page-btn" id="btnPrevPage" data-action="changePage" data-action-arg="-1">‹</button>
+              <span class="page-info" id="pageInfo"></span>
+              <button class="page-btn" id="btnNextPage" data-action="changePage" data-action-arg="1">›</button>
+              <input type="number" class="page-jump" id="pageJump" min="1" data-action="jumpToPage">
+              <button class="page-btn" data-action="jumpToPage" data-i18n="resultPanel.go">Go</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

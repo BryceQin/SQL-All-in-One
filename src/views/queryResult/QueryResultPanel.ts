@@ -26,6 +26,7 @@ export interface ForeignKeyOption {
 
 type WebviewMessage =
     | { command: 'executeQuery'; sql: string }
+    | { command: 'executePanelSql'; sql: string }
     | { command: 'cancelQuery' }
     | { command: 'requestExport'; format: string; options?: Record<string, unknown> }
     | { command: 'requestSort'; column: string; direction: string }
@@ -63,6 +64,7 @@ export class QueryResultPanel {
     public onRollbackTransaction?: () => Promise<void>;
     public onCreateSavepoint?: (name: string) => Promise<void>;
     public onRollbackToSavepoint?: (name: string) => Promise<void>;
+    public onExecutePanelSql?: (sql: string) => Promise<void>;
 
     public static createOrShow(extensionUri: vscode.Uri, context: vscode.ExtensionContext): QueryResultPanel {
         const column = vscode.window.activeTextEditor
@@ -101,6 +103,15 @@ export class QueryResultPanel {
         // this.__context = context;
 
         this._update();
+
+        this._disposables.push(
+            vscode.window.onDidChangeActiveColorTheme((theme) => {
+                this._panel.webview.postMessage({
+                    type: 'themeChange',
+                    data: { kind: theme.kind },
+                });
+            })
+        );
 
         this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
 
@@ -192,6 +203,11 @@ export class QueryResultPanel {
                     case 'requestBlobPreview':
                         this._handleBlobPreview(message.rowIndex, message.colIndex);
                         break;
+                    case 'executePanelSql':
+                        if (message.sql && this.onExecutePanelSql) {
+                            await this.onExecutePanelSql(message.sql);
+                        }
+                        break;
                 }
             },
             null,
@@ -218,6 +234,20 @@ export class QueryResultPanel {
         this._panel.webview.postMessage({
             type: 'queryError',
             data: error,
+        });
+    }
+
+    public setSqlAndExecute(sql: string): void {
+        this._panel.webview.postMessage({
+            type: 'setEditorSql',
+            data: { sql, autoExecute: true },
+        });
+    }
+
+    public setSql(sql: string): void {
+        this._panel.webview.postMessage({
+            type: 'setEditorSql',
+            data: { sql, autoExecute: false },
         });
     }
 
@@ -276,9 +306,17 @@ export class QueryResultPanel {
             const jsUri = this._panel.webview.asWebviewUri(
                 vscode.Uri.joinPath(this._extensionUri, 'media', 'query-result.js')
             );
+            const monacoLoaderUri = this._panel.webview.asWebviewUri(
+                vscode.Uri.joinPath(this._extensionUri, 'media', 'monaco', 'vs', 'loader.js')
+            );
+            const monacoBaseUri = this._panel.webview.asWebviewUri(
+                vscode.Uri.joinPath(this._extensionUri, 'media', 'monaco', 'vs')
+            );
 
             html = html.replace('{{CSS_URI}}', cssUri.toString());
             html = html.replace('{{JS_URI}}', jsUri.toString());
+            html = html.replace('{{MONACO_LOADER_URI}}', monacoLoaderUri.toString());
+            html = html.replace(/\{\{CSP_SOURCE\}\}/g, this._panel.webview.cspSource);
 
             const config = vscode.workspace.getConfiguration('SQL-All-in-One');
             const configData = {
@@ -299,6 +337,8 @@ export class QueryResultPanel {
                 enableValidation: config.get<boolean>('dataEditor.enableValidation', true),
                 validateOnEdit: config.get<boolean>('dataEditor.validateOnEdit', true),
                 validateForeignKeys: config.get<boolean>('dataEditor.validateForeignKeys', false),
+                monacoBasePath: monacoBaseUri.toString(),
+                themeKind: vscode.window.activeColorTheme.kind,
             };
             const configScript = '<script>window.__CONFIG__ = ' + JSON.stringify(configData) + ';</script>';
             html = html.replace('{{CONFIG_INJECT}}', configScript);
@@ -330,7 +370,9 @@ export class QueryResultPanel {
                 referencedTable: c.referencedTable,
                 comment: c.comment,
             })),
-            rows: result.rows,
+            rows: result.rows.map((row) =>
+                result.columns.map((c) => row[c.name])
+            ),
             rowCount: result.rowCount,
             affectedRows: result.affectedRows,
             executionTime: result.executionTime,

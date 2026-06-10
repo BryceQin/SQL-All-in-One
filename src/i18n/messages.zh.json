@@ -583,5 +583,9 @@
     "configEditor.searchPlaceholder": "搜索配置项...",
     "configEditor.searchEmpty": "未找到匹配的配置项",
     "configEditor.expandAll": "全部展开",
-    "configEditor.collapseAll": "全部折叠"
+    "configEditor.collapseAll": "全部折叠",
+    "resultPanel.queryData": "查询数据",
+    "resultPanel.sqlEditor": "SQL 编辑器",
+    "resultPanel.executePanel": "执行",
+    "resultPanel.stopPanel": "停止"
 }
