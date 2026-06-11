@@ -11,6 +11,12 @@ export class CommonLayoutHelper {
         private layout: Layout,
     ) {}
 
+    reset(cfg: FormatOptions, indent: Indentation, layout: Layout): void {
+        this.cfg = cfg;
+        this.indent = indent;
+        this.layout = layout;
+    }
+
     clauseStart(keyword: string, newlineBefore: boolean): void {
         if (newlineBefore) {
             this.layout.add(WS.NEWLINE, WS.INDENT);

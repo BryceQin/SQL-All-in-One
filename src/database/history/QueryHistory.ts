@@ -6,6 +6,7 @@ const MAX_SQL_LENGTH = 2000;
 
 export class QueryHistory {
     private context: vscode.ExtensionContext | null = null;
+    private cachedEntries: QueryHistoryEntry[] | null = null;
 
     initialize(context: vscode.ExtensionContext): void {
         this.context = context;
@@ -28,12 +29,15 @@ export class QueryHistory {
             entries.pop();
         }
 
+        this.cachedEntries = entries;
         await this.context.globalState.update(STORAGE_KEY, entries);
     }
 
     getAll(): QueryHistoryEntry[] {
         if (!this.context) return [];
-        return this.context.globalState.get<QueryHistoryEntry[]>(STORAGE_KEY, []);
+        if (this.cachedEntries !== null) return this.cachedEntries;
+        this.cachedEntries = this.context.globalState.get<QueryHistoryEntry[]>(STORAGE_KEY, []);
+        return this.cachedEntries;
     }
 
     getRecent(count: number): QueryHistoryEntry[] {
@@ -49,12 +53,14 @@ export class QueryHistory {
 
     async clear(): Promise<void> {
         if (!this.context) return;
+        this.cachedEntries = [];
         await this.context.globalState.update(STORAGE_KEY, []);
     }
 
     async deleteEntry(id: string): Promise<void> {
         if (!this.context) return;
         const entries = this.getAll().filter((e) => e.id !== id);
+        this.cachedEntries = entries;
         await this.context.globalState.update(STORAGE_KEY, entries);
     }
 

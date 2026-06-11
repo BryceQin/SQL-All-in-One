@@ -4,11 +4,12 @@ import type { HoverResolver } from './HoverResolver'
 import { SchemaProvider, getSchemaProvider } from '../database/schema/SchemaProvider'
 import { getConnectionManager } from '../database/connection/ConnectionManager'
 import { sqlDialects } from '../core/sqlDialects'
-import { getParserEngine } from '../parser/SqlParserEngine'
 import type { SqlDialect } from '../parser/dialectMapper'
 import { isAstNode } from '../parser/AstVisitor'
 import type { AstNode } from '../parser/astTypes'
-import { extractTableNames } from '../completion/AstCompletionProvider'
+import { extractTableNamesFromAst } from '../completion/AstCompletionProvider'
+import { getDocumentAstCache } from '../parser/DocumentAstCache'
+import type { AST } from 'node-sql-parser'
 
 export class SchemaHoverResolver implements HoverResolver {
     private schemaProvider: SchemaProvider
@@ -33,7 +34,10 @@ export class SchemaHoverResolver implements HoverResolver {
         const database = activeConn.database || ''
         const dialectName = sqlDialects[document.languageId as keyof typeof sqlDialects] || 'mysql'
 
-        const tableName = this.findTableNameAtPosition(document, position, word, dialectName as SqlDialect)
+        const astResult = getDocumentAstCache().getOrParse(document, dialectName as SqlDialect)
+        if (!astResult.success || !astResult.ast) return null
+
+        const tableName = this.findTableNameAtPosition(astResult.ast, word)
 
         if (tableName) {
             const hoverInfo = await this.schemaProvider.getTableHoverInfo(tableName, database)
@@ -51,7 +55,7 @@ export class SchemaHoverResolver implements HoverResolver {
             }
         }
 
-        const tables = await this.findTablesForColumnLookup(document, position, dialectName as SqlDialect)
+        const tables = await this.findTablesForColumnLookup(astResult.ast, document, position)
         for (const tbl of tables) {
             const hoverInfo = await this.schemaProvider.getColumnHoverInfo(word, tbl, database)
             if (hoverInfo) {
@@ -64,19 +68,13 @@ export class SchemaHoverResolver implements HoverResolver {
     }
 
     private findTableNameAtPosition(
-        document: vscode.TextDocument,
-        _position: vscode.Position,
+        ast: unknown,
         word: string,
-        dialect: SqlDialect,
     ): string | null {
-        const sql = document.getText()
-        const result = getParserEngine().tryAstify(sql, dialect)
-        if (!result.success || !result.ast) return null
-
-        const astList = Array.isArray(result.ast) ? result.ast : [result.ast]
-        for (const ast of astList) {
-            if (!isAstNode(ast)) continue
-            const node = ast as AstNode
+        const astList = Array.isArray(ast) ? ast : [ast]
+        for (const item of astList) {
+            if (!isAstNode(item)) continue
+            const node = item as AstNode
             if (node.type === 'select' && Array.isArray(node.from)) {
                 for (const entry of node.from) {
                     if (entry == null || typeof entry !== 'object') continue
@@ -92,12 +90,11 @@ export class SchemaHoverResolver implements HoverResolver {
     }
 
     private async findTablesForColumnLookup(
+        ast: unknown,
         document: vscode.TextDocument,
         position: vscode.Position,
-        dialect: SqlDialect,
     ): Promise<string[]> {
-        const sql = document.getText()
-        const aliasMap = this.schemaProvider.parseAliasMap(sql, dialect)
+        const aliasMap = this.schemaProvider.parseAliasMapFromAst(ast as AST[] | AST)
 
         const lineText = document.lineAt(position.line).text
         const textBeforeCursor = lineText.substring(0, position.character)
@@ -108,7 +105,7 @@ export class SchemaHoverResolver implements HoverResolver {
             if (tableName) return [tableName]
         }
 
-        const tables = extractTableNames(sql, dialect)
+        const tables = extractTableNamesFromAst(ast)
         return tables
     }
 }

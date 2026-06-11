@@ -52,9 +52,7 @@ export class AstDiagnosticsProvider {
         walkAst(root, {
             enter: (child) => {
                 if (child !== root && isAstNode(child) && (child as AstNode).type === 'select') {
-                    const selectChild = child as AstNode
-                    this.checkSelectNode(selectChild, sql, diagnostics)
-                    this.walkForSubSelects(selectChild, sql, diagnostics)
+                    this.checkSelectNode(child as AstNode, sql, diagnostics)
                 }
             },
         })

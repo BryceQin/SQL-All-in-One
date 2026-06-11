@@ -10,6 +10,7 @@ import type { QueryError, QueryRow } from '../adapters/IDatabaseAdapter';
 import { getSchemaCache } from '../schema/SchemaCache';
 import { getConfigManager } from '../../core/configManager';
 import { generateEditSql, executeInTransaction, getActiveAdapter } from '../query/DataEditService';
+import { t } from '../../i18n/index';
 
 
 function isDDLStatement(sql: string): boolean {
@@ -59,7 +60,7 @@ export function registerQueryCommands(
         vscode.commands.registerCommand('sql-all-in-one.executeQuery', async () => {
             const editor = vscode.window.activeTextEditor;
             if (!editor) {
-                vscode.window.showWarningMessage('No active editor');
+                vscode.window.showWarningMessage(t('database.noActiveEditor'));
                 return;
             }
 
@@ -74,7 +75,7 @@ export function registerQueryCommands(
                     (c) => connectionManager.getState(c.id) === 'connected'
                 );
                 if (connections.length === 0) {
-                    vscode.window.showWarningMessage('No active connection. Please connect to a database first.');
+                    vscode.window.showWarningMessage(t('database.noActiveConnection'));
                     return;
                 }
                 const picked = await vscode.window.showQuickPick(
@@ -83,7 +84,7 @@ export function registerQueryCommands(
                         description: `${c.host}:${c.port}`,
                         connectionId: c.id,
                     })),
-                    { placeHolder: 'Select a connection' }
+                    { placeHolder: t('database.selectAConnection') }
                 );
                 if (!picked) return;
                 connectionManager.setActiveConnection(picked.connectionId);
@@ -91,7 +92,7 @@ export function registerQueryCommands(
             }
 
             if (!adapter) {
-                vscode.window.showErrorMessage('Failed to get database adapter');
+                vscode.window.showErrorMessage(t('database.failedToGetAdapter'));
                 return;
             }
 
@@ -101,7 +102,7 @@ export function registerQueryCommands(
             );
 
             if (!statement.sql) {
-                vscode.window.showWarningMessage('No SQL statement found');
+                vscode.window.showWarningMessage(t('database.noSqlFound'));
                 return;
             }
 
@@ -139,12 +140,12 @@ export function registerQueryCommands(
                 try {
                     const adapter = getActiveAdapter();
                     if (!adapter) {
-                        return { success: false, errors: ['No active database connection'] };
+                        return { success: false, errors: [t('database.noActiveAdapter')] };
                     }
 
                     const currentResult = queryResultPanel?.getCurrentResult();
                     if (!currentResult) {
-                        return { success: false, errors: ['No current result data'] };
+                        return { success: false, errors: [t('database.noQueryResult')] };
                     }
 
                     const statements = generateEditSql(
@@ -209,7 +210,7 @@ export function registerQueryCommands(
                 const adapter = getActiveAdapter();
                 if (adapter) {
                     if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
-                        throw new Error(`Invalid savepoint name: ${name}`);
+                        throw new Error(t('database.invalidSavepointName', name));
                     }
                     await adapter.execute(`SAVEPOINT ${name}`);
                 }
@@ -219,7 +220,7 @@ export function registerQueryCommands(
                 const adapter = getActiveAdapter();
                 if (adapter) {
                     if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
-                        throw new Error(`Invalid savepoint name: ${name}`);
+                        throw new Error(t('database.invalidSavepointName', name));
                     }
                     await adapter.execute(`ROLLBACK TO SAVEPOINT ${name}`);
                 }
@@ -236,7 +237,7 @@ export function registerQueryCommands(
                     if (!panelAdapter) {
                         queryResultPanel?.showError({
                             code: 'NO_CONNECTION',
-                            message: 'No active database connection',
+                            message: t('database.noActiveAdapter'),
                             sql,
                         });
                         return;
@@ -251,11 +252,11 @@ export function registerQueryCommands(
                     );
 
                     if (result.status === 'error') {
-                        outputChannel.appendLine(`❌ Error: ${result.error?.message || 'Unknown error'}`);
+                        outputChannel.appendLine(`❌ Error: ${result.error?.message || t('database.unknownError')}`);
                         outputChannel.appendLine(`   SQL: ${sql}`);
                         queryResultPanel?.showError(result.error as QueryError);
                     } else {
-                        outputChannel.appendLine(`✅ Query executed successfully (${result.executionTime}ms, ${result.rowCount} rows)`);
+                        outputChannel.appendLine(`✅ ${t('database.queryExecutedSuccessfully', String(result.executionTime), String(result.rowCount))}`);
                         outputChannel.appendLine(`   SQL: ${sql}`);
                         const activeConfig = connectionManager.getActiveConnection();
                         queryResultPanel?.showResult(result, activeConfig?.name, activeConfig?.color);
@@ -279,15 +280,15 @@ export function registerQueryCommands(
             );
 
             if (result.status === 'error') {
-                outputChannel.appendLine(`❌ Error: ${result.error?.message || 'Unknown error'}`);
+                outputChannel.appendLine(`❌ Error: ${result.error?.message || t('database.unknownError')}`);
                 outputChannel.appendLine(`   SQL: ${statement.sql}`);
                 queryResultPanel.showError(result.error as QueryError);
             } else {
-                outputChannel.appendLine(`✅ Query executed successfully (${result.executionTime}ms, ${result.rowCount} rows)`);
+                outputChannel.appendLine(`✅ ${t('database.queryExecutedSuccessfully', String(result.executionTime), String(result.rowCount))}`);
                 outputChannel.appendLine(`   SQL: ${statement.sql}`);
 
                 if (result.affectedRows !== undefined && result.affectedRows > 0) {
-                    outputChannel.appendLine(`   Affected rows: ${result.affectedRows}`);
+                    outputChannel.appendLine(`   ${t('database.affectedRows', String(result.affectedRows))}`);
                 }
 
                 queryResultPanel.showResult(result, activeConfig?.name, activeConfig?.color);
@@ -318,12 +319,12 @@ export function registerQueryCommands(
         vscode.commands.registerCommand('sql-all-in-one.executeSelection', async () => {
             const editor = vscode.window.activeTextEditor;
             if (!editor) {
-                vscode.window.showWarningMessage('No active editor');
+                vscode.window.showWarningMessage(t('database.noActiveEditor'));
                 return;
             }
 
             if (editor.selection.isEmpty) {
-                vscode.window.showWarningMessage('No text selected');
+                vscode.window.showWarningMessage(t('database.noTextSelected'));
                 return;
             }
 
@@ -335,13 +336,13 @@ export function registerQueryCommands(
         vscode.commands.registerCommand('sql-all-in-one.cancelQuery', async () => {
             const running = queryExecutor.getRunningQueries();
             if (running.length === 0) {
-                vscode.window.showInformationMessage('No running queries');
+                vscode.window.showInformationMessage(t('database.noRunningQueries'));
                 return;
             }
 
             if (running.length === 1) {
                 await queryExecutor.cancel(running[0].queryId);
-                vscode.window.showInformationMessage('Query cancelled');
+                vscode.window.showInformationMessage(t('database.queryCancelled'));
                 return;
             }
 
@@ -351,12 +352,12 @@ export function registerQueryCommands(
                     description: `Running for ${Date.now() - q.startTime}ms`,
                     queryId: q.queryId,
                 })),
-                { placeHolder: 'Select query to cancel' }
+                { placeHolder: t('database.selectQueryToCancel') }
             );
 
             if (!picked) return;
             await queryExecutor.cancel(picked.queryId);
-            vscode.window.showInformationMessage('Query cancelled');
+            vscode.window.showInformationMessage(t('database.queryCancelled'));
         })
     );
 
@@ -364,7 +365,7 @@ export function registerQueryCommands(
         vscode.commands.registerCommand('sql-all-in-one.showQueryHistory', async () => {
             const entries = queryHistory.getRecent(50);
             if (entries.length === 0) {
-                vscode.window.showInformationMessage('No query history');
+                vscode.window.showInformationMessage(t('database.noQueryHistory'));
                 return;
             }
 
@@ -375,25 +376,25 @@ export function registerQueryCommands(
                     detail: entry.status === 'error' ? `Error: ${entry.errorMessage}` : `${entry.rowCount} rows`,
                     entry,
                 })),
-                { placeHolder: 'Query History' }
+                { placeHolder: t('database.queryHistory') }
             );
 
             if (!picked) return;
 
             const action = await vscode.window.showQuickPick(
-                ['Open in Editor', 'Copy SQL'],
+                [t('database.openInEditor'), t('database.copySql')],
                 { placeHolder: 'Action' }
             );
 
-            if (action === 'Open in Editor') {
+            if (action === t('database.openInEditor')) {
                 const doc = await vscode.workspace.openTextDocument({
                     content: picked.entry.sql,
                     language: 'sql',
                 });
                 await vscode.window.showTextDocument(doc);
-            } else if (action === 'Copy SQL') {
+            } else if (action === t('database.copySql')) {
                 await vscode.env.clipboard.writeText(picked.entry.sql);
-                vscode.window.showInformationMessage('SQL copied to clipboard');
+                vscode.window.showInformationMessage(t('database.sqlCopied'));
             }
         })
     );
@@ -401,13 +402,13 @@ export function registerQueryCommands(
     disposables.push(
         vscode.commands.registerCommand('sql-all-in-one.clearQueryHistory', async () => {
             const confirm = await vscode.window.showWarningMessage(
-                'Clear all query history?',
+                t('database.clearHistoryConfirm'),
                 { modal: true },
-                'Clear'
+                t('database.clear')
             );
-            if (confirm === 'Clear') {
+            if (confirm === t('database.clear')) {
                 await queryHistory.clear();
-                vscode.window.showInformationMessage('Query history cleared');
+                vscode.window.showInformationMessage(t('database.queryHistoryCleared'));
             }
         })
     );

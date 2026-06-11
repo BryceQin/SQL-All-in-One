@@ -7,27 +7,48 @@
 :root {
   --accent: var(--vscode-button-background, #4a9eff);
   --accent-dim: rgba(74, 158, 255, 0.10);
-  --accent-glow: rgba(74, 158, 255, 0.25);
+  --accent-glow: rgba(74, 158, 255, 0.20);
   --bg: var(--vscode-editor-background, #1e1e2e);
-  --surface: var(--vscode-panel-background, #252536);
-  --surface2: var(--vscode-editorWidget-background, #2a2a3c);
+  --surface: rgba(255,255,255,0.03);
+  --surface2: rgba(255,255,255,0.05);
+  --surface3: rgba(255,255,255,0.07);
   --text: var(--vscode-editor-foreground, #cdd6f4);
-  --text-secondary: var(--vscode-descriptionForeground, #7c7f93);
-  --border: var(--vscode-panel-border, rgba(255,255,255,0.06));
+  --text-secondary: var(--vscode-descriptionForeground, rgba(255,255,255,0.45));
+  --border: rgba(255,255,255,0.06);
+  --border-hover: rgba(255,255,255,0.12);
   --input-bg: var(--vscode-input-background, #313145);
   --input-border: var(--vscode-input-border, rgba(255,255,255,0.08));
   --input-fg: var(--vscode-input-foreground, #cdd6f4);
   --btn-bg: var(--vscode-button-background, #4a9eff);
   --btn-fg: var(--vscode-button-foreground, #fff);
   --btn-hover: var(--vscode-button-hoverBackground, #5caeff);
-  --btn-secondary-bg: var(--vscode-button-secondaryBackground, rgba(255,255,255,0.06));
-  --btn-secondary-hover: var(--vscode-button-secondaryHoverBackground, rgba(255,255,255,0.10));
+  --btn-secondary-bg: rgba(255,255,255,0.04);
+  --btn-secondary-hover: rgba(255,255,255,0.08);
   --focus-border: var(--vscode-focusBorder, #4a9eff);
-  --hover-bg: var(--vscode-list-hoverBackground, rgba(255,255,255,0.04));
+  --hover-bg: rgba(255,255,255,0.04);
   --error-color: var(--vscode-errorForeground, #f44747);
+  --error-dim: rgba(244, 71, 71, 0.12);
+  --warning-color: #e2b714;
+  --warning-dim: rgba(226, 183, 20, 0.12);
+  --success-color: #4ec9b0;
+  --success-dim: rgba(78, 201, 176, 0.12);
+  --info-color: #4a9eff;
+  --info-dim: rgba(74, 158, 255, 0.12);
   --radius-sm: 6px;
   --radius: 8px;
+  --radius-lg: 12px;
   --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.15);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.20);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.25);
+  --glass-blur: blur(16px);
+  --glass-border: rgba(255,255,255,0.06);
+  --glass-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  --glass-inset: inset 0 1px 0 rgba(255,255,255,0.04);
+  --type-int: #7cb8ff;
+  --type-str: #4ec9b0;
+  --type-enum: #ce9178;
+  --type-date: #dcdcaa;
 }
 
 body {
@@ -45,6 +66,14 @@ body {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  background: var(--surface);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--glass-shadow), var(--glass-inset);
+  margin: 4px;
+  overflow: hidden;
 }
 
 .header-bar {
@@ -52,7 +81,7 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 6px 12px;
-  background: var(--surface);
+  background: rgba(255,255,255,0.02);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
@@ -82,7 +111,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 14px;
+  padding: 5px 12px;
   border: none;
   border-radius: var(--radius-sm);
   cursor: pointer;
@@ -96,10 +125,16 @@ body {
 .btn-primary {
   background: var(--btn-bg);
   color: var(--btn-fg);
+  box-shadow: 0 1px 4px rgba(74,158,255,0.2);
 }
 
 .btn-primary:hover {
-  background: var(--btn-hover);
+  box-shadow: 0 2px 8px rgba(74,158,255,0.3);
+}
+
+.btn-primary:active {
+  transform: scale(0.96);
+  box-shadow: 0 1px 4px rgba(74,158,255,0.2);
 }
 
 .btn-secondary {
@@ -120,7 +155,7 @@ body {
   display: flex;
   gap: 2px;
   padding: 0 12px;
-  background: var(--surface);
+  background: rgba(255,255,255,0.01);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
@@ -226,15 +261,21 @@ body {
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
 }
 
 .design-table th {
   padding: 6px 8px;
   text-align: left;
-  font-size: 11px;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
   font-weight: 600;
   color: var(--text-secondary);
-  background: var(--surface2);
+  background: rgba(255,255,255,0.04);
   border-bottom: 1px solid var(--border);
   white-space: nowrap;
   position: sticky;
@@ -244,7 +285,7 @@ body {
 
 .design-table td {
   padding: 2px 4px;
-  border-bottom: 1px solid rgba(255,255,255,0.03);
+  border-bottom: 1px solid rgba(255,255,255,0.025);
   vertical-align: middle;
 }
 
@@ -432,7 +473,7 @@ body {
   height: 22px;
   padding: 0 4px;
   border: 1px solid var(--input-border);
-  border-radius: 3px;
+  border-radius: 4px;
   background: transparent;
   color: var(--text-secondary);
   font-size: 10px;
@@ -449,7 +490,7 @@ body {
 
 .constraint-btn.active {
   background: var(--accent-dim);
-  border-color: var(--accent);
+  border-color: rgba(74,158,255,0.25);
   color: var(--accent);
 }
 
@@ -648,7 +689,7 @@ body {
   border-top: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  background: var(--surface);
+  background: rgba(255,255,255,0.02);
 }
 
 .sql-preview-header {
@@ -713,9 +754,11 @@ body {
 
 .dialog {
   background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--glass-shadow), var(--glass-inset);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   width: 600px;
   max-width: 90vw;
   max-height: 80vh;
@@ -780,8 +823,8 @@ body {
 }
 
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -795,4 +838,8 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255,255,255,0.15);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
 }

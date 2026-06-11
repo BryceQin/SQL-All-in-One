@@ -1,5 +1,6 @@
 import type { IDatabaseAdapter, IPoolStatus, ConnectionConfig, QueryResult, QueryRow, QueryParam, SqlStatement, ColumnMeta, DatabaseInfo, TableInfo, ViewInfo, FunctionInfo, ProcedureInfo, TriggerInfo, TableStructure, ColumnInfo, IndexInfo, ForeignKeyInfo, DialectCapabilities, DataTypeCategory, ExplainResult, ExplainNode, TestConnectionResult } from './IDatabaseAdapter';
 import type { Pool, PoolOptions, PoolConnection, RowDataPacket, FieldPacket, ResultSetHeader } from 'mysql2/promise';
+import { t } from '../../i18n/index';
 
 export class MysqlAdapter implements IDatabaseAdapter {
     private connectionId: string;
@@ -28,56 +29,34 @@ export class MysqlAdapter implements IDatabaseAdapter {
         const hostPort = `${config.host}:${config.port}`;
 
         if (msg.includes('ECONNREFUSED')) {
-            return new Error(
-                `Connection refused to ${hostPort}. ` +
-                `Please check: 1) Database server is running; 2) Host and port are correct; 3) No firewall is blocking the connection.`
-            );
+            return new Error(t('database.connectionRefused', hostPort));
         }
         if (msg.includes('ETIMEDOUT') || msg.includes('connectTimeout')) {
-            return new Error(
-                `Connection timed out to ${hostPort}. ` +
-                `Please check: 1) Database server is reachable; 2) Network connectivity; 3) Increase connectTimeout in settings.`
-            );
+            return new Error(t('database.connectionTimedOut', hostPort));
         }
         if (msg.includes('EHOSTUNREACH')) {
-            return new Error(
-                `Host unreachable: ${hostPort}. Please check the host address and network connectivity.`
-            );
+            return new Error(t('database.hostUnreachable', hostPort));
         }
         if (msg.includes('ENOTFOUND')) {
-            return new Error(
-                `Host not found: ${config.host}. Please check the host address is correct.`
-            );
+            return new Error(t('database.hostNotFound', config.host));
         }
         if (msg.includes('ER_ACCESS_DENIED_ERROR') || msg.includes('Access denied')) {
-            return new Error(
-                `Access denied for user '${config.username}'@'${hostPort}'. Please check username and password.`
-            );
+            return new Error(t('database.accessDenied', config.username, hostPort));
         }
         if (msg.includes('ER_DBACCESS_DENIED_ERROR') || msg.includes('denied to user')) {
-            return new Error(
-                `Database access denied for user '${config.username}' to database '${config.database || '(none)'}'. Please check user permissions.`
-            );
+            return new Error(t('database.databaseAccessDenied', config.username, config.database || '(none)'));
         }
         if (msg.includes('PROTOCOL_CONNECTION_LOST')) {
-            return new Error(
-                `Connection lost during handshake with ${hostPort}. Please check the database server is stable.`
-            );
+            return new Error(t('database.connectionLost', hostPort));
         }
         if (msg.includes('ER_CON_COUNT_ERROR') || msg.includes('Too many connections')) {
-            return new Error(
-                `Too many connections to ${hostPort}. The database server has reached its connection limit.`
-            );
+            return new Error(t('database.tooManyConnections', hostPort));
         }
         if (msg.includes('self signed certificate') || msg.includes('certificate') || msg.includes('SSL')) {
-            return new Error(
-                `SSL/TLS error connecting to ${hostPort}. Please check SSL configuration or set rejectUnauthorized to false.`
-            );
+            return new Error(t('database.sslError', hostPort));
         }
         if (msg.includes('ER_BAD_DB_ERROR')) {
-            return new Error(
-                `Database '${config.database}' does not exist on ${hostPort}. Please check the database name.`
-            );
+            return new Error(t('database.databaseNotExist', config.database || '(none)', hostPort));
         }
 
         return error instanceof Error ? error : new Error(msg);
@@ -142,25 +121,20 @@ export class MysqlAdapter implements IDatabaseAdapter {
 
     async testConnection(config: ConnectionConfig): Promise<TestConnectionResult> {
         const startTime = Date.now();
-        let tempPool: Pool | null = null;
+        let tempConn: import('mysql2/promise').Connection | null = null;
 
         try {
             const mysql = await import('mysql2/promise');
-            const poolOptions = this.createPoolOptions(config, 1);
+            const connectOptions = this.createConnectionOptions(config);
 
-            tempPool = mysql.createPool(poolOptions);
-            const conn = await tempPool.getConnection();
-            try {
-                const [rows] = await conn.query<RowDataPacket[]>('SELECT VERSION() AS version');
-                const endTime = Date.now();
-                return {
-                    success: true,
-                    serverVersion: (rows[0] as Record<string, unknown>)?.version as string ?? 'MySQL',
-                    latency: endTime - startTime,
-                };
-            } finally {
-                conn.release();
-            }
+            tempConn = await mysql.createConnection(connectOptions);
+            const [rows] = await tempConn.query<RowDataPacket[]>('SELECT VERSION() AS version');
+            const endTime = Date.now();
+            return {
+                success: true,
+                serverVersion: (rows[0] as Record<string, unknown>)?.version as string ?? 'MySQL',
+                latency: endTime - startTime,
+            };
         } catch (error: unknown) {
             const formatted = this.formatConnectionError(error, config);
             return {
@@ -168,8 +142,8 @@ export class MysqlAdapter implements IDatabaseAdapter {
                 error: formatted.message,
             };
         } finally {
-            if (tempPool) {
-                await tempPool.end();
+            if (tempConn) {
+                await tempConn.end();
             }
         }
     }
@@ -207,7 +181,7 @@ export class MysqlAdapter implements IDatabaseAdapter {
                 executionTime,
                 error: {
                     code: 'NOT_CONNECTED',
-                    message: 'Not connected to database',
+                    message: t('database.notConnected'),
                     sql,
                 },
                 database: this.config?.database,
@@ -305,10 +279,10 @@ export class MysqlAdapter implements IDatabaseAdapter {
 
     async beginTransaction(): Promise<void> {
         if (this.transactionConnection) {
-            throw new Error('Transaction already in progress');
+            throw new Error(t('database.transactionInProgress'));
         }
         if (!this.pool) {
-            throw new Error('Not connected to database');
+            throw new Error(t('database.notConnected'));
         }
 
         this.transactionConnection = await this.pool.getConnection();
@@ -317,7 +291,7 @@ export class MysqlAdapter implements IDatabaseAdapter {
 
     async commit(): Promise<void> {
         if (!this.transactionConnection) {
-            throw new Error('No transaction in progress');
+            throw new Error(t('database.noTransactionInProgress'));
         }
 
         try {
@@ -330,13 +304,16 @@ export class MysqlAdapter implements IDatabaseAdapter {
 
     async rollback(): Promise<void> {
         if (!this.transactionConnection) {
-            throw new Error('No transaction in progress');
+            throw new Error(t('database.noTransactionInProgress'));
         }
 
         try {
             await this.transactionConnection.rollback();
-        } finally {
             this.transactionConnection.release();
+        } catch (rollbackError) {
+            this.transactionConnection.destroy();
+            console.error('Rollback failed, connection destroyed:', rollbackError);
+        } finally {
             this.transactionConnection = null;
         }
     }
@@ -610,27 +587,39 @@ export class MysqlAdapter implements IDatabaseAdapter {
 
     async getExplainPlan(database: string, sql: string): Promise<ExplainResult> {
         const useDb = database ?? this.config?.database;
-        if (useDb) {
-            await this.execute(`USE ${this.quoteIdentifier(useDb)}`);
-        }
-
-        const explainSql = `EXPLAIN FORMAT=JSON ${sql}`;
-        const result = await this.execute(explainSql);
-        if (result.status !== 'success' || result.rows.length === 0) {
+        if (!this.pool) {
             return { format: 'json', raw: '{}', nodes: [] };
         }
 
-        const raw = (result.rows[0].EXPLAIN ?? result.rows[0]['EXPLAIN'] ?? '{}') as string;
-
-        let nodes: ExplainNode[] = [];
+        let conn: PoolConnection | null = null;
         try {
-            const parsed = JSON.parse(raw) as Record<string, unknown>;
-            nodes = this.parseExplainNodes(parsed);
-        } catch {
-            // if JSON parse fails, return empty nodes
-        }
+            conn = await this.pool.getConnection();
+            if (useDb) {
+                await conn.query(`USE ${this.quoteIdentifier(useDb)}`);
+            }
 
-        return { format: 'json', raw, nodes };
+            const explainSql = `EXPLAIN FORMAT=JSON ${sql}`;
+            const [result] = await conn.query<RowDataPacket[]>(explainSql);
+            if (!result || result.length === 0) {
+                return { format: 'json', raw: '{}', nodes: [] };
+            }
+
+            const raw = (result[0].EXPLAIN ?? result[0]['EXPLAIN'] ?? '{}') as string;
+
+            let nodes: ExplainNode[] = [];
+            try {
+                const parsed = JSON.parse(raw) as Record<string, unknown>;
+                nodes = this.parseExplainNodes(parsed);
+            } catch (_e) {
+                nodes = [];
+            }
+
+            return { format: 'json', raw, nodes };
+        } catch {
+            return { format: 'json', raw: '{}', nodes: [] };
+        } finally {
+            conn?.release();
+        }
     }
 
     private parseExplainNodes(obj: Record<string, unknown>, idCounter: { value: number } = { value: 0 }): ExplainNode[] {
@@ -825,6 +814,13 @@ export class MysqlAdapter implements IDatabaseAdapter {
             keepAliveInitialDelay: config.poolConfig?.keepAliveInterval ?? 30000,
         };
 
+        if (config.options?.charset) {
+            poolOptions.charset = config.options.charset as string;
+        }
+        if (config.options?.timezone) {
+            poolOptions.timezone = config.options.timezone as string;
+        }
+
         if (config.ssl?.enabled) {
             poolOptions.ssl = {
                 rejectUnauthorized: config.ssl.rejectUnauthorized ?? true,
@@ -837,20 +833,57 @@ export class MysqlAdapter implements IDatabaseAdapter {
         return poolOptions;
     }
 
+    private createConnectionOptions(config: ConnectionConfig): Record<string, unknown> {
+        const options: Record<string, unknown> = {
+            host: config.host,
+            port: config.port,
+            user: config.username,
+            password: config.password,
+            database: config.database,
+            connectTimeout: config.connectTimeout ?? 10000,
+        };
+
+        if (config.options?.charset) {
+            options.charset = config.options.charset;
+        }
+        if (config.options?.timezone) {
+            options.timezone = config.options.timezone;
+        }
+
+        if (config.ssl?.enabled) {
+            options.ssl = {
+                rejectUnauthorized: config.ssl.rejectUnauthorized ?? true,
+                ca: config.ssl.ca,
+                cert: config.ssl.cert,
+                key: config.ssl.key,
+            };
+        }
+
+        return options;
+    }
+
     private async acquireConnectionWithTimeout(timeout: number): Promise<PoolConnection> {
         return new Promise<PoolConnection>((resolve, reject) => {
+            let timedOut = false;
             const timer = setTimeout(() => {
-                reject(new Error(`Connection acquire timeout after ${timeout}ms`));
+                timedOut = true;
+                reject(new Error(t('database.connectionAcquireTimeout', String(timeout))));
             }, timeout);
 
             this.pool!.getConnection()
                 .then((conn) => {
                     clearTimeout(timer);
-                    resolve(conn);
+                    if (timedOut) {
+                        conn.release();
+                    } else {
+                        resolve(conn);
+                    }
                 })
                 .catch((error: unknown) => {
                     clearTimeout(timer);
-                    reject(error);
+                    if (!timedOut) {
+                        reject(error);
+                    }
                 });
         });
     }
@@ -877,7 +910,7 @@ export class MysqlAdapter implements IDatabaseAdapter {
         const now = Date.now();
         if (now - this.lastActivityTime > idleTimeout) {
             const status = this.getPoolStatus();
-            if (status.activeConnections === 0 && status.idleConnections > 0) {
+            if (status.activeConnections === 0 && typeof status.idleConnections === 'number' && status.idleConnections > 0) {
                 try {
                     const config = this.config!;
                     await this.pool.end();
@@ -905,13 +938,36 @@ export class MysqlAdapter implements IDatabaseAdapter {
         }
 
         const pool = this.pool as unknown as Record<string, unknown[]>;
-        const totalConnections = pool._allConnections?.length ?? 0;
-        const idleConnections = pool._freeConnections?.length ?? 0;
+        let totalConnections: number | 'unknown' = 'unknown';
+        let idleConnections: number | 'unknown' = 'unknown';
+        let waitingRequests: number | 'unknown' = 'unknown';
+
+        try {
+            totalConnections = pool._allConnections?.length ?? 0;
+        } catch {
+            totalConnections = 'unknown';
+        }
+        try {
+            idleConnections = pool._freeConnections?.length ?? 0;
+        } catch {
+            idleConnections = 'unknown';
+        }
+        try {
+            waitingRequests = pool._connectionQueue?.length ?? 0;
+        } catch {
+            waitingRequests = 'unknown';
+        }
+
+        const activeConnections: number | 'unknown' =
+            totalConnections === 'unknown' || idleConnections === 'unknown'
+                ? 'unknown'
+                : totalConnections - idleConnections;
+
         return {
             totalConnections,
-            activeConnections: totalConnections - idleConnections,
+            activeConnections,
             idleConnections,
-            waitingRequests: pool._connectionQueue?.length ?? 0,
+            waitingRequests,
             connectionLimit: this.config?.poolConfig?.maxConnections ?? 5,
             acquireTimeout: this.config?.poolConfig?.acquireTimeout ?? 60000,
         };

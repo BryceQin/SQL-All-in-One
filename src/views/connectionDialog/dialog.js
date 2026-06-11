@@ -20,14 +20,16 @@ const DIALECT_DEFAULT_USERNAMES = {
     sqlite: ''
 };
 
+const IMPLEMENTED_DIALECTS = ['mysql'];
+
 const DIALECT_INFO = {
-    mysql: { name: 'MySQL', icon: '<svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" fill="#4CAF50"/></svg>' },
-    hive: { name: 'Hive', icon: '<svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#FF9800" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>' },
-    spark: { name: 'Spark', icon: '<svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 2l2.4 7.2H22l-6 4.8 2.4 7.2L12 16.4 5.6 21.2 8 14 2 9.2h7.6z" fill="#F44336"/></svg>' },
-    flinksql: { name: 'Flink', icon: '<svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="#E65100"/></svg>' },
-    postgresql: { name: 'PostgreSQL', icon: '<svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" fill="#2196F3"/></svg>' },
-    bigquery: { name: 'BigQuery', icon: '<svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.34 2.73-2.27 5.46-3.87 6.47-.48.3-.91.47-1.27.47-.34 0-.61-.14-.78-.41-.18-.3-.2-.7-.06-1.16.3-1.01.87-2.72.87-2.72s-1.53.94-2.72 1.69c-.58.36-1.04.55-1.4.55-.31 0-.54-.14-.67-.4-.15-.3-.12-.71.08-1.2.57-1.38 1.83-3.73 1.83-3.73s-2.22 1.28-3.26 1.88c-.35.2-.64.3-.87.3-.24 0-.41-.12-.51-.35-.13-.3-.07-.72.17-1.25.8-1.77 2.67-3.94 2.67-3.94" stroke="#9C27B0" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>' },
-    sqlite: { name: 'SQLite', icon: '<svg width="20" height="20" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" fill="#00BCD4"/></svg>' }
+    mysql: { name: 'MySQL', implemented: true, icon: '<svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" fill="#4CAF50"/></svg>' },
+    postgresql: { name: 'PostgreSQL', implemented: false, icon: '<svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" fill="#2196F3"/></svg>' },
+    sqlite: { name: 'SQLite', implemented: false, icon: '<svg width="20" height="20" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" fill="#00BCD4"/></svg>' },
+    hive: { name: 'Hive', implemented: false, icon: '<svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#FF9800" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>' },
+    spark: { name: 'Spark', implemented: false, icon: '<svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 2l2.4 7.2H22l-6 4.8 2.4 7.2L12 16.4 5.6 21.2 8 14 2 9.2h7.6z" fill="#F44336"/></svg>' },
+    flinksql: { name: 'Flink', implemented: false, icon: '<svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="#E65100"/></svg>' },
+    bigquery: { name: 'BigQuery', implemented: false, icon: '<svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.34 2.73-2.27 5.46-3.87 6.47-.48.3-.91.47-1.27.47-.34 0-.61-.14-.78-.41-.18-.3-.2-.7-.06-1.16.3-1.01.87-2.72.87-2.72s-1.53.94-2.72 1.69c-.58.36-1.04.55-1.4.55-.31 0-.54-.14-.67-.4-.15-.3-.12-.71.08-1.2.57-1.38 1.83-3.73 1.83-3.73s-2.22 1.28-3.26 1.88c-.35.2-.64.3-.87.3-.24 0-.41-.12-.51-.35-.13-.3-.07-.72.17-1.25.8-1.77 2.67-3.94 2.67-3.94" stroke="#9C27B0" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>' }
 };
 
 const PRESET_COLORS = ['#4CAF50', '#2196F3', '#FF9800', '#F44336', '#9C27B0', '#00BCD4', '#795548', '#607D8B'];
@@ -88,9 +90,9 @@ function init() {
             state.ssh = Object.assign({}, state.ssh, iv.ssh);
         }
         if (state.mode === 'edit') {
-            state.password = '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022';
-            state.ssh.password = iv.ssh && iv.ssh.password ? '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022' : '';
-            state.ssh.passphrase = iv.ssh && iv.ssh.passphrase ? '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022' : '';
+            state.password = '';
+            state.ssh.password = '';
+            state.ssh.passphrase = '';
         }
     }
 
@@ -102,6 +104,7 @@ function init() {
     updateSshFieldsVisibility();
     updateSslFieldsVisibility();
     updateHeaderTitle();
+    updatePasswordPlaceholders();
 }
 
 function populateForm() {
@@ -140,6 +143,21 @@ function updateHeaderTitle() {
     }
 }
 
+function updatePasswordPlaceholders() {
+    let passwordInput = document.getElementById('connPassword');
+    let sshPasswordInput = document.getElementById('sshPassword');
+    let sshPassphraseInput = document.getElementById('sshPassphrase');
+    if (state.mode === 'edit') {
+        passwordInput.placeholder = 'Leave empty to keep current password';
+        sshPasswordInput.placeholder = 'Leave empty to keep current password';
+        sshPassphraseInput.placeholder = 'Leave empty to keep current passphrase';
+    } else {
+        passwordInput.placeholder = 'Enter password';
+        sshPasswordInput.placeholder = 'SSH password';
+        sshPassphraseInput.placeholder = 'Optional passphrase for private key';
+    }
+}
+
 function renderDialectGrid() {
     let grid = document.getElementById('dialectGrid');
     grid.innerHTML = '';
@@ -147,15 +165,22 @@ function renderDialectGrid() {
     Object.keys(DIALECT_INFO).forEach(function(key) {
         let info = DIALECT_INFO[key];
         let card = document.createElement('div');
-        card.className = 'dialect-card' + (state.dialect === key ? ' active' : '');
+        let isActive = state.dialect === key;
+        let isImplemented = info.implemented !== false;
+        card.className = 'dialect-card' + (isActive ? ' active' : '') + (!isImplemented ? ' disabled' : '');
         card.setAttribute('data-dialect', key);
-        card.innerHTML = '<div class="dialect-card-icon">' + info.icon + '</div><div class="dialect-card-name">' + info.name + '</div>';
-        card.onclick = function() { selectDialect(key); };
+        card.innerHTML = '<div class="dialect-card-icon">' + info.icon + '</div><div class="dialect-card-name">' + info.name + (!isImplemented ? ' <small style="opacity:0.5">(Soon)</small>' : '') + '</div>';
+        if (isImplemented) {
+            card.onclick = function() { selectDialect(key); };
+        }
         grid.appendChild(card);
     });
 }
 
 function selectDialect(dialect) {
+    if (DIALECT_INFO[dialect] && DIALECT_INFO[dialect].implemented === false) {
+        return;
+    }
     state.dialect = dialect;
     state.port = DIALECT_DEFAULT_PORTS[dialect] || 3306;
     state.username = DIALECT_DEFAULT_USERNAMES[dialect] || 'root';

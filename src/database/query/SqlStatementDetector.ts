@@ -128,13 +128,28 @@ export class SqlStatementDetector {
 
         for (let i = 0; i < text.length; i++) {
             const ch = text[i];
-            const prev = i > 0 ? text[i - 1] : '';
 
-            if (ch === "'" && prev !== '\\') {
-                inSingleQuote = !inSingleQuote;
-            } else if (ch === '"' && prev !== '\\') {
-                inDoubleQuote = !inDoubleQuote;
-            } else if (ch === ';' && !inSingleQuote && !inDoubleQuote) {
+            if (inSingleQuote) {
+                if (ch === "'") {
+                    if (i + 1 < text.length && text[i + 1] === "'") {
+                        i++;
+                    } else {
+                        inSingleQuote = false;
+                    }
+                } else if (ch === '\\') {
+                    i++;
+                }
+            } else if (inDoubleQuote) {
+                if (ch === '"') {
+                    inDoubleQuote = false;
+                } else if (ch === '\\') {
+                    i++;
+                }
+            } else if (ch === "'") {
+                inSingleQuote = true;
+            } else if (ch === '"') {
+                inDoubleQuote = true;
+            } else if (ch === ';') {
                 offsets.push(i + 1);
             }
         }

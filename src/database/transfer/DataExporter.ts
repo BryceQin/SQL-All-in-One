@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import { ColumnMeta, IDatabaseAdapter, QueryRow } from '../adapters/IDatabaseAdapter';
+import { t } from '../../i18n/index';
 
 export interface CsvExportOptions {
     delimiter?: string;
@@ -32,26 +33,33 @@ export class DataExporter {
             return;
         }
 
-        const lines: string[] = [];
+        const stream = fs.createWriteStream(uri.fsPath, { encoding: encoding as BufferEncoding });
 
-        if (includeHeaders) {
-            lines.push(columns.map((col) => this.escapeCsvField(col.name, delimiter)).join(delimiter));
-        }
+        try {
+            if (includeHeaders) {
+                stream.write(columns.map((col) => this.escapeCsvField(col.name, delimiter)).join(delimiter) + '\n');
+            }
 
-        for (const row of rows) {
-            const values = columns.map((col) => {
-                const value = row[col.name];
-                if (value === null || value === undefined) {
-                    return '';
-                }
-                return this.escapeCsvField(String(value), delimiter);
+            for (const row of rows) {
+                const values = columns.map((col) => {
+                    const value = row[col.name];
+                    if (value === null || value === undefined) {
+                        return '';
+                    }
+                    return this.escapeCsvField(String(value), delimiter);
+                });
+                stream.write(values.join(delimiter) + '\n');
+            }
+
+            await new Promise<void>((resolve, reject) => {
+                stream.end(() => resolve());
+                stream.on('error', reject);
             });
-            lines.push(values.join(delimiter));
+            vscode.window.setStatusBarMessage(t('database.exportCompleted'), 3000);
+        } catch (error) {
+            stream.destroy();
+            throw error;
         }
-
-        const content = lines.join('\n');
-        await fs.promises.writeFile(uri.fsPath, content, { encoding: encoding as BufferEncoding });
-        vscode.window.setStatusBarMessage('Export completed', 3000);
     }
 
     async exportToJson(rows: QueryRow[], columns: ColumnMeta[], options?: JsonExportOptions): Promise<void> {
@@ -67,21 +75,39 @@ export class DataExporter {
             return;
         }
 
-        const result = rows.map((row) => {
-            const obj: Record<string, unknown> = {};
-            for (const col of columns) {
-                const value = row[col.name];
-                obj[col.name] = this.convertJsonValue(value);
-            }
-            return obj;
-        });
+        const stream = fs.createWriteStream(uri.fsPath, 'utf-8');
+        const indent = prettyPrint ? 2 : 0;
 
-        const content = JSON.stringify(result, null, prettyPrint ? 2 : undefined);
-        await fs.promises.writeFile(uri.fsPath, content, 'utf-8');
-        vscode.window.setStatusBarMessage('Export completed', 3000);
+        try {
+            stream.write('[\n');
+
+            for (let i = 0; i < rows.length; i++) {
+                const obj: Record<string, unknown> = {};
+                for (const col of columns) {
+                    const value = rows[i][col.name];
+                    obj[col.name] = this.convertJsonValue(value);
+                }
+                const jsonStr = JSON.stringify(obj, null, indent > 0 ? indent : undefined);
+                const line = indent > 0
+                    ? '  ' + jsonStr.split('\n').join('\n  ')
+                    : jsonStr;
+                stream.write((i > 0 ? ',' : '') + '\n' + line);
+            }
+
+            stream.write('\n]');
+
+            await new Promise<void>((resolve, reject) => {
+                stream.end(() => resolve());
+                stream.on('error', reject);
+            });
+            vscode.window.setStatusBarMessage(t('database.exportCompleted'), 3000);
+        } catch (error) {
+            stream.destroy();
+            throw error;
+        }
     }
 
-    async exportToInsert(rows: QueryRow[], columns: ColumnMeta[], tableName: string, options?: InsertExportOptions): Promise<void> {
+    async exportToInsert(rows: QueryRow[], columns: ColumnMeta[], tableName: string, options?: InsertExportOptions, adapter?: IDatabaseAdapter): Promise<void> {
         const batchSize = options?.batchSize ?? 1;
 
         const uri = await vscode.window.showSaveDialog({
@@ -93,7 +119,8 @@ export class DataExporter {
             return;
         }
 
-        const columnNames = columns.map((col) => `\`${col.name}\``).join(', ');
+        const q = adapter ? adapter.quoteIdentifier.bind(adapter) : ((id: string): string => '`' + id.replace(/`/g, '``') + '`');
+        const columnNames = columns.map((col) => q(col.name)).join(', ');
         const lines: string[] = [];
 
         for (let i = 0; i < rows.length; i += batchSize) {
@@ -102,12 +129,12 @@ export class DataExporter {
                 const values = columns.map((col) => this.formatSqlValue(row[col.name]));
                 return `(${values.join(', ')})`;
             });
-            lines.push(`INSERT INTO \`${tableName}\` (${columnNames}) VALUES ${valueGroups.join(', ')};`);
+            lines.push(`INSERT INTO ${q(tableName)} (${columnNames}) VALUES ${valueGroups.join(', ')};`);
         }
 
         const content = lines.join('\n');
         await fs.promises.writeFile(uri.fsPath, content, 'utf-8');
-        vscode.window.setStatusBarMessage('Export completed', 3000);
+        vscode.window.setStatusBarMessage(t('database.exportCompleted'), 3000);
     }
 
     async exportToDdl(adapter: IDatabaseAdapter, database: string, table: string): Promise<void> {
@@ -122,11 +149,11 @@ export class DataExporter {
 
         const ddl = await adapter.getTableDDL(database, table);
         await fs.promises.writeFile(uri.fsPath, ddl, 'utf-8');
-        vscode.window.setStatusBarMessage('Export completed', 3000);
+        vscode.window.setStatusBarMessage(t('database.exportCompleted'), 3000);
     }
 
     async exportToExcel(): Promise<void> {
-        throw new Error('Excel export will be available in a future update');
+        throw new Error(t('database.excelNotAvailable'));
     }
 
     private escapeCsvField(value: string, delimiter: string): string {

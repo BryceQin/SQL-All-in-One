@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import type { QueryResult, QueryError, QueryRow } from '../../database/adapters/IDatabaseAdapter';
 import type { QueryHistoryEntry } from '../../database/query/QueryResult';
+import { LanguageBridge } from './LanguageBridge';
 
 export interface FilterCondition {
     column: string;
@@ -39,7 +40,11 @@ type WebviewMessage =
     | { command: 'rollbackTransaction' }
     | { command: 'createSavepoint'; name: string }
     | { command: 'rollbackToSavepoint'; name: string }
-    | { command: 'requestBlobPreview'; rowIndex: number; colIndex: number };
+    | { command: 'requestBlobPreview'; rowIndex: number; colIndex: number }
+    | { command: 'requestCompletion'; requestId: string; sql: string; position: { line: number; column: number }; dialect: string }
+    | { command: 'requestHover'; requestId: string; sql: string; position: { line: number; column: number }; dialect: string }
+    | { command: 'requestFormat'; requestId: string; sql: string; dialect: string }
+    | { command: 'requestDiagnostics'; requestId: string; sql: string; dialect: string };
 
 export class QueryResultPanel {
     public static currentPanel: QueryResultPanel | undefined;
@@ -51,6 +56,8 @@ export class QueryResultPanel {
     // private readonly __context: vscode.ExtensionContext;
     private _disposables: vscode.Disposable[] = [];
     private _currentResult: QueryResult | undefined;
+    private _languageBridge: LanguageBridge;
+    private _currentDialect = 'mysql';
 
     public onExecuteQuery?: (sql: string) => void;
     public onCancelQuery?: () => void;
@@ -100,6 +107,7 @@ export class QueryResultPanel {
     ) {
         this._panel = panel;
         this._extensionUri = extensionUri;
+        this._languageBridge = new LanguageBridge(extensionUri);
         // this.__context = context;
 
         this._update();
@@ -208,6 +216,52 @@ export class QueryResultPanel {
                             await this.onExecutePanelSql(message.sql);
                         }
                         break;
+                    case 'requestCompletion': {
+                        const items = await this._languageBridge.handleCompletionRequest(
+                            message.sql,
+                            message.position,
+                            message.dialect,
+                        );
+                        this._panel.webview.postMessage({
+                            type: 'completionResult',
+                            data: { requestId: message.requestId, items },
+                        });
+                        break;
+                    }
+                    case 'requestHover': {
+                        const contents = await this._languageBridge.handleHoverRequest(
+                            message.sql,
+                            message.position,
+                            message.dialect,
+                        );
+                        this._panel.webview.postMessage({
+                            type: 'hoverResult',
+                            data: { requestId: message.requestId, contents },
+                        });
+                        break;
+                    }
+                    case 'requestFormat': {
+                        const formattedSql = await this._languageBridge.handleFormatRequest(
+                            message.sql,
+                            message.dialect,
+                        );
+                        this._panel.webview.postMessage({
+                            type: 'formatResult',
+                            data: { requestId: message.requestId, formattedSql },
+                        });
+                        break;
+                    }
+                    case 'requestDiagnostics': {
+                        const diagnostics = await this._languageBridge.handleDiagnosticsRequest(
+                            message.sql,
+                            message.dialect,
+                        );
+                        this._panel.webview.postMessage({
+                            type: 'diagnosticsResult',
+                            data: { requestId: message.requestId, diagnostics },
+                        });
+                        break;
+                    }
                 }
             },
             null,
@@ -217,9 +271,74 @@ export class QueryResultPanel {
 
     public showResult(result: QueryResult, connectionName?: string, connectionColor?: string, tableName?: string): void {
         this._currentResult = result;
+
+        (async () => {
+            try {
+                const { getConnectionManager } = await import('../../database/connection/ConnectionManager.js');
+                const activeConn = getConnectionManager().getActiveConnection();
+                if (activeConn) {
+                    const newDialect = activeConn.dialect || 'mysql';
+                    if (newDialect !== this._currentDialect) {
+                        this._currentDialect = newDialect;
+                        this._sendLanguageData();
+                    }
+                }
+            } catch { /* ignore if ConnectionManager not available */ }
+        })();
+
+        const metadata = {
+            queryId: result.queryId,
+            status: result.status,
+            columns: result.columns.map((c) => ({
+                name: c.name,
+                type: c.type,
+                nullable: c.nullable,
+                isPrimaryKey: c.isPrimaryKey,
+                isAutoIncrement: c.isAutoIncrement,
+                isEnum: c.isEnum,
+                enumValues: c.enumValues,
+                referencedTable: c.referencedTable,
+                comment: c.comment,
+            })),
+            rowCount: result.rowCount,
+            affectedRows: result.affectedRows,
+            executionTime: result.executionTime,
+            error: result.error,
+            database: result.database,
+            connectionName: connectionName || '',
+            connectionColor: connectionColor || '',
+            tableName: tableName || '',
+        };
+
         this._panel.webview.postMessage({
-            type: 'queryResult',
-            data: this._serializeResult(result, connectionName, connectionColor, tableName),
+            type: 'queryResultStart',
+            data: metadata,
+        });
+
+        const BATCH_SIZE = 1000;
+        const totalRows = result.rows.length;
+        const totalBatches = Math.ceil(totalRows / BATCH_SIZE);
+
+        for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+            const start = batchIndex * BATCH_SIZE;
+            const end = Math.min(start + BATCH_SIZE, totalRows);
+            const batchRows = result.rows.slice(start, end).map((row) =>
+                result.columns.map((c) => row[c.name])
+            );
+
+            this._panel.webview.postMessage({
+                type: 'queryResultBatch',
+                data: {
+                    batchIndex,
+                    totalBatches,
+                    rows: batchRows,
+                },
+            });
+        }
+
+        this._panel.webview.postMessage({
+            type: 'queryResultEnd',
+            data: { queryId: result.queryId },
         });
     }
 
@@ -273,8 +392,14 @@ export class QueryResultPanel {
         this._handleExport(format);
     }
 
+    public setDialect(dialect: string): void {
+        this._currentDialect = dialect;
+        this._sendLanguageData();
+    }
+
     public dispose(): void {
         QueryResultPanel.currentPanel = undefined;
+        this._languageBridge.dispose();
         this._panel.dispose();
 
         while (this._disposables.length) {
@@ -288,6 +413,15 @@ export class QueryResultPanel {
     private _update(): void {
         this._getHtmlForWebview().then(html => {
             this._panel.webview.html = html;
+            this._sendLanguageData();
+        });
+    }
+
+    private _sendLanguageData(): void {
+        const data = this._languageBridge.exportLanguageData(this._currentDialect);
+        this._panel.webview.postMessage({
+            type: 'languageData',
+            data,
         });
     }
 
@@ -337,6 +471,7 @@ export class QueryResultPanel {
                 enableValidation: config.get<boolean>('dataEditor.enableValidation', true),
                 validateOnEdit: config.get<boolean>('dataEditor.validateOnEdit', true),
                 validateForeignKeys: config.get<boolean>('dataEditor.validateForeignKeys', false),
+                dialect: this._currentDialect,
                 monacoBasePath: monacoBaseUri.toString(),
                 themeKind: vscode.window.activeColorTheme.kind,
             };
@@ -348,40 +483,6 @@ export class QueryResultPanel {
             console.error('Failed to load Query Result panel HTML:', error);
             return '<html><body><h2>Failed to load Query Result panel</h2><p>Please reinstall the extension.</p></body></html>';
         }
-    }
-
-    private _serializeResult(
-        result: QueryResult,
-        connectionName?: string,
-        connectionColor?: string,
-        tableName?: string
-    ): Record<string, unknown> {
-        return {
-            queryId: result.queryId,
-            status: result.status,
-            columns: result.columns.map((c) => ({
-                name: c.name,
-                type: c.type,
-                nullable: c.nullable,
-                isPrimaryKey: c.isPrimaryKey,
-                isAutoIncrement: c.isAutoIncrement,
-                isEnum: c.isEnum,
-                enumValues: c.enumValues,
-                referencedTable: c.referencedTable,
-                comment: c.comment,
-            })),
-            rows: result.rows.map((row) =>
-                result.columns.map((c) => row[c.name])
-            ),
-            rowCount: result.rowCount,
-            affectedRows: result.affectedRows,
-            executionTime: result.executionTime,
-            error: result.error,
-            database: result.database,
-            connectionName: connectionName || '',
-            connectionColor: connectionColor || '',
-            tableName: tableName || '',
-        };
     }
 
     private async _handleExport(format: string, options?: Record<string, unknown>): Promise<void> {
@@ -404,9 +505,13 @@ export class QueryResultPanel {
                 case 'json':
                     await exporter.exportToJson(rows, columns);
                     break;
-                case 'insert':
-                    await exporter.exportToInsert(rows, columns, tableName);
+                case 'insert': {
+                    const { getConnectionManager: getConnMgr } = await import('../../database/connection/ConnectionManager.js');
+                    const activeConnCfg = getConnMgr().getActiveConnection();
+                    const insertAdapter = activeConnCfg ? getConnMgr().getAdapter(activeConnCfg.id) : undefined;
+                    await exporter.exportToInsert(rows, columns, tableName, undefined, insertAdapter);
                     break;
+                }
                 case 'ddl':
                     await this._handleDdlExport(exporter, options);
                     break;

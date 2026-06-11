@@ -6,6 +6,7 @@ import { IDatabaseAdapter, IPoolStatus } from '../adapters/IDatabaseAdapter';
 import { SshTunnel } from './SshTunnel';
 import { handleError, ErrorCategory } from '../../core/errorHandler';
 import { getContainer, Tokens } from '../../core/diContainer';
+import { t } from '../../i18n/index';
 
 export interface ConnectionEvent {
     type: 'add' | 'remove' | 'update';
@@ -33,6 +34,7 @@ export class ConnectionManager {
     private sshTunnels = new Map<string, SshTunnel>();
     private healthCheckTimers = new Map<string, ReturnType<typeof setInterval>>();
     private consecutiveHealthFailures = new Map<string, number>();
+    private isHealthChecking = new Map<string, boolean>();
 
     private readonly _onDidChangeConnections = new EventEmitter<ConnectionEvent>();
     private readonly _onDidChangeConnectionState = new EventEmitter<ConnectionStateEvent>();
@@ -84,9 +86,12 @@ export class ConnectionManager {
             return;
         }
 
+        this.updateConnectionState(id, 'connecting');
+
         const config = this.connectionStore.getConnection(id);
         if (!config) {
-            throw new Error(`Connection not found: ${id}`);
+            this.updateConnectionState(id, 'disconnected');
+            throw new Error(t('database.connectionNotFoundWithId', id));
         }
 
         const password = await this.connectionStore.getPassword(id);
@@ -104,7 +109,8 @@ export class ConnectionManager {
                 const tunnelResult = await tunnel.open(
                     sshConfig,
                     config.host,
-                    config.port
+                    config.port,
+                    config.connectTimeout
                 );
 
                 this.sshTunnels.set(id, tunnel);
@@ -112,11 +118,9 @@ export class ConnectionManager {
                 fullConfig.port = tunnelResult.localPort;
             } catch (error: unknown) {
                 this.updateConnectionState(id, 'error');
-                throw new Error(`SSH tunnel failed: ${error instanceof Error ? error.message : String(error)}`);
+                throw new Error(t('database.sshTunnelFailed', error instanceof Error ? error.message : String(error)));
             }
         }
-
-        this.updateConnectionState(id, 'connecting');
 
         try {
             const adapter = AdapterFactory.create(config.dialect, fullConfig);
@@ -205,7 +209,7 @@ export class ConnectionManager {
         if (typeof arg === 'string') {
             const conn = this.connectionStore.getConnection(arg);
             if (!conn) {
-                throw new Error(`Connection not found: ${arg}`);
+                throw new Error(t('database.connectionNotFoundWithId', arg));
             }
             config = conn;
             pass = await this.connectionStore.getPassword(arg);
@@ -231,7 +235,7 @@ export class ConnectionManager {
                     await tunnel.close();
                 }
             } catch (error: unknown) {
-                return { success: false, error: `SSH tunnel failed: ${error instanceof Error ? error.message : String(error)}` };
+                return { success: false, error: t('database.sshTunnelFailed', error instanceof Error ? error.message : String(error)) };
             }
         }
 
@@ -329,31 +333,63 @@ export class ConnectionManager {
         this.stopHealthCheck(id);
         const interval = config.poolConfig?.keepAliveInterval ?? 30000;
         const timer = setInterval(async () => {
-            const adapter = this.adapters.get(id);
-            if (!adapter) {
-                this.stopHealthCheck(id);
+            if (this.isHealthChecking.get(id)) {
                 return;
             }
+            this.isHealthChecking.set(id, true);
             try {
-                const healthy = await adapter.checkConnectionHealth();
-                if (healthy) {
-                    this.consecutiveHealthFailures.set(id, 0);
-                } else {
+                const adapter = this.adapters.get(id);
+                if (!adapter) {
+                    this.stopHealthCheck(id);
+                    return;
+                }
+                try {
+                    const healthy = await adapter.checkConnectionHealth();
+                    if (healthy) {
+                        this.consecutiveHealthFailures.set(id, 0);
+                    } else {
+                        const failures = (this.consecutiveHealthFailures.get(id) ?? 0) + 1;
+                        this.consecutiveHealthFailures.set(id, failures);
+                        if (failures >= 2) {
+                            this.stopHealthCheck(id);
+                            try {
+                                await adapter.disconnect();
+                            } catch {
+                                // ignore disconnect error on unhealthy connection
+                            }
+                            this.adapters.delete(id);
+                            const tunnel = this.sshTunnels.get(id);
+                            if (tunnel) {
+                                try { await tunnel.close(); } catch { /* ignore */ }
+                                this.sshTunnels.delete(id);
+                            }
+                            this.updateConnectionState(id, 'error');
+                            this.scheduleRetry(id);
+                        }
+                    }
+                } catch {
                     const failures = (this.consecutiveHealthFailures.get(id) ?? 0) + 1;
                     this.consecutiveHealthFailures.set(id, failures);
+                    console.warn(`Health check failed for connection ${id}:`);
                     if (failures >= 2) {
+                        this.stopHealthCheck(id);
+                        try {
+                            await adapter.disconnect();
+                        } catch {
+                            // ignore disconnect error on unhealthy connection
+                        }
+                        this.adapters.delete(id);
+                        const tunnel = this.sshTunnels.get(id);
+                        if (tunnel) {
+                            try { await tunnel.close(); } catch { /* ignore */ }
+                            this.sshTunnels.delete(id);
+                        }
                         this.updateConnectionState(id, 'error');
                         this.scheduleRetry(id);
                     }
                 }
-            } catch {
-                const failures = (this.consecutiveHealthFailures.get(id) ?? 0) + 1;
-                this.consecutiveHealthFailures.set(id, failures);
-                console.warn(`Health check failed for connection ${id}:`);
-                if (failures >= 2) {
-                    this.updateConnectionState(id, 'error');
-                    this.scheduleRetry(id);
-                }
+            } finally {
+                this.isHealthChecking.set(id, false);
             }
         }, interval);
         this.healthCheckTimers.set(id, timer);
@@ -366,9 +402,10 @@ export class ConnectionManager {
             this.healthCheckTimers.delete(id);
         }
         this.consecutiveHealthFailures.delete(id);
+        this.isHealthChecking.delete(id);
     }
 
-    dispose(): void {
+    async dispose(): Promise<void> {
         for (const timer of this.retryTimers.values()) {
             clearTimeout(timer);
         }
@@ -377,6 +414,21 @@ export class ConnectionManager {
         for (const timer of this.healthCheckTimers.values()) {
             clearInterval(timer);
         }
+        this.healthCheckTimers.clear();
+
+        await Promise.allSettled(
+            Array.from(this.adapters.values()).map(adapter =>
+                adapter.disconnect().catch((_e) => undefined)
+            )
+        );
+        this.adapters.clear();
+
+        await Promise.allSettled(
+            Array.from(this.sshTunnels.values()).map(tunnel =>
+                tunnel.close().catch((_e) => undefined)
+            )
+        );
+        this.sshTunnels.clear();
 
         this._onDidChangeConnections.dispose();
         this._onDidChangeConnectionState.dispose();

@@ -7,6 +7,7 @@ import { CTEFormatter } from './CTEFormatter';
 import { CommonLayoutHelper } from './CommonLayoutHelper';
 import { asSelectStmt } from '../../parser/typeGuards';
 import type { AstNode } from '../../parser/astTypes';
+import type { FormatterFactory } from './FormatterFactory';
 
 export class SelectFormatter {
     private cfg: FormatOptions;
@@ -14,16 +15,28 @@ export class SelectFormatter {
     private layout: Layout;
     private exprFmt: ExpressionFormatter;
     private helper: CommonLayoutHelper;
+    private factory?: FormatterFactory;
 
-    constructor(cfg: FormatOptions, indent: Indentation) {
+    constructor(cfg: FormatOptions, indent: Indentation, factory?: FormatterFactory) {
         this.cfg = cfg;
         this.indent = indent;
         this.layout = new Layout(indent);
+        this.factory = factory;
         this.exprFmt = new ExpressionFormatter(cfg, indent, (expr: unknown): string => {
-            const subFmt = new SelectFormatter(this.cfg, this.indent);
+            const subFmt = factory
+                ? factory.getSelectFormatter(this.cfg, this.indent)
+                : new SelectFormatter(this.cfg, this.indent);
             return subFmt.format(expr);
         });
         this.helper = new CommonLayoutHelper(cfg, indent, this.layout);
+    }
+
+    public reset(cfg: FormatOptions, indent: Indentation): void {
+        this.cfg = cfg;
+        this.indent = indent;
+        this.layout = new Layout(indent);
+        this.exprFmt.reset(cfg, indent);
+        this.helper.reset(cfg, indent, this.layout);
     }
 
     public format(stmt: unknown): string {
@@ -171,7 +184,9 @@ export class SelectFormatter {
     }
 
     private formatSubqueryFrom(item: AstNode): void {
-        const subFmt = new SelectFormatter(this.cfg, this.indent);
+        const subFmt = this.factory
+            ? this.factory.getSelectFormatter(this.cfg, this.indent)
+            : new SelectFormatter(this.cfg, this.indent);
         const exprObj = item.expr as { ast: unknown };
         const subSql = subFmt.format(exprObj.ast);
         this.layout.add('(', WS.NEWLINE);
@@ -300,7 +315,9 @@ export class SelectFormatter {
 
     private formatWith(withClause: unknown[]): void {
         const cteFmt = new CTEFormatter(this.cfg, this.indent, (subStmt: unknown): string => {
-            const subFmt = new SelectFormatter(this.cfg, this.indent);
+            const subFmt = this.factory
+                ? this.factory.getSelectFormatter(this.cfg, this.indent)
+                : new SelectFormatter(this.cfg, this.indent);
             return subFmt.format(subStmt);
         });
         const cteResult = cteFmt.format(withClause as AstNode[]);
@@ -334,7 +351,9 @@ export class SelectFormatter {
             this.layout.add(WS.SPACE);
         }
 
-        const nextFmt = new SelectFormatter(this.cfg, this.indent);
+        const nextFmt = this.factory
+            ? this.factory.getSelectFormatter(this.cfg, this.indent)
+            : new SelectFormatter(this.cfg, this.indent);
         this.layout.add(nextFmt.format(next));
     }
 }

@@ -34,6 +34,18 @@ import { QueryExecutor } from './database/query/QueryExecutor';
 import { SafeQueryGuard } from './database/query/SafeQueryGuard';
 import { QueryHistory } from './database/history/QueryHistory';
 import { SqlStatementDetector } from './database/query/SqlStatementDetector';
+import { clearParameterScanCache } from './hover/ParameterHoverResolver';
+
+function createLazyProvider<T>(container: ReturnType<typeof getContainer>, token: string, context: vscode.ExtensionContext): () => T {
+    let instance: T | undefined;
+    return () => {
+        if (!instance) {
+            instance = container.get<T>(token);
+            if (instance) context.subscriptions.push(instance as unknown as vscode.Disposable);
+        }
+        return instance;
+    };
+}
 
 function registerCommands(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
@@ -59,14 +71,7 @@ function registerFormattingProviders(context: vscode.ExtensionContext): void {
 
 function registerDiagnostics(context: vscode.ExtensionContext): void {
   const container = getContainer();
-  let dp: SqlDiagnosticsProvider | undefined;
-  const getDp = () => {
-    if (!dp) {
-      dp = container.get<SqlDiagnosticsProvider>(Tokens.SqlDiagnosticsProvider);
-      if (dp) context.subscriptions.push(dp);
-    }
-    return dp;
-  };
+  const getDp = createLazyProvider<SqlDiagnosticsProvider>(container, Tokens.SqlDiagnosticsProvider, context);
 
   context.subscriptions.push(
     vscode.workspace.onDidChangeTextDocument((event) => {
@@ -92,21 +97,13 @@ function registerProviders(context: vscode.ExtensionContext): void {
   const container = getContainer();
   const sqlLanguages = getSqlLanguageIds();
 
-  let codeActionProvider: SqlCodeActionProvider | undefined;
-  let foldingRangeProvider: SqlFoldingRangeProvider | undefined;
-  let outlineProvider: SqlOutlineProvider | undefined;
-  let hoverProvider: SqlHoverProvider | undefined;
-  let definitionProvider: SqlDefinitionProvider | undefined;
-  let referenceProvider: SqlReferenceProvider | undefined;
-  let renameProvider: SqlRenameProvider | undefined;
-
-  const lazyCodeAction = () => codeActionProvider ??= container.get<SqlCodeActionProvider>(Tokens.CodeActionProvider);
-  const lazyFoldingRange = () => foldingRangeProvider ??= container.get<SqlFoldingRangeProvider>(Tokens.FoldingRangeProvider);
-  const lazyOutline = () => outlineProvider ??= container.get<SqlOutlineProvider>(Tokens.OutlineProvider);
-  const lazyHover = () => hoverProvider ??= container.get<SqlHoverProvider>(Tokens.HoverProvider);
-  const lazyDefinition = () => definitionProvider ??= container.get<SqlDefinitionProvider>(Tokens.DefinitionProvider);
-  const lazyReference = () => referenceProvider ??= container.get<SqlReferenceProvider>(Tokens.ReferenceProvider);
-  const lazyRename = () => renameProvider ??= container.get<SqlRenameProvider>(Tokens.RenameProvider);
+  const lazyCodeAction = createLazyProvider<SqlCodeActionProvider>(container, Tokens.CodeActionProvider, context);
+  const lazyFoldingRange = createLazyProvider<SqlFoldingRangeProvider>(container, Tokens.FoldingRangeProvider, context);
+  const lazyOutline = createLazyProvider<SqlOutlineProvider>(container, Tokens.OutlineProvider, context);
+  const lazyHover = createLazyProvider<SqlHoverProvider>(container, Tokens.HoverProvider, context);
+  const lazyDefinition = createLazyProvider<SqlDefinitionProvider>(container, Tokens.DefinitionProvider, context);
+  const lazyReference = createLazyProvider<SqlReferenceProvider>(container, Tokens.ReferenceProvider, context);
+  const lazyRename = createLazyProvider<SqlRenameProvider>(container, Tokens.RenameProvider, context);
 
   for (const lang of sqlLanguages) {
     const selector = { language: lang };
@@ -163,14 +160,7 @@ function registerCompletion(context: vscode.ExtensionContext): void {
   const sqlLanguages = getSqlLanguageIds();
   const triggerChars: string[] = ['.', ' ', '('];
 
-  let provider: SqlCompletionProvider | undefined;
-  const getProvider = () => {
-    if (!provider) {
-      provider = container.get<SqlCompletionProvider>(Tokens.CompletionProvider);
-      if (provider) context.subscriptions.push(provider);
-    }
-    return provider;
-  };
+  const getProvider = createLazyProvider<SqlCompletionProvider>(container, Tokens.CompletionProvider, context);
 
   const lazyProvider: vscode.CompletionItemProvider = {
     provideCompletionItems: (doc, pos, token, _ctx) =>
@@ -186,14 +176,7 @@ function registerCompletion(context: vscode.ExtensionContext): void {
 
 function registerParameterHighlighter(context: vscode.ExtensionContext): void {
   const container = getContainer();
-  let highlighter: SqlParameterHighlighter | undefined;
-  const getHighlighter = () => {
-    if (!highlighter) {
-      highlighter = container.get<SqlParameterHighlighter>(Tokens.ParameterHighlighter);
-      if (highlighter) context.subscriptions.push(highlighter);
-    }
-    return highlighter;
-  };
+  const getHighlighter = createLazyProvider<SqlParameterHighlighter>(container, Tokens.ParameterHighlighter, context);
 
   context.subscriptions.push(SqlParameterReplaceCommand.register(context));
   getHighlighter();
@@ -201,8 +184,7 @@ function registerParameterHighlighter(context: vscode.ExtensionContext): void {
 
 function registerAstNavigatorEvents(context: vscode.ExtensionContext): void {
   const container = getContainer();
-  let navigator: AstNavigator | undefined;
-  const getNavigator = () => navigator ??= container.get<AstNavigator>(Tokens.AstNavigator);
+  const getNavigator = createLazyProvider<AstNavigator>(container, Tokens.AstNavigator, context);
 
   context.subscriptions.push(
     vscode.workspace.onDidChangeTextDocument(e => {
@@ -216,14 +198,7 @@ function registerStatusBar(context: vscode.ExtensionContext): void {
   if (!vscode.workspace.textDocuments.some(isSqlDocument)) return;
 
   const container = getContainer();
-  let statusBar: StatusBarProvider | undefined;
-  const getStatusBar = () => {
-    if (!statusBar) {
-      statusBar = container.get<StatusBarProvider>(Tokens.StatusBarProvider);
-      if (statusBar) context.subscriptions.push(statusBar);
-    }
-    return statusBar;
-  };
+  const getStatusBar = createLazyProvider<StatusBarProvider>(container, Tokens.StatusBarProvider, context);
   getStatusBar();
 }
 
@@ -287,7 +262,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         dbModule.initialize().catch(e => {
             getErrorHandler().handle(e, 'Database initialization', ErrorLevel.ERROR, ErrorCategory.CRITICAL);
         });
-        context.subscriptions.push({ dispose: async () => { await dbModule.dispose(); } });
+        context.subscriptions.push({
+            dispose: () => {
+                dbModule.dispose().catch(e => {
+                    console.error('Failed to dispose DatabaseModule:', e);
+                });
+            }
+        });
 
         context.subscriptions.push(getConfigManager());
         context.subscriptions.push(getDocumentAstCache());
@@ -297,5 +278,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 }
 
 export function deactivate(): Thenable<void> {
+  clearParameterScanCache();
   return Promise.resolve(getContainer().disposeAll());
 }

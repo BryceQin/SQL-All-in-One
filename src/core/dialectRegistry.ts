@@ -12,6 +12,10 @@ const dialectEntries = [
     { vscodeLangId: 'sqlite', sqlLanguage: 'sqlite', sqlDialect: 'sqlite', nodeSqlParserDialect: 'SQLite' },
 ] as const
 
+const langIdSet = new Set<string>(dialectEntries.map(e => e.vscodeLangId))
+const langIdMap = new Map<string, DialectEntry>(dialectEntries.map(e => [e.vscodeLangId, e] as const))
+const dialectMap = new Map<string, DialectEntry>(dialectEntries.map(e => [e.sqlDialect, e] as const))
+
 export type SqlDialect = (typeof dialectEntries)[number]['sqlDialect']
 export type SqlLanguage = (typeof dialectEntries)[number]['sqlLanguage']
 
@@ -27,7 +31,7 @@ export function getDialectEntries(): readonly DialectEntry[] {
 }
 
 export function findDialectByLangId(langId: string): DialectEntry | undefined {
-    return dialectEntries.find(e => e.vscodeLangId === langId)
+    return langIdMap.get(langId)
 }
 
 let _cachedLanguageIds: readonly string[] | null = null
@@ -40,7 +44,7 @@ export function getSqlLanguageIds(): readonly string[] {
 }
 
 export function isSqlDocument(document: { languageId: string }): boolean {
-    return dialectEntries.some(e => e.vscodeLangId === document.languageId)
+    return langIdSet.has(document.languageId)
 }
 
 export function toSqlDialect(langId: string): SqlDialect {
@@ -50,6 +54,6 @@ export function toSqlDialect(langId: string): SqlDialect {
 }
 
 export function toNodeSqlParserDialect(dialect: SqlDialect): string {
-    const entry = dialectEntries.find(e => e.sqlDialect === dialect)
+    const entry = dialectMap.get(dialect)
     return entry ? entry.nodeSqlParserDialect : 'MySQL'
 }

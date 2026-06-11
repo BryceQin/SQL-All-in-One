@@ -1,4 +1,5 @@
 import { escapeRegExp } from "../lexer/regexUtil"
+import { SqlTextScanner } from "../utils/sqlTextScanner"
 
 export interface CommentSlot {
     id: string
@@ -236,121 +237,37 @@ function findAllComments(sql: string): {
     isAfterSemicolon: boolean
     isTailComment: boolean
 }[] {
-    const comments: {
-        start: number
-        end: number
-        text: string
-        isOnOwnLine: boolean
-        isAfterSemicolon: boolean
-        isTailComment: boolean
-    }[] = []
+    const rawComments = SqlTextScanner.findAllComments(sql)
 
-    let i = 0
-    const len = sql.length
-    let inSingleQuote = false
-    let inDoubleQuote = false
-
-    while (i < len) {
-        const ch = sql[i]
-
-        if (inSingleQuote) {
-            if (ch === "'" && i + 1 < len && sql[i + 1] === "'") {
-                i += 2
-                continue
-            }
-            if (ch === "'") {
-                inSingleQuote = false
-            }
-            i++
-            continue
-        }
-
-        if (inDoubleQuote) {
-            if (ch === '"') {
-                inDoubleQuote = false
-            }
-            i++
-            continue
-        }
-
-        if (ch === "'") {
-            inSingleQuote = true
-            i++
-            continue
-        }
-
-        if (ch === '"') {
-            inDoubleQuote = true
-            i++
-            continue
-        }
-
-        if (ch === '-' && i + 1 < len && sql[i + 1] === '-') {
-            const start = i
-            const isOnOwnLine = isStartOfLine(sql, start)
-            const isAfterSemi = isAfterSemicolon(sql, start)
-
-            i += 2
-            while (i < len && sql[i] !== '\n') {
-                i++
-            }
-
-            const commentText = sql.substring(start, i)
-            comments.push({
-                start,
-                end: i,
-                text: commentText,
-                isOnOwnLine,
-                isAfterSemicolon: isAfterSemi,
-                isTailComment: !isOnOwnLine && !isAfterSemi,
-            })
-            continue
-        }
-
-        if (ch === '/' && i + 1 < len && sql[i + 1] === '*') {
-            const start = i
-            const isOnOwnLine = isStartOfLine(sql, start)
-            const isAfterSemi = isAfterSemicolon(sql, start)
-
-            i += 2
-            while (i < len) {
-                if (sql[i] === '*' && i + 1 < len && sql[i + 1] === '/') {
-                    i += 2
-                    break
-                }
-                i++
-            }
-
-            let isTailComment = false
-            if (!isOnOwnLine && !isAfterSemi) {
-                let j = i
-                while (j < len && sql[j] !== '\n') {
+    return rawComments.map(c => {
+        const isOnOwnLine = isStartOfLine(sql, c.start)
+        const isAfterSemi = isAfterSemicolon(sql, c.start)
+        let isTailComment = false
+        if (!isOnOwnLine && !isAfterSemi) {
+            if (c.type === 'line') {
+                isTailComment = true
+            } else {
+                let j = c.end
+                while (j < sql.length && sql[j] !== '\n') {
                     if (sql[j] !== ' ' && sql[j] !== '\t') {
                         break
                     }
                     j++
                 }
-                if (j >= len || sql[j] === '\n') {
+                if (j >= sql.length || sql[j] === '\n') {
                     isTailComment = true
                 }
             }
-
-            const commentText = sql.substring(start, i)
-            comments.push({
-                start,
-                end: i,
-                text: commentText,
-                isOnOwnLine,
-                isAfterSemicolon: isAfterSemi,
-                isTailComment,
-            })
-            continue
         }
-
-        i++
-    }
-
-    return comments
+        return {
+            start: c.start,
+            end: c.end,
+            text: c.text,
+            isOnOwnLine,
+            isAfterSemicolon: isAfterSemi,
+            isTailComment,
+        }
+    })
 }
 
 function isStartOfLine(sql: string, pos: number): boolean {

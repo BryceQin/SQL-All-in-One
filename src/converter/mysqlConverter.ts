@@ -1,5 +1,5 @@
 import { MYSQL_TO_HIVE_TYPES } from './typeMappings'
-import { MYSQL_TO_HIVE_FUNCTIONS } from './functionMappings'
+import { MYSQL_TO_HIVE_FUNCTIONS, convertIfnullToCoalesce } from './functionMappings'
 import { SqlParser } from './sqlParser'
 
 export class MysqlToHiveConverter {
@@ -144,7 +144,7 @@ export class MysqlToHiveConverter {
   }
 
   private convertFunctions(sql: string): string {
-    let result = sql
+    let result = convertIfnullToCoalesce(sql)
 
     for (const mapping of MYSQL_TO_HIVE_FUNCTIONS) {
       result = result.replace(mapping.pattern, mapping.replacement)

@@ -17,6 +17,11 @@ export class ExpressionFormatter {
         this.formatSubqueryFn = formatSubqueryFn;
     }
 
+    public reset(cfg: FormatOptions, indent: Indentation): void {
+        this.cfg = cfg;
+        this.indent = indent;
+    }
+
     public format(expr: unknown): string {
         if (expr == null) return '';
         if (typeof expr === 'string') return expr;

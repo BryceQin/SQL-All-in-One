@@ -1,5 +1,5 @@
 import { HIVE_TO_MYSQL_TYPES } from './typeMappings'
-import { HIVE_TO_MYSQL_FUNCTIONS } from './functionMappings'
+import { HIVE_TO_MYSQL_FUNCTIONS, convertCoalesceToIfnull } from './functionMappings'
 
 export class HiveToMysqlConverter {
   convert(sql: string): string {
@@ -12,7 +12,7 @@ export class HiveToMysqlConverter {
   }
 
   private convertFunctions(sql: string): string {
-    let result = sql
+    let result = convertCoalesceToIfnull(sql)
 
     for (const mapping of HIVE_TO_MYSQL_FUNCTIONS) {
       result = result.replace(mapping.pattern, mapping.replacement)

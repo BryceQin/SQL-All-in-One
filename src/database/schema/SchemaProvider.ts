@@ -166,9 +166,7 @@ export class SchemaProvider {
 
     private async addViewItems(items: vscode.CompletionItem[], context: CompletionContext): Promise<void> {
         try {
-            const adapter = getConnectionManager().getAdapter(context.connectionId);
-            if (!adapter) return;
-            const views = await adapter.listViews(context.database);
+            const views = await this.schemaCache.getViews(context.connectionId, context.database);
             for (const view of views) {
                 if (context.prefix && !view.name.toLowerCase().startsWith(context.prefix.toLowerCase())) continue;
                 const item = new vscode.CompletionItem(view.name, vscode.CompletionItemKind.Struct);

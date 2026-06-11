@@ -2,13 +2,21 @@ import * as vscode from 'vscode'
 import type { SqlLanguage } from '../formatter/sqlFormatter'
 import type { HoverResolver } from './HoverResolver'
 import { extractParameterAtPosition, buildParameterMarkdown } from './hoverUtils'
+import { LRUCache } from '../utils/lruCache'
 
 interface ParamScanResult {
     paramName: string
     locations: { line: number; context: string }[]
 }
 
-const scanCache = new Map<string, { version: number; result: Map<string, ParamScanResult> }>()
+const scanCache = new LRUCache<string, { version: number; result: Map<string, ParamScanResult> }>({
+    maxSize: 50,
+    maxAge: 300000,
+})
+
+export function clearParameterScanCache(): void {
+    scanCache.clear()
+}
 
 function scanDocumentParameters(document: vscode.TextDocument): Map<string, ParamScanResult> {
     const cacheKey = document.uri.toString()

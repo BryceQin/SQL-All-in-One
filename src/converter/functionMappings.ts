@@ -3,11 +3,118 @@ export interface FunctionMapping {
   replacement: string
 }
 
+export function matchFunctionCall(sql: string, funcName: string): { index: number; end: number; args: string[] } | null {
+  const regex = new RegExp(`\\b${funcName}\\s*\\(`, 'gi')
+  const match = regex.exec(sql)
+  if (!match) return null
+
+  const callStart = match.index
+  const openParen = callStart + match[0].length - 1
+  let depth = 1
+  let i = openParen + 1
+  let inSingleQuote = false
+  let inDoubleQuote = false
+
+  while (i < sql.length && depth > 0) {
+    const ch = sql[i]
+
+    if (inSingleQuote) {
+      if (ch === "'" && i + 1 < sql.length && sql[i + 1] === "'") {
+        i += 2
+        continue
+      }
+      if (ch === "'") inSingleQuote = false
+      i++
+      continue
+    }
+
+    if (inDoubleQuote) {
+      if (ch === '"') inDoubleQuote = false
+      i++
+      continue
+    }
+
+    if (ch === "'") { inSingleQuote = true; i++; continue }
+    if (ch === '"') { inDoubleQuote = true; i++; continue }
+    if (ch === '(') depth++
+    if (ch === ')') depth--
+    i++
+  }
+
+  if (depth !== 0) return null
+
+  const callEnd = i
+  const innerContent = sql.substring(openParen + 1, callEnd - 1)
+  const args = splitTopLevelArgs(innerContent)
+
+  return { index: callStart, end: callEnd, args }
+}
+
+function splitTopLevelArgs(content: string): string[] {
+  const args: string[] = []
+  let current = ''
+  let depth = 0
+  let inSingleQuote = false
+  let inDoubleQuote = false
+
+  for (let i = 0; i < content.length; i++) {
+    const ch = content[i]
+
+    if (inSingleQuote) {
+      current += ch
+      if (ch === "'" && i + 1 < content.length && content[i + 1] === "'") {
+        current += content[i + 1]
+        i++
+      } else if (ch === "'") {
+        inSingleQuote = false
+      }
+      continue
+    }
+
+    if (inDoubleQuote) {
+      current += ch
+      if (ch === '"') inDoubleQuote = false
+      continue
+    }
+
+    if (ch === "'") { inSingleQuote = true; current += ch; continue }
+    if (ch === '"') { inDoubleQuote = true; current += ch; continue }
+    if (ch === '(') { depth++; current += ch; continue }
+    if (ch === ')') { depth--; current += ch; continue }
+
+    if (ch === ',' && depth === 0) {
+      args.push(current.trim())
+      current = ''
+    } else {
+      current += ch
+    }
+  }
+
+  if (current.trim()) {
+    args.push(current.trim())
+  }
+
+  return args
+}
+
+export function replaceFunctionCall(sql: string, funcName: string, replacer: (args: string[]) => string): string {
+  let result = sql
+  let offset = 0
+
+  while (true) {
+    const remaining = result.substring(offset)
+    const match = matchFunctionCall(remaining, funcName)
+    if (!match) break
+
+    const replacement = replacer(match.args)
+    result = result.substring(0, offset + match.index) + replacement + result.substring(offset + match.end)
+    offset += match.index + replacement.length
+  }
+
+  return result
+}
+
 export const MYSQL_TO_HIVE_FUNCTIONS: FunctionMapping[] = [
-  {
-    pattern: /\bIFNULL\s*\(\s*([^,]+)\s*,\s*([^)]+)\s*\)/gi,
-    replacement: 'COALESCE($1, $2)'
-  },
   {
     pattern: /\bNOW\s*\(\s*\)/gi,
     replacement: 'CURRENT_TIMESTAMP'
@@ -26,11 +133,11 @@ export const MYSQL_TO_HIVE_FUNCTIONS: FunctionMapping[] = [
   }
 ]
 
+export function convertIfnullToCoalesce(sql: string): string {
+  return replaceFunctionCall(sql, 'IFNULL', (args) => `COALESCE(${args.join(', ')})`)
+}
+
 export const HIVE_TO_MYSQL_FUNCTIONS: FunctionMapping[] = [
-  {
-    pattern: /\bCOALESCE\s*\(\s*([^,]+)\s*,\s*([^)]+)\s*\)/gi,
-    replacement: 'IFNULL($1, $2)'
-  },
   {
     pattern: /\bCURRENT_TIMESTAMP\s*(?:\(\s*\))?/gi,
     replacement: 'NOW()'
@@ -44,15 +151,22 @@ export const HIVE_TO_MYSQL_FUNCTIONS: FunctionMapping[] = [
     replacement: " - INTERVAL $1 $2"
   },
   {
-    pattern: /\s*DISTRIBUTE\s+BY\s+[^;]+/gi,
+    pattern: /\s*DISTRIBUTE\s+BY\s+((?:(?!LIMIT|ORDER\s+BY|CLUSTER\s+BY|SORT\s+BY|;).)+)/gi,
     replacement: ''
   },
   {
-    pattern: /\s*SORT\s+BY\s+[^;]+/gi,
+    pattern: /\s*SORT\s+BY\s+((?:(?!LIMIT|ORDER\s+BY|CLUSTER\s+BY|DISTRIBUTE\s+BY|;).)+)/gi,
     replacement: ''
   },
   {
-    pattern: /\s*CLUSTER\s+BY\s+[^;]+/gi,
+    pattern: /\s*CLUSTER\s+BY\s+((?:(?!LIMIT|ORDER\s+BY|SORT\s+BY|DISTRIBUTE\s+BY|;).)+)/gi,
     replacement: ''
   }
 ]
+
+export function convertCoalesceToIfnull(sql: string): string {
+  return replaceFunctionCall(sql, 'COALESCE', (args) => {
+    if (args.length === 2) return `IFNULL(${args.join(', ')})`
+    return `COALESCE(${args.join(', ')})`
+  })
+}

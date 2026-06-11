@@ -103,7 +103,7 @@ export class DatabaseModule {
         vscode.commands.executeCommand('sql-all-in-one.viewTableData', element);
         const node = element;
         setTimeout(() => {
-          treeView.reveal(node, { expand: true }).then(undefined, () => {});
+          treeView.reveal(node, { expand: true }).then(undefined, (_e) => undefined);
         }, 50);
         setTimeout(() => {
           ignoreNodeId = null;

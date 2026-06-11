@@ -6,6 +6,7 @@ import { ExpressionFormatter } from './ExpressionFormatter';
 import { SelectFormatter } from './SelectFormatter';
 import { CommonLayoutHelper } from './CommonLayoutHelper';
 import type { AstNode } from '../../parser/astTypes';
+import type { FormatterFactory } from './FormatterFactory';
 
 export class DDLFormatter {
     private cfg: FormatOptions;
@@ -13,16 +14,28 @@ export class DDLFormatter {
     private layout: Layout;
     private exprFmt: ExpressionFormatter;
     private helper: CommonLayoutHelper;
+    private factory?: FormatterFactory;
 
-    constructor(cfg: FormatOptions, indent: Indentation) {
+    constructor(cfg: FormatOptions, indent: Indentation, factory?: FormatterFactory) {
         this.cfg = cfg;
         this.indent = indent;
         this.layout = new Layout(indent);
+        this.factory = factory;
         this.exprFmt = new ExpressionFormatter(cfg, indent, (expr: unknown): string => {
-            const selectFmt = new SelectFormatter(this.cfg, this.indent);
+            const selectFmt = factory
+                ? factory.getSelectFormatter(this.cfg, this.indent)
+                : new SelectFormatter(this.cfg, this.indent);
             return selectFmt.format(expr);
         });
         this.helper = new CommonLayoutHelper(cfg, indent, this.layout);
+    }
+
+    public reset(cfg: FormatOptions, indent: Indentation): void {
+        this.cfg = cfg;
+        this.indent = indent;
+        this.layout = new Layout(indent);
+        this.exprFmt.reset(cfg, indent);
+        this.helper.reset(cfg, indent, this.layout);
     }
 
     public format(stmt: AstNode): string {
@@ -73,7 +86,9 @@ export class DDLFormatter {
         if (stmt.query_expr) {
             this.layout.add(WS.SPACE, formatKeyword('AS', this.cfg.keywordCase));
             this.layout.add(WS.NEWLINE, WS.INDENT);
-            const selectFmt = new SelectFormatter(this.cfg, this.indent);
+            const selectFmt = this.factory
+                ? this.factory.getSelectFormatter(this.cfg, this.indent)
+                : new SelectFormatter(this.cfg, this.indent);
             this.layout.add(selectFmt.format(stmt.query_expr));
         }
 

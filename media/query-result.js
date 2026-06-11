@@ -190,6 +190,10 @@ const state = {
 
 var monacoEditor = null;
 var monacoLoaded = false;
+var languageData = null;
+var pendingRequests = new Map();
+var requestIdCounter = 0;
+var diagnosticsDebounceTimer = null;
 
 function getTypeColorInfo(type) {
     if (!type) return null;
@@ -279,6 +283,21 @@ function createMonacoInstance(monaco, container, sql) {
     monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyE, function() {
         executePanelSql();
     });
+
+    monacoEditor.addCommand(monaco.KeyMod.Shift | monaco.KeyMod.Alt | monaco.KeyCode.KeyF, function() {
+        requestFormat();
+    });
+    monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyI, function() {
+        requestFormat();
+    });
+
+    monacoEditor.onDidChangeModelContent(function() {
+        requestDiagnosticsDebounced();
+    });
+
+    if (languageData) {
+        registerLanguageFeatures(languageData);
+    }
 
     monacoEditor.focus();
 }
@@ -441,6 +460,15 @@ function handleMessage(event) {
         case 'queryResult':
             handleQueryResult(message.data);
             break;
+        case 'queryResultStart':
+            handleQueryResultStart(message.data);
+            break;
+        case 'queryResultBatch':
+            handleQueryResultBatch(message.data);
+            break;
+        case 'queryResultEnd':
+            handleQueryResultEnd(message.data);
+            break;
         case 'queryStart':
             handleQueryStart(message.data);
             break;
@@ -470,6 +498,21 @@ function handleMessage(event) {
             break;
         case 'themeChange':
             handleThemeChange(message.data);
+            break;
+        case 'languageData':
+            handleLanguageData(message.data);
+            break;
+        case 'completionResult':
+            handleBridgeResponse(message.data);
+            break;
+        case 'hoverResult':
+            handleBridgeResponse(message.data);
+            break;
+        case 'formatResult':
+            handleBridgeResponse(message.data);
+            break;
+        case 'diagnosticsResult':
+            handleBridgeResponse(message.data);
             break;
     }
 }
@@ -521,6 +564,41 @@ function handleQueryResult(data) {
     updateHeader();
     updateStatusBar();
     updateEmptyState();
+}
+
+var _batchedResult = null;
+
+function handleQueryResultStart(data) {
+    _batchedResult = {
+        columns: data.columns || [],
+        rows: [],
+        rowCount: data.rowCount || 0,
+        affectedRows: data.affectedRows || 0,
+        executionTime: data.executionTime || 0,
+        error: data.error || null,
+        database: data.database || '',
+        connectionName: data.connectionName || '',
+        connectionColor: data.connectionColor || '',
+        queryId: data.queryId || null,
+        status: data.status === 'error' ? 'error' : 'success',
+        tableName: data.tableName || '',
+        totalBatches: 0
+    };
+}
+
+function handleQueryResultBatch(data) {
+    if (!_batchedResult) return;
+    var batchRows = data.rows || [];
+    for (var i = 0; i < batchRows.length; i++) {
+        _batchedResult.rows.push(batchRows[i]);
+    }
+    _batchedResult.totalBatches = data.totalBatches || 0;
+}
+
+function handleQueryResultEnd(data) {
+    if (!_batchedResult) return;
+    handleQueryResult(_batchedResult);
+    _batchedResult = null;
 }
 
 function handleQueryStart(data) {
@@ -1960,6 +2038,260 @@ function bindActions() {
         }
         el.removeAttribute('data-action');
         el.removeAttribute('data-action-arg');
+    });
+}
+
+function generateRequestId() {
+    return 'req_' + (++requestIdCounter) + '_' + Date.now();
+}
+
+function sendBridgeRequest(command, payload) {
+    var requestId = generateRequestId();
+    return new Promise(function(resolve) {
+        pendingRequests.set(requestId, {
+            resolve: resolve,
+            timer: setTimeout(function() {
+                pendingRequests.delete(requestId);
+                resolve(null);
+            }, 3000),
+        });
+        vscode.postMessage(Object.assign({ command: command, requestId: requestId }, payload));
+    });
+}
+
+function handleBridgeResponse(data) {
+    if (!data || !data.requestId) return;
+    var pending = pendingRequests.get(data.requestId);
+    if (pending) {
+        clearTimeout(pending.timer);
+        pendingRequests.delete(data.requestId);
+        pending.resolve(data);
+    }
+}
+
+function handleLanguageData(data) {
+    languageData = data;
+    if (monacoEditor && typeof monaco !== 'undefined') {
+        registerLanguageFeatures(data);
+        var model = monacoEditor.getModel();
+        if (model) {
+            monaco.editor.setModelLanguage(model, data.dialect || 'mysql');
+        }
+    }
+}
+
+function registerLanguageFeatures(data) {
+    if (!data || !monacoEditor) return;
+
+    var dialect = data.dialect || 'mysql';
+
+    monaco.languages.register({ id: dialect });
+
+    monaco.languages.setMonarchTokensProvider(dialect, data.monarchRules);
+
+    monaco.languages.registerCompletionItemProvider(dialect, {
+        triggerCharacters: ['.', ' '],
+        provideCompletionItems: function(model, position) {
+            var word = model.getWordUntilPosition(position);
+            var range = {
+                startLineNumber: position.lineNumber,
+                endLineNumber: position.lineNumber,
+                startColumn: word.startColumn,
+                endColumn: word.endColumn,
+            };
+            var suggestions = [];
+
+            if (data.snippets) {
+                data.snippets.forEach(function(s) {
+                    suggestions.push({
+                        label: s.prefix,
+                        kind: 27,
+                        insertText: s.body.join('\n'),
+                        insertTextRules: 4,
+                        documentation: s.description,
+                        sortText: '0_' + s.prefix,
+                        range: range,
+                    });
+                });
+            }
+
+            if (data.keywords) {
+                data.keywords.forEach(function(kw) {
+                    suggestions.push({
+                        label: kw,
+                        kind: 14,
+                        insertText: kw,
+                        sortText: '1_' + kw,
+                        range: range,
+                    });
+                });
+            }
+
+            if (data.dataTypes) {
+                data.dataTypes.forEach(function(dt) {
+                    suggestions.push({
+                        label: dt,
+                        kind: 17,
+                        insertText: dt,
+                        sortText: '1_' + dt,
+                        range: range,
+                    });
+                });
+            }
+
+            if (data.functions) {
+                data.functions.forEach(function(fn) {
+                    var params = fn.params || [];
+                    var snippetParams = params.map(function(p, i) { return '${' + (i + 1) + ':' + p + '}'; }).join(', ');
+                    suggestions.push({
+                        label: fn.name,
+                        kind: 1,
+                        insertText: fn.name + '(' + snippetParams + ')',
+                        insertTextRules: 4,
+                        documentation: fn.description || '',
+                        detail: fn.category || '',
+                        sortText: '2_' + fn.name,
+                        range: range,
+                    });
+                });
+            }
+
+            return { suggestions: suggestions };
+        },
+    });
+
+    monaco.languages.registerSignatureHelpProvider(dialect, {
+        signatureHelpTriggerCharacters: ['(', ','],
+        provideSignatureHelp: function(model, position) {
+            if (!data.functions || data.functions.length === 0) return { dispose: function() {} };
+
+            var lineContent = model.getLineContent(position.lineNumber);
+            var textBefore = lineContent.substring(0, position.column - 1);
+            var funcMatch = textBefore.match(/(\w+)\s*\(([^)]*)$/);
+            if (!funcMatch) return { dispose: function() {} };
+
+            var funcName = funcMatch[1].toUpperCase();
+            var funcDef = data.functions.find(function(f) { return f.name.toUpperCase() === funcName; });
+            if (!funcDef) return { dispose: function() {} };
+
+            var paramCount = funcMatch[2].split(',').length;
+            var params = (funcDef.params || []).map(function(p, i) {
+                return { label: p, documentation: '' };
+            });
+
+            return {
+                value: {
+                    signatures: [{
+                        label: funcDef.name + '(' + (funcDef.params || []).join(', ') + ')',
+                        parameters: params,
+                        documentation: funcDef.description || '',
+                    }],
+                    activeSignature: 0,
+                    activeParameter: Math.min(paramCount - 1, params.length - 1),
+                },
+                dispose: function() {},
+            };
+        },
+    });
+
+    monaco.languages.registerCompletionItemProvider(dialect, {
+        triggerCharacters: ['.', ' '],
+        provideCompletionItems: function(model, position) {
+            var sql = model.getValue();
+            var pos = { line: position.lineNumber - 1, column: position.column - 1 };
+            return sendBridgeRequest('requestCompletion', {
+                sql: sql,
+                position: pos,
+                dialect: dialect,
+            }).then(function(response) {
+                if (!response || !response.items) return { suggestions: [] };
+                var word = model.getWordUntilPosition(position);
+                var range = {
+                    startLineNumber: position.lineNumber,
+                    endLineNumber: position.lineNumber,
+                    startColumn: word.startColumn,
+                    endColumn: word.endColumn,
+                };
+                return {
+                    suggestions: response.items.map(function(item) {
+                        return Object.assign({}, item, { range: range });
+                    }),
+                };
+            });
+        },
+    });
+
+    monaco.languages.registerHoverProvider(dialect, {
+        provideHover: function(model, position) {
+            var sql = model.getValue();
+            var pos = { line: position.lineNumber - 1, column: position.column - 1 };
+            return sendBridgeRequest('requestHover', {
+                sql: sql,
+                position: pos,
+                dialect: dialect,
+            }).then(function(response) {
+                if (!response || !response.contents) return null;
+                return {
+                    range: new monaco.Range(
+                        position.lineNumber,
+                        position.column,
+                        position.lineNumber,
+                        position.column + 20,
+                    ),
+                    contents: response.contents.map(function(c) {
+                        return { value: c };
+                    }),
+                };
+            });
+        },
+    });
+
+    var model = monacoEditor.getModel();
+    if (model) {
+        monaco.editor.setModelLanguage(model, dialect);
+    }
+}
+
+function requestFormat() {
+    if (!monacoEditor) return;
+    var sql = monacoEditor.getValue();
+    var dialect = languageData ? languageData.dialect : 'mysql';
+    sendBridgeRequest('requestFormat', {
+        sql: sql,
+        dialect: dialect,
+    }).then(function(response) {
+        if (!response || !response.formattedSql) return;
+        var fullRange = monacoEditor.getModel().getFullModelRange();
+        monacoEditor.executeEdits('format', [{
+            range: fullRange,
+            text: response.formattedSql,
+        }]);
+        monacoEditor.pushUndoStop();
+    });
+}
+
+function requestDiagnosticsDebounced() {
+    if (diagnosticsDebounceTimer) {
+        clearTimeout(diagnosticsDebounceTimer);
+    }
+    diagnosticsDebounceTimer = setTimeout(function() {
+        requestDiagnostics();
+    }, 500);
+}
+
+function requestDiagnostics() {
+    if (!monacoEditor) return;
+    var sql = monacoEditor.getValue();
+    var dialect = languageData ? languageData.dialect : 'mysql';
+    sendBridgeRequest('requestDiagnostics', {
+        sql: sql,
+        dialect: dialect,
+    }).then(function(response) {
+        if (!response || !response.diagnostics) return;
+        var model = monacoEditor.getModel();
+        if (model) {
+            monaco.editor.setModelMarkers(model, 'sql-lint', response.diagnostics);
+        }
     });
 }
 

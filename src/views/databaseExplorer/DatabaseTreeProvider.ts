@@ -42,6 +42,8 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
     private favorites: FavoriteItem[] = [];
     private readonly FAVORITES_KEY = 'sql-all-in-one.favorites';
 
+    private _disposables: vscode.Disposable[] = [];
+
     constructor(context: vscode.ExtensionContext) {
         this.context = context;
         this.connectionManager = getConnectionManager();
@@ -52,17 +54,24 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
     }
 
     private setupEventListeners(): void {
-        this.connectionManager.onDidChangeConnections(() => {
-            this.refresh();
-        });
-        
-        this.connectionManager.onDidChangeConnectionState(() => {
-            this.refresh();
-        });
-        
-        this.connectionManager.onDidChangeActiveConnection(() => {
-            this.refresh();
-        });
+        this._disposables.push(
+            this.connectionManager.onDidChangeConnections(() => {
+                this.refresh();
+            }),
+            this.connectionManager.onDidChangeConnectionState(() => {
+                this.refresh();
+            }),
+            this.connectionManager.onDidChangeActiveConnection(() => {
+                this.refresh();
+            })
+        );
+    }
+
+    dispose(): void {
+        for (const d of this._disposables) {
+            d.dispose();
+        }
+        this._disposables = [];
     }
 
     private async loadFavorites(): Promise<void> {

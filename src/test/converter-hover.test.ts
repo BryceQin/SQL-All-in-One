@@ -1,6 +1,6 @@
 import * as assert from 'assert'
 import { SqlParser } from '../converter/sqlParser'
-import { MYSQL_TO_HIVE_FUNCTIONS, HIVE_TO_MYSQL_FUNCTIONS } from '../converter/functionMappings'
+import { MYSQL_TO_HIVE_FUNCTIONS, HIVE_TO_MYSQL_FUNCTIONS, convertIfnullToCoalesce, convertCoalesceToIfnull } from '../converter/functionMappings'
 import { HoverResolver } from '../hover/HoverResolver'
 import { FunctionHoverResolver } from '../hover/FunctionHoverResolver'
 import { KeywordHoverResolver } from '../hover/KeywordHoverResolver'
@@ -66,38 +66,25 @@ suite('Converter and Hover Module Tests', () => {
     suite('functionMappings - MYSQL_TO_HIVE_FUNCTIONS', () => {
 
         test('contains expected number of mappings', () => {
-            assert.strictEqual(MYSQL_TO_HIVE_FUNCTIONS.length, 5)
-        })
-
-        test('IFNULL mapping has pattern RegExp and replacement string', () => {
-            const mapping = MYSQL_TO_HIVE_FUNCTIONS[0]
-            assert.ok(mapping.pattern instanceof RegExp, 'pattern should be RegExp')
-            assert.strictEqual(typeof mapping.replacement, 'string', 'replacement should be string')
-            assert.strictEqual(mapping.replacement, 'COALESCE($1, $2)')
-        })
-
-        test('IFNULL pattern matches IFNULL(x, y)', () => {
-            const mapping = MYSQL_TO_HIVE_FUNCTIONS[0]
-            const result = 'IFNULL(a, b)'.replace(mapping.pattern, mapping.replacement)
-            assert.strictEqual(result, 'COALESCE(a, b)')
+            assert.strictEqual(MYSQL_TO_HIVE_FUNCTIONS.length, 4)
         })
 
         test('NOW() mapping replaces with CURRENT_TIMESTAMP', () => {
-            const mapping = MYSQL_TO_HIVE_FUNCTIONS[1]
+            const mapping = MYSQL_TO_HIVE_FUNCTIONS[0]
             assert.strictEqual(mapping.replacement, 'CURRENT_TIMESTAMP')
             const result = 'NOW()'.replace(mapping.pattern, mapping.replacement)
             assert.strictEqual(result, 'CURRENT_TIMESTAMP')
         })
 
         test('CURDATE() mapping replaces with CURRENT_DATE', () => {
-            const mapping = MYSQL_TO_HIVE_FUNCTIONS[2]
+            const mapping = MYSQL_TO_HIVE_FUNCTIONS[1]
             assert.strictEqual(mapping.replacement, 'CURRENT_DATE')
             const result = 'CURDATE()'.replace(mapping.pattern, mapping.replacement)
             assert.strictEqual(result, 'CURRENT_DATE')
         })
 
         test('CURTIME() mapping replaces with FROM_UNIXTIME expression', () => {
-            const mapping = MYSQL_TO_HIVE_FUNCTIONS[3]
+            const mapping = MYSQL_TO_HIVE_FUNCTIONS[2]
             assert.ok(mapping.replacement.includes('FROM_UNIXTIME'))
             assert.ok(mapping.replacement.includes('UNIX_TIMESTAMP'))
             const result = 'CURTIME()'.replace(mapping.pattern, mapping.replacement)
@@ -105,13 +92,13 @@ suite('Converter and Hover Module Tests', () => {
         })
 
         test('INTERVAL mapping pattern is RegExp and replacement is string', () => {
-            const mapping = MYSQL_TO_HIVE_FUNCTIONS[4]
+            const mapping = MYSQL_TO_HIVE_FUNCTIONS[3]
             assert.ok(mapping.pattern instanceof RegExp, 'pattern should be RegExp')
             assert.strictEqual(typeof mapping.replacement, 'string', 'replacement should be string')
         })
 
         test('INTERVAL mapping correctly quotes the interval value', () => {
-            const mapping = MYSQL_TO_HIVE_FUNCTIONS[4]
+            const mapping = MYSQL_TO_HIVE_FUNCTIONS[3]
             const input = "date_col - INTERVAL 30 DAY"
             const result = input.replace(mapping.pattern, mapping.replacement)
             assert.ok(result.includes("'30'"), 'Should quote the numeric value')
@@ -126,55 +113,52 @@ suite('Converter and Hover Module Tests', () => {
                     `Replacement should be string`)
             }
         })
+
+        test('convertIfnullToCoalesce converts IFNULL(x, y) to COALESCE(x, y)', () => {
+            const result = convertIfnullToCoalesce('IFNULL(a, b)')
+            assert.strictEqual(result, 'COALESCE(a, b)')
+        })
+
+        test('convertIfnullToCoalesce handles nested IFNULL', () => {
+            const result = convertIfnullToCoalesce('IFNULL(a, IFNULL(b, c))')
+            assert.strictEqual(result, 'COALESCE(a, COALESCE(b, c))')
+        })
     })
 
     suite('functionMappings - HIVE_TO_MYSQL_FUNCTIONS', () => {
 
         test('contains expected number of mappings', () => {
-            assert.strictEqual(HIVE_TO_MYSQL_FUNCTIONS.length, 7)
-        })
-
-        test('COALESCE mapping has pattern RegExp and replacement string', () => {
-            const mapping = HIVE_TO_MYSQL_FUNCTIONS[0]
-            assert.ok(mapping.pattern instanceof RegExp, 'pattern should be RegExp')
-            assert.strictEqual(typeof mapping.replacement, 'string', 'replacement should be string')
-            assert.strictEqual(mapping.replacement, 'IFNULL($1, $2)')
-        })
-
-        test('COALESCE pattern matches COALESCE(x, y)', () => {
-            const mapping = HIVE_TO_MYSQL_FUNCTIONS[0]
-            const result = 'COALESCE(a, b)'.replace(mapping.pattern, mapping.replacement)
-            assert.strictEqual(result, 'IFNULL(a, b)')
+            assert.strictEqual(HIVE_TO_MYSQL_FUNCTIONS.length, 6)
         })
 
         test('CURRENT_TIMESTAMP mapping replaces with NOW()', () => {
-            const mapping = HIVE_TO_MYSQL_FUNCTIONS[1]
+            const mapping = HIVE_TO_MYSQL_FUNCTIONS[0]
             assert.strictEqual(mapping.replacement, 'NOW()')
             const result = 'CURRENT_TIMESTAMP'.replace(mapping.pattern, mapping.replacement)
             assert.strictEqual(result, 'NOW()')
         })
 
         test('CURRENT_TIMESTAMP pattern also matches CURRENT_TIMESTAMP()', () => {
-            const mapping = HIVE_TO_MYSQL_FUNCTIONS[1]
+            const mapping = HIVE_TO_MYSQL_FUNCTIONS[0]
             const result = 'CURRENT_TIMESTAMP()'.replace(mapping.pattern, mapping.replacement)
             assert.strictEqual(result, 'NOW()')
         })
 
         test('CURRENT_DATE mapping replaces with CURDATE()', () => {
-            const mapping = HIVE_TO_MYSQL_FUNCTIONS[2]
+            const mapping = HIVE_TO_MYSQL_FUNCTIONS[1]
             assert.strictEqual(mapping.replacement, 'CURDATE()')
             const result = 'CURRENT_DATE'.replace(mapping.pattern, mapping.replacement)
             assert.strictEqual(result, 'CURDATE()')
         })
 
         test('CURRENT_DATE pattern also matches CURRENT_DATE()', () => {
-            const mapping = HIVE_TO_MYSQL_FUNCTIONS[2]
+            const mapping = HIVE_TO_MYSQL_FUNCTIONS[1]
             const result = 'CURRENT_DATE()'.replace(mapping.pattern, mapping.replacement)
             assert.strictEqual(result, 'CURDATE()')
         })
 
         test('INTERVAL mapping unquotes the interval value', () => {
-            const mapping = HIVE_TO_MYSQL_FUNCTIONS[3]
+            const mapping = HIVE_TO_MYSQL_FUNCTIONS[2]
             const input = "date_col - INTERVAL '30' DAY"
             const result = input.replace(mapping.pattern, mapping.replacement)
             assert.ok(!result.includes("'30'"), 'Quotes should be removed')
@@ -182,26 +166,26 @@ suite('Converter and Hover Module Tests', () => {
         })
 
         test('DISTRIBUTE BY mapping removes the clause', () => {
-            const mapping = HIVE_TO_MYSQL_FUNCTIONS[4]
+            const mapping = HIVE_TO_MYSQL_FUNCTIONS[3]
             assert.strictEqual(mapping.replacement, '', 'DISTRIBUTE BY should be removed')
             assert.ok(mapping.pattern instanceof RegExp, 'pattern should be RegExp')
         })
 
         test('DISTRIBUTE BY pattern matches and removes the clause', () => {
-            const mapping = HIVE_TO_MYSQL_FUNCTIONS[4]
+            const mapping = HIVE_TO_MYSQL_FUNCTIONS[3]
             const input = 'SELECT a DISTRIBUTE BY a'
             const result = input.replace(mapping.pattern, mapping.replacement)
             assert.ok(!result.includes('DISTRIBUTE BY'), 'DISTRIBUTE BY should be removed')
         })
 
         test('SORT BY mapping removes the clause', () => {
-            const mapping = HIVE_TO_MYSQL_FUNCTIONS[5]
+            const mapping = HIVE_TO_MYSQL_FUNCTIONS[4]
             assert.strictEqual(mapping.replacement, '', 'SORT BY should be removed')
             assert.ok(mapping.pattern instanceof RegExp, 'pattern should be RegExp')
         })
 
         test('CLUSTER BY mapping removes the clause', () => {
-            const mapping = HIVE_TO_MYSQL_FUNCTIONS[6]
+            const mapping = HIVE_TO_MYSQL_FUNCTIONS[5]
             assert.strictEqual(mapping.replacement, '', 'CLUSTER BY should be removed')
             assert.ok(mapping.pattern instanceof RegExp, 'pattern should be RegExp')
         })
@@ -213,6 +197,16 @@ suite('Converter and Hover Module Tests', () => {
                 assert.strictEqual(typeof mapping.replacement, 'string',
                     `Replacement should be string`)
             }
+        })
+
+        test('convertCoalesceToIfnull converts COALESCE(x, y) to IFNULL(x, y)', () => {
+            const result = convertCoalesceToIfnull('COALESCE(a, b)')
+            assert.strictEqual(result, 'IFNULL(a, b)')
+        })
+
+        test('convertCoalesceToIfnull handles nested COALESCE', () => {
+            const result = convertCoalesceToIfnull('COALESCE(a, COALESCE(b, c))')
+            assert.strictEqual(result, 'IFNULL(a, IFNULL(b, c))')
         })
     })
 

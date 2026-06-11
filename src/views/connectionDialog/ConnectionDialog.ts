@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import { getConnectionManager } from '../../database/connection/ConnectionManager';
@@ -30,7 +31,7 @@ export class ConnectionDialog {
     private _mode: 'create' | 'edit' = 'create';
     private _connectionId?: string;
     private _treeProvider?: DatabaseTreeProvider;
-    private _resolveDialog?: (result: { saved: boolean; connectionId?: string }) => void;
+    private _resolveDialog?: (result: { saved: boolean; connectionId?: string } | undefined) => void;
 
     public static async show(
         extensionUri: vscode.Uri,
@@ -187,6 +188,9 @@ export class ConnectionDialog {
                 const store = getConnectionStore();
                 const saveConfig = { ...formData };
 
+                if (!saveConfig.password) {
+                    saveConfig.password = await store.getPassword(this._connectionId);
+                }
                 if (saveConfig.ssh?.enabled) {
                     if (!saveConfig.ssh.password) {
                         saveConfig.ssh = { ...saveConfig.ssh, password: await store.getSshPassword(this._connectionId) };
@@ -196,11 +200,11 @@ export class ConnectionDialog {
                     }
                 }
 
-                await manager.updateConnection(this._connectionId, saveConfig, formData.password);
+                await manager.updateConnection(this._connectionId, saveConfig, formData.password || undefined);
             } else {
-                const id = Date.now().toString(36) + Math.random().toString(36).substr(2);
+                const id = crypto.randomUUID();
                 const config = { ...formData, id };
-                await manager.addConnection(config, formData.password);
+                await manager.addConnection(config, formData.password || undefined);
                 this._connectionId = id;
             }
 
@@ -322,6 +326,10 @@ export class ConnectionDialog {
 
     public dispose(): void {
         ConnectionDialog.currentPanel = undefined;
+        if (this._resolveDialog) {
+            this._resolveDialog(undefined);
+            this._resolveDialog = undefined;
+        }
         this._panel.dispose();
 
         while (this._disposables.length) {

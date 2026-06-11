@@ -1,11 +1,13 @@
 import * as vscode from 'vscode';
 import { initI18n } from '../i18n';
 import { getContainer, Tokens } from './diContainer';
+import { LRUCache } from '../utils/lruCache';
 
 type ConfigListener = () => void;
 
 export class ConfigManager {
-    private cache = new Map<string, unknown>();
+    private static readonly MAX_CACHE_SIZE = 500;
+    private cache = new LRUCache<string, unknown>({ maxSize: ConfigManager.MAX_CACHE_SIZE });
     private disposables: vscode.Disposable[] = [];
     private listeners: ConfigListener[] = [];
     private validators = new Map<string, (value: unknown) => boolean>();
@@ -65,8 +67,6 @@ export class ConfigManager {
         this.validators.set(section, validator as (value: unknown) => boolean);
     }
 
-    private static readonly MAX_CACHE_SIZE = 500;
-
     get<T>(section: string, defaultValue: T): T {
         const cached = this.cache.get(section);
         if (cached !== undefined) {
@@ -81,12 +81,6 @@ export class ConfigManager {
             value = defaultValue;
         }
 
-        if (this.cache.size >= ConfigManager.MAX_CACHE_SIZE) {
-            const firstKey = this.cache.keys().next().value;
-            if (firstKey !== undefined) {
-                this.cache.delete(firstKey);
-            }
-        }
         this.cache.set(section, value);
         return value;
     }

@@ -5,6 +5,7 @@ import {
     extractUntilNextClause,
     escapeRegExp,
 } from "./BaseSqlAdapter"
+import { SqlTextScanner } from "../utils/sqlTextScanner"
 
 interface ReplacementSlot {
     id: string
@@ -340,53 +341,7 @@ function restoreComplexTypes(formatted: string, slots: ReplacementSlot[]): strin
 }
 
 function findStatementEnd(sql: string, startIdx: number): number {
-    let depth = 0
-    let inSingleQuote = false
-    let inDoubleQuote = false
-    let i = startIdx
-
-    while (i < sql.length) {
-        const ch = sql[i]
-
-        if (inSingleQuote) {
-            if (ch === "'" && (i + 1 >= sql.length || sql[i + 1] !== "'")) {
-                inSingleQuote = false
-            }
-            i++
-            continue
-        }
-
-        if (inDoubleQuote) {
-            if (ch === '"') {
-                inDoubleQuote = false
-            }
-            i++
-            continue
-        }
-
-        if (ch === "'") {
-            inSingleQuote = true
-            i++
-            continue
-        }
-
-        if (ch === '"') {
-            inDoubleQuote = true
-            i++
-            continue
-        }
-
-        if (ch === '(') depth++
-        if (ch === ')') depth--
-
-        if (ch === ';' && depth <= 0) {
-            return i
-        }
-
-        i++
-    }
-
-    return sql.length
+    return SqlTextScanner.findStatementEnd(sql, startIdx)
 }
 
 function extractJsonStrings(sql: string, slots: ReplacementSlot[], counter: { value: number }): string {

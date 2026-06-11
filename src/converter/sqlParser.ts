@@ -1,3 +1,5 @@
+import { SqlTextScanner } from '../utils/sqlTextScanner'
+
 export interface CreateTableInfo {
   before: string
   content: string
@@ -13,7 +15,8 @@ export class SqlParser {
       return null
     }
 
-    const { fullStatement } = this.findStatementEnd(sql, createStart)
+    const endIndex = SqlTextScanner.findStatementEnd(sql, createStart)
+    const fullStatement = sql.substring(createStart, endIndex + (sql[endIndex] === ';' ? 1 : 0))
     const firstParen = fullStatement.indexOf('(')
     const lastParen = fullStatement.lastIndexOf(')')
 
@@ -31,69 +34,6 @@ export class SqlParser {
       tableComment,
       fullStatement,
       startIndex: createStart
-    }
-  }
-
-  private static findStatementEnd(sql: string, startIndex: number): { fullStatement: string; endIndex: number } {
-    let i = startIndex
-    let inString = false
-    let stringChar = ''
-    let inComment = false
-    let depth = 0
-
-    while (i < sql.length) {
-      const char = sql[i]
-      const nextChar = i + 1 < sql.length ? sql[i + 1] : ''
-
-      if ((char === "'" || char === '"') && !inComment) {
-        if (!inString) {
-          inString = true
-          stringChar = char
-        } else if (char === stringChar) {
-          const nextCh = i + 1 < sql.length ? sql[i + 1] : ''
-          if (nextCh === stringChar) {
-            i++
-          } else {
-            inString = false
-          }
-        }
-      }
-
-      if (!inString && !inComment) {
-        if (char === '/' && nextChar === '*') {
-          inComment = true
-          i++
-        } else if (char === '-' && nextChar === '-') {
-          while (i < sql.length && sql[i] !== '\n') i++
-        } else if (char === '#') {
-          while (i < sql.length && sql[i] !== '\n') i++
-        }
-      }
-      if (!inString && inComment) {
-        if (char === '*' && nextChar === '/') {
-          inComment = false
-          i++
-        }
-      }
-
-      if (!inString && !inComment) {
-        if (char === '(') depth++
-        if (char === ')') depth--
-      }
-
-      if (!inString && !inComment && char === ';' && depth === 0) {
-        return {
-          fullStatement: sql.substring(startIndex, i + 1),
-          endIndex: i + 1
-        }
-      }
-
-      i++
-    }
-
-    return {
-      fullStatement: sql.substring(startIndex),
-      endIndex: sql.length
     }
   }
 

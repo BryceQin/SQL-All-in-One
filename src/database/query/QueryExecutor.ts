@@ -4,6 +4,7 @@ import { IDatabaseAdapter, QueryResult } from '../adapters/IDatabaseAdapter';
 import { getConnectionManager } from '../connection/ConnectionManager';
 import { QueryOptions, QueryStartEvent, QueryEndEvent, RunningQuery } from './QueryResult';
 import { getConfigManager } from '../../core/configManager';
+import { t } from '../../i18n/index';
 
 export class QueryExecutor {
     private runningQueries = new Map<string, RunningQuery>();
@@ -123,7 +124,7 @@ export class QueryExecutor {
                 }
 
                 vscode.window.showWarningMessage(
-                    'Query may still be running on the database server. Please check manually.'
+                    t('database.queryMayStillBeRunning')
                 );
             }
         }
@@ -173,13 +174,13 @@ export class QueryExecutor {
             timer = setTimeout(() => {
                 cleanup();
                 attemptCancel();
-                reject(new Error(`Query timed out after ${options.timeout}ms`));
+                reject(new Error(t('database.queryTimedOut', String(options.timeout))));
             }, options.timeout);
 
             cancellationDisposable = token.onCancellationRequested(() => {
                 cleanup();
                 attemptCancel();
-                reject(new Error('Query was cancelled'));
+                reject(new Error(t('database.queryWasCancelled')));
             });
 
             adapter.execute(sql, options.params)
