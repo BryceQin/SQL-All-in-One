@@ -371,6 +371,48 @@ function initMonacoEditor(sql) {
     }
 }
 
+function buildVscodeTheme() {
+    var style = getComputedStyle(document.body);
+    function getColor(varName, fallback) {
+        var val = style.getPropertyValue(varName).trim();
+        return val || fallback;
+    }
+    var isDark = document.body.classList.contains('vscode-dark') ||
+                 document.querySelector('[data-vscode-theme-kind="vscode-dark"]') ||
+                 (window.__CONFIG__ && window.__CONFIG__.themeKind === 2);
+    var base = isDark ? 'vs-dark' : 'vs';
+    return {
+        base: base,
+        inherit: true,
+        rules: [
+            { token: 'keyword', foreground: getColor('--vscode-editorKeyword-foreground', isDark ? '#569cd6' : '#0000ff') },
+            { token: 'string', foreground: getColor('--vscode-string-foreground', isDark ? '#ce9178' : '#a31515') },
+            { token: 'string.sql', foreground: getColor('--vscode-string-foreground', isDark ? '#ce9178' : '#a31515') },
+            { token: 'comment', foreground: getColor('--vscode-editorComments-foreground', isDark ? '#6a9955' : '#008000') },
+            { token: 'number', foreground: getColor('--vscode-editorNumbers-foreground', isDark ? '#b5cea8' : '#098658') },
+            { token: 'type', foreground: getColor('--vscode-editorType-foreground', isDark ? '#4ec9b0' : '#267f99') },
+            { token: 'type.identifier', foreground: getColor('--vscode-editorType-foreground', isDark ? '#4ec9b0' : '#267f99') },
+            { token: 'function', foreground: getColor('--vscode-editorFunction-foreground', isDark ? '#dcdcaa' : '#795e26') },
+            { token: 'operator', foreground: getColor('--vscode-editorOperator-foreground', isDark ? '#d4d4d4' : '#000000') },
+            { token: 'delimiter', foreground: getColor('--vscode-editorBracketMatch-background', isDark ? '#d4d4d4' : '#000000') },
+            { token: 'variable', foreground: getColor('--vscode-editorVariable-foreground', isDark ? '#9cdcfe' : '#001080') },
+            { token: '', foreground: getColor('--vscode-editor-foreground', isDark ? '#d4d4d4' : '#000000') },
+        ],
+        colors: {
+            'editor.background': getColor('--vscode-editor-background', isDark ? '#1e1e1e' : '#ffffff'),
+            'editor.foreground': getColor('--vscode-editor-foreground', isDark ? '#d4d4d4' : '#000000'),
+            'editor.lineHighlightBackground': getColor('--vscode-editor-lineHighlightBackground', isDark ? '#2a2d2e' : '#f0f0f0'),
+            'editor.selectionBackground': getColor('--vscode-editor-selectionBackground', isDark ? '#264f78' : '#add6ff'),
+            'editorCursor.foreground': getColor('--vscode-editorCursor-foreground', isDark ? '#aeafad' : '#000000'),
+            'editor.inactiveSelectionBackground': getColor('--vscode-editor-inactiveSelectionBackground', isDark ? '#3a3d41' : '#e5ebf1'),
+            'editorLineNumber.foreground': getColor('--vscode-editorLineNumber-foreground', isDark ? '#858585' : '#237893'),
+            'editorLineNumber.activeForeground': getColor('--vscode-editorLineNumber-activeForeground', isDark ? '#c6c6c6' : '#0b216f'),
+            'editorIndentGuide.background': getColor('--vscode-editorIndentGuide-background', isDark ? '#404040' : '#e4e4e4'),
+            'editorIndentGuide.activeBackground': getColor('--vscode-editorIndentGuide-activeBackground', isDark ? '#707070' : '#e4e4e4'),
+        }
+    };
+}
+
 function createMonacoInstance(monaco, container, sql) {
     if (monacoEditor) {
         monacoEditor.setValue(sql || '');
@@ -380,10 +422,12 @@ function createMonacoInstance(monaco, container, sql) {
                  document.querySelector('[data-vscode-theme-kind="vscode-dark"]') ||
                  (window.__CONFIG__ && window.__CONFIG__.themeKind === 2);
     var initialLanguage = (languageData && languageData.dialect) || state.dialect || 'sql';
+    var customThemeName = 'vscode-sync-' + (isDark ? 'dark' : 'light');
+    monacoRef.editor.defineTheme(customThemeName, buildVscodeTheme());
     monacoEditor = monaco.editor.create(container, {
         value: sql || '',
         language: initialLanguage,
-        theme: isDark ? 'vs-dark' : 'vs',
+        theme: customThemeName,
         minimap: { enabled: false },
         lineNumbers: 'on',
         scrollBeyondLastLine: false,
@@ -521,8 +565,10 @@ function handleSetEditorSql(data) {
 
 function handleThemeChange(data) {
     if (!monacoEditor || !monacoRef) return;
-    var theme = data.kind === 2 || data.kind === 3 ? 'vs-dark' : 'vs';
-    monacoRef.editor.setTheme(theme);
+    var isDark = data.kind === 2 || data.kind === 3;
+    var customThemeName = 'vscode-sync-' + (isDark ? 'dark' : 'light');
+    monacoRef.editor.defineTheme(customThemeName, buildVscodeTheme());
+    monacoRef.editor.setTheme(customThemeName);
 }
 
 var _scrollRafId = 0;
@@ -680,7 +726,8 @@ function handleQueryResult(data) {
         state.editMode = true;
         state.originalRows = (data.rows || []).map(function(row) { return row.slice(); });
         var btn = document.getElementById('btnEditMode');
-        btn.textContent = '🔓';
+        btn.classList.add('edit-mode-active');
+        btn.title = t('resultPanel.editable');
         document.getElementById('btnAddRow').disabled = false;
         document.getElementById('btnDeleteRow').disabled = false;
         document.getElementById('btnBeginTx').disabled = false;
@@ -1497,8 +1544,13 @@ function toggleEditMode() {
         state.originalRows = state.rows.map(function(row) { return row.slice(); });
     }
     var btn = document.getElementById('btnEditMode');
-    btn.textContent = state.editMode ? '🔓' : '🔒';
-    btn.title = state.editMode ? t('resultPanel.editable') : t('resultPanel.readonly');
+    if (state.editMode) {
+        btn.classList.add('edit-mode-active');
+        btn.title = t('resultPanel.editable');
+    } else {
+        btn.classList.remove('edit-mode-active');
+        btn.title = t('resultPanel.readonly');
+    }
 
     document.getElementById('btnAddRow').disabled = !state.editMode;
     document.getElementById('btnDeleteRow').disabled = !state.editMode;

@@ -1,5 +1,23 @@
 # Changelog
 
+## [2.15.0] - 2026-06-11
+
+### UI/UX
+
+- 查询结果面板工具栏分区优化：将工具栏拆分为上下两部分，查询操作（执行、停止、筛选）放在 SQL 编辑器区域，结果操作（刷新、导出、编辑模式、增删行、提交回滚、事务、视图切换）放在结果区域
+- Query result panel toolbar split: query actions (Execute, Stop, Filter) moved to SQL editor area; result actions (Refresh, Export, Edit Mode, Add/Delete Row, Commit/Rollback, Transaction, View Switch) moved to result area
+
+- 工具栏按钮改为图标+文字形式，提升可读性（如 ↻ Refresh、✓ Commit、⟳ Transaction 等）
+- Toolbar buttons changed to icon+text format for better readability (e.g., ↻ Refresh, ✓ Commit, ⟳ Transaction, etc.)
+
+- 修复编辑模式无法退出的问题：编辑模式激活时按钮添加高亮视觉反馈，再次点击即可退出
+- Fixed edit mode cannot exit: added highlight visual feedback when edit mode is active, click again to exit
+
+- Monaco 编辑器语法高亮与 VSCode 主题同步：通过读取 VSCode CSS 变量动态构建 Monaco 自定义主题，关键字、字符串、注释、数字、类型、函数等 token 颜色与当前 VSCode 主题一致
+- Monaco editor syntax highlighting synced with VSCode theme: dynamically builds Monaco custom theme by reading VSCode CSS variables, keyword/string/comment/number/type/function token colors match the current VSCode theme
+
+---
+
 ## [2.14.4] - 2026-06-11
 
 ### Internationalization

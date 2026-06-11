@@ -18,34 +18,6 @@
         <span class="header-dot" id="headerDot"></span>
         <span class="header-time" id="headerTime"></span>
       </div>
-      <div class="toolbar">
-        <button class="tb-btn" id="btnExecute" data-action="handleExecute" data-i18n="resultPanel.execute" title="Execute">▶ Run</button>
-        <button class="tb-btn" id="btnCancel" data-action="handleCancel" data-i18n="resultPanel.cancel" title="Cancel">■ Stop</button>
-        <button class="tb-btn" id="btnRefresh" data-action="handleRefresh" data-i18n="resultPanel.refresh" title="Refresh">↻</button>
-        <div class="tb-dropdown" id="exportDropdown">
-          <button class="tb-btn" data-action="toggleExportMenu" data-i18n="resultPanel.export" title="Export">Export ▼</button>
-          <div class="tb-dropdown-menu" id="exportMenu">
-            <div class="tb-dropdown-item" data-action="handleExport" data-action-arg="csv">CSV</div>
-            <div class="tb-dropdown-item" data-action="handleExport" data-action-arg="json">JSON</div>
-            <div class="tb-dropdown-item" data-action="handleExport" data-action-arg="sql_insert">SQL INSERT</div>
-            <div class="tb-dropdown-item" data-action="handleExport" data-action-arg="ddl">DDL</div>
-          </div>
-        </div>
-        <button class="tb-btn" id="btnFilter" data-action="toggleFilterBar" data-i18n="resultPanel.filter" title="Filter">Filter</button>
-        <span class="tb-separator"></span>
-        <button class="tb-btn" id="btnEditMode" data-action="toggleEditMode" title="Toggle Edit Mode">Edit</button>
-        <button class="tb-btn" id="btnAddRow" data-action="addRow" title="Add Row" disabled>+</button>
-        <button class="tb-btn" id="btnDeleteRow" data-action="deleteRow" title="Delete Row" disabled>−</button>
-        <button class="tb-btn" id="btnCommit" data-action="commitChanges" title="Commit Changes" disabled>✓</button>
-        <button class="tb-btn" id="btnRollback" data-action="rollbackChanges" title="Rollback Changes" disabled>←</button>
-        <span class="tb-separator"></span>
-        <button class="tb-btn" id="btnBeginTx" data-action="beginTransaction" title="Begin Transaction" disabled>Tx</button>
-        <button class="tb-btn" id="btnSavepoint" data-action="createSavepoint" title="Create Savepoint" disabled>SP</button>
-        <button class="tb-btn" id="btnRollbackToSp" data-action="rollbackToSavepoint" title="Rollback to Savepoint" disabled>←SP</button>
-        <span class="tb-separator"></span>
-        <button class="tb-btn" id="btnGridView" data-action="switchView" data-action-arg="grid" title="Grid View">Grid</button>
-        <button class="tb-btn" id="btnFormView" data-action="switchView" data-action-arg="form" title="Form View">Form</button>
-      </div>
     </div>
 
     <div class="filter-bar" id="filterBar">
@@ -81,6 +53,10 @@
       <div class="sql-editor-section" id="sqlEditorSection">
         <div class="sql-editor-toolbar">
           <span class="sql-label">SQL</span>
+          <span class="tb-separator"></span>
+          <button class="tb-btn" id="btnExecute" data-action="handleExecute" data-i18n="resultPanel.execute" title="Execute">▶ Run</button>
+          <button class="tb-btn" id="btnCancel" data-action="handleCancel" data-i18n="resultPanel.cancel" title="Cancel">■ Stop</button>
+          <button class="tb-btn" id="btnFilter" data-action="toggleFilterBar" data-i18n="resultPanel.filter" title="Filter">Filter</button>
         </div>
         <div class="sql-editor-container" id="sqlEditorContainer"></div>
       </div>
@@ -88,6 +64,31 @@
         <div class="splitter-handle"></div>
       </div>
       <div class="result-section" id="resultSection">
+        <div class="result-toolbar">
+          <button class="tb-btn" id="btnRefresh" data-action="handleRefresh" data-i18n="resultPanel.refresh" title="Refresh">↻ Refresh</button>
+          <div class="tb-dropdown" id="exportDropdown">
+            <button class="tb-btn" data-action="toggleExportMenu" data-i18n="resultPanel.export" title="Export">Export ▼</button>
+            <div class="tb-dropdown-menu" id="exportMenu">
+              <div class="tb-dropdown-item" data-action="handleExport" data-action-arg="csv">CSV</div>
+              <div class="tb-dropdown-item" data-action="handleExport" data-action-arg="json">JSON</div>
+              <div class="tb-dropdown-item" data-action="handleExport" data-action-arg="sql_insert">SQL INSERT</div>
+              <div class="tb-dropdown-item" data-action="handleExport" data-action-arg="ddl">DDL</div>
+            </div>
+          </div>
+          <span class="tb-separator"></span>
+          <button class="tb-btn" id="btnEditMode" data-action="toggleEditMode" data-i18n="resultPanel.editMode" title="Toggle Edit Mode">Edit</button>
+          <button class="tb-btn" id="btnAddRow" data-action="addRow" data-i18n-title="resultPanel.addRow" title="Add Row" disabled>+ Add</button>
+          <button class="tb-btn" id="btnDeleteRow" data-action="deleteRow" data-i18n-title="resultPanel.deleteRow" title="Delete Row" disabled>− Delete</button>
+          <button class="tb-btn" id="btnCommit" data-action="commitChanges" data-i18n-title="resultPanel.commit" title="Commit Changes" disabled>✓ Commit</button>
+          <button class="tb-btn" id="btnRollback" data-action="rollbackChanges" data-i18n-title="resultPanel.rollback" title="Rollback Changes" disabled>← Rollback</button>
+          <span class="tb-separator"></span>
+          <button class="tb-btn" id="btnBeginTx" data-action="beginTransaction" data-i18n-title="resultPanel.beginTx" title="Begin Transaction" disabled>⟳ Transaction</button>
+          <button class="tb-btn" id="btnSavepoint" data-action="createSavepoint" data-i18n-title="resultPanel.savepoint" title="Create Savepoint" disabled>⚑ Savepoint</button>
+          <button class="tb-btn" id="btnRollbackToSp" data-action="rollbackToSavepoint" data-i18n-title="resultPanel.rollbackToSp" title="Rollback to Savepoint" disabled>← Rollback SP</button>
+          <span class="tb-separator"></span>
+          <button class="tb-btn" id="btnGridView" data-action="switchView" data-action-arg="grid" data-i18n="resultPanel.gridView" title="Grid View">⊞ Grid</button>
+          <button class="tb-btn" id="btnFormView" data-action="switchView" data-action-arg="form" data-i18n="resultPanel.formView" title="Form View">☰ Form</button>
+        </div>
         <div class="tab-content" id="tabContent">
           <div class="tab-page active" id="pageResult">
             <div class="grid-container" id="gridContainer">

@@ -143,13 +143,6 @@ body {
   font-size: 11px;
 }
 
-.toolbar {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  flex-shrink: 0;
-}
-
 .tb-btn {
   display: inline-flex;
   align-items: center;
@@ -1204,12 +1197,12 @@ body {
 .sql-editor-toolbar {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 3px;
     padding: 2px 8px;
     background: var(--surface);
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
-    height: 26px;
+    height: 30px;
 }
 
 .sql-label {
@@ -1286,4 +1279,21 @@ body {
 
 .result-section .bottom-bar {
     flex-shrink: 0;
+}
+
+.result-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 8px;
+    background: rgba(255,255,255,0.02);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    height: 30px;
+}
+
+.tb-btn.edit-mode-active {
+    background: var(--accent-dim);
+    color: var(--accent);
+    border-color: rgba(74,158,255,0.3);
 }
