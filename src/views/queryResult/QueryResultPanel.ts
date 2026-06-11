@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import type { QueryResult, QueryError, QueryRow } from '../../database/adapters/IDatabaseAdapter';
 import type { QueryHistoryEntry } from '../../database/query/QueryResult';
+import { getLanguage, t } from '../../i18n';
 import { LanguageBridge } from './LanguageBridge';
 import { getConnectionManager } from '../../database/connection/ConnectionManager';
 
@@ -500,6 +501,7 @@ export class QueryResultPanel {
                 dialect: this._currentDialect,
                 monacoBasePath: monacoBaseUri.toString(),
                 themeKind: vscode.window.activeColorTheme.kind,
+                lang: getLanguage(),
             };
             const configScript = '<script>window.__CONFIG__ = ' + JSON.stringify(configData) + ';</script>';
             html = html.replace('{{CONFIG_INJECT}}', configScript);
@@ -507,13 +509,13 @@ export class QueryResultPanel {
             return html;
         } catch (error) {
             console.error('Failed to load Query Result panel HTML:', error);
-            return '<html><body><h2>Failed to load Query Result panel</h2><p>Please reinstall the extension.</p></body></html>';
+            return '<html><body><h2>' + t('resultPanel.loadFailed') + '</h2><p>' + t('resultPanel.reinstall') + '</p></body></html>';
         }
     }
 
     private async _handleExport(format: string, options?: Record<string, unknown>): Promise<void> {
         if (!this._currentResult) {
-            vscode.window.showWarningMessage('No query result to export');
+            vscode.window.showWarningMessage(t('resultPanel.noResultToExport'));
             return;
         }
 
@@ -562,7 +564,7 @@ export class QueryResultPanel {
             : undefined;
 
         if (!adapter) {
-            vscode.window.showWarningMessage('No active connection for DDL export');
+            vscode.window.showWarningMessage(t('resultPanel.noActiveConnectionForDDL'));
             return;
         }
 
@@ -570,7 +572,7 @@ export class QueryResultPanel {
         const table = options?.tableName as string || '';
 
         if (!table) {
-            vscode.window.showWarningMessage('No table specified for DDL export');
+            vscode.window.showWarningMessage(t('resultPanel.noTableForDDL'));
             return;
         }
 

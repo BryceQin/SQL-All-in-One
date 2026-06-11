@@ -33,18 +33,18 @@
         </div>
         <button class="tb-btn" id="btnFilter" data-action="toggleFilterBar" data-i18n="resultPanel.filter" title="Filter">Filter</button>
         <span class="tb-separator"></span>
-        <button class="tb-btn" id="btnEditMode" data-action="toggleEditMode" title="Toggle Edit Mode">Edit</button>
-        <button class="tb-btn" id="btnAddRow" data-action="addRow" title="Add Row" disabled>+</button>
-        <button class="tb-btn" id="btnDeleteRow" data-action="deleteRow" title="Delete Row" disabled>−</button>
-        <button class="tb-btn" id="btnCommit" data-action="commitChanges" title="Commit Changes" disabled>✓</button>
-        <button class="tb-btn" id="btnRollback" data-action="rollbackChanges" title="Rollback Changes" disabled>←</button>
+        <button class="tb-btn" id="btnEditMode" data-action="toggleEditMode" data-i18n="resultPanel.editMode" title="Toggle Edit Mode">Edit</button>
+        <button class="tb-btn" id="btnAddRow" data-action="addRow" data-i18n-title="resultPanel.addRow" title="Add Row" disabled>+</button>
+        <button class="tb-btn" id="btnDeleteRow" data-action="deleteRow" data-i18n-title="resultPanel.deleteRow" title="Delete Row" disabled>−</button>
+        <button class="tb-btn" id="btnCommit" data-action="commitChanges" data-i18n-title="resultPanel.commit" title="Commit Changes" disabled>✓</button>
+        <button class="tb-btn" id="btnRollback" data-action="rollbackChanges" data-i18n-title="resultPanel.rollback" title="Rollback Changes" disabled>←</button>
         <span class="tb-separator"></span>
-        <button class="tb-btn" id="btnBeginTx" data-action="beginTransaction" title="Begin Transaction" disabled>Tx</button>
-        <button class="tb-btn" id="btnSavepoint" data-action="createSavepoint" title="Create Savepoint" disabled>SP</button>
-        <button class="tb-btn" id="btnRollbackToSp" data-action="rollbackToSavepoint" title="Rollback to Savepoint" disabled>←SP</button>
+        <button class="tb-btn" id="btnBeginTx" data-action="beginTransaction" data-i18n-title="resultPanel.beginTx" title="Begin Transaction" disabled>Tx</button>
+        <button class="tb-btn" id="btnSavepoint" data-action="createSavepoint" data-i18n-title="resultPanel.savepoint" title="Create Savepoint" disabled>SP</button>
+        <button class="tb-btn" id="btnRollbackToSp" data-action="rollbackToSavepoint" data-i18n-title="resultPanel.rollbackToSp" title="Rollback to Savepoint" disabled>←SP</button>
         <span class="tb-separator"></span>
-        <button class="tb-btn" id="btnGridView" data-action="switchView" data-action-arg="grid" title="Grid View">Grid</button>
-        <button class="tb-btn" id="btnFormView" data-action="switchView" data-action-arg="form" title="Form View">Form</button>
+        <button class="tb-btn" id="btnGridView" data-action="switchView" data-action-arg="grid" data-i18n="resultPanel.gridView" title="Grid View">Grid</button>
+        <button class="tb-btn" id="btnFormView" data-action="switchView" data-action-arg="form" data-i18n="resultPanel.formView" title="Form View">Form</button>
       </div>
     </div>
 
@@ -67,7 +67,7 @@
             <option value="IS NOT NULL">IS NOT NULL</option>
             <option value="BETWEEN">BETWEEN</option>
           </select>
-          <input type="text" class="filter-val" placeholder="Value">
+          <input type="text" class="filter-val" data-i18n-ph="resultPanel.filterValue" placeholder="Value">
           <button class="filter-remove-btn" data-action="removeFilterCondition" data-action-arg="0">×</button>
         </div>
       </div>
@@ -150,31 +150,31 @@
     </div>
     <div class="dialog-overlay" id="commitDialog" style="display:none;">
         <div class="dialog">
-            <div class="dialog-header">提交更改确认</div>
+            <div class="dialog-header" data-i18n="resultPanel.commitConfirm">提交更改确认</div>
             <div class="dialog-body">
-                <div class="dialog-label">即将执行以下 SQL:</div>
+                <div class="dialog-label" data-i18n="resultPanel.executeSql">即将执行以下 SQL:</div>
                 <pre class="dialog-sql" id="commitSqlPreview"></pre>
                 <div class="dialog-summary" id="commitSummary"></div>
             </div>
             <div class="dialog-footer">
-                <button class="btn btn-primary" data-action="confirmCommit">执行</button>
-                <button class="btn btn-secondary" data-action="cancelCommit">取消</button>
+                <button class="btn btn-primary" data-action="confirmCommit" data-i18n="resultPanel.execute">执行</button>
+                <button class="btn btn-secondary" data-action="cancelCommit" data-i18n="resultPanel.cancel">取消</button>
             </div>
         </div>
     </div>
     <div class="dialog-overlay" id="blobDialog" style="display:none;">
         <div class="dialog dialog-wide">
-            <div class="dialog-header">BLOB 预览</div>
+            <div class="dialog-header" data-i18n="resultPanel.blobPreview">BLOB 预览</div>
             <div class="dialog-body">
                 <div class="blob-tabs">
-                    <button class="blob-tab active" data-action="switchBlobTab" data-action-arg="text">文本</button>
-                    <button class="blob-tab" data-action="switchBlobTab" data-action-arg="hex">十六进制</button>
-                    <button class="blob-tab" data-action="switchBlobTab" data-action-arg="image">图片</button>
+                    <button class="blob-tab active" data-action="switchBlobTab" data-action-arg="text" data-i18n="resultPanel.blobText">文本</button>
+                    <button class="blob-tab" data-action="switchBlobTab" data-action-arg="hex" data-i18n="resultPanel.blobHex">十六进制</button>
+                    <button class="blob-tab" data-action="switchBlobTab" data-action-arg="image" data-i18n="resultPanel.blobImage">图片</button>
                 </div>
                 <div class="blob-content" id="blobContent"></div>
             </div>
             <div class="dialog-footer">
-                <button class="btn btn-secondary" data-action="closeBlobDialog">关闭</button>
+                <button class="btn btn-secondary" data-action="closeBlobDialog" data-i18n="resultPanel.close">关闭</button>
             </div>
         </div>
     </div>

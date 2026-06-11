@@ -383,7 +383,7 @@ export function registerQueryCommands(
 
             const action = await vscode.window.showQuickPick(
                 [t('database.openInEditor'), t('database.copySql')],
-                { placeHolder: 'Action' }
+                { placeHolder: t('database.action') }
             );
 
             if (action === t('database.openInEditor')) {

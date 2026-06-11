@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { ColumnInfo, IndexInfo } from '../../database/adapters/IDatabaseAdapter';
+import { t } from '../../i18n';
 
 export type TreeNodeType =
     | 'root'
@@ -70,7 +71,7 @@ export class RootTreeNode extends BaseTreeNode {
 export class FavoritesTreeNode extends BaseTreeNode {
     readonly type: TreeNodeType = 'favorites';
     readonly id: string = 'favorites';
-    readonly label: string = 'Favorites';
+    readonly label: string = t('explorer.favorites');
     readonly contextValue?: string = 'favorites';
     readonly collapsibleState?: vscode.TreeItemCollapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
     readonly iconPath: vscode.ThemeIcon = new vscode.ThemeIcon('star-full');
@@ -93,7 +94,7 @@ export class GroupTreeNode extends BaseTreeNode {
         super({
             iconPath: new vscode.ThemeIcon('folder'),
             parent,
-            tooltip: `Group: ${groupName}`
+            tooltip: t('explorer.group', groupName)
         });
         this.groupName = groupName;
         this.label = groupName;
@@ -122,22 +123,22 @@ export class ConnectionTreeNode extends BaseTreeNode {
         switch (state) {
             case 'connected':
                 iconPath = new vscode.ThemeIcon('plug');
-                description = 'Connected';
+                description = t('explorer.connected');
                 contextValue = 'connectionConnected';
                 break;
             case 'disconnected':
                 iconPath = new vscode.ThemeIcon('circle-outline');
-                description = 'Disconnected';
+                description = t('explorer.disconnected');
                 contextValue = 'connectionDisconnected';
                 break;
             case 'connecting':
                 iconPath = new vscode.ThemeIcon('sync~spin');
-                description = 'Connecting...';
+                description = t('explorer.connecting');
                 contextValue = 'connectionConnecting';
                 break;
             case 'error':
                 iconPath = new vscode.ThemeIcon('error');
-                description = 'Error';
+                description = t('explorer.connectionError');
                 contextValue = 'connectionError';
                 break;
         }
@@ -174,8 +175,8 @@ export class DatabaseTreeNode extends BaseTreeNode {
             iconPath: new vscode.ThemeIcon('database'),
             collapsibleState: vscode.TreeItemCollapsibleState.Collapsed,
             parent,
-            tooltip: `Database: ${databaseName}`,
-            description: isDefault ? 'Default' : undefined
+            tooltip: t('explorer.database', databaseName),
+            description: isDefault ? t('explorer.default') : undefined
         });
         this.databaseName = databaseName;
         this.connectionId = connectionId;
@@ -210,23 +211,23 @@ export class ObjectGroupTreeNode extends BaseTreeNode {
         switch (groupType) {
             case 'tables':
                 iconPath = new vscode.ThemeIcon('table');
-                label = 'Tables';
+                label = t('explorer.tables');
                 break;
             case 'views':
                 iconPath = new vscode.ThemeIcon('eye');
-                label = 'Views';
+                label = t('explorer.views');
                 break;
             case 'functions':
                 iconPath = new vscode.ThemeIcon('zap');
-                label = 'Functions';
+                label = t('explorer.functions');
                 break;
             case 'procedures':
                 iconPath = new vscode.ThemeIcon('settings-gear');
-                label = 'Procedures';
+                label = t('explorer.procedures');
                 break;
             case 'triggers':
                 iconPath = new vscode.ThemeIcon('bell');
-                label = 'Triggers';
+                label = t('explorer.triggers');
                 break;
         }
         
@@ -269,9 +270,9 @@ export class TableTreeNode extends BaseTreeNode {
         super({
             iconPath: new vscode.ThemeIcon('table'),
             collapsibleState: vscode.TreeItemCollapsibleState.Collapsed,
-            description: rowCount !== undefined ? `${rowCount} rows` : undefined,
+            description: rowCount !== undefined ? t('explorer.rows', String(rowCount)) : undefined,
             parent,
-            tooltip: comment ? `Table: ${tableName}\n${comment}` : `Table: ${tableName}`
+            tooltip: comment ? `${t('explorer.table', tableName)}\n${comment}` : t('explorer.table', tableName)
         });
         
         this.tableName = tableName;
@@ -305,7 +306,7 @@ export class ViewTreeNode extends BaseTreeNode {
             iconPath: new vscode.ThemeIcon('eye'),
             collapsibleState: vscode.TreeItemCollapsibleState.None,
             parent,
-            tooltip: comment ? `View: ${viewName}\n${comment}` : `View: ${viewName}`
+            tooltip: comment ? `${t('explorer.view', viewName)}\n${comment}` : t('explorer.view', viewName)
         });
         
         this.viewName = viewName;
@@ -339,7 +340,7 @@ export class FunctionTreeNode extends BaseTreeNode {
             collapsibleState: vscode.TreeItemCollapsibleState.None,
             description: returns,
             parent,
-            tooltip: returns ? `Function: ${functionName}\nReturns: ${returns}` : `Function: ${functionName}`
+            tooltip: returns ? `${t('explorer.function', functionName)}\n${t('explorer.returns', returns)}` : t('explorer.function', functionName)
         });
         
         this.functionName = functionName;
@@ -370,7 +371,7 @@ export class ProcedureTreeNode extends BaseTreeNode {
             iconPath: new vscode.ThemeIcon('settings-gear'),
             collapsibleState: vscode.TreeItemCollapsibleState.None,
             parent,
-            tooltip: `Procedure: ${procedureName}`
+            tooltip: t('explorer.procedure', procedureName)
         });
         
         this.procedureName = procedureName;
@@ -405,7 +406,7 @@ export class TriggerTreeNode extends BaseTreeNode {
             collapsibleState: vscode.TreeItemCollapsibleState.None,
             description: event ? `${timing || ''} ${event}`.trim() : undefined,
             parent,
-            tooltip: `Trigger: ${triggerName}`
+            tooltip: t('explorer.trigger', triggerName)
         });
         
         this.triggerName = triggerName;
@@ -459,15 +460,15 @@ export class ColumnTreeNode extends BaseTreeNode {
         const description = tags.length > 0 ? `${typeDisplay} ${tags.join(' ')}` : typeDisplay;
         
         const tooltipParts: string[] = [
-            `Column: ${columnInfo.name}`,
-            `Type: ${typeDisplay}`,
+            t('explorer.column', columnInfo.name),
+            t('explorer.type', typeDisplay),
         ];
-        if (columnInfo.nullable) tooltipParts.push('Nullable: Yes');
-        if (columnInfo.isPrimaryKey) tooltipParts.push('Primary Key: Yes');
-        if (columnInfo.isUnique) tooltipParts.push('Unique: Yes');
-        if (columnInfo.isAutoIncrement) tooltipParts.push('Auto Increment: Yes');
-        if (columnInfo.defaultValue) tooltipParts.push(`Default: ${columnInfo.defaultValue}`);
-        if (columnInfo.comment) tooltipParts.push(`Comment: ${columnInfo.comment}`);
+        if (columnInfo.nullable) tooltipParts.push(t('explorer.nullable'));
+        if (columnInfo.isPrimaryKey) tooltipParts.push(t('explorer.primaryKey'));
+        if (columnInfo.isUnique) tooltipParts.push(t('explorer.unique'));
+        if (columnInfo.isAutoIncrement) tooltipParts.push(t('explorer.autoIncrement'));
+        if (columnInfo.defaultValue) tooltipParts.push(t('explorer.defaultValue', String(columnInfo.defaultValue)));
+        if (columnInfo.comment) tooltipParts.push(t('explorer.comment', columnInfo.comment));
         
         super({
             iconPath,
@@ -512,12 +513,12 @@ export class IndexTreeNode extends BaseTreeNode {
             : `(${indexInfo.columns.join(', ')})`;
         
         const tooltipParts: string[] = [
-            `Index: ${indexInfo.name}`,
-            `Type: ${indexInfo.type}`,
-            `Columns: ${indexInfo.columns.join(', ')}`,
+            t('explorer.index', indexInfo.name),
+            t('explorer.indexType', indexInfo.type),
+            t('explorer.columns', indexInfo.columns.join(', ')),
         ];
-        if (indexInfo.isPrimary) tooltipParts.push('Primary: Yes');
-        if (indexInfo.isUnique) tooltipParts.push('Unique: Yes');
+        if (indexInfo.isPrimary) tooltipParts.push(t('explorer.primary'));
+        if (indexInfo.isUnique) tooltipParts.push(t('explorer.indexUnique'));
         
         super({
             iconPath,
@@ -561,12 +562,14 @@ export class FavoriteTreeNode extends BaseTreeNode {
             ? new vscode.ThemeIcon('table')
             : new vscode.ThemeIcon('eye');
         
+        const typeLabel = objectType === 'table' ? t('explorer.table', objectName) : t('explorer.view', objectName);
+        
         super({
             iconPath,
             collapsibleState: vscode.TreeItemCollapsibleState.None,
             description: `${connectionName}/${databaseName}`,
             parent,
-            tooltip: `${objectType}: ${objectName}\nConnection: ${connectionName}\nDatabase: ${databaseName}`
+            tooltip: `${typeLabel}\n${t('explorer.connection', connectionName)}\n${t('explorer.database', databaseName)}`
         });
         
         this.type = objectType;
@@ -581,4 +584,3 @@ export class FavoriteTreeNode extends BaseTreeNode {
         this.isAvailable = isAvailable;
     }
 }
-

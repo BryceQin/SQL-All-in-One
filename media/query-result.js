@@ -69,7 +69,13 @@ const i18n = {
         'resultPanel.validationError': '校验错误',
         'resultPanel.notNullViolation': '此字段不能为空',
         'resultPanel.typeMismatch': '类型不匹配',
-        'resultPanel.lengthExceeded': '长度超限'
+        'resultPanel.lengthExceeded': '长度超限',
+        'resultPanel.filterValue': '值',
+        'resultPanel.blobPreview': 'BLOB 预览',
+        'resultPanel.blobText': '文本',
+        'resultPanel.blobHex': '十六进制',
+        'resultPanel.blobImage': '图片',
+        'resultPanel.close': '关闭'
     },
     en: {
         'resultPanel.title': 'Query Result',
@@ -139,7 +145,13 @@ const i18n = {
         'resultPanel.validationError': 'Validation error',
         'resultPanel.notNullViolation': 'This field cannot be null',
         'resultPanel.typeMismatch': 'Type mismatch',
-        'resultPanel.lengthExceeded': 'Length exceeded'
+        'resultPanel.lengthExceeded': 'Length exceeded',
+        'resultPanel.filterValue': 'Value',
+        'resultPanel.blobPreview': 'BLOB Preview',
+        'resultPanel.blobText': 'Text',
+        'resultPanel.blobHex': 'Hex',
+        'resultPanel.blobImage': 'Image',
+        'resultPanel.close': 'Close'
     }
 };
 
@@ -147,6 +159,37 @@ let lang = 'zh';
 
 function t(key) {
     return i18n[lang][key] || i18n.en[key] || key;
+}
+
+function applyI18nToDom() {
+    document.querySelectorAll('[data-i18n]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n');
+        var text = t(key);
+        if (text && text !== key) {
+            if (el.tagName === 'OPTION') {
+                el.textContent = text;
+            } else if (el.tagName === 'TITLE') {
+                document.title = text;
+            } else {
+                var prefix = el.textContent.replace(/[^\u0000-\u007F]/g, '').match(/^[\s▶■↻✓←+−]*([\s▶■↻✓←+−]*)/);
+                el.textContent = text;
+            }
+        }
+    });
+    document.querySelectorAll('[data-i18n-ph]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n-ph');
+        var text = t(key);
+        if (text && text !== key) {
+            el.placeholder = text;
+        }
+    });
+    document.querySelectorAll('[data-i18n-title]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n-title');
+        var text = t(key);
+        if (text && text !== key) {
+            el.title = text;
+        }
+    });
 }
 
 const state = {
@@ -255,6 +298,10 @@ function init() {
     if (config.editMode !== undefined) state.editMode = config.editMode === 'editable';
     if (config.autoCommit !== undefined) state.autoCommit = config.autoCommit;
     if (config.defaultView !== undefined) state.defaultView = config.defaultView;
+    if (config.lang !== undefined) {
+        lang = config.lang.startsWith('zh') ? 'zh' : 'en';
+    }
+    applyI18nToDom();
 
     const gridBodyWrapper = document.getElementById('gridBodyWrapper');
     gridBodyWrapper.addEventListener('scroll', onGridScroll);
@@ -733,6 +780,10 @@ function handleConfig(data) {
     if (data.validateForeignKeys !== undefined) state.validateForeignKeys = data.validateForeignKeys;
     if (data.monacoBasePath !== undefined) state.monacoBasePath = data.monacoBasePath;
     if (data.dialect !== undefined) state.dialect = data.dialect;
+    if (data.lang !== undefined) {
+        lang = data.lang.startsWith('zh') ? 'zh' : 'en';
+        applyI18nToDom();
+    }
 }
 
 function renderGrid() {

@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as os from 'os';
 import * as vscode from 'vscode';
 import { ConnectionConfig, ConnectionGroup } from './ConnectionConfig';
+import { t } from '../../i18n';
 import { getContainer, Tokens } from '../../core/diContainer';
 
 interface ConnectionsFile {
@@ -244,11 +245,11 @@ export class ConnectionStore {
     async exportConnections(filePath: string, includePasswords = false): Promise<void> {
         if (includePasswords) {
             const confirm = await vscode.window.showWarningMessage(
-                'You are about to export connection passwords in plaintext. This is a security risk. Continue?',
+                t('connStore.exportPasswordWarning'),
                 { modal: true },
-                'Export'
+                t('connStore.export')
             );
-            if (confirm !== 'Export') {
+            if (confirm !== t('connStore.export')) {
                 return;
             }
         }

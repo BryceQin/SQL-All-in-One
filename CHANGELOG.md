@@ -1,5 +1,35 @@
 # Changelog
 
+## [2.14.4] - 2026-06-11
+
+### Internationalization
+
+- 修复查询结果面板（Query Result Panel）工具栏按钮未应用国际化的问题（Run/Stop/Export/Filter/Edit/Grid/Form 等）
+- 修复查询结果面板对话框（提交确认、BLOB 预览）未国际化的问题
+- 后端 QueryResultPanel 传入语言配置到 Webview，确保前端正确切换语言
+- Fix query result panel toolbar buttons not applying i18n (Run/Stop/Export/Filter/Edit/Grid/Form etc.)
+- Fix query result panel dialogs (commit confirm, BLOB preview) not internationalized
+- Pass language config from backend to Webview for correct language switching
+
+---
+
+## [2.14.3] - 2026-06-11
+
+### Internationalization
+
+- 左侧栏数据库资源管理器全部节点标签、描述、tooltip 国际化（收藏夹、连接状态、数据库、表/视图/函数/存储过程/触发器、列、索引等）
+- 数据库连接对话框（ConnectionDialog）全部文本国际化（表单标签、按钮、placeholder、验证消息、测试结果等）
+- 设置编辑器中的连接管理表单国际化（SSH/SSL 标签、认证方式选项、验证错误消息等）
+- 所有命令标题、视图名称、欢迎文本通过 package.nls.json 支持中英双语
+- VS Code 原生交互（showQuickPick/showWarningMessage 等）全部国际化
+- Internationalize all sidebar explorer node labels, descriptions, and tooltips
+- Internationalize connection dialog (form labels, buttons, placeholders, validation messages, test results)
+- Internationalize connection management form in settings editor (SSH/SSL labels, auth options, validation errors)
+- Support Chinese/English bilingual via package.nls.json for all command titles, view names, and welcome text
+- Internationalize all VS Code native interactions (showQuickPick, showWarningMessage, etc.)
+
+---
+
 ## [2.14.2] - 2026-06-11
 
 ### Bug Fixes

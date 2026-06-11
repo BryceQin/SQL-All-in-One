@@ -6,7 +6,18 @@
         'configEditor.searchPlaceholder': '搜索配置项...',
         'configEditor.searchEmpty': '未找到匹配的配置项',
         'configEditor.expandAll': '全部展开',
-        'configEditor.collapseAll': '全部折叠'
+        'configEditor.collapseAll': '全部折叠',
+        'configEditor.conn.error.sshHostRequired': 'SSH 主机不能为空',
+        'configEditor.conn.error.sshUserRequired': 'SSH 用户名不能为空',
+        'configEditor.conn.lbl.sshHost': 'SSH 主机',
+        'configEditor.conn.lbl.sshPort': 'SSH 端口',
+        'configEditor.conn.lbl.sshUsername': 'SSH 用户名',
+        'configEditor.conn.lbl.sshPassword': 'SSH 密码',
+        'configEditor.conn.lbl.privateKey': '私钥',
+        'configEditor.conn.lbl.passphrase': '口令',
+        'configEditor.conn.lbl.caCert': 'CA 证书',
+        'configEditor.conn.lbl.clientCert': '客户端证书',
+        'configEditor.conn.lbl.clientKey': '客户端密钥'
     },
     en: {
         'configEditor.tab.formatting': 'Formatting',
@@ -15,7 +26,18 @@
         'configEditor.searchPlaceholder': 'Search settings...',
         'configEditor.searchEmpty': 'No matching settings found',
         'configEditor.expandAll': 'Expand All',
-        'configEditor.collapseAll': 'Collapse All'
+        'configEditor.collapseAll': 'Collapse All',
+        'configEditor.conn.error.sshHostRequired': 'SSH host is required',
+        'configEditor.conn.error.sshUserRequired': 'SSH username is required',
+        'configEditor.conn.lbl.sshHost': 'SSH Host',
+        'configEditor.conn.lbl.sshPort': 'SSH Port',
+        'configEditor.conn.lbl.sshUsername': 'SSH Username',
+        'configEditor.conn.lbl.sshPassword': 'SSH Password',
+        'configEditor.conn.lbl.privateKey': 'Private Key',
+        'configEditor.conn.lbl.passphrase': 'Passphrase',
+        'configEditor.conn.lbl.caCert': 'CA Certificate',
+        'configEditor.conn.lbl.clientCert': 'Client Certificate',
+        'configEditor.conn.lbl.clientKey': 'Client Key'
     },
     lang: 'zh'
 };
@@ -1834,8 +1856,8 @@ function changeLanguage(lang) {
             }
 
             if (document.getElementById('cfSshEnabled').checked) {
-                if (!document.getElementById('cfSshHost').value.trim()) errors.push('SSH host is required');
-                if (!document.getElementById('cfSshUsername').value.trim()) errors.push('SSH username is required');
+                if (!document.getElementById('cfSshHost').value.trim()) errors.push(getI18nDict()['configEditor.conn.error.sshHostRequired'] || 'SSH 主机不能为空');
+                if (!document.getElementById('cfSshUsername').value.trim()) errors.push(getI18nDict()['configEditor.conn.error.sshUserRequired'] || 'SSH 用户名不能为空');
             }
 
             return errors;

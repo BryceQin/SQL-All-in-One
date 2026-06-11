@@ -1,3 +1,12 @@
+let i18n = window.__CONNECTION_DIALOG_I18N__ || {};
+
+function t(key) {
+    if (i18n[key]) return i18n[key];
+    var stripped = key.replace(/^conn\./, '');
+    if (i18n[stripped]) return i18n[stripped];
+    return key;
+}
+
 const vscode = acquireVsCodeApi();
 
 const DIALECT_DEFAULT_PORTS = {
@@ -102,6 +111,19 @@ function init() {
     updateSshFieldsVisibility();
     updateSslFieldsVisibility();
     updateHeaderTitle();
+    applyI18n();
+}
+
+function applyI18n() {
+    document.querySelectorAll('[data-i18n]').forEach(function(el) {
+        el.textContent = t(el.getAttribute('data-i18n'));
+    });
+    document.querySelectorAll('[data-i18n-ph]').forEach(function(el) {
+        el.placeholder = t(el.getAttribute('data-i18n-ph'));
+    });
+    document.querySelectorAll('[data-i18n-title]').forEach(function(el) {
+        el.title = t(el.getAttribute('data-i18n-title'));
+    });
 }
 
 function populateForm() {
@@ -134,9 +156,9 @@ function populateForm() {
 function updateHeaderTitle() {
     let title = document.getElementById('headerTitle');
     if (state.mode === 'edit') {
-        title.textContent = (state.name || 'Edit Connection') + ' - Edit Connection';
+        title.textContent = (state.name || t('conn.editConnection')) + ' - ' + t('conn.editConnection');
     } else {
-        title.textContent = 'New Connection';
+        title.textContent = t('conn.newConnection');
     }
 }
 
@@ -291,7 +313,7 @@ function renderColorPicker() {
     noneSwatch.className = 'color-swatch' + (!state.color ? ' active' : '');
     noneSwatch.style.background = 'transparent';
     noneSwatch.style.border = '2px dashed var(--text-secondary)';
-    noneSwatch.title = 'None';
+    noneSwatch.title = t('conn.none');
     noneSwatch.onclick = function() { selectColor(''); };
     container.appendChild(noneSwatch);
 
@@ -313,7 +335,7 @@ function selectColor(color) {
 function renderGroupDropdown() {
     let select = document.getElementById('connGroup');
     let currentValue = state.group;
-    select.innerHTML = '<option value="">No Group</option>';
+    select.innerHTML = '<option value="">' + t('conn.noGroup') + '</option>';
 
     state.groups.forEach(function(g) {
         let opt = document.createElement('option');
@@ -325,12 +347,12 @@ function renderGroupDropdown() {
 
     let newOpt = document.createElement('option');
     newOpt.value = '__new__';
-    newOpt.textContent = '+ New Group...';
+    newOpt.textContent = t('conn.newGroup');
     select.appendChild(newOpt);
 
     select.onchange = function() {
         if (this.value === '__new__') {
-            let newName = prompt('Enter new group name:');
+            let newName = prompt(t('conn.enterNewGroupName'));
             if (newName && newName.trim()) {
                 state.groups.push({ name: newName.trim(), color: '#4CAF50' });
                 state.group = newName.trim();
@@ -424,31 +446,31 @@ function validate() {
     let errors = [];
 
     if (!state.name || !state.name.trim()) {
-        errors.push('Connection name is required');
+        errors.push(t('conn.nameRequired'));
     } else if (state.existingNames.indexOf(state.name.trim()) !== -1) {
-        errors.push('Connection name already exists');
+        errors.push(t('conn.nameExists'));
     }
 
     if (state.dialect !== 'sqlite') {
         if (!state.host || !state.host.trim()) {
-            errors.push('Host is required');
+            errors.push(t('conn.hostRequired'));
         }
         if (!state.port || state.port < 1 || state.port > 65535) {
-            errors.push('Port must be between 1 and 65535');
+            errors.push(t('conn.portRange'));
         }
         if (!state.username || !state.username.trim()) {
-            errors.push('Username is required');
+            errors.push(t('conn.usernameRequired'));
         }
     } else {
         if (!state.database || !state.database.trim()) {
-            errors.push('Database file path is required for SQLite');
+            errors.push(t('conn.sqlitePathRequired'));
         }
     }
 
     if (state.ssh.enabled) {
-        if (!state.ssh.host) errors.push('SSH host is required');
-        if (!state.ssh.port || state.ssh.port < 1 || state.ssh.port > 65535) errors.push('SSH port must be between 1 and 65535');
-        if (!state.ssh.username) errors.push('SSH username is required');
+        if (!state.ssh.host) errors.push(t('conn.sshHostRequired'));
+        if (!state.ssh.port || state.ssh.port < 1 || state.ssh.port > 65535) errors.push(t('conn.sshPortRange'));
+        if (!state.ssh.username) errors.push(t('conn.sshUsernameRequired'));
     }
 
     return errors;
@@ -550,25 +572,25 @@ window.addEventListener('message', function(event) {
 
     switch (message.command) {
         case 'testStart':
-            showTestResult('loading', 'Testing connection...');
+            showTestResult('loading', t('conn.testing'));
             document.getElementById('btnTest').disabled = true;
             break;
         case 'testResult':
             document.getElementById('btnTest').disabled = false;
             if (message.success) {
-                let parts = ['Connection successful'];
+                let parts = [t('conn.connectionSuccessful')];
                 if (message.serverVersion) parts.push(message.serverVersion);
                 if (message.latency !== undefined) parts.push(message.latency + 'ms');
                 showTestResult('success', parts.join(', '));
             } else {
-                showTestResult('error', 'Connection failed: ' + (message.error || 'Unknown error'));
+                showTestResult('error', t('conn.connectionFailed') + (message.error || t('conn.unknownError')));
             }
             break;
         case 'saveResult':
             if (message.success) {
                 vscode.postMessage({ command: 'close' });
             } else {
-                showTestResult('error', 'Save failed: ' + (message.error || 'Unknown error'));
+                showTestResult('error', t('conn.saveFailed') + (message.error || t('conn.unknownError')));
             }
             break;
         case 'fileSelected':
