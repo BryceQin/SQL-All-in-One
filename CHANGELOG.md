@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.14.1] - 2026-06-11
+
+### Bug Fixes
+
+- 修复 Monaco 语言特性无法工作的问题：Monarch 规则中的 RegExp 对象无法通过 postMessage 结构化克隆传递，改为在 Webview 端构建
+- Fix Monaco language features not working: RegExp objects in Monarch rules cannot survive postMessage structured clone, moved construction to Webview side
+- 修复 dialect 配置未被 handleConfig 处理的问题
+- Fix dialect config not being handled by handleConfig
+- 修复 Monaco 编辑器初始语言 ID 与自定义方言不匹配的问题
+- Fix Monaco editor initial language ID mismatch with custom dialect
+- 添加重复注册防护，避免同一方言被多次注册
+- Add duplicate registration guard to prevent same dialect being registered multiple times
+
+---
+
 ## [2.14.0] - 2026-06-11
 
 ### Features
