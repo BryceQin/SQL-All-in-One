@@ -10,7 +10,7 @@ interface AggregateStats {
 
 export class PerformanceMonitor {
     private static readonly MAX_STATS_ENTRIES = 200;
-    private aggregateStats = new LRUCache<string, AggregateStats>({ maxSize: PerformanceMonitor.MAX_STATS_ENTRIES, maxAge: Infinity });
+    private aggregateStats = new LRUCache<string, AggregateStats>({ maxSize: PerformanceMonitor.MAX_STATS_ENTRIES, maxAge: 3600000 });
     private enabled = false;
     private slowThreshold = 100;
 

@@ -57,7 +57,7 @@ export function registerQueryCommands(
     const getQueryResultPanel = (): QueryResultPanel | undefined => queryResultPanel;
 
     disposables.push(
-        vscode.commands.registerCommand('sql-all-in-one.executeQuery', async () => {
+        vscode.commands.registerCommand('hive-formatter.executeQuery', async () => {
             const editor = vscode.window.activeTextEditor;
             if (!editor) {
                 vscode.window.showWarningMessage(t('database.noActiveEditor'));
@@ -118,19 +118,19 @@ export function registerQueryCommands(
                     context
                 );
                 queryResultPanel.onExecuteQuery = (_sql: string): void => {
-                    vscode.commands.executeCommand('sql-all-in-one.executeQuery');
+                    vscode.commands.executeCommand('hive-formatter.executeQuery');
                 };
                 queryResultPanel.onCancelQuery = (): void => {
-                    vscode.commands.executeCommand('sql-all-in-one.cancelQuery');
+                    vscode.commands.executeCommand('hive-formatter.cancelQuery');
                 };
                 queryResultPanel.onRequestSort = (_column: string, _direction: string): void => {
-                    vscode.commands.executeCommand('sql-all-in-one.executeQuery');
+                    vscode.commands.executeCommand('hive-formatter.executeQuery');
                 };
                 queryResultPanel.onRequestFilter = (_conditions: FilterCondition[]): void => {
-                    vscode.commands.executeCommand('sql-all-in-one.executeQuery');
+                    vscode.commands.executeCommand('hive-formatter.executeQuery');
                 };
                 queryResultPanel.onRequestPage = (_page: number): void => {
-                    vscode.commands.executeCommand('sql-all-in-one.executeQuery');
+                    vscode.commands.executeCommand('hive-formatter.executeQuery');
                 };
             } else {
                 queryResultPanel.showLoading(statement.sql);
@@ -316,7 +316,7 @@ export function registerQueryCommands(
     );
 
     disposables.push(
-        vscode.commands.registerCommand('sql-all-in-one.executeSelection', async () => {
+        vscode.commands.registerCommand('hive-formatter.executeSelection', async () => {
             const editor = vscode.window.activeTextEditor;
             if (!editor) {
                 vscode.window.showWarningMessage(t('database.noActiveEditor'));
@@ -328,12 +328,12 @@ export function registerQueryCommands(
                 return;
             }
 
-            vscode.commands.executeCommand('sql-all-in-one.executeQuery');
+            vscode.commands.executeCommand('hive-formatter.executeQuery');
         })
     );
 
     disposables.push(
-        vscode.commands.registerCommand('sql-all-in-one.cancelQuery', async () => {
+        vscode.commands.registerCommand('hive-formatter.cancelQuery', async () => {
             const running = queryExecutor.getRunningQueries();
             if (running.length === 0) {
                 vscode.window.showInformationMessage(t('database.noRunningQueries'));
@@ -362,7 +362,7 @@ export function registerQueryCommands(
     );
 
     disposables.push(
-        vscode.commands.registerCommand('sql-all-in-one.showQueryHistory', async () => {
+        vscode.commands.registerCommand('hive-formatter.showQueryHistory', async () => {
             const entries = queryHistory.getRecent(50);
             if (entries.length === 0) {
                 vscode.window.showInformationMessage(t('database.noQueryHistory'));
@@ -400,7 +400,7 @@ export function registerQueryCommands(
     );
 
     disposables.push(
-        vscode.commands.registerCommand('sql-all-in-one.clearQueryHistory', async () => {
+        vscode.commands.registerCommand('hive-formatter.clearQueryHistory', async () => {
             const confirm = await vscode.window.showWarningMessage(
                 t('database.clearHistoryConfirm'),
                 { modal: true },

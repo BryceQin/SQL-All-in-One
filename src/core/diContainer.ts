@@ -21,7 +21,11 @@ export class DIContainer {
             return this.services.get(token) as T;
         }
 
-        if (this.singletons.has(token) && !this.creating.has(token)) {
+        if (this.creating.has(token)) {
+            throw new Error(`Circular dependency detected: ${token}`);
+        }
+
+        if (this.singletons.has(token)) {
             this.creating.add(token);
             try {
                 const factory = this.singletons.get(token) as () => T;
@@ -35,9 +39,6 @@ export class DIContainer {
         }
 
         if (this.factories.has(token)) {
-            if (this.creating.has(token)) {
-                throw new Error(`Circular dependency detected: ${token}`);
-            }
             this.creating.add(token);
             try {
                 const factory = this.factories.get(token) as () => T;
@@ -109,7 +110,7 @@ export class DIContainer {
     }
 }
 
-const container = new DIContainer();
+let container = new DIContainer();
 
 export const Tokens = {
     ConfigManager: 'ConfigManager',
@@ -147,4 +148,9 @@ export type Token = typeof Tokens[keyof typeof Tokens];
 
 export function getContainer(): DIContainer {
     return container;
+}
+
+export function resetContainer(): void {
+    container.disposeAll();
+    container = new DIContainer();
 }

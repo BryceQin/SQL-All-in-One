@@ -13,7 +13,7 @@ export class StatusBarProvider {
         this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100)
         this.statusBarItem.text = '$(sql)'
         this.statusBarItem.tooltip = t('statusBar.tooltip')
-        this.statusBarItem.command = 'sql-all-in-one.open-config-editor'
+        this.statusBarItem.command = 'hive-formatter.open-config-editor'
         
         this.updateStatusBar()
         this.statusBarItem.show()

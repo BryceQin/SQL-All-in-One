@@ -162,4 +162,10 @@ export const formatDialect = (
     return formatter.format(query)
 }
 
+export function clearFormatterCache(): void {
+    formatterCache.clear();
+    lastOptionsRef = undefined;
+    lastCacheKey = undefined;
+}
+
 export type FormatFn = typeof format

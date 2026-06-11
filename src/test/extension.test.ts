@@ -1,7 +1,7 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
 
-const EXTENSION_IDS = ['bryce-qin.sql-all-in-one', 'bryce-qin.hive-formatter'];
+const EXTENSION_IDS = ['bryce-qin.hive-formatter', 'bryce-qin.hive-formatter'];
 
 function findExtension(): vscode.Extension<unknown> | undefined {
     for (const id of EXTENSION_IDS) {

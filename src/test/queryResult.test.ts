@@ -1719,25 +1719,25 @@ suite('Package.json Configuration Validation', () => {
 
     test('should have exportCsv command', () => {
         const commands = pkg.contributes.commands;
-        const cmd = commands.find((c: { command: string }) => c.command === 'sql-all-in-one.exportCsv');
+        const cmd = commands.find((c: { command: string }) => c.command === 'hive-formatter.exportCsv');
         assert.ok(cmd, 'exportCsv command should exist');
     });
 
     test('should have exportJson command', () => {
         const commands = pkg.contributes.commands;
-        const cmd = commands.find((c: { command: string }) => c.command === 'sql-all-in-one.exportJson');
+        const cmd = commands.find((c: { command: string }) => c.command === 'hive-formatter.exportJson');
         assert.ok(cmd, 'exportJson command should exist');
     });
 
     test('should have exportInsert command', () => {
         const commands = pkg.contributes.commands;
-        const cmd = commands.find((c: { command: string }) => c.command === 'sql-all-in-one.exportInsert');
+        const cmd = commands.find((c: { command: string }) => c.command === 'hive-formatter.exportInsert');
         assert.ok(cmd, 'exportInsert command should exist');
     });
 
     test('should have exportDdl command', () => {
         const commands = pkg.contributes.commands;
-        const cmd = commands.find((c: { command: string }) => c.command === 'sql-all-in-one.exportDdl');
+        const cmd = commands.find((c: { command: string }) => c.command === 'hive-formatter.exportDdl');
         assert.ok(cmd, 'exportDdl command should exist');
     });
 });
@@ -1794,7 +1794,7 @@ suite('InMemoryDocument', () => {
     test('uri and languageId are set', () => {
         const doc = new InMemoryDocument('SELECT 1', 'mysql');
         assert.strictEqual(doc.languageId, 'mysql');
-        assert.ok(doc.uri.scheme === 'sql-all-in-one');
+        assert.ok(doc.uri.scheme === 'hive-formatter');
     });
 });
 

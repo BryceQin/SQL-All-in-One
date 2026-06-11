@@ -23,6 +23,11 @@ esbuild.build({
     platform: 'node',
     target: 'node20',
     plugins: [nativePlugin],
-    sourcemap: !process.argv.includes('--minify'),
+    sourcemap: true,
     minify: process.argv.includes('--minify'),
+    treeShaking: true,
+    define: {
+        'process.env.NODE_ENV': process.argv.includes('--minify') ? '"production"' : '"development"',
+    },
+    logLevel: process.argv.includes('--minify') ? 'warning' : 'info',
 }).catch(() => process.exit(1));

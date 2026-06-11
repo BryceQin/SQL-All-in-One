@@ -21,6 +21,7 @@ export class SchemaCache {
     private pendingRequests = new Map<string, Promise<unknown>>();
     private cachedTtls: Record<string, number> = {};
     private ttlConfigDisposable: vscode.Disposable | undefined;
+    private disposed = false;
 
     constructor() {
         this.loadTtls();
@@ -69,7 +70,9 @@ export class SchemaCache {
         const request = (async (): Promise<T> => {
             try {
                 const data = await fetcher();
-                cache.set(cacheKey, { data, expireAt: Date.now() + this.getTtl(ttlType) * 1000 });
+                if (!this.disposed) {
+                    cache.set(cacheKey, { data, expireAt: Date.now() + this.getTtl(ttlType) * 1000 });
+                }
                 return data;
             } finally {
                 this.pendingRequests.delete(cacheKey);
@@ -223,6 +226,7 @@ export class SchemaCache {
     }
 
     dispose(): void {
+        this.disposed = true;
         this.ttlConfigDisposable?.dispose();
         this.databaseCache.clear();
         this.tableCache.clear();

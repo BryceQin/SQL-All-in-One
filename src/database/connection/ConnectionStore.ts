@@ -22,7 +22,7 @@ export class ConnectionStore {
     private readonly SAVE_DEBOUNCE_MS = 300;
 
     constructor() {
-        this.configDir = path.join(os.homedir(), '.sql-all-in-one');
+        this.configDir = path.join(os.homedir(), '.hive-formatter');
         this.configFilePath = path.join(this.configDir, 'connections.json');
     }
 
@@ -140,25 +140,25 @@ export class ConnectionStore {
 
         if (password !== undefined) {
             if (password) {
-                await this.secretStorage.store(`sql-all-in-one.password.${id}`, password);
+                await this.secretStorage.store(`hive-formatter.password.${id}`, password);
             } else {
-                await this.secretStorage.delete(`sql-all-in-one.password.${id}`);
+                await this.secretStorage.delete(`hive-formatter.password.${id}`);
             }
         }
 
         if (config.ssh?.password !== undefined) {
             if (config.ssh.password) {
-                await this.secretStorage.store(`sql-all-in-one.ssh.password.${id}`, config.ssh.password);
+                await this.secretStorage.store(`hive-formatter.ssh.password.${id}`, config.ssh.password);
             } else {
-                await this.secretStorage.delete(`sql-all-in-one.ssh.password.${id}`);
+                await this.secretStorage.delete(`hive-formatter.ssh.password.${id}`);
             }
         }
 
         if (config.ssh?.passphrase !== undefined) {
             if (config.ssh.passphrase) {
-                await this.secretStorage.store(`sql-all-in-one.ssh.passphrase.${id}`, config.ssh.passphrase);
+                await this.secretStorage.store(`hive-formatter.ssh.passphrase.${id}`, config.ssh.passphrase);
             } else {
-                await this.secretStorage.delete(`sql-all-in-one.ssh.passphrase.${id}`);
+                await this.secretStorage.delete(`hive-formatter.ssh.passphrase.${id}`);
             }
         }
     }
@@ -180,9 +180,9 @@ export class ConnectionStore {
     async removeConnection(id: string): Promise<void> {
         this.connections.delete(id);
         if (this.secretStorage) {
-            await this.secretStorage.delete(`sql-all-in-one.password.${id}`);
-            await this.secretStorage.delete(`sql-all-in-one.ssh.password.${id}`);
-            await this.secretStorage.delete(`sql-all-in-one.ssh.passphrase.${id}`);
+            await this.secretStorage.delete(`hive-formatter.password.${id}`);
+            await this.secretStorage.delete(`hive-formatter.ssh.password.${id}`);
+            await this.secretStorage.delete(`hive-formatter.ssh.passphrase.${id}`);
         }
         await this.save();
     }
@@ -203,21 +203,21 @@ export class ConnectionStore {
 
     async getPassword(id: string): Promise<string | undefined> {
         if (this.secretStorage) {
-            return await this.secretStorage.get(`sql-all-in-one.password.${id}`);
+            return await this.secretStorage.get(`hive-formatter.password.${id}`);
         }
         return undefined;
     }
 
     async getSshPassword(id: string): Promise<string | undefined> {
         if (this.secretStorage) {
-            return await this.secretStorage.get(`sql-all-in-one.ssh.password.${id}`);
+            return await this.secretStorage.get(`hive-formatter.ssh.password.${id}`);
         }
         return undefined;
     }
 
     async getSshPassphrase(id: string): Promise<string | undefined> {
         if (this.secretStorage) {
-            return await this.secretStorage.get(`sql-all-in-one.ssh.passphrase.${id}`);
+            return await this.secretStorage.get(`hive-formatter.ssh.passphrase.${id}`);
         }
         return undefined;
     }
@@ -263,9 +263,9 @@ export class ConnectionStore {
         if (includePasswords && this.secretStorage) {
             data.connections = await Promise.all(
                 data.connections.map(async (conn) => {
-                    const password = await this.secretStorage!.get(`sql-all-in-one.password.${conn.id}`);
-                    const sshPassword = await this.secretStorage!.get(`sql-all-in-one.ssh.password.${conn.id}`);
-                    const sshPassphrase = await this.secretStorage!.get(`sql-all-in-one.ssh.passphrase.${conn.id}`);
+                    const password = await this.secretStorage!.get(`hive-formatter.password.${conn.id}`);
+                    const sshPassword = await this.secretStorage!.get(`hive-formatter.ssh.password.${conn.id}`);
+                    const sshPassphrase = await this.secretStorage!.get(`hive-formatter.ssh.passphrase.${conn.id}`);
                     return {
                         ...conn,
                         password: password || undefined,

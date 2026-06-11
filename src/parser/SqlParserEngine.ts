@@ -63,6 +63,10 @@ export class SqlParserEngine {
             return { success: false, ast: null, error };
         }
     }
+
+    dispose(): void {
+        this.parser = null;
+    }
 }
 
 export function createParserEngine(): SqlParserEngine {

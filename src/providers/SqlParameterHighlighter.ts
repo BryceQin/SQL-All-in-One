@@ -130,7 +130,7 @@ export class SqlParameterHighlighter {
 
 export class SqlParameterReplaceCommand {
     public static register(_context: vscode.ExtensionContext): vscode.Disposable {
-        return vscode.commands.registerCommand('sql-all-in-one.replaceParameter', async () => {
+        return vscode.commands.registerCommand('hive-formatter.replaceParameter', async () => {
             const editor = vscode.window.activeTextEditor
             if (!editor) {
                 vscode.window.showErrorMessage(t('notification.noActiveEditor'))

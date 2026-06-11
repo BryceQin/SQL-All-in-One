@@ -1,7 +1,7 @@
 import * as vscode from 'vscode'
 import * as assert from 'assert'
 
-const EXTENSION_IDS = ['bryce-qin.sql-all-in-one', 'bryce-qin.hive-formatter']
+const EXTENSION_IDS = ['bryce-qin.hive-formatter', 'bryce-qin.hive-formatter']
 
 function findExtension(): vscode.Extension<unknown> | undefined {
     for (const id of EXTENSION_IDS) {
@@ -30,7 +30,7 @@ suite('ConfigEditorPanel 测试', () => {
             
             await extension.activate()
             
-            await vscode.commands.executeCommand('sql-all-in-one.open-config-editor')
+            await vscode.commands.executeCommand('hive-formatter.open-config-editor')
             
             await new Promise(resolve => setTimeout(resolve, 1000))
             
@@ -55,22 +55,22 @@ suite('ConfigEditorPanel 测试', () => {
             const commands = await vscode.commands.getCommands()
             
             assert.ok(
-                commands.includes('sql-all-in-one.open-config-editor'),
+                commands.includes('hive-formatter.open-config-editor'),
                 'Open Config Editor 命令未找到'
             )
             
             assert.ok(
-                commands.includes('sql-all-in-one.format-selection'),
+                commands.includes('hive-formatter.format-selection'),
                 'Format Selection 命令未找到'
             )
             
             assert.ok(
-                commands.includes('sql-all-in-one.mysql-to-hive'),
+                commands.includes('hive-formatter.mysql-to-hive'),
                 'MySQL to HiveSQL 命令未找到'
             )
             
             assert.ok(
-                commands.includes('sql-all-in-one.hive-to-mysql'),
+                commands.includes('hive-formatter.hive-to-mysql'),
                 'HiveSQL to MySQL 命令未找到'
             )
         })
@@ -190,7 +190,7 @@ suite('回归测试 - 现有功能完整性', () => {
             
             await vscode.window.showTextDocument(document)
             
-            await vscode.commands.executeCommand('sql-all-in-one.mysql-to-hive')
+            await vscode.commands.executeCommand('hive-formatter.mysql-to-hive')
             
             await new Promise(resolve => setTimeout(resolve, 500))
             
@@ -211,7 +211,7 @@ suite('回归测试 - 现有功能完整性', () => {
             
             await vscode.window.showTextDocument(document)
             
-            await vscode.commands.executeCommand('sql-all-in-one.hive-to-mysql')
+            await vscode.commands.executeCommand('hive-formatter.hive-to-mysql')
             
             await new Promise(resolve => setTimeout(resolve, 500))
             

@@ -29,7 +29,7 @@ export function registerConnectionCommands(
     const disposables: vscode.Disposable[] = [];
 
     disposables.push(
-        vscode.commands.registerCommand('sql-all-in-one.addConnection', async () => {
+        vscode.commands.registerCommand('hive-formatter.addConnection', async () => {
             openConfigEditorCommand(context.extensionUri, {
                 initialTab: 'database',
                 autoAddConnection: true
@@ -38,7 +38,7 @@ export function registerConnectionCommands(
     );
 
     disposables.push(
-        vscode.commands.registerCommand('sql-all-in-one.editConnection', async (node?: ConnectionTreeNode) => {
+        vscode.commands.registerCommand('hive-formatter.editConnection', async (node?: ConnectionTreeNode) => {
             let connectionId: string | undefined;
 
             if (node) {
@@ -68,7 +68,7 @@ export function registerConnectionCommands(
     );
 
     disposables.push(
-        vscode.commands.registerCommand('sql-all-in-one.removeConnection', async (node?: ConnectionTreeNode) => {
+        vscode.commands.registerCommand('hive-formatter.removeConnection', async (node?: ConnectionTreeNode) => {
             const manager = getConnectionManager();
             let connectionId: string | undefined;
             let connectionName: string | undefined;
@@ -113,7 +113,7 @@ export function registerConnectionCommands(
     );
 
     disposables.push(
-        vscode.commands.registerCommand('sql-all-in-one.connect', async (node?: ConnectionTreeNode) => {
+        vscode.commands.registerCommand('hive-formatter.connect', async (node?: ConnectionTreeNode) => {
             if (node) {
                 try {
                     await getConnectionManager().connect(node.connectionId);
@@ -133,7 +133,7 @@ export function registerConnectionCommands(
     );
 
     disposables.push(
-        vscode.commands.registerCommand('sql-all-in-one.disconnect', async (node?: ConnectionTreeNode) => {
+        vscode.commands.registerCommand('hive-formatter.disconnect', async (node?: ConnectionTreeNode) => {
             if (node) {
                 try {
                     await getConnectionManager().disconnect(node.connectionId);
@@ -149,7 +149,7 @@ export function registerConnectionCommands(
     );
 
     disposables.push(
-        vscode.commands.registerCommand('sql-all-in-one.testConnection', async (node?: ConnectionTreeNode) => {
+        vscode.commands.registerCommand('hive-formatter.testConnection', async (node?: ConnectionTreeNode) => {
             const manager = getConnectionManager();
             let connectionId: string | undefined;
 
@@ -200,7 +200,7 @@ export function registerConnectionCommands(
     );
 
     disposables.push(
-        vscode.commands.registerCommand('sql-all-in-one.exportConnections', async () => {
+        vscode.commands.registerCommand('hive-formatter.exportConnections', async () => {
             const uri = await vscode.window.showSaveDialog({
                 defaultUri: vscode.Uri.file('connections.json'),
                 filters: { 'JSON': ['json'] }
@@ -225,7 +225,7 @@ export function registerConnectionCommands(
     );
 
     disposables.push(
-        vscode.commands.registerCommand('sql-all-in-one.importConnections', async () => {
+        vscode.commands.registerCommand('hive-formatter.importConnections', async () => {
             const uris = await vscode.window.showOpenDialog({
                 filters: { 'JSON': ['json'] },
                 canSelectMany: false
