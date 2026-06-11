@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { QueryHistoryEntry } from '../query/QueryResult';
 
-const STORAGE_KEY = 'sql-all-in-one.queryHistory';
+const STORAGE_KEY = 'hive-formatter.queryHistory';
 const MAX_SQL_LENGTH = 2000;
 
 export class QueryHistory {

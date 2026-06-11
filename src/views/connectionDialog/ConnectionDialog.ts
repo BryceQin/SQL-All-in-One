@@ -161,7 +161,12 @@ export class ConnectionDialog {
             html = html.replace('{{JS_URI}}', jsUri.toString());
             html = html.replace(/\{\{CSP_SOURCE\}\}/g, this._panel.webview.cspSource);
 
-            const configScript = '<script>window.__CONNECTION_DIALOG_CONFIG__ = ' + JSON.stringify(config) + ';</script>';
+            const nonce = crypto.randomUUID();
+            html = html.replace(/\{\{CSP_NONCE\}\}/g, nonce);
+            html = html.replace(/<script(?=\s)/g, `<script nonce="${nonce}"`);
+            html = html.replace(/<style(?=\s)/g, `<style nonce="${nonce}"`);
+
+            const configScript = '<script nonce="' + nonce + '">window.__CONNECTION_DIALOG_CONFIG__ = ' + JSON.stringify(config) + ';</script>';
             html = html.replace('{{CONFIG_INJECT}}', configScript);
 
             const i18nData: Record<string, string> = {

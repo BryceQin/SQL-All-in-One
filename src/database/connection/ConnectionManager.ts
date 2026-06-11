@@ -141,17 +141,13 @@ export class ConnectionManager {
                 this.setActiveConnection(id);
             }
         } catch (error: unknown) {
-            const tunnel = this.sshTunnels.get(id);
-            if (tunnel) {
-                try {
-                    await tunnel.close();
-                } catch (e) {
-                    handleError(e, 'ConnectionManager.closeSshTunnelOnError', ErrorCategory.FEATURE);
-                }
-                this.sshTunnels.delete(id);
-            }
+            await this.closeSshTunnel(id);
             this.updateConnectionState(id, 'error');
-            this.scheduleRetry(id);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const isAuthError = /access denied|authentication failed|invalid password|login failed/i.test(errorMessage);
+            if (!isAuthError) {
+                this.scheduleRetry(id);
+            }
             throw error;
         }
     }
@@ -173,15 +169,7 @@ export class ConnectionManager {
             this.adapters.delete(id);
         }
 
-        const tunnel = this.sshTunnels.get(id);
-        if (tunnel) {
-            try {
-                await tunnel.close();
-            } catch (e) {
-                handleError(e, 'ConnectionManager.closeSshTunnel', ErrorCategory.FEATURE);
-            }
-            this.sshTunnels.delete(id);
-        }
+        await this.closeSshTunnel(id);
 
         this.updateConnectionState(id, 'disconnected');
         this.cancelRetry(id);
@@ -341,6 +329,18 @@ export class ConnectionManager {
         this.retryAttempts.delete(id);
     }
 
+    private async closeSshTunnel(id: string): Promise<void> {
+        const tunnel = this.sshTunnels.get(id);
+        if (tunnel) {
+            try {
+                await tunnel.close();
+            } catch (e) {
+                handleError(e, 'ConnectionManager.closeSshTunnel', ErrorCategory.FEATURE);
+            }
+            this.sshTunnels.delete(id);
+        }
+    }
+
     private async handleUnhealthyConnection(id: string, adapter: IDatabaseAdapter): Promise<void> {
         this.stopHealthCheck(id);
         try {
@@ -349,11 +349,7 @@ export class ConnectionManager {
             // ignore disconnect error on unhealthy connection
         }
         this.adapters.delete(id);
-        const tunnel = this.sshTunnels.get(id);
-        if (tunnel) {
-            try { await tunnel.close(); } catch { /* ignore */ }
-            this.sshTunnels.delete(id);
-        }
+        await this.closeSshTunnel(id);
         this.updateConnectionState(id, 'error');
         this.scheduleRetry(id);
     }
@@ -436,6 +432,11 @@ export class ConnectionManager {
         this._onDidChangeConnections.dispose();
         this._onDidChangeConnectionState.dispose();
         this._onDidChangeActiveConnection.dispose();
+
+        this.connectionStates.clear();
+        this.retryAttempts.clear();
+        this.consecutiveHealthFailures.clear();
+        this.isHealthChecking.clear();
     }
 }
 

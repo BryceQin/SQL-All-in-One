@@ -15,7 +15,7 @@ export class InMemoryDocument implements vscode.TextDocument {
     private readonly _lineCount: number;
 
     constructor(content: string, languageId: string) {
-        this.uri = vscode.Uri.parse(`sql-all-in-one://virtual/${Date.now()}.sql`);
+        this.uri = vscode.Uri.parse(`hive-formatter://virtual/${Date.now()}.sql`);
         this.languageId = languageId;
         this._lines = content.split('\n');
         this._lineCount = this._lines.length;

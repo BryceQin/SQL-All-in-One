@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { QueryResult, QueryError, QueryRow } from '../../database/adapters/IDatabaseAdapter';
@@ -432,6 +433,8 @@ export class QueryResultPanel {
             this._cachedHtml = html;
             this._panel.webview.html = html;
             this._sendLanguageData();
+        }).catch(e => {
+            console.error('[SQL All in One] Failed to load QueryResult panel HTML:', e);
         });
     }
 
@@ -476,6 +479,11 @@ export class QueryResultPanel {
             html = html.replace('{{MONACO_LOADER_URI}}', monacoLoaderUri.toString());
             html = html.replace(/\{\{CSP_SOURCE\}\}/g, this._panel.webview.cspSource);
 
+            const nonce = crypto.randomUUID();
+            html = html.replace(/\{\{CSP_NONCE\}\}/g, nonce);
+            html = html.replace(/<script(?=\s)/g, `<script nonce="${nonce}"`);
+            html = html.replace(/<style(?=\s)/g, `<style nonce="${nonce}"`);
+
             const config = vscode.workspace.getConfiguration('SQL-All-in-One');
             const configData = {
                 pageSize: config.get<number>('query.pageSize', 100),
@@ -501,7 +509,7 @@ export class QueryResultPanel {
                 lang: getLanguage(),
             };
             const configJson = JSON.stringify(configData).replace(/<\/script>/gi, '<\\/script>');
-            const configScript = '<script>window.__CONFIG__ = ' + configJson + ';</script>';
+            const configScript = '<script nonce="' + nonce + '">window.__CONFIG__ = ' + configJson + ';</script>';
             html = html.replace('{{CONFIG_INJECT}}', configScript);
 
             return html;

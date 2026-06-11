@@ -8,10 +8,10 @@ export function registerExportCommands(
     const disposables: vscode.Disposable[] = [];
     const formats = ['csv', 'json', 'insert', 'ddl'] as const;
     const commands = [
-        'sql-all-in-one.exportCsv',
-        'sql-all-in-one.exportJson',
-        'sql-all-in-one.exportInsert',
-        'sql-all-in-one.exportDdl'
+        'hive-formatter.exportCsv',
+        'hive-formatter.exportJson',
+        'hive-formatter.exportInsert',
+        'hive-formatter.exportDdl'
     ] as const;
 
     for (let i = 0; i < formats.length; i++) {

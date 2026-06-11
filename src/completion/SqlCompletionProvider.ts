@@ -91,6 +91,10 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
 
     public dispose(): void {
         this.configChangeDisposable.dispose()
+        this.dialectCache.clear()
+        this.snippetItemsMap.clear()
+        this.keywordItemsCache.clear()
+        this.functionItemsCache.clear()
     }
 
     private getDialect(langId: string): { dialect: Dialect; dName: string } {

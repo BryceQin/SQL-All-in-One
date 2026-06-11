@@ -21,7 +21,7 @@ export class SqlDiagnosticsProvider {
 
     constructor() {
         this.diagnosticCollection =
-            vscode.languages.createDiagnosticCollection("sql-all-in-one")
+            vscode.languages.createDiagnosticCollection("hive-formatter")
         this.linter = new SqlLinter()
 
         this.configChangeDisposable = getConfigManager().onConfigChange(() => {

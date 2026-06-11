@@ -96,7 +96,8 @@ export class LanguageBridge implements vscode.Disposable {
             } finally {
                 cts.dispose();
             }
-        } catch {
+        } catch (e) {
+            console.warn('[SQL All in One] LanguageBridge completion failed:', e instanceof Error ? e.message : String(e));
             return [];
         }
     }
@@ -120,7 +121,8 @@ export class LanguageBridge implements vscode.Disposable {
             } finally {
                 cts.dispose();
             }
-        } catch {
+        } catch (e) {
+            console.warn('[SQL All in One] LanguageBridge hover failed:', e instanceof Error ? e.message : String(e));
             return null;
         }
     }
@@ -135,7 +137,8 @@ export class LanguageBridge implements vscode.Disposable {
             };
             const config = createConfig(extensionSettings, formattingOptions, languageId);
             return formatEditorText(sql, config);
-        } catch {
+        } catch (e) {
+            console.warn('[SQL All in One] LanguageBridge format failed:', e instanceof Error ? e.message : String(e));
             return sql;
         }
     }

@@ -41,7 +41,7 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
     private schemaCache: SchemaCache;
     private nodeCache = new LRUCache<string, ITreeNode[]>({ maxSize: 200, maxAge: 60000 });
     private favorites: FavoriteItem[] = [];
-    private readonly FAVORITES_KEY = 'sql-all-in-one.favorites';
+    private readonly FAVORITES_KEY = 'hive-formatter.favorites';
 
     private _disposables: vscode.Disposable[] = [];
 
@@ -161,7 +161,7 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
         if (element instanceof ConnectionTreeNode) {
             if (element.connectionState === 'disconnected' || element.connectionState === 'error') {
                 return {
-                    command: 'sql-all-in-one.connect',
+                    command: 'hive-formatter.connect',
                     title: t('explorer.cmd.connect'),
                     arguments: [element]
                 };
@@ -170,28 +170,28 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
         }
         if (element instanceof ViewTreeNode) {
             return {
-                command: 'sql-all-in-one.viewTableData',
+                command: 'hive-formatter.viewTableData',
                 title: t('explorer.cmd.viewData'),
                 arguments: [element]
             };
         }
         if (element instanceof TableTreeNode) {
             return {
-                command: 'sql-all-in-one.viewTableData',
+                command: 'hive-formatter.viewTableData',
                 title: t('explorer.cmd.queryData'),
                 arguments: [element]
             };
         }
         if (element instanceof ColumnTreeNode) {
             return {
-                command: 'sql-all-in-one.copyColumnName',
+                command: 'hive-formatter.copyColumnName',
                 title: t('explorer.cmd.copyName'),
                 arguments: [element]
             };
         }
         if (element instanceof FavoriteTreeNode) {
             return {
-                command: 'sql-all-in-one.revealInExplorer',
+                command: 'hive-formatter.revealInExplorer',
                 title: t('explorer.cmd.reveal'),
                 arguments: [element]
             };

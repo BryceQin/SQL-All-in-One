@@ -86,7 +86,7 @@ export class MysqlAdapter implements IDatabaseAdapter {
             const warmupPromises: Promise<void>[] = [];
             for (let i = 0; i < minConnections; i++) {
                 warmupPromises.push(
-                    this.pool!.getConnection().then(conn => conn.release())
+                    this.pool!.getConnection().then(conn => conn.release()).catch(() => {})
                 );
             }
             await Promise.all(warmupPromises);

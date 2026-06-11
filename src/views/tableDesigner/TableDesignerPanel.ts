@@ -287,6 +287,7 @@ export class TableDesignerPanel {
 
     public dispose(): void {
         TableDesignerPanel.currentPanel = undefined;
+        (this as unknown as { _originalStructure?: unknown })._originalStructure = undefined;
         this._panel.dispose();
 
         while (this._disposables.length) {
@@ -300,6 +301,8 @@ export class TableDesignerPanel {
     private _update(): void {
         this._getHtmlForWebview().then(html => {
             this._panel.webview.html = html;
+        }).catch(e => {
+            console.error('[SQL All in One] Failed to load TableDesigner panel HTML:', e);
         });
     }
 
@@ -323,12 +326,17 @@ export class TableDesignerPanel {
             html = html.replace('{{JS_URI}}', jsUri.toString());
             html = html.replace(/\{\{CSP_SOURCE\}\}/g, this._panel.webview.cspSource);
 
+            const nonce = crypto.randomUUID();
+            html = html.replace(/\{\{CSP_NONCE\}\}/g, nonce);
+            html = html.replace(/<script(?=\s)/g, `<script nonce="${nonce}"`);
+            html = html.replace(/<style(?=\s)/g, `<style nonce="${nonce}"`);
+
             const configData = {
                 mode: this._mode,
                 database: this._database,
                 tableName: this._tableName,
             };
-            const configScript = '<script>window.__TABLE_DESIGNER_CONFIG__ = ' + JSON.stringify(configData) + ';</script>';
+            const configScript = '<script nonce="' + nonce + '">window.__TABLE_DESIGNER_CONFIG__ = ' + JSON.stringify(configData) + ';</script>';
             html = html.replace('{{CONFIG_INJECT}}', configScript);
 
             return html;

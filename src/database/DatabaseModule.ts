@@ -9,7 +9,6 @@ import { QueryExecutor } from './query/QueryExecutor';
 import { SafeQueryGuard } from './query/SafeQueryGuard';
 import { QueryHistory } from './history/QueryHistory';
 import { getSchemaCache } from './schema/SchemaCache';
-import { getSchemaProvider } from './schema/SchemaProvider';
 import { registerConnectionCommands } from './commands/ConnectionCommands';
 import { registerQueryCommands } from './commands/QueryCommands';
 import { registerExportCommands } from './commands/ExportCommands';
@@ -38,10 +37,10 @@ export class DatabaseModule {
 
     const connectionManager = getConnectionManager();
     await connectionManager.initialize();
-    vscode.commands.executeCommand('setContext', 'sql-all-in-one.connectionCount', connectionManager.getAllConnections().length);
+    vscode.commands.executeCommand('setContext', 'hive-formatter.connectionCount', connectionManager.getAllConnections().length);
 
     this.treeProvider = new DatabaseTreeProvider(this.context);
-    const treeView = vscode.window.createTreeView('sql-all-in-one.databaseExplorer', {
+    const treeView = vscode.window.createTreeView('hive-formatter.databaseExplorer', {
       treeDataProvider: this.treeProvider,
       showCollapseAll: true,
     });
@@ -64,21 +63,22 @@ export class DatabaseModule {
     const connectionManager = getConnectionManager();
     const schemaCache = getSchemaCache();
 
-    connectionManager.onDidChangeConnectionState(async (event) => {
+    const stateChangeDisposable = connectionManager.onDidChangeConnectionState(async (event) => {
       if (event.newState === 'connected') {
         const config = connectionManager.getActiveConnection();
         if (config && config.database) {
           schemaCache.prefetchOnConnect(event.connectionId, config.database).catch(() => {
             /* ignore prefetch error */
           });
-          vscode.commands.executeCommand('setContext', 'sql-all-in-one.connectionCount', connectionManager.getAllConnections().length);
+          vscode.commands.executeCommand('setContext', 'hive-formatter.connectionCount', connectionManager.getAllConnections().length);
         }
       }
       if (event.newState === 'disconnected') {
         schemaCache.invalidate(event.connectionId);
-        vscode.commands.executeCommand('setContext', 'sql-all-in-one.connectionCount', connectionManager.getAllConnections().length);
+        vscode.commands.executeCommand('setContext', 'hive-formatter.connectionCount', connectionManager.getAllConnections().length);
       }
     });
+    this.context.subscriptions.push(stateChangeDisposable);
   }
 
   private setupDoubleClickHandler(treeView: vscode.TreeView<unknown>): void {
@@ -100,7 +100,7 @@ export class DatabaseModule {
         lastToggleNodeId = null;
         lastToggleTime = 0;
         ignoreNodeId = nodeId;
-        vscode.commands.executeCommand('sql-all-in-one.viewTableData', element);
+        vscode.commands.executeCommand('hive-formatter.viewTableData', element);
         const node = element;
         setTimeout(() => {
           treeView.reveal(node, { expand: true }).then(undefined, (_e) => undefined);
@@ -149,10 +149,7 @@ export class DatabaseModule {
   }
 
   async dispose(): Promise<void> {
-    this.queryExecutor?.dispose();
     this.outputChannel?.dispose();
-    getSchemaProvider().dispose();
-    getSchemaCache().dispose();
     const connectionManager = getConnectionManager();
     await connectionManager.disconnectAll();
   }

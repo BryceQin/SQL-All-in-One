@@ -13,24 +13,28 @@ export class SqlFormattingProvider
     provideDocumentFormattingEdits(
         document: vscode.TextDocument,
         formattingOptions: vscode.FormattingOptions,
+        token: vscode.CancellationToken,
     ): vscode.TextEdit[] {
         return getPerformanceMonitor().measure('SqlFormattingProvider.provideDocumentFormattingEdits', () => {
             try {
+                if (token.isCancellationRequested) return [];
+                const formatted = this.formatText(
+                    document.getText(),
+                    formattingOptions,
+                    document.uri,
+                );
+                if (token.isCancellationRequested) return [];
                 return [
                     vscode.TextEdit.replace(
                         this.fullDocumentRange(document),
-                        this.formatText(
-                            document.getText(),
-                            formattingOptions,
-                            document.uri,
-                        ),
+                        formatted,
                     ),
-                ]
+                ];
             } catch (e) {
-                handleError(e, 'format document', ErrorCategory.CRITICAL)
-                return []
+                handleError(e, 'format document', ErrorCategory.CRITICAL);
+                return [];
             }
-        })
+        });
     }
 
     private fullDocumentRange(document: vscode.TextDocument): vscode.Range {

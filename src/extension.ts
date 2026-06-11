@@ -35,6 +35,8 @@ import { SafeQueryGuard } from './database/query/SafeQueryGuard';
 import { QueryHistory } from './database/history/QueryHistory';
 import { SqlStatementDetector } from './database/query/SqlStatementDetector';
 import { clearParameterScanCache } from './hover/ParameterHoverResolver';
+import { clearFormatterCache } from './formatter/sqlFormatter';
+import { invalidateRuleDefinitions } from './linter/lintRules';
 
 function createLazyProvider<T>(container: ReturnType<typeof getContainer>, token: string, context: vscode.ExtensionContext): () => T {
     let instance: T | undefined;
@@ -49,13 +51,13 @@ function createLazyProvider<T>(container: ReturnType<typeof getContainer>, token
 
 function registerCommands(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
-    vscode.commands.registerCommand('sql-all-in-one.format-selection', formatSelectionCommand),
-    vscode.commands.registerCommand('sql-all-in-one.toggleComment', toggleComment),
-    vscode.commands.registerCommand('sql-all-in-one.toggleAdvancedComment', toggleAdvancedComment),
-    vscode.commands.registerCommand('sql-all-in-one.mysql-to-hive', convertMysqlToHiveCommand),
-    vscode.commands.registerCommand('sql-all-in-one.hive-to-mysql', convertHiveToMysqlCommand),
-    vscode.commands.registerCommand('sql-all-in-one.open-config-editor', () => openConfigEditorCommand(context.extensionUri)),
-    vscode.commands.registerCommand('sql-all-in-one.showErrorLog', () => {
+    vscode.commands.registerCommand('hive-formatter.format-selection', formatSelectionCommand),
+    vscode.commands.registerCommand('hive-formatter.toggleComment', toggleComment),
+    vscode.commands.registerCommand('hive-formatter.toggleAdvancedComment', toggleAdvancedComment),
+    vscode.commands.registerCommand('hive-formatter.mysql-to-hive', convertMysqlToHiveCommand),
+    vscode.commands.registerCommand('hive-formatter.hive-to-mysql', convertHiveToMysqlCommand),
+    vscode.commands.registerCommand('hive-formatter.open-config-editor', () => openConfigEditorCommand(context.extensionUri)),
+    vscode.commands.registerCommand('hive-formatter.showErrorLog', () => {
       getErrorHandler().showOutputChannel();
     }),
   );
@@ -179,6 +181,7 @@ function registerParameterHighlighter(context: vscode.ExtensionContext): void {
   const getHighlighter = createLazyProvider<SqlParameterHighlighter>(container, Tokens.ParameterHighlighter, context);
 
   context.subscriptions.push(SqlParameterReplaceCommand.register(context));
+  // Eagerly instantiate to register decoration decorators
   getHighlighter();
 }
 
@@ -197,6 +200,7 @@ function registerAstNavigatorEvents(context: vscode.ExtensionContext): void {
 function registerStatusBar(context: vscode.ExtensionContext): void {
   const container = getContainer();
   const getStatusBar = createLazyProvider<StatusBarProvider>(container, Tokens.StatusBarProvider, context);
+  // Eagerly instantiate to show status bar item
   getStatusBar();
 }
 
@@ -250,11 +254,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         registerCommands(context);
         registerFormattingProviders(context);
         registerDiagnostics(context);
-        registerProviders(context);
-        registerCompletion(context);
-        registerParameterHighlighter(context);
-        registerAstNavigatorEvents(context);
-        registerStatusBar(context);
+
+        queueMicrotask(() => {
+            registerProviders(context);
+            registerCompletion(context);
+            registerParameterHighlighter(context);
+            registerAstNavigatorEvents(context);
+            registerStatusBar(context);
+        });
 
         const dbModule = new DatabaseModule(context);
         dbModule.initialize().catch(e => {
@@ -277,5 +284,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
 export function deactivate(): Thenable<void> {
   clearParameterScanCache();
+  clearFormatterCache();
+  invalidateRuleDefinitions();
   return Promise.resolve(getContainer().disposeAll());
 }

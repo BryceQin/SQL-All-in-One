@@ -62,7 +62,7 @@ function addBlockComment(editor: vscode.TextEditor, selection: vscode.Selection)
     const selectedText = fullText.substring(startPos, endPos)
     const newText = `/* ${selectedText.replace(/\n/g, `\n   `)} */`
     edit.replace(editor.document.uri, selection, newText)
-    vscode.workspace.applyEdit(edit).then(success => {
+    void vscode.workspace.applyEdit(edit).then(success => {
         if (success) getContainer().get<StatusBarProvider>(Tokens.StatusBarProvider)?.showTemporaryMessage(t('notification.commentAdded'))
     })
 }
@@ -75,7 +75,7 @@ function removeBlockComment(editor: vscode.TextEditor, selection: vscode.Selecti
     cleaned = cleaned.replace(/^\s{0,3}/gm, '')
     cleaned = cleaned.trim()
     edit.replace(editor.document.uri, selection, cleaned)
-    vscode.workspace.applyEdit(edit).then(success => {
+    void vscode.workspace.applyEdit(edit).then(success => {
         if (success) getContainer().get<StatusBarProvider>(Tokens.StatusBarProvider)?.showTemporaryMessage(t('notification.commentRemoved'))
     })
 }
@@ -133,7 +133,7 @@ function addColumnComment(editor: vscode.TextEditor): void {
         ? line.range.end.translate(0, -1)
         : line.range.end
     edit.insert(editor.document.uri, insertPos, " COMMENT ''")
-    vscode.workspace.applyEdit(edit).then(success => {
+    void vscode.workspace.applyEdit(edit).then(success => {
         if (success) {
             const newLine = editor.document.lineAt(editor.selection.active.line).text
             const quoteStart = newLine.indexOf("COMMENT '") + 9
@@ -157,7 +157,7 @@ function wrapWithFormatterDisable(editor: vscode.TextEditor): void {
     const linePrefix = editor.document.lineAt(selection.start.line).text.match(/^(\s*)/)?.[1] || ''
     edit.insert(editor.document.uri, selection.start, `/* sql-formatter-disable */\n${linePrefix}`)
     edit.insert(editor.document.uri, selection.end, `\n${linePrefix}/* sql-formatter-enable */`)
-    vscode.workspace.applyEdit(edit).then(success => {
+    void vscode.workspace.applyEdit(edit).then(success => {
         if (success) getContainer().get<StatusBarProvider>(Tokens.StatusBarProvider)?.showTemporaryMessage(t('notification.formatDisabledMarkAdded'))
     })
 }

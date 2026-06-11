@@ -1,5 +1,5 @@
 {
-    "name": "sql-all-in-one",
+    "name": "hive-formatter",
     "displayName": "SQL All in One",
     "description": "SQL All in One - 强大的 SQL 格式化、智能补全、语法检查、DDL 转换 VSCode 插件，支持 Hive、MySQL、SparkSQL、FlinkSQL、PostgreSQL、BigQuery、SQLite 等多种 SQL 方言",
     "version": "2.15.2",
@@ -59,17 +59,17 @@
         "viewsContainers": {
             "activitybar": [
                 {
-                    "id": "sql-all-in-one",
+                    "id": "hive-formatter",
                     "title": "SQL All in One",
                     "icon": "resources/database-icon.svg"
                 }
             ]
         },
         "views": {
-            "sql-all-in-one": [
+            "hive-formatter": [
                 {
-                    "id": "sql-all-in-one.databaseExplorer",
-                    "name": "%sql-all-in-one.view.databaseExplorer.name%",
+                    "id": "hive-formatter.databaseExplorer",
+                    "name": "%hive-formatter.view.databaseExplorer.name%",
                     "icon": "resources/database-icon.svg",
                     "when": "true"
                 }
@@ -77,9 +77,9 @@
         },
         "viewsWelcome": [
             {
-                "view": "sql-all-in-one.databaseExplorer",
-                "contents": "%sql-all-in-one.viewWelcome.databaseExplorer.contents%",
-                "when": "sql-all-in-one.connectionCount == 0"
+                "view": "hive-formatter.databaseExplorer",
+                "contents": "%hive-formatter.viewWelcome.databaseExplorer.contents%",
+                "when": "hive-formatter.connectionCount == 0"
             }
         ],
         "languages": [
@@ -232,190 +232,190 @@
             {
                 "title": "Format Selection (SQL All in One)",
                 "shortTitle": "Format SQL",
-                "command": "sql-all-in-one.format-selection"
+                "command": "hive-formatter.format-selection"
             },
             {
                 "title": "MySQL to HiveSQL",
                 "shortTitle": "MySQL to Hive",
-                "command": "sql-all-in-one.mysql-to-hive"
+                "command": "hive-formatter.mysql-to-hive"
             },
             {
                 "title": "HiveSQL to MySQL",
                 "shortTitle": "Hive to MySQL",
-                "command": "sql-all-in-one.hive-to-mysql"
+                "command": "hive-formatter.hive-to-mysql"
             },
             {
                 "title": "SQL All in One Config",
                 "shortTitle": "Config Editor",
-                "command": "sql-all-in-one.open-config-editor"
+                "command": "hive-formatter.open-config-editor"
             },
             {
                 "title": "Replace Parameter",
                 "shortTitle": "Replace Param",
-                "command": "sql-all-in-one.replaceParameter"
+                "command": "hive-formatter.replaceParameter"
             },
             {
-                "command": "sql-all-in-one.toggleComment",
+                "command": "hive-formatter.toggleComment",
                 "title": "切换注释 (SQL All in One)"
             },
             {
-                "command": "sql-all-in-one.toggleAdvancedComment",
+                "command": "hive-formatter.toggleAdvancedComment",
                 "title": "切换高级注释 (SQL All in One)"
             },
             {
-                "command": "sql-all-in-one.addConnection",
-                "title": "%sql-all-in-one.command.addConnection.title%",
+                "command": "hive-formatter.addConnection",
+                "title": "%hive-formatter.command.addConnection.title%",
                 "icon": "$(add)"
             },
             {
-                "command": "sql-all-in-one.editConnection",
-                "title": "%sql-all-in-one.command.editConnection.title%"
+                "command": "hive-formatter.editConnection",
+                "title": "%hive-formatter.command.editConnection.title%"
             },
             {
-                "command": "sql-all-in-one.removeConnection",
-                "title": "%sql-all-in-one.command.removeConnection.title%"
+                "command": "hive-formatter.removeConnection",
+                "title": "%hive-formatter.command.removeConnection.title%"
             },
             {
-                "command": "sql-all-in-one.connect",
-                "title": "%sql-all-in-one.command.connect.title%"
+                "command": "hive-formatter.connect",
+                "title": "%hive-formatter.command.connect.title%"
             },
             {
-                "command": "sql-all-in-one.disconnect",
-                "title": "%sql-all-in-one.command.disconnect.title%"
+                "command": "hive-formatter.disconnect",
+                "title": "%hive-formatter.command.disconnect.title%"
             },
             {
-                "command": "sql-all-in-one.testConnection",
-                "title": "%sql-all-in-one.command.testConnection.title%"
+                "command": "hive-formatter.testConnection",
+                "title": "%hive-formatter.command.testConnection.title%"
             },
             {
-                "command": "sql-all-in-one.refreshSchema",
-                "title": "%sql-all-in-one.command.refreshSchema.title%",
+                "command": "hive-formatter.refreshSchema",
+                "title": "%hive-formatter.command.refreshSchema.title%",
                 "icon": "$(refresh)"
             },
             {
-                "command": "sql-all-in-one.viewTableData",
-                "title": "%sql-all-in-one.command.viewTableData.title%"
+                "command": "hive-formatter.viewTableData",
+                "title": "%hive-formatter.command.viewTableData.title%"
             },
             {
-                "command": "sql-all-in-one.viewTableDDL",
-                "title": "%sql-all-in-one.command.viewTableDDL.title%"
+                "command": "hive-formatter.viewTableDDL",
+                "title": "%hive-formatter.command.viewTableDDL.title%"
             },
             {
-                "command": "sql-all-in-one.newQuery",
-                "title": "%sql-all-in-one.command.newQuery.title%"
+                "command": "hive-formatter.newQuery",
+                "title": "%hive-formatter.command.newQuery.title%"
             },
             {
-                "command": "sql-all-in-one.copyColumnName",
-                "title": "%sql-all-in-one.command.copyColumnName.title%"
+                "command": "hive-formatter.copyColumnName",
+                "title": "%hive-formatter.command.copyColumnName.title%"
             },
             {
-                "command": "sql-all-in-one.addToFavorites",
-                "title": "%sql-all-in-one.command.addToFavorites.title%"
+                "command": "hive-formatter.addToFavorites",
+                "title": "%hive-formatter.command.addToFavorites.title%"
             },
             {
-                "command": "sql-all-in-one.removeFromFavorites",
-                "title": "%sql-all-in-one.command.removeFromFavorites.title%"
+                "command": "hive-formatter.removeFromFavorites",
+                "title": "%hive-formatter.command.removeFromFavorites.title%"
             },
             {
-                "command": "sql-all-in-one.revealInExplorer",
-                "title": "%sql-all-in-one.command.revealInExplorer.title%"
+                "command": "hive-formatter.revealInExplorer",
+                "title": "%hive-formatter.command.revealInExplorer.title%"
             },
             {
-                "command": "sql-all-in-one.setDefaultDatabase",
-                "title": "%sql-all-in-one.command.setDefaultDatabase.title%"
+                "command": "hive-formatter.setDefaultDatabase",
+                "title": "%hive-formatter.command.setDefaultDatabase.title%"
             },
             {
-                "command": "sql-all-in-one.executeQuery",
-                "title": "%sql-all-in-one.command.executeQuery.title%"
+                "command": "hive-formatter.executeQuery",
+                "title": "%hive-formatter.command.executeQuery.title%"
             },
             {
-                "command": "sql-all-in-one.executeSelection",
-                "title": "%sql-all-in-one.command.executeSelection.title%"
+                "command": "hive-formatter.executeSelection",
+                "title": "%hive-formatter.command.executeSelection.title%"
             },
             {
-                "command": "sql-all-in-one.cancelQuery",
-                "title": "%sql-all-in-one.command.cancelQuery.title%"
+                "command": "hive-formatter.cancelQuery",
+                "title": "%hive-formatter.command.cancelQuery.title%"
             },
             {
-                "command": "sql-all-in-one.showQueryHistory",
-                "title": "%sql-all-in-one.command.showQueryHistory.title%"
+                "command": "hive-formatter.showQueryHistory",
+                "title": "%hive-formatter.command.showQueryHistory.title%"
             },
             {
-                "command": "sql-all-in-one.clearQueryHistory",
-                "title": "%sql-all-in-one.command.clearQueryHistory.title%"
+                "command": "hive-formatter.clearQueryHistory",
+                "title": "%hive-formatter.command.clearQueryHistory.title%"
             },
             {
-                "command": "sql-all-in-one.exportCsv",
-                "title": "%sql-all-in-one.command.exportCsv.title%"
+                "command": "hive-formatter.exportCsv",
+                "title": "%hive-formatter.command.exportCsv.title%"
             },
             {
-                "command": "sql-all-in-one.exportJson",
-                "title": "%sql-all-in-one.command.exportJson.title%"
+                "command": "hive-formatter.exportJson",
+                "title": "%hive-formatter.command.exportJson.title%"
             },
             {
-                "command": "sql-all-in-one.exportInsert",
-                "title": "%sql-all-in-one.command.exportInsert.title%"
+                "command": "hive-formatter.exportInsert",
+                "title": "%hive-formatter.command.exportInsert.title%"
             },
             {
-                "command": "sql-all-in-one.exportDdl",
-                "title": "%sql-all-in-one.command.exportDdl.title%"
+                "command": "hive-formatter.exportDdl",
+                "title": "%hive-formatter.command.exportDdl.title%"
             },
             {
-                "command": "sql-all-in-one.designTable",
-                "title": "%sql-all-in-one.command.designTable.title%"
+                "command": "hive-formatter.designTable",
+                "title": "%hive-formatter.command.designTable.title%"
             },
             {
-                "command": "sql-all-in-one.editTable",
-                "title": "%sql-all-in-one.command.editTable.title%"
+                "command": "hive-formatter.editTable",
+                "title": "%hive-formatter.command.editTable.title%"
             },
             {
-                "command": "sql-all-in-one.explainQuery",
-                "title": "%sql-all-in-one.command.explainQuery.title%"
+                "command": "hive-formatter.explainQuery",
+                "title": "%hive-formatter.command.explainQuery.title%"
             },
             {
-                "command": "sql-all-in-one.importData",
-                "title": "%sql-all-in-one.command.importData.title%"
+                "command": "hive-formatter.importData",
+                "title": "%hive-formatter.command.importData.title%"
             },
             {
-                "command": "sql-all-in-one.showErrorLog",
-                "title": "%sql-all-in-one.command.showErrorLog.title%"
+                "command": "hive-formatter.showErrorLog",
+                "title": "%hive-formatter.command.showErrorLog.title%"
             },
             {
-                "command": "sql-all-in-one.exportConnections",
-                "title": "%sql-all-in-one.command.exportConnections.title%"
+                "command": "hive-formatter.exportConnections",
+                "title": "%hive-formatter.command.exportConnections.title%"
             },
             {
-                "command": "sql-all-in-one.importConnections",
-                "title": "%sql-all-in-one.command.importConnections.title%"
+                "command": "hive-formatter.importConnections",
+                "title": "%hive-formatter.command.importConnections.title%"
             }
         ],
         "keybindings": [
             {
-                "command": "sql-all-in-one.replaceParameter",
+                "command": "hive-formatter.replaceParameter",
                 "key": "ctrl+alt+p",
                 "mac": "cmd+alt+p",
                 "when": "editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite/"
             },
             {
-                "command": "sql-all-in-one.toggleComment",
+                "command": "hive-formatter.toggleComment",
                 "key": "ctrl+/",
                 "mac": "cmd+/",
                 "when": "editorTextFocus && editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite/"
             },
             {
-                "command": "sql-all-in-one.toggleAdvancedComment",
+                "command": "hive-formatter.toggleAdvancedComment",
                 "key": "ctrl+shift+/",
                 "mac": "cmd+shift+/",
                 "when": "editorTextFocus && editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite/"
             },
             {
-                "command": "sql-all-in-one.executeQuery",
+                "command": "hive-formatter.executeQuery",
                 "key": "ctrl+shift+e",
                 "mac": "cmd+shift+e",
                 "when": "editorTextFocus && editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite/"
             },
             {
-                "command": "sql-all-in-one.executeSelection",
+                "command": "hive-formatter.executeSelection",
                 "key": "ctrl+shift+r",
                 "mac": "cmd+shift+r",
                 "when": "editorTextFocus && editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite/"
@@ -438,18 +438,18 @@
                         "sqlite"
                     ],
                     "enumDescriptions": [
-                        "%sql-all-in-one.config.dialect.enumDescriptions.auto-detect%",
-                        "%sql-all-in-one.config.dialect.enumDescriptions.hive%",
-                        "%sql-all-in-one.config.dialect.enumDescriptions.mysql%",
-                        "%sql-all-in-one.config.dialect.enumDescriptions.spark%",
-                        "%sql-all-in-one.config.dialect.enumDescriptions.flinksql%",
-                        "%sql-all-in-one.config.dialect.enumDescriptions.sql%",
-                        "%sql-all-in-one.config.dialect.enumDescriptions.postgresql%",
-                        "%sql-all-in-one.config.dialect.enumDescriptions.bigquery%",
-                        "%sql-all-in-one.config.dialect.enumDescriptions.sqlite%"
+                        "%hive-formatter.config.dialect.enumDescriptions.auto-detect%",
+                        "%hive-formatter.config.dialect.enumDescriptions.hive%",
+                        "%hive-formatter.config.dialect.enumDescriptions.mysql%",
+                        "%hive-formatter.config.dialect.enumDescriptions.spark%",
+                        "%hive-formatter.config.dialect.enumDescriptions.flinksql%",
+                        "%hive-formatter.config.dialect.enumDescriptions.sql%",
+                        "%hive-formatter.config.dialect.enumDescriptions.postgresql%",
+                        "%hive-formatter.config.dialect.enumDescriptions.bigquery%",
+                        "%hive-formatter.config.dialect.enumDescriptions.sqlite%"
                     ],
                     "default": "hive",
-                    "markdownDescription": "%sql-all-in-one.config.dialect.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.dialect.markdownDescription%",
                     "order": 2
                 },
                 "SQL-All-in-One.displayLanguage": {
@@ -460,31 +460,31 @@
                         "en"
                     ],
                     "enumDescriptions": [
-                        "%sql-all-in-one.config.displayLanguage.enumDescriptions.auto%",
-                        "%sql-all-in-one.config.displayLanguage.enumDescriptions.zh%",
-                        "%sql-all-in-one.config.displayLanguage.enumDescriptions.en%"
+                        "%hive-formatter.config.displayLanguage.enumDescriptions.auto%",
+                        "%hive-formatter.config.displayLanguage.enumDescriptions.zh%",
+                        "%hive-formatter.config.displayLanguage.enumDescriptions.en%"
                     ],
                     "default": "auto",
-                    "markdownDescription": "%sql-all-in-one.config.displayLanguage.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.displayLanguage.markdownDescription%",
                     "order": 1
                 },
                 "SQL-All-in-One.ignoreTabSettings": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "%sql-all-in-one.config.ignoreTabSettings.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.ignoreTabSettings.markdownDescription%",
                     "order": 23
                 },
                 "SQL-All-in-One.tabSizeOverride": {
                     "type": "number",
                     "default": 2,
                     "minimum": 1,
-                    "markdownDescription": "%sql-all-in-one.config.tabSizeOverride.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.tabSizeOverride.markdownDescription%",
                     "order": 21
                 },
                 "SQL-All-in-One.insertSpacesOverride": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.insertSpacesOverride.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.insertSpacesOverride.markdownDescription%",
                     "order": 22
                 },
                 "SQL-All-in-One.keywordCase": {
@@ -495,12 +495,12 @@
                         "lower"
                     ],
                     "enumDescriptions": [
-                        "%sql-all-in-one.config.keywordCase.enumDescriptions.preserve%",
-                        "%sql-all-in-one.config.keywordCase.enumDescriptions.upper%",
-                        "%sql-all-in-one.config.keywordCase.enumDescriptions.lower%"
+                        "%hive-formatter.config.keywordCase.enumDescriptions.preserve%",
+                        "%hive-formatter.config.keywordCase.enumDescriptions.upper%",
+                        "%hive-formatter.config.keywordCase.enumDescriptions.lower%"
                     ],
                     "default": "preserve",
-                    "markdownDescription": "%sql-all-in-one.config.keywordCase.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.keywordCase.markdownDescription%",
                     "order": 10
                 },
                 "SQL-All-in-One.dataTypeCase": {
@@ -511,12 +511,12 @@
                         "lower"
                     ],
                     "enumDescriptions": [
-                        "%sql-all-in-one.config.dataTypeCase.enumDescriptions.preserve%",
-                        "%sql-all-in-one.config.dataTypeCase.enumDescriptions.upper%",
-                        "%sql-all-in-one.config.dataTypeCase.enumDescriptions.lower%"
+                        "%hive-formatter.config.dataTypeCase.enumDescriptions.preserve%",
+                        "%hive-formatter.config.dataTypeCase.enumDescriptions.upper%",
+                        "%hive-formatter.config.dataTypeCase.enumDescriptions.lower%"
                     ],
                     "default": "preserve",
-                    "markdownDescription": "%sql-all-in-one.config.dataTypeCase.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.dataTypeCase.markdownDescription%",
                     "order": 11
                 },
                 "SQL-All-in-One.functionCase": {
@@ -527,12 +527,12 @@
                         "lower"
                     ],
                     "enumDescriptions": [
-                        "%sql-all-in-one.config.functionCase.enumDescriptions.preserve%",
-                        "%sql-all-in-one.config.functionCase.enumDescriptions.upper%",
-                        "%sql-all-in-one.config.functionCase.enumDescriptions.lower%"
+                        "%hive-formatter.config.functionCase.enumDescriptions.preserve%",
+                        "%hive-formatter.config.functionCase.enumDescriptions.upper%",
+                        "%hive-formatter.config.functionCase.enumDescriptions.lower%"
                     ],
                     "default": "preserve",
-                    "markdownDescription": "%sql-all-in-one.config.functionCase.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.functionCase.markdownDescription%",
                     "order": 12
                 },
                 "SQL-All-in-One.identifierCase": {
@@ -543,12 +543,12 @@
                         "lower"
                     ],
                     "enumDescriptions": [
-                        "%sql-all-in-one.config.identifierCase.enumDescriptions.preserve%",
-                        "%sql-all-in-one.config.identifierCase.enumDescriptions.upper%",
-                        "%sql-all-in-one.config.identifierCase.enumDescriptions.lower%"
+                        "%hive-formatter.config.identifierCase.enumDescriptions.preserve%",
+                        "%hive-formatter.config.identifierCase.enumDescriptions.upper%",
+                        "%hive-formatter.config.identifierCase.enumDescriptions.lower%"
                     ],
                     "default": "preserve",
-                    "markdownDescription": "%sql-all-in-one.config.identifierCase.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.identifierCase.markdownDescription%",
                     "order": 13
                 },
                 "SQL-All-in-One.indentStyle": {
@@ -559,12 +559,12 @@
                         "tabularRight"
                     ],
                     "enumDescriptions": [
-                        "%sql-all-in-one.config.indentStyle.enumDescriptions.standard%",
-                        "%sql-all-in-one.config.indentStyle.enumDescriptions.tabularLeft%",
-                        "%sql-all-in-one.config.indentStyle.enumDescriptions.tabularRight%"
+                        "%hive-formatter.config.indentStyle.enumDescriptions.standard%",
+                        "%hive-formatter.config.indentStyle.enumDescriptions.tabularLeft%",
+                        "%hive-formatter.config.indentStyle.enumDescriptions.tabularRight%"
                     ],
                     "default": "standard",
-                    "markdownDescription": "%sql-all-in-one.config.indentStyle.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.indentStyle.markdownDescription%",
                     "order": 20
                 },
                 "SQL-All-in-One.logicalOperatorNewline": {
@@ -574,37 +574,37 @@
                         "after"
                     ],
                     "enumDescriptions": [
-                        "%sql-all-in-one.config.logicalOperatorNewline.enumDescriptions.before%",
-                        "%sql-all-in-one.config.logicalOperatorNewline.enumDescriptions.after%"
+                        "%hive-formatter.config.logicalOperatorNewline.enumDescriptions.before%",
+                        "%hive-formatter.config.logicalOperatorNewline.enumDescriptions.after%"
                     ],
                     "default": "before",
-                    "markdownDescription": "%sql-all-in-one.config.logicalOperatorNewline.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.logicalOperatorNewline.markdownDescription%",
                     "order": 68
                 },
                 "SQL-All-in-One.expressionWidth": {
                     "type": "integer",
                     "default": 50,
                     "minimum": 0,
-                    "markdownDescription": "%sql-all-in-one.config.expressionWidth.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.expressionWidth.markdownDescription%",
                     "order": 70
                 },
                 "SQL-All-in-One.linesBetweenQueries": {
                     "type": "integer",
                     "default": 1,
                     "minimum": 0,
-                    "markdownDescription": "%sql-all-in-one.config.linesBetweenQueries.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.linesBetweenQueries.markdownDescription%",
                     "order": 71
                 },
                 "SQL-All-in-One.denseOperators": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "%sql-all-in-one.config.denseOperators.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.denseOperators.markdownDescription%",
                     "order": 72
                 },
                 "SQL-All-in-One.newlineBeforeSemicolon": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeSemicolon.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.newlineBeforeSemicolon.markdownDescription%",
                     "order": 73
                 },
                 "SQL-All-in-One.commaPosition": {
@@ -614,113 +614,113 @@
                         "after"
                     ],
                     "enumDescriptions": [
-                        "%sql-all-in-one.config.commaPosition.enumDescriptions.before%",
-                        "%sql-all-in-one.config.commaPosition.enumDescriptions.after%"
+                        "%hive-formatter.config.commaPosition.enumDescriptions.before%",
+                        "%hive-formatter.config.commaPosition.enumDescriptions.after%"
                     ],
                     "default": "after",
-                    "markdownDescription": "%sql-all-in-one.config.commaPosition.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.commaPosition.markdownDescription%",
                     "order": 74
                 },
                 "SQL-All-in-One.alignColumnDefinitions": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "%sql-all-in-one.config.alignColumnDefinitions.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.alignColumnDefinitions.markdownDescription%",
                     "order": 75
                 },
                 "SQL-All-in-One.newlineAfterSelect": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineAfterSelect.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.newlineAfterSelect.markdownDescription%",
                     "order": 30
                 },
                 "SQL-All-in-One.newlineAfterFrom": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineAfterFrom.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.newlineAfterFrom.markdownDescription%",
                     "order": 31
                 },
                 "SQL-All-in-One.newlineBeforeWhere": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeWhere.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.newlineBeforeWhere.markdownDescription%",
                     "order": 32
                 },
                 "SQL-All-in-One.newlineAfterWhere": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineAfterWhere.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.newlineAfterWhere.markdownDescription%",
                     "order": 33
                 },
                 "SQL-All-in-One.newlineBeforeOrderBy": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeOrderBy.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.newlineBeforeOrderBy.markdownDescription%",
                     "order": 34
                 },
                 "SQL-All-in-One.newlineBeforeGroupBy": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeGroupBy.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.newlineBeforeGroupBy.markdownDescription%",
                     "order": 35
                 },
                 "SQL-All-in-One.newlineBeforeHaving": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeHaving.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.newlineBeforeHaving.markdownDescription%",
                     "order": 36
                 },
                 "SQL-All-in-One.newlineBeforeLimit": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeLimit.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.newlineBeforeLimit.markdownDescription%",
                     "order": 37
                 },
                 "SQL-All-in-One.tabulateAlias": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "%sql-all-in-one.config.tabulateAlias.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.tabulateAlias.markdownDescription%",
                     "order": 78
                 },
                 "SQL-All-in-One.newlineBeforeJoin": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeJoin.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.newlineBeforeJoin.markdownDescription%",
                     "order": 38
                 },
                 "SQL-All-in-One.alignWhereClauses": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "%sql-all-in-one.config.alignWhereClauses.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.alignWhereClauses.markdownDescription%",
                     "order": 85
                 },
                 "SQL-All-in-One.alignCaseStatements": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "%sql-all-in-one.config.alignCaseStatements.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.alignCaseStatements.markdownDescription%",
                     "order": 86
                 },
                 "SQL-All-in-One.spaceBeforeComma": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "%sql-all-in-one.config.spaceBeforeComma.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.spaceBeforeComma.markdownDescription%",
                     "order": 79
                 },
                 "SQL-All-in-One.spaceInsideParentheses": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "%sql-all-in-one.config.spaceInsideParentheses.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.spaceInsideParentheses.markdownDescription%",
                     "order": 80
                 },
                 "SQL-All-in-One.trimTrailingSpaces": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.trimTrailingSpaces.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.trimTrailingSpaces.markdownDescription%",
                     "order": 81
                 },
                 "SQL-All-in-One.semicolonAtEnd": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.semicolonAtEnd.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.semicolonAtEnd.markdownDescription%",
                     "order": 82
                 },
                 "SQL-All-in-One.singleLineMaxLength": {
@@ -728,37 +728,37 @@
                     "default": 80,
                     "minimum": 40,
                     "maximum": 500,
-                    "markdownDescription": "%sql-all-in-one.config.singleLineMaxLength.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.singleLineMaxLength.markdownDescription%",
                     "order": 77
                 },
                 "SQL-All-in-One.paramTypes": {
                     "type": "object",
                     "default": {},
-                    "markdownDescription": "%sql-all-in-one.config.paramTypes.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.paramTypes.markdownDescription%",
                     "order": 240
                 },
                 "SQL-All-in-One.showErrorLevel": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.showErrorLevel.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.showErrorLevel.markdownDescription%",
                     "order": 101
                 },
                 "SQL-All-in-One.showWarningLevel": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.showWarningLevel.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.showWarningLevel.markdownDescription%",
                     "order": 102
                 },
                 "SQL-All-in-One.showInfoLevel": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.showInfoLevel.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.showInfoLevel.markdownDescription%",
                     "order": 103
                 },
                 "SQL-All-in-One.enableLinter": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.enableLinter.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.enableLinter.markdownDescription%",
                     "order": 100
                 },
                 "SQL-All-in-One.lint.avoid_select_star": {
@@ -767,7 +767,7 @@
                         "enabled": true,
                         "severity": "warning"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.avoid_select_star.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.lint.avoid_select_star.markdownDescription%",
                     "order": 110
                 },
                 "SQL-All-in-One.lint.explicit_join_type": {
@@ -776,7 +776,7 @@
                         "enabled": true,
                         "severity": "information"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.explicit_join_type.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.lint.explicit_join_type.markdownDescription%",
                     "order": 111
                 },
                 "SQL-All-in-One.lint.limit_with_order_by": {
@@ -785,7 +785,7 @@
                         "enabled": true,
                         "severity": "warning"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.limit_with_order_by.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.lint.limit_with_order_by.markdownDescription%",
                     "order": 112
                 },
                 "SQL-All-in-One.lint.avoid_column_count_mismatch": {
@@ -794,7 +794,7 @@
                         "enabled": true,
                         "severity": "error"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.avoid_column_count_mismatch.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.lint.avoid_column_count_mismatch.markdownDescription%",
                     "order": 113
                 },
                 "SQL-All-in-One.lint.missing_primary_key": {
@@ -803,7 +803,7 @@
                         "enabled": true,
                         "severity": "warning"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.missing_primary_key.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.lint.missing_primary_key.markdownDescription%",
                     "order": 114
                 },
                 "SQL-All-in-One.lint.use_current_timestamp": {
@@ -812,7 +812,7 @@
                         "enabled": true,
                         "severity": "information"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.use_current_timestamp.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.lint.use_current_timestamp.markdownDescription%",
                     "order": 115
                 },
                 "SQL-All-in-One.lint.avoid_select_in_insert": {
@@ -821,7 +821,7 @@
                         "enabled": true,
                         "severity": "warning"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.avoid_select_in_insert.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.lint.avoid_select_in_insert.markdownDescription%",
                     "order": 116
                 },
                 "SQL-All-in-One.lint.duplicate_column_aliases": {
@@ -830,7 +830,7 @@
                         "enabled": true,
                         "severity": "warning"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.duplicate_column_aliases.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.lint.duplicate_column_aliases.markdownDescription%",
                     "order": 117
                 },
                 "SQL-All-in-One.lint.uppercase_keywords": {
@@ -839,7 +839,7 @@
                         "enabled": false,
                         "severity": "information"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.uppercase_keywords.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.lint.uppercase_keywords.markdownDescription%",
                     "order": 118
                 },
                 "SQL-All-in-One.lint.consistent_aliasing": {
@@ -848,7 +848,7 @@
                         "enabled": false,
                         "severity": "information"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.consistent_aliasing.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.lint.consistent_aliasing.markdownDescription%",
                     "order": 119
                 },
                 "SQL-All-in-One.lint.use_coalesce_over_isnull": {
@@ -857,7 +857,7 @@
                         "enabled": false,
                         "severity": "information"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.use_coalesce_over_isnull.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.lint.use_coalesce_over_isnull.markdownDescription%",
                     "order": 120
                 },
                 "SQL-All-in-One.lint.explicit_column_aliasing": {
@@ -866,7 +866,7 @@
                         "enabled": false,
                         "severity": "information"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.explicit_column_aliasing.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.lint.explicit_column_aliasing.markdownDescription%",
                     "order": 121
                 },
                 "SQL-All-in-One.lint.avoid_correlated_subqueries": {
@@ -875,7 +875,7 @@
                         "enabled": false,
                         "severity": "warning"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.avoid_correlated_subqueries.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.lint.avoid_correlated_subqueries.markdownDescription%",
                     "order": 122
                 },
                 "SQL-All-in-One.lint.long_query_line": {
@@ -884,161 +884,161 @@
                         "enabled": false,
                         "severity": "information"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.long_query_line.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.lint.long_query_line.markdownDescription%",
                     "order": 123
                 },
                 "SQL-All-in-One.enableCodeFolding": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.enableCodeFolding.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.enableCodeFolding.markdownDescription%",
                     "order": 150
                 },
                 "SQL-All-in-One.enableOutlineView": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.enableOutlineView.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.enableOutlineView.markdownDescription%",
                     "order": 151
                 },
                 "SQL-All-in-One.enableStatusBar": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.enableStatusBar.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.enableStatusBar.markdownDescription%",
                     "order": 152
                 },
                 "SQL-All-in-One.enableParameterHighlight": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.enableParameterHighlight.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.enableParameterHighlight.markdownDescription%",
                     "order": 153
                 },
                 "SQL-All-in-One.enableSnippets": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.enableSnippets.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.enableSnippets.markdownDescription%",
                     "order": 154
                 },
                 "SQL-All-in-One.enableQuickFix": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.enableQuickFix.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.enableQuickFix.markdownDescription%",
                     "order": 155
                 },
                 "SQL-All-in-One.enableHover": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.enableHover.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.enableHover.markdownDescription%",
                     "order": 156
                 },
                 "SQL-All-in-One.enableNavigation": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.enableNavigation.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.enableNavigation.markdownDescription%",
                     "order": 157
                 },
                 "SQL-All-in-One.enableCompletion": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.enableCompletion.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.enableCompletion.markdownDescription%",
                     "order": 158
                 },
                 "SQL-All-in-One.completion.keywords": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.completion.keywords.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.completion.keywords.markdownDescription%",
                     "order": 160
                 },
                 "SQL-All-in-One.completion.functions": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.completion.functions.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.completion.functions.markdownDescription%",
                     "order": 161
                 },
                 "SQL-All-in-One.completion.snippets": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "%sql-all-in-one.config.completion.snippets.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.completion.snippets.markdownDescription%",
                     "order": 162
                 },
                 "SQL-All-in-One.completion.cteNames": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.completion.cteNames.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.completion.cteNames.markdownDescription%",
                     "order": 163
                 },
                 "SQL-All-in-One.completion.identifiers": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.completion.identifiers.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.completion.identifiers.markdownDescription%",
                     "order": 164
                 },
                 "SQL-All-in-One.enableSmartCommentToggle": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.enableSmartCommentToggle.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.enableSmartCommentToggle.markdownDescription%",
                     "order": 159
                 },
                 "SQL-All-in-One.headerAuthor": {
                     "type": "string",
                     "default": "",
-                    "markdownDescription": "%sql-all-in-one.config.headerAuthor.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.headerAuthor.markdownDescription%",
                     "order": 241
                 },
                 "SQL-All-in-One.headerModifier": {
                     "type": "string",
                     "default": "",
-                    "markdownDescription": "%sql-all-in-one.config.headerModifier.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.headerModifier.markdownDescription%",
                     "order": 242
                 },
                 "SQL-All-in-One.completion.commentSnippets": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.completion.commentSnippets.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.completion.commentSnippets.markdownDescription%",
                     "order": 165
                 },
                 "SQL-All-in-One.completion.schema": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.completion.schema.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.completion.schema.markdownDescription%",
                     "order": 166
                 },
                 "SQL-All-in-One.schemaCache.databaseTtl": {
                     "type": "number",
                     "default": 600,
                     "minimum": 0,
-                    "markdownDescription": "%sql-all-in-one.config.schemaCache.databaseTtl.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.schemaCache.databaseTtl.markdownDescription%",
                     "order": 170
                 },
                 "SQL-All-in-One.schemaCache.tableTtl": {
                     "type": "number",
                     "default": 300,
                     "minimum": 0,
-                    "markdownDescription": "%sql-all-in-one.config.schemaCache.tableTtl.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.schemaCache.tableTtl.markdownDescription%",
                     "order": 171
                 },
                 "SQL-All-in-One.schemaCache.columnTtl": {
                     "type": "number",
                     "default": 120,
                     "minimum": 0,
-                    "markdownDescription": "%sql-all-in-one.config.schemaCache.columnTtl.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.schemaCache.columnTtl.markdownDescription%",
                     "order": 172
                 },
                 "SQL-All-in-One.schemaCache.functionTtl": {
                     "type": "number",
                     "default": 600,
                     "minimum": 0,
-                    "markdownDescription": "%sql-all-in-one.config.schemaCache.functionTtl.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.schemaCache.functionTtl.markdownDescription%",
                     "order": 173
                 },
                 "SQL-All-in-One.schemaCache.refreshOnDDL": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.schemaCache.refreshOnDDL.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.schemaCache.refreshOnDDL.markdownDescription%",
                     "order": 174
                 },
                 "SQL-All-in-One.schemaCache.prefetchOnConnect": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.schemaCache.prefetchOnConnect.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.schemaCache.prefetchOnConnect.markdownDescription%",
                     "order": 175
                 },
                 "SQL-All-in-One.lint.missing_query_comment": {
@@ -1050,7 +1050,7 @@
                         "thresholdJoinCount": 3,
                         "thresholdSubqueryCount": 2
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.missing_query_comment.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.lint.missing_query_comment.markdownDescription%",
                     "order": 124
                 },
                 "SQL-All-in-One.lint.missing_column_comment": {
@@ -1061,7 +1061,7 @@
                         "aggregate": true,
                         "externalTableExempt": false
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.missing_column_comment.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.lint.missing_column_comment.markdownDescription%",
                     "order": 128
                 },
                 "SQL-All-in-One.lint.commented_out_code": {
@@ -1071,7 +1071,7 @@
                         "severity": "information",
                         "thresholdLines": 3
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.commented_out_code.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.lint.commented_out_code.markdownDescription%",
                     "order": 131
                 },
                 "SQL-All-in-One.lint.expired_todo": {
@@ -1081,7 +1081,7 @@
                         "severity": "information",
                         "gracePeriodDays": 7
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.expired_todo.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.lint.expired_todo.markdownDescription%",
                     "order": 133
                 },
                 "SQL-All-in-One.lint.having_without_group_by": {
@@ -1090,7 +1090,7 @@
                         "enabled": true,
                         "severity": "warning"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.having_without_group_by.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.lint.having_without_group_by.markdownDescription%",
                     "order": 135
                 },
                 "SQL-All-in-One.lint.limit_invalid_value": {
@@ -1099,7 +1099,7 @@
                         "enabled": true,
                         "severity": "error"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.limit_invalid_value.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.lint.limit_invalid_value.markdownDescription%",
                     "order": 136
                 },
                 "SQL-All-in-One.lint.reserved_word_identifier": {
@@ -1108,7 +1108,7 @@
                         "enabled": true,
                         "severity": "warning"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.reserved_word_identifier.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.lint.reserved_word_identifier.markdownDescription%",
                     "order": 137
                 },
                 "SQL-All-in-One.lint.join_missing_on": {
@@ -1117,7 +1117,7 @@
                         "enabled": true,
                         "severity": "warning"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.join_missing_on.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.lint.join_missing_on.markdownDescription%",
                     "order": 138
                 },
                 "SQL-All-in-One.lint.select_without_from": {
@@ -1126,7 +1126,7 @@
                         "enabled": true,
                         "severity": "warning"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.select_without_from.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.lint.select_without_from.markdownDescription%",
                     "order": 139
                 },
                 "SQL-All-in-One.lint.misplaced_distinct": {
@@ -1135,7 +1135,7 @@
                         "enabled": true,
                         "severity": "error"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.misplaced_distinct.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.lint.misplaced_distinct.markdownDescription%",
                     "order": 140
                 },
                 "SQL-All-in-One.lint.aggregate_in_where": {
@@ -1144,7 +1144,7 @@
                         "enabled": true,
                         "severity": "error"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.aggregate_in_where.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.lint.aggregate_in_where.markdownDescription%",
                     "order": 141
                 },
                 "SQL-All-in-One.lint.subquery_without_alias": {
@@ -1153,7 +1153,7 @@
                         "enabled": true,
                         "severity": "warning"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.subquery_without_alias.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.lint.subquery_without_alias.markdownDescription%",
                     "order": 142
                 },
                 "SQL-All-in-One.lint.suspicious_null_comparison": {
@@ -1162,7 +1162,7 @@
                         "enabled": true,
                         "severity": "warning"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.suspicious_null_comparison.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.lint.suspicious_null_comparison.markdownDescription%",
                     "order": 143
                 },
                 "SQL-All-in-One.lint.incomplete_case": {
@@ -1171,7 +1171,7 @@
                         "enabled": true,
                         "severity": "error"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.incomplete_case.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.lint.incomplete_case.markdownDescription%",
                     "order": 144
                 },
                 "SQL-All-in-One.lint.redundant_distinct": {
@@ -1180,7 +1180,7 @@
                         "enabled": true,
                         "severity": "warning"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.redundant_distinct.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.lint.redundant_distinct.markdownDescription%",
                     "order": 145
                 },
                 "SQL-All-in-One.lint.date_function_usage": {
@@ -1189,7 +1189,7 @@
                         "enabled": true,
                         "severity": "information"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.date_function_usage.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.lint.date_function_usage.markdownDescription%",
                     "order": 146
                 },
                 "SQL-All-in-One.lint.wildcard_in_update": {
@@ -1198,7 +1198,7 @@
                         "enabled": true,
                         "severity": "error"
                     },
-                    "markdownDescription": "%sql-all-in-one.config.lint.wildcard_in_update.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.lint.wildcard_in_update.markdownDescription%",
                     "order": 147
                 },
                 "SQL-All-in-One.nullCase": {
@@ -1209,12 +1209,12 @@
                         "lower"
                     ],
                     "enumDescriptions": [
-                        "%sql-all-in-one.config.nullCase.enumDescriptions.preserve%",
-                        "%sql-all-in-one.config.nullCase.enumDescriptions.upper%",
-                        "%sql-all-in-one.config.nullCase.enumDescriptions.lower%"
+                        "%hive-formatter.config.nullCase.enumDescriptions.preserve%",
+                        "%hive-formatter.config.nullCase.enumDescriptions.upper%",
+                        "%hive-formatter.config.nullCase.enumDescriptions.lower%"
                     ],
                     "default": "preserve",
-                    "markdownDescription": "%sql-all-in-one.config.nullCase.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.nullCase.markdownDescription%",
                     "order": 14
                 },
                 "SQL-All-in-One.booleanCase": {
@@ -1225,90 +1225,90 @@
                         "lower"
                     ],
                     "enumDescriptions": [
-                        "%sql-all-in-one.config.booleanCase.enumDescriptions.preserve%",
-                        "%sql-all-in-one.config.booleanCase.enumDescriptions.upper%",
-                        "%sql-all-in-one.config.booleanCase.enumDescriptions.lower%"
+                        "%hive-formatter.config.booleanCase.enumDescriptions.preserve%",
+                        "%hive-formatter.config.booleanCase.enumDescriptions.upper%",
+                        "%hive-formatter.config.booleanCase.enumDescriptions.lower%"
                     ],
                     "default": "preserve",
-                    "markdownDescription": "%sql-all-in-one.config.booleanCase.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.booleanCase.markdownDescription%",
                     "order": 15
                 },
                 "SQL-All-in-One.newlineAfterGroupBy": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineAfterGroupBy.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.newlineAfterGroupBy.markdownDescription%",
                     "order": 41
                 },
                 "SQL-All-in-One.newlineAfterHaving": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineAfterHaving.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.newlineAfterHaving.markdownDescription%",
                     "order": 42
                 },
                 "SQL-All-in-One.newlineAfterOrderBy": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineAfterOrderBy.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.newlineAfterOrderBy.markdownDescription%",
                     "order": 43
                 },
                 "SQL-All-in-One.newlineAfterLimit": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "%sql-all-in-one.config.newlineAfterLimit.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.newlineAfterLimit.markdownDescription%",
                     "order": 44
                 },
                 "SQL-All-in-One.newlineAfterJoin": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineAfterJoin.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.newlineAfterJoin.markdownDescription%",
                     "order": 39
                 },
                 "SQL-All-in-One.newlineBeforeSetOperation": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeSetOperation.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.newlineBeforeSetOperation.markdownDescription%",
                     "order": 45
                 },
                 "SQL-All-in-One.newlineAfterSetOperation": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineAfterSetOperation.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.newlineAfterSetOperation.markdownDescription%",
                     "order": 46
                 },
                 "SQL-All-in-One.newlineBeforeOn": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeOn.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.newlineBeforeOn.markdownDescription%",
                     "order": 47
                 },
                 "SQL-All-in-One.newlineBeforeUsing": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeUsing.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.newlineBeforeUsing.markdownDescription%",
                     "order": 48
                 },
                 "SQL-All-in-One.newlineBeforeWith": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeWith.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.newlineBeforeWith.markdownDescription%",
                     "order": 49
                 },
                 "SQL-All-in-One.newlineAfterWith": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineAfterWith.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.newlineAfterWith.markdownDescription%",
                     "order": 50
                 },
                 "SQL-All-in-One.indentCteBody": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.indentCteBody.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.indentCteBody.markdownDescription%",
                     "order": 87
                 },
                 "SQL-All-in-One.newlineBetweenCtes": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineBetweenCtes.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.newlineBetweenCtes.markdownDescription%",
                     "order": 67
                 },
                 "SQL-All-in-One.cteCommaPosition": {
@@ -1318,96 +1318,96 @@
                         "after"
                     ],
                     "enumDescriptions": [
-                        "%sql-all-in-one.config.cteCommaPosition.enumDescriptions.before%",
-                        "%sql-all-in-one.config.cteCommaPosition.enumDescriptions.after%"
+                        "%hive-formatter.config.cteCommaPosition.enumDescriptions.before%",
+                        "%hive-formatter.config.cteCommaPosition.enumDescriptions.after%"
                     ],
                     "default": "before",
-                    "markdownDescription": "%sql-all-in-one.config.cteCommaPosition.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.cteCommaPosition.markdownDescription%",
                     "order": 88
                 },
                 "SQL-All-in-One.indentJoinConditions": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.indentJoinConditions.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.indentJoinConditions.markdownDescription%",
                     "order": 89
                 },
                 "SQL-All-in-One.alignOnClauses": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "%sql-all-in-one.config.alignOnClauses.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.alignOnClauses.markdownDescription%",
                     "order": 90
                 },
                 "SQL-All-in-One.alignInsertColumns": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "%sql-all-in-one.config.alignInsertColumns.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.alignInsertColumns.markdownDescription%",
                     "order": 91
                 },
                 "SQL-All-in-One.alignInsertValuesGroups": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "%sql-all-in-one.config.alignInsertValuesGroups.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.alignInsertValuesGroups.markdownDescription%",
                     "order": 92
                 },
                 "SQL-All-in-One.newlineAfterInsertColumns": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineAfterInsertColumns.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.newlineAfterInsertColumns.markdownDescription%",
                     "order": 52
                 },
                 "SQL-All-in-One.newlineBetweenValuesGroups": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineBetweenValuesGroups.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.newlineBetweenValuesGroups.markdownDescription%",
                     "order": 53
                 },
                 "SQL-All-in-One.newlineAfterCase": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineAfterCase.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.newlineAfterCase.markdownDescription%",
                     "order": 54
                 },
                 "SQL-All-in-One.newlineAfterWhen": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineAfterWhen.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.newlineAfterWhen.markdownDescription%",
                     "order": 55
                 },
                 "SQL-All-in-One.newlineAfterThen": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "%sql-all-in-one.config.newlineAfterThen.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.newlineAfterThen.markdownDescription%",
                     "order": 56
                 },
                 "SQL-All-in-One.newlineAfterElse": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "%sql-all-in-one.config.newlineAfterElse.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.newlineAfterElse.markdownDescription%",
                     "order": 57
                 },
                 "SQL-All-in-One.indentWhen": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.indentWhen.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.indentWhen.markdownDescription%",
                     "order": 93
                 },
                 "SQL-All-in-One.indentThen": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.indentThen.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.indentThen.markdownDescription%",
                     "order": 94
                 },
                 "SQL-All-in-One.newlineAfterIn": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "%sql-all-in-one.config.newlineAfterIn.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.newlineAfterIn.markdownDescription%",
                     "order": 58
                 },
                 "SQL-All-in-One.maxItemsInlineList": {
                     "type": "number",
                     "default": 5,
                     "minimum": 1,
-                    "markdownDescription": "%sql-all-in-one.config.maxItemsInlineList.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.maxItemsInlineList.markdownDescription%",
                     "order": 95
                 },
                 "SQL-All-in-One.subqueryParenStyle": {
@@ -1417,11 +1417,11 @@
                         "newline"
                     ],
                     "enumDescriptions": [
-                        "%sql-all-in-one.config.subqueryParenStyle.enumDescriptions.inline%",
-                        "%sql-all-in-one.config.subqueryParenStyle.enumDescriptions.newline%"
+                        "%hive-formatter.config.subqueryParenStyle.enumDescriptions.inline%",
+                        "%hive-formatter.config.subqueryParenStyle.enumDescriptions.newline%"
                     ],
                     "default": "inline",
-                    "markdownDescription": "%sql-all-in-one.config.subqueryParenStyle.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.subqueryParenStyle.markdownDescription%",
                     "order": 96
                 },
                 "SQL-All-in-One.commentPosition": {
@@ -1432,50 +1432,50 @@
                         "inline"
                     ],
                     "enumDescriptions": [
-                        "%sql-all-in-one.config.commentPosition.enumDescriptions.preserve%",
-                        "%sql-all-in-one.config.commentPosition.enumDescriptions.newline%",
-                        "%sql-all-in-one.config.commentPosition.enumDescriptions.inline%"
+                        "%hive-formatter.config.commentPosition.enumDescriptions.preserve%",
+                        "%hive-formatter.config.commentPosition.enumDescriptions.newline%",
+                        "%hive-formatter.config.commentPosition.enumDescriptions.inline%"
                     ],
                     "default": "preserve",
-                    "markdownDescription": "%sql-all-in-one.config.commentPosition.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.commentPosition.markdownDescription%",
                     "order": 97
                 },
                 "SQL-All-in-One.blankLinesBeforeSetOperation": {
                     "type": "number",
                     "default": 1,
                     "minimum": 0,
-                    "markdownDescription": "%sql-all-in-one.config.blankLinesBeforeSetOperation.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.blankLinesBeforeSetOperation.markdownDescription%",
                     "order": 98
                 },
                 "SQL-All-in-One.blankLinesAfterSetOperation": {
                     "type": "number",
                     "default": 0,
                     "minimum": 0,
-                    "markdownDescription": "%sql-all-in-one.config.blankLinesAfterSetOperation.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.blankLinesAfterSetOperation.markdownDescription%",
                     "order": 99
                 },
                 "SQL-All-in-One.newlineBeforeLateralView": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeLateralView.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.newlineBeforeLateralView.markdownDescription%",
                     "order": 63
                 },
                 "SQL-All-in-One.newlineBeforeDistributeBy": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeDistributeBy.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.newlineBeforeDistributeBy.markdownDescription%",
                     "order": 64
                 },
                 "SQL-All-in-One.newlineBeforeClusterBy": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeClusterBy.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.newlineBeforeClusterBy.markdownDescription%",
                     "order": 65
                 },
                 "SQL-All-in-One.newlineBeforeSortBy": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%sql-all-in-one.config.newlineBeforeSortBy.markdownDescription%",
+                    "markdownDescription": "%hive-formatter.config.newlineBeforeSortBy.markdownDescription%",
                     "order": 66
                 },
                 "SQL-All-in-One.query.maxRows": {
@@ -1713,115 +1713,115 @@
         "menus": {
             "editor/context": [
                 {
-                    "command": "sql-all-in-one.toggleComment",
+                    "command": "hive-formatter.toggleComment",
                     "when": "editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite/",
                     "group": "1_comment@1"
                 },
                 {
-                    "command": "sql-all-in-one.toggleAdvancedComment",
+                    "command": "hive-formatter.toggleAdvancedComment",
                     "when": "editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite/",
                     "group": "1_comment@2"
                 }
             ],
             "view/title": [
                 {
-                    "command": "sql-all-in-one.addConnection",
-                    "when": "view == sql-all-in-one.databaseExplorer",
+                    "command": "hive-formatter.addConnection",
+                    "when": "view == hive-formatter.databaseExplorer",
                     "group": "navigation@1"
                 },
                 {
-                    "command": "sql-all-in-one.refreshSchema",
-                    "when": "view == sql-all-in-one.databaseExplorer",
+                    "command": "hive-formatter.refreshSchema",
+                    "when": "view == hive-formatter.databaseExplorer",
                     "group": "navigation@2"
                 },
                 {
-                    "command": "sql-all-in-one.exportConnections",
-                    "when": "view == sql-all-in-one.databaseExplorer"
+                    "command": "hive-formatter.exportConnections",
+                    "when": "view == hive-formatter.databaseExplorer"
                 },
                 {
-                    "command": "sql-all-in-one.importConnections",
-                    "when": "view == sql-all-in-one.databaseExplorer"
+                    "command": "hive-formatter.importConnections",
+                    "when": "view == hive-formatter.databaseExplorer"
                 }
             ],
             "view/item/context": [
                 {
-                    "command": "sql-all-in-one.addConnection",
-                    "when": "view == sql-all-in-one.databaseExplorer && viewItem =~ /^(favorites|group)$/",
+                    "command": "hive-formatter.addConnection",
+                    "when": "view == hive-formatter.databaseExplorer && viewItem =~ /^(favorites|group)$/",
                     "group": "inline@1"
                 },
                 {
-                    "command": "sql-all-in-one.connect",
-                    "when": "view == sql-all-in-one.databaseExplorer && viewItem == connectionDisconnected",
+                    "command": "hive-formatter.connect",
+                    "when": "view == hive-formatter.databaseExplorer && viewItem == connectionDisconnected",
                     "group": "1_connection@1"
                 },
                 {
-                    "command": "sql-all-in-one.disconnect",
-                    "when": "view == sql-all-in-one.databaseExplorer && viewItem == connectionConnected",
+                    "command": "hive-formatter.disconnect",
+                    "when": "view == hive-formatter.databaseExplorer && viewItem == connectionConnected",
                     "group": "1_connection@1"
                 },
                 {
-                    "command": "sql-all-in-one.editConnection",
-                    "when": "view == sql-all-in-one.databaseExplorer && viewItem =~ /connection/",
+                    "command": "hive-formatter.editConnection",
+                    "when": "view == hive-formatter.databaseExplorer && viewItem =~ /connection/",
                     "group": "2_manage@1"
                 },
                 {
-                    "command": "sql-all-in-one.removeConnection",
-                    "when": "view == sql-all-in-one.databaseExplorer && viewItem =~ /connection/",
+                    "command": "hive-formatter.removeConnection",
+                    "when": "view == hive-formatter.databaseExplorer && viewItem =~ /connection/",
                     "group": "2_manage@2"
                 },
                 {
-                    "command": "sql-all-in-one.viewTableData",
-                    "when": "view == sql-all-in-one.databaseExplorer && viewItem == table",
+                    "command": "hive-formatter.viewTableData",
+                    "when": "view == hive-formatter.databaseExplorer && viewItem == table",
                     "group": "3_table@1"
                 },
                 {
-                    "command": "sql-all-in-one.viewTableDDL",
-                    "when": "view == sql-all-in-one.databaseExplorer && viewItem == table",
+                    "command": "hive-formatter.viewTableDDL",
+                    "when": "view == hive-formatter.databaseExplorer && viewItem == table",
                     "group": "3_table@2"
                 },
                 {
-                    "command": "sql-all-in-one.editTable",
-                    "when": "view == sql-all-in-one.databaseExplorer && viewItem == table",
+                    "command": "hive-formatter.editTable",
+                    "when": "view == hive-formatter.databaseExplorer && viewItem == table",
                     "group": "3_table@3"
                 },
                 {
-                    "command": "sql-all-in-one.viewTableData",
-                    "when": "view == sql-all-in-one.databaseExplorer && viewItem == view",
+                    "command": "hive-formatter.viewTableData",
+                    "when": "view == hive-formatter.databaseExplorer && viewItem == view",
                     "group": "3_table@1"
                 },
                 {
-                    "command": "sql-all-in-one.newQuery",
-                    "when": "view == sql-all-in-one.databaseExplorer && viewItem =~ /database|connectionConnected/",
+                    "command": "hive-formatter.newQuery",
+                    "when": "view == hive-formatter.databaseExplorer && viewItem =~ /database|connectionConnected/",
                     "group": "4_query@1"
                 },
                 {
-                    "command": "sql-all-in-one.designTable",
-                    "when": "view == sql-all-in-one.databaseExplorer && viewItem =~ /database|connectionConnected/",
+                    "command": "hive-formatter.designTable",
+                    "when": "view == hive-formatter.databaseExplorer && viewItem =~ /database|connectionConnected/",
                     "group": "4_query@2"
                 },
                 {
-                    "command": "sql-all-in-one.addToFavorites",
-                    "when": "view == sql-all-in-one.databaseExplorer && viewItem =~ /table|view/",
+                    "command": "hive-formatter.addToFavorites",
+                    "when": "view == hive-formatter.databaseExplorer && viewItem =~ /table|view/",
                     "group": "5_favorites@1"
                 },
                 {
-                    "command": "sql-all-in-one.removeFromFavorites",
-                    "when": "view == sql-all-in-one.databaseExplorer && (viewItem == table || viewItem == view)",
+                    "command": "hive-formatter.removeFromFavorites",
+                    "when": "view == hive-formatter.databaseExplorer && (viewItem == table || viewItem == view)",
                     "group": "5_favorites@1"
                 },
                 {
-                    "command": "sql-all-in-one.copyColumnName",
-                    "when": "view == sql-all-in-one.databaseExplorer && viewItem == column",
+                    "command": "hive-formatter.copyColumnName",
+                    "when": "view == hive-formatter.databaseExplorer && viewItem == column",
                     "group": "6_column@1"
                 },
                 {
-                    "command": "sql-all-in-one.setDefaultDatabase",
-                    "when": "view == sql-all-in-one.databaseExplorer && viewItem == database",
+                    "command": "hive-formatter.setDefaultDatabase",
+                    "when": "view == hive-formatter.databaseExplorer && viewItem == database",
                     "group": "7_database@1"
                 },
                 {
-                    "command": "sql-all-in-one.refreshSchema",
-                    "when": "view == sql-all-in-one.databaseExplorer && viewItem =~ /database|objectGroup|connectionConnected/",
+                    "command": "hive-formatter.refreshSchema",
+                    "when": "view == hive-formatter.databaseExplorer && viewItem =~ /database|objectGroup|connectionConnected/",
                     "group": "8_refresh@1"
                 }
             ]

@@ -30,7 +30,7 @@ export function registerSchemaCommands(
     const disposables: vscode.Disposable[] = [];
 
     disposables.push(
-        vscode.commands.registerCommand('sql-all-in-one.refreshSchema', async () => {
+        vscode.commands.registerCommand('hive-formatter.refreshSchema', async () => {
             const activeConn = getConnectionManager().getActiveConnection();
             if (activeConn) {
                 getSchemaCache().invalidate(activeConn.id);
@@ -42,7 +42,7 @@ export function registerSchemaCommands(
     let queryResultPanel: QueryResultPanel | undefined;
 
     disposables.push(
-        vscode.commands.registerCommand('sql-all-in-one.viewTableData', async (node?: TableTreeNode | ViewTreeNode) => {
+        vscode.commands.registerCommand('hive-formatter.viewTableData', async (node?: TableTreeNode | ViewTreeNode) => {
             try {
                 if (!node) {
                     vscode.window.showErrorMessage(t('database.noTableNodeSelected'));
@@ -63,19 +63,19 @@ export function registerSchemaCommands(
                 if (!queryResultPanel) {
                     queryResultPanel = QueryResultPanel.createOrShow(context.extensionUri, context);
                     queryResultPanel.onExecuteQuery = (_sql: string): void => {
-                        vscode.commands.executeCommand('sql-all-in-one.executeQuery');
+                        vscode.commands.executeCommand('hive-formatter.executeQuery');
                     };
                     queryResultPanel.onCancelQuery = (): void => {
-                        vscode.commands.executeCommand('sql-all-in-one.cancelQuery');
+                        vscode.commands.executeCommand('hive-formatter.cancelQuery');
                     };
                     queryResultPanel.onRequestSort = (_column: string, _direction: string): void => {
-                        vscode.commands.executeCommand('sql-all-in-one.executeQuery');
+                        vscode.commands.executeCommand('hive-formatter.executeQuery');
                     };
                     queryResultPanel.onRequestFilter = (_conditions: FilterCondition[]): void => {
-                        vscode.commands.executeCommand('sql-all-in-one.executeQuery');
+                        vscode.commands.executeCommand('hive-formatter.executeQuery');
                     };
                     queryResultPanel.onRequestPage = (_page: number): void => {
-                        vscode.commands.executeCommand('sql-all-in-one.executeQuery');
+                        vscode.commands.executeCommand('hive-formatter.executeQuery');
                     };
                     queryResultPanel.onCommitChanges = async (changes, tableName, _database): Promise<{ success: boolean; errors?: string[] }> => {
                         try {
@@ -191,7 +191,7 @@ export function registerSchemaCommands(
     );
 
     disposables.push(
-        vscode.commands.registerCommand('sql-all-in-one.viewTableDDL', async (node?: TableTreeNode) => {
+        vscode.commands.registerCommand('hive-formatter.viewTableDDL', async (node?: TableTreeNode) => {
             if (node) {
                 const adapter = getConnectionManager().getAdapter(node.connectionId);
                 if (adapter) {
@@ -211,7 +211,7 @@ export function registerSchemaCommands(
     );
 
     disposables.push(
-        vscode.commands.registerCommand('sql-all-in-one.newQuery', async (node?: DatabaseTreeNode | ConnectionTreeNode) => {
+        vscode.commands.registerCommand('hive-formatter.newQuery', async (node?: DatabaseTreeNode | ConnectionTreeNode) => {
             let database = '';
             if (node instanceof DatabaseTreeNode) {
                 database = node.databaseName;
@@ -229,7 +229,7 @@ export function registerSchemaCommands(
     );
 
     disposables.push(
-        vscode.commands.registerCommand('sql-all-in-one.copyColumnName', async (node?: ColumnTreeNode) => {
+        vscode.commands.registerCommand('hive-formatter.copyColumnName', async (node?: ColumnTreeNode) => {
             if (node) {
                 await vscode.env.clipboard.writeText(node.columnInfo.name);
                 vscode.window.showInformationMessage(t('database.columnCopied'));
@@ -238,7 +238,7 @@ export function registerSchemaCommands(
     );
 
     disposables.push(
-        vscode.commands.registerCommand('sql-all-in-one.addToFavorites', async (node?: TableTreeNode | ViewTreeNode) => {
+        vscode.commands.registerCommand('hive-formatter.addToFavorites', async (node?: TableTreeNode | ViewTreeNode) => {
             if (node) {
                 const conn = getConnectionManager().getAllConnections().find(
                     (c) => c.id === node.connectionId
@@ -260,7 +260,7 @@ export function registerSchemaCommands(
     );
 
     disposables.push(
-        vscode.commands.registerCommand('sql-all-in-one.removeFromFavorites', async (node?: FavoriteTreeNode) => {
+        vscode.commands.registerCommand('hive-formatter.removeFromFavorites', async (node?: FavoriteTreeNode) => {
             if (node) {
                 await treeProvider.removeFavorite(
                     node.connectionId,
@@ -274,7 +274,7 @@ export function registerSchemaCommands(
     );
 
     disposables.push(
-        vscode.commands.registerCommand('sql-all-in-one.revealInExplorer', async (node?: FavoriteTreeNode) => {
+        vscode.commands.registerCommand('hive-formatter.revealInExplorer', async (node?: FavoriteTreeNode) => {
             if (node) {
                 vscode.window.showInformationMessage(
                     `${node.objectType}: ${node.objectName} | Connection: ${node.connectionName} | Database: ${node.databaseName}`
@@ -284,7 +284,7 @@ export function registerSchemaCommands(
     );
 
     disposables.push(
-        vscode.commands.registerCommand('sql-all-in-one.setDefaultDatabase', async (node?: DatabaseTreeNode) => {
+        vscode.commands.registerCommand('hive-formatter.setDefaultDatabase', async (node?: DatabaseTreeNode) => {
             if (node) {
                 const manager = getConnectionManager();
                 const currentConfig = manager.getAllConnections().find(c => c.id === node.connectionId);
@@ -310,7 +310,7 @@ export function registerSchemaCommands(
     );
 
     disposables.push(
-        vscode.commands.registerCommand('sql-all-in-one.designTable', async (node?: DatabaseTreeNode | ConnectionTreeNode) => {
+        vscode.commands.registerCommand('hive-formatter.designTable', async (node?: DatabaseTreeNode | ConnectionTreeNode) => {
             const connectionManager = getConnectionManager();
             const activeConn = connectionManager.getActiveConnection();
             if (!activeConn) {
@@ -356,7 +356,7 @@ export function registerSchemaCommands(
     );
 
     disposables.push(
-        vscode.commands.registerCommand('sql-all-in-one.editTable', async (node?: TableTreeNode) => {
+        vscode.commands.registerCommand('hive-formatter.editTable', async (node?: TableTreeNode) => {
             if (!node) {
                 vscode.window.showWarningMessage(t('database.selectTableToEdit'));
                 return;
@@ -378,7 +378,7 @@ export function registerSchemaCommands(
     );
 
     disposables.push(
-        vscode.commands.registerCommand('sql-all-in-one.explainQuery', async () => {
+        vscode.commands.registerCommand('hive-formatter.explainQuery', async () => {
             const editor = vscode.window.activeTextEditor;
             if (!editor) {
                 vscode.window.showWarningMessage(t('database.noActiveEditor'));
@@ -421,7 +421,7 @@ export function registerSchemaCommands(
     );
 
     disposables.push(
-        vscode.commands.registerCommand('sql-all-in-one.importData', async () => {
+        vscode.commands.registerCommand('hive-formatter.importData', async () => {
             const connectionManager = getConnectionManager();
             const activeConn = connectionManager.getActiveConnection();
             if (!activeConn) {

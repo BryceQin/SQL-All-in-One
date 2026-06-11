@@ -22,18 +22,18 @@ export class ConfigManager {
         return this.config;
     }
 
-    private deepEqual(a: unknown, b: unknown, seenA = new WeakSet(), seenB = new WeakSet()): boolean {
+    private deepEqual(a: unknown, b: unknown, seen = new WeakSet()): boolean {
         if (a === b) return true;
         if (a === null || b === null || typeof a !== 'object' || typeof b !== 'object') return false;
-        if (seenA.has(a as object) || seenB.has(b as object)) return false;
-        seenA.add(a as object);
-        seenB.add(b as object);
+        if (seen.has(a as object) || seen.has(b as object)) return a === b;
+        seen.add(a as object);
+        seen.add(b as object);
         const keysA = Object.keys(a as Record<string, unknown>);
         const keysB = new Set(Object.keys(b as Record<string, unknown>));
         if (keysA.length !== keysB.size) return false;
         for (const key of keysA) {
             if (!keysB.has(key)) return false;
-            if (!this.deepEqual((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key], seenA, seenB)) return false;
+            if (!this.deepEqual((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key], seen)) return false;
         }
         return true;
     }

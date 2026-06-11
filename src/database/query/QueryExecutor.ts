@@ -10,9 +10,29 @@ export class QueryExecutor {
     private runningQueries = new Map<string, RunningQuery>();
     private readonly _onDidStartQuery = new EventEmitter<QueryStartEvent>();
     private readonly _onDidEndQuery = new EventEmitter<QueryEndEvent>();
+    private cachedMaxRows: number = 1000;
+    private cachedTimeout: number = 30000;
+    private cachedCancelRetries: number = 3;
+    private cachedCancelRetryDelay: number = 500;
+    private configDisposable: vscode.Disposable | undefined;
 
     readonly onDidStartQuery = this._onDidStartQuery.event;
     readonly onDidEndQuery = this._onDidEndQuery.event;
+
+    constructor() {
+        this.refreshConfigCache();
+        this.configDisposable = getConfigManager().onConfigChange(() => {
+            this.refreshConfigCache();
+        });
+    }
+
+    private refreshConfigCache(): void {
+        const cfg = getConfigManager();
+        this.cachedMaxRows = cfg.get<number>('query.maxRows', 1000);
+        this.cachedTimeout = cfg.get<number>('query.timeout', 30000);
+        this.cachedCancelRetries = cfg.get<number>('execution.cancelRetries', 3);
+        this.cachedCancelRetryDelay = cfg.get<number>('execution.cancelRetryDelay', 500);
+    }
 
     async execute(
         adapter: IDatabaseAdapter,
@@ -118,7 +138,8 @@ export class QueryExecutor {
                         return;
                     } catch {
                         if (attempt < maxRetries - 1) {
-                            await this.delay(retryDelay);
+                            const backoffDelay = retryDelay * Math.pow(2, attempt);
+                            await this.delay(backoffDelay);
                         }
                     }
                 }
@@ -194,19 +215,19 @@ export class QueryExecutor {
     }
 
     private getConfigMaxRows(): number {
-        return getConfigManager().get<number>('query.maxRows', 1000);
+        return this.cachedMaxRows;
     }
 
     private getConfigTimeout(): number {
-        return getConfigManager().get<number>('query.timeout', 30000);
+        return this.cachedTimeout;
     }
 
     private getConfigCancelRetries(): number {
-        return getConfigManager().get<number>('execution.cancelRetries', 3);
+        return this.cachedCancelRetries;
     }
 
     private getConfigCancelRetryDelay(): number {
-        return getConfigManager().get<number>('execution.cancelRetryDelay', 500);
+        return this.cachedCancelRetryDelay;
     }
 
     private delay(ms: number): Promise<void> {
@@ -221,5 +242,6 @@ export class QueryExecutor {
         this.runningQueries.clear();
         this._onDidStartQuery.dispose();
         this._onDidEndQuery.dispose();
+        this.configDisposable?.dispose();
     }
 }

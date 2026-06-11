@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import { getConnectionManager } from '../../database/connection/ConnectionManager';
@@ -130,6 +131,8 @@ export class DataTransferDialog {
     private _update(): void {
         this._getHtmlForWebview().then(html => {
             this._panel.webview.html = html;
+        }).catch(e => {
+            console.error('[SQL All in One] Failed to load DataTransferDialog HTML:', e);
         });
     }
 
@@ -152,6 +155,11 @@ export class DataTransferDialog {
             html = html.replace('{{CSS_URI}}', cssUri.toString());
             html = html.replace('{{JS_URI}}', jsUri.toString());
             html = html.replace(/\{\{CSP_SOURCE\}\}/g, this._panel.webview.cspSource);
+
+            const nonce = crypto.randomUUID();
+            html = html.replace(/\{\{CSP_NONCE\}\}/g, nonce);
+            html = html.replace(/<script(?=\s)/g, `<script nonce="${nonce}"`);
+            html = html.replace(/<style(?=\s)/g, `<style nonce="${nonce}"`);
 
             return html;
         } catch (error) {
