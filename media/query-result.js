@@ -192,6 +192,7 @@ const state = {
 
 var monacoEditor = null;
 var monacoLoaded = false;
+var monacoRef = null;
 var languageData = null;
 var registeredDialect = null;
 var pendingRequests = new Map();
@@ -242,6 +243,19 @@ const HEADER_HEIGHT = 48;
 const BUFFER_ROWS = 5;
 
 function init() {
+    var config = window.__CONFIG__ || {};
+    if (config.monacoBasePath) state.monacoBasePath = config.monacoBasePath;
+    if (config.dialect) state.dialect = config.dialect;
+    if (config.pageSize !== undefined) state.pageSize = config.pageSize;
+    if (config.nullPlaceholder !== undefined) state.nullPlaceholder = config.nullPlaceholder;
+    if (config.enablePreload !== undefined) state.enablePreload = config.enablePreload;
+    if (config.jsonPrettyPrint !== undefined) state.jsonPrettyPrint = config.jsonPrettyPrint;
+    if (config.dateFormat !== undefined) state.dateFormat = config.dateFormat;
+    if (config.longTextThreshold !== undefined) state.longTextThreshold = config.longTextThreshold;
+    if (config.editMode !== undefined) state.editMode = config.editMode === 'editable';
+    if (config.autoCommit !== undefined) state.autoCommit = config.autoCommit;
+    if (config.defaultView !== undefined) state.defaultView = config.defaultView;
+
     const gridBodyWrapper = document.getElementById('gridBodyWrapper');
     gridBodyWrapper.addEventListener('scroll', onGridScroll);
     document.addEventListener('click', onDocumentClick);
@@ -296,13 +310,15 @@ function initMonacoEditor(sql) {
     if (typeof require === 'function' && !monacoLoaded) {
         require.config({ paths: { 'vs': state.monacoBasePath } });
         require(['vs/editor/editor.main'], function(monaco) {
+            monacoRef = monaco;
             monacoLoaded = true;
             createMonacoInstance(monaco, container, sql);
-        }, function() {
+        }, function(err) {
+            console.error('[SQL-All-in-One] Monaco load failed:', err);
             createFallbackEditor(container, sql);
         });
-    } else if (monacoLoaded && typeof monaco !== 'undefined') {
-        createMonacoInstance(monaco, container, sql);
+    } else if (monacoLoaded && monacoRef) {
+        createMonacoInstance(monacoRef, container, sql);
     } else {
         createFallbackEditor(container, sql);
     }
@@ -361,7 +377,7 @@ function createMonacoInstance(monaco, container, sql) {
         registerLanguageFeatures(languageData);
         var model = monacoEditor.getModel();
         if (model) {
-            monaco.editor.setModelLanguage(model, languageData.dialect || 'mysql');
+            monacoRef.editor.setModelLanguage(model, languageData.dialect || 'mysql');
         }
     }
 
@@ -457,9 +473,9 @@ function handleSetEditorSql(data) {
 }
 
 function handleThemeChange(data) {
-    if (!monacoEditor || typeof monaco === 'undefined') return;
+    if (!monacoEditor || !monacoRef) return;
     var theme = data.kind === 2 || data.kind === 3 ? 'vs-dark' : 'vs';
-    monaco.editor.setTheme(theme);
+    monacoRef.editor.setTheme(theme);
 }
 
 var _scrollRafId = 0;
@@ -2166,11 +2182,11 @@ function handleLanguageData(data) {
     if (data.dialect) {
         state.dialect = data.dialect;
     }
-    if (monacoEditor && typeof monaco !== 'undefined') {
+    if (monacoEditor && monacoRef) {
         registerLanguageFeatures(data);
         var model = monacoEditor.getModel();
         if (model) {
-            monaco.editor.setModelLanguage(model, data.dialect || 'mysql');
+            monacoRef.editor.setModelLanguage(model, data.dialect || 'mysql');
         }
     }
 }
@@ -2254,12 +2270,12 @@ function registerLanguageFeatures(data) {
     if (registeredDialect === dialect) return;
     registeredDialect = dialect;
 
-    monaco.languages.register({ id: dialect });
+    monacoRef.languages.register({ id: dialect });
 
     var monarchRules = buildMonarchRules(data);
-    monaco.languages.setMonarchTokensProvider(dialect, monarchRules);
+    monacoRef.languages.setMonarchTokensProvider(dialect, monarchRules);
 
-    monaco.languages.registerCompletionItemProvider(dialect, {
+    monacoRef.languages.registerCompletionItemProvider(dialect, {
         triggerCharacters: ['.', ' '],
         provideCompletionItems: function(model, position) {
             var word = model.getWordUntilPosition(position);
@@ -2330,7 +2346,7 @@ function registerLanguageFeatures(data) {
         },
     });
 
-    monaco.languages.registerSignatureHelpProvider(dialect, {
+    monacoRef.languages.registerSignatureHelpProvider(dialect, {
         signatureHelpTriggerCharacters: ['(', ','],
         provideSignatureHelp: function(model, position) {
             if (!data.functions || data.functions.length === 0) return { dispose: function() {} };
@@ -2364,7 +2380,7 @@ function registerLanguageFeatures(data) {
         },
     });
 
-    monaco.languages.registerCompletionItemProvider(dialect, {
+    monacoRef.languages.registerCompletionItemProvider(dialect, {
         triggerCharacters: ['.', ' '],
         provideCompletionItems: function(model, position) {
             var sql = model.getValue();
@@ -2391,7 +2407,7 @@ function registerLanguageFeatures(data) {
         },
     });
 
-    monaco.languages.registerHoverProvider(dialect, {
+    monacoRef.languages.registerHoverProvider(dialect, {
         provideHover: function(model, position) {
             var sql = model.getValue();
             var pos = { line: position.lineNumber - 1, column: position.column - 1 };
@@ -2402,7 +2418,7 @@ function registerLanguageFeatures(data) {
             }).then(function(response) {
                 if (!response || !response.contents) return null;
                 return {
-                    range: new monaco.Range(
+                    range: new monacoRef.Range(
                         position.lineNumber,
                         position.column,
                         position.lineNumber,
@@ -2418,7 +2434,7 @@ function registerLanguageFeatures(data) {
 
     var model = monacoEditor.getModel();
     if (model) {
-        monaco.editor.setModelLanguage(model, dialect);
+        monacoRef.editor.setModelLanguage(model, dialect);
     }
 }
 
@@ -2460,7 +2476,7 @@ function requestDiagnostics() {
         if (!response || !response.diagnostics) return;
         var model = monacoEditor.getModel();
         if (model) {
-            monaco.editor.setModelMarkers(model, 'sql-lint', response.diagnostics);
+            monacoRef.editor.setModelMarkers(model, 'sql-lint', response.diagnostics);
         }
     });
 }

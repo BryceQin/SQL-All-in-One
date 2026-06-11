@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.14.2] - 2026-06-11
+
+### Bug Fixes
+
+- 修复 Monaco 无法加载的根因：`state.monacoBasePath` 从未被初始化，`init()` 函数未从 `window.__CONFIG__` 读取配置
+- Fix root cause of Monaco not loading: `state.monacoBasePath` was never initialized, `init()` function did not read config from `window.__CONFIG__`
+- 修复 `monaco` 全局变量不可用的问题：改用显式存储的 `monacoRef` 引用
+- Fix `monaco` global variable not available: use explicitly stored `monacoRef` reference instead
+- 所有 `monaco.languages.*` 和 `monaco.editor.*` 调用统一使用 `monacoRef`
+- All `monaco.languages.*` and `monaco.editor.*` calls now use `monacoRef` consistently
+
+---
+
 ## [2.14.1] - 2026-06-11
 
 ### Bug Fixes
