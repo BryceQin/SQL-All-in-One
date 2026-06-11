@@ -11,7 +11,7 @@
 | | |
 |---|---|
 | **发布者** | bryce-qin |
-| **版本** | 2.13.0 |
+| **版本** | 2.14.0 |
 | **许可证** | MIT |
 | **仓库** | [GitHub](https://github.com/BryceQin/SQL-All-in-One) |
 | **VSCode 引擎** | ^1.85.0 |
@@ -631,7 +631,7 @@ MIT License
 | | |
 |---|---|
 | **Publisher** | bryce-qin |
-| **Version** | 2.13.0 |
+| **Version** | 2.14.0 |
 | **License** | MIT |
 | **Repository** | [GitHub](https://github.com/BryceQin/SQL-All-in-One) |
 | **VSCode Engine** | ^1.85.0 |
@@ -684,7 +684,7 @@ MIT License
 - **Query Data Panel (new in v2.12)**: integrated Monaco SQL editor, write and execute SQL directly in the result panel
 - Draggable split panel: SQL editor and query results in vertical split layout, adjustable ratio
 - Monaco editor: SQL syntax highlighting, IntelliSense, code folding, auto-follows VS Code theme
-- **Monaco Language Features (new in v2.13)**: dialect-aware syntax highlighting, smart completion, hover info, SQL formatting, lint diagnostics
+- **Monaco Language Features (new in v2.14)**: dialect-aware syntax highlighting, smart completion, hover info, SQL formatting, lint diagnostics
 - Dialect-aware Monarch syntax highlighting: 8 SQL dialect tokenizers, keywords/data types/functions colored separately
 - Static completion (zero latency): keywords, 580+ function signatures (with parameter snippets), data types, code snippets
 - Function signature help: shows parameter signatures on `(` or `,`, auto-highlights current parameter
