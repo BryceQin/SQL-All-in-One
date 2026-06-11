@@ -3,10 +3,10 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { sqlDialects, toSqlDialect } from '../core/sqlDialects'
 import { createDialect, type Dialect, type DialectOptions } from '../languages/dialect'
+import { keywordMap, functionSigMap } from '../languages/dialectData'
 import * as allDialects from '../languages/allDialects'
 import { getKeywordItems } from './keywordCompletion'
 import { getFunctionItems } from './functionCompletion'
-import type { FunctionSignature } from './functionSignatures'
 import { getSnippetItems } from './snippetCompletion'
 import { getCTEItemsFromAst } from './cteCompletion'
 import { getIdentifierItems } from './identifierCompletion'
@@ -20,28 +20,6 @@ import { getDocumentAstCache } from '../parser/DocumentAstCache'
 import type { SqlDialect } from '../parser/dialectMapper'
 
 interface SnippetDef { prefix: string; body: string[]; description: string }
-
-const keywordMap: Record<string, { keywords: string[]; dataTypes: string[] }> = {
-    hive: { keywords: allDialects.hiveKeywords, dataTypes: allDialects.hiveDataTypes },
-    mysql: { keywords: allDialects.mysqlKeywords, dataTypes: allDialects.mysqlDataTypes },
-    spark: { keywords: allDialects.sparkKeywords, dataTypes: allDialects.sparkDataTypes },
-    flinksql: { keywords: allDialects.flinksqlKeywords, dataTypes: allDialects.flinksqlDataTypes },
-    sql:   { keywords: allDialects.sqlKeywords,   dataTypes: allDialects.sqlDataTypes },
-    postgresql: { keywords: allDialects.pgKeywords, dataTypes: allDialects.pgDataTypes },
-    bigquery: { keywords: allDialects.bqKeywords, dataTypes: allDialects.bqDataTypes },
-    sqlite: { keywords: allDialects.sqliteKeywords, dataTypes: allDialects.sqliteDataTypes },
-}
-
-const functionSigMap: Record<string, FunctionSignature[]> = {
-    hive:  allDialects.hiveFunctionSignatures,
-    mysql: allDialects.mysqlFunctionSignatures,
-    spark: allDialects.sparkFunctionSignatures,
-    flinksql: allDialects.flinksqlFunctionSignatures,
-    sql:   allDialects.sqlFunctionSignatures,
-    postgresql: allDialects.pgFunctionSignatures,
-    bigquery: allDialects.bqFunctionSignatures,
-    sqlite: allDialects.sqliteFunctionSignatures,
-}
 
 export class SqlCompletionProvider implements vscode.CompletionItemProvider {
     private extensionPath: string
@@ -200,8 +178,9 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
                 }, 'snippet completion')
                 if (token.isCancellationRequested) return []
 
+                const textContent = doc.getText().trim();
                 this.tryCollect(items, () => {
-                    if (!cfg.cteNames || !doc.getText().trim()) return []
+                    if (!cfg.cteNames || !textContent) return []
                     if (parseResult.success && parseResult.ast) {
                         return getCTEItemsFromAst(parseResult.ast)
                     }
@@ -210,7 +189,7 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
                 if (token.isCancellationRequested) return []
 
                 this.tryCollect(items, () => {
-                    if (!cfg.identifiers || !doc.getText().trim()) return []
+                    if (!cfg.identifiers || !textContent) return []
                     return getIdentifierItems(doc, pos, dialect.tokenizer)
                 }, 'identifier completion')
                 if (token.isCancellationRequested) return []

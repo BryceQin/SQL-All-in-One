@@ -647,6 +647,10 @@
     "database.queryWasCancelled": "查询已取消",
     "database.connectionNotFoundWithId": "未找到连接：{0}",
     "database.sshTunnelFailed": "SSH 隧道失败：{0}",
+    "ssh.connectionRefused": "SSH 连接被拒绝，请检查 SSH 服务器地址和端口。",
+    "ssh.authFailed": "SSH 认证失败，请检查用户名和密码/密钥。",
+    "ssh.keyFormatError": "SSH 私钥格式错误，请检查密钥文件格式。",
+    "ssh.connectionError": "SSH 连接错误：{0}",
 
     "explorer.favorites": "收藏夹",
     "explorer.group": "分组: {0}",

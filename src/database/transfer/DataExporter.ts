@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import { ColumnMeta, IDatabaseAdapter, QueryRow } from '../adapters/IDatabaseAdapter';
 import { t } from '../../i18n/index';
+import { formatSqlValue } from './sqlFormatUtils';
 
 export interface CsvExportOptions {
     delimiter?: string;
@@ -126,7 +127,7 @@ export class DataExporter {
         for (let i = 0; i < rows.length; i += batchSize) {
             const batch = rows.slice(i, i + batchSize);
             const valueGroups = batch.map((row) => {
-                const values = columns.map((col) => this.formatSqlValue(row[col.name]));
+                const values = columns.map((col) => formatSqlValue(row[col.name]));
                 return `(${values.join(', ')})`;
             });
             lines.push(`INSERT INTO ${q(tableName)} (${columnNames}) VALUES ${valueGroups.join(', ')};`);
@@ -179,19 +180,4 @@ export class DataExporter {
         return value;
     }
 
-    private formatSqlValue(value: unknown): string {
-        if (value === null || value === undefined) {
-            return 'NULL';
-        }
-        if (typeof value === 'number') {
-            return String(value);
-        }
-        if (typeof value === 'boolean') {
-            return String(value);
-        }
-        if (value instanceof Date) {
-            return `'${value.toISOString()}'`;
-        }
-        return `'${String(value).replace(/'/g, "''")}'`;
-    }
 }

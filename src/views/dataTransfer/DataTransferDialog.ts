@@ -463,8 +463,22 @@ export class DataTransferDialog {
                 title: 'Importing data...',
                 cancellable: true,
             },
-            async (progress) => {
+            async (progress, token) => {
                 try {
+                    if (token.isCancellationRequested) {
+                        this._panel.webview.postMessage({
+                            type: 'importResult',
+                            result: {
+                                success: false,
+                                totalRows: 0,
+                                importedRows: 0,
+                                skippedRows: 0,
+                                errors: [{ row: 0, message: 'Import cancelled by user.', data: '' }],
+                            },
+                        });
+                        return;
+                    }
+
                     let result: ImportResult;
 
                     if (config.format === 'csv') {

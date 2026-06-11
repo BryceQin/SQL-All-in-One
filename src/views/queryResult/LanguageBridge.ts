@@ -10,7 +10,7 @@ import { getContainer, Tokens } from '../../core/diContainer';
 import { createConfig } from '../../core/config';
 import { InMemoryDocument } from './InMemoryDocument';
 import { MonacoDataAdapter, type MonacoCompletionItem, type MonacoDiagnostic } from './MonacoDataAdapter';
-import * as allDialects from '../../languages/allDialects';
+import { keywordMap, functionSigMap } from '../../languages/dialectData';
 import type { FunctionSignature } from '../../completion/functionSignatures';
 import type { SqlDialect } from '../../parser/dialectMapper';
 import type { SqlLanguage } from '../../formatter/sqlFormatter';
@@ -28,28 +28,6 @@ export interface LanguageData {
     functions: FunctionSignature[];
     snippets: SnippetDef[];
 }
-
-const keywordMap: Record<string, { keywords: string[]; dataTypes: string[] }> = {
-    hive: { keywords: allDialects.hiveKeywords, dataTypes: allDialects.hiveDataTypes },
-    mysql: { keywords: allDialects.mysqlKeywords, dataTypes: allDialects.mysqlDataTypes },
-    spark: { keywords: allDialects.sparkKeywords, dataTypes: allDialects.sparkDataTypes },
-    flinksql: { keywords: allDialects.flinksqlKeywords, dataTypes: allDialects.flinksqlDataTypes },
-    sql: { keywords: allDialects.sqlKeywords, dataTypes: allDialects.sqlDataTypes },
-    postgresql: { keywords: allDialects.pgKeywords, dataTypes: allDialects.pgDataTypes },
-    bigquery: { keywords: allDialects.bqKeywords, dataTypes: allDialects.bqDataTypes },
-    sqlite: { keywords: allDialects.sqliteKeywords, dataTypes: allDialects.sqliteDataTypes },
-};
-
-const functionSigMap: Record<string, FunctionSignature[]> = {
-    hive: allDialects.hiveFunctionSignatures,
-    mysql: allDialects.mysqlFunctionSignatures,
-    spark: allDialects.sparkFunctionSignatures,
-    flinksql: allDialects.flinksqlFunctionSignatures,
-    sql: allDialects.sqlFunctionSignatures,
-    postgresql: allDialects.pgFunctionSignatures,
-    bigquery: allDialects.bqFunctionSignatures,
-    sqlite: allDialects.sqliteFunctionSignatures,
-};
 
 const dialectToLanguageId: Record<string, string> = {
     hive: 'hive',
@@ -102,17 +80,22 @@ export class LanguageBridge implements vscode.Disposable {
             const languageId = dialectToLanguageId[dialect] || 'mysql';
             const document = new InMemoryDocument(sql, languageId);
             const pos = new vscode.Position(position.line, position.column);
-            const items = await this._schemaCompletionProvider.provideCompletionItems(
-                document, pos, new vscode.CancellationTokenSource().token,
-            );
-            if (items && items.length > 0) {
-                return MonacoDataAdapter.toMonacoCompletionItems(items);
-            }
+            const cts = new vscode.CancellationTokenSource();
+            try {
+                const items = await this._schemaCompletionProvider.provideCompletionItems(
+                    document, pos, cts.token,
+                );
+                if (items && items.length > 0) {
+                    return MonacoDataAdapter.toMonacoCompletionItems(items);
+                }
 
-            const allItems = await this._completionProvider.provideCompletionItems(
-                document, pos, new vscode.CancellationTokenSource().token,
-            );
-            return MonacoDataAdapter.toMonacoCompletionItems(allItems || []);
+                const allItems = await this._completionProvider.provideCompletionItems(
+                    document, pos, cts.token,
+                );
+                return MonacoDataAdapter.toMonacoCompletionItems(allItems || []);
+            } finally {
+                cts.dispose();
+            }
         } catch {
             return [];
         }
@@ -127,11 +110,16 @@ export class LanguageBridge implements vscode.Disposable {
             const languageId = dialectToLanguageId[dialect] || 'mysql';
             const document = new InMemoryDocument(sql, languageId);
             const pos = new vscode.Position(position.line, position.column);
-            const hover = await this._hoverProvider.provideHover(
-                document, pos, new vscode.CancellationTokenSource().token,
-            );
-            if (!hover) return null;
-            return MonacoDataAdapter.toMonacoHoverContents(hover);
+            const cts = new vscode.CancellationTokenSource();
+            try {
+                const hover = await this._hoverProvider.provideHover(
+                    document, pos, cts.token,
+                );
+                if (!hover) return null;
+                return MonacoDataAdapter.toMonacoHoverContents(hover);
+            } finally {
+                cts.dispose();
+            }
         } catch {
             return null;
         }

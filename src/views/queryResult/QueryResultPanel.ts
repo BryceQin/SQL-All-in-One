@@ -54,8 +54,6 @@ export class QueryResultPanel {
 
     private readonly _panel: vscode.WebviewPanel;
     private readonly _extensionUri: vscode.Uri;
-    // Context is received but not used in this dialog
-    // private readonly __context: vscode.ExtensionContext;
     private _disposables: vscode.Disposable[] = [];
     private _currentResult: QueryResult | undefined;
     private _languageBridge: LanguageBridge;
@@ -112,7 +110,6 @@ export class QueryResultPanel {
         this._panel = panel;
         this._extensionUri = extensionUri;
         this._languageBridge = new LanguageBridge(extensionUri);
-        // this.__context = context;
 
         this._update();
 
@@ -503,7 +500,8 @@ export class QueryResultPanel {
                 themeKind: vscode.window.activeColorTheme.kind,
                 lang: getLanguage(),
             };
-            const configScript = '<script>window.__CONFIG__ = ' + JSON.stringify(configData) + ';</script>';
+            const configJson = JSON.stringify(configData).replace(/<\/script>/gi, '<\\/script>');
+            const configScript = '<script>window.__CONFIG__ = ' + configJson + ';</script>';
             html = html.replace('{{CONFIG_INJECT}}', configScript);
 
             return html;

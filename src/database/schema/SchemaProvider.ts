@@ -9,6 +9,7 @@ import type { AstNode } from '../../parser/astTypes';
 import type { AST } from 'node-sql-parser';
 import { handleError, ErrorCategory } from '../../core/errorHandler';
 import { getContainer, Tokens } from '../../core/diContainer';
+import { LRUCache } from '../../utils/lruCache';
 
 export type ClauseType =
     | 'USE'
@@ -33,9 +34,9 @@ export interface CompletionContext {
 }
 
 export class SchemaProvider {
-    private schemaCache = getSchemaCache();
-    private mruCache = new Map<string, number>();
     private static readonly MRU_MAX_SIZE = 50;
+    private schemaCache = getSchemaCache();
+    private mruCache = new LRUCache<string, number>({ maxSize: SchemaProvider.MRU_MAX_SIZE, maxAge: Infinity });
 
     async getCompletionItems(context: CompletionContext): Promise<vscode.CompletionItem[]> {
         const items: vscode.CompletionItem[] = [];
@@ -321,12 +322,7 @@ export class SchemaProvider {
 
     private touchMru(key: string): void {
         const lowerKey = key.toLowerCase();
-        this.mruCache.delete(lowerKey);
         this.mruCache.set(lowerKey, Date.now());
-        if (this.mruCache.size > SchemaProvider.MRU_MAX_SIZE) {
-            const lruKey = this.mruCache.keys().next().value as string;
-            this.mruCache.delete(lruKey);
-        }
     }
 
     async getTableHoverInfo(tableName: string, database: string): Promise<vscode.MarkdownString | null> {

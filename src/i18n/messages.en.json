@@ -647,6 +647,10 @@
     "database.queryWasCancelled": "Query was cancelled",
     "database.connectionNotFoundWithId": "Connection not found: {0}",
     "database.sshTunnelFailed": "SSH tunnel failed: {0}",
+    "ssh.connectionRefused": "SSH connection refused. Check SSH server address and port.",
+    "ssh.authFailed": "SSH authentication failed. Check username and password/key.",
+    "ssh.keyFormatError": "SSH private key format error. Check the key file format.",
+    "ssh.connectionError": "SSH connection error: {0}",
 
     "explorer.favorites": "Favorites",
     "explorer.group": "Group: {0}",

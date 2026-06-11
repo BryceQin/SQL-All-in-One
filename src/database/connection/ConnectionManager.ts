@@ -95,7 +95,8 @@ export class ConnectionManager {
         }
 
         const password = await this.connectionStore.getPassword(id);
-        const fullConfig = { ...config, password };
+        // SECURITY: connectConfig contains the password — never log or serialize this object.
+        const connectConfig: ConnectionConfig = { ...config, password };
 
         if (config.ssh?.enabled) {
             const tunnel = new SshTunnel();
@@ -114,8 +115,8 @@ export class ConnectionManager {
                 );
 
                 this.sshTunnels.set(id, tunnel);
-                fullConfig.host = tunnelResult.localHost;
-                fullConfig.port = tunnelResult.localPort;
+                connectConfig.host = tunnelResult.localHost;
+                connectConfig.port = tunnelResult.localPort;
             } catch (error: unknown) {
                 this.updateConnectionState(id, 'error');
                 throw new Error(t('database.sshTunnelFailed', error instanceof Error ? error.message : String(error)));
@@ -123,14 +124,18 @@ export class ConnectionManager {
         }
 
         try {
-            const adapter = AdapterFactory.create(config.dialect, fullConfig);
-            await adapter.connect(fullConfig);
+            const adapter = AdapterFactory.create(config.dialect, connectConfig);
+            await adapter.connect(connectConfig);
+
+            // Clear password from the local config copy after connection is established
+            // to reduce the window in which it is held in memory.
+            connectConfig.password = undefined;
 
             this.adapters.set(id, adapter);
             this.updateConnectionState(id, 'connected');
             this.retryAttempts.delete(id);
 
-            this.startHealthCheck(id, fullConfig);
+            this.startHealthCheck(id, connectConfig);
 
             if (!this.activeConnectionId) {
                 this.setActiveConnection(id);
@@ -226,10 +231,13 @@ export class ConnectionManager {
                     sshConfig.password = config.ssh.password;
                 }
                 const tunnelResult = await tunnel.open(sshConfig, config.host, config.port);
-                const fullConfig = { ...config, password: pass, host: tunnelResult.localHost, port: tunnelResult.localPort };
+                // SECURITY: connectConfig contains the password — never log or serialize this object.
+                const connectConfig: ConnectionConfig = { ...config, password: pass, host: tunnelResult.localHost, port: tunnelResult.localPort };
                 try {
-                    const adapter = AdapterFactory.create(config.dialect, fullConfig);
-                    const result = await adapter.testConnection(fullConfig);
+                    const adapter = AdapterFactory.create(config.dialect, connectConfig);
+                    const result = await adapter.testConnection(connectConfig);
+                    // Clear password after use
+                    connectConfig.password = undefined;
                     return result;
                 } finally {
                     await tunnel.close();
@@ -239,9 +247,13 @@ export class ConnectionManager {
             }
         }
 
-        const fullConfig = { ...config, password: pass };
-        const adapter = AdapterFactory.create(config.dialect, fullConfig);
-        return await adapter.testConnection(fullConfig);
+        // SECURITY: connectConfig contains the password — never log or serialize this object.
+        const connectConfig: ConnectionConfig = { ...config, password: pass };
+        const adapter = AdapterFactory.create(config.dialect, connectConfig);
+        const result = await adapter.testConnection(connectConfig);
+        // Clear password after use
+        connectConfig.password = undefined;
+        return result;
     }
 
     getAdapter(id: string): IDatabaseAdapter | undefined {
@@ -329,6 +341,23 @@ export class ConnectionManager {
         this.retryAttempts.delete(id);
     }
 
+    private async handleUnhealthyConnection(id: string, adapter: IDatabaseAdapter): Promise<void> {
+        this.stopHealthCheck(id);
+        try {
+            await adapter.disconnect();
+        } catch {
+            // ignore disconnect error on unhealthy connection
+        }
+        this.adapters.delete(id);
+        const tunnel = this.sshTunnels.get(id);
+        if (tunnel) {
+            try { await tunnel.close(); } catch { /* ignore */ }
+            this.sshTunnels.delete(id);
+        }
+        this.updateConnectionState(id, 'error');
+        this.scheduleRetry(id);
+    }
+
     private startHealthCheck(id: string, config: ConnectionConfig): void {
         this.stopHealthCheck(id);
         const interval = config.poolConfig?.keepAliveInterval ?? 30000;
@@ -351,20 +380,7 @@ export class ConnectionManager {
                         const failures = (this.consecutiveHealthFailures.get(id) ?? 0) + 1;
                         this.consecutiveHealthFailures.set(id, failures);
                         if (failures >= 2) {
-                            this.stopHealthCheck(id);
-                            try {
-                                await adapter.disconnect();
-                            } catch {
-                                // ignore disconnect error on unhealthy connection
-                            }
-                            this.adapters.delete(id);
-                            const tunnel = this.sshTunnels.get(id);
-                            if (tunnel) {
-                                try { await tunnel.close(); } catch { /* ignore */ }
-                                this.sshTunnels.delete(id);
-                            }
-                            this.updateConnectionState(id, 'error');
-                            this.scheduleRetry(id);
+                            await this.handleUnhealthyConnection(id, adapter);
                         }
                     }
                 } catch {
@@ -372,20 +388,7 @@ export class ConnectionManager {
                     this.consecutiveHealthFailures.set(id, failures);
                     console.warn(`Health check failed for connection ${id}:`);
                     if (failures >= 2) {
-                        this.stopHealthCheck(id);
-                        try {
-                            await adapter.disconnect();
-                        } catch {
-                            // ignore disconnect error on unhealthy connection
-                        }
-                        this.adapters.delete(id);
-                        const tunnel = this.sshTunnels.get(id);
-                        if (tunnel) {
-                            try { await tunnel.close(); } catch { /* ignore */ }
-                            this.sshTunnels.delete(id);
-                        }
-                        this.updateConnectionState(id, 'error');
-                        this.scheduleRetry(id);
+                        await this.handleUnhealthyConnection(id, adapter);
                     }
                 }
             } finally {

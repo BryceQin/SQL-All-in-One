@@ -77,8 +77,6 @@ export class TableDesignerPanel {
 
     private readonly _panel: vscode.WebviewPanel;
     private readonly _extensionUri: vscode.Uri;
-    // Context is received but not used in this dialog
-    // private readonly __context: vscode.ExtensionContext;
     private _disposables: vscode.Disposable[] = [];
     private _mode: 'create' | 'edit' = 'create';
     private _database = '';

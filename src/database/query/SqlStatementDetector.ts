@@ -3,6 +3,42 @@ import { getParserEngine } from '../../parser/SqlParserEngine';
 import { toSqlDialect, isSqlDocument } from '../../core/dialectRegistry';
 import { DetectedStatement, StatementType } from './QueryResult';
 
+const statementTypeMap: Record<string, StatementType> = {
+    SELECT: 'SELECT',
+    INSERT: 'INSERT',
+    UPDATE: 'UPDATE',
+    DELETE: 'DELETE',
+    CREATE: 'CREATE',
+    ALTER: 'ALTER',
+    DROP: 'DROP',
+    TRUNCATE: 'TRUNCATE',
+    RENAME: 'RENAME',
+    GRANT: 'GRANT',
+    REVOKE: 'REVOKE',
+    SET: 'SET',
+    SHOW: 'SHOW',
+    USE: 'USE',
+    CALL: 'CALL',
+    EXPLAIN: 'EXPLAIN',
+    WITH: 'SELECT',
+    select: 'SELECT',
+    insert: 'INSERT',
+    update: 'UPDATE',
+    delete: 'DELETE',
+    create: 'CREATE',
+    alter: 'ALTER',
+    drop: 'DROP',
+    truncate: 'TRUNCATE',
+    rename: 'RENAME',
+    grant: 'GRANT',
+    revoke: 'REVOKE',
+    set: 'SET',
+    show: 'SHOW',
+    use: 'USE',
+    call: 'CALL',
+    explain: 'EXPLAIN',
+};
+
 export class SqlStatementDetector {
     detectCurrentStatement(
         document: vscode.TextDocument,
@@ -176,52 +212,11 @@ export class SqlStatementDetector {
     }
 
     private detectStatementType(sql: string): StatementType {
-        const trimmed = sql.trim().toUpperCase();
-        const keyword = trimmed.split(/\s+/)[0];
-
-        const typeMap: Record<string, StatementType> = {
-            SELECT: 'SELECT',
-            INSERT: 'INSERT',
-            UPDATE: 'UPDATE',
-            DELETE: 'DELETE',
-            CREATE: 'CREATE',
-            ALTER: 'ALTER',
-            DROP: 'DROP',
-            TRUNCATE: 'TRUNCATE',
-            RENAME: 'RENAME',
-            GRANT: 'GRANT',
-            REVOKE: 'REVOKE',
-            SET: 'SET',
-            SHOW: 'SHOW',
-            USE: 'USE',
-            CALL: 'CALL',
-            EXPLAIN: 'EXPLAIN',
-            WITH: 'SELECT',
-        };
-
-        return typeMap[keyword] || 'OTHER';
+        const keyword = sql.trim().split(/\s+/)[0];
+        return statementTypeMap[keyword] || 'OTHER';
     }
 
     private mapAstTypeToStatementType(astType: string): StatementType {
-        const typeMap: Record<string, StatementType> = {
-            select: 'SELECT',
-            insert: 'INSERT',
-            update: 'UPDATE',
-            delete: 'DELETE',
-            create: 'CREATE',
-            alter: 'ALTER',
-            drop: 'DROP',
-            truncate: 'TRUNCATE',
-            rename: 'RENAME',
-            grant: 'GRANT',
-            revoke: 'REVOKE',
-            set: 'SET',
-            show: 'SHOW',
-            use: 'USE',
-            call: 'CALL',
-            explain: 'EXPLAIN',
-        };
-
-        return typeMap[astType] || 'OTHER';
+        return statementTypeMap[astType] || 'OTHER';
     }
 }

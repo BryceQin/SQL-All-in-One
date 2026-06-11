@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as readline from 'readline';
-import { IDatabaseAdapter } from '../adapters/IDatabaseAdapter';
+import { IDatabaseAdapter, QueryParam } from '../adapters/IDatabaseAdapter';
 import { t } from '../../i18n/index';
 
 // ---------------------------------------------------------------------------
@@ -102,41 +102,34 @@ export function parseCsvLine(line: string, delimiter: string): string[] {
 }
 
 // ---------------------------------------------------------------------------
-// Helper: formatSqlValue
-// ---------------------------------------------------------------------------
-
-/**
- * Formats a JavaScript value for inclusion in a SQL statement.
- * - null / undefined  -\> NULL
- * - number            -\> literal number
- * - boolean           -\> 1 / 0
- * - Date              -\> ISO string, single-quoted
- * - string            -\> single-quoted with escaped inner quotes
- */
-export function formatSqlValue(value: unknown): string {
-    if (value === null || value === undefined) {
-        return 'NULL';
-    }
-    if (typeof value === 'number') {
-        return String(value);
-    }
-    if (typeof value === 'boolean') {
-        return value ? '1' : '0';
-    }
-    if (value instanceof Date) {
-        return `'${value.toISOString()}'`;
-    }
-    return `'${String(value).replace(/'/g, "''")}'`;
-}
-
-// ---------------------------------------------------------------------------
 // Helper: executeBatchInsert
 // ---------------------------------------------------------------------------
 
 /**
- * Executes a batch INSERT statement. If the batch fails and `onError` is
- * `'skip'`, falls back to row-by-row insertion so that individual failing
- * rows are skipped without aborting the entire import.
+ * Converts a JavaScript value to a QueryParam value for parameterized queries.
+ * - null / undefined  -\> null
+ * - number / boolean  -\> passed as-is
+ * - Date              -\> ISO string
+ * - string            -\> passed as-is (no quoting needed; parameterized queries handle escaping)
+ */
+function toQueryParamValue(value: unknown): string | number | boolean | null | undefined {
+    if (value === null || value === undefined) {
+        return null;
+    }
+    if (value instanceof Date) {
+        return value.toISOString();
+    }
+    if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'string') {
+        return value;
+    }
+    return String(value);
+}
+
+/**
+ * Executes a batch INSERT statement using parameterized queries to prevent
+ * SQL injection. If the batch fails and `onError` is `'skip'`, falls back
+ * to row-by-row insertion so that individual failing rows are skipped
+ * without aborting the entire import.
  */
 export async function executeBatchInsert(
     adapter: IDatabaseAdapter,
@@ -148,30 +141,38 @@ export async function executeBatchInsert(
 ): Promise<{ imported: number; skipped: number; errors: ImportError[] }> {
     const q = adapter.quoteIdentifier.bind(adapter);
     const quotedColumns = columns.map((c) => q(c)).join(', ');
-    const valueGroups = batch.map((row) => {
-        const values = columns.map((col) => formatSqlValue(row[col]));
-        return `(${values.join(', ')})`;
-    });
+    const placeholdersPerRow = `(${columns.map(() => '?').join(', ')})`;
 
+    // Build batch SQL: INSERT INTO "table" ("col1", "col2") VALUES (?, ?), (?, ?), ...
+    const valueGroups = batch.map(() => placeholdersPerRow);
     const sql = `INSERT INTO ${q(tableName)} (${quotedColumns}) VALUES ${valueGroups.join(', ')};`;
+
+    // Flatten all row values into a single params array
+    const params: QueryParam[] = [];
+    for (const row of batch) {
+        for (const col of columns) {
+            params.push({ value: toQueryParamValue(row[col]) });
+        }
+    }
 
     let imported = 0;
     let skipped = 0;
     const errors: ImportError[] = [];
 
     try {
-        await adapter.execute(sql);
+        await adapter.execute(sql, params);
         imported = batch.length;
     } catch (batchError: unknown) {
         if (onError === 'abort') {
             throw batchError;
         }
+        // Fallback: insert rows one by one
+        const rowSql = `INSERT INTO ${q(tableName)} (${quotedColumns}) VALUES ${placeholdersPerRow};`;
         for (let i = 0; i < batch.length; i++) {
             const row = batch[i];
-            const rowValues = columns.map((col) => formatSqlValue(row[col]));
-            const rowSql = `INSERT INTO ${q(tableName)} (${quotedColumns}) VALUES (${rowValues.join(', ')});`;
+            const rowParams = columns.map((col) => ({ value: toQueryParamValue(row[col]) }));
             try {
-                await adapter.execute(rowSql);
+                await adapter.execute(rowSql, rowParams);
                 imported++;
             } catch (rowError: unknown) {
                 skipped++;

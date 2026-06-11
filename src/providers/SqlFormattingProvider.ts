@@ -20,7 +20,7 @@ export class SqlFormattingProvider
                     vscode.TextEdit.replace(
                         this.fullDocumentRange(document),
                         this.formatText(
-                            this.getAllText(document),
+                            document.getText(),
                             formattingOptions,
                             document.uri,
                         ),
@@ -31,10 +31,6 @@ export class SqlFormattingProvider
                 return []
             }
         })
-    }
-
-    private getAllText(document: vscode.TextDocument): string {
-        return document.getText()
     }
 
     private fullDocumentRange(document: vscode.TextDocument): vscode.Range {

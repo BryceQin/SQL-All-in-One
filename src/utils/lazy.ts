@@ -26,8 +26,8 @@ export class Lazy<T> {
 
   dispose(): void {
     if (this.initialized && this.instance !== null) {
-      const obj = this.instance as Record<string, unknown>;
-      if (typeof obj.dispose === 'function') {
+      const obj = this.instance as unknown;
+      if (obj && typeof obj === 'object' && 'dispose' in obj && typeof (obj as { dispose: unknown }).dispose === 'function') {
         (obj as { dispose: () => void }).dispose();
       }
     }

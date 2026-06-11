@@ -285,13 +285,19 @@ function buildVscodeTheme() {
     var style = getComputedStyle(document.body);
     function getColor(varName, fallback) {
         var val = style.getPropertyValue(varName).trim();
-        return val || fallback;
+        if (!val) return fallback;
+        if (val.length === 9 && val.charAt(0) === '#') {
+            val = val.substring(0, 7);
+        }
+        return val;
     }
     var isDark = document.body.classList.contains('vscode-dark') ||
                  document.querySelector('[data-vscode-theme-kind="vscode-dark"]') ||
                  (window.__CONFIG__ && window.__CONFIG__.themeKind === 2);
     var base = isDark ? 'vs-dark' : 'vs';
     var editorBg = getColor('--vscode-editor-background', isDark ? '#1e1e1e' : '#ffffff');
+    var gutterBg = getColor('--vscode-editorGutter-background', editorBg);
+    var overviewBg = getColor('--vscode-editorOverviewRuler-background', isDark ? '#252526' : '#ffffff');
     return {
         base: base,
         inherit: true,
@@ -318,11 +324,14 @@ function buildVscodeTheme() {
             'editor.inactiveSelectionBackground': getColor('--vscode-editor-inactiveSelectionBackground', isDark ? '#3a3d41' : '#e5ebf1'),
             'editorLineNumber.foreground': getColor('--vscode-editorLineNumber-foreground', isDark ? '#858585' : '#237893'),
             'editorLineNumber.activeForeground': getColor('--vscode-editorLineNumber-activeForeground', isDark ? '#c6c6c6' : '#0b216f'),
-            'editorIndentGuide.background': getColor('--vscode-editorIndentGuide-background', isDark ? '#404040' : '#e4e4e4'),
-            'editorIndentGuide.activeBackground': getColor('--vscode-editorIndentGuide-activeBackground', isDark ? '#707070' : '#e4e4e4'),
-            'editorGutter.background': getColor('--vscode-editorGutter-background', editorBg),
-            'editorOverviewRuler.background': getColor('--vscode-editorOverviewRuler-background', isDark ? '#252526' : '#ffffff'),
+            'editorIndentGuide.background1': getColor('--vscode-editorIndentGuide-background1', isDark ? '#404040' : '#e4e4e4'),
+            'editorIndentGuide.activeBackground1': getColor('--vscode-editorIndentGuide-activeBackground1', isDark ? '#707070' : '#e4e4e4'),
+            'editorGutter.background': gutterBg,
+            'editorOverviewRuler.background': overviewBg,
             'editor.selectionHighlightBackground': getColor('--vscode-editor-selectionHighlightBackground', isDark ? '#add6ff26' : '#add6ff52'),
+            'editorGutter.modifiedBackground': getColor('--vscode-editorGutter-modifiedBackground', '#0078d466'),
+            'editorGutter.addedBackground': getColor('--vscode-editorGutter-addedBackground', '#587c0c66'),
+            'editorGutter.deletedBackground': getColor('--vscode-editorGutter-deletedBackground', '#94151b66'),
         }
     };
 }

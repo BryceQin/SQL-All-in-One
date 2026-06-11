@@ -195,8 +195,6 @@ function registerAstNavigatorEvents(context: vscode.ExtensionContext): void {
 }
 
 function registerStatusBar(context: vscode.ExtensionContext): void {
-  if (!vscode.workspace.textDocuments.some(isSqlDocument)) return;
-
   const container = getContainer();
   const getStatusBar = createLazyProvider<StatusBarProvider>(container, Tokens.StatusBarProvider, context);
   getStatusBar();

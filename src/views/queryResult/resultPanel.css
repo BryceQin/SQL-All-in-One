@@ -1226,6 +1226,22 @@ body {
     overflow: hidden;
 }
 
+.sql-editor-container .monaco-editor .margin,
+.sql-editor-container .monaco-editor .margin-view-overlays,
+.sql-editor-container .monaco-editor .glyph-margin,
+.sql-editor-container .monaco-editor .line-numbers {
+    background-color: var(--vscode-editor-background) !important;
+}
+
+.sql-editor-container .monaco-editor .current-line,
+.sql-editor-container .monaco-editor .margin-view-overlays .current-line-margin {
+    background-color: var(--vscode-editor-lineHighlightBackground, rgba(255, 255, 255, 0.04)) !important;
+}
+
+.sql-editor-container .monaco-editor .scroll-decoration {
+    display: none !important;
+}
+
 .sql-editor-fallback {
     width: 100%;
     height: 100%;

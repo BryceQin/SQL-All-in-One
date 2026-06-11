@@ -4,6 +4,7 @@ import * as path from 'path';
 import * as os from 'os';
 import { Client, ClientChannel } from 'ssh2';
 import type { SshConfig } from './ConnectionConfig';
+import { t } from '../../i18n';
 
 export interface SshConnectOptions {
     host: string;
@@ -59,16 +60,16 @@ export class SshTunnel {
         await new Promise<void>((resolve, reject) => {
             const onError = (err: Error): void => {
                 if (err.message.includes('ECONNREFUSED')) {
-                    reject(new Error('SSH connection refused. Check SSH server address and port.'));
+                    reject(new Error(t('ssh.connectionRefused')));
                 } else if (
                     err.message.includes('All configured authentication methods failed') ||
                     err.message.includes('Authentication failed')
                 ) {
-                    reject(new Error('SSH authentication failed. Check username and password/key.'));
+                    reject(new Error(t('ssh.authFailed')));
                 } else if (err.message.includes('Cannot parse privateKey')) {
-                    reject(new Error('SSH private key format error. Check the key file format.'));
+                    reject(new Error(t('ssh.keyFormatError')));
                 } else {
-                    reject(new Error(`SSH connection error: ${err.message}`));
+                    reject(new Error(t('ssh.connectionError', err.message)));
                 }
             };
 
