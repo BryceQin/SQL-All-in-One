@@ -93,11 +93,11 @@ export class DIContainer {
         this.services.clear();
         this.factories.clear();
         this.singletons.clear();
+        this.creating.clear();
     }
 
     clear(): void {
-        this.services.clear();
-        this.creating.clear();
+        this.disposeAll();
     }
 
     unregister(token: string): void {

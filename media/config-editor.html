@@ -529,39 +529,39 @@
                                             <div class="conn-form-row">
                                                 <div class="conn-form-inline">
                                                     <div class="conn-form-field-flex">
-                                                        <label class="conn-form-label">SSH Host</label>
+                                                        <label class="conn-form-label" data-i18n="configEditor.conn.lbl.sshHost">SSH 主机</label>
                                                         <input type="text" class="config-input" id="cfSshHost" placeholder="ssh.example.com">
                                                     </div>
                                                     <div class="conn-form-field-fixed">
-                                                        <label class="conn-form-label">SSH Port</label>
+                                                        <label class="conn-form-label" data-i18n="configEditor.conn.lbl.sshPort">SSH 端口</label>
                                                         <input type="number" class="config-input" id="cfSshPort" value="22" min="1" max="65535">
                                                     </div>
                                                 </div>
                                             </div>
                                             <div class="conn-form-row">
-                                                <label class="conn-form-label">SSH Username</label>
+                                                <label class="conn-form-label" data-i18n="configEditor.conn.lbl.sshUsername">SSH 用户名</label>
                                                 <input type="text" class="config-input" id="cfSshUsername" placeholder="user">
                                             </div>
                                             <div class="conn-form-row">
                                                 <label class="conn-form-label" data-i18n="configEditor.conn.lbl.sshAuth">认证方式</label>
                                                 <select class="config-select" id="cfSshAuth">
-                                                    <option value="password">Password</option>
-                                                    <option value="privateKey">Private Key</option>
+                                                    <option value="password" data-i18n="configEditor.conn.lbl.password">密码</option>
+                                                    <option value="privateKey" data-i18n="configEditor.conn.lbl.privateKey">私钥</option>
                                                 </select>
                                             </div>
                                             <div class="conn-form-row" id="cfSshPasswordRow">
-                                                <label class="conn-form-label">SSH Password</label>
+                                                <label class="conn-form-label" data-i18n="configEditor.conn.lbl.sshPassword">SSH 密码</label>
                                                 <div class="conn-form-input-group">
                                                     <input type="password" class="config-input" id="cfSshPassword" placeholder="SSH 密码">
                                                     <button class="btn btn-ghost btn-icon btn-toggle-password" data-target="cfSshPassword" data-action="togglePasswordVisibility">👁️</button>
                                                 </div>
                                             </div>
                                             <div class="conn-form-row" id="cfSshKeyRow" style="display:none;">
-                                                <label class="conn-form-label">Private Key</label>
+                                                <label class="conn-form-label" data-i18n="configEditor.conn.lbl.privateKey">私钥</label>
                                                 <input type="text" class="config-input" id="cfSshKey" placeholder="~/.ssh/id_rsa">
                                             </div>
                                             <div class="conn-form-row">
-                                                <label class="conn-form-label">Passphrase</label>
+                                                <label class="conn-form-label" data-i18n="configEditor.conn.lbl.passphrase">口令</label>
                                                 <div class="conn-form-input-group">
                                                     <input type="password" class="config-input" id="cfSshPassphrase" placeholder="密钥口令（可选）">
                                                     <button class="btn btn-ghost btn-icon btn-toggle-password" data-target="cfSshPassphrase" data-action="togglePasswordVisibility">👁️</button>
@@ -573,15 +573,15 @@
                                         <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.conn.lbl.useSSL">使用 SSL</span><label class="toggle"><input type="checkbox" id="cfSslEnabled"><span class="toggle-slider"></span></label></div>
                                         <div id="cfSslFields" class="conn-form-sub disabled">
                                             <div class="conn-form-row">
-                                                <label class="conn-form-label">CA Certificate</label>
+                                                <label class="conn-form-label" data-i18n="configEditor.conn.lbl.caCert">CA 证书</label>
                                                 <input type="text" class="config-input" id="cfSslCa" placeholder="CA 证书路径">
                                             </div>
                                             <div class="conn-form-row">
-                                                <label class="conn-form-label">Client Certificate</label>
+                                                <label class="conn-form-label" data-i18n="configEditor.conn.lbl.clientCert">客户端证书</label>
                                                 <input type="text" class="config-input" id="cfSslCert" placeholder="客户端证书路径">
                                             </div>
                                             <div class="conn-form-row">
-                                                <label class="conn-form-label">Client Key</label>
+                                                <label class="conn-form-label" data-i18n="configEditor.conn.lbl.clientKey">客户端密钥</label>
                                                 <input type="text" class="config-input" id="cfSslKey" placeholder="客户端密钥路径">
                                             </div>
                                             <div class="toggle-row"><span class="toggle-label" data-i18n="configEditor.conn.lbl.rejectUnauthorized">验证服务器证书</span><label class="toggle"><input type="checkbox" id="cfSslReject" checked><span class="toggle-slider"></span></label></div>

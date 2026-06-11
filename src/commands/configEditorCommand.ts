@@ -21,6 +21,7 @@ interface ConfigEditorMessage {
 export interface ConfigEditorOptions {
     initialTab?: string;
     autoAddConnection?: boolean;
+    connectionId?: string;
 }
 
 export class ConfigEditorPanel {
@@ -172,6 +173,9 @@ export class ConfigEditorPanel {
         }
         if (options.autoAddConnection) {
             message.autoAddConnection = true
+        }
+        if (options.connectionId) {
+            message.connectionId = options.connectionId
         }
         this._panel.webview.postMessage(message)
     }

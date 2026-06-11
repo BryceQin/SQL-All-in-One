@@ -5,21 +5,33 @@ import { formatKeyword } from './CommonFormatter';
 import { ExpressionFormatter } from './ExpressionFormatter';
 import { SelectFormatter } from './SelectFormatter';
 import type { AstNode } from '../../parser/astTypes';
+import type { FormatterFactory } from './FormatterFactory';
 
 export class InsertFormatter {
     private cfg: FormatOptions;
     private indent: Indentation;
     private layout: Layout;
     private exprFmt: ExpressionFormatter;
+    private factory?: FormatterFactory;
 
-    constructor(cfg: FormatOptions, indent: Indentation) {
+    constructor(cfg: FormatOptions, indent: Indentation, factory?: FormatterFactory) {
         this.cfg = cfg;
         this.indent = indent;
         this.layout = new Layout(indent);
+        this.factory = factory;
         this.exprFmt = new ExpressionFormatter(cfg, indent, (expr: unknown): string => {
-            const selectFmt = new SelectFormatter(this.cfg, this.indent);
+            const selectFmt = factory
+                ? factory.getSelectFormatter(this.cfg, this.indent)
+                : new SelectFormatter(this.cfg, this.indent);
             return selectFmt.format(expr);
         });
+    }
+
+    public reset(cfg: FormatOptions, indent: Indentation): void {
+        this.cfg = cfg;
+        this.indent = indent;
+        this.layout = new Layout(indent);
+        this.exprFmt.reset(cfg, indent);
     }
 
     public format(stmt: AstNode): string {
@@ -144,7 +156,9 @@ export class InsertFormatter {
             this.indent.decreaseBlockLevel();
         } else if (values.type === 'select') {
             this.layout.add(WS.NEWLINE, WS.INDENT);
-            const selectFmt = new SelectFormatter(this.cfg, this.indent);
+            const selectFmt = this.factory
+                ? this.factory.getSelectFormatter(this.cfg, this.indent)
+                : new SelectFormatter(this.cfg, this.indent);
             this.layout.add(selectFmt.format(values));
         }
     }

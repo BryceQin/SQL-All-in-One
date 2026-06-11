@@ -117,7 +117,12 @@ export async function executeInTransaction(
         await adapter.commit();
         return { success: true };
     } catch (error) {
-        try { await adapter.rollback(); } catch { /* rollback failed */ }
+        try {
+            await adapter.rollback();
+        } catch (rollbackError) {
+            console.error('Rollback failed, disconnecting adapter:', rollbackError);
+            try { await adapter.disconnect(); } catch { /* ignore */ }
+        }
         return { success: false, errors: [(error as Error).message] };
     }
 }

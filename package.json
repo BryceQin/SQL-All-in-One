@@ -1,8 +1,8 @@
 {
-    "name": "hive-formatter",
+    "name": "sql-all-in-one",
     "displayName": "SQL All in One",
     "description": "SQL All in One - 强大的 SQL 格式化、智能补全、语法检查、DDL 转换 VSCode 插件，支持 Hive、MySQL、SparkSQL、FlinkSQL、PostgreSQL、BigQuery、SQLite 等多种 SQL 方言",
-    "version": "2.11.0",
+    "version": "2.15.2",
     "publisher": "bryce-qin",
     "contributors": [
         "TalDu"
@@ -69,7 +69,7 @@
             "sql-all-in-one": [
                 {
                     "id": "sql-all-in-one.databaseExplorer",
-                    "name": "Database Explorer",
+                    "name": "%sql-all-in-one.view.databaseExplorer.name%",
                     "icon": "resources/database-icon.svg",
                     "when": "true"
                 }
@@ -78,7 +78,7 @@
         "viewsWelcome": [
             {
                 "view": "sql-all-in-one.databaseExplorer",
-                "contents": "No database connections yet.\n[Add Connection](command:sql-all-in-one.addConnection)",
+                "contents": "%sql-all-in-one.viewWelcome.databaseExplorer.contents%",
                 "when": "sql-all-in-one.connectionCount == 0"
             }
         ],
@@ -264,129 +264,129 @@
             },
             {
                 "command": "sql-all-in-one.addConnection",
-                "title": "Add Database Connection",
+                "title": "%sql-all-in-one.command.addConnection.title%",
                 "icon": "$(add)"
             },
             {
                 "command": "sql-all-in-one.editConnection",
-                "title": "Edit Connection"
+                "title": "%sql-all-in-one.command.editConnection.title%"
             },
             {
                 "command": "sql-all-in-one.removeConnection",
-                "title": "Remove Connection"
+                "title": "%sql-all-in-one.command.removeConnection.title%"
             },
             {
                 "command": "sql-all-in-one.connect",
-                "title": "Connect to Database"
+                "title": "%sql-all-in-one.command.connect.title%"
             },
             {
                 "command": "sql-all-in-one.disconnect",
-                "title": "Disconnect from Database"
+                "title": "%sql-all-in-one.command.disconnect.title%"
             },
             {
                 "command": "sql-all-in-one.testConnection",
-                "title": "Test Connection"
+                "title": "%sql-all-in-one.command.testConnection.title%"
             },
             {
                 "command": "sql-all-in-one.refreshSchema",
-                "title": "Refresh Schema",
+                "title": "%sql-all-in-one.command.refreshSchema.title%",
                 "icon": "$(refresh)"
             },
             {
                 "command": "sql-all-in-one.viewTableData",
-                "title": "View Data"
+                "title": "%sql-all-in-one.command.viewTableData.title%"
             },
             {
                 "command": "sql-all-in-one.viewTableDDL",
-                "title": "View DDL"
+                "title": "%sql-all-in-one.command.viewTableDDL.title%"
             },
             {
                 "command": "sql-all-in-one.newQuery",
-                "title": "New Query"
+                "title": "%sql-all-in-one.command.newQuery.title%"
             },
             {
                 "command": "sql-all-in-one.copyColumnName",
-                "title": "Copy Column Name"
+                "title": "%sql-all-in-one.command.copyColumnName.title%"
             },
             {
                 "command": "sql-all-in-one.addToFavorites",
-                "title": "Add to Favorites"
+                "title": "%sql-all-in-one.command.addToFavorites.title%"
             },
             {
                 "command": "sql-all-in-one.removeFromFavorites",
-                "title": "Remove from Favorites"
+                "title": "%sql-all-in-one.command.removeFromFavorites.title%"
             },
             {
                 "command": "sql-all-in-one.revealInExplorer",
-                "title": "Reveal in Explorer"
+                "title": "%sql-all-in-one.command.revealInExplorer.title%"
             },
             {
                 "command": "sql-all-in-one.setDefaultDatabase",
-                "title": "Set as Default Database"
+                "title": "%sql-all-in-one.command.setDefaultDatabase.title%"
             },
             {
                 "command": "sql-all-in-one.executeQuery",
-                "title": "Execute SQL"
+                "title": "%sql-all-in-one.command.executeQuery.title%"
             },
             {
                 "command": "sql-all-in-one.executeSelection",
-                "title": "Execute Selected SQL"
+                "title": "%sql-all-in-one.command.executeSelection.title%"
             },
             {
                 "command": "sql-all-in-one.cancelQuery",
-                "title": "Cancel Running Query"
+                "title": "%sql-all-in-one.command.cancelQuery.title%"
             },
             {
                 "command": "sql-all-in-one.showQueryHistory",
-                "title": "Show Query History"
+                "title": "%sql-all-in-one.command.showQueryHistory.title%"
             },
             {
                 "command": "sql-all-in-one.clearQueryHistory",
-                "title": "Clear Query History"
+                "title": "%sql-all-in-one.command.clearQueryHistory.title%"
             },
             {
                 "command": "sql-all-in-one.exportCsv",
-                "title": "Export Result to CSV"
+                "title": "%sql-all-in-one.command.exportCsv.title%"
             },
             {
                 "command": "sql-all-in-one.exportJson",
-                "title": "Export Result to JSON"
+                "title": "%sql-all-in-one.command.exportJson.title%"
             },
             {
                 "command": "sql-all-in-one.exportInsert",
-                "title": "Export Result to SQL INSERT"
+                "title": "%sql-all-in-one.command.exportInsert.title%"
             },
             {
                 "command": "sql-all-in-one.exportDdl",
-                "title": "Export Table DDL"
+                "title": "%sql-all-in-one.command.exportDdl.title%"
             },
             {
                 "command": "sql-all-in-one.designTable",
-                "title": "Design Table"
+                "title": "%sql-all-in-one.command.designTable.title%"
             },
             {
                 "command": "sql-all-in-one.editTable",
-                "title": "Edit Table Design"
+                "title": "%sql-all-in-one.command.editTable.title%"
             },
             {
                 "command": "sql-all-in-one.explainQuery",
-                "title": "Explain Query Execution Plan"
+                "title": "%sql-all-in-one.command.explainQuery.title%"
             },
             {
                 "command": "sql-all-in-one.importData",
-                "title": "Import Data"
+                "title": "%sql-all-in-one.command.importData.title%"
             },
             {
                 "command": "sql-all-in-one.showErrorLog",
-                "title": "Show Error Log (SQL All in One)"
+                "title": "%sql-all-in-one.command.showErrorLog.title%"
             },
             {
                 "command": "sql-all-in-one.exportConnections",
-                "title": "Export Connections"
+                "title": "%sql-all-in-one.command.exportConnections.title%"
             },
             {
                 "command": "sql-all-in-one.importConnections",
-                "title": "Import Connections"
+                "title": "%sql-all-in-one.command.importConnections.title%"
             }
         ],
         "keybindings": [
@@ -1866,6 +1866,7 @@
         "eslint": "^9.39.2",
         "eslint-plugin-tsdoc": "^0.5.0",
         "jiti": "^2.6.1",
+        "monaco-editor": "^0.45.0",
         "typescript": "^5.9.3",
         "typescript-eslint": "^8.52.0"
     },

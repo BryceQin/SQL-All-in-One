@@ -34,18 +34,18 @@ const i18n = {
         'resultPanel.queryCancelled': '查询已取消',
         'resultPanel.ms': '毫秒',
         'resultPanel.seconds': '秒',
-        'resultPanel.editMode': '编辑模式',
+        'resultPanel.editMode': '编辑',
         'resultPanel.readonly': '只读',
         'resultPanel.editable': '可编辑',
-        'resultPanel.addRow': '添加行',
-        'resultPanel.deleteRow': '删除行',
+        'resultPanel.addRow': '添加',
+        'resultPanel.deleteRow': '删除',
         'resultPanel.commit': '提交',
         'resultPanel.rollback': '回滚',
-        'resultPanel.beginTx': '开始事务',
+        'resultPanel.beginTx': '事务',
         'resultPanel.savepoint': '保存点',
-        'resultPanel.rollbackToSp': '回滚到保存点',
-        'resultPanel.gridView': '网格视图',
-        'resultPanel.formView': '表单视图',
+        'resultPanel.rollbackToSp': '回滚保存点',
+        'resultPanel.gridView': '网格',
+        'resultPanel.formView': '表单',
         'resultPanel.pendingChanges': '待提交',
         'resultPanel.modify': '修改',
         'resultPanel.insert': '新增',
@@ -69,7 +69,15 @@ const i18n = {
         'resultPanel.validationError': '校验错误',
         'resultPanel.notNullViolation': '此字段不能为空',
         'resultPanel.typeMismatch': '类型不匹配',
-        'resultPanel.lengthExceeded': '长度超限'
+        'resultPanel.lengthExceeded': '长度超限',
+        'resultPanel.filterValue': '值',
+        'resultPanel.addRowTitle': '添加行',
+        'resultPanel.deleteRowTitle': '删除行',
+        'resultPanel.beginTxTitle': '开始事务',
+        'resultPanel.rollbackToSpTitle': '回滚到保存点',
+        'resultPanel.gridViewTitle': '网格视图',
+        'resultPanel.formViewTitle': '表单视图',
+        'resultPanel.editModeTitle': '编辑模式'
     },
     en: {
         'resultPanel.title': 'Query Result',
@@ -104,18 +112,18 @@ const i18n = {
         'resultPanel.queryCancelled': 'Query cancelled',
         'resultPanel.ms': 'ms',
         'resultPanel.seconds': 's',
-        'resultPanel.editMode': 'Edit Mode',
+        'resultPanel.editMode': 'Edit',
         'resultPanel.readonly': 'Read Only',
         'resultPanel.editable': 'Editable',
-        'resultPanel.addRow': 'Add Row',
-        'resultPanel.deleteRow': 'Delete Row',
+        'resultPanel.addRow': 'Add',
+        'resultPanel.deleteRow': 'Delete',
         'resultPanel.commit': 'Commit',
         'resultPanel.rollback': 'Rollback',
-        'resultPanel.beginTx': 'Begin Tx',
+        'resultPanel.beginTx': 'Transaction',
         'resultPanel.savepoint': 'Savepoint',
-        'resultPanel.rollbackToSp': 'Rollback to SP',
-        'resultPanel.gridView': 'Grid View',
-        'resultPanel.formView': 'Form View',
+        'resultPanel.rollbackToSp': 'Rollback SP',
+        'resultPanel.gridView': 'Grid',
+        'resultPanel.formView': 'Form',
         'resultPanel.pendingChanges': 'Pending',
         'resultPanel.modify': 'modify',
         'resultPanel.insert': 'insert',
@@ -139,7 +147,15 @@ const i18n = {
         'resultPanel.validationError': 'Validation error',
         'resultPanel.notNullViolation': 'This field cannot be null',
         'resultPanel.typeMismatch': 'Type mismatch',
-        'resultPanel.lengthExceeded': 'Length exceeded'
+        'resultPanel.lengthExceeded': 'Length exceeded',
+        'resultPanel.filterValue': 'Value',
+        'resultPanel.addRowTitle': 'Add Row',
+        'resultPanel.deleteRowTitle': 'Delete Row',
+        'resultPanel.beginTxTitle': 'Begin Transaction',
+        'resultPanel.rollbackToSpTitle': 'Rollback to Savepoint',
+        'resultPanel.gridViewTitle': 'Grid View',
+        'resultPanel.formViewTitle': 'Form View',
+        'resultPanel.editModeTitle': 'Edit Mode'
     }
 };
 
@@ -188,11 +204,33 @@ const state = {
     validationErrors: {},
 };
 
+var monacoEditor = null;
+var monacoLoaded = false;
+
+function getTypeColorInfo(type) {
+    if (!type) return null;
+    var t = type.toUpperCase();
+    if (t.match(/INT|BIGINT|SMALLINT|TINYINT|FLOAT|DOUBLE|DECIMAL|NUMERIC|BIT|BOOL/)) {
+        return { color: '#7cb8ff', bg: 'rgba(74,158,255,0.08)', border: 'rgba(74,158,255,0.12)' };
+    }
+    if (t.match(/CHAR|TEXT|CLOB|ENUM|SET|JSON/)) {
+        return { color: '#4ec9b0', bg: 'rgba(78,201,176,0.08)', border: 'rgba(78,201,176,0.12)' };
+    }
+    if (t.match(/DATE|TIME|TIMESTAMP|YEAR/)) {
+        return { color: '#dcdcaa', bg: 'rgba(220,220,170,0.08)', border: 'rgba(220,220,170,0.12)' };
+    }
+    if (t.match(/BLOB|BINARY|VARBINARY/)) {
+        return { color: '#ce9178', bg: 'rgba(206,145,120,0.08)', border: 'rgba(206,145,120,0.12)' };
+    }
+    return { color: '#4ec9b0', bg: 'rgba(78,201,176,0.08)', border: 'rgba(78,201,176,0.12)' };
+}
+
 const ROW_HEIGHT = 28;
 const HEADER_HEIGHT = 48;
 const BUFFER_ROWS = 5;
 
 function init() {
+    applyI18n();
     const gridBodyWrapper = document.getElementById('gridBodyWrapper');
     gridBodyWrapper.addEventListener('scroll', onGridScroll);
     document.addEventListener('click', onDocumentClick);
@@ -200,6 +238,240 @@ function init() {
     updateEmptyState();
     updateHeader();
     updateStatusBar();
+    initSplitter();
+}
+
+function applyI18n() {
+    document.querySelectorAll('[data-i18n]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n');
+        if (key && i18n[lang] && i18n[lang][key]) {
+            el.textContent = i18n[lang][key];
+        }
+    });
+    document.querySelectorAll('[data-i18n-title]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n-title');
+        if (key && i18n[lang] && i18n[lang][key]) {
+            el.title = i18n[lang][key];
+        }
+    });
+    document.querySelectorAll('[data-i18n-ph]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n-ph');
+        if (key && i18n[lang] && i18n[lang][key]) {
+            el.placeholder = i18n[lang][key];
+        }
+    });
+}
+
+function initMonacoEditor(sql) {
+    var container = document.getElementById('sqlEditorContainer');
+    if (!container) return;
+
+    if (typeof require === 'function' && !monacoLoaded) {
+        require.config({ paths: { 'vs': state.monacoBasePath } });
+        require(['vs/editor/editor.main'], function(monaco) {
+            monacoLoaded = true;
+            createMonacoInstance(monaco, container, sql);
+        }, function() {
+            createFallbackEditor(container, sql);
+        });
+    } else if (monacoLoaded && typeof monaco !== 'undefined') {
+        createMonacoInstance(monaco, container, sql);
+    } else {
+        createFallbackEditor(container, sql);
+    }
+}
+
+function buildVscodeTheme() {
+    var style = getComputedStyle(document.body);
+    function getColor(varName, fallback) {
+        var val = style.getPropertyValue(varName).trim();
+        if (!val) return fallback;
+        if (val.length === 9 && val.charAt(0) === '#') {
+            val = val.substring(0, 7);
+        }
+        return val;
+    }
+    var isDark = document.body.classList.contains('vscode-dark') ||
+                 document.querySelector('[data-vscode-theme-kind="vscode-dark"]') ||
+                 (window.__CONFIG__ && window.__CONFIG__.themeKind === 2);
+    var base = isDark ? 'vs-dark' : 'vs';
+    var editorBg = getColor('--vscode-editor-background', isDark ? '#1e1e1e' : '#ffffff');
+    var gutterBg = getColor('--vscode-editorGutter-background', editorBg);
+    var overviewBg = getColor('--vscode-editorOverviewRuler-background', isDark ? '#252526' : '#ffffff');
+    return {
+        base: base,
+        inherit: true,
+        rules: [
+            { token: 'keyword', foreground: getColor('--vscode-editorKeyword-foreground', isDark ? '#569cd6' : '#0000ff') },
+            { token: 'string', foreground: getColor('--vscode-string-foreground', isDark ? '#ce9178' : '#a31515') },
+            { token: 'string.sql', foreground: getColor('--vscode-string-foreground', isDark ? '#ce9178' : '#a31515') },
+            { token: 'comment', foreground: getColor('--vscode-editorComments-foreground', isDark ? '#6a9955' : '#008000') },
+            { token: 'number', foreground: getColor('--vscode-editorNumbers-foreground', isDark ? '#b5cea8' : '#098658') },
+            { token: 'type', foreground: getColor('--vscode-editorType-foreground', isDark ? '#4ec9b0' : '#267f99') },
+            { token: 'type.identifier', foreground: getColor('--vscode-editorType-foreground', isDark ? '#4ec9b0' : '#267f99') },
+            { token: 'function', foreground: getColor('--vscode-editorFunction-foreground', isDark ? '#dcdcaa' : '#795e26') },
+            { token: 'operator', foreground: getColor('--vscode-editorOperator-foreground', isDark ? '#d4d4d4' : '#000000') },
+            { token: 'delimiter', foreground: getColor('--vscode-editorBracketMatch-background', isDark ? '#d4d4d4' : '#000000') },
+            { token: 'variable', foreground: getColor('--vscode-editorVariable-foreground', isDark ? '#9cdcfe' : '#001080') },
+            { token: '', foreground: getColor('--vscode-editor-foreground', isDark ? '#d4d4d4' : '#000000') },
+        ],
+        colors: {
+            'editor.background': editorBg,
+            'editor.foreground': getColor('--vscode-editor-foreground', isDark ? '#d4d4d4' : '#000000'),
+            'editor.lineHighlightBackground': getColor('--vscode-editor-lineHighlightBackground', isDark ? '#2a2d2e' : '#f0f0f0'),
+            'editor.selectionBackground': getColor('--vscode-editor-selectionBackground', isDark ? '#264f78' : '#add6ff'),
+            'editorCursor.foreground': getColor('--vscode-editorCursor-foreground', isDark ? '#aeafad' : '#000000'),
+            'editor.inactiveSelectionBackground': getColor('--vscode-editor-inactiveSelectionBackground', isDark ? '#3a3d41' : '#e5ebf1'),
+            'editorLineNumber.foreground': getColor('--vscode-editorLineNumber-foreground', isDark ? '#858585' : '#237893'),
+            'editorLineNumber.activeForeground': getColor('--vscode-editorLineNumber-activeForeground', isDark ? '#c6c6c6' : '#0b216f'),
+            'editorIndentGuide.background1': getColor('--vscode-editorIndentGuide-background1', isDark ? '#404040' : '#e4e4e4'),
+            'editorIndentGuide.activeBackground1': getColor('--vscode-editorIndentGuide-activeBackground1', isDark ? '#707070' : '#e4e4e4'),
+            'editorGutter.background': gutterBg,
+            'editorOverviewRuler.background': overviewBg,
+            'editor.selectionHighlightBackground': getColor('--vscode-editor-selectionHighlightBackground', isDark ? '#add6ff26' : '#add6ff52'),
+            'editorGutter.modifiedBackground': getColor('--vscode-editorGutter-modifiedBackground', '#0078d466'),
+            'editorGutter.addedBackground': getColor('--vscode-editorGutter-addedBackground', '#587c0c66'),
+            'editorGutter.deletedBackground': getColor('--vscode-editorGutter-deletedBackground', '#94151b66'),
+        }
+    };
+}
+
+function createMonacoInstance(monaco, container, sql) {
+    if (monacoEditor) {
+        monacoEditor.setValue(sql || '');
+        return;
+    }
+    var isDark = document.body.classList.contains('vscode-dark') ||
+                 document.querySelector('[data-vscode-theme-kind="vscode-dark"]') ||
+                 (window.__CONFIG__ && window.__CONFIG__.themeKind === 2);
+    var customThemeName = 'vscode-sync-' + (isDark ? 'dark' : 'light');
+    monaco.editor.defineTheme(customThemeName, buildVscodeTheme());
+    monacoEditor = monaco.editor.create(container, {
+        value: sql || '',
+        language: 'sql',
+        theme: customThemeName,
+        minimap: { enabled: false },
+        lineNumbers: 'on',
+        scrollBeyondLastLine: false,
+        fontSize: 13,
+        wordWrap: 'on',
+        automaticLayout: true,
+        overviewRulerLanes: 0,
+        folding: true,
+        renderLineHighlight: 'gutter',
+        contextmenu: true,
+        suggestOnTriggerCharacters: true,
+        scrollbar: {
+            verticalScrollbarSize: 8,
+            horizontalScrollbarSize: 8,
+        },
+        padding: { top: 4, bottom: 4 },
+    });
+
+    monacoEditor.addCommand(monaco.KeyMod.Cmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyE, function() {
+        executePanelSql();
+    });
+    monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyE, function() {
+        executePanelSql();
+    });
+
+    monacoEditor.focus();
+}
+
+function createFallbackEditor(container, sql) {
+    var textarea = document.createElement('textarea');
+    textarea.className = 'sql-editor-fallback';
+    textarea.value = sql || '';
+    container.appendChild(textarea);
+}
+
+function getEditorSql() {
+    if (monacoEditor) {
+        return monacoEditor.getValue();
+    }
+    var fallback = document.querySelector('.sql-editor-fallback');
+    if (fallback) {
+        return fallback.value;
+    }
+    return state.currentSql || '';
+}
+
+function setEditorSql(sql) {
+    if (monacoEditor) {
+        var fullRange = monacoEditor.getModel().getFullModelRange();
+        monacoEditor.executeEdits('setSql', [{
+            range: fullRange,
+            text: sql || '',
+        }]);
+        monacoEditor.pushUndoStop();
+    } else {
+        var fallback = document.querySelector('.sql-editor-fallback');
+        if (fallback) fallback.value = sql || '';
+    }
+    state.currentSql = sql || '';
+}
+
+function initSplitter() {
+    var splitter = document.getElementById('splitter');
+    var sqlSection = document.getElementById('sqlEditorSection');
+    var resultSection = document.getElementById('resultSection');
+    var panelSplit = document.getElementById('panelSplit');
+    var isDragging = false;
+
+    if (!splitter || !sqlSection || !resultSection || !panelSplit) return;
+
+    splitter.addEventListener('mousedown', function(e) {
+        isDragging = true;
+        document.body.style.cursor = 'row-resize';
+        document.body.style.userSelect = 'none';
+        e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', function(e) {
+        if (!isDragging) return;
+        var panelRect = panelSplit.getBoundingClientRect();
+        var ratio = (e.clientY - panelRect.top) / panelRect.height;
+        ratio = Math.max(0.1, Math.min(0.8, ratio));
+        sqlSection.style.height = (ratio * 100) + '%';
+        sqlSection.style.flex = 'none';
+        resultSection.style.flex = '1';
+    });
+
+    document.addEventListener('mouseup', function() {
+        if (!isDragging) return;
+        isDragging = false;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+    });
+}
+
+function executePanelSql() {
+    var sql = getEditorSql().trim();
+    if (!sql) return;
+    state.currentSql = sql;
+    vscode.postMessage({ command: 'executePanelSql', sql: sql });
+}
+
+function handleSetEditorSql(data) {
+    var sql = data.sql || '';
+    if (monacoEditor || document.querySelector('.sql-editor-fallback')) {
+        setEditorSql(sql);
+    } else {
+        initMonacoEditor(sql);
+    }
+    if (data.autoExecute) {
+        setTimeout(function() {
+            executePanelSql();
+        }, 100);
+    }
+}
+
+function handleThemeChange(data) {
+    if (!monacoEditor || typeof monaco === 'undefined') return;
+    var isDark = data.kind === 2 || data.kind === 3;
+    var customThemeName = 'vscode-sync-' + (isDark ? 'dark' : 'light');
+    monaco.editor.defineTheme(customThemeName, buildVscodeTheme());
+    monaco.editor.setTheme(customThemeName);
 }
 
 function onGridScroll() {
@@ -290,6 +562,12 @@ function handleMessage(event) {
         case 'blobPreview':
             handleBlobPreview(message.data);
             break;
+        case 'setEditorSql':
+            handleSetEditorSql(message.data);
+            break;
+        case 'themeChange':
+            handleThemeChange(message.data);
+            break;
     }
 }
 
@@ -319,7 +597,8 @@ function handleQueryResult(data) {
     if (config.editMode === 'editable') {
         state.editMode = true;
         var btn = document.getElementById('btnEditMode');
-        btn.textContent = '🔓';
+        btn.classList.add('edit-mode-active');
+        btn.title = t('resultPanel.editable');
         document.getElementById('btnAddRow').disabled = false;
         document.getElementById('btnDeleteRow').disabled = false;
         document.getElementById('btnBeginTx').disabled = false;
@@ -380,6 +659,7 @@ function handleConfig(data) {
     if (data.enableValidation !== undefined) state.enableValidation = data.enableValidation;
     if (data.validateOnEdit !== undefined) state.validateOnEdit = data.validateOnEdit;
     if (data.validateForeignKeys !== undefined) state.validateForeignKeys = data.validateForeignKeys;
+    if (data.monacoBasePath !== undefined) state.monacoBasePath = data.monacoBasePath;
 }
 
 function renderGrid() {
@@ -407,6 +687,12 @@ function renderHeader() {
         const typeSpan = document.createElement('span');
         typeSpan.className = 'col-type';
         typeSpan.textContent = col.type || '';
+        var typeColorInfo = getTypeColorInfo(col.type);
+        if (typeColorInfo) {
+            typeSpan.style.color = typeColorInfo.color;
+            typeSpan.style.background = typeColorInfo.bg;
+            typeSpan.style.border = '1px solid ' + typeColorInfo.border;
+        }
 
         th.appendChild(nameSpan);
         th.appendChild(typeSpan);
@@ -751,12 +1037,7 @@ function handleExport(format) {
 }
 
 function handleExecute() {
-    if (state.currentSql) {
-        vscode.postMessage({
-            command: 'executeQuery',
-            sql: state.currentSql
-        });
-    }
+    executePanelSql();
 }
 
 function handleCancel() {
@@ -767,12 +1048,7 @@ function handleCancel() {
 }
 
 function handleRefresh() {
-    if (state.currentSql) {
-        vscode.postMessage({
-            command: 'executeQuery',
-            sql: state.currentSql
-        });
-    }
+    executePanelSql();
 }
 
 function switchTab(tabId) {
@@ -1096,8 +1372,13 @@ function renderCellEditor(td, val, col, rowIdx, colIdx) {
 function toggleEditMode() {
     state.editMode = !state.editMode;
     var btn = document.getElementById('btnEditMode');
-    btn.textContent = state.editMode ? '🔓' : '🔒';
-    btn.title = state.editMode ? t('resultPanel.editable') : t('resultPanel.readonly');
+    if (state.editMode) {
+        btn.classList.add('edit-mode-active');
+        btn.title = t('resultPanel.editable');
+    } else {
+        btn.classList.remove('edit-mode-active');
+        btn.title = t('resultPanel.readonly');
+    }
 
     document.getElementById('btnAddRow').disabled = !state.editMode;
     document.getElementById('btnDeleteRow').disabled = !state.editMode;
@@ -1464,6 +1745,12 @@ function renderFormView() {
         var typeSpan = document.createElement('span');
         typeSpan.className = 'field-type';
         typeSpan.textContent = col.type || '';
+        var typeColorInfo = getTypeColorInfo(col.type);
+        if (typeColorInfo) {
+            typeSpan.style.color = typeColorInfo.color;
+            typeSpan.style.background = typeColorInfo.bg;
+            typeSpan.style.border = '1px solid ' + typeColorInfo.border;
+        }
         labelDiv.appendChild(typeSpan);
 
         var valueDiv = document.createElement('div');

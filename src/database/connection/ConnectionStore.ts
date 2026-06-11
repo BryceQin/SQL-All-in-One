@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as os from 'os';
 import * as vscode from 'vscode';
 import { ConnectionConfig, ConnectionGroup } from './ConnectionConfig';
+import { t } from '../../i18n';
 import { getContainer, Tokens } from '../../core/diContainer';
 
 interface ConnectionsFile {
@@ -17,6 +18,8 @@ export class ConnectionStore {
     private connections = new Map<string, ConnectionConfig>();
     private groups = new Map<string, ConnectionGroup>();
     private secretStorage: vscode.SecretStorage | null = null;
+    private saveTimer: ReturnType<typeof setTimeout> | null = null;
+    private readonly SAVE_DEBOUNCE_MS = 300;
 
     constructor() {
         this.configDir = path.join(os.homedir(), '.sql-all-in-one');
@@ -92,6 +95,35 @@ export class ConnectionStore {
     }
 
     async save(): Promise<void> {
+        if (this.saveTimer) {
+            clearTimeout(this.saveTimer);
+        }
+        return new Promise<void>((resolve, reject) => {
+            this.saveTimer = setTimeout(async () => {
+                this.saveTimer = null;
+                try {
+                    const data: ConnectionsFile = {
+                        version: 1,
+                        groups: Array.from(this.groups.values()),
+                        connections: Array.from(this.connections.values()).map((conn) => ({
+                            ...conn,
+                            password: undefined,
+                        })),
+                    };
+                    await this.saveToFile(data);
+                    resolve();
+                } catch (error) {
+                    reject(error);
+                }
+            }, this.SAVE_DEBOUNCE_MS);
+        });
+    }
+
+    async saveImmediate(): Promise<void> {
+        if (this.saveTimer) {
+            clearTimeout(this.saveTimer);
+            this.saveTimer = null;
+        }
         const data: ConnectionsFile = {
             version: 1,
             groups: Array.from(this.groups.values()),
@@ -213,11 +245,11 @@ export class ConnectionStore {
     async exportConnections(filePath: string, includePasswords = false): Promise<void> {
         if (includePasswords) {
             const confirm = await vscode.window.showWarningMessage(
-                'You are about to export connection passwords in plaintext. This is a security risk. Continue?',
+                t('connStore.exportPasswordWarning'),
                 { modal: true },
-                'Export'
+                t('connStore.export')
             );
-            if (confirm !== 'Export') {
+            if (confirm !== t('connStore.export')) {
                 return;
             }
         }
@@ -228,7 +260,24 @@ export class ConnectionStore {
             connections: Array.from(this.connections.values()),
         };
 
-        if (!includePasswords) {
+        if (includePasswords && this.secretStorage) {
+            data.connections = await Promise.all(
+                data.connections.map(async (conn) => {
+                    const password = await this.secretStorage!.get(`sql-all-in-one.password.${conn.id}`);
+                    const sshPassword = await this.secretStorage!.get(`sql-all-in-one.ssh.password.${conn.id}`);
+                    const sshPassphrase = await this.secretStorage!.get(`sql-all-in-one.ssh.passphrase.${conn.id}`);
+                    return {
+                        ...conn,
+                        password: password || undefined,
+                        ssh: conn.ssh ? {
+                            ...conn.ssh,
+                            password: sshPassword || undefined,
+                            passphrase: sshPassphrase || undefined,
+                        } : undefined,
+                    };
+                })
+            );
+        } else {
             data.connections = data.connections.map((conn) => ({
                 ...conn,
                 password: undefined,
@@ -327,19 +376,22 @@ export class ConnectionStore {
             }
         }
 
+        const existingNames = new Set(
+            Array.from(this.connections.values()).map(c => c.name)
+        );
+
         for (const conn of data.connections) {
             if (!this.connections.has(conn.id)) {
                 const newId = conn.id;
                 let counter = 1;
                 let name = conn.name;
 
-                while (
-                    Array.from(this.connections.values()).some((c) => c.name === name)
-                ) {
+                while (existingNames.has(name)) {
                     name = `${conn.name} (${counter})`;
                     counter++;
                 }
 
+                existingNames.add(name);
                 const newConn = { ...conn, id: newId, name };
                 this.connections.set(newId, newConn);
                 added++;

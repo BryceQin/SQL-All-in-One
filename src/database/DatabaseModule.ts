@@ -82,48 +82,44 @@ export class DatabaseModule {
   }
 
   private setupDoubleClickHandler(treeView: vscode.TreeView<unknown>): void {
-    let lastSelectedNode: unknown = null;
-    let lastSelectedTime = 0;
-    let doubleClickNode: TableTreeNode | null = null;
+    let lastToggleNodeId: string | null = null;
+    let lastToggleTime = 0;
+    let ignoreNodeId: string | null = null;
     const DOUBLE_CLICK_THRESHOLD = 500;
 
-    this.context.subscriptions.push(
-      treeView.onDidChangeSelection((e) => {
-        if (e.selection.length === 0) {
-          return;
-        }
-        const selectedNode = e.selection[0];
-        const now = Date.now();
+    const handleToggle = (element: unknown): void => {
+      if (!(element instanceof TableTreeNode)) {
+        return;
+      }
+      const nodeId = element.id;
+      if (ignoreNodeId === nodeId) {
+        return;
+      }
+      const now = Date.now();
+      if (lastToggleNodeId === nodeId && now - lastToggleTime < DOUBLE_CLICK_THRESHOLD) {
+        lastToggleNodeId = null;
+        lastToggleTime = 0;
+        ignoreNodeId = nodeId;
+        vscode.commands.executeCommand('sql-all-in-one.viewTableData', element);
+        const node = element;
+        setTimeout(() => {
+          treeView.reveal(node, { expand: true }).then(undefined, (_e) => undefined);
+        }, 50);
+        setTimeout(() => {
+          ignoreNodeId = null;
+        }, 300);
+      } else {
+        lastToggleNodeId = nodeId;
+        lastToggleTime = now;
+      }
+    };
 
-        if (
-          selectedNode instanceof TableTreeNode &&
-          selectedNode === lastSelectedNode &&
-          now - lastSelectedTime < DOUBLE_CLICK_THRESHOLD
-        ) {
-          doubleClickNode = selectedNode;
-          vscode.commands.executeCommand('sql-all-in-one.viewTableData', selectedNode);
-          lastSelectedNode = null;
-          lastSelectedTime = 0;
-          const node = selectedNode;
-          setTimeout(() => {
-            if (doubleClickNode === node) {
-              doubleClickNode = null;
-            }
-          }, 300);
-        } else {
-          lastSelectedNode = selectedNode;
-          lastSelectedTime = now;
-        }
-      })
+    this.context.subscriptions.push(
+      treeView.onDidExpandElement((e) => handleToggle(e.element))
     );
 
     this.context.subscriptions.push(
-      treeView.onDidCollapseElement((e) => {
-        if (doubleClickNode && e.element === doubleClickNode) {
-          doubleClickNode = null;
-          treeView.reveal(e.element, { expand: true }).then(undefined, () => {});
-        }
-      })
+      treeView.onDidCollapseElement((e) => handleToggle(e.element))
     );
   }
 

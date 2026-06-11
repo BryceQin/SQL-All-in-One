@@ -597,13 +597,17 @@ export function extractTableNames(sql: string, dialect: SqlDialect, token?: vsco
         return []
     }
 
-    const astList = Array.isArray(result.ast) ? result.ast : [result.ast]
+    return extractTableNamesFromAst(result.ast)
+}
+
+export function extractTableNamesFromAst(ast: unknown): string[] {
+    const astList = Array.isArray(ast) ? ast : [ast]
     const names: string[] = []
     const seen = new Set<string>()
 
-    for (const ast of astList) {
-        if (!isAstNode(ast)) continue
-        const node = ast as AstNode
+    for (const a of astList) {
+        if (!isAstNode(a)) continue
+        const node = a as AstNode
 
         if (node.type === 'select') {
             collectTableNamesFromSelect(node, names, seen)

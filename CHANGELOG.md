@@ -1,5 +1,224 @@
 # Changelog
 
+## [2.15.2] - 2026-06-11
+
+### UI/UX
+
+- 彻底修复 Monaco 编辑器行号区域（gutter）背景色与编辑器不一致的问题：增加 CSS `!important` 强制覆盖 gutter 背景色；修复 `getColor` 函数 8 位 hex 颜色格式截断问题；更正缩进参考线主题键名为 `background1`/`activeBackground1`；新增 `editorGutter.modifiedBackground`/`addedBackground`/`deletedBackground` 配置
+- Thoroughly fix Monaco editor gutter background color mismatch: added CSS `!important` override for gutter backgrounds; fixed `getColor` 8-digit hex color truncation; corrected indent guide theme keys to `background1`/`activeBackground1`; added `editorGutter.modifiedBackground`/`addedBackground`/`deletedBackground` configs
+
+---
+
+## [2.15.1] - 2026-06-11
+
+### UI/UX
+
+- 修复 Monaco 编辑器行号区域（gutter）背景色与编辑器不一致的问题：添加 `editorGutter.background`、`editorOverviewRuler.background`、`editor.selectionHighlightBackground` 配置，使语法高亮主题与 VSCode 当前主题完全同步
+- Fix Monaco editor gutter background color mismatch: added `editorGutter.background`, `editorOverviewRuler.background`, `editor.selectionHighlightBackground` configs to fully sync syntax highlighting theme with current VSCode theme
+
+- 查询结果面板工具栏按钮改为 SVG 图标+文字形式（文字语言跟随插件语言设置），替代原来的纯英文文字按钮
+- Query result panel toolbar buttons changed to SVG icon + text format (text language follows plugin language setting), replacing original English-only text buttons
+
+---
+
+## [2.15.0] - 2026-06-11
+
+### UI/UX
+
+- 查询结果面板工具栏分区优化：将工具栏拆分为上下两部分，查询操作（执行、停止、筛选）放在 SQL 编辑器区域，结果操作（刷新、导出、编辑模式、增删行、提交回滚、事务、视图切换）放在结果区域
+- Query result panel toolbar split: query actions (Execute, Stop, Filter) moved to SQL editor area; result actions (Refresh, Export, Edit Mode, Add/Delete Row, Commit/Rollback, Transaction, View Switch) moved to result area
+
+- 工具栏按钮改为图标+文字形式，提升可读性（如 ↻ Refresh、✓ Commit、⟳ Transaction 等）
+- Toolbar buttons changed to icon+text format for better readability (e.g., ↻ Refresh, ✓ Commit, ⟳ Transaction, etc.)
+
+- 修复编辑模式无法退出的问题：编辑模式激活时按钮添加高亮视觉反馈，再次点击即可退出
+- Fixed edit mode cannot exit: added highlight visual feedback when edit mode is active, click again to exit
+
+- Monaco 编辑器语法高亮与 VSCode 主题同步：通过读取 VSCode CSS 变量动态构建 Monaco 自定义主题，关键字、字符串、注释、数字、类型、函数等 token 颜色与当前 VSCode 主题一致
+- Monaco editor syntax highlighting synced with VSCode theme: dynamically builds Monaco custom theme by reading VSCode CSS variables, keyword/string/comment/number/type/function token colors match the current VSCode theme
+
+---
+
+## [2.14.4] - 2026-06-11
+
+### Internationalization
+
+- 修复查询结果面板（Query Result Panel）工具栏按钮未应用国际化的问题（Run/Stop/Export/Filter/Edit/Grid/Form 等）
+- 修复查询结果面板对话框（提交确认、BLOB 预览）未国际化的问题
+- 后端 QueryResultPanel 传入语言配置到 Webview，确保前端正确切换语言
+- Fix query result panel toolbar buttons not applying i18n (Run/Stop/Export/Filter/Edit/Grid/Form etc.)
+- Fix query result panel dialogs (commit confirm, BLOB preview) not internationalized
+- Pass language config from backend to Webview for correct language switching
+
+---
+
+## [2.14.3] - 2026-06-11
+
+### Internationalization
+
+- 左侧栏数据库资源管理器全部节点标签、描述、tooltip 国际化（收藏夹、连接状态、数据库、表/视图/函数/存储过程/触发器、列、索引等）
+- 数据库连接对话框（ConnectionDialog）全部文本国际化（表单标签、按钮、placeholder、验证消息、测试结果等）
+- 设置编辑器中的连接管理表单国际化（SSH/SSL 标签、认证方式选项、验证错误消息等）
+- 所有命令标题、视图名称、欢迎文本通过 package.nls.json 支持中英双语
+- VS Code 原生交互（showQuickPick/showWarningMessage 等）全部国际化
+- Internationalize all sidebar explorer node labels, descriptions, and tooltips
+- Internationalize connection dialog (form labels, buttons, placeholders, validation messages, test results)
+- Internationalize connection management form in settings editor (SSH/SSL labels, auth options, validation errors)
+- Support Chinese/English bilingual via package.nls.json for all command titles, view names, and welcome text
+- Internationalize all VS Code native interactions (showQuickPick, showWarningMessage, etc.)
+
+---
+
+## [2.14.2] - 2026-06-11
+
+### Bug Fixes
+
+- 修复 Monaco 无法加载的根因：`state.monacoBasePath` 从未被初始化，`init()` 函数未从 `window.__CONFIG__` 读取配置
+- Fix root cause of Monaco not loading: `state.monacoBasePath` was never initialized, `init()` function did not read config from `window.__CONFIG__`
+- 修复 `monaco` 全局变量不可用的问题：改用显式存储的 `monacoRef` 引用
+- Fix `monaco` global variable not available: use explicitly stored `monacoRef` reference instead
+- 所有 `monaco.languages.*` 和 `monaco.editor.*` 调用统一使用 `monacoRef`
+- All `monaco.languages.*` and `monaco.editor.*` calls now use `monacoRef` consistently
+
+---
+
+## [2.14.1] - 2026-06-11
+
+### Bug Fixes
+
+- 修复 Monaco 语言特性无法工作的问题：Monarch 规则中的 RegExp 对象无法通过 postMessage 结构化克隆传递，改为在 Webview 端构建
+- Fix Monaco language features not working: RegExp objects in Monarch rules cannot survive postMessage structured clone, moved construction to Webview side
+- 修复 dialect 配置未被 handleConfig 处理的问题
+- Fix dialect config not being handled by handleConfig
+- 修复 Monaco 编辑器初始语言 ID 与自定义方言不匹配的问题
+- Fix Monaco editor initial language ID mismatch with custom dialect
+- 添加重复注册防护，避免同一方言被多次注册
+- Add duplicate registration guard to prevent same dialect being registered multiple times
+
+---
+
+## [2.14.0] - 2026-06-11
+
+### Features
+
+- 查询数据面板 Monaco 编辑器语言特性增强 — 方言化语法高亮、智能补全、悬停提示、SQL 格式化、Lint 诊断
+- Query Data Panel Monaco editor language features — dialect-aware syntax highlighting, smart completion, hover info, SQL formatting, lint diagnostics
+
+- 方言化 Monarch 语法高亮：为每种 SQL 方言（MySQL、Hive、Spark、FlinkSQL、PostgreSQL、BigQuery、SQLite）注册独立的 Monarch tokenizer，关键字、数据类型、函数名分别着色
+- Dialect-aware Monarch syntax highlighting: register independent Monarch tokenizer per SQL dialect with distinct colors for keywords, data types, and function names
+
+- 静态补全（零延迟）：关键字补全、580+ 函数签名补全（含参数 Snippet）、数据类型补全、代码片段补全，全部在 Webview 内直接注册
+- Static completion (zero latency): keyword, 580+ function signature (with parameter snippets), data type, and code snippet completions registered directly in the Webview
+
+- 函数签名提示：输入 `(` 或 `,` 时显示函数参数签名，自动高亮当前参数
+- Function signature help: shows function parameter signatures when typing `(` or `,`, auto-highlights current parameter
+
+- Schema 感知补全（桥接）：输入 `.` 或空格触发，通过 postMessage 桥接到 Extension Host 查询数据库 Schema，返回表名/列名补全
+- Schema-aware completion (bridged): triggered by `.` or space, bridges to Extension Host via postMessage to query database schema for table/column completions
+
+- 悬停提示（桥接）：鼠标悬停在函数名/关键字/Schema 对象上，显示签名、用法说明、表结构等信息
+- Hover information (bridged): hover over function names, keywords, or schema objects to show signatures, usage info, table structure, etc.
+
+- SQL 格式化：`Shift+Alt+F` / `Cmd+Shift+I` 快捷键格式化当前 SQL，使用用户配置的格式化选项
+- SQL formatting: `Shift+Alt+F` / `Cmd+Shift+I` shortcut to format current SQL using user-configured formatting options
+
+- SQL Lint 诊断：编辑内容变更后 500ms 防抖自动检查，通过桥接调用 AstLinter，在编辑器中显示波浪线警告
+- SQL lint diagnostics: auto-check with 500ms debounce on content change, bridges to AstLinter, shows squiggly warnings in editor
+
+- 连接切换时自动更新方言：切换数据库连接时自动检测方言类型，重新注册语言特性
+- Auto dialect switch on connection change: auto-detects dialect when switching database connections and re-registers language features
+
+- 混合架构：静态特性（关键字/函数/片段补全、Monarch 高亮）在 Webview 内直接注册，动态特性（Schema 补全、悬停、格式化、Lint）通过 postMessage 桥接到 Extension Host 处理
+- Hybrid architecture: static features (keyword/function/snippet completion, Monarch highlighting) registered directly in Webview; dynamic features (schema completion, hover, formatting, lint) bridged to Extension Host via postMessage
+
+---
+
+## [2.13.0] - 2026-06-11
+
+### Features
+
+- 查询数据面板 Monaco 编辑器语言特性增强 — 方言化语法高亮、智能补全、悬停提示、SQL 格式化、Lint 诊断
+- Query Data Panel Monaco editor language features — dialect-aware syntax highlighting, smart completion, hover info, SQL formatting, lint diagnostics
+
+- 方言化 Monarch 语法高亮：为每种 SQL 方言（MySQL、Hive、Spark、FlinkSQL、PostgreSQL、BigQuery、SQLite）注册独立的 Monarch tokenizer，关键字、数据类型、函数名分别着色
+- Dialect-aware Monarch syntax highlighting: register independent Monarch tokenizer per SQL dialect with distinct colors for keywords, data types, and function names
+
+- 静态补全（零延迟）：关键字补全、580+ 函数签名补全（含参数 Snippet）、数据类型补全、代码片段补全，全部在 Webview 内直接注册
+- Static completion (zero latency): keyword, 580+ function signature (with parameter snippets), data type, and code snippet completions registered directly in the Webview
+
+- 函数签名提示：输入 `(` 或 `,` 时显示函数参数签名，自动高亮当前参数
+- Function signature help: shows function parameter signatures when typing `(` or `,`, auto-highlights current parameter
+
+- Schema 感知补全（桥接）：输入 `.` 或空格触发，通过 postMessage 桥接到 Extension Host 查询数据库 Schema，返回表名/列名补全
+- Schema-aware completion (bridged): triggered by `.` or space, bridges to Extension Host via postMessage to query database schema for table/column completions
+
+- 悬停提示（桥接）：鼠标悬停在函数名/关键字/Schema 对象上，显示签名、用法说明、表结构等信息
+- Hover information (bridged): hover over function names, keywords, or schema objects to show signatures, usage info, table structure, etc.
+
+- SQL 格式化：`Shift+Alt+F` / `Cmd+Shift+I` 快捷键格式化当前 SQL，使用用户配置的格式化选项
+- SQL formatting: `Shift+Alt+F` / `Cmd+Shift+I` shortcut to format current SQL using user-configured formatting options
+
+- SQL Lint 诊断：编辑内容变更后 500ms 防抖自动检查，通过桥接调用 AstLinter，在编辑器中显示波浪线警告
+- SQL lint diagnostics: auto-check with 500ms debounce on content change, bridges to AstLinter, shows squiggly warnings in editor
+
+- 连接切换时自动更新方言：切换数据库连接时自动检测方言类型，重新注册语言特性
+- Auto dialect switch on connection change: auto-detects dialect when switching database connections and re-registers language features
+
+- 混合架构：静态特性（关键字/函数/片段补全、Monarch 高亮）在 Webview 内直接注册，动态特性（Schema 补全、悬停、格式化、Lint）通过 postMessage 桥接到 Extension Host 处理
+- Hybrid architecture: static features (keyword/function/snippet completion, Monarch highlighting) registered directly in Webview; dynamic features (schema completion, hover, formatting, lint) bridged to Extension Host via postMessage
+
+### Bug Fixes
+
+- MysqlAdapter 连接池和查询超时修复
+- MysqlAdapter connection pool and query timeout fixes
+
+- 数据导入导出流程优化
+- Data import/export flow improvements
+
+- 格式化引擎多项修复（注释保留、Hive/Spark 预处理、DDL/INSERT/SELECT 格式化）
+- Formatter fixes (comment preservation, Hive/Spark preprocessing, DDL/INSERT/SELECT formatting)
+
+- Schema 缓存和 SchemaHover 解析修复
+- Schema cache and SchemaHover resolver fixes
+
+- SQL 语句检测和批量执行优化
+- SQL statement detection and batch execution improvements
+
+---
+
+## [2.12.0] - 2026-06-10
+
+### Features
+
+- 查询数据面板 — 查询结果面板集成 Monaco SQL 编辑器，支持在结果面板中直接编写和执行 SQL
+- Query Data Panel — integrated Monaco SQL editor in the query result panel, supporting writing and executing SQL directly
+
+- Monaco Editor 集成：SQL 语法高亮、智能提示、代码折叠，支持 `Cmd/Ctrl+Shift+E` 快捷执行
+- Monaco Editor integration: SQL syntax highlighting, IntelliSense, code folding, with `Cmd/Ctrl+Shift+E` shortcut to execute
+
+- 可拖拽分割面板：SQL 编辑器与查询结果上下分栏，支持拖拽调整比例（10%~80%）
+- Draggable split panel: SQL editor and query results in a vertical split layout, with adjustable ratio (10%~80%)
+
+- VS Code 主题同步：Monaco 编辑器自动跟随 VS Code 明/暗主题切换
+- VS Code theme sync: Monaco editor automatically follows VS Code light/dark theme changes
+
+- 从数据库浏览器点击表/视图节点时，自动生成 `SELECT * FROM table LIMIT 200` 并执行
+- Clicking table/view node in Database Explorer auto-generates `SELECT * FROM table LIMIT 200` and executes it
+
+- 执行 SQL 命令也会将当前 SQL 同步到面板编辑器
+- Execute SQL command also syncs current SQL to the panel editor
+
+- 编辑器降级方案：Monaco 加载失败时自动回退到 textarea
+- Editor fallback: automatically falls back to textarea when Monaco fails to load
+
+- "View Data" 命令重命名为 "Query Data"，更准确反映功能
+- "View Data" command renamed to "Query Data", more accurately reflecting the functionality
+
+- 表节点默认点击操作改为 "Query Data"
+- Table node default click action changed to "Query Data"
+
+---
+
 ## [2.11.0] - 2026-06-10
 
 ### UI/UX

@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:;">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline' {{CSP_SOURCE}}; script-src 'unsafe-inline' {{CSP_SOURCE}}; img-src data: {{CSP_SOURCE}}; worker-src blob: {{CSP_SOURCE}};">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title data-i18n="resultPanel.title">Query Result</title>
+  <title data-i18n="resultPanel.title">查询结果</title>
   <link rel="stylesheet" href="{{CSS_URI}}">
   {{CONFIG_INJECT}}
+  <script src="{{MONACO_LOADER_URI}}"></script>
 </head>
 <body>
   <div class="result-panel">
@@ -16,34 +17,6 @@
         <span class="header-conn" id="headerConn"></span>
         <span class="header-dot" id="headerDot"></span>
         <span class="header-time" id="headerTime"></span>
-      </div>
-      <div class="toolbar">
-        <button class="tb-btn" id="btnExecute" data-action="handleExecute" data-i18n="resultPanel.execute" title="Execute">▶ Run</button>
-        <button class="tb-btn" id="btnCancel" data-action="handleCancel" data-i18n="resultPanel.cancel" title="Cancel">■ Stop</button>
-        <button class="tb-btn" id="btnRefresh" data-action="handleRefresh" data-i18n="resultPanel.refresh" title="Refresh">↻</button>
-        <div class="tb-dropdown" id="exportDropdown">
-          <button class="tb-btn" data-action="toggleExportMenu" data-i18n="resultPanel.export" title="Export">Export ▼</button>
-          <div class="tb-dropdown-menu" id="exportMenu">
-            <div class="tb-dropdown-item" data-action="handleExport" data-action-arg="csv">CSV</div>
-            <div class="tb-dropdown-item" data-action="handleExport" data-action-arg="json">JSON</div>
-            <div class="tb-dropdown-item" data-action="handleExport" data-action-arg="sql_insert">SQL INSERT</div>
-            <div class="tb-dropdown-item" data-action="handleExport" data-action-arg="ddl">DDL</div>
-          </div>
-        </div>
-        <button class="tb-btn" id="btnFilter" data-action="toggleFilterBar" data-i18n="resultPanel.filter" title="Filter">Filter</button>
-        <span class="tb-separator"></span>
-        <button class="tb-btn" id="btnEditMode" data-action="toggleEditMode" title="Toggle Edit Mode">Edit</button>
-        <button class="tb-btn" id="btnAddRow" data-action="addRow" title="Add Row" disabled>+</button>
-        <button class="tb-btn" id="btnDeleteRow" data-action="deleteRow" title="Delete Row" disabled>−</button>
-        <button class="tb-btn" id="btnCommit" data-action="commitChanges" title="Commit Changes" disabled>✓</button>
-        <button class="tb-btn" id="btnRollback" data-action="rollbackChanges" title="Rollback Changes" disabled>←</button>
-        <span class="tb-separator"></span>
-        <button class="tb-btn" id="btnBeginTx" data-action="beginTransaction" title="Begin Transaction" disabled>Tx</button>
-        <button class="tb-btn" id="btnSavepoint" data-action="createSavepoint" title="Create Savepoint" disabled>SP</button>
-        <button class="tb-btn" id="btnRollbackToSp" data-action="rollbackToSavepoint" title="Rollback to Savepoint" disabled>←SP</button>
-        <span class="tb-separator"></span>
-        <button class="tb-btn" id="btnGridView" data-action="switchView" data-action-arg="grid" title="Grid View">Grid</button>
-        <button class="tb-btn" id="btnFormView" data-action="switchView" data-action-arg="form" title="Form View">Form</button>
       </div>
     </div>
 
@@ -66,102 +39,143 @@
             <option value="IS NOT NULL">IS NOT NULL</option>
             <option value="BETWEEN">BETWEEN</option>
           </select>
-          <input type="text" class="filter-val" placeholder="Value">
+          <input type="text" class="filter-val" data-i18n-ph="resultPanel.filterValue" placeholder="值">
           <button class="filter-remove-btn" data-action="removeFilterCondition" data-action-arg="0">×</button>
         </div>
       </div>
       <div class="filter-actions">
-        <button class="btn btn-secondary" data-action="addFilterCondition" data-i18n="resultPanel.addCondition">+ Add Condition</button>
-        <button class="btn btn-primary" data-action="applyFilter" data-i18n="resultPanel.applyFilter">Apply</button>
+        <button class="btn btn-secondary" data-action="addFilterCondition"><svg class="tb-icon" viewBox="0 0 16 16"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M8 2.5v11M2.5 8h11"/></svg><span data-i18n="resultPanel.addCondition">添加条件</span></button>
+        <button class="btn btn-primary" data-action="applyFilter"><svg class="tb-icon" viewBox="0 0 16 16"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M3 8l3.5 3.5L13 5"/></svg><span data-i18n="resultPanel.applyFilter">应用</span></button>
       </div>
     </div>
 
-    <div class="tab-content" id="tabContent">
-      <div class="tab-page active" id="pageResult">
-        <div class="grid-container" id="gridContainer">
-          <div class="grid-header-wrapper" id="gridHeaderWrapper">
-            <table class="grid-table grid-header-table" id="gridHeaderTable">
-              <thead>
-                <tr id="gridHeaderRow"></tr>
-              </thead>
-            </table>
-          </div>
-          <div class="grid-body-wrapper" id="gridBodyWrapper">
-            <div class="grid-spacer" id="gridSpacer"></div>
-            <table class="grid-table grid-body-table" id="gridBodyTable">
-              <tbody id="gridBody"></tbody>
-            </table>
-          </div>
+    <div class="panel-split" id="panelSplit">
+      <div class="sql-editor-section" id="sqlEditorSection">
+        <div class="sql-editor-toolbar">
+          <span class="sql-label">SQL</span>
+          <span class="tb-separator"></span>
+          <button class="tb-btn" id="btnExecute" data-action="handleExecute" data-i18n-title="resultPanel.execute" title="执行"><svg class="tb-icon" viewBox="0 0 16 16"><path fill="currentColor" d="M4 2v12l9-6z"/></svg><span data-i18n="resultPanel.execute">执行</span></button>
+          <button class="tb-btn" id="btnCancel" data-action="handleCancel" data-i18n-title="resultPanel.cancel" title="取消"><svg class="tb-icon" viewBox="0 0 16 16"><rect fill="currentColor" x="3" y="3" width="10" height="10" rx="1"/></svg><span data-i18n="resultPanel.cancel">取消</span></button>
+          <button class="tb-btn" id="btnFilter" data-action="toggleFilterBar" data-i18n-title="resultPanel.filter" title="筛选"><svg class="tb-icon" viewBox="0 0 16 16"><path fill="currentColor" d="M1.5 2h13l-5 6v5l-3 2V8z"/></svg><span data-i18n="resultPanel.filter">筛选</span></button>
         </div>
-        <div class="form-container" id="formContainer" style="display:none;">
-            <div class="form-nav">
-                <button class="form-nav-btn" id="btnPrevRecord" data-action="navigateRecord" data-action-arg="-1">‹</button>
-                <span class="form-record-info" id="formRecordInfo">0/0</span>
-                <button class="form-nav-btn" id="btnNextRecord" data-action="navigateRecord" data-action-arg="1">›</button>
+        <div class="sql-editor-container" id="sqlEditorContainer"></div>
+      </div>
+      <div class="splitter" id="splitter">
+        <div class="splitter-handle"></div>
+      </div>
+      <div class="result-section" id="resultSection">
+        <div class="result-toolbar">
+          <button class="tb-btn" id="btnRefresh" data-action="handleRefresh" data-i18n-title="resultPanel.refresh" title="刷新"><svg class="tb-icon" viewBox="0 0 16 16"><path fill="currentColor" d="M13.5 8a5.5 5.5 0 1 1-1.68-3.93L14 2.5V7h-4.5l1.82-1.82A4 4 0 1 0 12.1 8h1.4z"/></svg><span data-i18n="resultPanel.refresh">刷新</span></button>
+          <div class="tb-dropdown" id="exportDropdown">
+            <button class="tb-btn" data-action="toggleExportMenu" data-i18n-title="resultPanel.export" title="导出"><svg class="tb-icon" viewBox="0 0 16 16"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M3 13h10M8 2v8M5 7l3 3 3-3"/></svg><span data-i18n="resultPanel.export">导出</span> ▼</button>
+            <div class="tb-dropdown-menu" id="exportMenu">
+              <div class="tb-dropdown-item" data-action="handleExport" data-action-arg="csv">CSV</div>
+              <div class="tb-dropdown-item" data-action="handleExport" data-action-arg="json">JSON</div>
+              <div class="tb-dropdown-item" data-action="handleExport" data-action-arg="sql_insert">SQL INSERT</div>
+              <div class="tb-dropdown-item" data-action="handleExport" data-action-arg="ddl">DDL</div>
             </div>
-            <div class="form-fields" id="formFields"></div>
+          </div>
+          <span class="tb-separator"></span>
+          <button class="tb-btn" id="btnEditMode" data-action="toggleEditMode" data-i18n-title="resultPanel.editMode" title="编辑模式"><svg class="tb-icon" viewBox="0 0 16 16"><path fill="currentColor" d="M12.2 2.3l1.5 1.5L5.5 12H4v-1.5z"/><path fill="currentColor" d="M4 12h1.5l8.2-8.2-1.5-1.5z" opacity="0"/></svg><span data-i18n="resultPanel.editMode">编辑</span></button>
+          <button class="tb-btn" id="btnAddRow" data-action="addRow" data-i18n-title="resultPanel.addRow" title="添加行" disabled><svg class="tb-icon" viewBox="0 0 16 16"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M8 2.5v11M2.5 8h11"/></svg><span data-i18n="resultPanel.addRow">添加</span></button>
+          <button class="tb-btn" id="btnDeleteRow" data-action="deleteRow" data-i18n-title="resultPanel.deleteRow" title="删除行" disabled><svg class="tb-icon" viewBox="0 0 16 16"><path fill="currentColor" d="M11 3.5V2H5v1.5H2V5h1l.8 8.4c.05.6.5 1.1 1.2 1.1h6c.6 0 1.1-.5 1.2-1.1L13 5h1V3.5h-3zM6 11V7h1v4H6zm3 0V7h1v4H9z"/></svg><span data-i18n="resultPanel.deleteRow">删除</span></button>
+          <button class="tb-btn" id="btnCommit" data-action="commitChanges" data-i18n-title="resultPanel.commit" title="提交" disabled><svg class="tb-icon" viewBox="0 0 16 16"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M3 8l3.5 3.5L13 5"/></svg><span data-i18n="resultPanel.commit">提交</span></button>
+          <button class="tb-btn" id="btnRollback" data-action="rollbackChanges" data-i18n-title="resultPanel.rollback" title="回滚" disabled><svg class="tb-icon" viewBox="0 0 16 16"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M4 5L1 8l3 3M1 8h8a4 4 0 0 0 0-8"/></svg><span data-i18n="resultPanel.rollback">回滚</span></button>
+          <span class="tb-separator"></span>
+          <button class="tb-btn" id="btnBeginTx" data-action="beginTransaction" data-i18n-title="resultPanel.beginTx" title="开始事务" disabled><svg class="tb-icon" viewBox="0 0 16 16"><path fill="currentColor" d="M2 4c0 1.1 2.7 2 6 2s6-.9 6-2-2.7-2-6-2-6 .9-6 2M2 8c0 1.1 2.7 2 6 2s6-.9 6-2M2 12c0 1.1 2.7 2 6 2s6-.9 6-2"/></svg><span data-i18n="resultPanel.beginTx">事务</span></button>
+          <button class="tb-btn" id="btnSavepoint" data-action="createSavepoint" data-i18n-title="resultPanel.savepoint" title="保存点" disabled><svg class="tb-icon" viewBox="0 0 16 16"><path fill="currentColor" d="M4 2h8v12l-4-3-4 3z"/></svg><span data-i18n="resultPanel.savepoint">保存点</span></button>
+          <button class="tb-btn" id="btnRollbackToSp" data-action="rollbackToSavepoint" data-i18n-title="resultPanel.rollbackToSp" title="回滚到保存点" disabled><svg class="tb-icon" viewBox="0 0 16 16"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M4 5L1 8l3 3M1 8h5"/></svg><span data-i18n="resultPanel.rollbackToSp">回滚保存点</span></button>
+          <span class="tb-separator"></span>
+          <button class="tb-btn" id="btnGridView" data-action="switchView" data-action-arg="grid" data-i18n-title="resultPanel.gridView" title="网格视图"><svg class="tb-icon" viewBox="0 0 16 16"><path fill="currentColor" d="M2 2h4.5v4.5H2zM9.5 2H14v4.5H9.5zM2 9.5h4.5V14H2zM9.5 9.5H14V14H9.5z"/></svg><span data-i18n="resultPanel.gridView">网格</span></button>
+          <button class="tb-btn" id="btnFormView" data-action="switchView" data-action-arg="form" data-i18n-title="resultPanel.formView" title="表单视图"><svg class="tb-icon" viewBox="0 0 16 16"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M2 3.5h12M2 8h12M2 12.5h12"/></svg><span data-i18n="resultPanel.formView">表单</span></button>
         </div>
-        <div class="empty-state" id="emptyState">
-          <div class="empty-state-icon">—</div>
-          <div data-i18n="resultPanel.noData">No query results</div>
+        <div class="tab-content" id="tabContent">
+          <div class="tab-page active" id="pageResult">
+            <div class="grid-container" id="gridContainer">
+              <div class="grid-header-wrapper" id="gridHeaderWrapper">
+                <table class="grid-table grid-header-table" id="gridHeaderTable">
+                  <thead>
+                    <tr id="gridHeaderRow"></tr>
+                  </thead>
+                </table>
+              </div>
+              <div class="grid-body-wrapper" id="gridBodyWrapper">
+                <div class="grid-spacer" id="gridSpacer"></div>
+                <table class="grid-table grid-body-table" id="gridBodyTable">
+                  <tbody id="gridBody"></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="form-container" id="formContainer" style="display:none;">
+                <div class="form-nav">
+                    <button class="form-nav-btn" id="btnPrevRecord" data-action="navigateRecord" data-action-arg="-1">‹</button>
+                    <span class="form-record-info" id="formRecordInfo">0/0</span>
+                    <button class="form-nav-btn" id="btnNextRecord" data-action="navigateRecord" data-action-arg="1">›</button>
+                </div>
+                <div class="form-fields" id="formFields"></div>
+            </div>
+            <div class="empty-state" id="emptyState">
+              <div class="empty-state-icon">—</div>
+              <div data-i18n="resultPanel.noData">暂无查询结果</div>
+            </div>
+          </div>
+
+          <div class="tab-page" id="pageMessages">
+            <div class="messages-container" id="messagesContainer"></div>
+          </div>
+
+          <div class="tab-page" id="pageHistory">
+            <div class="history-container" id="historyContainer"></div>
+          </div>
         </div>
-      </div>
-
-      <div class="tab-page" id="pageMessages">
-        <div class="messages-container" id="messagesContainer"></div>
-      </div>
-
-      <div class="tab-page" id="pageHistory">
-        <div class="history-container" id="historyContainer"></div>
-      </div>
-    </div>
-
-    <div class="bottom-bar">
-      <div class="tab-bar">
-        <button class="tab-btn active" data-tab="pageResult" data-action="switchTab" data-action-arg="pageResult" data-i18n="resultPanel.resultSet">结果集</button>
-        <button class="tab-btn" data-tab="pageMessages" data-action="switchTab" data-action-arg="pageMessages" data-i18n="resultPanel.messages">消息</button>
-        <button class="tab-btn" data-tab="pageHistory" data-action="switchTab" data-action-arg="pageHistory" data-i18n="resultPanel.history">历史</button>
-      </div>
-      <div class="status-bar">
-        <span class="status-info" id="statusInfo"></span>
-        <span class="edit-status" id="editStatus"></span>
-        <span class="transaction-status" id="transactionStatus"></span>
-        <div class="pagination" id="pagination">
-          <button class="page-btn" id="btnPrevPage" data-action="changePage" data-action-arg="-1">‹</button>
-          <span class="page-info" id="pageInfo"></span>
-          <button class="page-btn" id="btnNextPage" data-action="changePage" data-action-arg="1">›</button>
-          <input type="number" class="page-jump" id="pageJump" min="1" data-action="jumpToPage">
-          <button class="page-btn" data-action="jumpToPage" data-i18n="resultPanel.go">Go</button>
+        <div class="bottom-bar">
+          <div class="tab-bar">
+            <button class="tab-btn active" data-tab="pageResult" data-action="switchTab" data-action-arg="pageResult" data-i18n="resultPanel.resultSet">结果集</button>
+            <button class="tab-btn" data-tab="pageMessages" data-action="switchTab" data-action-arg="pageMessages" data-i18n="resultPanel.messages">消息</button>
+            <button class="tab-btn" data-tab="pageHistory" data-action="switchTab" data-action-arg="pageHistory" data-i18n="resultPanel.history">历史</button>
+          </div>
+          <div class="status-bar">
+            <span class="status-info" id="statusInfo"></span>
+            <span class="edit-status" id="editStatus"></span>
+            <span class="transaction-status" id="transactionStatus"></span>
+            <div class="pagination" id="pagination">
+              <button class="page-btn" id="btnPrevPage" data-action="changePage" data-action-arg="-1">‹</button>
+              <span class="page-info" id="pageInfo"></span>
+              <button class="page-btn" id="btnNextPage" data-action="changePage" data-action-arg="1">›</button>
+              <input type="number" class="page-jump" id="pageJump" min="1" data-action="jumpToPage">
+              <button class="page-btn" data-action="jumpToPage" data-i18n="resultPanel.go">跳转</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
     <div class="dialog-overlay" id="commitDialog" style="display:none;">
         <div class="dialog">
-            <div class="dialog-header">提交更改确认</div>
+            <div class="dialog-header" data-i18n="resultPanel.commitConfirm">提交更改确认</div>
             <div class="dialog-body">
-                <div class="dialog-label">即将执行以下 SQL:</div>
+                <div class="dialog-label" data-i18n="resultPanel.executeSql">即将执行以下 SQL:</div>
                 <pre class="dialog-sql" id="commitSqlPreview"></pre>
                 <div class="dialog-summary" id="commitSummary"></div>
             </div>
             <div class="dialog-footer">
-                <button class="btn btn-primary" data-action="confirmCommit">执行</button>
-                <button class="btn btn-secondary" data-action="cancelCommit">取消</button>
+                <button class="btn btn-primary" data-action="confirmCommit" data-i18n="resultPanel.execute">执行</button>
+                <button class="btn btn-secondary" data-action="cancelCommit" data-i18n="resultPanel.cancel">取消</button>
             </div>
         </div>
     </div>
     <div class="dialog-overlay" id="blobDialog" style="display:none;">
         <div class="dialog dialog-wide">
-            <div class="dialog-header">BLOB 预览</div>
+            <div class="dialog-header" data-i18n="resultPanel.blobPreview">BLOB 预览</div>
             <div class="dialog-body">
                 <div class="blob-tabs">
-                    <button class="blob-tab active" data-action="switchBlobTab" data-action-arg="text">文本</button>
-                    <button class="blob-tab" data-action="switchBlobTab" data-action-arg="hex">十六进制</button>
-                    <button class="blob-tab" data-action="switchBlobTab" data-action-arg="image">图片</button>
+                    <button class="blob-tab active" data-action="switchBlobTab" data-action-arg="text" data-i18n="resultPanel.blobText">文本</button>
+                    <button class="blob-tab" data-action="switchBlobTab" data-action-arg="hex" data-i18n="resultPanel.blobHex">十六进制</button>
+                    <button class="blob-tab" data-action="switchBlobTab" data-action-arg="image" data-i18n="resultPanel.blobImage">图片</button>
                 </div>
                 <div class="blob-content" id="blobContent"></div>
             </div>
             <div class="dialog-footer">
-                <button class="btn btn-secondary" data-action="closeBlobDialog">关闭</button>
+                <button class="btn btn-secondary" data-action="closeBlobDialog" data-i18n="resultPanel.close">关闭</button>
             </div>
         </div>
     </div>

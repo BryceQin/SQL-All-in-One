@@ -10,8 +10,6 @@ export class ExplainPlanPanel {
 
     private readonly _panel: vscode.WebviewPanel;
     private readonly _extensionUri: vscode.Uri;
-    // Context is received but not used in this dialog
-    // private readonly __context: vscode.ExtensionContext;
     private _disposables: vscode.Disposable[] = [];
 
     public static createOrShow(extensionUri: vscode.Uri, context: vscode.ExtensionContext): ExplainPlanPanel {
@@ -179,6 +177,7 @@ export class ExplainPlanPanel {
 
             html = html.replace('{{CSS_URI}}', cssUri.toString());
             html = html.replace('{{JS_URI}}', jsUri.toString());
+            html = html.replace(/\{\{CSP_SOURCE\}\}/g, this._panel.webview.cspSource);
 
             return html;
         } catch (error) {

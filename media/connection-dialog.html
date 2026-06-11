@@ -1,20 +1,21 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:;">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline' {{CSP_SOURCE}}; script-src 'unsafe-inline' {{CSP_SOURCE}}; img-src data: {{CSP_SOURCE}};">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Connection Dialog</title>
   <link rel="stylesheet" href="{{CSS_URI}}">
   {{CONFIG_INJECT}}
+  {{I18N_INJECT}}
 </head>
 <body>
   <div class="container">
     <div class="header">
       <div class="header-logo">🗄️</div>
       <div class="header-info">
-        <h1 id="headerTitle">New Connection</h1>
-        <div class="header-sub">Configure database connection parameters</div>
+        <h1 id="headerTitle" data-i18n="newConnection">New Connection</h1>
+        <div class="header-sub" data-i18n="configureDatabaseConnection">Configure database connection parameters</div>
       </div>
       <div class="header-actions">
         <button class="btn btn-ghost btn-sm" id="btnClose" data-action="handleClose">✕</button>
@@ -32,25 +33,25 @@
 
         <div class="conn-form-page active" id="pageGeneral">
           <div class="dialect-selector">
-            <div class="section-label">Database Type</div>
+            <div class="section-label" data-i18n="databaseType">Database Type</div>
             <div class="dialect-grid" id="dialectGrid"></div>
           </div>
 
           <div class="conn-form-row">
-            <label class="conn-form-label">Connection Name</label>
-            <input type="text" class="config-input" id="connName" data-action="updateField" data-action-arg="name" placeholder="e.g. Production MySQL">
+            <label class="conn-form-label" data-i18n="connectionName">Connection Name</label>
+            <input type="text" class="config-input" id="connName" data-action="updateField" data-action-arg="name" data-i18n-ph="connectionNamePlaceholder" placeholder="e.g. Production MySQL">
           </div>
 
           <div class="conn-form-row">
             <div class="conn-form-inline">
               <div class="conn-form-field-flex">
-                <label class="conn-form-label">Group</label>
+                <label class="conn-form-label" data-i18n="group">Group</label>
                 <select class="config-select" id="connGroup" data-action="updateField" data-action-arg="group">
-                  <option value="">No Group</option>
+                  <option value="" data-i18n="noGroup">No Group</option>
                 </select>
               </div>
               <div class="conn-form-field-fixed-color">
-                <label class="conn-form-label">Color Tag</label>
+                <label class="conn-form-label" data-i18n="colorTag">Color Tag</label>
                 <div class="color-picker" id="colorPicker"></div>
               </div>
             </div>
@@ -60,38 +61,38 @@
             <div class="conn-form-row">
               <div class="conn-form-inline">
                 <div class="conn-form-field-flex">
-                  <label class="conn-form-label">Host</label>
+                  <label class="conn-form-label" data-i18n="host">Host</label>
                   <input type="text" class="config-input" id="connHost" data-action="updateField" data-action-arg="host" value="127.0.0.1" placeholder="127.0.0.1">
                 </div>
                 <div class="conn-form-field-fixed">
-                  <label class="conn-form-label">Port</label>
+                  <label class="conn-form-label" data-i18n="port">Port</label>
                   <input type="number" class="config-input" id="connPort" data-action="updateField" data-action-arg="port" value="3306" min="0" max="65535">
                 </div>
               </div>
             </div>
             <div class="conn-form-row">
-              <label class="conn-form-label">Username</label>
+              <label class="conn-form-label" data-i18n="username">Username</label>
               <input type="text" class="config-input" id="connUsername" data-action="updateField" data-action-arg="username" value="root" placeholder="root">
             </div>
             <div class="conn-form-row">
-              <label class="conn-form-label">Password</label>
+              <label class="conn-form-label" data-i18n="password">Password</label>
               <div class="conn-form-input-group">
-                <input type="password" class="config-input" id="connPassword" data-action="updateField" data-action-arg="password" placeholder="Enter password">
+                <input type="password" class="config-input" id="connPassword" data-action="updateField" data-action-arg="password" data-i18n-ph="enterPassword" placeholder="Enter password">
                 <button class="btn btn-ghost btn-icon btn-toggle-password" data-target="connPassword" data-action="togglePasswordVisibility">👁️</button>
               </div>
             </div>
             <div class="conn-form-row">
-              <label class="conn-form-label">Database</label>
+              <label class="conn-form-label" data-i18n="database">Database</label>
               <input type="text" class="config-input" id="connDatabase" data-action="updateField" data-action-arg="database" placeholder="mydb">
             </div>
           </div>
 
           <div id="sqliteSection" style="display:none;">
             <div class="conn-form-row">
-              <label class="conn-form-label">Database File Path</label>
+              <label class="conn-form-label" data-i18n="databaseFilePath">Database File Path</label>
               <div class="conn-form-input-group">
-                <input type="text" class="config-input" id="connSqliteFile" data-action="updateField" data-action-arg="database" placeholder="/path/to/database.db">
-                <button class="btn btn-ghost btn-sm" data-action="browseFile" data-action-arg="sqliteFile">Browse</button>
+                <input type="text" class="config-input" id="connSqliteFile" data-action="updateField" data-action-arg="database" data-i18n-ph="databaseFilePathPlaceholder" placeholder="/path/to/database.db">
+                <button class="btn btn-ghost btn-sm" data-action="browseFile" data-action-arg="sqliteFile" data-i18n="browse">Browse</button>
               </div>
             </div>
           </div>
@@ -99,51 +100,51 @@
 
         <div class="conn-form-page" id="pageSsh">
           <div class="toggle-row">
-            <span class="toggle-label">Use SSH Tunnel</span>
+            <span class="toggle-label" data-i18n="useSshTunnel">Use SSH Tunnel</span>
             <label class="toggle"><input type="checkbox" id="sshEnabled" data-action="updateField" data-action-arg="ssh.enabled"><span class="toggle-slider"></span></label>
           </div>
           <div id="sshFields" class="conn-form-sub disabled">
             <div class="conn-form-row">
               <div class="conn-form-inline">
                 <div class="conn-form-field-flex">
-                  <label class="conn-form-label">SSH Host</label>
+                  <label class="conn-form-label" data-i18n="sshHost">SSH Host</label>
                   <input type="text" class="config-input" id="sshHost" data-action="updateField" data-action-arg="ssh.host" placeholder="ssh.example.com">
                 </div>
                 <div class="conn-form-field-fixed">
-                  <label class="conn-form-label">SSH Port</label>
+                  <label class="conn-form-label" data-i18n="sshPort">SSH Port</label>
                   <input type="number" class="config-input" id="sshPort" data-action="updateField" data-action-arg="ssh.port" value="22" min="1" max="65535">
                 </div>
               </div>
             </div>
             <div class="conn-form-row">
-              <label class="conn-form-label">Username</label>
+              <label class="conn-form-label" data-i18n="username">Username</label>
               <input type="text" class="config-input" id="sshUsername" data-action="updateField" data-action-arg="ssh.username" placeholder="user">
             </div>
             <div class="conn-form-row">
-              <label class="conn-form-label">Authentication Method</label>
+              <label class="conn-form-label" data-i18n="authenticationMethod">Authentication Method</label>
               <select class="config-select" id="sshAuthMethod" data-action="updateField" data-action-arg="ssh.authentication">
-                <option value="password">Password</option>
-                <option value="privateKey">Private Key</option>
+                <option value="password" data-i18n="password">Password</option>
+                <option value="privateKey" data-i18n="privateKey">Private Key</option>
               </select>
             </div>
             <div class="conn-form-row" id="sshPasswordRow">
-              <label class="conn-form-label">Password</label>
+              <label class="conn-form-label" data-i18n="password">Password</label>
               <div class="conn-form-input-group">
-                <input type="password" class="config-input" id="sshPassword" data-action="updateField" data-action-arg="ssh.password" placeholder="SSH password">
+                <input type="password" class="config-input" id="sshPassword" data-action="updateField" data-action-arg="ssh.password" data-i18n-ph="sshPassword" placeholder="SSH password">
                 <button class="btn btn-ghost btn-icon btn-toggle-password" data-target="sshPassword" data-action="togglePasswordVisibility">👁️</button>
               </div>
             </div>
             <div class="conn-form-row" id="sshKeyRow" style="display:none;">
-              <label class="conn-form-label">Private Key</label>
+              <label class="conn-form-label" data-i18n="privateKey">Private Key</label>
               <div class="conn-form-input-group">
                 <input type="text" class="config-input" id="sshPrivateKey" data-action="updateField" data-action-arg="ssh.privateKey" placeholder="~/.ssh/id_rsa">
-                <button class="btn btn-ghost btn-sm" data-action="browseFile" data-action-arg="sshPrivateKey">Browse</button>
+                <button class="btn btn-ghost btn-sm" data-action="browseFile" data-action-arg="sshPrivateKey" data-i18n="browse">Browse</button>
               </div>
             </div>
             <div class="conn-form-row">
-              <label class="conn-form-label">Passphrase</label>
+              <label class="conn-form-label" data-i18n="passphrase">Passphrase</label>
               <div class="conn-form-input-group">
-                <input type="password" class="config-input" id="sshPassphrase" data-action="updateField" data-action-arg="ssh.passphrase" placeholder="Optional passphrase for private key">
+                <input type="password" class="config-input" id="sshPassphrase" data-action="updateField" data-action-arg="ssh.passphrase" data-i18n-ph="optionalPassphrase" placeholder="Optional passphrase for private key">
                 <button class="btn btn-ghost btn-icon btn-toggle-password" data-target="sshPassphrase" data-action="togglePasswordVisibility">👁️</button>
               </div>
             </div>
@@ -152,33 +153,33 @@
 
         <div class="conn-form-page" id="pageSsl">
           <div class="toggle-row">
-            <span class="toggle-label">Use SSL</span>
+            <span class="toggle-label" data-i18n="useSsl">Use SSL</span>
             <label class="toggle"><input type="checkbox" id="sslEnabled" data-action="updateField" data-action-arg="ssl.enabled"><span class="toggle-slider"></span></label>
           </div>
           <div id="sslFields" class="conn-form-sub disabled">
             <div class="conn-form-row">
-              <label class="conn-form-label">CA Certificate</label>
+              <label class="conn-form-label" data-i18n="caCertificate">CA Certificate</label>
               <div class="conn-form-input-group">
                 <input type="text" class="config-input" id="sslCa" data-action="updateField" data-action-arg="ssl.ca" placeholder="CA certificate path">
-                <button class="btn btn-ghost btn-sm" data-action="browseFile" data-action-arg="sslCa">Browse</button>
+                <button class="btn btn-ghost btn-sm" data-action="browseFile" data-action-arg="sslCa" data-i18n="browse">Browse</button>
               </div>
             </div>
             <div class="conn-form-row">
-              <label class="conn-form-label">Client Certificate</label>
+              <label class="conn-form-label" data-i18n="clientCertificate">Client Certificate</label>
               <div class="conn-form-input-group">
                 <input type="text" class="config-input" id="sslCert" data-action="updateField" data-action-arg="ssl.cert" placeholder="Client certificate path">
-                <button class="btn btn-ghost btn-sm" data-action="browseFile" data-action-arg="sslCert">Browse</button>
+                <button class="btn btn-ghost btn-sm" data-action="browseFile" data-action-arg="sslCert" data-i18n="browse">Browse</button>
               </div>
             </div>
             <div class="conn-form-row">
-              <label class="conn-form-label">Client Key</label>
+              <label class="conn-form-label" data-i18n="clientKey">Client Key</label>
               <div class="conn-form-input-group">
                 <input type="text" class="config-input" id="sslKey" data-action="updateField" data-action-arg="ssl.key" placeholder="Client key path">
-                <button class="btn btn-ghost btn-sm" data-action="browseFile" data-action-arg="sslKey">Browse</button>
+                <button class="btn btn-ghost btn-sm" data-action="browseFile" data-action-arg="sslKey" data-i18n="browse">Browse</button>
               </div>
             </div>
             <div class="toggle-row">
-              <span class="toggle-label">Verify Server Certificate</span>
+              <span class="toggle-label" data-i18n="verifyServerCertificate">Verify Server Certificate</span>
               <label class="toggle"><input type="checkbox" id="sslRejectUnauthorized" data-action="updateField" data-action-arg="ssl.rejectUnauthorized" checked><span class="toggle-slider"></span></label>
             </div>
           </div>
@@ -188,11 +189,11 @@
           <div class="conn-form-row">
             <div class="conn-form-inline">
               <div class="conn-form-field-flex">
-                <label class="conn-form-label">Connect Timeout (ms)</label>
+                <label class="conn-form-label" data-i18n="connectTimeout">Connect Timeout (ms)</label>
                 <input type="number" class="config-input" id="connTimeout" data-action="updateField" data-action-arg="connectTimeout" value="10000" min="0">
               </div>
               <div class="conn-form-field-flex">
-                <label class="conn-form-label">Pool Size</label>
+                <label class="conn-form-label" data-i18n="poolSize">Pool Size</label>
                 <input type="number" class="config-input" id="poolSize" data-action="updateField" data-action-arg="poolConfig.maxConnections" value="5" min="1" max="100">
               </div>
             </div>
@@ -200,7 +201,7 @@
           <div class="conn-form-row">
             <div class="conn-form-inline">
               <div class="conn-form-field-flex">
-                <label class="conn-form-label">Charset</label>
+                <label class="conn-form-label" data-i18n="charset">Charset</label>
                 <select class="config-select" id="connCharset" data-action="updateField" data-action-arg="options.charset">
                   <option value="utf8mb4">utf8mb4</option>
                   <option value="utf8">utf8</option>
@@ -210,7 +211,7 @@
                 </select>
               </div>
               <div class="conn-form-field-flex">
-                <label class="conn-form-label">Timezone</label>
+                <label class="conn-form-label" data-i18n="timezone">Timezone</label>
                 <select class="config-select" id="connTimezone" data-action="updateField" data-action-arg="options.timezone">
                   <option value="local">Local</option>
                   <option value="+00:00">UTC (+00:00)</option>
@@ -222,7 +223,7 @@
             </div>
           </div>
           <div class="conn-form-row">
-            <label class="conn-form-label">Initial SQL</label>
+            <label class="conn-form-label" data-i18n="initialSql">Initial SQL</label>
             <input type="text" class="config-input" id="connInitSql" data-action="updateField" data-action-arg="options.initSql" placeholder="SET NAMES utf8mb4;">
           </div>
         </div>
@@ -230,9 +231,9 @@
         <div class="conn-form-footer">
           <div class="conn-form-result" id="testResult"></div>
           <div class="conn-form-actions">
-            <button class="btn btn-ghost btn-sm" id="btnTest" data-action="handleTestConnection">🔌 Test</button>
-            <button class="btn btn-ghost btn-sm" id="btnCancel" data-action="handleClose">Cancel</button>
-            <button class="btn btn-primary btn-sm" id="btnSave" data-action="handleSave">💾 Save</button>
+            <button class="btn btn-ghost btn-sm" id="btnTest" data-action="handleTestConnection" data-i18n="test">🔌 Test</button>
+            <button class="btn btn-ghost btn-sm" id="btnCancel" data-action="handleClose" data-i18n="cancel">Cancel</button>
+            <button class="btn btn-primary btn-sm" id="btnSave" data-action="handleSave" data-i18n="save">💾 Save</button>
           </div>
         </div>
       </div>

@@ -30,26 +30,9 @@ export class AstLinter {
     }
 
     private processStatement(node: AstNode, sql: string, dialect: SqlDialect, diagnostics: vscode.Diagnostic[], document?: vscode.TextDocument): void {
-        if (node.type === 'select') {
-            this.processSelectChain(node, sql, dialect, diagnostics, document)
-        } else {
-            const context: RuleContext = { sql, dialect, document, node }
-            diagnostics.push(...this.registry.runRules(context))
-            this.walkForSubStatements(node, sql, dialect, diagnostics, document)
-        }
-    }
-
-    private processSelectChain(node: AstNode, sql: string, dialect: SqlDialect, diagnostics: vscode.Diagnostic[], document?: vscode.TextDocument): void {
         const context: RuleContext = { sql, dialect, document, node }
         diagnostics.push(...this.registry.runRules(context))
         this.walkForSubStatements(node, sql, dialect, diagnostics, document)
-
-        if (isAstNode(node._next)) {
-            const next = node._next as AstNode
-            if (next.type === 'select') {
-                this.processSelectChain(next, sql, dialect, diagnostics, document)
-            }
-        }
     }
 
     private walkForSubStatements(root: AstNode, sql: string, dialect: SqlDialect, diagnostics: vscode.Diagnostic[], document?: vscode.TextDocument): void {

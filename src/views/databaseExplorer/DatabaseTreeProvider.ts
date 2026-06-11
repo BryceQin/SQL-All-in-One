@@ -22,6 +22,7 @@ import { SchemaCache, getSchemaCache } from '../../database/schema/SchemaCache';
 import { getConfigManager } from '../../core/configManager';
 import { handleError, ErrorCategory } from '../../core/errorHandler';
 import { LRUCache } from '../../utils/lruCache';
+import { t } from '../../i18n';
 
 interface FavoriteItem {
     connectionId: string;
@@ -42,6 +43,8 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
     private favorites: FavoriteItem[] = [];
     private readonly FAVORITES_KEY = 'sql-all-in-one.favorites';
 
+    private _disposables: vscode.Disposable[] = [];
+
     constructor(context: vscode.ExtensionContext) {
         this.context = context;
         this.connectionManager = getConnectionManager();
@@ -52,17 +55,24 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
     }
 
     private setupEventListeners(): void {
-        this.connectionManager.onDidChangeConnections(() => {
-            this.refresh();
-        });
-        
-        this.connectionManager.onDidChangeConnectionState(() => {
-            this.refresh();
-        });
-        
-        this.connectionManager.onDidChangeActiveConnection(() => {
-            this.refresh();
-        });
+        this._disposables.push(
+            this.connectionManager.onDidChangeConnections(() => {
+                this.refresh();
+            }),
+            this.connectionManager.onDidChangeConnectionState(() => {
+                this.refresh();
+            }),
+            this.connectionManager.onDidChangeActiveConnection(() => {
+                this.refresh();
+            })
+        );
+    }
+
+    dispose(): void {
+        for (const d of this._disposables) {
+            d.dispose();
+        }
+        this._disposables = [];
     }
 
     private async loadFavorites(): Promise<void> {
@@ -152,7 +162,7 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
             if (element.connectionState === 'disconnected' || element.connectionState === 'error') {
                 return {
                     command: 'sql-all-in-one.connect',
-                    title: 'Connect',
+                    title: t('explorer.cmd.connect'),
                     arguments: [element]
                 };
             }
@@ -161,21 +171,28 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
         if (element instanceof ViewTreeNode) {
             return {
                 command: 'sql-all-in-one.viewTableData',
-                title: 'View Data',
+                title: t('explorer.cmd.viewData'),
+                arguments: [element]
+            };
+        }
+        if (element instanceof TableTreeNode) {
+            return {
+                command: 'sql-all-in-one.viewTableData',
+                title: t('explorer.cmd.queryData'),
                 arguments: [element]
             };
         }
         if (element instanceof ColumnTreeNode) {
             return {
                 command: 'sql-all-in-one.copyColumnName',
-                title: 'Copy Name',
+                title: t('explorer.cmd.copyName'),
                 arguments: [element]
             };
         }
         if (element instanceof FavoriteTreeNode) {
             return {
                 command: 'sql-all-in-one.revealInExplorer',
-                title: 'Reveal',
+                title: t('explorer.cmd.reveal'),
                 arguments: [element]
             };
         }
@@ -233,7 +250,7 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
         const groupMap = new Map<string, ConnectionConfig[]>();
         
         for (const conn of connections) {
-            const groupName = conn.group || 'Default';
+            const groupName = conn.group || t('explorer.defaultGroup');
             if (!groupMap.has(groupName)) {
                 groupMap.set(groupName, []);
             }
@@ -268,7 +285,7 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
 
     private getGroupChildren(parent: GroupTreeNode): ITreeNode[] {
         const connections = this.connectionManager.getAllConnections();
-        const groupConnections = connections.filter((c) => (c.group || 'Default') === parent.groupName);
+        const groupConnections = connections.filter((c) => (c.group || t('explorer.defaultGroup')) === parent.groupName);
         
         return groupConnections.map((conn) => {
             const state = this.connectionManager.getState(conn.id);

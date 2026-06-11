@@ -92,7 +92,6 @@ export class SqlDiagnosticsProvider {
                 }
 
                 if (cfg.enableLinter) {
-                    await Promise.resolve()
                     const lintDiagnostics = this.linter.lint(text, document, astList)
                     const filteredLintDiagnostics = this.filterBySeverity(lintDiagnostics, cfg)
                     diagnostics.push(...filteredLintDiagnostics)

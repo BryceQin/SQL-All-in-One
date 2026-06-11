@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import type { DatabaseInfo, TableInfo, ColumnInfo, FunctionInfo, ProcedureInfo } from '../adapters/IDatabaseAdapter';
+import type { DatabaseInfo, TableInfo, ColumnInfo, FunctionInfo, ProcedureInfo, ViewInfo } from '../adapters/IDatabaseAdapter';
 import { getConnectionManager } from '../connection/ConnectionManager';
 import { getConfigManager } from '../../core/configManager';
 import { getContainer, Tokens } from '../../core/diContainer';
@@ -9,7 +9,7 @@ interface CacheEntry<T> {
     expireAt: number;
 }
 
-type InvalidateScope = 'database' | 'table' | 'column' | 'function' | 'procedure';
+type InvalidateScope = 'database' | 'table' | 'column' | 'function' | 'procedure' | 'view';
 
 export class SchemaCache {
     private databaseCache = new Map<string, CacheEntry<DatabaseInfo[]>>();
@@ -17,6 +17,7 @@ export class SchemaCache {
     private columnCache = new Map<string, CacheEntry<ColumnInfo[]>>();
     private functionCache = new Map<string, CacheEntry<FunctionInfo[]>>();
     private procedureCache = new Map<string, CacheEntry<ProcedureInfo[]>>();
+    private viewCache = new Map<string, CacheEntry<ViewInfo[]>>();
     private pendingRequests = new Map<string, Promise<unknown>>();
     private cachedTtls: Record<string, number> = {};
     private ttlConfigDisposable: vscode.Disposable | undefined;
@@ -36,6 +37,7 @@ export class SchemaCache {
             column: cfgMgr.get<number>('schemaCache.columnTtl', 120),
             function: cfgMgr.get<number>('schemaCache.functionTtl', 600),
             procedure: cfgMgr.get<number>('schemaCache.procedureTtl', 600),
+            view: cfgMgr.get<number>('schemaCache.tableTtl', 300),
         };
     }
 
@@ -140,6 +142,18 @@ export class SchemaCache {
         );
     }
 
+    async getViews(connectionId: string, database: string): Promise<ViewInfo[]> {
+        return this.cachedFetch(
+            this.viewCache,
+            this.makeKey(connectionId, database),
+            'view',
+            async () => {
+                const adapter = getConnectionManager().getAdapter(connectionId);
+                return adapter ? await adapter.listViews(database) : [];
+            }
+        );
+    }
+
     invalidate(connectionId: string, scope?: InvalidateScope, database?: string, table?: string): void {
         if (!scope) {
             this.invalidateByPrefix(this.databaseCache, connectionId);
@@ -147,6 +161,7 @@ export class SchemaCache {
             this.invalidateByPrefix(this.columnCache, connectionId);
             this.invalidateByPrefix(this.functionCache, connectionId);
             this.invalidateByPrefix(this.procedureCache, connectionId);
+            this.invalidateByPrefix(this.viewCache, connectionId);
             return;
         }
 
@@ -173,6 +188,11 @@ export class SchemaCache {
             case 'procedure':
                 if (database) {
                     this.procedureCache.delete(this.makeKey(connectionId, database));
+                }
+                break;
+            case 'view':
+                if (database) {
+                    this.viewCache.delete(this.makeKey(connectionId, database));
                 }
                 break;
         }
@@ -209,6 +229,7 @@ export class SchemaCache {
         this.columnCache.clear();
         this.functionCache.clear();
         this.procedureCache.clear();
+        this.viewCache.clear();
         this.pendingRequests.clear();
     }
 }

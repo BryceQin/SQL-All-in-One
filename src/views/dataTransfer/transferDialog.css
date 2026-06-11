@@ -7,25 +7,40 @@
 :root {
   --accent: var(--vscode-button-background, #4a9eff);
   --accent-dim: rgba(74, 158, 255, 0.10);
-  --accent-glow: rgba(74, 158, 255, 0.25);
+  --accent-glow: rgba(74, 158, 255, 0.20);
   --bg: var(--vscode-editor-background, #1e1e2e);
-  --surface: var(--vscode-panel-background, #252536);
-  --surface2: var(--vscode-editorWidget-background, #2a2a3c);
+  --surface: rgba(255,255,255,0.03);
+  --surface2: rgba(255,255,255,0.05);
+  --surface3: rgba(255,255,255,0.07);
   --text: var(--vscode-editor-foreground, #cdd6f4);
-  --text-secondary: var(--vscode-descriptionForeground, #7c7f93);
-  --border: var(--vscode-panel-border, rgba(255,255,255,0.06));
+  --text-secondary: var(--vscode-descriptionForeground, rgba(255,255,255,0.45));
+  --border: rgba(255,255,255,0.06);
+  --border-hover: rgba(255,255,255,0.12);
   --input-bg: var(--vscode-input-background, #313145);
   --input-border: var(--vscode-input-border, rgba(255,255,255,0.08));
+  --input-fg: var(--vscode-input-foreground, #cdd6f4);
   --btn-bg: var(--vscode-button-background, #4a9eff);
   --btn-hover: var(--vscode-button-hoverBackground, #5caeff);
-  --btn-secondary-bg: var(--vscode-button-secondaryBackground, rgba(255,255,255,0.06));
-  --btn-secondary-hover: var(--vscode-button-secondaryHoverBackground, rgba(255,255,255,0.10));
+  --btn-secondary-bg: rgba(255,255,255,0.04);
+  --btn-secondary-hover: rgba(255,255,255,0.08);
+  --focus-border: var(--vscode-focusBorder, #4a9eff);
+  --hover-bg: rgba(255,255,255,0.04);
   --error-color: var(--vscode-errorForeground, #f44747);
+  --error-dim: rgba(244, 71, 71, 0.12);
   --success-color: #4ec9b0;
+  --success-dim: rgba(78, 201, 176, 0.12);
   --warning-color: #e2b714;
   --radius-sm: 6px;
   --radius: 8px;
+  --radius-lg: 12px;
   --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.15);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.20);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.25);
+  --glass-blur: blur(16px);
+  --glass-border: rgba(255,255,255,0.06);
+  --glass-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  --glass-inset: inset 0 1px 0 rgba(255,255,255,0.04);
 }
 
 body {
@@ -42,15 +57,22 @@ body {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  background: var(--surface);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--glass-shadow), var(--glass-inset);
+  margin: 4px;
+  overflow: hidden;
 }
 
-/* Header */
 .header-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 16px;
-  background: var(--surface);
+  padding: 6px 12px;
+  background: rgba(255,255,255,0.02);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
@@ -58,8 +80,8 @@ body {
 .header-title {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 14px;
+  gap: 6px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -67,14 +89,13 @@ body {
   flex-shrink: 0;
 }
 
-/* Step Indicators */
 .step-indicators {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0;
-  padding: 16px 24px;
-  background: var(--surface);
+  padding: 14px 20px;
+  background: rgba(255,255,255,0.02);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
@@ -83,7 +104,7 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
+  padding: 4px 10px;
   border-radius: var(--radius-sm);
   transition: all var(--transition);
   cursor: default;
@@ -93,12 +114,12 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   background: var(--btn-secondary-bg);
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   transition: all var(--transition);
 }
@@ -130,7 +151,7 @@ body {
 }
 
 .step-connector {
-  width: 32px;
+  width: 28px;
   height: 2px;
   background: var(--border);
   flex-shrink: 0;
@@ -140,7 +161,6 @@ body {
   background: var(--success-color);
 }
 
-/* Step Content */
 .step-content {
   flex: 1;
   overflow: auto;
@@ -149,16 +169,15 @@ body {
 
 .step-page {
   display: none;
-  padding: 20px 24px;
+  padding: 16px 20px;
 }
 
 .step-page.active {
   display: block;
 }
 
-/* Form Groups */
 .form-group {
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .form-label {
@@ -166,20 +185,20 @@ body {
   font-size: 12px;
   font-weight: 600;
   color: var(--text-secondary);
-  margin-bottom: 6px;
+  margin-bottom: 5px;
 }
 
 .form-input,
 .form-select {
   width: 100%;
-  padding: 8px 12px;
+  padding: 6px 10px;
   background: var(--input-bg);
   border: 1px solid var(--input-border);
   border-radius: var(--radius-sm);
   color: var(--text);
-  font-size: 13px;
+  font-size: 12px;
   font-family: inherit;
-  transition: border-color var(--transition);
+  transition: all var(--transition);
 }
 
 .form-input:focus,
@@ -199,13 +218,12 @@ body {
   font-size: 11px;
   color: var(--text-secondary);
   font-style: italic;
-  margin-top: 4px;
+  margin-top: 3px;
 }
 
-/* File Input Group */
 .file-input-group {
   display: flex;
-  gap: 8px;
+  gap: 6px;
 }
 
 .file-input-group .form-input {
@@ -216,16 +234,15 @@ body {
   flex-shrink: 0;
 }
 
-/* Buttons */
 .btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border: none;
+  gap: 4px;
+  padding: 5px 12px;
+  border: 1px solid transparent;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   transition: all var(--transition);
   white-space: nowrap;
@@ -237,13 +254,14 @@ body {
 }
 
 .btn:disabled {
-  opacity: 0.4;
+  opacity: 0.35;
   cursor: not-allowed;
 }
 
 .btn-primary {
   background: var(--btn-bg);
   color: #fff;
+  box-shadow: 0 1px 4px rgba(74,158,255,0.2);
 }
 
 .btn-primary:hover {
@@ -253,22 +271,22 @@ body {
 .btn-secondary {
   background: var(--btn-secondary-bg);
   color: var(--text);
+  border: 1px solid var(--input-border);
 }
 
 .btn-secondary:hover {
   background: var(--btn-secondary-hover);
 }
 
-/* Mapping */
 .mapping-header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
+  gap: 10px;
+  padding: 6px 10px;
   background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm) var(--radius-sm) 0 0;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--text-secondary);
 }
@@ -296,7 +314,7 @@ body {
 }
 
 .mapping-empty {
-  padding: 24px;
+  padding: 20px;
   text-align: center;
   color: var(--text-secondary);
   font-style: italic;
@@ -305,8 +323,8 @@ body {
 .mapping-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 6px 12px;
+  gap: 10px;
+  padding: 5px 10px;
   border-bottom: 1px solid var(--border);
   transition: background var(--transition);
 }
@@ -355,15 +373,14 @@ body {
   box-shadow: 0 0 0 2px var(--accent-dim);
 }
 
-/* Preview */
 .preview-section {
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .preview-title {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   color: var(--text);
 }
 
@@ -381,7 +398,7 @@ body {
 }
 
 .preview-table th {
-  padding: 8px 12px;
+  padding: 6px 10px;
   text-align: left;
   font-weight: 600;
   color: var(--text);
@@ -399,7 +416,7 @@ body {
 }
 
 .preview-table td {
-  padding: 6px 12px;
+  padding: 5px 10px;
   border-bottom: 1px solid rgba(255,255,255,0.03);
   border-right: 1px solid rgba(255,255,255,0.03);
   white-space: nowrap;
@@ -416,18 +433,17 @@ body {
   background: rgba(255,255,255,0.03);
 }
 
-/* Progress Bar */
 .import-progress-section {
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .progress-bar-container {
   width: 100%;
-  height: 6px;
+  height: 5px;
   background: var(--btn-secondary-bg);
   border-radius: 3px;
   overflow: hidden;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .progress-bar {
@@ -449,31 +465,30 @@ body {
 }
 
 .progress-text {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-secondary);
 }
 
-/* Import Result */
 .import-result-section {
-  padding: 16px;
+  padding: 14px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
 }
 
 .import-result-success {
-  background: rgba(78, 201, 176, 0.08);
+  background: var(--success-dim);
   border-color: var(--success-color);
 }
 
 .import-result-error {
-  background: rgba(244, 71, 71, 0.08);
+  background: var(--error-dim);
   border-color: var(--error-color);
 }
 
 .import-result-title {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .import-result-success .import-result-title {
@@ -486,8 +501,8 @@ body {
 
 .import-result-stats {
   display: flex;
-  gap: 20px;
-  margin-bottom: 8px;
+  gap: 16px;
+  margin-bottom: 6px;
 }
 
 .import-result-stat {
@@ -496,7 +511,7 @@ body {
 }
 
 .import-result-stat-value {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--text);
 }
@@ -507,35 +522,33 @@ body {
 }
 
 .import-result-errors {
-  margin-top: 8px;
-  max-height: 120px;
+  margin-top: 6px;
+  max-height: 100px;
   overflow-y: auto;
   font-size: 11px;
   font-family: var(--vscode-editor-font-family, 'SF Mono', 'Fira Code', monospace);
 }
 
 .import-result-error-item {
-  padding: 4px 0;
+  padding: 3px 0;
   color: var(--error-color);
   border-bottom: 1px solid rgba(255,255,255,0.03);
 }
 
-/* Footer Bar */
 .footer-bar {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
-  padding: 10px 16px;
-  background: var(--surface);
+  gap: 6px;
+  padding: 8px 12px;
+  background: rgba(255,255,255,0.02);
   border-top: 1px solid var(--border);
   flex-shrink: 0;
 }
 
-/* Scrollbar */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {

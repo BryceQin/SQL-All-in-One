@@ -4,6 +4,7 @@ import * as path from 'path';
 import * as os from 'os';
 import { Client, ClientChannel } from 'ssh2';
 import type { SshConfig } from './ConnectionConfig';
+import { t } from '../../i18n';
 
 export interface SshConnectOptions {
     host: string;
@@ -30,7 +31,8 @@ export class SshTunnel {
     async open(
         sshConfig: SshConfig,
         targetHost: string,
-        targetPort: number
+        targetPort: number,
+        timeout?: number
     ): Promise<TunnelResult> {
         if (this._isOpen) {
             return { localHost: '127.0.0.1', localPort: this._localPort };
@@ -42,11 +44,11 @@ export class SshTunnel {
             host: sshConfig.host!,
             port: sshConfig.port || 22,
             username: sshConfig.username,
-            readyTimeout: 15000,
+            readyTimeout: timeout ?? 15000,
         };
 
         if (sshConfig.authentication === 'privateKey' && sshConfig.privateKey) {
-            const validatedPath = this.validateKeyPath(sshConfig.privateKey);
+            const validatedPath = await this.validateKeyPath(sshConfig.privateKey);
             connectOptions.privateKey = await fs.promises.readFile(validatedPath);
             if (sshConfig.passphrase) {
                 connectOptions.passphrase = sshConfig.passphrase;
@@ -58,16 +60,16 @@ export class SshTunnel {
         await new Promise<void>((resolve, reject) => {
             const onError = (err: Error): void => {
                 if (err.message.includes('ECONNREFUSED')) {
-                    reject(new Error('SSH connection refused. Check SSH server address and port.'));
+                    reject(new Error(t('ssh.connectionRefused')));
                 } else if (
                     err.message.includes('All configured authentication methods failed') ||
                     err.message.includes('Authentication failed')
                 ) {
-                    reject(new Error('SSH authentication failed. Check username and password/key.'));
+                    reject(new Error(t('ssh.authFailed')));
                 } else if (err.message.includes('Cannot parse privateKey')) {
-                    reject(new Error('SSH private key format error. Check the key file format.'));
+                    reject(new Error(t('ssh.keyFormatError')));
                 } else {
-                    reject(new Error(`SSH connection error: ${err.message}`));
+                    reject(new Error(t('ssh.connectionError', err.message)));
                 }
             };
 
@@ -154,11 +156,11 @@ export class SshTunnel {
         return this._localPort;
     }
 
-    private validateKeyPath(keyPath: string): string {
+    private async validateKeyPath(keyPath: string): Promise<string> {
         const resolved = path.resolve(keyPath);
         let realPath: string;
         try {
-            realPath = fs.realpathSync(resolved);
+            realPath = await fs.promises.realpath(resolved);
         } catch {
             throw new Error(`SSH private key path does not exist: ${keyPath}`);
         }
@@ -168,10 +170,18 @@ export class SshTunnel {
             path.join(homeDir, '.ssh'),
             '/etc/ssh',
         ];
-        const realAllowedDirs = allowedDirs.map(dir => {
-            try { return fs.realpathSync(dir); } catch { return dir; }
+        const realAllowedDirs: string[] = [];
+        for (const dir of allowedDirs) {
+            try {
+                realAllowedDirs.push(await fs.promises.realpath(dir));
+            } catch {
+                realAllowedDirs.push(dir);
+            }
+        }
+        const isAllowed = realAllowedDirs.some(allowedDir => {
+            const relative = path.relative(allowedDir, realPath);
+            return !relative.startsWith('..') && !path.isAbsolute(relative);
         });
-        const isAllowed = realAllowedDirs.some(dir => realPath.startsWith(dir));
         if (!isAllowed) {
             throw new Error(`SSH private key path not allowed: ${keyPath}. Key must be located in your home directory, .ssh folder, or /etc/ssh.`);
         }

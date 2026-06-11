@@ -1,11 +1,13 @@
 import * as vscode from 'vscode';
 import { initI18n } from '../i18n';
 import { getContainer, Tokens } from './diContainer';
+import { LRUCache } from '../utils/lruCache';
 
 type ConfigListener = () => void;
 
 export class ConfigManager {
-    private cache = new Map<string, unknown>();
+    private static readonly MAX_CACHE_SIZE = 500;
+    private cache = new LRUCache<string, unknown>({ maxSize: ConfigManager.MAX_CACHE_SIZE });
     private disposables: vscode.Disposable[] = [];
     private listeners: ConfigListener[] = [];
     private validators = new Map<string, (value: unknown) => boolean>();
@@ -20,18 +22,18 @@ export class ConfigManager {
         return this.config;
     }
 
-    private deepEqual(a: unknown, b: unknown, seen = new WeakSet()): boolean {
+    private deepEqual(a: unknown, b: unknown, seenA = new WeakSet(), seenB = new WeakSet()): boolean {
         if (a === b) return true;
         if (a === null || b === null || typeof a !== 'object' || typeof b !== 'object') return false;
-        if (seen.has(a as object) || seen.has(b as object)) return false;
-        seen.add(a as object);
-        seen.add(b as object);
+        if (seenA.has(a as object) || seenB.has(b as object)) return false;
+        seenA.add(a as object);
+        seenB.add(b as object);
         const keysA = Object.keys(a as Record<string, unknown>);
         const keysB = new Set(Object.keys(b as Record<string, unknown>));
         if (keysA.length !== keysB.size) return false;
         for (const key of keysA) {
             if (!keysB.has(key)) return false;
-            if (!this.deepEqual((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key], seen)) return false;
+            if (!this.deepEqual((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key], seenA, seenB)) return false;
         }
         return true;
     }
@@ -65,8 +67,6 @@ export class ConfigManager {
         this.validators.set(section, validator as (value: unknown) => boolean);
     }
 
-    private static readonly MAX_CACHE_SIZE = 500;
-
     get<T>(section: string, defaultValue: T): T {
         const cached = this.cache.get(section);
         if (cached !== undefined) {
@@ -81,12 +81,6 @@ export class ConfigManager {
             value = defaultValue;
         }
 
-        if (this.cache.size >= ConfigManager.MAX_CACHE_SIZE) {
-            const firstKey = this.cache.keys().next().value;
-            if (firstKey !== undefined) {
-                this.cache.delete(firstKey);
-            }
-        }
         this.cache.set(section, value);
         return value;
     }

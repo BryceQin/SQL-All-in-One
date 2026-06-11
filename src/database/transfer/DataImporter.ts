@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as readline from 'readline';
-import { IDatabaseAdapter } from '../adapters/IDatabaseAdapter';
+import { IDatabaseAdapter, QueryParam } from '../adapters/IDatabaseAdapter';
+import { t } from '../../i18n/index';
 
 // ---------------------------------------------------------------------------
 // Interfaces
@@ -101,41 +102,34 @@ export function parseCsvLine(line: string, delimiter: string): string[] {
 }
 
 // ---------------------------------------------------------------------------
-// Helper: formatSqlValue
-// ---------------------------------------------------------------------------
-
-/**
- * Formats a JavaScript value for inclusion in a SQL statement.
- * - null / undefined  -\> NULL
- * - number            -\> literal number
- * - boolean           -\> 1 / 0
- * - Date              -\> ISO string, single-quoted
- * - string            -\> single-quoted with escaped inner quotes
- */
-export function formatSqlValue(value: unknown): string {
-    if (value === null || value === undefined) {
-        return 'NULL';
-    }
-    if (typeof value === 'number') {
-        return String(value);
-    }
-    if (typeof value === 'boolean') {
-        return value ? '1' : '0';
-    }
-    if (value instanceof Date) {
-        return `'${value.toISOString()}'`;
-    }
-    return `'${String(value).replace(/'/g, "''")}'`;
-}
-
-// ---------------------------------------------------------------------------
 // Helper: executeBatchInsert
 // ---------------------------------------------------------------------------
 
 /**
- * Executes a batch INSERT statement. If the batch fails and `onError` is
- * `'skip'`, falls back to row-by-row insertion so that individual failing
- * rows are skipped without aborting the entire import.
+ * Converts a JavaScript value to a QueryParam value for parameterized queries.
+ * - null / undefined  -\> null
+ * - number / boolean  -\> passed as-is
+ * - Date              -\> ISO string
+ * - string            -\> passed as-is (no quoting needed; parameterized queries handle escaping)
+ */
+function toQueryParamValue(value: unknown): string | number | boolean | null | undefined {
+    if (value === null || value === undefined) {
+        return null;
+    }
+    if (value instanceof Date) {
+        return value.toISOString();
+    }
+    if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'string') {
+        return value;
+    }
+    return String(value);
+}
+
+/**
+ * Executes a batch INSERT statement using parameterized queries to prevent
+ * SQL injection. If the batch fails and `onError` is `'skip'`, falls back
+ * to row-by-row insertion so that individual failing rows are skipped
+ * without aborting the entire import.
  */
 export async function executeBatchInsert(
     adapter: IDatabaseAdapter,
@@ -145,32 +139,40 @@ export async function executeBatchInsert(
     onError: 'skip' | 'abort',
     startRow: number,
 ): Promise<{ imported: number; skipped: number; errors: ImportError[] }> {
-    const quotedColumns = columns.map((c) => `\`${c}\``).join(', ');
-    const valueGroups = batch.map((row) => {
-        const values = columns.map((col) => formatSqlValue(row[col]));
-        return `(${values.join(', ')})`;
-    });
+    const q = adapter.quoteIdentifier.bind(adapter);
+    const quotedColumns = columns.map((c) => q(c)).join(', ');
+    const placeholdersPerRow = `(${columns.map(() => '?').join(', ')})`;
 
-    const sql = `INSERT INTO \`${tableName}\` (${quotedColumns}) VALUES ${valueGroups.join(', ')};`;
+    // Build batch SQL: INSERT INTO "table" ("col1", "col2") VALUES (?, ?), (?, ?), ...
+    const valueGroups = batch.map(() => placeholdersPerRow);
+    const sql = `INSERT INTO ${q(tableName)} (${quotedColumns}) VALUES ${valueGroups.join(', ')};`;
+
+    // Flatten all row values into a single params array
+    const params: QueryParam[] = [];
+    for (const row of batch) {
+        for (const col of columns) {
+            params.push({ value: toQueryParamValue(row[col]) });
+        }
+    }
 
     let imported = 0;
     let skipped = 0;
     const errors: ImportError[] = [];
 
     try {
-        await adapter.execute(sql);
+        await adapter.execute(sql, params);
         imported = batch.length;
     } catch (batchError: unknown) {
         if (onError === 'abort') {
             throw batchError;
         }
-        // Fall back to row-by-row insertion
+        // Fallback: insert rows one by one
+        const rowSql = `INSERT INTO ${q(tableName)} (${quotedColumns}) VALUES ${placeholdersPerRow};`;
         for (let i = 0; i < batch.length; i++) {
             const row = batch[i];
-            const rowValues = columns.map((col) => formatSqlValue(row[col]));
-            const rowSql = `INSERT INTO \`${tableName}\` (${quotedColumns}) VALUES (${rowValues.join(', ')});`;
+            const rowParams = columns.map((col) => ({ value: toQueryParamValue(row[col]) }));
             try {
-                await adapter.execute(rowSql);
+                await adapter.execute(rowSql, rowParams);
                 imported++;
             } catch (rowError: unknown) {
                 skipped++;
@@ -231,7 +233,7 @@ export function detectFileFormat(filePath: string): 'csv' | 'json' | 'sql' {
         case 'sql':
             return 'sql';
         default:
-            throw new Error(`Unsupported file format: .${ext}`);
+            throw new Error(t('database.unsupportedFileFormat', ext || ''));
     }
 }
 
@@ -383,6 +385,9 @@ export async function importFromCsv(
  * Reads a JSON file containing an array of objects, maps keys to columns,
  * and inserts data in batches.
  */
+const MAX_JSON_FILE_SIZE = 50 * 1024 * 1024;
+const MAX_SQL_FILE_SIZE = 50 * 1024 * 1024;
+
 export async function importFromJson(
     adapter: IDatabaseAdapter,
     tableName: string,
@@ -390,6 +395,17 @@ export async function importFromJson(
     options: JsonImportOptions,
 ): Promise<ImportResult> {
     const batchSize = options.batchSize ?? 100;
+
+    const stat = await fs.promises.stat(filePath);
+    if (stat.size > MAX_JSON_FILE_SIZE) {
+        return {
+            success: false,
+            totalRows: 0,
+            importedRows: 0,
+            skippedRows: 0,
+            errors: [{ row: 0, message: t('database.jsonFileTooLarge', (stat.size / 1024 / 1024).toFixed(1), String(MAX_JSON_FILE_SIZE / 1024 / 1024)), data: '' }],
+        };
+    }
 
     const errors: ImportError[] = [];
     let importedRows = 0;
@@ -404,13 +420,12 @@ export async function importFromJson(
             totalRows: 0,
             importedRows: 0,
             skippedRows: 0,
-            errors: [{ row: 0, message: 'JSON file must contain an array', data: '' }],
+            errors: [{ row: 0, message: t('database.jsonMustBeArray'), data: '' }],
         };
     }
 
     const totalRows = records.length;
 
-    // Derive columns from all record keys (preserving first-seen order)
     const columnSet = new Set<string>();
     for (const record of records) {
         if (record && typeof record === 'object') {
@@ -427,16 +442,15 @@ export async function importFromJson(
             totalRows,
             importedRows: 0,
             skippedRows: 0,
-            errors: [{ row: 0, message: 'No columns found in JSON data', data: '' }],
+            errors: [{ row: 0, message: t('database.noColumnsInJson'), data: '' }],
         };
     }
 
-    // Build rows
     const rows: Record<string, unknown>[] = records.map((record, idx) => {
         if (!record || typeof record !== 'object') {
             errors.push({
                 row: idx + 1,
-                message: 'Record is not an object',
+                message: t('database.recordNotObject'),
                 data: String(record),
             });
             return {};
@@ -449,7 +463,6 @@ export async function importFromJson(
         return row;
     });
 
-    // Insert in batches
     for (let i = 0; i < rows.length; i += batchSize) {
         const batch = rows.slice(i, i + batchSize);
         try {
@@ -499,28 +512,71 @@ export async function importFromSql(
     adapter: IDatabaseAdapter,
     filePath: string,
 ): Promise<ImportResult> {
-    const raw = await fs.promises.readFile(filePath, 'utf-8');
+    const stat = await fs.promises.stat(filePath);
+    if (stat.size > MAX_SQL_FILE_SIZE) {
+        return {
+            success: false,
+            totalRows: 0,
+            importedRows: 0,
+            skippedRows: 0,
+            errors: [{ row: 0, message: t('database.sqlFileTooLarge', (stat.size / 1024 / 1024).toFixed(1), String(MAX_SQL_FILE_SIZE / 1024 / 1024)), data: '' }],
+        };
+    }
 
-    // Split by semicolons, filter out empty / whitespace-only statements
-    const statements = raw
-        .split(';')
-        .map((s) => s.trim())
-        .filter((s) => s.length > 0);
-
-    const totalRows = statements.length;
+    let totalRows = 0;
     let importedRows = 0;
     let skippedRows = 0;
     const errors: ImportError[] = [];
 
-    for (let i = 0; i < statements.length; i++) {
-        const sql = statements[i] + ';';
+    const stream = fs.createReadStream(filePath, 'utf-8');
+    const rl = readline.createInterface({ input: stream, crlfDelay: Infinity });
+
+    let currentStatement = '';
+
+    for await (const line of rl) {
+        const trimmed = line.trim();
+        if (trimmed === '') {
+            continue;
+        }
+
+        if (currentStatement.length > 0) {
+            currentStatement += '\n' + line;
+        } else {
+            currentStatement = line;
+        }
+
+        while (currentStatement.includes(';')) {
+            const semiIdx = currentStatement.indexOf(';');
+            const segment = currentStatement.substring(0, semiIdx).trim();
+            currentStatement = currentStatement.substring(semiIdx + 1);
+            if (segment.length === 0) {
+                continue;
+            }
+            totalRows++;
+            try {
+                await adapter.execute(segment + ';');
+                importedRows++;
+            } catch (err: unknown) {
+                skippedRows++;
+                errors.push({
+                    row: totalRows,
+                    message: err instanceof Error ? err.message : String(err),
+                    data: segment + ';',
+                });
+            }
+        }
+    }
+
+    if (currentStatement.trim().length > 0) {
+        const sql = currentStatement.trim();
+        totalRows++;
         try {
-            await adapter.execute(sql);
+            await adapter.execute(sql.endsWith(';') ? sql : sql + ';');
             importedRows++;
         } catch (err: unknown) {
             skippedRows++;
             errors.push({
-                row: i + 1,
+                row: totalRows,
                 message: err instanceof Error ? err.message : String(err),
                 data: sql,
             });

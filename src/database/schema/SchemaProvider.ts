@@ -9,6 +9,7 @@ import type { AstNode } from '../../parser/astTypes';
 import type { AST } from 'node-sql-parser';
 import { handleError, ErrorCategory } from '../../core/errorHandler';
 import { getContainer, Tokens } from '../../core/diContainer';
+import { LRUCache } from '../../utils/lruCache';
 
 export type ClauseType =
     | 'USE'
@@ -33,9 +34,9 @@ export interface CompletionContext {
 }
 
 export class SchemaProvider {
-    private schemaCache = getSchemaCache();
-    private mruCache = new Map<string, number>();
     private static readonly MRU_MAX_SIZE = 50;
+    private schemaCache = getSchemaCache();
+    private mruCache = new LRUCache<string, number>({ maxSize: SchemaProvider.MRU_MAX_SIZE, maxAge: Infinity });
 
     async getCompletionItems(context: CompletionContext): Promise<vscode.CompletionItem[]> {
         const items: vscode.CompletionItem[] = [];
@@ -166,9 +167,7 @@ export class SchemaProvider {
 
     private async addViewItems(items: vscode.CompletionItem[], context: CompletionContext): Promise<void> {
         try {
-            const adapter = getConnectionManager().getAdapter(context.connectionId);
-            if (!adapter) return;
-            const views = await adapter.listViews(context.database);
+            const views = await this.schemaCache.getViews(context.connectionId, context.database);
             for (const view of views) {
                 if (context.prefix && !view.name.toLowerCase().startsWith(context.prefix.toLowerCase())) continue;
                 const item = new vscode.CompletionItem(view.name, vscode.CompletionItemKind.Struct);
@@ -212,8 +211,9 @@ export class SchemaProvider {
                     )
                 );
             } else {
+                const limitedTables = tables.slice(0, 10);
                 await Promise.all(
-                    tables.map(tbl =>
+                    limitedTables.map(tbl =>
                         this.addColumnsForTable(items, context, tbl.name, prefix)
                     )
                 );
@@ -322,12 +322,7 @@ export class SchemaProvider {
 
     private touchMru(key: string): void {
         const lowerKey = key.toLowerCase();
-        this.mruCache.delete(lowerKey);
         this.mruCache.set(lowerKey, Date.now());
-        if (this.mruCache.size > SchemaProvider.MRU_MAX_SIZE) {
-            const lruKey = this.mruCache.keys().next().value as string;
-            this.mruCache.delete(lruKey);
-        }
     }
 
     async getTableHoverInfo(tableName: string, database: string): Promise<vscode.MarkdownString | null> {

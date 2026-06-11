@@ -34,18 +34,18 @@ const i18n = {
         'resultPanel.queryCancelled': '查询已取消',
         'resultPanel.ms': '毫秒',
         'resultPanel.seconds': '秒',
-        'resultPanel.editMode': '编辑模式',
+        'resultPanel.editMode': '编辑',
         'resultPanel.readonly': '只读',
         'resultPanel.editable': '可编辑',
-        'resultPanel.addRow': '添加行',
-        'resultPanel.deleteRow': '删除行',
+        'resultPanel.addRow': '添加',
+        'resultPanel.deleteRow': '删除',
         'resultPanel.commit': '提交',
         'resultPanel.rollback': '回滚',
-        'resultPanel.beginTx': '开始事务',
+        'resultPanel.beginTx': '事务',
         'resultPanel.savepoint': '保存点',
-        'resultPanel.rollbackToSp': '回滚到保存点',
-        'resultPanel.gridView': '网格视图',
-        'resultPanel.formView': '表单视图',
+        'resultPanel.rollbackToSp': '回滚保存点',
+        'resultPanel.gridView': '网格',
+        'resultPanel.formView': '表单',
         'resultPanel.pendingChanges': '待提交',
         'resultPanel.modify': '修改',
         'resultPanel.insert': '新增',
@@ -69,7 +69,13 @@ const i18n = {
         'resultPanel.validationError': '校验错误',
         'resultPanel.notNullViolation': '此字段不能为空',
         'resultPanel.typeMismatch': '类型不匹配',
-        'resultPanel.lengthExceeded': '长度超限'
+        'resultPanel.lengthExceeded': '长度超限',
+        'resultPanel.filterValue': '值',
+        'resultPanel.blobPreview': 'BLOB 预览',
+        'resultPanel.blobText': '文本',
+        'resultPanel.blobHex': '十六进制',
+        'resultPanel.blobImage': '图片',
+        'resultPanel.close': '关闭'
     },
     en: {
         'resultPanel.title': 'Query Result',
@@ -104,18 +110,18 @@ const i18n = {
         'resultPanel.queryCancelled': 'Query cancelled',
         'resultPanel.ms': 'ms',
         'resultPanel.seconds': 's',
-        'resultPanel.editMode': 'Edit Mode',
+        'resultPanel.editMode': 'Edit',
         'resultPanel.readonly': 'Read Only',
         'resultPanel.editable': 'Editable',
-        'resultPanel.addRow': 'Add Row',
-        'resultPanel.deleteRow': 'Delete Row',
+        'resultPanel.addRow': 'Add',
+        'resultPanel.deleteRow': 'Delete',
         'resultPanel.commit': 'Commit',
         'resultPanel.rollback': 'Rollback',
-        'resultPanel.beginTx': 'Begin Tx',
+        'resultPanel.beginTx': 'Transaction',
         'resultPanel.savepoint': 'Savepoint',
-        'resultPanel.rollbackToSp': 'Rollback to SP',
-        'resultPanel.gridView': 'Grid View',
-        'resultPanel.formView': 'Form View',
+        'resultPanel.rollbackToSp': 'Rollback SP',
+        'resultPanel.gridView': 'Grid',
+        'resultPanel.formView': 'Form',
         'resultPanel.pendingChanges': 'Pending',
         'resultPanel.modify': 'modify',
         'resultPanel.insert': 'insert',
@@ -139,7 +145,13 @@ const i18n = {
         'resultPanel.validationError': 'Validation error',
         'resultPanel.notNullViolation': 'This field cannot be null',
         'resultPanel.typeMismatch': 'Type mismatch',
-        'resultPanel.lengthExceeded': 'Length exceeded'
+        'resultPanel.lengthExceeded': 'Length exceeded',
+        'resultPanel.filterValue': 'Value',
+        'resultPanel.blobPreview': 'BLOB Preview',
+        'resultPanel.blobText': 'Text',
+        'resultPanel.blobHex': 'Hex',
+        'resultPanel.blobImage': 'Image',
+        'resultPanel.close': 'Close'
     }
 };
 
@@ -147,6 +159,37 @@ let lang = 'zh';
 
 function t(key) {
     return i18n[lang][key] || i18n.en[key] || key;
+}
+
+function applyI18nToDom() {
+    document.querySelectorAll('[data-i18n]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n');
+        var text = t(key);
+        if (text && text !== key) {
+            if (el.tagName === 'OPTION') {
+                el.textContent = text;
+            } else if (el.tagName === 'TITLE') {
+                document.title = text;
+            } else {
+                var prefix = el.textContent.replace(/[^\u0000-\u007F]/g, '').match(/^[\s▶■↻✓←+−]*([\s▶■↻✓←+−]*)/);
+                el.textContent = text;
+            }
+        }
+    });
+    document.querySelectorAll('[data-i18n-ph]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n-ph');
+        var text = t(key);
+        if (text && text !== key) {
+            el.placeholder = text;
+        }
+    });
+    document.querySelectorAll('[data-i18n-title]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n-title');
+        var text = t(key);
+        if (text && text !== key) {
+            el.title = text;
+        }
+    });
 }
 
 const state = {
@@ -186,7 +229,23 @@ const state = {
     transactionStartTime: null,
     transactionTimer: null,
     validationErrors: {},
+    monacoBasePath: '',
+    dialect: 'mysql',
 };
+
+var monacoEditor = null;
+var monacoLoaded = false;
+var monacoRef = null;
+var languageData = null;
+var registeredDialect = null;
+var pendingRequests = new Map();
+var requestIdCounter = 0;
+var diagnosticsDebounceTimer = null;
+var _typeColorCache = {};
+var _pendingChangeMap = {};
+var _selectedCellEl = null;
+var _renderedMessageCount = 0;
+var _numberFormatter = null;
 
 function getTypeColorInfo(type) {
     if (!type) return null;
@@ -206,22 +265,333 @@ function getTypeColorInfo(type) {
     return { color: '#4ec9b0', bg: 'rgba(78,201,176,0.08)', border: 'rgba(78,201,176,0.12)' };
 }
 
+function getTypeColorInfoCached(type) {
+    if (!type) return null;
+    var key = type.toUpperCase();
+    if (_typeColorCache[key]) return _typeColorCache[key];
+    var result = getTypeColorInfo(type);
+    _typeColorCache[key] = result;
+    return result;
+}
+
+function rebuildPendingChangeMap() {
+    _pendingChangeMap = {};
+    for (var i = 0; i < state.pendingChanges.length; i++) {
+        _pendingChangeMap[state.pendingChanges[i].rowIndex] = state.pendingChanges[i];
+    }
+}
+
 const ROW_HEIGHT = 28;
 const HEADER_HEIGHT = 48;
 const BUFFER_ROWS = 5;
 
 function init() {
+    var config = window.__CONFIG__ || {};
+    if (config.monacoBasePath) state.monacoBasePath = config.monacoBasePath;
+    if (config.dialect) state.dialect = config.dialect;
+    if (config.pageSize !== undefined) state.pageSize = config.pageSize;
+    if (config.nullPlaceholder !== undefined) state.nullPlaceholder = config.nullPlaceholder;
+    if (config.enablePreload !== undefined) state.enablePreload = config.enablePreload;
+    if (config.jsonPrettyPrint !== undefined) state.jsonPrettyPrint = config.jsonPrettyPrint;
+    if (config.dateFormat !== undefined) state.dateFormat = config.dateFormat;
+    if (config.longTextThreshold !== undefined) state.longTextThreshold = config.longTextThreshold;
+    if (config.editMode !== undefined) state.editMode = config.editMode === 'editable';
+    if (config.autoCommit !== undefined) state.autoCommit = config.autoCommit;
+    if (config.defaultView !== undefined) state.defaultView = config.defaultView;
+    if (config.lang !== undefined) {
+        lang = config.lang.startsWith('zh') ? 'zh' : 'en';
+    }
+    applyI18nToDom();
+
     const gridBodyWrapper = document.getElementById('gridBodyWrapper');
     gridBodyWrapper.addEventListener('scroll', onGridScroll);
     document.addEventListener('click', onDocumentClick);
     document.addEventListener('keydown', onKeyDown);
+    initGridDelegation();
     updateEmptyState();
     updateHeader();
     updateStatusBar();
+    initSplitter();
 }
 
+function initGridDelegation() {
+    var gridBody = document.getElementById('gridBody');
+    gridBody.addEventListener('click', function(e) {
+        var td = e.target.closest('td');
+        if (!td || td.classList.contains('row-num')) return;
+        var tr = td.parentElement;
+        if (!tr) return;
+        var rowIdx = parseInt(tr.getAttribute('data-row'), 10);
+        if (isNaN(rowIdx)) return;
+        if (tr.classList.contains('row-placeholder')) {
+            if (state.editMode) addRow();
+            return;
+        }
+        var colIdx = td.cellIndex - 1;
+        if (colIdx < 0) return;
+        if (state.editingCell && (state.editingCell.row !== rowIdx || state.editingCell.col !== colIdx)) {
+            commitCellEdit();
+        }
+        selectCell(rowIdx, colIdx);
+    });
+    gridBody.addEventListener('dblclick', function(e) {
+        var td = e.target.closest('td');
+        if (!td || td.classList.contains('row-num')) return;
+        var tr = td.parentElement;
+        if (!tr) return;
+        var rowIdx = parseInt(tr.getAttribute('data-row'), 10);
+        if (isNaN(rowIdx)) return;
+        if (tr.classList.contains('row-placeholder')) return;
+        var colIdx = td.cellIndex - 1;
+        if (colIdx < 0) return;
+        if (state.editMode) {
+            startCellEdit(rowIdx, colIdx);
+        }
+    });
+}
+
+function initMonacoEditor(sql) {
+    var container = document.getElementById('sqlEditorContainer');
+    if (!container) return;
+
+    if (typeof require === 'function' && !monacoLoaded) {
+        require.config({ paths: { 'vs': state.monacoBasePath } });
+        require(['vs/editor/editor.main'], function(monaco) {
+            monacoRef = monaco;
+            monacoLoaded = true;
+            createMonacoInstance(monaco, container, sql);
+        }, function(err) {
+            console.error('[SQL-All-in-One] Monaco load failed:', err);
+            createFallbackEditor(container, sql);
+        });
+    } else if (monacoLoaded && monacoRef) {
+        createMonacoInstance(monacoRef, container, sql);
+    } else {
+        createFallbackEditor(container, sql);
+    }
+}
+
+function buildVscodeTheme() {
+    var style = getComputedStyle(document.body);
+    function getColor(varName, fallback) {
+        var val = style.getPropertyValue(varName).trim();
+        if (!val) return fallback;
+        if (val.length === 9 && val.charAt(0) === '#') {
+            val = val.substring(0, 7);
+        }
+        return val;
+    }
+    var isDark = document.body.classList.contains('vscode-dark') ||
+                 document.querySelector('[data-vscode-theme-kind="vscode-dark"]') ||
+                 (window.__CONFIG__ && window.__CONFIG__.themeKind === 2);
+    var base = isDark ? 'vs-dark' : 'vs';
+    var editorBg = getColor('--vscode-editor-background', isDark ? '#1e1e1e' : '#ffffff');
+    var gutterBg = getColor('--vscode-editorGutter-background', editorBg);
+    var overviewBg = getColor('--vscode-editorOverviewRuler-background', isDark ? '#252526' : '#ffffff');
+    return {
+        base: base,
+        inherit: true,
+        rules: [
+            { token: 'keyword', foreground: getColor('--vscode-editorKeyword-foreground', isDark ? '#569cd6' : '#0000ff') },
+            { token: 'string', foreground: getColor('--vscode-string-foreground', isDark ? '#ce9178' : '#a31515') },
+            { token: 'string.sql', foreground: getColor('--vscode-string-foreground', isDark ? '#ce9178' : '#a31515') },
+            { token: 'comment', foreground: getColor('--vscode-editorComments-foreground', isDark ? '#6a9955' : '#008000') },
+            { token: 'number', foreground: getColor('--vscode-editorNumbers-foreground', isDark ? '#b5cea8' : '#098658') },
+            { token: 'type', foreground: getColor('--vscode-editorType-foreground', isDark ? '#4ec9b0' : '#267f99') },
+            { token: 'type.identifier', foreground: getColor('--vscode-editorType-foreground', isDark ? '#4ec9b0' : '#267f99') },
+            { token: 'function', foreground: getColor('--vscode-editorFunction-foreground', isDark ? '#dcdcaa' : '#795e26') },
+            { token: 'operator', foreground: getColor('--vscode-editorOperator-foreground', isDark ? '#d4d4d4' : '#000000') },
+            { token: 'delimiter', foreground: getColor('--vscode-editorBracketMatch-background', isDark ? '#d4d4d4' : '#000000') },
+            { token: 'variable', foreground: getColor('--vscode-editorVariable-foreground', isDark ? '#9cdcfe' : '#001080') },
+            { token: '', foreground: getColor('--vscode-editor-foreground', isDark ? '#d4d4d4' : '#000000') },
+        ],
+        colors: {
+            'editor.background': editorBg,
+            'editor.foreground': getColor('--vscode-editor-foreground', isDark ? '#d4d4d4' : '#000000'),
+            'editor.lineHighlightBackground': getColor('--vscode-editor-lineHighlightBackground', isDark ? '#2a2d2e' : '#f0f0f0'),
+            'editor.selectionBackground': getColor('--vscode-editor-selectionBackground', isDark ? '#264f78' : '#add6ff'),
+            'editorCursor.foreground': getColor('--vscode-editorCursor-foreground', isDark ? '#aeafad' : '#000000'),
+            'editor.inactiveSelectionBackground': getColor('--vscode-editor-inactiveSelectionBackground', isDark ? '#3a3d41' : '#e5ebf1'),
+            'editorLineNumber.foreground': getColor('--vscode-editorLineNumber-foreground', isDark ? '#858585' : '#237893'),
+            'editorLineNumber.activeForeground': getColor('--vscode-editorLineNumber-activeForeground', isDark ? '#c6c6c6' : '#0b216f'),
+            'editorIndentGuide.background1': getColor('--vscode-editorIndentGuide-background1', isDark ? '#404040' : '#e4e4e4'),
+            'editorIndentGuide.activeBackground1': getColor('--vscode-editorIndentGuide-activeBackground1', isDark ? '#707070' : '#e4e4e4'),
+            'editorGutter.background': gutterBg,
+            'editorOverviewRuler.background': overviewBg,
+            'editor.selectionHighlightBackground': getColor('--vscode-editor-selectionHighlightBackground', isDark ? '#add6ff26' : '#add6ff52'),
+            'editorGutter.modifiedBackground': getColor('--vscode-editorGutter-modifiedBackground', '#0078d466'),
+            'editorGutter.addedBackground': getColor('--vscode-editorGutter-addedBackground', '#587c0c66'),
+            'editorGutter.deletedBackground': getColor('--vscode-editorGutter-deletedBackground', '#94151b66'),
+        }
+    };
+}
+
+function createMonacoInstance(monaco, container, sql) {
+    if (monacoEditor) {
+        monacoEditor.setValue(sql || '');
+        return;
+    }
+    var isDark = document.body.classList.contains('vscode-dark') ||
+                 document.querySelector('[data-vscode-theme-kind="vscode-dark"]') ||
+                 (window.__CONFIG__ && window.__CONFIG__.themeKind === 2);
+    var initialLanguage = (languageData && languageData.dialect) || state.dialect || 'sql';
+    var customThemeName = 'vscode-sync-' + (isDark ? 'dark' : 'light');
+    monacoRef.editor.defineTheme(customThemeName, buildVscodeTheme());
+    monacoEditor = monaco.editor.create(container, {
+        value: sql || '',
+        language: initialLanguage,
+        theme: customThemeName,
+        minimap: { enabled: false },
+        lineNumbers: 'on',
+        scrollBeyondLastLine: false,
+        fontSize: 13,
+        wordWrap: 'on',
+        automaticLayout: true,
+        overviewRulerLanes: 0,
+        folding: true,
+        renderLineHighlight: 'gutter',
+        contextmenu: true,
+        suggestOnTriggerCharacters: true,
+        scrollbar: {
+            verticalScrollbarSize: 8,
+            horizontalScrollbarSize: 8,
+        },
+        padding: { top: 4, bottom: 4 },
+    });
+
+    monacoEditor.addCommand(monaco.KeyMod.Cmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyE, function() {
+        executePanelSql();
+    });
+    monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyE, function() {
+        executePanelSql();
+    });
+
+    monacoEditor.addCommand(monaco.KeyMod.Shift | monaco.KeyMod.Alt | monaco.KeyCode.KeyF, function() {
+        requestFormat();
+    });
+    monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyI, function() {
+        requestFormat();
+    });
+
+    monacoEditor.onDidChangeModelContent(function() {
+        requestDiagnosticsDebounced();
+    });
+
+    if (languageData) {
+        registerLanguageFeatures(languageData);
+        var model = monacoEditor.getModel();
+        if (model) {
+            monacoRef.editor.setModelLanguage(model, languageData.dialect || 'mysql');
+        }
+    }
+
+    monacoEditor.focus();
+}
+
+function createFallbackEditor(container, sql) {
+    var textarea = document.createElement('textarea');
+    textarea.className = 'sql-editor-fallback';
+    textarea.value = sql || '';
+    container.appendChild(textarea);
+}
+
+function getEditorSql() {
+    if (monacoEditor) {
+        return monacoEditor.getValue();
+    }
+    var fallback = document.querySelector('.sql-editor-fallback');
+    if (fallback) {
+        return fallback.value;
+    }
+    return state.currentSql || '';
+}
+
+function setEditorSql(sql) {
+    if (monacoEditor) {
+        var fullRange = monacoEditor.getModel().getFullModelRange();
+        monacoEditor.executeEdits('setSql', [{
+            range: fullRange,
+            text: sql || '',
+        }]);
+        monacoEditor.pushUndoStop();
+    } else {
+        var fallback = document.querySelector('.sql-editor-fallback');
+        if (fallback) fallback.value = sql || '';
+    }
+    state.currentSql = sql || '';
+}
+
+function initSplitter() {
+    var splitter = document.getElementById('splitter');
+    var sqlSection = document.getElementById('sqlEditorSection');
+    var resultSection = document.getElementById('resultSection');
+    var panelSplit = document.getElementById('panelSplit');
+    var isDragging = false;
+
+    if (!splitter || !sqlSection || !resultSection || !panelSplit) return;
+
+    splitter.addEventListener('mousedown', function(e) {
+        isDragging = true;
+        document.body.style.cursor = 'row-resize';
+        document.body.style.userSelect = 'none';
+        e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', function(e) {
+        if (!isDragging) return;
+        var panelRect = panelSplit.getBoundingClientRect();
+        var ratio = (e.clientY - panelRect.top) / panelRect.height;
+        ratio = Math.max(0.1, Math.min(0.8, ratio));
+        sqlSection.style.height = (ratio * 100) + '%';
+        sqlSection.style.flex = 'none';
+        resultSection.style.flex = '1';
+    });
+
+    document.addEventListener('mouseup', function() {
+        if (!isDragging) return;
+        isDragging = false;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+    });
+}
+
+function executePanelSql() {
+    var sql = getEditorSql().trim();
+    if (!sql) return;
+    state.currentSql = sql;
+    vscode.postMessage({ command: 'executePanelSql', sql: sql });
+}
+
+function handleSetEditorSql(data) {
+    var sql = data.sql || '';
+    if (monacoEditor || document.querySelector('.sql-editor-fallback')) {
+        setEditorSql(sql);
+    } else {
+        initMonacoEditor(sql);
+    }
+    if (data.autoExecute) {
+        setTimeout(function() {
+            executePanelSql();
+        }, 100);
+    }
+}
+
+function handleThemeChange(data) {
+    if (!monacoEditor || !monacoRef) return;
+    var isDark = data.kind === 2 || data.kind === 3;
+    var customThemeName = 'vscode-sync-' + (isDark ? 'dark' : 'light');
+    monacoRef.editor.defineTheme(customThemeName, buildVscodeTheme());
+    monacoRef.editor.setTheme(customThemeName);
+}
+
+var _scrollRafId = 0;
+
 function onGridScroll() {
-    renderVisibleRows();
+    if (_scrollRafId) return;
+    _scrollRafId = requestAnimationFrame(function() {
+        _scrollRafId = 0;
+        renderVisibleRows();
+    });
 }
 
 function onDocumentClick(e) {
@@ -284,6 +654,15 @@ function handleMessage(event) {
         case 'queryResult':
             handleQueryResult(message.data);
             break;
+        case 'queryResultStart':
+            handleQueryResultStart(message.data);
+            break;
+        case 'queryResultBatch':
+            handleQueryResultBatch(message.data);
+            break;
+        case 'queryResultEnd':
+            handleQueryResultEnd(message.data);
+            break;
         case 'queryStart':
             handleQueryStart(message.data);
             break;
@@ -308,6 +687,27 @@ function handleMessage(event) {
         case 'blobPreview':
             handleBlobPreview(message.data);
             break;
+        case 'setEditorSql':
+            handleSetEditorSql(message.data);
+            break;
+        case 'themeChange':
+            handleThemeChange(message.data);
+            break;
+        case 'languageData':
+            handleLanguageData(message.data);
+            break;
+        case 'completionResult':
+            handleBridgeResponse(message.data);
+            break;
+        case 'hoverResult':
+            handleBridgeResponse(message.data);
+            break;
+        case 'formatResult':
+            handleBridgeResponse(message.data);
+            break;
+        case 'diagnosticsResult':
+            handleBridgeResponse(message.data);
+            break;
     }
 }
 
@@ -326,9 +726,10 @@ function handleQueryResult(data) {
     state.sortColumn = null;
     state.sortDirection = null;
     state.selectedCell = null;
+    _selectedCellEl = null;
     state.tableName = data.tableName || '';
-    state.originalRows = (data.rows || []).map(function(row) { return Object.assign({}, row); });
     state.pendingChanges = [];
+    rebuildPendingChangeMap();
     state.validationErrors = {};
     state.editingCell = null;
     state.formCurrentIndex = 0;
@@ -336,11 +737,15 @@ function handleQueryResult(data) {
     var config = window.__CONFIG__ || {};
     if (config.editMode === 'editable') {
         state.editMode = true;
+        state.originalRows = (data.rows || []).map(function(row) { return row.slice(); });
         var btn = document.getElementById('btnEditMode');
-        btn.textContent = '🔓';
+        btn.classList.add('edit-mode-active');
+        btn.title = t('resultPanel.editable');
         document.getElementById('btnAddRow').disabled = false;
         document.getElementById('btnDeleteRow').disabled = false;
         document.getElementById('btnBeginTx').disabled = false;
+    } else {
+        state.originalRows = [];
     }
 
     if (config.defaultView === 'form') {
@@ -358,6 +763,41 @@ function handleQueryResult(data) {
     updateHeader();
     updateStatusBar();
     updateEmptyState();
+}
+
+var _batchedResult = null;
+
+function handleQueryResultStart(data) {
+    _batchedResult = {
+        columns: data.columns || [],
+        rows: [],
+        rowCount: data.rowCount || 0,
+        affectedRows: data.affectedRows || 0,
+        executionTime: data.executionTime || 0,
+        error: data.error || null,
+        database: data.database || '',
+        connectionName: data.connectionName || '',
+        connectionColor: data.connectionColor || '',
+        queryId: data.queryId || null,
+        status: data.status === 'error' ? 'error' : 'success',
+        tableName: data.tableName || '',
+        totalBatches: 0
+    };
+}
+
+function handleQueryResultBatch(data) {
+    if (!_batchedResult) return;
+    var batchRows = data.rows || [];
+    if (batchRows.length > 0) {
+        _batchedResult.rows.push.apply(_batchedResult.rows, batchRows);
+    }
+    _batchedResult.totalBatches = data.totalBatches || 0;
+}
+
+function handleQueryResultEnd(data) {
+    if (!_batchedResult) return;
+    handleQueryResult(_batchedResult);
+    _batchedResult = null;
 }
 
 function handleQueryStart(data) {
@@ -398,6 +838,12 @@ function handleConfig(data) {
     if (data.enableValidation !== undefined) state.enableValidation = data.enableValidation;
     if (data.validateOnEdit !== undefined) state.validateOnEdit = data.validateOnEdit;
     if (data.validateForeignKeys !== undefined) state.validateForeignKeys = data.validateForeignKeys;
+    if (data.monacoBasePath !== undefined) state.monacoBasePath = data.monacoBasePath;
+    if (data.dialect !== undefined) state.dialect = data.dialect;
+    if (data.lang !== undefined) {
+        lang = data.lang.startsWith('zh') ? 'zh' : 'en';
+        applyI18nToDom();
+    }
 }
 
 function renderGrid() {
@@ -425,7 +871,7 @@ function renderHeader() {
         const typeSpan = document.createElement('span');
         typeSpan.className = 'col-type';
         typeSpan.textContent = col.type || '';
-        var typeColorInfo = getTypeColorInfo(col.type);
+        var typeColorInfo = getTypeColorInfoCached(col.type);
         if (typeColorInfo) {
             typeSpan.style.color = typeColorInfo.color;
             typeSpan.style.background = typeColorInfo.bg;
@@ -462,12 +908,20 @@ function renderVisibleRows() {
     var endRow = Math.min(totalRows, Math.ceil((scrollTop + viewportHeight) / ROW_HEIGHT) + BUFFER_ROWS);
 
     tbody.innerHTML = '';
+    var fragment = document.createDocumentFragment();
 
     var table = document.getElementById('gridBodyTable');
     table.style.top = (startRow * ROW_HEIGHT) + 'px';
 
+    var editRow = state.editingCell ? state.editingCell.row : -1;
+    var editCol = state.editingCell ? state.editingCell.col : -1;
+    var selRow = state.selectedCell ? state.selectedCell.row : -1;
+    var selCol = state.selectedCell ? state.selectedCell.col : -1;
+    var colsLen = state.columns.length;
+
     for (var i = startRow; i < endRow; i++) {
         var tr = document.createElement('tr');
+        tr.setAttribute('data-row', i);
         var isPlaceholder = i >= state.rows.length;
 
         var tdNum = document.createElement('td');
@@ -480,7 +934,7 @@ function renderVisibleRows() {
         }
         tr.appendChild(tdNum);
 
-        var rowChange = isPlaceholder ? null : state.pendingChanges.find(function(c) { return c.rowIndex === i; });
+        var rowChange = isPlaceholder ? null : _pendingChangeMap[i] || null;
         if (rowChange) {
             if (rowChange.type === 'insert') tr.classList.add('row-new');
             if (rowChange.type === 'delete') tr.classList.add('row-deleted');
@@ -489,13 +943,14 @@ function renderVisibleRows() {
 
         if (!isPlaceholder) {
             var row = state.rows[i];
-            state.columns.forEach(function(col, colIdx) {
+            for (var ci = 0; ci < colsLen; ci++) {
+                var col = state.columns[ci];
                 var td = document.createElement('td');
-                var val = row ? row[colIdx] : undefined;
+                var val = row ? row[ci] : undefined;
 
-                if (state.editingCell && state.editingCell.row === i && state.editingCell.col === colIdx) {
+                if (editRow === i && editCol === ci) {
                     td.className = 'cell-editing';
-                    renderCellEditor(td, val, col, i, colIdx);
+                    renderCellEditor(td, val, col, i, ci);
                 } else {
                     if (val === null || val === undefined) {
                         td.className = state.editMode ? 'cell-null-editable' : 'cell-null';
@@ -511,78 +966,61 @@ function renderVisibleRows() {
                                 display = display.substring(0, state.longTextThreshold) + '...';
                             }
                             td.textContent = display;
-                            td.title = String(val);
+                            if (display.length !== String(val).length) {
+                                td.title = String(val);
+                            }
                         }
                     }
 
-                    if (rowChange && rowChange.type === 'update' && rowChange.changes && rowChange.changes[col.name]) {
-                        td.classList.add('cell-modified');
-                    }
-                    if (rowChange && rowChange.type === 'insert') {
-                        td.classList.add('cell-new');
-                    }
-                    if (rowChange && rowChange.type === 'delete') {
-                        td.classList.add('cell-deleted');
+                    if (rowChange) {
+                        if (rowChange.type === 'update' && rowChange.changes && rowChange.changes[col.name]) {
+                            td.classList.add('cell-modified');
+                        } else if (rowChange.type === 'insert') {
+                            td.classList.add('cell-new');
+                        } else if (rowChange.type === 'delete') {
+                            td.classList.add('cell-deleted');
+                        }
                     }
 
-                    var validationKey = i + '_' + colIdx;
-                    if (state.validationErrors[validationKey]) {
+                    if (state.validationErrors[i + '_' + ci]) {
                         td.classList.add('cell-validation-error');
-                        td.title = state.validationErrors[validationKey];
+                        td.title = state.validationErrors[i + '_' + ci];
                     }
                 }
 
-                if (state.selectedCell && state.selectedCell.row === i && state.selectedCell.col === colIdx) {
+                if (selRow === i && selCol === ci) {
                     td.classList.add('selected');
+                    _selectedCellEl = td;
                 }
 
-                (function(rowIdx, colIdx2) {
-                    td.onclick = function(e) {
-                        e.stopPropagation();
-                        if (state.editingCell && (state.editingCell.row !== rowIdx || state.editingCell.col !== colIdx2)) {
-                            commitCellEdit();
-                        }
-                        selectCell(rowIdx, colIdx2);
-                    };
-                    td.ondblclick = function(e) {
-                        e.stopPropagation();
-                        if (state.editMode) {
-                            startCellEdit(rowIdx, colIdx2);
-                        }
-                    };
-                })(i, colIdx);
-
                 tr.appendChild(td);
-            });
+            }
         } else {
-            state.columns.forEach(function(_, colIdx) {
-                var td = document.createElement('td');
-                td.textContent = '';
-                td.onclick = function(e) {
-                    e.stopPropagation();
-                    if (state.editMode) {
-                        addRow();
-                    }
-                };
-                tr.appendChild(td);
-            });
+            for (var ci2 = 0; ci2 < colsLen; ci2++) {
+                var td2 = document.createElement('td');
+                td2.textContent = '';
+                tr.appendChild(td2);
+            }
         }
 
-        tbody.appendChild(tr);
+        fragment.appendChild(tr);
     }
+
+    tbody.appendChild(fragment);
 }
 
 function selectCell(row, col) {
     state.selectedCell = { row, col };
-    const prev = document.querySelector('.grid-body-table td.selected');
-    if (prev) prev.classList.remove('selected');
-    const wrapper = document.getElementById('gridBodyWrapper');
-    const rows = wrapper.querySelectorAll('.grid-body-table tbody tr');
-    const targetRow = row - Math.max(0, Math.floor(wrapper.scrollTop / ROW_HEIGHT) - BUFFER_ROWS);
-    if (rows[targetRow]) {
-        const cells = rows[targetRow].querySelectorAll('td');
+    if (_selectedCellEl) {
+        _selectedCellEl.classList.remove('selected');
+        _selectedCellEl = null;
+    }
+    var targetRow = document.querySelector('.grid-body-table tbody tr[data-row="' + row + '"]');
+    if (targetRow) {
+        var cells = targetRow.children;
         if (cells[col + 1]) {
-            cells[col + 1].classList.add('selected');
+            _selectedCellEl = cells[col + 1];
+            _selectedCellEl.classList.add('selected');
         }
     }
 }
@@ -775,12 +1213,7 @@ function handleExport(format) {
 }
 
 function handleExecute() {
-    if (state.currentSql) {
-        vscode.postMessage({
-            command: 'executeQuery',
-            sql: state.currentSql
-        });
-    }
+    executePanelSql();
 }
 
 function handleCancel() {
@@ -791,12 +1224,7 @@ function handleCancel() {
 }
 
 function handleRefresh() {
-    if (state.currentSql) {
-        vscode.postMessage({
-            command: 'executeQuery',
-            sql: state.currentSql
-        });
-    }
+    executePanelSql();
 }
 
 function switchTab(tabId) {
@@ -918,10 +1346,14 @@ function addMessage(level, text) {
     renderMessages();
 }
 
-function renderMessages() {
+function renderMessages(forceFull) {
     const container = document.getElementById('messagesContainer');
-    container.innerHTML = '';
-    state.messages.forEach(msg => {
+    if (forceFull) {
+        container.innerHTML = '';
+        _renderedMessageCount = 0;
+    }
+    for (var i = _renderedMessageCount; i < state.messages.length; i++) {
+        const msg = state.messages[i];
         const div = document.createElement('div');
         div.className = 'msg-item msg-' + msg.level;
         const timeSpan = document.createElement('span');
@@ -930,7 +1362,8 @@ function renderMessages() {
         div.appendChild(timeSpan);
         div.appendChild(document.createTextNode(msg.text));
         container.appendChild(div);
-    });
+    }
+    _renderedMessageCount = state.messages.length;
     container.scrollTop = container.scrollHeight;
 }
 
@@ -1011,7 +1444,8 @@ function formatTime(ms) {
 }
 
 function formatNumber(num) {
-    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    if (!_numberFormatter) _numberFormatter = new Intl.NumberFormat();
+    return _numberFormatter.format(num);
 }
 
 function isBlobType(type) {
@@ -1119,9 +1553,17 @@ function renderCellEditor(td, val, col, rowIdx, colIdx) {
 
 function toggleEditMode() {
     state.editMode = !state.editMode;
+    if (state.editMode && state.originalRows.length === 0 && state.rows.length > 0) {
+        state.originalRows = state.rows.map(function(row) { return row.slice(); });
+    }
     var btn = document.getElementById('btnEditMode');
-    btn.textContent = state.editMode ? '🔓' : '🔒';
-    btn.title = state.editMode ? t('resultPanel.editable') : t('resultPanel.readonly');
+    if (state.editMode) {
+        btn.classList.add('edit-mode-active');
+        btn.title = t('resultPanel.editable');
+    } else {
+        btn.classList.remove('edit-mode-active');
+        btn.title = t('resultPanel.readonly');
+    }
 
     document.getElementById('btnAddRow').disabled = !state.editMode;
     document.getElementById('btnDeleteRow').disabled = !state.editMode;
@@ -1183,21 +1625,23 @@ function cancelCellEdit() {
 }
 
 function trackChange(row, col, oldVal, newVal) {
-    var existing = state.pendingChanges.find(function(c) { return c.rowIndex === row; });
+    var existing = _pendingChangeMap[row];
     if (existing && existing.type === 'update') {
         if (!existing.changes) existing.changes = {};
         existing.changes[state.columns[col].name] = { old: oldVal, new: newVal };
     } else if (!existing) {
         var primaryKey = getPrimaryKeyValue(row);
-        state.pendingChanges.push({
+        var change = {
             type: 'update',
             table: state.tableName,
             primaryKey: primaryKey,
             changes: {},
-            originalRow: Object.assign({}, state.originalRows[row]),
+            originalRow: state.originalRows[row] ? state.originalRows[row].slice() : [],
             rowIndex: row,
-        });
-        state.pendingChanges[state.pendingChanges.length - 1].changes[state.columns[col].name] = { old: oldVal, new: newVal };
+        };
+        change.changes[state.columns[col].name] = { old: oldVal, new: newVal };
+        state.pendingChanges.push(change);
+        _pendingChangeMap[row] = change;
     }
     updateEditStatusBar();
 }
@@ -1217,7 +1661,7 @@ function addRow() {
     var newRow = new Array(state.columns.length).fill(null);
     state.rows.push(newRow);
     var insertIndex = state.rows.length - 1;
-    state.originalRows[insertIndex] = Object.assign({}, newRow);
+    state.originalRows[insertIndex] = newRow.slice();
 
     var primaryKey = {};
     state.columns.forEach(function(col, idx) {
@@ -1226,13 +1670,15 @@ function addRow() {
         }
     });
 
-    state.pendingChanges.push({
+    var change = {
         type: 'insert',
         table: state.tableName,
         primaryKey: primaryKey,
         rowIndex: insertIndex,
-        originalRow: Object.assign({}, newRow),
-    });
+        originalRow: newRow.slice(),
+    };
+    state.pendingChanges.push(change);
+    _pendingChangeMap[insertIndex] = change;
 
     renderGrid();
     updateEditStatusBar();
@@ -1246,32 +1692,32 @@ function deleteRow() {
     var row = state.selectedCell.row;
     if (row < 0 || row >= state.rows.length) return;
 
-    var existingInsert = state.pendingChanges.find(function(c) { return c.rowIndex === row && c.type === 'insert'; });
-    if (existingInsert) {
-        state.pendingChanges = state.pendingChanges.filter(function(c) { return c !== existingInsert; });
+    var existingChange = _pendingChangeMap[row];
+    if (existingChange && existingChange.type === 'insert') {
+        state.pendingChanges = state.pendingChanges.filter(function(c) { return c !== existingChange; });
         state.rows.splice(row, 1);
         state.pendingChanges.forEach(function(c) {
             if (c.rowIndex > row) c.rowIndex--;
         });
     } else {
-        var existingDelete = state.pendingChanges.find(function(c) { return c.rowIndex === row && c.type === 'delete'; });
-        if (existingDelete) {
-            state.pendingChanges = state.pendingChanges.filter(function(c) { return c !== existingDelete; });
+        if (existingChange && existingChange.type === 'delete') {
+            state.pendingChanges = state.pendingChanges.filter(function(c) { return c !== existingChange; });
         } else {
-            var existingUpdate = state.pendingChanges.find(function(c) { return c.rowIndex === row && c.type === 'update'; });
-            if (existingUpdate) {
-                state.pendingChanges = state.pendingChanges.filter(function(c) { return c !== existingUpdate; });
+            if (existingChange && existingChange.type === 'update') {
+                state.pendingChanges = state.pendingChanges.filter(function(c) { return c !== existingChange; });
             }
             var primaryKey = getPrimaryKeyValue(row);
-            state.pendingChanges.push({
+            var change = {
                 type: 'delete',
                 table: state.tableName,
                 primaryKey: primaryKey,
-                originalRow: Object.assign({}, state.originalRows[row]),
+                originalRow: state.originalRows[row] ? state.originalRows[row].slice() : [],
                 rowIndex: row,
-            });
+            };
+            state.pendingChanges.push(change);
         }
     }
+    rebuildPendingChangeMap();
 
     renderGrid();
     updateEditStatusBar();
@@ -1281,9 +1727,13 @@ function commitChanges() {
     if (state.pendingChanges.length === 0) return;
 
     var sqlStatements = generateSqlFromChanges(state.pendingChanges);
-    var updateCount = state.pendingChanges.filter(function(c) { return c.type === 'update'; }).length;
-    var insertCount = state.pendingChanges.filter(function(c) { return c.type === 'insert'; }).length;
-    var deleteCount = state.pendingChanges.filter(function(c) { return c.type === 'delete'; }).length;
+    var updateCount = 0, insertCount = 0, deleteCount = 0;
+    for (var i = 0; i < state.pendingChanges.length; i++) {
+        var ct = state.pendingChanges[i].type;
+        if (ct === 'update') updateCount++;
+        else if (ct === 'insert') insertCount++;
+        else if (ct === 'delete') deleteCount++;
+    }
 
     var summary = '';
     if (updateCount > 0) summary += updateCount + ' ' + t('resultPanel.rowModify');
@@ -1325,6 +1775,7 @@ function rollbackChanges() {
         }
     });
     state.pendingChanges = [];
+    rebuildPendingChangeMap();
     state.validationErrors = {};
     renderGrid();
     updateEditStatusBar();
@@ -1413,9 +1864,13 @@ function updateTransactionStatus(active) {
 
 function updateEditStatusBar() {
     var editStatusEl = document.getElementById('editStatus');
-    var updateCount = state.pendingChanges.filter(function(c) { return c.type === 'update'; }).length;
-    var insertCount = state.pendingChanges.filter(function(c) { return c.type === 'insert'; }).length;
-    var deleteCount = state.pendingChanges.filter(function(c) { return c.type === 'delete'; }).length;
+    var updateCount = 0, insertCount = 0, deleteCount = 0;
+    for (var i = 0; i < state.pendingChanges.length; i++) {
+        var ct = state.pendingChanges[i].type;
+        if (ct === 'update') updateCount++;
+        else if (ct === 'insert') insertCount++;
+        else if (ct === 'delete') deleteCount++;
+    }
 
     if (state.pendingChanges.length === 0) {
         editStatusEl.textContent = '';
@@ -1488,7 +1943,7 @@ function renderFormView() {
         var typeSpan = document.createElement('span');
         typeSpan.className = 'field-type';
         typeSpan.textContent = col.type || '';
-        var typeColorInfo = getTypeColorInfo(col.type);
+        var typeColorInfo = getTypeColorInfoCached(col.type);
         if (typeColorInfo) {
             typeSpan.style.color = typeColorInfo.color;
             typeSpan.style.background = typeColorInfo.bg;
@@ -1707,6 +2162,7 @@ function validateCell(rowIdx, colIdx, value) {
 function handleCommitResult(data) {
     if (data.success) {
         state.pendingChanges = [];
+        rebuildPendingChangeMap();
         state.validationErrors = {};
         addMessage('success', t('resultPanel.queryCompleted'));
         updateEditStatusBar();
@@ -1806,6 +2262,338 @@ function bindActions() {
         }
         el.removeAttribute('data-action');
         el.removeAttribute('data-action-arg');
+    });
+}
+
+function generateRequestId() {
+    return 'req_' + (++requestIdCounter) + '_' + Date.now();
+}
+
+function sendBridgeRequest(command, payload) {
+    var requestId = generateRequestId();
+    return new Promise(function(resolve) {
+        pendingRequests.set(requestId, {
+            resolve: resolve,
+            timer: setTimeout(function() {
+                pendingRequests.delete(requestId);
+                resolve(null);
+            }, 3000),
+        });
+        vscode.postMessage(Object.assign({ command: command, requestId: requestId }, payload));
+    });
+}
+
+function handleBridgeResponse(data) {
+    if (!data || !data.requestId) return;
+    var pending = pendingRequests.get(data.requestId);
+    if (pending) {
+        clearTimeout(pending.timer);
+        pendingRequests.delete(data.requestId);
+        pending.resolve(data);
+    }
+}
+
+function handleLanguageData(data) {
+    languageData = data;
+    if (data.dialect) {
+        state.dialect = data.dialect;
+    }
+    if (monacoEditor && monacoRef) {
+        registerLanguageFeatures(data);
+        var model = monacoEditor.getModel();
+        if (model) {
+            monacoRef.editor.setModelLanguage(model, data.dialect || 'mysql');
+        }
+    }
+}
+
+function buildMonarchRules(data) {
+    var dialect = data.dialect || 'mysql';
+    var functionNames = (data.functions || []).map(function(f) { return f.name.toUpperCase(); });
+    return {
+        defaultToken: '',
+        tokenPostfix: '.' + dialect,
+        keywords: data.keywords || [],
+        dataTypes: data.dataTypes || [],
+        functions: functionNames,
+        operators: [
+            '=', '>', '<', '!', '~', '?', ':', '===', '>=', '<=',
+            '!=', '<>', '==', '<=>', '&&', '||', '<<', '>>',
+        ],
+        symbols: /[=><!~?:&|+\-*/^%]+/,
+        escapes: /\\(?:[abfnrtv\\"']|x[0-9A-Fa-f]{1,4}|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})/,
+        tokenizer: {
+            root: [
+                { include: '@comments' },
+                { include: '@whitespace' },
+                { include: '@numbers' },
+                { include: '@strings' },
+                [/[a-zA-Z_]\w*/, {
+                    cases: {
+                        '@keywords': 'keyword',
+                        '@dataTypes': 'type',
+                        '@functions': 'function',
+                        '@default': 'identifier',
+                    },
+                }],
+                [/@symbols/, {
+                    cases: {
+                        '@operators': 'operator',
+                        '@default': '',
+                    },
+                }],
+            ],
+            whitespace: [
+                [/\s+/, 'white'],
+            ],
+            comments: [
+                [/--+.*/, 'comment'],
+                [/\/\*/, 'comment', '@comment'],
+            ],
+            comment: [
+                [/[^/*]+/, 'comment'],
+                [/\*\//, 'comment', '@pop'],
+                [/[/*]/, 'comment'],
+            ],
+            numbers: [
+                [/0[xX][0-9a-fA-F]+/, 'number'],
+                [/[$][+-]*\d+(\.\d+)?/, 'number'],
+                [/\d+(\.\d+)?([eE][+-]?\d+)?/, 'number'],
+            ],
+            strings: [
+                [/'/, 'string', '@stringSingle'],
+                [/"/, 'string', '@stringDouble'],
+            ],
+            stringSingle: [
+                [/[^']+/, 'string'],
+                [/''/, 'string'],
+                [/'/, 'string', '@pop'],
+            ],
+            stringDouble: [
+                [/[^"]+/, 'string'],
+                [/""/, 'string'],
+                [/"/, 'string', '@pop'],
+            ],
+        },
+    };
+}
+
+function registerLanguageFeatures(data) {
+    if (!data || !monacoEditor) return;
+
+    var dialect = data.dialect || 'mysql';
+
+    if (registeredDialect === dialect) return;
+    registeredDialect = dialect;
+
+    monacoRef.languages.register({ id: dialect });
+
+    var monarchRules = buildMonarchRules(data);
+    monacoRef.languages.setMonarchTokensProvider(dialect, monarchRules);
+
+    monacoRef.languages.registerCompletionItemProvider(dialect, {
+        triggerCharacters: ['.', ' '],
+        provideCompletionItems: function(model, position) {
+            var word = model.getWordUntilPosition(position);
+            var range = {
+                startLineNumber: position.lineNumber,
+                endLineNumber: position.lineNumber,
+                startColumn: word.startColumn,
+                endColumn: word.endColumn,
+            };
+            var suggestions = [];
+
+            if (data.snippets) {
+                data.snippets.forEach(function(s) {
+                    suggestions.push({
+                        label: s.prefix,
+                        kind: 27,
+                        insertText: s.body.join('\n'),
+                        insertTextRules: 4,
+                        documentation: s.description,
+                        sortText: '0_' + s.prefix,
+                        range: range,
+                    });
+                });
+            }
+
+            if (data.keywords) {
+                data.keywords.forEach(function(kw) {
+                    suggestions.push({
+                        label: kw,
+                        kind: 14,
+                        insertText: kw,
+                        sortText: '1_' + kw,
+                        range: range,
+                    });
+                });
+            }
+
+            if (data.dataTypes) {
+                data.dataTypes.forEach(function(dt) {
+                    suggestions.push({
+                        label: dt,
+                        kind: 17,
+                        insertText: dt,
+                        sortText: '1_' + dt,
+                        range: range,
+                    });
+                });
+            }
+
+            if (data.functions) {
+                data.functions.forEach(function(fn) {
+                    var params = fn.params || [];
+                    var snippetParams = params.map(function(p, i) { return '${' + (i + 1) + ':' + p + '}'; }).join(', ');
+                    suggestions.push({
+                        label: fn.name,
+                        kind: 1,
+                        insertText: fn.name + '(' + snippetParams + ')',
+                        insertTextRules: 4,
+                        documentation: fn.description || '',
+                        detail: fn.category || '',
+                        sortText: '2_' + fn.name,
+                        range: range,
+                    });
+                });
+            }
+
+            return { suggestions: suggestions };
+        },
+    });
+
+    monacoRef.languages.registerSignatureHelpProvider(dialect, {
+        signatureHelpTriggerCharacters: ['(', ','],
+        provideSignatureHelp: function(model, position) {
+            if (!data.functions || data.functions.length === 0) return { dispose: function() {} };
+
+            var lineContent = model.getLineContent(position.lineNumber);
+            var textBefore = lineContent.substring(0, position.column - 1);
+            var funcMatch = textBefore.match(/(\w+)\s*\(([^)]*)$/);
+            if (!funcMatch) return { dispose: function() {} };
+
+            var funcName = funcMatch[1].toUpperCase();
+            var funcDef = data.functions.find(function(f) { return f.name.toUpperCase() === funcName; });
+            if (!funcDef) return { dispose: function() {} };
+
+            var paramCount = funcMatch[2].split(',').length;
+            var params = (funcDef.params || []).map(function(p, i) {
+                return { label: p, documentation: '' };
+            });
+
+            return {
+                value: {
+                    signatures: [{
+                        label: funcDef.name + '(' + (funcDef.params || []).join(', ') + ')',
+                        parameters: params,
+                        documentation: funcDef.description || '',
+                    }],
+                    activeSignature: 0,
+                    activeParameter: Math.min(paramCount - 1, params.length - 1),
+                },
+                dispose: function() {},
+            };
+        },
+    });
+
+    monacoRef.languages.registerCompletionItemProvider(dialect, {
+        triggerCharacters: ['.', ' '],
+        provideCompletionItems: function(model, position) {
+            var sql = model.getValue();
+            var pos = { line: position.lineNumber - 1, column: position.column - 1 };
+            return sendBridgeRequest('requestCompletion', {
+                sql: sql,
+                position: pos,
+                dialect: dialect,
+            }).then(function(response) {
+                if (!response || !response.items) return { suggestions: [] };
+                var word = model.getWordUntilPosition(position);
+                var range = {
+                    startLineNumber: position.lineNumber,
+                    endLineNumber: position.lineNumber,
+                    startColumn: word.startColumn,
+                    endColumn: word.endColumn,
+                };
+                return {
+                    suggestions: response.items.map(function(item) {
+                        return Object.assign({}, item, { range: range });
+                    }),
+                };
+            });
+        },
+    });
+
+    monacoRef.languages.registerHoverProvider(dialect, {
+        provideHover: function(model, position) {
+            var sql = model.getValue();
+            var pos = { line: position.lineNumber - 1, column: position.column - 1 };
+            return sendBridgeRequest('requestHover', {
+                sql: sql,
+                position: pos,
+                dialect: dialect,
+            }).then(function(response) {
+                if (!response || !response.contents) return null;
+                return {
+                    range: new monacoRef.Range(
+                        position.lineNumber,
+                        position.column,
+                        position.lineNumber,
+                        position.column + 20,
+                    ),
+                    contents: response.contents.map(function(c) {
+                        return { value: c };
+                    }),
+                };
+            });
+        },
+    });
+
+    var model = monacoEditor.getModel();
+    if (model) {
+        monacoRef.editor.setModelLanguage(model, dialect);
+    }
+}
+
+function requestFormat() {
+    if (!monacoEditor) return;
+    var sql = monacoEditor.getValue();
+    var dialect = languageData ? languageData.dialect : 'mysql';
+    sendBridgeRequest('requestFormat', {
+        sql: sql,
+        dialect: dialect,
+    }).then(function(response) {
+        if (!response || !response.formattedSql) return;
+        var fullRange = monacoEditor.getModel().getFullModelRange();
+        monacoEditor.executeEdits('format', [{
+            range: fullRange,
+            text: response.formattedSql,
+        }]);
+        monacoEditor.pushUndoStop();
+    });
+}
+
+function requestDiagnosticsDebounced() {
+    if (diagnosticsDebounceTimer) {
+        clearTimeout(diagnosticsDebounceTimer);
+    }
+    diagnosticsDebounceTimer = setTimeout(function() {
+        requestDiagnostics();
+    }, 500);
+}
+
+function requestDiagnostics() {
+    if (!monacoEditor) return;
+    var sql = monacoEditor.getValue();
+    var dialect = languageData ? languageData.dialect : 'mysql';
+    sendBridgeRequest('requestDiagnostics', {
+        sql: sql,
+        dialect: dialect,
+    }).then(function(response) {
+        if (!response || !response.diagnostics) return;
+        var model = monacoEditor.getModel();
+        if (model) {
+            monacoRef.editor.setModelMarkers(model, 'sql-lint', response.diagnostics);
+        }
     });
 }
 

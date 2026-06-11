@@ -1,10 +1,12 @@
 import * as vscode from 'vscode';
+import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import { getConnectionManager } from '../../database/connection/ConnectionManager';
 import { getConnectionStore } from '../../database/connection/ConnectionStore';
 import { ConnectionConfig, ConnectionGroup } from '../../database/connection/ConnectionConfig';
 import { DatabaseTreeProvider } from '../databaseExplorer/DatabaseTreeProvider';
+import { t } from '../../i18n';
 
 interface ConnectionDialogConfig {
     mode: 'create' | 'edit';
@@ -30,7 +32,7 @@ export class ConnectionDialog {
     private _mode: 'create' | 'edit' = 'create';
     private _connectionId?: string;
     private _treeProvider?: DatabaseTreeProvider;
-    private _resolveDialog?: (result: { saved: boolean; connectionId?: string }) => void;
+    private _resolveDialog?: (result: { saved: boolean; connectionId?: string } | undefined) => void;
 
     public static async show(
         extensionUri: vscode.Uri,
@@ -47,7 +49,7 @@ export class ConnectionDialog {
 
         const panel = vscode.window.createWebviewPanel(
             ConnectionDialog.viewType,
-            options.mode === 'create' ? 'New Connection' : 'Edit Connection',
+            options.mode === 'create' ? t('connDialog.newConnection') : t('connDialog.editConnection'),
             vscode.ViewColumn.One,
             {
                 enableScripts: true,
@@ -157,14 +159,77 @@ export class ConnectionDialog {
 
             html = html.replace('{{CSS_URI}}', cssUri.toString());
             html = html.replace('{{JS_URI}}', jsUri.toString());
+            html = html.replace(/\{\{CSP_SOURCE\}\}/g, this._panel.webview.cspSource);
 
             const configScript = '<script>window.__CONNECTION_DIALOG_CONFIG__ = ' + JSON.stringify(config) + ';</script>';
             html = html.replace('{{CONFIG_INJECT}}', configScript);
 
+            const i18nData: Record<string, string> = {
+                'newConnection': t('connDialog.newConnection'),
+                'editConnection': t('connDialog.editConnection'),
+                'configureDatabaseConnection': t('connDialog.configureParams'),
+                'databaseType': t('connDialog.databaseType'),
+                'connectionName': t('connDialog.connectionName'),
+                'connectionNamePlaceholder': t('connDialog.connectionNamePh'),
+                'group': t('connDialog.group'),
+                'noGroup': t('connDialog.noGroup'),
+                'colorTag': t('connDialog.colorTag'),
+                'host': t('connDialog.host'),
+                'port': t('connDialog.port'),
+                'username': t('connDialog.username'),
+                'password': t('connDialog.password'),
+                'enterPassword': t('connDialog.enterPassword'),
+                'database': t('connDialog.database'),
+                'databaseFilePath': t('connDialog.databaseFilePath'),
+                'databaseFilePathPlaceholder': t('connDialog.databaseFilePathPh'),
+                'browse': t('connDialog.browse'),
+                'useSshTunnel': t('connDialog.useSshTunnel'),
+                'sshHost': t('connDialog.sshHost'),
+                'sshPort': t('connDialog.sshPort'),
+                'authenticationMethod': t('connDialog.authenticationMethod'),
+                'privateKey': t('connDialog.authPrivateKey'),
+                'sshPassword': t('connDialog.sshPasswordPh'),
+                'passphrase': t('connDialog.passphrase'),
+                'optionalPassphrase': t('connDialog.passphrasePh'),
+                'useSsl': t('connDialog.useSsl'),
+                'caCertificate': t('connDialog.caCertificate'),
+                'clientCertificate': t('connDialog.clientCertificate'),
+                'clientKey': t('connDialog.clientKey'),
+                'verifyServerCertificate': t('connDialog.verifyServerCert'),
+                'connectTimeout': t('connDialog.connectTimeout'),
+                'poolSize': t('connDialog.poolSize'),
+                'charset': t('connDialog.charset'),
+                'timezone': t('connDialog.timezone'),
+                'initialSql': t('connDialog.initialSql'),
+                'test': t('connDialog.test'),
+                'cancel': t('connDialog.cancel'),
+                'save': t('connDialog.save'),
+                'testing': t('connDialog.testing'),
+                'connectionSuccessful': t('connDialog.connectionSuccessful'),
+                'connectionFailed': t('connDialog.connectionFailed'),
+                'saveFailed': t('connDialog.saveFailed'),
+                'unknownError': t('connDialog.unknownError'),
+                'nameRequired': t('connDialog.nameRequired'),
+                'nameExists': t('connDialog.nameExists'),
+                'hostRequired': t('connDialog.hostRequired'),
+                'portRange': t('connDialog.portRange'),
+                'usernameRequired': t('connDialog.usernameRequired'),
+                'sqlitePathRequired': t('connDialog.sqlitePathRequired'),
+                'sshHostRequired': t('connDialog.sshHostRequired'),
+                'sshPortRange': t('connDialog.sshPortRange'),
+                'sshUsernameRequired': t('connDialog.sshUsernameRequired'),
+                'newGroup': t('connDialog.newGroup'),
+                'enterNewGroupName': t('connDialog.enterNewGroupName'),
+                'selectFile': t('connDialog.selectFile'),
+                'none': t('connDialog.none'),
+            };
+            const i18nScript = '<script>window.__CONNECTION_DIALOG_I18N__ = ' + JSON.stringify(i18nData) + ';</script>';
+            html = html.replace('{{I18N_INJECT}}', i18nScript);
+
             return html;
         } catch (error) {
             console.error('Failed to load Connection Dialog HTML:', error);
-            return '<html><body><h2>Failed to load Connection Dialog</h2><p>Please reinstall the extension.</p></body></html>';
+            return '<html><body><h2>' + t('connDialog.loadFailed') + '</h2><p>' + t('connDialog.reinstall') + '</p></body></html>';
         }
     }
 
@@ -186,6 +251,9 @@ export class ConnectionDialog {
                 const store = getConnectionStore();
                 const saveConfig = { ...formData };
 
+                if (!saveConfig.password) {
+                    saveConfig.password = await store.getPassword(this._connectionId);
+                }
                 if (saveConfig.ssh?.enabled) {
                     if (!saveConfig.ssh.password) {
                         saveConfig.ssh = { ...saveConfig.ssh, password: await store.getSshPassword(this._connectionId) };
@@ -195,11 +263,11 @@ export class ConnectionDialog {
                     }
                 }
 
-                await manager.updateConnection(this._connectionId, saveConfig, formData.password);
+                await manager.updateConnection(this._connectionId, saveConfig, formData.password || undefined);
             } else {
-                const id = Date.now().toString(36) + Math.random().toString(36).substr(2);
+                const id = crypto.randomUUID();
                 const config = { ...formData, id };
-                await manager.addConnection(config, formData.password);
+                await manager.addConnection(config, formData.password || undefined);
                 this._connectionId = id;
             }
 
@@ -265,7 +333,7 @@ export class ConnectionDialog {
             canSelectFiles: true,
             canSelectFolders: false,
             canSelectMany: false,
-            title: 'Select File',
+            title: t('connDialog.selectFile'),
         });
 
         if (uris && uris.length > 0) {
@@ -279,7 +347,7 @@ export class ConnectionDialog {
 
     private _validateForm(data: ConnectionConfig): string | null {
         if (!data.name || !data.name.trim()) {
-            return 'Connection name is required';
+            return t('connDialog.nameRequired');
         }
 
         const store = getConnectionStore();
@@ -287,25 +355,25 @@ export class ConnectionDialog {
             .filter(c => c.id !== this._connectionId)
             .map(c => c.name);
         if (existing.includes(data.name.trim())) {
-            return 'Connection name already exists';
+            return t('connDialog.nameExists');
         }
 
         if (data.dialect !== 'sqlite') {
             if (!data.host || !data.host.trim()) {
-                return 'Host is required';
+                return t('connDialog.hostRequired');
             }
             if (!data.port || data.port < 1 || data.port > 65535) {
-                return 'Port must be between 1 and 65535';
+                return t('connDialog.portRange');
             }
             if (!data.username || !data.username.trim()) {
-                return 'Username is required';
+                return t('connDialog.usernameRequired');
             }
         }
 
         if (data.ssh?.enabled) {
-            if (!data.ssh.host) return 'SSH host is required';
-            if (!data.ssh.port || data.ssh.port < 1 || data.ssh.port > 65535) return 'SSH port must be between 1 and 65535';
-            if (!data.ssh.username) return 'SSH username is required';
+            if (!data.ssh.host) return t('connDialog.sshHostRequired');
+            if (!data.ssh.port || data.ssh.port < 1 || data.ssh.port > 65535) return t('connDialog.sshPortRange');
+            if (!data.ssh.username) return t('connDialog.sshUsernameRequired');
         }
 
         return null;
@@ -321,6 +389,10 @@ export class ConnectionDialog {
 
     public dispose(): void {
         ConnectionDialog.currentPanel = undefined;
+        if (this._resolveDialog) {
+            this._resolveDialog(undefined);
+            this._resolveDialog = undefined;
+        }
         this._panel.dispose();
 
         while (this._disposables.length) {

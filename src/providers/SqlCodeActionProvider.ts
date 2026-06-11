@@ -1,5 +1,28 @@
 import * as vscode from 'vscode'
 import { t } from '../i18n'
+import { toSqlDialect } from '../core/dialectRegistry'
+
+function getQuoteCharForDialect(langId: string): string {
+    const dialect = toSqlDialect(langId)
+    switch (dialect) {
+        case 'mysql':
+        case 'hive':
+        case 'spark':
+        case 'flinksql':
+            return '`'
+        case 'postgresql':
+        case 'sqlite':
+        case 'bigquery':
+            return '"'
+        default:
+            return '"'
+    }
+}
+
+function quoteIdentifierForDialect(name: string, langId: string): string {
+    const q = getQuoteCharForDialect(langId)
+    return q + name.replace(new RegExp(q === '`' ? '`' : '"', 'g'), q === '`' ? '``' : '""') + q
+}
 
 export class SqlCodeActionProvider implements vscode.CodeActionProvider {
     public static readonly providedCodeActionKinds = [
@@ -271,7 +294,7 @@ export class SqlCodeActionProvider implements vscode.CodeActionProvider {
         action.isPreferred = true
 
         const text = document.getText(diagnostic.range)
-        const newText = `\`${text}\``
+        const newText = quoteIdentifierForDialect(text, document.languageId)
 
         action.edit = new vscode.WorkspaceEdit()
         action.edit.replace(document.uri, diagnostic.range, newText)

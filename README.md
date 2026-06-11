@@ -11,7 +11,7 @@
 | | |
 |---|---|
 | **发布者** | bryce-qin |
-| **版本** | 2.11.0 |
+| **版本** | 2.15.1 |
 | **许可证** | MIT |
 | **仓库** | [GitHub](https://github.com/BryceQin/SQL-All-in-One) |
 | **VSCode 引擎** | ^1.85.0 |
@@ -61,6 +61,19 @@
 - 查询超时控制（可配置）
 - 查询取消支持（CancellationToken + KILL QUERY）
 - 最大行数限制
+- **查询数据面板（v2.12 新增）**：集成 Monaco SQL 编辑器，支持在结果面板中直接编写和执行 SQL
+- 可拖拽分割面板：SQL 编辑器与查询结果上下分栏，比例可调
+- Monaco 编辑器：SQL 语法高亮、智能提示、代码折叠，自动跟随 VS Code 主题
+- **Monaco 语言特性增强（v2.13 新增）**：方言化语法高亮、智能补全、悬停提示、SQL 格式化、Lint 诊断
+- 方言化 Monarch 语法高亮：8 种 SQL 方言独立 tokenizer，关键字/数据类型/函数名分别着色
+- 静态补全（零延迟）：关键字、580+ 函数签名（含参数 Snippet）、数据类型、代码片段
+- 函数签名提示：输入 `(` 或 `,` 显示参数签名，自动高亮当前参数
+- Schema 感知补全：输入 `.` 或空格触发，查询数据库 Schema 返回表名/列名
+- 悬停提示：鼠标悬停显示函数签名、关键字说明、表结构等
+- SQL 格式化：`Shift+Alt+F` / `Cmd+Shift+I` 快捷键格式化
+- SQL Lint 诊断：编辑后自动检查，显示波浪线警告
+- 连接切换时自动更新方言
+- 从数据库浏览器点击表/视图节点，自动生成 `SELECT * FROM table LIMIT 200` 并执行
 - 结果面板：分页、滚动预加载
 - 网格视图和表单视图
 - JSON 美化输出
@@ -459,7 +472,7 @@ LIMIT 10;
 | 替换参数 | `Ctrl+Alt+P` | `Cmd+Alt+P` |
 | 切换注释 | `Ctrl+/` | `Cmd+/` |
 | 高级注释 | `Ctrl+Shift+/` | `Cmd+Shift+/` |
-| 执行 SQL | `Ctrl+R` | `Cmd+R` |
+| 执行 SQL | `Ctrl+Shift+E` | `Cmd+Shift+E` |
 | 执行选中 SQL | `Ctrl+Shift+R` | `Cmd+Shift+R` |
 | 格式化文档 | `Shift+Alt+F` | `Shift+Option+F` |
 
@@ -618,7 +631,7 @@ MIT License
 | | |
 |---|---|
 | **Publisher** | bryce-qin |
-| **Version** | 2.9.0 |
+| **Version** | 2.15.2 |
 | **License** | MIT |
 | **Repository** | [GitHub](https://github.com/BryceQin/SQL-All-in-One) |
 | **VSCode Engine** | ^1.85.0 |
@@ -664,10 +677,23 @@ MIT License
 
 #### 2. Query Execution & Results
 
-- Execute SQL (`Ctrl+R` / `Cmd+R`) and Execute Selected SQL (`Ctrl+Shift+R` / `Cmd+Shift+R`)
+- Execute SQL (`Ctrl+Shift+E` / `Cmd+Shift+E`) and Execute Selected SQL (`Ctrl+Shift+R` / `Cmd+Shift+R`)
 - Query timeout control (configurable)
 - Query cancellation support (CancellationToken + KILL QUERY)
 - Max rows limit
+- **Query Data Panel (new in v2.12)**: integrated Monaco SQL editor, write and execute SQL directly in the result panel
+- Draggable split panel: SQL editor and query results in vertical split layout, adjustable ratio
+- Monaco editor: SQL syntax highlighting, IntelliSense, code folding, auto-follows VS Code theme
+- **Monaco Language Features (new in v2.14)**: dialect-aware syntax highlighting, smart completion, hover info, SQL formatting, lint diagnostics
+- Dialect-aware Monarch syntax highlighting: 8 SQL dialect tokenizers, keywords/data types/functions colored separately
+- Static completion (zero latency): keywords, 580+ function signatures (with parameter snippets), data types, code snippets
+- Function signature help: shows parameter signatures on `(` or `,`, auto-highlights current parameter
+- Schema-aware completion: triggered by `.` or space, queries database schema for table/column names
+- Hover information: hover over functions, keywords, schema objects to show signatures, descriptions, table structure
+- SQL formatting: `Shift+Alt+F` / `Cmd+Shift+I` shortcut to format SQL
+- SQL lint diagnostics: auto-check on edit, shows squiggly warnings
+- Auto dialect switch on connection change
+- Click table/view node in Database Explorer auto-generates `SELECT * FROM table LIMIT 200` and executes it
 - Result panel with pagination, scroll preloading
 - Grid view and form view
 - JSON pretty print in results

@@ -4,6 +4,7 @@ import { getConnectionStore } from '../connection/ConnectionStore';
 import { DatabaseTreeProvider } from '../../views/databaseExplorer/DatabaseTreeProvider';
 import { ConnectionTreeNode } from '../../views/databaseExplorer/treeNodes';
 import { openConfigEditorCommand } from '../../commands/configEditorCommand';
+import { t } from '../../i18n/index';
 
 const connectionOutputChannel = vscode.window.createOutputChannel('SQL All in One - Connection');
 
@@ -12,8 +13,8 @@ function showConnectionError(shortMessage: string, fullError: string): void {
         vscode.window.showErrorMessage(shortMessage);
         return;
     }
-    vscode.window.showErrorMessage(shortMessage, 'Show Details').then(choice => {
-        if (choice === 'Show Details') {
+    vscode.window.showErrorMessage(shortMessage, t('database.showDetails')).then(choice => {
+        if (choice === t('database.showDetails')) {
             connectionOutputChannel.clear();
             connectionOutputChannel.appendLine(fullError);
             connectionOutputChannel.show(true);
@@ -38,24 +39,30 @@ export function registerConnectionCommands(
 
     disposables.push(
         vscode.commands.registerCommand('sql-all-in-one.editConnection', async (node?: ConnectionTreeNode) => {
-            if (!node) {
+            let connectionId: string | undefined;
+
+            if (node) {
+                connectionId = node.connectionId;
+            } else {
                 const manager = getConnectionManager();
                 const connections = manager.getAllConnections();
                 if (connections.length === 0) {
-                    vscode.window.showInformationMessage('No connections available');
+                    vscode.window.showInformationMessage(t('database.noConnectionsAvailable'));
                     return;
                 }
                 const picked = await vscode.window.showQuickPick(
                     connections.map(c => ({ label: c.name, id: c.id })),
-                    { placeHolder: 'Select a connection to edit' }
+                    { placeHolder: t('database.selectConnectionToEdit') }
                 );
                 if (!picked) {
                     return;
                 }
+                connectionId = picked.id;
             }
 
             openConfigEditorCommand(context.extensionUri, {
-                initialTab: 'database'
+                initialTab: 'database',
+                connectionId
             });
         })
     );
@@ -72,12 +79,12 @@ export function registerConnectionCommands(
             } else {
                 const connections = manager.getAllConnections();
                 if (connections.length === 0) {
-                    vscode.window.showInformationMessage('No connections available');
+                    vscode.window.showInformationMessage(t('database.noConnectionsAvailable'));
                     return;
                 }
                 const picked = await vscode.window.showQuickPick(
                     connections.map(c => ({ label: c.name, id: c.id })),
-                    { placeHolder: 'Select a connection to remove' }
+                    { placeHolder: t('database.selectConnectionToRemove') }
                 );
                 if (!picked) {
                     return;
@@ -87,20 +94,20 @@ export function registerConnectionCommands(
             }
 
             const confirmed = await vscode.window.showWarningMessage(
-                `Are you sure you want to remove connection "${connectionName}"?`,
+                t('database.confirmRemoveConnection', connectionName!),
                 { modal: true },
-                'Remove'
+                t('database.remove')
             );
-            if (confirmed !== 'Remove') {
+            if (confirmed !== t('database.remove')) {
                 return;
             }
 
             try {
                 await manager.removeConnection(connectionId);
                 treeProvider.refresh();
-                vscode.window.showInformationMessage(`Connection "${connectionName}" removed`);
+                vscode.window.showInformationMessage(t('database.connectionRemoved', connectionName!));
             } catch (error) {
-                vscode.window.showErrorMessage(`Failed to remove connection: ${error}`);
+                vscode.window.showErrorMessage(t('database.failedToRemoveConnection', String(error)));
             }
         })
     );
@@ -110,17 +117,17 @@ export function registerConnectionCommands(
             if (node) {
                 try {
                     await getConnectionManager().connect(node.connectionId);
-                    vscode.window.showInformationMessage(`Connected to ${node.connectionName}`);
+                    vscode.window.showInformationMessage(t('database.connected', node.connectionName));
                     treeProvider.refresh();
                 } catch (error) {
                     const fullError = error instanceof Error ? error.message : String(error);
                     const shortMessage = fullError.length > 80
                         ? fullError.substring(0, 80) + '...'
                         : fullError;
-                    showConnectionError(`Failed to connect: ${shortMessage}`, fullError);
+                    showConnectionError(t('database.connectFailed', shortMessage), fullError);
                 }
             } else {
-                vscode.window.showInformationMessage('Select a connection first');
+                vscode.window.showInformationMessage(t('database.selectConnection'));
             }
         })
     );
@@ -130,13 +137,13 @@ export function registerConnectionCommands(
             if (node) {
                 try {
                     await getConnectionManager().disconnect(node.connectionId);
-                    vscode.window.showInformationMessage(`Disconnected from ${node.connectionName}`);
+                    vscode.window.showInformationMessage(t('database.disconnected', node.connectionName));
                     treeProvider.refresh();
                 } catch (error) {
-                    vscode.window.showErrorMessage(`Failed to disconnect: ${error}`);
+                    vscode.window.showErrorMessage(t('database.disconnectFailed', String(error)));
                 }
             } else {
-                vscode.window.showInformationMessage('Select a connection first');
+                vscode.window.showInformationMessage(t('database.selectConnection'));
             }
         })
     );
@@ -151,12 +158,12 @@ export function registerConnectionCommands(
             } else {
                 const connections = manager.getAllConnections();
                 if (connections.length === 0) {
-                    vscode.window.showInformationMessage('No connections available');
+                    vscode.window.showInformationMessage(t('database.noConnectionsAvailable'));
                     return;
                 }
                 const picked = await vscode.window.showQuickPick(
                     connections.map(c => ({ label: c.name, id: c.id })),
-                    { placeHolder: 'Select a connection to test' }
+                    { placeHolder: t('database.selectConnectionToTest') }
                 );
                 if (!picked) {
                     return;
@@ -167,12 +174,12 @@ export function registerConnectionCommands(
             try {
                 const result = await manager.testConnection(connectionId);
                 if (result.success) {
-                    const parts: string[] = ['Connection successful'];
+                    const parts: string[] = [t('configEditor.conn.testSuccess')];
                     if (result.serverVersion) {
-                        parts.push(`Server version: ${result.serverVersion}`);
+                        parts.push(t('database.serverVersion', result.serverVersion));
                     }
                     if (result.latency !== undefined) {
-                        parts.push(`Latency: ${result.latency}ms`);
+                        parts.push(t('database.latency', String(result.latency)));
                     }
                     vscode.window.showInformationMessage(parts.join(' | '));
                 } else {
@@ -180,14 +187,14 @@ export function registerConnectionCommands(
                     const shortMessage = fullError.length > 80
                         ? fullError.substring(0, 80) + '...'
                         : fullError;
-                    showConnectionError(`Connection failed: ${shortMessage}`, fullError);
+                    showConnectionError(t('database.connectionFailedShort', shortMessage), fullError);
                 }
             } catch (error) {
                 const fullError = error instanceof Error ? error.message : String(error);
                 const shortMessage = fullError.length > 80
                     ? fullError.substring(0, 80) + '...'
                     : fullError;
-                showConnectionError(`Test connection failed: ${shortMessage}`, fullError);
+                showConnectionError(t('database.testConnectionFailed', shortMessage), fullError);
             }
         })
     );
@@ -202,17 +209,17 @@ export function registerConnectionCommands(
             try {
                 const store = getConnectionStore();
                 const includePasswords = await vscode.window.showQuickPick(
-                    ['Without passwords (recommended)', 'With passwords'],
-                    { placeHolder: 'Export options' }
+                    [t('database.withoutPasswords'), t('database.withPasswords')],
+                    { placeHolder: t('database.exportOptions') }
                 );
                 if (!includePasswords) return;
                 await store.exportConnections(
                     uri.fsPath,
-                    includePasswords === 'With passwords'
+                    includePasswords === t('database.withPasswords')
                 );
-                vscode.window.showInformationMessage(`Connections exported to ${uri.fsPath}`);
+                vscode.window.showInformationMessage(t('database.connectionsExported', uri.fsPath));
             } catch (error) {
-                vscode.window.showErrorMessage(`Export failed: ${error}`);
+                vscode.window.showErrorMessage(t('database.exportFailed', String(error)));
             }
         })
     );
@@ -228,11 +235,11 @@ export function registerConnectionCommands(
                 const store = getConnectionStore();
                 const result = await store.importConnections(uris[0].fsPath);
                 vscode.window.showInformationMessage(
-                    `Imported ${result.added} connections (${result.skipped} skipped)`
+                    t('database.importedConnections', String(result.added), String(result.skipped))
                 );
                 treeProvider.refresh();
             } catch (error) {
-                vscode.window.showErrorMessage(`Import failed: ${error}`);
+                vscode.window.showErrorMessage(t('database.importFailed', String(error)));
             }
         })
     );

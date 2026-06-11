@@ -7,12 +7,13 @@
 :root {
   --accent: var(--vscode-button-background, #4a9eff);
   --accent-dim: rgba(74, 158, 255, 0.10);
-  --accent-glow: rgba(74, 158, 255, 0.25);
+  --accent-glow: rgba(74, 158, 255, 0.20);
   --bg: var(--vscode-editor-background, #1e1e2e);
-  --surface: rgba(255,255,255,0.035);
-  --surface2: rgba(255,255,255,0.055);
+  --surface: rgba(255,255,255,0.03);
+  --surface2: rgba(255,255,255,0.05);
+  --surface3: rgba(255,255,255,0.07);
   --text: var(--vscode-editor-foreground, #cdd6f4);
-  --text-secondary: rgba(255,255,255,0.45);
+  --text-secondary: var(--vscode-descriptionForeground, rgba(255,255,255,0.45));
   --border: rgba(255,255,255,0.06);
   --border-hover: rgba(255,255,255,0.12);
   --input-bg: var(--vscode-input-background, #313145);
@@ -26,19 +27,24 @@
   --focus-border: var(--vscode-focusBorder, #4a9eff);
   --hover-bg: rgba(255,255,255,0.04);
   --error-color: var(--vscode-errorForeground, #f44747);
+  --error-dim: rgba(244, 71, 71, 0.12);
   --warning-color: #e2b714;
+  --warning-dim: rgba(226, 183, 20, 0.12);
   --success-color: #4ec9b0;
+  --success-dim: rgba(78, 201, 176, 0.12);
+  --info-color: #4a9eff;
+  --info-dim: rgba(74, 158, 255, 0.12);
   --radius-sm: 6px;
   --radius: 8px;
   --radius-lg: 12px;
   --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
-  --shadow-md: 0 2px 8px rgba(0,0,0,0.25);
-  --shadow-lg: 0 8px 32px rgba(0,0,0,0.20);
-  --glass-blur: blur(24px);
-  --glass-border: rgba(255,255,255,0.07);
-  --glass-shadow: 0 8px 32px rgba(0,0,0,0.4);
-  --glass-inset: inset 0 1px 0 rgba(255,255,255,0.05);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.15);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.20);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.25);
+  --glass-blur: blur(16px);
+  --glass-border: rgba(255,255,255,0.06);
+  --glass-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  --glass-inset: inset 0 1px 0 rgba(255,255,255,0.04);
   --type-int: #7cb8ff;
   --type-str: #4ec9b0;
   --type-enum: #ce9178;
@@ -53,9 +59,9 @@
 
 body {
   font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text);
-  background: linear-gradient(145deg, var(--bg) 0%, color-mix(in srgb, var(--bg) 95%, #1a1b35) 50%, var(--bg) 100%);
+  background: var(--bg);
   line-height: 1.4;
   overflow: hidden;
   height: 100vh;
@@ -67,12 +73,10 @@ body {
   flex-direction: column;
   height: 100vh;
   background: var(--surface);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--glass-shadow), var(--glass-inset);
-  margin: 6px;
+  margin: 4px;
   overflow: hidden;
 }
 
@@ -80,11 +84,11 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 14px;
+  padding: 6px 12px;
   background: rgba(255,255,255,0.02);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
-  height: 36px;
+  height: 34px;
 }
 
 .header-title {
@@ -137,18 +141,12 @@ body {
   font-size: 11px;
 }
 
-.toolbar {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  flex-shrink: 0;
-}
-
 .tb-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 4px 10px;
+  gap: 3px;
+  padding: 4px 8px;
   border: 1px solid rgba(255,255,255,0.05);
   border-radius: var(--radius-sm);
   background: rgba(255,255,255,0.03);
@@ -158,6 +156,12 @@ body {
   transition: all var(--transition);
   font-family: inherit;
   white-space: nowrap;
+}
+
+.tb-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
 }
 
 .tb-btn:hover {
@@ -356,7 +360,6 @@ body {
 }
 
 .tab-content {
-  flex: 1;
   overflow: hidden;
   position: relative;
 }
@@ -502,6 +505,10 @@ body {
 
 .grid-body-table tr:nth-child(even) td.row-num {
   background: rgba(255,255,255,0.02);
+}
+
+.grid-body-table tr {
+  contain: content;
 }
 
 .grid-body-table td.cell-null {
@@ -1177,4 +1184,141 @@ body {
   background: rgba(74,158,255,0.12) !important;
   color: var(--accent) !important;
   border-color: rgba(74,158,255,0.2) !important;
+}
+
+.panel-split {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+}
+
+.sql-editor-section {
+    display: flex;
+    flex-direction: column;
+    height: 30%;
+    min-height: 60px;
+    overflow: hidden;
+    border-bottom: none;
+}
+
+.sql-editor-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 8px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    height: 30px;
+}
+
+.sql-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.sql-editor-container {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.sql-editor-container .monaco-editor .margin,
+.sql-editor-container .monaco-editor .margin-view-overlays,
+.sql-editor-container .monaco-editor .glyph-margin,
+.sql-editor-container .monaco-editor .line-numbers {
+    background-color: var(--vscode-editor-background) !important;
+}
+
+.sql-editor-container .monaco-editor .current-line,
+.sql-editor-container .monaco-editor .margin-view-overlays .current-line-margin {
+    background-color: var(--vscode-editor-lineHighlightBackground, rgba(255, 255, 255, 0.04)) !important;
+}
+
+.sql-editor-container .monaco-editor .scroll-decoration {
+    display: none !important;
+}
+
+.sql-editor-fallback {
+    width: 100%;
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    border: none;
+    padding: 8px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    resize: none;
+    outline: none;
+    tab-size: 4;
+}
+
+.splitter {
+    height: 6px;
+    cursor: row-resize;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--border);
+    flex-shrink: 0;
+    transition: background var(--transition);
+}
+
+.splitter:hover {
+    background: var(--border-hover);
+}
+
+.splitter-handle {
+    width: 40px;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--text-secondary);
+    opacity: 0.4;
+    transition: opacity var(--transition), background var(--transition);
+}
+
+.splitter:hover .splitter-handle {
+    opacity: 1;
+    background: var(--focus-border);
+}
+
+.result-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 60px;
+}
+
+.result-section .tab-content {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+}
+
+.result-section .bottom-bar {
+    flex-shrink: 0;
+}
+
+.result-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 8px;
+    background: rgba(255,255,255,0.02);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    height: 30px;
+}
+
+.tb-btn.edit-mode-active {
+    background: var(--accent-dim);
+    color: var(--accent);
+    border-color: rgba(74,158,255,0.3);
 }

@@ -17,6 +17,7 @@ import { QueryExecutor } from '../query/QueryExecutor';
 import { QueryResultPanel, FilterCondition } from '../../views/queryResult/QueryResultPanel';
 import type { QueryError } from '../adapters/IDatabaseAdapter';
 import { generateEditSql, executeInTransaction, getActiveAdapter } from '../query/DataEditService';
+import { t } from '../../i18n/index';
 
 
 export function registerSchemaCommands(
@@ -44,18 +45,17 @@ export function registerSchemaCommands(
         vscode.commands.registerCommand('sql-all-in-one.viewTableData', async (node?: TableTreeNode | ViewTreeNode) => {
             try {
                 if (!node) {
-                    vscode.window.showErrorMessage('No table node selected. Please use the context menu from a table or view in the database explorer.');
+                    vscode.window.showErrorMessage(t('database.noTableNodeSelected'));
                     return;
                 }
 
                 const connectionManager = getConnectionManager();
                 const adapter = connectionManager.getAdapter(node.connectionId);
                 if (!adapter) {
-                    vscode.window.showWarningMessage('No active connection for the selected table. Please connect first.');
+                    vscode.window.showWarningMessage(t('database.noAdapterForTable'));
                     return;
                 }
 
-                const conn = connectionManager.getAllConnections().find(c => c.id === node.connectionId);
                 const name = node instanceof TableTreeNode ? node.tableName : node.viewName;
                 const quotedName = adapter.quoteIdentifier(node.databaseName) + '.' + adapter.quoteIdentifier(name);
                 const sql = `SELECT * FROM ${quotedName} LIMIT 100;`;
@@ -81,11 +81,11 @@ export function registerSchemaCommands(
                         try {
                             const editAdapter = getActiveAdapter();
                             if (!editAdapter) {
-                                return { success: false, errors: ['No active database connection'] };
+                                return { success: false, errors: [t('database.noActiveAdapter')] };
                             }
                             const currentResult = queryResultPanel?.getCurrentResult();
                             if (!currentResult) {
-                                return { success: false, errors: ['No current result data'] };
+                                return { success: false, errors: [t('database.noQueryResult')] };
                             }
                             const statements = generateEditSql(
                                 changes,
@@ -139,7 +139,7 @@ export function registerSchemaCommands(
                         const spAdapter = getActiveAdapter();
                         if (spAdapter) {
                             if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
-                                throw new Error(`Invalid savepoint name: ${name}`);
+                                throw new Error(t('database.invalidSavepointName', name));
                             }
                             await spAdapter.execute(`SAVEPOINT ${name}`);
                         }
@@ -148,7 +148,7 @@ export function registerSchemaCommands(
                         const spAdapter = getActiveAdapter();
                         if (spAdapter) {
                             if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
-                                throw new Error(`Invalid savepoint name: ${name}`);
+                                throw new Error(t('database.invalidSavepointName', name));
                             }
                             await spAdapter.execute(`ROLLBACK TO SAVEPOINT ${name}`);
                         }
@@ -157,26 +157,34 @@ export function registerSchemaCommands(
                     queryResultPanel.showLoading(sql);
                 }
 
-                const result = await queryExecutor.execute(
-                    adapter,
-                    sql,
-                    { database: node.databaseName },
-                    node.connectionId
-                );
+                queryResultPanel!.onExecutePanelSql = async (panelSql: string): Promise<void> => {
+                    try {
+                        const panelConn = getConnectionManager().getAllConnections().find(c => c.id === node.connectionId);
+                        const panelAdapter = getConnectionManager().getAdapter(node.connectionId);
+                        if (!panelAdapter) {
+                            queryResultPanel?.showError({ code: 'NO_CONNECTION', message: t('database.noActiveAdapter'), sql: panelSql });
+                            return;
+                        }
+                        queryResultPanel?.showLoading(panelSql);
+                        const panelResult = await queryExecutor.execute(panelAdapter, panelSql, { database: node.databaseName }, node.connectionId);
+                        if (panelResult.status === 'error') {
+                            outputChannel.appendLine(`❌ Error: ${panelResult.error?.message || t('database.unknownError')}`);
+                            outputChannel.appendLine(`   SQL: ${panelSql}`);
+                            queryResultPanel?.showError(panelResult.error as QueryError);
+                        } else {
+                            outputChannel.appendLine(`✅ ${t('database.queryExecutedSuccessfully', String(panelResult.executionTime), String(panelResult.rowCount))}`);
+                            outputChannel.appendLine(`   SQL: ${panelSql}`);
+                            queryResultPanel?.showResult(panelResult, panelConn?.name, panelConn?.color, name);
+                        }
+                    } catch (error) {
+                        queryResultPanel?.showError({ code: 'EXEC_ERROR', message: String(error), sql: panelSql });
+                    }
+                };
 
-                if (result.status === 'error') {
-                    outputChannel.appendLine(`❌ Error: ${result.error?.message || 'Unknown error'}`);
-                    outputChannel.appendLine(`   SQL: ${sql}`);
-                    queryResultPanel.showError(result.error as QueryError);
-                } else {
-                    outputChannel.appendLine(`✅ Query executed successfully (${result.executionTime}ms, ${result.rowCount} rows)`);
-                    outputChannel.appendLine(`   SQL: ${sql}`);
-
-                    queryResultPanel.showResult(result, conn?.name, conn?.color, name);
-                }
+                queryResultPanel!.setSqlAndExecute(sql);
             } catch (error) {
                 const msg = error instanceof Error ? error.message : String(error);
-                vscode.window.showErrorMessage(`Failed to view table data: ${msg}`);
+                vscode.window.showErrorMessage(t('database.failedToViewTableData', msg));
                 outputChannel.appendLine(`❌ viewTableData error: ${msg}`);
             }
         })
@@ -195,7 +203,7 @@ export function registerSchemaCommands(
                         });
                         await vscode.window.showTextDocument(document);
                     } catch (error) {
-                        vscode.window.showErrorMessage(`Failed to get DDL: ${error}`);
+                        vscode.window.showErrorMessage(t('database.failedToGetDdl', String(error)));
                     }
                 }
             }
@@ -208,7 +216,10 @@ export function registerSchemaCommands(
             if (node instanceof DatabaseTreeNode) {
                 database = node.databaseName;
             }
-            const content = database ? `USE \`${database}\`;\n\n` : '';
+            const activeConn = getConnectionManager().getActiveConnection();
+            const newQueryAdapter = activeConn ? getConnectionManager().getAdapter(activeConn.id) : undefined;
+            const q = activeConn ? newQueryAdapter!.quoteIdentifier.bind(newQueryAdapter) : ((id: string): string => '`' + id.replace(/`/g, '``') + '`');
+            const content = database ? `USE ${q(database)};\n\n` : '';
             const document = await vscode.workspace.openTextDocument({
                 content,
                 language: 'sql'
@@ -221,7 +232,7 @@ export function registerSchemaCommands(
         vscode.commands.registerCommand('sql-all-in-one.copyColumnName', async (node?: ColumnTreeNode) => {
             if (node) {
                 await vscode.env.clipboard.writeText(node.columnInfo.name);
-                vscode.window.showInformationMessage('Column name copied to clipboard');
+                vscode.window.showInformationMessage(t('database.columnCopied'));
             }
         })
     );
@@ -242,7 +253,7 @@ export function registerSchemaCommands(
                         type,
                         name
                     );
-                    vscode.window.showInformationMessage('Added to favorites');
+                    vscode.window.showInformationMessage(t('database.addedToFavorites'));
                 }
             }
         })
@@ -257,7 +268,7 @@ export function registerSchemaCommands(
                     node.objectType,
                     node.objectName
                 );
-                vscode.window.showInformationMessage('Removed from favorites');
+                vscode.window.showInformationMessage(t('database.removedFromFavorites'));
             }
         })
     );
@@ -278,7 +289,7 @@ export function registerSchemaCommands(
                 const manager = getConnectionManager();
                 const currentConfig = manager.getAllConnections().find(c => c.id === node.connectionId);
                 if (!currentConfig) {
-                    vscode.window.showErrorMessage('Connection not found');
+                    vscode.window.showErrorMessage(t('database.connectionNotFound'));
                     return;
                 }
 
@@ -290,9 +301,9 @@ export function registerSchemaCommands(
                 try {
                     await manager.updateConnection(node.connectionId, updatedConfig);
                     treeProvider.refresh();
-                    vscode.window.showInformationMessage(`Default database set to "${node.databaseName}"`);
+                    vscode.window.showInformationMessage(t('database.defaultDatabaseSet', node.databaseName));
                 } catch (error) {
-                    vscode.window.showErrorMessage(`Failed to set default database: ${error}`);
+                    vscode.window.showErrorMessage(t('database.failedToSetDefaultDatabase', String(error)));
                 }
             }
         })
@@ -303,7 +314,7 @@ export function registerSchemaCommands(
             const connectionManager = getConnectionManager();
             const activeConn = connectionManager.getActiveConnection();
             if (!activeConn) {
-                vscode.window.showWarningMessage('No active connection. Please connect to a database first.');
+                vscode.window.showWarningMessage(t('database.noActiveConnection'));
                 return;
             }
 
@@ -320,18 +331,18 @@ export function registerSchemaCommands(
                 try {
                     const adapter = connectionManager.getAdapter(activeConn.id);
                     if (!adapter) {
-                        vscode.window.showWarningMessage('No database adapter available');
+                        vscode.window.showWarningMessage(t('database.noDatabaseAdapter'));
                         return;
                     }
                     const databases = await adapter.listDatabases();
                     const picked = await vscode.window.showQuickPick(
                         databases.map(d => d.name),
-                        { placeHolder: 'Select a database' }
+                        { placeHolder: t('database.selectDatabase') }
                     );
                     if (!picked) return;
                     database = picked;
                 } catch {
-                    vscode.window.showWarningMessage('Failed to list databases');
+                    vscode.window.showWarningMessage(t('database.failedToListDatabases'));
                     return;
                 }
             }
@@ -347,14 +358,14 @@ export function registerSchemaCommands(
     disposables.push(
         vscode.commands.registerCommand('sql-all-in-one.editTable', async (node?: TableTreeNode) => {
             if (!node) {
-                vscode.window.showWarningMessage('Select a table to edit');
+                vscode.window.showWarningMessage(t('database.selectTableToEdit'));
                 return;
             }
 
             const connectionManager = getConnectionManager();
             const adapter = connectionManager.getAdapter(node.connectionId);
             if (!adapter) {
-                vscode.window.showWarningMessage('No active connection for the selected table');
+                vscode.window.showWarningMessage(t('database.noAdapterForTable'));
                 return;
             }
 
@@ -370,26 +381,26 @@ export function registerSchemaCommands(
         vscode.commands.registerCommand('sql-all-in-one.explainQuery', async () => {
             const editor = vscode.window.activeTextEditor;
             if (!editor) {
-                vscode.window.showWarningMessage('No active editor');
+                vscode.window.showWarningMessage(t('database.noActiveEditor'));
                 return;
             }
 
             const connectionManager = getConnectionManager();
             const activeConn = connectionManager.getActiveConnection();
             if (!activeConn) {
-                vscode.window.showWarningMessage('No active connection. Please connect to a database first.');
+                vscode.window.showWarningMessage(t('database.noActiveConnection'));
                 return;
             }
 
             const adapter = connectionManager.getAdapter(activeConn.id);
             if (!adapter) {
-                vscode.window.showWarningMessage('No active database adapter');
+                vscode.window.showWarningMessage(t('database.noActiveAdapter'));
                 return;
             }
 
             const capabilities = adapter.getDialectCapabilities();
             if (!capabilities.supportsExplain) {
-                vscode.window.showWarningMessage('Current database does not support EXPLAIN');
+                vscode.window.showWarningMessage(t('database.currentDbNoExplain'));
                 return;
             }
 
@@ -399,7 +410,7 @@ export function registerSchemaCommands(
             );
 
             if (!statement.sql) {
-                vscode.window.showWarningMessage('No SQL statement found');
+                vscode.window.showWarningMessage(t('database.noSqlFound'));
                 return;
             }
 
@@ -414,7 +425,7 @@ export function registerSchemaCommands(
             const connectionManager = getConnectionManager();
             const activeConn = connectionManager.getActiveConnection();
             if (!activeConn) {
-                vscode.window.showWarningMessage('No active connection. Please connect to a database first.');
+                vscode.window.showWarningMessage(t('database.noActiveConnection'));
                 return;
             }
 

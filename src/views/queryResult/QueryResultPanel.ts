@@ -3,6 +3,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import type { QueryResult, QueryError, QueryRow } from '../../database/adapters/IDatabaseAdapter';
 import type { QueryHistoryEntry } from '../../database/query/QueryResult';
+import { getLanguage, t } from '../../i18n';
+import { LanguageBridge } from './LanguageBridge';
+import { getConnectionManager } from '../../database/connection/ConnectionManager';
 
 export interface FilterCondition {
     column: string;
@@ -26,6 +29,7 @@ export interface ForeignKeyOption {
 
 type WebviewMessage =
     | { command: 'executeQuery'; sql: string }
+    | { command: 'executePanelSql'; sql: string }
     | { command: 'cancelQuery' }
     | { command: 'requestExport'; format: string; options?: Record<string, unknown> }
     | { command: 'requestSort'; column: string; direction: string }
@@ -38,7 +42,11 @@ type WebviewMessage =
     | { command: 'rollbackTransaction' }
     | { command: 'createSavepoint'; name: string }
     | { command: 'rollbackToSavepoint'; name: string }
-    | { command: 'requestBlobPreview'; rowIndex: number; colIndex: number };
+    | { command: 'requestBlobPreview'; rowIndex: number; colIndex: number }
+    | { command: 'requestCompletion'; requestId: string; sql: string; position: { line: number; column: number }; dialect: string }
+    | { command: 'requestHover'; requestId: string; sql: string; position: { line: number; column: number }; dialect: string }
+    | { command: 'requestFormat'; requestId: string; sql: string; dialect: string }
+    | { command: 'requestDiagnostics'; requestId: string; sql: string; dialect: string };
 
 export class QueryResultPanel {
     public static currentPanel: QueryResultPanel | undefined;
@@ -46,10 +54,12 @@ export class QueryResultPanel {
 
     private readonly _panel: vscode.WebviewPanel;
     private readonly _extensionUri: vscode.Uri;
-    // Context is received but not used in this dialog
-    // private readonly __context: vscode.ExtensionContext;
     private _disposables: vscode.Disposable[] = [];
     private _currentResult: QueryResult | undefined;
+    private _languageBridge: LanguageBridge;
+    private _currentDialect = 'mysql';
+    private _cachedHtml: string | undefined;
+    private _sendLanguageDataTimer: ReturnType<typeof setTimeout> | undefined;
 
     public onExecuteQuery?: (sql: string) => void;
     public onCancelQuery?: () => void;
@@ -63,6 +73,7 @@ export class QueryResultPanel {
     public onRollbackTransaction?: () => Promise<void>;
     public onCreateSavepoint?: (name: string) => Promise<void>;
     public onRollbackToSavepoint?: (name: string) => Promise<void>;
+    public onExecutePanelSql?: (sql: string) => Promise<void>;
 
     public static createOrShow(extensionUri: vscode.Uri, context: vscode.ExtensionContext): QueryResultPanel {
         const column = vscode.window.activeTextEditor
@@ -98,9 +109,18 @@ export class QueryResultPanel {
     ) {
         this._panel = panel;
         this._extensionUri = extensionUri;
-        // this.__context = context;
+        this._languageBridge = new LanguageBridge(extensionUri);
 
         this._update();
+
+        this._disposables.push(
+            vscode.window.onDidChangeActiveColorTheme((theme) => {
+                this._panel.webview.postMessage({
+                    type: 'themeChange',
+                    data: { kind: theme.kind },
+                });
+            })
+        );
 
         this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
 
@@ -192,6 +212,57 @@ export class QueryResultPanel {
                     case 'requestBlobPreview':
                         this._handleBlobPreview(message.rowIndex, message.colIndex);
                         break;
+                    case 'executePanelSql':
+                        if (message.sql && this.onExecutePanelSql) {
+                            await this.onExecutePanelSql(message.sql);
+                        }
+                        break;
+                    case 'requestCompletion': {
+                        const items = await this._languageBridge.handleCompletionRequest(
+                            message.sql,
+                            message.position,
+                            message.dialect,
+                        );
+                        this._panel.webview.postMessage({
+                            type: 'completionResult',
+                            data: { requestId: message.requestId, items },
+                        });
+                        break;
+                    }
+                    case 'requestHover': {
+                        const contents = await this._languageBridge.handleHoverRequest(
+                            message.sql,
+                            message.position,
+                            message.dialect,
+                        );
+                        this._panel.webview.postMessage({
+                            type: 'hoverResult',
+                            data: { requestId: message.requestId, contents },
+                        });
+                        break;
+                    }
+                    case 'requestFormat': {
+                        const formattedSql = await this._languageBridge.handleFormatRequest(
+                            message.sql,
+                            message.dialect,
+                        );
+                        this._panel.webview.postMessage({
+                            type: 'formatResult',
+                            data: { requestId: message.requestId, formattedSql },
+                        });
+                        break;
+                    }
+                    case 'requestDiagnostics': {
+                        const diagnostics = await this._languageBridge.handleDiagnosticsRequest(
+                            message.sql,
+                            message.dialect,
+                        );
+                        this._panel.webview.postMessage({
+                            type: 'diagnosticsResult',
+                            data: { requestId: message.requestId, diagnostics },
+                        });
+                        break;
+                    }
                 }
             },
             null,
@@ -201,9 +272,81 @@ export class QueryResultPanel {
 
     public showResult(result: QueryResult, connectionName?: string, connectionColor?: string, tableName?: string): void {
         this._currentResult = result;
+
+        try {
+            const activeConn = getConnectionManager().getActiveConnection();
+            if (activeConn) {
+                const newDialect = activeConn.dialect || 'mysql';
+                if (newDialect !== this._currentDialect) {
+                    this._currentDialect = newDialect;
+                    this._sendLanguageData();
+                }
+            }
+        } catch { /* ignore */ }
+
+        const metadata = {
+            queryId: result.queryId,
+            status: result.status,
+            columns: result.columns.map((c) => ({
+                name: c.name,
+                type: c.type,
+                nullable: c.nullable,
+                isPrimaryKey: c.isPrimaryKey,
+                isAutoIncrement: c.isAutoIncrement,
+                isEnum: c.isEnum,
+                enumValues: c.enumValues,
+                referencedTable: c.referencedTable,
+                comment: c.comment,
+            })),
+            rowCount: result.rowCount,
+            affectedRows: result.affectedRows,
+            executionTime: result.executionTime,
+            error: result.error,
+            database: result.database,
+            connectionName: connectionName || '',
+            connectionColor: connectionColor || '',
+            tableName: tableName || '',
+        };
+
         this._panel.webview.postMessage({
-            type: 'queryResult',
-            data: this._serializeResult(result, connectionName, connectionColor, tableName),
+            type: 'queryResultStart',
+            data: metadata,
+        });
+
+        const BATCH_SIZE = 1000;
+        const rows = result.rows;
+        const totalRows = rows.length;
+        const totalBatches = Math.ceil(totalRows / BATCH_SIZE);
+        const colNames = result.columns.map((c) => c.name);
+        const colCount = colNames.length;
+
+        for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+            const start = batchIndex * BATCH_SIZE;
+            const end = Math.min(start + BATCH_SIZE, totalRows);
+            const batchRows: unknown[][] = new Array<unknown[]>(end - start);
+
+            for (let i = start; i < end; i++) {
+                const row = rows[i];
+                const values = new Array(colCount);
+                for (let j = 0; j < colCount; j++) {
+                    values[j] = row[colNames[j]];
+                }
+                batchRows[i - start] = values;
+            }
+
+            this._panel.webview.postMessage({
+                type: 'queryResultBatch',
+                data: {
+                    batchIndex,
+                    totalBatches,
+                    rows: batchRows,
+                },
+            });
+        }
+
+        this._panel.webview.postMessage({
+            type: 'queryResultEnd',
+            data: { queryId: result.queryId },
         });
     }
 
@@ -218,6 +361,20 @@ export class QueryResultPanel {
         this._panel.webview.postMessage({
             type: 'queryError',
             data: error,
+        });
+    }
+
+    public setSqlAndExecute(sql: string): void {
+        this._panel.webview.postMessage({
+            type: 'setEditorSql',
+            data: { sql, autoExecute: true },
+        });
+    }
+
+    public setSql(sql: string): void {
+        this._panel.webview.postMessage({
+            type: 'setEditorSql',
+            data: { sql, autoExecute: false },
         });
     }
 
@@ -243,8 +400,18 @@ export class QueryResultPanel {
         this._handleExport(format);
     }
 
+    public setDialect(dialect: string): void {
+        this._currentDialect = dialect;
+        this._sendLanguageData();
+    }
+
     public dispose(): void {
         QueryResultPanel.currentPanel = undefined;
+        if (this._sendLanguageDataTimer) {
+            clearTimeout(this._sendLanguageDataTimer);
+            this._sendLanguageDataTimer = undefined;
+        }
+        this._languageBridge.dispose();
         this._panel.dispose();
 
         while (this._disposables.length) {
@@ -256,9 +423,30 @@ export class QueryResultPanel {
     }
 
     private _update(): void {
+        if (this._cachedHtml) {
+            this._panel.webview.html = this._cachedHtml;
+            this._sendLanguageData();
+            return;
+        }
         this._getHtmlForWebview().then(html => {
+            this._cachedHtml = html;
             this._panel.webview.html = html;
+            this._sendLanguageData();
         });
+    }
+
+    private _sendLanguageData(): void {
+        if (this._sendLanguageDataTimer) {
+            clearTimeout(this._sendLanguageDataTimer);
+        }
+        this._sendLanguageDataTimer = setTimeout(() => {
+            const data = this._languageBridge.exportLanguageData(this._currentDialect);
+            this._panel.webview.postMessage({
+                type: 'languageData',
+                data,
+            });
+            this._sendLanguageDataTimer = undefined;
+        }, 100);
     }
 
     private async _getHtmlForWebview(): Promise<string> {
@@ -276,9 +464,17 @@ export class QueryResultPanel {
             const jsUri = this._panel.webview.asWebviewUri(
                 vscode.Uri.joinPath(this._extensionUri, 'media', 'query-result.js')
             );
+            const monacoLoaderUri = this._panel.webview.asWebviewUri(
+                vscode.Uri.joinPath(this._extensionUri, 'media', 'monaco', 'vs', 'loader.js')
+            );
+            const monacoBaseUri = this._panel.webview.asWebviewUri(
+                vscode.Uri.joinPath(this._extensionUri, 'media', 'monaco', 'vs')
+            );
 
             html = html.replace('{{CSS_URI}}', cssUri.toString());
             html = html.replace('{{JS_URI}}', jsUri.toString());
+            html = html.replace('{{MONACO_LOADER_URI}}', monacoLoaderUri.toString());
+            html = html.replace(/\{\{CSP_SOURCE\}\}/g, this._panel.webview.cspSource);
 
             const config = vscode.workspace.getConfiguration('SQL-All-in-One');
             const configData = {
@@ -299,52 +495,25 @@ export class QueryResultPanel {
                 enableValidation: config.get<boolean>('dataEditor.enableValidation', true),
                 validateOnEdit: config.get<boolean>('dataEditor.validateOnEdit', true),
                 validateForeignKeys: config.get<boolean>('dataEditor.validateForeignKeys', false),
+                dialect: this._currentDialect,
+                monacoBasePath: monacoBaseUri.toString(),
+                themeKind: vscode.window.activeColorTheme.kind,
+                lang: getLanguage(),
             };
-            const configScript = '<script>window.__CONFIG__ = ' + JSON.stringify(configData) + ';</script>';
+            const configJson = JSON.stringify(configData).replace(/<\/script>/gi, '<\\/script>');
+            const configScript = '<script>window.__CONFIG__ = ' + configJson + ';</script>';
             html = html.replace('{{CONFIG_INJECT}}', configScript);
 
             return html;
         } catch (error) {
             console.error('Failed to load Query Result panel HTML:', error);
-            return '<html><body><h2>Failed to load Query Result panel</h2><p>Please reinstall the extension.</p></body></html>';
+            return '<html><body><h2>' + t('resultPanel.loadFailed') + '</h2><p>' + t('resultPanel.reinstall') + '</p></body></html>';
         }
-    }
-
-    private _serializeResult(
-        result: QueryResult,
-        connectionName?: string,
-        connectionColor?: string,
-        tableName?: string
-    ): Record<string, unknown> {
-        return {
-            queryId: result.queryId,
-            status: result.status,
-            columns: result.columns.map((c) => ({
-                name: c.name,
-                type: c.type,
-                nullable: c.nullable,
-                isPrimaryKey: c.isPrimaryKey,
-                isAutoIncrement: c.isAutoIncrement,
-                isEnum: c.isEnum,
-                enumValues: c.enumValues,
-                referencedTable: c.referencedTable,
-                comment: c.comment,
-            })),
-            rows: result.rows,
-            rowCount: result.rowCount,
-            affectedRows: result.affectedRows,
-            executionTime: result.executionTime,
-            error: result.error,
-            database: result.database,
-            connectionName: connectionName || '',
-            connectionColor: connectionColor || '',
-            tableName: tableName || '',
-        };
     }
 
     private async _handleExport(format: string, options?: Record<string, unknown>): Promise<void> {
         if (!this._currentResult) {
-            vscode.window.showWarningMessage('No query result to export');
+            vscode.window.showWarningMessage(t('resultPanel.noResultToExport'));
             return;
         }
 
@@ -362,9 +531,13 @@ export class QueryResultPanel {
                 case 'json':
                     await exporter.exportToJson(rows, columns);
                     break;
-                case 'insert':
-                    await exporter.exportToInsert(rows, columns, tableName);
+                case 'insert': {
+                    const { getConnectionManager: getConnMgr } = await import('../../database/connection/ConnectionManager.js');
+                    const activeConnCfg = getConnMgr().getActiveConnection();
+                    const insertAdapter = activeConnCfg ? getConnMgr().getAdapter(activeConnCfg.id) : undefined;
+                    await exporter.exportToInsert(rows, columns, tableName, undefined, insertAdapter);
                     break;
+                }
                 case 'ddl':
                     await this._handleDdlExport(exporter, options);
                     break;
@@ -389,7 +562,7 @@ export class QueryResultPanel {
             : undefined;
 
         if (!adapter) {
-            vscode.window.showWarningMessage('No active connection for DDL export');
+            vscode.window.showWarningMessage(t('resultPanel.noActiveConnectionForDDL'));
             return;
         }
 
@@ -397,7 +570,7 @@ export class QueryResultPanel {
         const table = options?.tableName as string || '';
 
         if (!table) {
-            vscode.window.showWarningMessage('No table specified for DDL export');
+            vscode.window.showWarningMessage(t('resultPanel.noTableForDDL'));
             return;
         }
 
@@ -419,6 +592,14 @@ export class QueryResultPanel {
             return;
         }
 
+        if (typeof value === 'number' || typeof value === 'boolean') {
+            this._panel.webview.postMessage({
+                type: 'blobPreview',
+                data: { rowIndex, colIndex, content: String(value), mode: 'text' },
+            });
+            return;
+        }
+
         let buffer: Buffer;
         if (Buffer.isBuffer(value)) {
             buffer = value;
@@ -430,7 +611,6 @@ export class QueryResultPanel {
 
         const config = vscode.workspace.getConfiguration('SQL-All-in-One');
         const maxSize = config.get<number>('dataEditor.maxBlobPreviewSize', 5242880);
-        const textMaxSize = config.get<number>('dataEditor.blobTextPreviewSize', 1048576);
 
         if (buffer.length > maxSize) {
             this._panel.webview.postMessage({
@@ -451,6 +631,7 @@ export class QueryResultPanel {
             return;
         }
 
+        const textMaxSize = config.get<number>('dataEditor.blobTextPreviewSize', 1048576);
         if (buffer.length <= textMaxSize) {
             try {
                 const text = buffer.toString('utf-8');
@@ -465,9 +646,10 @@ export class QueryResultPanel {
                 });
             }
         } else {
+            const hexPreview = buffer.subarray(0, 1024).toString('hex');
             this._panel.webview.postMessage({
                 type: 'blobPreview',
-                data: { rowIndex, colIndex, content: buffer.toString('hex').substring(0, 2048), mode: 'hex' },
+                data: { rowIndex, colIndex, content: hexPreview, mode: 'hex' },
             });
         }
     }

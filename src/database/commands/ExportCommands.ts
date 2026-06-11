@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import type { QueryResultPanel } from '../../views/queryResult/QueryResultPanel';
+import { t } from '../../i18n/index';
 
 export function registerExportCommands(
     getQueryResultPanel: () => QueryResultPanel | undefined
@@ -22,7 +23,7 @@ export function registerExportCommands(
                 if (panel) {
                     panel.triggerExport(format);
                 } else {
-                    vscode.window.showWarningMessage('No query result to export');
+                    vscode.window.showWarningMessage(t('database.noQueryResult'));
                 }
             })
         );

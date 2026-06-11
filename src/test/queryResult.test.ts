@@ -2,7 +2,11 @@ import * as assert from 'assert';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
+import * as vscode from 'vscode';
 import { ColumnMeta, QueryResult, QueryError } from '../database/adapters/IDatabaseAdapter';
+import { InMemoryDocument } from '../views/queryResult/InMemoryDocument';
+import { MonacoDataAdapter } from '../views/queryResult/MonacoDataAdapter';
+import { LanguageBridge } from '../views/queryResult/LanguageBridge';
 
 type CellValue = string | number | boolean | null | undefined | Date | Buffer;
 type DataRow = Record<string, CellValue>;
@@ -1747,5 +1751,196 @@ suite('DataExporter - Excel Placeholder', () => {
             () => exportToExcel(),
             /Excel export will be available in a future update/
         );
+    });
+});
+
+suite('InMemoryDocument', () => {
+    test('getText returns full content', () => {
+        const doc = new InMemoryDocument('SELECT * FROM users', 'mysql');
+        assert.strictEqual(doc.getText(), 'SELECT * FROM users');
+    });
+
+    test('getText with range returns partial content', () => {
+        const doc = new InMemoryDocument('SELECT * FROM users', 'mysql');
+        const range = new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 6));
+        assert.strictEqual(doc.getText(range), 'SELECT');
+    });
+
+    test('lineAt returns correct line', () => {
+        const doc = new InMemoryDocument('SELECT *\nFROM users', 'mysql');
+        const line = doc.lineAt(0);
+        assert.strictEqual(line.text, 'SELECT *');
+        assert.strictEqual(line.lineNumber, 0);
+    });
+
+    test('positionAt converts offset to position', () => {
+        const doc = new InMemoryDocument('SELECT *\nFROM users', 'mysql');
+        const pos = doc.positionAt(9);
+        assert.strictEqual(pos.line, 1);
+        assert.strictEqual(pos.character, 0);
+    });
+
+    test('offsetAt converts position to offset', () => {
+        const doc = new InMemoryDocument('SELECT *\nFROM users', 'mysql');
+        const offset = doc.offsetAt(new vscode.Position(1, 0));
+        assert.strictEqual(offset, 9);
+    });
+
+    test('lineCount returns correct count', () => {
+        const doc = new InMemoryDocument('SELECT *\nFROM users', 'mysql');
+        assert.strictEqual(doc.lineCount, 2);
+    });
+
+    test('uri and languageId are set', () => {
+        const doc = new InMemoryDocument('SELECT 1', 'mysql');
+        assert.strictEqual(doc.languageId, 'mysql');
+        assert.ok(doc.uri.scheme === 'sql-all-in-one');
+    });
+});
+
+suite('MonacoDataAdapter', () => {
+    test('toMonacoCompletionItems converts VS Code items', () => {
+        const vscodeItems: vscode.CompletionItem[] = [
+            Object.assign(new vscode.CompletionItem('SELECT', vscode.CompletionItemKind.Keyword), {
+                sortText: '1_SELECT',
+                detail: 'SQL keyword',
+            }),
+        ];
+        const result = MonacoDataAdapter.toMonacoCompletionItems(vscodeItems);
+        assert.strictEqual(result.length, 1);
+        assert.strictEqual(result[0].label, 'SELECT');
+        assert.strictEqual(result[0].kind, 14);
+        assert.strictEqual(result[0].sortText, '1_SELECT');
+    });
+
+    test('toMonacoDiagnostics converts VS Code diagnostics', () => {
+        const diagnostics = [
+            new vscode.Diagnostic(
+                new vscode.Range(0, 0, 0, 6),
+                'Avoid SELECT *',
+                vscode.DiagnosticSeverity.Warning
+            ),
+        ];
+        const result = MonacoDataAdapter.toMonacoDiagnostics(diagnostics);
+        assert.strictEqual(result.length, 1);
+        assert.strictEqual(result[0].startLineNumber, 1);
+        assert.strictEqual(result[0].startColumn, 1);
+        assert.strictEqual(result[0].endLineNumber, 1);
+        assert.strictEqual(result[0].endColumn, 7);
+        assert.strictEqual(result[0].message, 'Avoid SELECT *');
+        assert.strictEqual(result[0].severity, 4);
+    });
+
+    test('toMonacoHoverContents converts VS Code Hover', () => {
+        const hover = new vscode.Hover('Function description');
+        const result = MonacoDataAdapter.toMonacoHoverContents(hover);
+        assert.ok(result.length > 0);
+    });
+
+    test('mapCompletionItemKind maps correctly', () => {
+        assert.strictEqual(MonacoDataAdapter.mapCompletionItemKind(vscode.CompletionItemKind.Function), 1);
+        assert.strictEqual(MonacoDataAdapter.mapCompletionItemKind(vscode.CompletionItemKind.Keyword), 14);
+        assert.strictEqual(MonacoDataAdapter.mapCompletionItemKind(vscode.CompletionItemKind.Snippet), 27);
+        assert.strictEqual(MonacoDataAdapter.mapCompletionItemKind(vscode.CompletionItemKind.TypeParameter), 17);
+    });
+
+    test('toMonacoCompletionItems handles empty items', () => {
+        const result = MonacoDataAdapter.toMonacoCompletionItems([]);
+        assert.strictEqual(result.length, 0);
+    });
+
+    test('toMonacoDiagnostics handles empty diagnostics', () => {
+        const result = MonacoDataAdapter.toMonacoDiagnostics([]);
+        assert.strictEqual(result.length, 0);
+    });
+});
+
+suite('LanguageBridge', () => {
+    let extensionUri: vscode.Uri;
+
+    suiteSetup(() => {
+        extensionUri = vscode.Uri.file(path.join(__dirname, '..', '..'));
+    });
+
+    test('exportLanguageData returns keywords, dataTypes, functions, snippets for dialect', () => {
+        const bridge = new LanguageBridge(extensionUri);
+        const data = bridge.exportLanguageData('mysql');
+        assert.ok(data.keywords.length > 0, 'should have keywords');
+        assert.ok(data.dataTypes.length > 0, 'should have data types');
+        assert.ok(data.functions.length > 0, 'should have functions');
+        assert.strictEqual(data.dialect, 'mysql');
+        bridge.dispose();
+    });
+
+    test('exportLanguageData returns keywords and dataTypes', () => {
+        const bridge = new LanguageBridge(extensionUri);
+        const data = bridge.exportLanguageData('mysql');
+        assert.ok(data.keywords.length > 0, 'should have keywords');
+        assert.ok(data.dataTypes.length > 0, 'should have data types');
+        assert.ok(data.functions.length > 0, 'should have functions');
+        assert.strictEqual(data.dialect, 'mysql');
+        bridge.dispose();
+    });
+
+    test('handleFormatRequest formats SQL', async () => {
+        const bridge = new LanguageBridge(extensionUri);
+        const result = await bridge.handleFormatRequest('select * from users', 'mysql');
+        assert.ok(result.length > 0, 'formatted result should not be empty');
+        bridge.dispose();
+    });
+
+    test('handleDiagnosticsRequest returns diagnostics', async () => {
+        const bridge = new LanguageBridge(extensionUri);
+        const result = await bridge.handleDiagnosticsRequest('SELECT * FROM users', 'mysql');
+        assert.ok(Array.isArray(result), 'should return array');
+        bridge.dispose();
+    });
+
+    test('diagnostics for empty SQL returns empty', async () => {
+        const bridge = new LanguageBridge(extensionUri);
+        const result = await bridge.handleDiagnosticsRequest('', 'mysql');
+        assert.ok(Array.isArray(result), 'should return array');
+        bridge.dispose();
+    });
+
+    test('hover returns null for unknown word', async () => {
+        const bridge = new LanguageBridge(extensionUri);
+        const result = await bridge.handleHoverRequest(
+            'SELECT xyzabc123 FROM users',
+            { line: 0, column: 8 },
+            'mysql',
+        );
+        assert.strictEqual(result, null, 'unknown word should return null');
+        bridge.dispose();
+    });
+
+    test('format preserves valid SQL', async () => {
+        const bridge = new LanguageBridge(extensionUri);
+        const result = await bridge.handleFormatRequest('select 1', 'mysql');
+        assert.ok(result.length > 0, 'formatted result should not be empty');
+        bridge.dispose();
+    });
+});
+
+suite('LanguageBridge Integration', () => {
+    let extensionUri: vscode.Uri;
+
+    suiteSetup(() => {
+        extensionUri = vscode.Uri.file(path.join(__dirname, '..', '..'));
+    });
+
+    test('full completion flow: exportLanguageData + handleCompletionRequest', async () => {
+        const bridge = new LanguageBridge(extensionUri);
+        const data = bridge.exportLanguageData('mysql');
+        assert.ok(data.keywords.includes('SELECT'), 'mysql should have SELECT keyword');
+        assert.ok(data.functions.length > 0, 'mysql should have functions');
+
+        const items = await bridge.handleCompletionRequest(
+            'SELECT * FROM ',
+            { line: 0, column: 15 },
+            'mysql',
+        );
+        assert.ok(Array.isArray(items), 'should return array');
+        bridge.dispose();
     });
 });

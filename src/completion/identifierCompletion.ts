@@ -12,6 +12,15 @@ const RESERVED_COLS = new Set([
     'ALTER', 'TABLE', 'INTO', 'SET', 'VALUES'
 ])
 
+interface IdentifierCache {
+    version: number;
+    uri: string;
+    tableNames: string[];
+    columnNames: string[];
+}
+
+let _identifierCache: IdentifierCache | null = null;
+
 export function getIdentifierItems(
     document: vscode.TextDocument,
     position: vscode.Position,
@@ -30,7 +39,21 @@ export function getIdentifierItems(
     }
 
     const ctx = getClauseContext(text, offset, tokenizer)
-    return getCompletionForContext(ctx, text)
+
+    if (_identifierCache && _identifierCache.uri === document.uri.toString() && _identifierCache.version === document.version) {
+        return getCompletionForContextFromCache(ctx, _identifierCache)
+    }
+
+    const tableNames = extractTableNames(text)
+    const columnNames = findColumns(text)
+    _identifierCache = {
+        version: document.version,
+        uri: document.uri.toString(),
+        tableNames,
+        columnNames,
+    }
+
+    return getCompletionForContextFromCache(ctx, _identifierCache)
 }
 
 function getClauseContext(text: string, offset: number, _tokenizer: Tokenizer): ClauseContext {
@@ -86,9 +109,9 @@ function findColumns(text: string): string[] {
     return [...cols]
 }
 
-function getCompletionForContext(ctx: ClauseContext, text: string): vscode.CompletionItem[] {
+function getCompletionForContextFromCache(ctx: ClauseContext, cache: IdentifierCache): vscode.CompletionItem[] {
     if (ctx === 'from') {
-        return extractTableNames(text).map((tbl) => {
+        return cache.tableNames.map((tbl) => {
             const item = new vscode.CompletionItem(tbl, vscode.CompletionItemKind.Class)
             item.detail = t('completion.tableName')
             item.sortText = `4_${tbl}`
@@ -96,7 +119,7 @@ function getCompletionForContext(ctx: ClauseContext, text: string): vscode.Compl
         })
     }
     if (ctx === 'select' || ctx === 'where') {
-        return findColumns(text).map((col) => {
+        return cache.columnNames.map((col) => {
             const item = new vscode.CompletionItem(col, vscode.CompletionItemKind.Field)
             item.detail = t('completion.columnName')
             item.sortText = `4_${col}`
