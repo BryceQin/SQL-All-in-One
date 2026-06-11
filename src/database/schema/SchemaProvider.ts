@@ -210,8 +210,9 @@ export class SchemaProvider {
                     )
                 );
             } else {
+                const limitedTables = tables.slice(0, 10);
                 await Promise.all(
-                    tables.map(tbl =>
+                    limitedTables.map(tbl =>
                         this.addColumnsForTable(items, context, tbl.name, prefix)
                     )
                 );

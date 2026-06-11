@@ -34,7 +34,7 @@ export class LRUCache<K, V> {
       return undefined;
     }
 
-    if (Date.now() - entry.timestamp > this.maxAge) {
+    if (this.maxAge < Infinity && Date.now() - entry.timestamp > this.maxAge) {
       this.cache.delete(key);
       return undefined;
     }
@@ -48,7 +48,7 @@ export class LRUCache<K, V> {
     const entry = this.cache.get(key);
     if (!entry) return false;
 
-    if (Date.now() - entry.timestamp > this.maxAge) {
+    if (this.maxAge < Infinity && Date.now() - entry.timestamp > this.maxAge) {
       this.cache.delete(key);
       return false;
     }
@@ -59,7 +59,7 @@ export class LRUCache<K, V> {
   peek(key: K): V | undefined {
     const entry = this.cache.get(key);
     if (!entry) return undefined;
-    if (Date.now() - entry.timestamp > this.maxAge) {
+    if (this.maxAge < Infinity && Date.now() - entry.timestamp > this.maxAge) {
       this.cache.delete(key);
       return undefined;
     }
@@ -71,27 +71,43 @@ export class LRUCache<K, V> {
   }
 
   deleteByPrefix(prefix: string): void {
-    this.cache.forEach((_, key) => {
+    const keysToDelete: K[] = [];
+    for (const key of this.cache.keys()) {
       if (String(key).startsWith(prefix)) {
-        this.cache.delete(key);
+        keysToDelete.push(key);
       }
-    });
+    }
+    for (const key of keysToDelete) {
+      this.cache.delete(key);
+    }
   }
 
   *entries(): IterableIterator<[K, V]> {
-    const now = Date.now();
-    for (const [key, entry] of this.cache) {
-      if (now - entry.timestamp <= this.maxAge) {
+    if (this.maxAge >= Infinity) {
+      for (const [key, entry] of this.cache) {
         yield [key, entry.value];
+      }
+    } else {
+      const now = Date.now();
+      for (const [key, entry] of this.cache) {
+        if (now - entry.timestamp <= this.maxAge) {
+          yield [key, entry.value];
+        }
       }
     }
   }
 
   *values(): IterableIterator<V> {
-    const now = Date.now();
-    for (const entry of this.cache.values()) {
-      if (now - entry.timestamp <= this.maxAge) {
+    if (this.maxAge >= Infinity) {
+      for (const entry of this.cache.values()) {
         yield entry.value;
+      }
+    } else {
+      const now = Date.now();
+      for (const entry of this.cache.values()) {
+        if (now - entry.timestamp <= this.maxAge) {
+          yield entry.value;
+        }
       }
     }
   }

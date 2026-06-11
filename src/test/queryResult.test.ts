@@ -1872,11 +1872,13 @@ suite('LanguageBridge', () => {
         bridge.dispose();
     });
 
-    test('exportLanguageData returns monarch rules', () => {
+    test('exportLanguageData returns keywords and dataTypes', () => {
         const bridge = new LanguageBridge(extensionUri);
         const data = bridge.exportLanguageData('mysql');
-        assert.ok(data.monarchRules, 'should have monarch rules');
-        assert.ok((data.monarchRules as Record<string, unknown>).keywords, 'monarch rules should have keywords');
+        assert.ok(data.keywords.length > 0, 'should have keywords');
+        assert.ok(data.dataTypes.length > 0, 'should have data types');
+        assert.ok(data.functions.length > 0, 'should have functions');
+        assert.strictEqual(data.dialect, 'mysql');
         bridge.dispose();
     });
 

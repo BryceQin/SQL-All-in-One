@@ -4,6 +4,7 @@ import * as path from 'path';
 import type { QueryResult, QueryError, QueryRow } from '../../database/adapters/IDatabaseAdapter';
 import type { QueryHistoryEntry } from '../../database/query/QueryResult';
 import { LanguageBridge } from './LanguageBridge';
+import { getConnectionManager } from '../../database/connection/ConnectionManager';
 
 export interface FilterCondition {
     column: string;
@@ -58,6 +59,8 @@ export class QueryResultPanel {
     private _currentResult: QueryResult | undefined;
     private _languageBridge: LanguageBridge;
     private _currentDialect = 'mysql';
+    private _cachedHtml: string | undefined;
+    private _sendLanguageDataTimer: ReturnType<typeof setTimeout> | undefined;
 
     public onExecuteQuery?: (sql: string) => void;
     public onCancelQuery?: () => void;
@@ -272,19 +275,16 @@ export class QueryResultPanel {
     public showResult(result: QueryResult, connectionName?: string, connectionColor?: string, tableName?: string): void {
         this._currentResult = result;
 
-        (async () => {
-            try {
-                const { getConnectionManager } = await import('../../database/connection/ConnectionManager.js');
-                const activeConn = getConnectionManager().getActiveConnection();
-                if (activeConn) {
-                    const newDialect = activeConn.dialect || 'mysql';
-                    if (newDialect !== this._currentDialect) {
-                        this._currentDialect = newDialect;
-                        this._sendLanguageData();
-                    }
+        try {
+            const activeConn = getConnectionManager().getActiveConnection();
+            if (activeConn) {
+                const newDialect = activeConn.dialect || 'mysql';
+                if (newDialect !== this._currentDialect) {
+                    this._currentDialect = newDialect;
+                    this._sendLanguageData();
                 }
-            } catch { /* ignore if ConnectionManager not available */ }
-        })();
+            }
+        } catch { /* ignore */ }
 
         const metadata = {
             queryId: result.queryId,
@@ -316,15 +316,25 @@ export class QueryResultPanel {
         });
 
         const BATCH_SIZE = 1000;
-        const totalRows = result.rows.length;
+        const rows = result.rows;
+        const totalRows = rows.length;
         const totalBatches = Math.ceil(totalRows / BATCH_SIZE);
+        const colNames = result.columns.map((c) => c.name);
+        const colCount = colNames.length;
 
         for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
             const start = batchIndex * BATCH_SIZE;
             const end = Math.min(start + BATCH_SIZE, totalRows);
-            const batchRows = result.rows.slice(start, end).map((row) =>
-                result.columns.map((c) => row[c.name])
-            );
+            const batchRows: unknown[][] = new Array<unknown[]>(end - start);
+
+            for (let i = start; i < end; i++) {
+                const row = rows[i];
+                const values = new Array(colCount);
+                for (let j = 0; j < colCount; j++) {
+                    values[j] = row[colNames[j]];
+                }
+                batchRows[i - start] = values;
+            }
 
             this._panel.webview.postMessage({
                 type: 'queryResultBatch',
@@ -399,6 +409,10 @@ export class QueryResultPanel {
 
     public dispose(): void {
         QueryResultPanel.currentPanel = undefined;
+        if (this._sendLanguageDataTimer) {
+            clearTimeout(this._sendLanguageDataTimer);
+            this._sendLanguageDataTimer = undefined;
+        }
         this._languageBridge.dispose();
         this._panel.dispose();
 
@@ -411,18 +425,30 @@ export class QueryResultPanel {
     }
 
     private _update(): void {
+        if (this._cachedHtml) {
+            this._panel.webview.html = this._cachedHtml;
+            this._sendLanguageData();
+            return;
+        }
         this._getHtmlForWebview().then(html => {
+            this._cachedHtml = html;
             this._panel.webview.html = html;
             this._sendLanguageData();
         });
     }
 
     private _sendLanguageData(): void {
-        const data = this._languageBridge.exportLanguageData(this._currentDialect);
-        this._panel.webview.postMessage({
-            type: 'languageData',
-            data,
-        });
+        if (this._sendLanguageDataTimer) {
+            clearTimeout(this._sendLanguageDataTimer);
+        }
+        this._sendLanguageDataTimer = setTimeout(() => {
+            const data = this._languageBridge.exportLanguageData(this._currentDialect);
+            this._panel.webview.postMessage({
+                type: 'languageData',
+                data,
+            });
+            this._sendLanguageDataTimer = undefined;
+        }, 100);
     }
 
     private async _getHtmlForWebview(): Promise<string> {
@@ -566,6 +592,14 @@ export class QueryResultPanel {
             return;
         }
 
+        if (typeof value === 'number' || typeof value === 'boolean') {
+            this._panel.webview.postMessage({
+                type: 'blobPreview',
+                data: { rowIndex, colIndex, content: String(value), mode: 'text' },
+            });
+            return;
+        }
+
         let buffer: Buffer;
         if (Buffer.isBuffer(value)) {
             buffer = value;
@@ -577,7 +611,6 @@ export class QueryResultPanel {
 
         const config = vscode.workspace.getConfiguration('SQL-All-in-One');
         const maxSize = config.get<number>('dataEditor.maxBlobPreviewSize', 5242880);
-        const textMaxSize = config.get<number>('dataEditor.blobTextPreviewSize', 1048576);
 
         if (buffer.length > maxSize) {
             this._panel.webview.postMessage({
@@ -598,6 +631,7 @@ export class QueryResultPanel {
             return;
         }
 
+        const textMaxSize = config.get<number>('dataEditor.blobTextPreviewSize', 1048576);
         if (buffer.length <= textMaxSize) {
             try {
                 const text = buffer.toString('utf-8');
@@ -612,9 +646,10 @@ export class QueryResultPanel {
                 });
             }
         } else {
+            const hexPreview = buffer.subarray(0, 1024).toString('hex');
             this._panel.webview.postMessage({
                 type: 'blobPreview',
-                data: { rowIndex, colIndex, content: buffer.toString('hex').substring(0, 2048), mode: 'hex' },
+                data: { rowIndex, colIndex, content: hexPreview, mode: 'hex' },
             });
         }
     }

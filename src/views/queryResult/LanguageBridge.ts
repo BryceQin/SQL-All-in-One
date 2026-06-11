@@ -6,6 +6,7 @@ import { SchemaCompletionProvider } from '../../completion/SchemaCompletionProvi
 import { SqlCompletionProvider } from '../../completion/SqlCompletionProvider';
 import { SqlHoverProvider } from '../../providers/SqlHoverProvider';
 import { formatEditorText } from '../../utils/formatEditorText';
+import { getContainer, Tokens } from '../../core/diContainer';
 import { createConfig } from '../../core/config';
 import { InMemoryDocument } from './InMemoryDocument';
 import { MonacoDataAdapter, type MonacoCompletionItem, type MonacoDiagnostic } from './MonacoDataAdapter';
@@ -26,7 +27,6 @@ export interface LanguageData {
     dataTypes: string[];
     functions: FunctionSignature[];
     snippets: SnippetDef[];
-    monarchRules: Record<string, unknown>;
 }
 
 const keywordMap: Record<string, { keywords: string[]; dataTypes: string[] }> = {
@@ -69,20 +69,20 @@ export class LanguageBridge implements vscode.Disposable {
     private _completionProvider: SqlCompletionProvider;
     private _extensionPath: string;
     private _snippetCache = new Map<string, SnippetDef[]>();
+    private _container = getContainer();
 
     constructor(extensionUri: vscode.Uri) {
         this._extensionPath = extensionUri.fsPath;
         this._linter = new AstLinter();
         this._schemaCompletionProvider = new SchemaCompletionProvider();
-        this._hoverProvider = new SqlHoverProvider();
-        this._completionProvider = new SqlCompletionProvider(extensionUri.fsPath);
+        this._hoverProvider = this._container.tryGet<SqlHoverProvider>(Tokens.HoverProvider) ?? new SqlHoverProvider();
+        this._completionProvider = this._container.tryGet<SqlCompletionProvider>(Tokens.CompletionProvider) ?? new SqlCompletionProvider(extensionUri.fsPath);
     }
 
     exportLanguageData(dialect: string): LanguageData {
         const kwData = keywordMap[dialect] || keywordMap['mysql'];
         const funcData = functionSigMap[dialect] || functionSigMap['mysql'];
         const snippets = this._loadSnippets(dialect);
-        const monarchRules = this._buildMonarchRules(dialect, kwData.keywords, kwData.dataTypes, funcData);
 
         return {
             dialect,
@@ -90,7 +90,6 @@ export class LanguageBridge implements vscode.Disposable {
             dataTypes: kwData.dataTypes,
             functions: funcData,
             snippets,
-            monarchRules,
         };
     }
 
@@ -172,7 +171,7 @@ export class LanguageBridge implements vscode.Disposable {
             const filePath = path.join(this._extensionPath, 'snippets', `${name}.json`);
             if (fs.existsSync(filePath)) {
                 try {
-                    const content: Record<string, { prefix: string; body: string[] | string; description: string }> = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+                    const content = JSON.parse(fs.readFileSync(filePath, 'utf-8')) as Record<string, { prefix: string; body: string[] | string; description: string }>;
                     for (const [, value] of Object.entries(content)) {
                         const def = value;
                         snippets.push({
@@ -186,81 +185,6 @@ export class LanguageBridge implements vscode.Disposable {
         }
         this._snippetCache.set(dialect, snippets);
         return snippets;
-    }
-
-    private _buildMonarchRules(
-        dialect: string,
-        keywords: string[],
-        dataTypes: string[],
-        functions: FunctionSignature[],
-    ): Record<string, unknown> {
-        const functionNames = functions.map((f) => f.name.toUpperCase());
-        return {
-            defaultToken: '',
-            tokenPostfix: `.${dialect}`,
-            keywords,
-            dataTypes,
-            functions: functionNames,
-            operators: [
-                '=', '>', '<', '!', '~', '?', ':', '===', '>=', '<=',
-                '!=', '<>', '==', '<=>', '&&', '||', '<<', '>>',
-            ],
-            symbols: /[=><!~?:&|+\-*/^%]+/,
-            escapes: /\\(?:[abfnrtv\\"']|x[0-9A-Fa-f]{1,4}|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})/,
-            tokenizer: {
-                root: [
-                    { include: '@comments' },
-                    { include: '@whitespace' },
-                    { include: '@numbers' },
-                    { include: '@strings' },
-                    [/[a-zA-Z_]\w*/, {
-                        cases: {
-                            '@keywords': 'keyword',
-                            '@dataTypes': 'type',
-                            '@functions': 'function',
-                            '@default': 'identifier',
-                        },
-                    }],
-                    [/@symbols/, {
-                        cases: {
-                            '@operators': 'operator',
-                            '@default': '',
-                        },
-                    }],
-                ],
-                whitespace: [
-                    [/\s+/, 'white'],
-                ],
-                comments: [
-                    [/--+.*/, 'comment'],
-                    [/\/\*/, 'comment', '@comment'],
-                ],
-                comment: [
-                    [(/[^/*]+/), 'comment'],
-                    [(/\*\//), 'comment', '@pop'],
-                    [(/[/*]/), 'comment'],
-                ],
-                numbers: [
-                    [/0[xX][0-9a-fA-F]+/, 'number'],
-                    [/[$][+-]*\d+(\.\d+)?/, 'number'],
-                    [/\d+(\.\d+)?([eE][+-]?\d+)?/, 'number'],
-                ],
-                strings: [
-                    [/'/, 'string', '@stringSingle'],
-                    [/"/, 'string', '@stringDouble'],
-                ],
-                stringSingle: [
-                    [/[^']+/, 'string'],
-                    [/''/, 'string'],
-                    [/'/, 'string', '@pop'],
-                ],
-                stringDouble: [
-                    [/[^"]+/, 'string'],
-                    [/""/, 'string'],
-                    [/"/, 'string', '@pop'],
-                ],
-            },
-        };
     }
 
     dispose(): void {

@@ -186,14 +186,22 @@ const state = {
     transactionStartTime: null,
     transactionTimer: null,
     validationErrors: {},
+    monacoBasePath: '',
+    dialect: 'mysql',
 };
 
 var monacoEditor = null;
 var monacoLoaded = false;
 var languageData = null;
+var registeredDialect = null;
 var pendingRequests = new Map();
 var requestIdCounter = 0;
 var diagnosticsDebounceTimer = null;
+var _typeColorCache = {};
+var _pendingChangeMap = {};
+var _selectedCellEl = null;
+var _renderedMessageCount = 0;
+var _numberFormatter = null;
 
 function getTypeColorInfo(type) {
     if (!type) return null;
@@ -213,6 +221,22 @@ function getTypeColorInfo(type) {
     return { color: '#4ec9b0', bg: 'rgba(78,201,176,0.08)', border: 'rgba(78,201,176,0.12)' };
 }
 
+function getTypeColorInfoCached(type) {
+    if (!type) return null;
+    var key = type.toUpperCase();
+    if (_typeColorCache[key]) return _typeColorCache[key];
+    var result = getTypeColorInfo(type);
+    _typeColorCache[key] = result;
+    return result;
+}
+
+function rebuildPendingChangeMap() {
+    _pendingChangeMap = {};
+    for (var i = 0; i < state.pendingChanges.length; i++) {
+        _pendingChangeMap[state.pendingChanges[i].rowIndex] = state.pendingChanges[i];
+    }
+}
+
 const ROW_HEIGHT = 28;
 const HEADER_HEIGHT = 48;
 const BUFFER_ROWS = 5;
@@ -222,10 +246,47 @@ function init() {
     gridBodyWrapper.addEventListener('scroll', onGridScroll);
     document.addEventListener('click', onDocumentClick);
     document.addEventListener('keydown', onKeyDown);
+    initGridDelegation();
     updateEmptyState();
     updateHeader();
     updateStatusBar();
     initSplitter();
+}
+
+function initGridDelegation() {
+    var gridBody = document.getElementById('gridBody');
+    gridBody.addEventListener('click', function(e) {
+        var td = e.target.closest('td');
+        if (!td || td.classList.contains('row-num')) return;
+        var tr = td.parentElement;
+        if (!tr) return;
+        var rowIdx = parseInt(tr.getAttribute('data-row'), 10);
+        if (isNaN(rowIdx)) return;
+        if (tr.classList.contains('row-placeholder')) {
+            if (state.editMode) addRow();
+            return;
+        }
+        var colIdx = td.cellIndex - 1;
+        if (colIdx < 0) return;
+        if (state.editingCell && (state.editingCell.row !== rowIdx || state.editingCell.col !== colIdx)) {
+            commitCellEdit();
+        }
+        selectCell(rowIdx, colIdx);
+    });
+    gridBody.addEventListener('dblclick', function(e) {
+        var td = e.target.closest('td');
+        if (!td || td.classList.contains('row-num')) return;
+        var tr = td.parentElement;
+        if (!tr) return;
+        var rowIdx = parseInt(tr.getAttribute('data-row'), 10);
+        if (isNaN(rowIdx)) return;
+        if (tr.classList.contains('row-placeholder')) return;
+        var colIdx = td.cellIndex - 1;
+        if (colIdx < 0) return;
+        if (state.editMode) {
+            startCellEdit(rowIdx, colIdx);
+        }
+    });
 }
 
 function initMonacoEditor(sql) {
@@ -255,9 +316,10 @@ function createMonacoInstance(monaco, container, sql) {
     var isDark = document.body.classList.contains('vscode-dark') ||
                  document.querySelector('[data-vscode-theme-kind="vscode-dark"]') ||
                  (window.__CONFIG__ && window.__CONFIG__.themeKind === 2);
+    var initialLanguage = (languageData && languageData.dialect) || state.dialect || 'sql';
     monacoEditor = monaco.editor.create(container, {
         value: sql || '',
-        language: 'sql',
+        language: initialLanguage,
         theme: isDark ? 'vs-dark' : 'vs',
         minimap: { enabled: false },
         lineNumbers: 'on',
@@ -297,6 +359,10 @@ function createMonacoInstance(monaco, container, sql) {
 
     if (languageData) {
         registerLanguageFeatures(languageData);
+        var model = monacoEditor.getModel();
+        if (model) {
+            monaco.editor.setModelLanguage(model, languageData.dialect || 'mysql');
+        }
     }
 
     monacoEditor.focus();
@@ -396,8 +462,14 @@ function handleThemeChange(data) {
     monaco.editor.setTheme(theme);
 }
 
+var _scrollRafId = 0;
+
 function onGridScroll() {
-    renderVisibleRows();
+    if (_scrollRafId) return;
+    _scrollRafId = requestAnimationFrame(function() {
+        _scrollRafId = 0;
+        renderVisibleRows();
+    });
 }
 
 function onDocumentClick(e) {
@@ -532,9 +604,10 @@ function handleQueryResult(data) {
     state.sortColumn = null;
     state.sortDirection = null;
     state.selectedCell = null;
+    _selectedCellEl = null;
     state.tableName = data.tableName || '';
-    state.originalRows = (data.rows || []).map(function(row) { return Object.assign({}, row); });
     state.pendingChanges = [];
+    rebuildPendingChangeMap();
     state.validationErrors = {};
     state.editingCell = null;
     state.formCurrentIndex = 0;
@@ -542,11 +615,14 @@ function handleQueryResult(data) {
     var config = window.__CONFIG__ || {};
     if (config.editMode === 'editable') {
         state.editMode = true;
+        state.originalRows = (data.rows || []).map(function(row) { return row.slice(); });
         var btn = document.getElementById('btnEditMode');
         btn.textContent = '🔓';
         document.getElementById('btnAddRow').disabled = false;
         document.getElementById('btnDeleteRow').disabled = false;
         document.getElementById('btnBeginTx').disabled = false;
+    } else {
+        state.originalRows = [];
     }
 
     if (config.defaultView === 'form') {
@@ -589,8 +665,8 @@ function handleQueryResultStart(data) {
 function handleQueryResultBatch(data) {
     if (!_batchedResult) return;
     var batchRows = data.rows || [];
-    for (var i = 0; i < batchRows.length; i++) {
-        _batchedResult.rows.push(batchRows[i]);
+    if (batchRows.length > 0) {
+        _batchedResult.rows.push.apply(_batchedResult.rows, batchRows);
     }
     _batchedResult.totalBatches = data.totalBatches || 0;
 }
@@ -640,6 +716,7 @@ function handleConfig(data) {
     if (data.validateOnEdit !== undefined) state.validateOnEdit = data.validateOnEdit;
     if (data.validateForeignKeys !== undefined) state.validateForeignKeys = data.validateForeignKeys;
     if (data.monacoBasePath !== undefined) state.monacoBasePath = data.monacoBasePath;
+    if (data.dialect !== undefined) state.dialect = data.dialect;
 }
 
 function renderGrid() {
@@ -667,7 +744,7 @@ function renderHeader() {
         const typeSpan = document.createElement('span');
         typeSpan.className = 'col-type';
         typeSpan.textContent = col.type || '';
-        var typeColorInfo = getTypeColorInfo(col.type);
+        var typeColorInfo = getTypeColorInfoCached(col.type);
         if (typeColorInfo) {
             typeSpan.style.color = typeColorInfo.color;
             typeSpan.style.background = typeColorInfo.bg;
@@ -704,12 +781,20 @@ function renderVisibleRows() {
     var endRow = Math.min(totalRows, Math.ceil((scrollTop + viewportHeight) / ROW_HEIGHT) + BUFFER_ROWS);
 
     tbody.innerHTML = '';
+    var fragment = document.createDocumentFragment();
 
     var table = document.getElementById('gridBodyTable');
     table.style.top = (startRow * ROW_HEIGHT) + 'px';
 
+    var editRow = state.editingCell ? state.editingCell.row : -1;
+    var editCol = state.editingCell ? state.editingCell.col : -1;
+    var selRow = state.selectedCell ? state.selectedCell.row : -1;
+    var selCol = state.selectedCell ? state.selectedCell.col : -1;
+    var colsLen = state.columns.length;
+
     for (var i = startRow; i < endRow; i++) {
         var tr = document.createElement('tr');
+        tr.setAttribute('data-row', i);
         var isPlaceholder = i >= state.rows.length;
 
         var tdNum = document.createElement('td');
@@ -722,7 +807,7 @@ function renderVisibleRows() {
         }
         tr.appendChild(tdNum);
 
-        var rowChange = isPlaceholder ? null : state.pendingChanges.find(function(c) { return c.rowIndex === i; });
+        var rowChange = isPlaceholder ? null : _pendingChangeMap[i] || null;
         if (rowChange) {
             if (rowChange.type === 'insert') tr.classList.add('row-new');
             if (rowChange.type === 'delete') tr.classList.add('row-deleted');
@@ -731,13 +816,14 @@ function renderVisibleRows() {
 
         if (!isPlaceholder) {
             var row = state.rows[i];
-            state.columns.forEach(function(col, colIdx) {
+            for (var ci = 0; ci < colsLen; ci++) {
+                var col = state.columns[ci];
                 var td = document.createElement('td');
-                var val = row ? row[colIdx] : undefined;
+                var val = row ? row[ci] : undefined;
 
-                if (state.editingCell && state.editingCell.row === i && state.editingCell.col === colIdx) {
+                if (editRow === i && editCol === ci) {
                     td.className = 'cell-editing';
-                    renderCellEditor(td, val, col, i, colIdx);
+                    renderCellEditor(td, val, col, i, ci);
                 } else {
                     if (val === null || val === undefined) {
                         td.className = state.editMode ? 'cell-null-editable' : 'cell-null';
@@ -753,78 +839,61 @@ function renderVisibleRows() {
                                 display = display.substring(0, state.longTextThreshold) + '...';
                             }
                             td.textContent = display;
-                            td.title = String(val);
+                            if (display.length !== String(val).length) {
+                                td.title = String(val);
+                            }
                         }
                     }
 
-                    if (rowChange && rowChange.type === 'update' && rowChange.changes && rowChange.changes[col.name]) {
-                        td.classList.add('cell-modified');
-                    }
-                    if (rowChange && rowChange.type === 'insert') {
-                        td.classList.add('cell-new');
-                    }
-                    if (rowChange && rowChange.type === 'delete') {
-                        td.classList.add('cell-deleted');
+                    if (rowChange) {
+                        if (rowChange.type === 'update' && rowChange.changes && rowChange.changes[col.name]) {
+                            td.classList.add('cell-modified');
+                        } else if (rowChange.type === 'insert') {
+                            td.classList.add('cell-new');
+                        } else if (rowChange.type === 'delete') {
+                            td.classList.add('cell-deleted');
+                        }
                     }
 
-                    var validationKey = i + '_' + colIdx;
-                    if (state.validationErrors[validationKey]) {
+                    if (state.validationErrors[i + '_' + ci]) {
                         td.classList.add('cell-validation-error');
-                        td.title = state.validationErrors[validationKey];
+                        td.title = state.validationErrors[i + '_' + ci];
                     }
                 }
 
-                if (state.selectedCell && state.selectedCell.row === i && state.selectedCell.col === colIdx) {
+                if (selRow === i && selCol === ci) {
                     td.classList.add('selected');
+                    _selectedCellEl = td;
                 }
 
-                (function(rowIdx, colIdx2) {
-                    td.onclick = function(e) {
-                        e.stopPropagation();
-                        if (state.editingCell && (state.editingCell.row !== rowIdx || state.editingCell.col !== colIdx2)) {
-                            commitCellEdit();
-                        }
-                        selectCell(rowIdx, colIdx2);
-                    };
-                    td.ondblclick = function(e) {
-                        e.stopPropagation();
-                        if (state.editMode) {
-                            startCellEdit(rowIdx, colIdx2);
-                        }
-                    };
-                })(i, colIdx);
-
                 tr.appendChild(td);
-            });
+            }
         } else {
-            state.columns.forEach(function(_, colIdx) {
-                var td = document.createElement('td');
-                td.textContent = '';
-                td.onclick = function(e) {
-                    e.stopPropagation();
-                    if (state.editMode) {
-                        addRow();
-                    }
-                };
-                tr.appendChild(td);
-            });
+            for (var ci2 = 0; ci2 < colsLen; ci2++) {
+                var td2 = document.createElement('td');
+                td2.textContent = '';
+                tr.appendChild(td2);
+            }
         }
 
-        tbody.appendChild(tr);
+        fragment.appendChild(tr);
     }
+
+    tbody.appendChild(fragment);
 }
 
 function selectCell(row, col) {
     state.selectedCell = { row, col };
-    const prev = document.querySelector('.grid-body-table td.selected');
-    if (prev) prev.classList.remove('selected');
-    const wrapper = document.getElementById('gridBodyWrapper');
-    const rows = wrapper.querySelectorAll('.grid-body-table tbody tr');
-    const targetRow = row - Math.max(0, Math.floor(wrapper.scrollTop / ROW_HEIGHT) - BUFFER_ROWS);
-    if (rows[targetRow]) {
-        const cells = rows[targetRow].querySelectorAll('td');
+    if (_selectedCellEl) {
+        _selectedCellEl.classList.remove('selected');
+        _selectedCellEl = null;
+    }
+    var targetRow = document.querySelector('.grid-body-table tbody tr[data-row="' + row + '"]');
+    if (targetRow) {
+        var cells = targetRow.children;
         if (cells[col + 1]) {
-            cells[col + 1].classList.add('selected');
+            _selectedCellEl = cells[col + 1];
+            _selectedCellEl.classList.add('selected');
         }
     }
 }
@@ -1150,10 +1219,14 @@ function addMessage(level, text) {
     renderMessages();
 }
 
-function renderMessages() {
+function renderMessages(forceFull) {
     const container = document.getElementById('messagesContainer');
-    container.innerHTML = '';
-    state.messages.forEach(msg => {
+    if (forceFull) {
+        container.innerHTML = '';
+        _renderedMessageCount = 0;
+    }
+    for (var i = _renderedMessageCount; i < state.messages.length; i++) {
+        const msg = state.messages[i];
         const div = document.createElement('div');
         div.className = 'msg-item msg-' + msg.level;
         const timeSpan = document.createElement('span');
@@ -1162,7 +1235,8 @@ function renderMessages() {
         div.appendChild(timeSpan);
         div.appendChild(document.createTextNode(msg.text));
         container.appendChild(div);
-    });
+    }
+    _renderedMessageCount = state.messages.length;
     container.scrollTop = container.scrollHeight;
 }
 
@@ -1243,7 +1317,8 @@ function formatTime(ms) {
 }
 
 function formatNumber(num) {
-    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    if (!_numberFormatter) _numberFormatter = new Intl.NumberFormat();
+    return _numberFormatter.format(num);
 }
 
 function isBlobType(type) {
@@ -1351,6 +1426,9 @@ function renderCellEditor(td, val, col, rowIdx, colIdx) {
 
 function toggleEditMode() {
     state.editMode = !state.editMode;
+    if (state.editMode && state.originalRows.length === 0 && state.rows.length > 0) {
+        state.originalRows = state.rows.map(function(row) { return row.slice(); });
+    }
     var btn = document.getElementById('btnEditMode');
     btn.textContent = state.editMode ? '🔓' : '🔒';
     btn.title = state.editMode ? t('resultPanel.editable') : t('resultPanel.readonly');
@@ -1415,21 +1493,23 @@ function cancelCellEdit() {
 }
 
 function trackChange(row, col, oldVal, newVal) {
-    var existing = state.pendingChanges.find(function(c) { return c.rowIndex === row; });
+    var existing = _pendingChangeMap[row];
     if (existing && existing.type === 'update') {
         if (!existing.changes) existing.changes = {};
         existing.changes[state.columns[col].name] = { old: oldVal, new: newVal };
     } else if (!existing) {
         var primaryKey = getPrimaryKeyValue(row);
-        state.pendingChanges.push({
+        var change = {
             type: 'update',
             table: state.tableName,
             primaryKey: primaryKey,
             changes: {},
-            originalRow: Object.assign({}, state.originalRows[row]),
+            originalRow: state.originalRows[row] ? state.originalRows[row].slice() : [],
             rowIndex: row,
-        });
-        state.pendingChanges[state.pendingChanges.length - 1].changes[state.columns[col].name] = { old: oldVal, new: newVal };
+        };
+        change.changes[state.columns[col].name] = { old: oldVal, new: newVal };
+        state.pendingChanges.push(change);
+        _pendingChangeMap[row] = change;
     }
     updateEditStatusBar();
 }
@@ -1449,7 +1529,7 @@ function addRow() {
     var newRow = new Array(state.columns.length).fill(null);
     state.rows.push(newRow);
     var insertIndex = state.rows.length - 1;
-    state.originalRows[insertIndex] = Object.assign({}, newRow);
+    state.originalRows[insertIndex] = newRow.slice();
 
     var primaryKey = {};
     state.columns.forEach(function(col, idx) {
@@ -1458,13 +1538,15 @@ function addRow() {
         }
     });
 
-    state.pendingChanges.push({
+    var change = {
         type: 'insert',
         table: state.tableName,
         primaryKey: primaryKey,
         rowIndex: insertIndex,
-        originalRow: Object.assign({}, newRow),
-    });
+        originalRow: newRow.slice(),
+    };
+    state.pendingChanges.push(change);
+    _pendingChangeMap[insertIndex] = change;
 
     renderGrid();
     updateEditStatusBar();
@@ -1478,32 +1560,32 @@ function deleteRow() {
     var row = state.selectedCell.row;
     if (row < 0 || row >= state.rows.length) return;
 
-    var existingInsert = state.pendingChanges.find(function(c) { return c.rowIndex === row && c.type === 'insert'; });
-    if (existingInsert) {
-        state.pendingChanges = state.pendingChanges.filter(function(c) { return c !== existingInsert; });
+    var existingChange = _pendingChangeMap[row];
+    if (existingChange && existingChange.type === 'insert') {
+        state.pendingChanges = state.pendingChanges.filter(function(c) { return c !== existingChange; });
         state.rows.splice(row, 1);
         state.pendingChanges.forEach(function(c) {
             if (c.rowIndex > row) c.rowIndex--;
         });
     } else {
-        var existingDelete = state.pendingChanges.find(function(c) { return c.rowIndex === row && c.type === 'delete'; });
-        if (existingDelete) {
-            state.pendingChanges = state.pendingChanges.filter(function(c) { return c !== existingDelete; });
+        if (existingChange && existingChange.type === 'delete') {
+            state.pendingChanges = state.pendingChanges.filter(function(c) { return c !== existingChange; });
         } else {
-            var existingUpdate = state.pendingChanges.find(function(c) { return c.rowIndex === row && c.type === 'update'; });
-            if (existingUpdate) {
-                state.pendingChanges = state.pendingChanges.filter(function(c) { return c !== existingUpdate; });
+            if (existingChange && existingChange.type === 'update') {
+                state.pendingChanges = state.pendingChanges.filter(function(c) { return c !== existingChange; });
             }
             var primaryKey = getPrimaryKeyValue(row);
-            state.pendingChanges.push({
+            var change = {
                 type: 'delete',
                 table: state.tableName,
                 primaryKey: primaryKey,
-                originalRow: Object.assign({}, state.originalRows[row]),
+                originalRow: state.originalRows[row] ? state.originalRows[row].slice() : [],
                 rowIndex: row,
-            });
+            };
+            state.pendingChanges.push(change);
         }
     }
+    rebuildPendingChangeMap();
 
     renderGrid();
     updateEditStatusBar();
@@ -1513,9 +1595,13 @@ function commitChanges() {
     if (state.pendingChanges.length === 0) return;
 
     var sqlStatements = generateSqlFromChanges(state.pendingChanges);
-    var updateCount = state.pendingChanges.filter(function(c) { return c.type === 'update'; }).length;
-    var insertCount = state.pendingChanges.filter(function(c) { return c.type === 'insert'; }).length;
-    var deleteCount = state.pendingChanges.filter(function(c) { return c.type === 'delete'; }).length;
+    var updateCount = 0, insertCount = 0, deleteCount = 0;
+    for (var i = 0; i < state.pendingChanges.length; i++) {
+        var ct = state.pendingChanges[i].type;
+        if (ct === 'update') updateCount++;
+        else if (ct === 'insert') insertCount++;
+        else if (ct === 'delete') deleteCount++;
+    }
 
     var summary = '';
     if (updateCount > 0) summary += updateCount + ' ' + t('resultPanel.rowModify');
@@ -1557,6 +1643,7 @@ function rollbackChanges() {
         }
     });
     state.pendingChanges = [];
+    rebuildPendingChangeMap();
     state.validationErrors = {};
     renderGrid();
     updateEditStatusBar();
@@ -1645,9 +1732,13 @@ function updateTransactionStatus(active) {
 
 function updateEditStatusBar() {
     var editStatusEl = document.getElementById('editStatus');
-    var updateCount = state.pendingChanges.filter(function(c) { return c.type === 'update'; }).length;
-    var insertCount = state.pendingChanges.filter(function(c) { return c.type === 'insert'; }).length;
-    var deleteCount = state.pendingChanges.filter(function(c) { return c.type === 'delete'; }).length;
+    var updateCount = 0, insertCount = 0, deleteCount = 0;
+    for (var i = 0; i < state.pendingChanges.length; i++) {
+        var ct = state.pendingChanges[i].type;
+        if (ct === 'update') updateCount++;
+        else if (ct === 'insert') insertCount++;
+        else if (ct === 'delete') deleteCount++;
+    }
 
     if (state.pendingChanges.length === 0) {
         editStatusEl.textContent = '';
@@ -1720,7 +1811,7 @@ function renderFormView() {
         var typeSpan = document.createElement('span');
         typeSpan.className = 'field-type';
         typeSpan.textContent = col.type || '';
-        var typeColorInfo = getTypeColorInfo(col.type);
+        var typeColorInfo = getTypeColorInfoCached(col.type);
         if (typeColorInfo) {
             typeSpan.style.color = typeColorInfo.color;
             typeSpan.style.background = typeColorInfo.bg;
@@ -1939,6 +2030,7 @@ function validateCell(rowIdx, colIdx, value) {
 function handleCommitResult(data) {
     if (data.success) {
         state.pendingChanges = [];
+        rebuildPendingChangeMap();
         state.validationErrors = {};
         addMessage('success', t('resultPanel.queryCompleted'));
         updateEditStatusBar();
@@ -2071,6 +2163,9 @@ function handleBridgeResponse(data) {
 
 function handleLanguageData(data) {
     languageData = data;
+    if (data.dialect) {
+        state.dialect = data.dialect;
+    }
     if (monacoEditor && typeof monaco !== 'undefined') {
         registerLanguageFeatures(data);
         var model = monacoEditor.getModel();
@@ -2080,14 +2175,89 @@ function handleLanguageData(data) {
     }
 }
 
+function buildMonarchRules(data) {
+    var dialect = data.dialect || 'mysql';
+    var functionNames = (data.functions || []).map(function(f) { return f.name.toUpperCase(); });
+    return {
+        defaultToken: '',
+        tokenPostfix: '.' + dialect,
+        keywords: data.keywords || [],
+        dataTypes: data.dataTypes || [],
+        functions: functionNames,
+        operators: [
+            '=', '>', '<', '!', '~', '?', ':', '===', '>=', '<=',
+            '!=', '<>', '==', '<=>', '&&', '||', '<<', '>>',
+        ],
+        symbols: /[=><!~?:&|+\-*/^%]+/,
+        escapes: /\\(?:[abfnrtv\\"']|x[0-9A-Fa-f]{1,4}|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})/,
+        tokenizer: {
+            root: [
+                { include: '@comments' },
+                { include: '@whitespace' },
+                { include: '@numbers' },
+                { include: '@strings' },
+                [/[a-zA-Z_]\w*/, {
+                    cases: {
+                        '@keywords': 'keyword',
+                        '@dataTypes': 'type',
+                        '@functions': 'function',
+                        '@default': 'identifier',
+                    },
+                }],
+                [/@symbols/, {
+                    cases: {
+                        '@operators': 'operator',
+                        '@default': '',
+                    },
+                }],
+            ],
+            whitespace: [
+                [/\s+/, 'white'],
+            ],
+            comments: [
+                [/--+.*/, 'comment'],
+                [/\/\*/, 'comment', '@comment'],
+            ],
+            comment: [
+                [/[^/*]+/, 'comment'],
+                [/\*\//, 'comment', '@pop'],
+                [/[/*]/, 'comment'],
+            ],
+            numbers: [
+                [/0[xX][0-9a-fA-F]+/, 'number'],
+                [/[$][+-]*\d+(\.\d+)?/, 'number'],
+                [/\d+(\.\d+)?([eE][+-]?\d+)?/, 'number'],
+            ],
+            strings: [
+                [/'/, 'string', '@stringSingle'],
+                [/"/, 'string', '@stringDouble'],
+            ],
+            stringSingle: [
+                [/[^']+/, 'string'],
+                [/''/, 'string'],
+                [/'/, 'string', '@pop'],
+            ],
+            stringDouble: [
+                [/[^"]+/, 'string'],
+                [/""/, 'string'],
+                [/"/, 'string', '@pop'],
+            ],
+        },
+    };
+}
+
 function registerLanguageFeatures(data) {
     if (!data || !monacoEditor) return;
 
     var dialect = data.dialect || 'mysql';
 
+    if (registeredDialect === dialect) return;
+    registeredDialect = dialect;
+
     monaco.languages.register({ id: dialect });
 
-    monaco.languages.setMonarchTokensProvider(dialect, data.monarchRules);
+    var monarchRules = buildMonarchRules(data);
+    monaco.languages.setMonarchTokensProvider(dialect, monarchRules);
 
     monaco.languages.registerCompletionItemProvider(dialect, {
         triggerCharacters: ['.', ' '],
