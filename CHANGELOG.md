@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.15.2] - 2026-06-11
+
+### UI/UX
+
+- 彻底修复 Monaco 编辑器行号区域（gutter）背景色与编辑器不一致的问题：增加 CSS `!important` 强制覆盖 gutter 背景色；修复 `getColor` 函数 8 位 hex 颜色格式截断问题；更正缩进参考线主题键名为 `background1`/`activeBackground1`；新增 `editorGutter.modifiedBackground`/`addedBackground`/`deletedBackground` 配置
+- Thoroughly fix Monaco editor gutter background color mismatch: added CSS `!important` override for gutter backgrounds; fixed `getColor` 8-digit hex color truncation; corrected indent guide theme keys to `background1`/`activeBackground1`; added `editorGutter.modifiedBackground`/`addedBackground`/`deletedBackground` configs
+
+---
+
 ## [2.15.1] - 2026-06-11
 
 ### UI/UX
