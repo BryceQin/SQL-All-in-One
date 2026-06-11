@@ -34,18 +34,18 @@ const i18n = {
         'resultPanel.queryCancelled': '查询已取消',
         'resultPanel.ms': '毫秒',
         'resultPanel.seconds': '秒',
-        'resultPanel.editMode': '编辑模式',
+        'resultPanel.editMode': '编辑',
         'resultPanel.readonly': '只读',
         'resultPanel.editable': '可编辑',
-        'resultPanel.addRow': '添加行',
-        'resultPanel.deleteRow': '删除行',
+        'resultPanel.addRow': '添加',
+        'resultPanel.deleteRow': '删除',
         'resultPanel.commit': '提交',
         'resultPanel.rollback': '回滚',
-        'resultPanel.beginTx': '开始事务',
+        'resultPanel.beginTx': '事务',
         'resultPanel.savepoint': '保存点',
-        'resultPanel.rollbackToSp': '回滚到保存点',
-        'resultPanel.gridView': '网格视图',
-        'resultPanel.formView': '表单视图',
+        'resultPanel.rollbackToSp': '回滚保存点',
+        'resultPanel.gridView': '网格',
+        'resultPanel.formView': '表单',
         'resultPanel.pendingChanges': '待提交',
         'resultPanel.modify': '修改',
         'resultPanel.insert': '新增',
@@ -69,7 +69,15 @@ const i18n = {
         'resultPanel.validationError': '校验错误',
         'resultPanel.notNullViolation': '此字段不能为空',
         'resultPanel.typeMismatch': '类型不匹配',
-        'resultPanel.lengthExceeded': '长度超限'
+        'resultPanel.lengthExceeded': '长度超限',
+        'resultPanel.filterValue': '值',
+        'resultPanel.addRowTitle': '添加行',
+        'resultPanel.deleteRowTitle': '删除行',
+        'resultPanel.beginTxTitle': '开始事务',
+        'resultPanel.rollbackToSpTitle': '回滚到保存点',
+        'resultPanel.gridViewTitle': '网格视图',
+        'resultPanel.formViewTitle': '表单视图',
+        'resultPanel.editModeTitle': '编辑模式'
     },
     en: {
         'resultPanel.title': 'Query Result',
@@ -104,18 +112,18 @@ const i18n = {
         'resultPanel.queryCancelled': 'Query cancelled',
         'resultPanel.ms': 'ms',
         'resultPanel.seconds': 's',
-        'resultPanel.editMode': 'Edit Mode',
+        'resultPanel.editMode': 'Edit',
         'resultPanel.readonly': 'Read Only',
         'resultPanel.editable': 'Editable',
-        'resultPanel.addRow': 'Add Row',
-        'resultPanel.deleteRow': 'Delete Row',
+        'resultPanel.addRow': 'Add',
+        'resultPanel.deleteRow': 'Delete',
         'resultPanel.commit': 'Commit',
         'resultPanel.rollback': 'Rollback',
-        'resultPanel.beginTx': 'Begin Tx',
+        'resultPanel.beginTx': 'Transaction',
         'resultPanel.savepoint': 'Savepoint',
-        'resultPanel.rollbackToSp': 'Rollback to SP',
-        'resultPanel.gridView': 'Grid View',
-        'resultPanel.formView': 'Form View',
+        'resultPanel.rollbackToSp': 'Rollback SP',
+        'resultPanel.gridView': 'Grid',
+        'resultPanel.formView': 'Form',
         'resultPanel.pendingChanges': 'Pending',
         'resultPanel.modify': 'modify',
         'resultPanel.insert': 'insert',
@@ -139,7 +147,15 @@ const i18n = {
         'resultPanel.validationError': 'Validation error',
         'resultPanel.notNullViolation': 'This field cannot be null',
         'resultPanel.typeMismatch': 'Type mismatch',
-        'resultPanel.lengthExceeded': 'Length exceeded'
+        'resultPanel.lengthExceeded': 'Length exceeded',
+        'resultPanel.filterValue': 'Value',
+        'resultPanel.addRowTitle': 'Add Row',
+        'resultPanel.deleteRowTitle': 'Delete Row',
+        'resultPanel.beginTxTitle': 'Begin Transaction',
+        'resultPanel.rollbackToSpTitle': 'Rollback to Savepoint',
+        'resultPanel.gridViewTitle': 'Grid View',
+        'resultPanel.formViewTitle': 'Form View',
+        'resultPanel.editModeTitle': 'Edit Mode'
     }
 };
 
@@ -214,6 +230,7 @@ const HEADER_HEIGHT = 48;
 const BUFFER_ROWS = 5;
 
 function init() {
+    applyI18n();
     const gridBodyWrapper = document.getElementById('gridBodyWrapper');
     gridBodyWrapper.addEventListener('scroll', onGridScroll);
     document.addEventListener('click', onDocumentClick);
@@ -222,6 +239,27 @@ function init() {
     updateHeader();
     updateStatusBar();
     initSplitter();
+}
+
+function applyI18n() {
+    document.querySelectorAll('[data-i18n]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n');
+        if (key && i18n[lang] && i18n[lang][key]) {
+            el.textContent = i18n[lang][key];
+        }
+    });
+    document.querySelectorAll('[data-i18n-title]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n-title');
+        if (key && i18n[lang] && i18n[lang][key]) {
+            el.title = i18n[lang][key];
+        }
+    });
+    document.querySelectorAll('[data-i18n-ph]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n-ph');
+        if (key && i18n[lang] && i18n[lang][key]) {
+            el.placeholder = i18n[lang][key];
+        }
+    });
 }
 
 function initMonacoEditor(sql) {
@@ -253,6 +291,7 @@ function buildVscodeTheme() {
                  document.querySelector('[data-vscode-theme-kind="vscode-dark"]') ||
                  (window.__CONFIG__ && window.__CONFIG__.themeKind === 2);
     var base = isDark ? 'vs-dark' : 'vs';
+    var editorBg = getColor('--vscode-editor-background', isDark ? '#1e1e1e' : '#ffffff');
     return {
         base: base,
         inherit: true,
@@ -271,7 +310,7 @@ function buildVscodeTheme() {
             { token: '', foreground: getColor('--vscode-editor-foreground', isDark ? '#d4d4d4' : '#000000') },
         ],
         colors: {
-            'editor.background': getColor('--vscode-editor-background', isDark ? '#1e1e1e' : '#ffffff'),
+            'editor.background': editorBg,
             'editor.foreground': getColor('--vscode-editor-foreground', isDark ? '#d4d4d4' : '#000000'),
             'editor.lineHighlightBackground': getColor('--vscode-editor-lineHighlightBackground', isDark ? '#2a2d2e' : '#f0f0f0'),
             'editor.selectionBackground': getColor('--vscode-editor-selectionBackground', isDark ? '#264f78' : '#add6ff'),
@@ -281,6 +320,9 @@ function buildVscodeTheme() {
             'editorLineNumber.activeForeground': getColor('--vscode-editorLineNumber-activeForeground', isDark ? '#c6c6c6' : '#0b216f'),
             'editorIndentGuide.background': getColor('--vscode-editorIndentGuide-background', isDark ? '#404040' : '#e4e4e4'),
             'editorIndentGuide.activeBackground': getColor('--vscode-editorIndentGuide-activeBackground', isDark ? '#707070' : '#e4e4e4'),
+            'editorGutter.background': getColor('--vscode-editorGutter-background', editorBg),
+            'editorOverviewRuler.background': getColor('--vscode-editorOverviewRuler-background', isDark ? '#252526' : '#ffffff'),
+            'editor.selectionHighlightBackground': getColor('--vscode-editor-selectionHighlightBackground', isDark ? '#add6ff26' : '#add6ff52'),
         }
     };
 }

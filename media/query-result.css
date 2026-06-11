@@ -145,7 +145,8 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 4px 10px;
+  gap: 3px;
+  padding: 4px 8px;
   border: 1px solid rgba(255,255,255,0.05);
   border-radius: var(--radius-sm);
   background: rgba(255,255,255,0.03);
@@ -155,6 +156,12 @@ body {
   transition: all var(--transition);
   font-family: inherit;
   white-space: nowrap;
+}
+
+.tb-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
 }
 
 .tb-btn:hover {

@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.15.1] - 2026-06-11
+
+### UI/UX
+
+- 修复 Monaco 编辑器行号区域（gutter）背景色与编辑器不一致的问题：添加 `editorGutter.background`、`editorOverviewRuler.background`、`editor.selectionHighlightBackground` 配置，使语法高亮主题与 VSCode 当前主题完全同步
+- Fix Monaco editor gutter background color mismatch: added `editorGutter.background`, `editorOverviewRuler.background`, `editor.selectionHighlightBackground` configs to fully sync syntax highlighting theme with current VSCode theme
+
+- 查询结果面板工具栏按钮改为 SVG 图标+文字形式（文字语言跟随插件语言设置），替代原来的纯英文文字按钮
+- Query result panel toolbar buttons changed to SVG icon + text format (text language follows plugin language setting), replacing original English-only text buttons
+
+---
+
 ## [2.15.0] - 2026-06-11
 
 ### UI/UX
