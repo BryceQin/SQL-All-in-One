@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.15.3] - 2026-06-11
+
+### Bug Fix
+
+- 修复扩展 ID 从 `sql-all-in-one` 改为 `hive-formatter` 后，TreeView 数据提供程序未注册导致"没有可提供视图数据的已注册数据提供程序"错误的问题
+- Fix TreeView data provider not registered error after renaming extension ID from `sql-all-in-one` to `hive-formatter`
+
+---
+
 ## [2.15.2] - 2026-06-11
 
 ### UI/UX
