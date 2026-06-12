@@ -30,18 +30,42 @@ export class DatabaseModule {
     this.context = context;
   }
 
+  getTreeProvider(): DatabaseTreeProvider | undefined {
+    return this.treeProvider;
+  }
+
+  getQueryExecutor(): QueryExecutor | undefined {
+    return this.queryExecutor;
+  }
+
+  getSafeQueryGuard(): SafeQueryGuard | undefined {
+    return this.safeQueryGuard;
+  }
+
+  getQueryHistory(): QueryHistory | undefined {
+    return this.queryHistory;
+  }
+
+  getStatementDetector(): SqlStatementDetector | undefined {
+    return this.statementDetector;
+  }
+
+  getOutputChannel(): vscode.OutputChannel | undefined {
+    return this.outputChannel;
+  }
+
+  isInitialized(): boolean {
+    return this.initialized;
+  }
+
   registerCommands(): void {
-    const connectionDisposables = registerConnectionCommands(this.context, this.treeProvider);
+    const connectionDisposables = registerConnectionCommands(this.context, this);
     const { disposables: queryDisposables, getQueryResultPanel } = registerQueryCommands(
       this.context,
-      this.queryExecutor,
-      this.safeQueryGuard,
-      this.queryHistory,
-      this.statementDetector,
-      this.outputChannel,
+      this,
     );
     const exportDisposables = registerExportCommands(getQueryResultPanel);
-    const schemaDisposables = registerSchemaCommands(this.context, this.treeProvider, this.statementDetector, this.queryExecutor, this.outputChannel);
+    const schemaDisposables = registerSchemaCommands(this.context, this, this.statementDetector, this.queryExecutor, this.outputChannel);
 
     const allDisposables = [
       ...connectionDisposables,
@@ -94,7 +118,6 @@ export class DatabaseModule {
       console.error('[SQL All in One] Query/Schema initialization failed:', e);
     }
 
-    this.registerCommands();
     this.initialized = true;
   }
 

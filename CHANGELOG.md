@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.15.8] - 2026-06-12
+
+### Bug Fix
+
+- 修复扩展激活卡在 "activating" 状态：将命令注册与数据库初始化解耦，先注册命令再异步初始化数据库，`activate()` 不再等待 `initialize()` 完成
+- 命令处理器改为通过 `DatabaseModule` 延迟获取依赖（treeProvider、queryExecutor 等），避免初始化未完成时引用为 undefined
+- Fix extension stuck in "activating" state: decouple command registration from database initialization, register commands first then initialize database asynchronously, `activate()` no longer awaits `initialize()`
+- Command handlers now lazily access dependencies via `DatabaseModule` getters, avoiding undefined references when initialization hasn't completed
+
+---
+
 ## [2.15.7] - 2026-06-12
 
 ### Bug Fix

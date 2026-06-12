@@ -1,9 +1,6 @@
 import * as vscode from 'vscode';
 import { getConnectionManager } from '../connection/ConnectionManager';
-import { QueryExecutor } from '../query/QueryExecutor';
-import { SafeQueryGuard } from '../query/SafeQueryGuard';
-import { QueryHistory } from '../history/QueryHistory';
-import { SqlStatementDetector } from '../query/SqlStatementDetector';
+import { DatabaseModule } from '../DatabaseModule';
 import type { SqlDialect } from '../../parser/dialectMapper';
 import { QueryResultPanel, FilterCondition } from '../../views/queryResult/QueryResultPanel';
 import type { QueryError, QueryRow } from '../adapters/IDatabaseAdapter';
@@ -45,11 +42,7 @@ function invalidateSchemaOnDDL(sql: string): void {
 
 export function registerQueryCommands(
     context: vscode.ExtensionContext,
-    queryExecutor: QueryExecutor,
-    safeQueryGuard: SafeQueryGuard,
-    queryHistory: QueryHistory,
-    statementDetector: SqlStatementDetector,
-    outputChannel: vscode.OutputChannel
+    dbModule: DatabaseModule
 ): { disposables: vscode.Disposable[]; getQueryResultPanel: () => QueryResultPanel | undefined } {
     const disposables: vscode.Disposable[] = [];
     let queryResultPanel: QueryResultPanel | undefined;
