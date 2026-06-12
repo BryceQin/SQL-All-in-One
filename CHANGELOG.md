@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.15.7] - 2026-06-12
+
+### Bug Fix
+
+- 重构 `DatabaseModule.initialize()`：将初始化步骤拆分为独立 try/catch 块，确保即使部分初始化失败，命令仍能注册；命令注册移至最后，保证所有步骤执行完毕后才注册
+- Refactor `DatabaseModule.initialize()`: split initialization into independent try/catch blocks so commands are always registered even if some steps fail; command registration moved to the end to ensure all steps have been attempted
+
+---
+
 ## [2.15.6] - 2026-06-12
 
 ### Bug Fix
