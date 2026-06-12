@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.15.9] - 2026-06-12
+
+### Bug Fix
+
+- 在 `activate()` 各关键步骤添加 console.log 诊断日志，用于定位扩展卡在 "activating" 的具体位置
+- Added diagnostic console.log at each key step of `activate()` to identify where extension gets stuck in "activating" state
+
+---
+
 ## [2.15.8] - 2026-06-12
 
 ### Bug Fix

@@ -247,13 +247,16 @@ function registerServicesToContainer(extensionPath: string): void {
 }
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
+    console.log('[SQL All in One] v2.15.8 activate() START');
     registerServicesToContainer(context.extensionPath);
+    console.log('[SQL All in One] registerServicesToContainer done');
 
     try {
         initI18n();
         registerCommands(context);
         registerFormattingProviders(context);
         registerDiagnostics(context);
+        console.log('[SQL All in One] core registration done');
 
         queueMicrotask(() => {
             registerProviders(context);
@@ -265,7 +268,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
         const dbModule = new DatabaseModule(context);
         dbModule.registerCommands();
-        dbModule.initialize().catch(e => {
+        console.log('[SQL All in One] db commands registered');
+        dbModule.initialize().then(() => {
+            console.log('[SQL All in One] db initialize DONE');
+        }).catch(e => {
             console.error('[SQL All in One] Database initialization failed:', e);
             getErrorHandler().handle(e, 'Database initialization', ErrorLevel.ERROR, ErrorCategory.CRITICAL);
         });
@@ -279,7 +285,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
         context.subscriptions.push(getConfigManager());
         context.subscriptions.push(getDocumentAstCache());
+        console.log('[SQL All in One] activate() END');
     } catch (e) {
+        console.error('[SQL All in One] activate() ERROR:', e);
         getErrorHandler().handle(e, 'Extension activation', ErrorLevel.FATAL, ErrorCategory.CRITICAL);
     }
 }
