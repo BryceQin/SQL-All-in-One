@@ -38,6 +38,11 @@ out/utils/**
 out/test/**
 node_modules/**
 !node_modules/ssh2/**
-!node_modules/mysql2/**
-!node_modules/stream-shift/**
-!node_modules/iconv-lite/**
+!node_modules/asn1/**
+!node_modules/safer-buffer/**
+!node_modules/bcrypt-pbkdf/**
+!node_modules/tweetnacl/**
+!node_modules/cpu-features/**
+!node_modules/buildcheck/**
+!node_modules/nan/**
+!node_modules/streamsearch/**
