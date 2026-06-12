@@ -1,5 +1,36 @@
 # Changelog
 
+## [2.15.14] - 2026-06-12
+
+### Bug Fix
+
+- 修复查看表数据时 "Webview is disposed" 错误：QueryResultPanel 添加 `_isDisposed` 标志位和 `_postMessage` 安全方法，所有 postMessage 调用前检查 disposed 状态并用 try-catch 包裹
+- 修复 SchemaCommands/QueryCommands 中局部变量持有已销毁面板实例的问题：改用 `QueryResultPanel.currentPanel` 获取当前面板实例
+- 修复异步回调中的竞态条件：`await` 等待期间面板可能被关闭，在异步操作后增加 disposed 检查
+- Fix "Webview is disposed" error when viewing table data: added `_isDisposed` flag and `_postMessage` safe method to QueryResultPanel, check disposed state before all postMessage calls with try-catch wrapper
+- Fix SchemaCommands/QueryCommands holding disposed panel instances in local variables: use `QueryResultPanel.currentPanel` to get current panel instance
+- Fix race condition in async callbacks: panel may be closed during `await`, added disposed checks after async operations
+
+---
+
+## [2.15.13] - 2026-06-12
+
+### Bug Fix
+
+- 修复 ssh2 native 模块在 vsix 包中的打包问题，确保扩展能正常激活
+- Fix ssh2 native module packaging in vsix, ensure extension activates correctly
+
+---
+
+## [2.15.11] - 2026-06-12
+
+### Bug Fix
+
+- 补全 `ssh2` 的所有传递依赖（asn1、safer-buffer、bcrypt-pbkdf、tweetnacl、cpu-features、buildcheck、nan、streamsearch），修复扩展激活时因缺少依赖模块而卡在 activating 的问题
+- Include all `ssh2` transitive dependencies in vsix package, fix extension stuck in activating due to missing dependency modules
+
+---
+
 ## [2.15.10] - 2026-06-12
 
 ### Bug Fix

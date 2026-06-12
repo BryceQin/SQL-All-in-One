@@ -61,6 +61,7 @@ export class QueryResultPanel {
     private _currentDialect = 'mysql';
     private _cachedHtml: string | undefined;
     private _sendLanguageDataTimer: ReturnType<typeof setTimeout> | undefined;
+    private _isDisposed = false;
 
     public onExecuteQuery?: (sql: string) => void;
     public onCancelQuery?: () => void;
@@ -116,7 +117,7 @@ export class QueryResultPanel {
 
         this._disposables.push(
             vscode.window.onDidChangeActiveColorTheme((theme) => {
-                this._panel.webview.postMessage({
+                this._postMessage({
                     type: 'themeChange',
                     data: { kind: theme.kind },
                 });
@@ -163,7 +164,7 @@ export class QueryResultPanel {
                                 message.tableName || '',
                                 message.database || ''
                             );
-                            this._panel.webview.postMessage({
+                            this._postMessage({
                                 type: 'commitResult',
                                 data: result,
                             });
@@ -176,7 +177,7 @@ export class QueryResultPanel {
                                 message.referencedTable || '',
                                 message.database || ''
                             );
-                            this._panel.webview.postMessage({
+                            this._postMessage({
                                 type: 'foreignKeyOptions',
                                 data: { column: message.column, options },
                             });
@@ -185,19 +186,19 @@ export class QueryResultPanel {
                     case 'beginTransaction':
                         if (this.onBeginTransaction) {
                             await this.onBeginTransaction();
-                            this._panel.webview.postMessage({ type: 'transactionStatus', data: { active: true } });
+                            this._postMessage({ type: 'transactionStatus', data: { active: true } });
                         }
                         break;
                     case 'commitTransaction':
                         if (this.onCommitTransaction) {
                             await this.onCommitTransaction();
-                            this._panel.webview.postMessage({ type: 'transactionStatus', data: { active: false } });
+                            this._postMessage({ type: 'transactionStatus', data: { active: false } });
                         }
                         break;
                     case 'rollbackTransaction':
                         if (this.onRollbackTransaction) {
                             await this.onRollbackTransaction();
-                            this._panel.webview.postMessage({ type: 'transactionStatus', data: { active: false } });
+                            this._postMessage({ type: 'transactionStatus', data: { active: false } });
                         }
                         break;
                     case 'createSavepoint':
@@ -224,7 +225,7 @@ export class QueryResultPanel {
                             message.position,
                             message.dialect,
                         );
-                        this._panel.webview.postMessage({
+                        this._postMessage({
                             type: 'completionResult',
                             data: { requestId: message.requestId, items },
                         });
@@ -236,7 +237,7 @@ export class QueryResultPanel {
                             message.position,
                             message.dialect,
                         );
-                        this._panel.webview.postMessage({
+                        this._postMessage({
                             type: 'hoverResult',
                             data: { requestId: message.requestId, contents },
                         });
@@ -247,7 +248,7 @@ export class QueryResultPanel {
                             message.sql,
                             message.dialect,
                         );
-                        this._panel.webview.postMessage({
+                        this._postMessage({
                             type: 'formatResult',
                             data: { requestId: message.requestId, formattedSql },
                         });
@@ -258,7 +259,7 @@ export class QueryResultPanel {
                             message.sql,
                             message.dialect,
                         );
-                        this._panel.webview.postMessage({
+                        this._postMessage({
                             type: 'diagnosticsResult',
                             data: { requestId: message.requestId, diagnostics },
                         });
@@ -309,7 +310,7 @@ export class QueryResultPanel {
             tableName: tableName || '',
         };
 
-        this._panel.webview.postMessage({
+        this._postMessage({
             type: 'queryResultStart',
             data: metadata,
         });
@@ -335,7 +336,7 @@ export class QueryResultPanel {
                 batchRows[i - start] = values;
             }
 
-            this._panel.webview.postMessage({
+            this._postMessage({
                 type: 'queryResultBatch',
                 data: {
                     batchIndex,
@@ -345,35 +346,35 @@ export class QueryResultPanel {
             });
         }
 
-        this._panel.webview.postMessage({
+        this._postMessage({
             type: 'queryResultEnd',
             data: { queryId: result.queryId },
         });
     }
 
     public showLoading(sql: string): void {
-        this._panel.webview.postMessage({
+        this._postMessage({
             type: 'queryStart',
             data: { sql },
         });
     }
 
     public showError(error: QueryError): void {
-        this._panel.webview.postMessage({
+        this._postMessage({
             type: 'queryError',
             data: error,
         });
     }
 
     public setSqlAndExecute(sql: string): void {
-        this._panel.webview.postMessage({
+        this._postMessage({
             type: 'setEditorSql',
             data: { sql, autoExecute: true },
         });
     }
 
     public setSql(sql: string): void {
-        this._panel.webview.postMessage({
+        this._postMessage({
             type: 'setEditorSql',
             data: { sql, autoExecute: false },
         });
@@ -381,13 +382,13 @@ export class QueryResultPanel {
 
     public clear(): void {
         this._currentResult = undefined;
-        this._panel.webview.postMessage({
+        this._postMessage({
             type: 'clear',
         });
     }
 
     public sendHistoryData(entries: QueryHistoryEntry[]): void {
-        this._panel.webview.postMessage({
+        this._postMessage({
             type: 'historyData',
             data: entries,
         });
@@ -407,6 +408,10 @@ export class QueryResultPanel {
     }
 
     public dispose(): void {
+        if (this._isDisposed) {
+            return;
+        }
+        this._isDisposed = true;
         QueryResultPanel.currentPanel = undefined;
         if (this._sendLanguageDataTimer) {
             clearTimeout(this._sendLanguageDataTimer);
@@ -420,6 +425,21 @@ export class QueryResultPanel {
             if (x) {
                 x.dispose();
             }
+        }
+    }
+
+    public get isDisposed(): boolean {
+        return this._isDisposed;
+    }
+
+    private _postMessage(message: object): void {
+        if (this._isDisposed) {
+            return;
+        }
+        try {
+            this._postMessage(message);
+        } catch {
+            // Webview may be disposed between the check and the call
         }
     }
 
@@ -444,7 +464,7 @@ export class QueryResultPanel {
         }
         this._sendLanguageDataTimer = setTimeout(() => {
             const data = this._languageBridge.exportLanguageData(this._currentDialect);
-            this._panel.webview.postMessage({
+            this._postMessage({
                 type: 'languageData',
                 data,
             });
@@ -593,7 +613,7 @@ export class QueryResultPanel {
 
         const value = row[col.name];
         if (value === null || value === undefined) {
-            this._panel.webview.postMessage({
+            this._postMessage({
                 type: 'blobPreview',
                 data: { rowIndex, colIndex, content: null, mode: 'null' },
             });
@@ -601,7 +621,7 @@ export class QueryResultPanel {
         }
 
         if (typeof value === 'number' || typeof value === 'boolean') {
-            this._panel.webview.postMessage({
+            this._postMessage({
                 type: 'blobPreview',
                 data: { rowIndex, colIndex, content: String(value), mode: 'text' },
             });
@@ -621,7 +641,7 @@ export class QueryResultPanel {
         const maxSize = config.get<number>('dataEditor.maxBlobPreviewSize', 5242880);
 
         if (buffer.length > maxSize) {
-            this._panel.webview.postMessage({
+            this._postMessage({
                 type: 'blobPreview',
                 data: { rowIndex, colIndex, size: buffer.length, mode: 'too_large' },
             });
@@ -632,7 +652,7 @@ export class QueryResultPanel {
         if (isImage) {
             const base64 = buffer.toString('base64');
             const mimeType = this._getImageMimeType(buffer);
-            this._panel.webview.postMessage({
+            this._postMessage({
                 type: 'blobPreview',
                 data: { rowIndex, colIndex, content: base64, mimeType, mode: 'image' },
             });
@@ -643,19 +663,19 @@ export class QueryResultPanel {
         if (buffer.length <= textMaxSize) {
             try {
                 const text = buffer.toString('utf-8');
-                this._panel.webview.postMessage({
+                this._postMessage({
                     type: 'blobPreview',
                     data: { rowIndex, colIndex, content: text, mode: 'text' },
                 });
             } catch {
-                this._panel.webview.postMessage({
+                this._postMessage({
                     type: 'blobPreview',
                     data: { rowIndex, colIndex, content: buffer.toString('hex'), mode: 'hex' },
                 });
             }
         } else {
             const hexPreview = buffer.subarray(0, 1024).toString('hex');
-            this._panel.webview.postMessage({
+            this._postMessage({
                 type: 'blobPreview',
                 data: { rowIndex, colIndex, content: hexPreview, mode: 'hex' },
             });

@@ -45,12 +45,22 @@ export function registerQueryCommands(
     dbModule: DatabaseModule
 ): { disposables: vscode.Disposable[]; getQueryResultPanel: () => QueryResultPanel | undefined } {
     const disposables: vscode.Disposable[] = [];
-    let queryResultPanel: QueryResultPanel | undefined;
 
-    const getQueryResultPanel = (): QueryResultPanel | undefined => queryResultPanel;
+    const getQueryResultPanel = (): QueryResultPanel | undefined => QueryResultPanel.currentPanel;
+
+    const queryExecutor = dbModule.getQueryExecutor();
+    const safeQueryGuard = dbModule.getSafeQueryGuard();
+    const statementDetector = dbModule.getStatementDetector();
+    const queryHistory = dbModule.getQueryHistory();
+    const outputChannel = dbModule.getOutputChannel();
 
     disposables.push(
         vscode.commands.registerCommand('hive-formatter.executeQuery', async () => {
+            if (!queryExecutor || !safeQueryGuard || !statementDetector || !queryHistory) {
+                vscode.window.showErrorMessage(t('database.noActiveAdapter'));
+                return;
+            }
+
             const editor = vscode.window.activeTextEditor;
             if (!editor) {
                 vscode.window.showWarningMessage(t('database.noActiveEditor'));
@@ -105,7 +115,8 @@ export function registerQueryCommands(
                 if (!confirmed) return;
             }
 
-            if (!queryResultPanel) {
+            let queryResultPanel = QueryResultPanel.currentPanel;
+            if (!queryResultPanel || queryResultPanel.isDisposed) {
                 queryResultPanel = QueryResultPanel.createOrShow(
                     context.extensionUri,
                     context
@@ -136,7 +147,7 @@ export function registerQueryCommands(
                         return { success: false, errors: [t('database.noActiveAdapter')] };
                     }
 
-                    const currentResult = queryResultPanel?.getCurrentResult();
+                    const currentResult = QueryResultPanel.currentPanel?.getCurrentResult();
                     if (!currentResult) {
                         return { success: false, errors: [t('database.noQueryResult')] };
                     }
@@ -221,6 +232,9 @@ export function registerQueryCommands(
 
             queryResultPanel.onExecutePanelSql = async (sql: string): Promise<void> => {
                 try {
+                    const currentPanel = QueryResultPanel.currentPanel;
+                    if (!currentPanel || currentPanel.isDisposed) return;
+
                     const connectionManager = getConnectionManager();
                     const activeConn = connectionManager.getActiveConnection();
                     const panelAdapter = activeConn
@@ -228,7 +242,7 @@ export function registerQueryCommands(
                         : undefined;
 
                     if (!panelAdapter) {
-                        queryResultPanel?.showError({
+                        currentPanel.showError({
                             code: 'NO_CONNECTION',
                             message: t('database.noActiveAdapter'),
                             sql,
@@ -236,7 +250,7 @@ export function registerQueryCommands(
                         return;
                     }
 
-                    queryResultPanel?.showLoading(sql);
+                    currentPanel.showLoading(sql);
                     const result = await queryExecutor.execute(
                         panelAdapter,
                         sql,
@@ -244,19 +258,23 @@ export function registerQueryCommands(
                         activeConn?.id
                     );
 
+                    if (currentPanel.isDisposed) return;
+
                     if (result.status === 'error') {
-                        outputChannel.appendLine(`❌ Error: ${result.error?.message || t('database.unknownError')}`);
-                        outputChannel.appendLine(`   SQL: ${sql}`);
-                        queryResultPanel?.showError(result.error as QueryError);
+                        outputChannel?.appendLine(`❌ Error: ${result.error?.message || t('database.unknownError')}`);
+                        outputChannel?.appendLine(`   SQL: ${sql}`);
+                        currentPanel.showError(result.error as QueryError);
                     } else {
-                        outputChannel.appendLine(`✅ ${t('database.queryExecutedSuccessfully', String(result.executionTime), String(result.rowCount))}`);
-                        outputChannel.appendLine(`   SQL: ${sql}`);
+                        outputChannel?.appendLine(`✅ ${t('database.queryExecutedSuccessfully', String(result.executionTime), String(result.rowCount))}`);
+                        outputChannel?.appendLine(`   SQL: ${sql}`);
                         const activeConfig = connectionManager.getActiveConnection();
-                        queryResultPanel?.showResult(result, activeConfig?.name, activeConfig?.color);
+                        currentPanel.showResult(result, activeConfig?.name, activeConfig?.color);
                     }
                 } catch (error) {
                     const msg = error instanceof Error ? error.message : String(error);
-                    queryResultPanel?.showError({
+                    const currentPanel = QueryResultPanel.currentPanel;
+                    if (!currentPanel || currentPanel.isDisposed) return;
+                    currentPanel.showError({
                         code: 'EXEC_ERROR',
                         message: msg,
                         sql,
@@ -273,18 +291,22 @@ export function registerQueryCommands(
             );
 
             if (result.status === 'error') {
-                outputChannel.appendLine(`❌ Error: ${result.error?.message || t('database.unknownError')}`);
-                outputChannel.appendLine(`   SQL: ${statement.sql}`);
-                queryResultPanel.showError(result.error as QueryError);
+                outputChannel?.appendLine(`❌ Error: ${result.error?.message || t('database.unknownError')}`);
+                outputChannel?.appendLine(`   SQL: ${statement.sql}`);
+                if (queryResultPanel && !queryResultPanel.isDisposed) {
+                    queryResultPanel.showError(result.error as QueryError);
+                }
             } else {
-                outputChannel.appendLine(`✅ ${t('database.queryExecutedSuccessfully', String(result.executionTime), String(result.rowCount))}`);
-                outputChannel.appendLine(`   SQL: ${statement.sql}`);
+                outputChannel?.appendLine(`✅ ${t('database.queryExecutedSuccessfully', String(result.executionTime), String(result.rowCount))}`);
+                outputChannel?.appendLine(`   SQL: ${statement.sql}`);
 
                 if (result.affectedRows !== undefined && result.affectedRows > 0) {
-                    outputChannel.appendLine(`   ${t('database.affectedRows', String(result.affectedRows))}`);
+                    outputChannel?.appendLine(`   ${t('database.affectedRows', String(result.affectedRows))}`);
                 }
 
-                queryResultPanel.showResult(result, activeConfig?.name, activeConfig?.color);
+                if (queryResultPanel && !queryResultPanel.isDisposed) {
+                    queryResultPanel.showResult(result, activeConfig?.name, activeConfig?.color);
+                }
             }
 
             if (result.status !== 'error' || result.error?.code !== 'CANCELLED') {
@@ -327,6 +349,10 @@ export function registerQueryCommands(
 
     disposables.push(
         vscode.commands.registerCommand('hive-formatter.cancelQuery', async () => {
+            if (!queryExecutor) {
+                vscode.window.showWarningMessage(t('database.noActiveAdapter'));
+                return;
+            }
             const running = queryExecutor.getRunningQueries();
             if (running.length === 0) {
                 vscode.window.showInformationMessage(t('database.noRunningQueries'));
@@ -356,6 +382,10 @@ export function registerQueryCommands(
 
     disposables.push(
         vscode.commands.registerCommand('hive-formatter.showQueryHistory', async () => {
+            if (!queryHistory) {
+                vscode.window.showWarningMessage(t('database.noActiveAdapter'));
+                return;
+            }
             const entries = queryHistory.getRecent(50);
             if (entries.length === 0) {
                 vscode.window.showInformationMessage(t('database.noQueryHistory'));
@@ -400,7 +430,9 @@ export function registerQueryCommands(
                 t('database.clear')
             );
             if (confirm === t('database.clear')) {
-                await queryHistory.clear();
+                if (queryHistory) {
+                    await queryHistory.clear();
+                }
                 vscode.window.showInformationMessage(t('database.queryHistoryCleared'));
             }
         })
