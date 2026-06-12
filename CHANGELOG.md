@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.15.6] - 2026-06-12
+
+### Bug Fix
+
+- 修复 `ConnectionStore.loadFromFile()` 在 `~/.hive-formatter/` 目录不存在时写入默认配置失败（ENOENT），导致扩展初始化失败、所有数据库命令不可用的问题
+- 自动迁移旧版 `~/.sql-all-in-one/connections.json` 数据到 `~/.hive-formatter/connections.json`
+- Fix `ConnectionStore.loadFromFile()` failing with ENOENT when `~/.hive-formatter/` directory doesn't exist, causing extension initialization failure and all database commands unavailable
+- Auto-migrate legacy `~/.sql-all-in-one/connections.json` data to `~/.hive-formatter/connections.json`
+
+---
+
 ## [2.15.5] - 2026-06-12
 
 ### Bug Fix
