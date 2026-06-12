@@ -12,6 +12,7 @@ export class ExplainPlanPanel {
     private readonly _panel: vscode.WebviewPanel;
     private readonly _extensionUri: vscode.Uri;
     private _disposables: vscode.Disposable[] = [];
+    private _cachedHtml: string | undefined;
 
     public static createOrShow(extensionUri: vscode.Uri, context: vscode.ExtensionContext): ExplainPlanPanel {
         const column = vscode.window.activeTextEditor
@@ -47,7 +48,6 @@ export class ExplainPlanPanel {
     ) {
         this._panel = panel;
         this._extensionUri = extensionUri;
-        // this.__context = context;
 
         this._update();
 
@@ -155,7 +155,12 @@ export class ExplainPlanPanel {
     }
 
     private _update(): void {
+        if (this._cachedHtml) {
+            this._panel.webview.html = this._cachedHtml;
+            return;
+        }
         this._getHtmlForWebview().then(html => {
+            this._cachedHtml = html;
             this._panel.webview.html = html;
         }).catch(e => {
             console.error('[SQL All in One] Failed to load ExplainPlan panel HTML:', e);

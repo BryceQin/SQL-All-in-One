@@ -42,9 +42,8 @@ export class DataTransferDialog {
 
     private readonly _panel: vscode.WebviewPanel;
     private readonly _extensionUri: vscode.Uri;
-    // Context is received but not used in this dialog
-    // private readonly __context: vscode.ExtensionContext;
     private _disposables: vscode.Disposable[] = [];
+    private _cachedHtml: string | undefined;
 
     public static createOrShow(extensionUri: vscode.Uri, context: vscode.ExtensionContext): DataTransferDialog {
         const column = vscode.window.activeTextEditor
@@ -129,7 +128,12 @@ export class DataTransferDialog {
     }
 
     private _update(): void {
+        if (this._cachedHtml) {
+            this._panel.webview.html = this._cachedHtml;
+            return;
+        }
         this._getHtmlForWebview().then(html => {
+            this._cachedHtml = html;
             this._panel.webview.html = html;
         }).catch(e => {
             console.error('[SQL All in One] Failed to load DataTransferDialog HTML:', e);

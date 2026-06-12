@@ -23,7 +23,7 @@ esbuild.build({
     platform: 'node',
     target: 'node20',
     plugins: [nativePlugin],
-    sourcemap: true,
+    sourcemap: !process.argv.includes('--minify'),
     minify: process.argv.includes('--minify'),
     treeShaking: true,
     define: {

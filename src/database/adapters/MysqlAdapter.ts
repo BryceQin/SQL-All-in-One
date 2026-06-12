@@ -13,7 +13,7 @@ export class MysqlAdapter implements IDatabaseAdapter {
 
     constructor(config: ConnectionConfig) {
         this.config = config;
-        this.connectionId = `mysql-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        this.connectionId = `mysql-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
     }
 
     getConnectionId(): string {
@@ -86,7 +86,7 @@ export class MysqlAdapter implements IDatabaseAdapter {
             const warmupPromises: Promise<void>[] = [];
             for (let i = 0; i < minConnections; i++) {
                 warmupPromises.push(
-                    this.pool!.getConnection().then(conn => conn.release()).catch(() => {})
+                    this.pool!.getConnection().then(conn => conn.release()).catch((e) => { console.debug('[SQL All in One] Connection warmup failed:', e); })
                 );
             }
             await Promise.all(warmupPromises);
@@ -102,8 +102,8 @@ export class MysqlAdapter implements IDatabaseAdapter {
         if (this.transactionConnection) {
             try {
                 await this.transactionConnection.rollback();
-            } catch {
-                // ignore rollback error on disconnect
+            } catch (e) {
+                console.debug('[SQL All in One] Rollback error on disconnect:', e);
             }
             this.transactionConnection.release();
             this.transactionConnection = null;
@@ -168,7 +168,7 @@ export class MysqlAdapter implements IDatabaseAdapter {
 
     async execute(sql: string, params?: QueryParam[]): Promise<QueryResult> {
         const startTime = Date.now();
-        const queryId = `q-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const queryId = `q-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
 
         if (!this.pool) {
             const executionTime = Date.now() - startTime;
@@ -335,8 +335,8 @@ export class MysqlAdapter implements IDatabaseAdapter {
             } finally {
                 conn.release();
             }
-        } catch {
-            // ignore cancel errors
+        } catch (e) {
+            console.debug('[SQL All in One] Cancel query error:', e);
         }
     }
 
@@ -615,7 +615,8 @@ export class MysqlAdapter implements IDatabaseAdapter {
             }
 
             return { format: 'json', raw, nodes };
-        } catch {
+        } catch (e) {
+            console.debug('[SQL All in One] EXPLAIN plan error:', e);
             return { format: 'json', raw: '{}', nodes: [] };
         } finally {
             conn?.release();
@@ -918,8 +919,8 @@ export class MysqlAdapter implements IDatabaseAdapter {
                     const poolOptions = this.createPoolOptions(config);
                     this.pool = mysql.createPool(poolOptions);
                     this.lastActivityTime = Date.now();
-                } catch {
-                    // ignore reap errors, pool will be recreated on next use
+                } catch (e) {
+                    console.debug('[SQL All in One] Reap idle connections error:', e);
                 }
             }
         }
@@ -937,24 +938,27 @@ export class MysqlAdapter implements IDatabaseAdapter {
             };
         }
 
-        const pool = this.pool as unknown as Record<string, unknown[]>;
+        const pool = this.pool as unknown as { _allConnections?: unknown[]; _freeConnections?: unknown[]; _connectionQueue?: unknown[]; connectionLimit?: number };
         let totalConnections: number | 'unknown' = 'unknown';
         let idleConnections: number | 'unknown' = 'unknown';
         let waitingRequests: number | 'unknown' = 'unknown';
 
         try {
             totalConnections = pool._allConnections?.length ?? 0;
-        } catch {
+        } catch (e) {
+            console.warn('[SQL All in One] Failed to access pool._allConnections, mysql2 internal API may have changed:', e);
             totalConnections = 'unknown';
         }
         try {
             idleConnections = pool._freeConnections?.length ?? 0;
-        } catch {
+        } catch (e) {
+            console.warn('[SQL All in One] Failed to access pool._freeConnections, mysql2 internal API may have changed:', e);
             idleConnections = 'unknown';
         }
         try {
             waitingRequests = pool._connectionQueue?.length ?? 0;
-        } catch {
+        } catch (e) {
+            console.warn('[SQL All in One] Failed to access pool._connectionQueue, mysql2 internal API may have changed:', e);
             waitingRequests = 'unknown';
         }
 

@@ -67,8 +67,8 @@ export class DatabaseModule {
       if (event.newState === 'connected') {
         const config = connectionManager.getActiveConnection();
         if (config && config.database) {
-          schemaCache.prefetchOnConnect(event.connectionId, config.database).catch(() => {
-            /* ignore prefetch error */
+          schemaCache.prefetchOnConnect(event.connectionId, config.database).catch((e) => {
+            console.debug('[SQL All in One] Schema prefetch failed:', e);
           });
           vscode.commands.executeCommand('setContext', 'hive-formatter.connectionCount', connectionManager.getAllConnections().length);
         }

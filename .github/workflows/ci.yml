@@ -21,9 +21,11 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
       - run: npm ci
-      - run: npm run compile
+      - run: npx tsc --noEmit
       - run: npm run lint
+      - run: npm run vscode:prepublish
       - run: xvfb-run -a npm test
+      - run: npm audit --omit=dev || true
       - name: Upload coverage
         uses: codecov/codecov-action@v4
         if: always()
