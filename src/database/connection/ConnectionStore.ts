@@ -15,6 +15,8 @@ interface ConnectionsFile {
 export class ConnectionStore {
     private readonly configDir: string;
     private readonly configFilePath: string;
+    private readonly legacyConfigDir: string;
+    private readonly legacyConfigFilePath: string;
     private connections = new Map<string, ConnectionConfig>();
     private groups = new Map<string, ConnectionGroup>();
     private secretStorage: vscode.SecretStorage | null = null;
@@ -24,6 +26,8 @@ export class ConnectionStore {
     constructor() {
         this.configDir = path.join(os.homedir(), '.hive-formatter');
         this.configFilePath = path.join(this.configDir, 'connections.json');
+        this.legacyConfigDir = path.join(os.homedir(), '.sql-all-in-one');
+        this.legacyConfigFilePath = path.join(this.legacyConfigDir, 'connections.json');
     }
 
     async init(): Promise<void> {
@@ -34,12 +38,48 @@ export class ConnectionStore {
         this.secretStorage = secretStorage;
     }
 
-    private async initConfigDir(): Promise<void> {
+    private async ensureConfigDir(): Promise<void> {
         try {
             await fs.promises.access(this.configDir);
         } catch {
             await fs.promises.mkdir(this.configDir, { recursive: true });
+        }
+    }
+
+    private async initConfigDir(): Promise<void> {
+        await this.ensureConfigDir();
+        try {
+            await fs.promises.access(this.configFilePath);
+        } catch {
             await this.writeDefaultConfig();
+        }
+    }
+
+    private async migrateFromLegacy(): Promise<void> {
+        try {
+            await fs.promises.access(this.legacyConfigFilePath);
+        } catch {
+            return;
+        }
+        try {
+            await fs.promises.access(this.configFilePath);
+            return;
+        } catch {
+        }
+        try {
+            const content = await fs.promises.readFile(this.legacyConfigFilePath, 'utf8');
+            const data = JSON.parse(content);
+            if (data && typeof data === 'object' && Array.isArray(data.connections)) {
+                await this.ensureConfigDir();
+                await fs.promises.writeFile(this.configFilePath, content, 'utf8');
+                try {
+                    await fs.promises.chmod(this.configFilePath, 0o600);
+                } catch {
+                }
+                console.info('[SQL All in One] Migrated connections from ~/.sql-all-in-one to ~/.hive-formatter');
+            }
+        } catch (e) {
+            console.warn('[SQL All in One] Failed to migrate legacy connections:', e);
         }
     }
 
@@ -63,9 +103,11 @@ export class ConnectionStore {
     }
 
     private async loadFromFile(): Promise<ConnectionsFile> {
+        await this.migrateFromLegacy();
         try {
             await fs.promises.access(this.configFilePath);
         } catch {
+            await this.ensureConfigDir();
             await this.writeDefaultConfig();
         }
         try {
