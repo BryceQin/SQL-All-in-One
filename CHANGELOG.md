@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.15.9] - 2026-06-12
+
+### Bug Fix
+
+- 修复扩展激活失败 `Cannot find module 'ssh2'`：`ssh2` 是 native 模块不能被 esbuild 打包，但 `.vscodeignore` 排除了 `node_modules`，导致运行时找不到。修改 `.vscodeignore` 允许 `ssh2` 等 external 依赖被包含在 vsix 包中；`mysql2` 改为由 esbuild 打包
+- Fix `Cannot find module 'ssh2'` activation failure: `ssh2` is a native module that can't be bundled by esbuild, but `.vscodeignore` excluded `node_modules`. Updated `.vscodeignore` to allow `ssh2` and other external dependencies in the vsix package; `mysql2` now bundled by esbuild
+
+---
+
 ## [2.15.8] - 2026-06-12
 
 ### Bug Fix
