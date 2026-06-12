@@ -37,3 +37,7 @@ out/providers/**
 out/utils/**
 out/test/**
 node_modules/**
+!node_modules/ssh2/**
+!node_modules/mysql2/**
+!node_modules/stream-shift/**
+!node_modules/iconv-lite/**
