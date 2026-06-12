@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.15.5] - 2026-06-12
+
+### Bug Fix
+
+- 修复扩展激活时未等待 `DatabaseModule.initialize()` 完成，导致数据库相关命令（如 `addConnection`）在扩展激活后仍不可用的问题
+- Fix extension not awaiting `DatabaseModule.initialize()` during activation, causing database commands (e.g., `addConnection`) to be unavailable after extension activation
+
+---
+
 ## [2.15.4] - 2026-06-11
 
 ### Bug Fix

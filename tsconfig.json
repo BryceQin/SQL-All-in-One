@@ -16,7 +16,6 @@
         "esModuleInterop": true,
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
-        "noUncheckedIndexedAccess": true,
         "noImplicitOverride": true
     },
     "include": ["src/**/*"],

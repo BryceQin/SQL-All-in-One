@@ -30,4 +30,5 @@ esbuild.build({
         'process.env.NODE_ENV': process.argv.includes('--minify') ? '"production"' : '"development"',
     },
     logLevel: process.argv.includes('--minify') ? 'warning' : 'info',
+    metafile: true,
 }).catch(() => process.exit(1));
