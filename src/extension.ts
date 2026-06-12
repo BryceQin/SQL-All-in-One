@@ -264,7 +264,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         });
 
         const dbModule = new DatabaseModule(context);
-        await dbModule.initialize();
+        try {
+            await dbModule.initialize();
+        } catch (e) {
+            console.error('[SQL All in One] Database initialization failed:', e);
+            getErrorHandler().handle(e, 'Database initialization', ErrorLevel.ERROR, ErrorCategory.CRITICAL);
+        }
         context.subscriptions.push({
             dispose: () => {
                 dbModule.dispose().catch(e => {

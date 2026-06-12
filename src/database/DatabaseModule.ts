@@ -24,9 +24,35 @@ export class DatabaseModule {
   private queryHistory!: QueryHistory;
   private statementDetector!: SqlStatementDetector;
   private outputChannel!: vscode.OutputChannel;
+  private initialized = false;
 
   constructor(context: vscode.ExtensionContext) {
     this.context = context;
+  }
+
+  registerCommands(): void {
+    const connectionDisposables = registerConnectionCommands(this.context, this.treeProvider);
+    const { disposables: queryDisposables, getQueryResultPanel } = registerQueryCommands(
+      this.context,
+      this.queryExecutor,
+      this.safeQueryGuard,
+      this.queryHistory,
+      this.statementDetector,
+      this.outputChannel,
+    );
+    const exportDisposables = registerExportCommands(getQueryResultPanel);
+    const schemaDisposables = registerSchemaCommands(this.context, this.treeProvider, this.statementDetector, this.queryExecutor, this.outputChannel);
+
+    const allDisposables = [
+      ...connectionDisposables,
+      ...queryDisposables,
+      ...exportDisposables,
+      ...schemaDisposables,
+    ];
+
+    for (const disposable of allDisposables) {
+      this.context.subscriptions.push(disposable);
+    }
   }
 
   async initialize(): Promise<void> {
@@ -35,28 +61,41 @@ export class DatabaseModule {
     const connectionStore = getConnectionStore();
     connectionStore.setSecretStorage(this.context.secrets);
 
-    const connectionManager = getConnectionManager();
-    await connectionManager.initialize();
-    vscode.commands.executeCommand('setContext', 'hive-formatter.connectionCount', connectionManager.getAllConnections().length);
+    try {
+      const connectionManager = getConnectionManager();
+      await connectionManager.initialize();
+      vscode.commands.executeCommand('setContext', 'hive-formatter.connectionCount', connectionManager.getAllConnections().length);
+    } catch (e) {
+      console.error('[SQL All in One] Connection manager initialization failed:', e);
+    }
 
-    this.treeProvider = new DatabaseTreeProvider(this.context);
-    const treeView = vscode.window.createTreeView('hive-formatter.databaseExplorer', {
-      treeDataProvider: this.treeProvider,
-      showCollapseAll: true,
-    });
-    this.setupDoubleClickHandler(treeView);
+    try {
+      this.treeProvider = new DatabaseTreeProvider(this.context);
+      const treeView = vscode.window.createTreeView('hive-formatter.databaseExplorer', {
+        treeDataProvider: this.treeProvider,
+        showCollapseAll: true,
+      });
+      this.setupDoubleClickHandler(treeView);
+    } catch (e) {
+      console.error('[SQL All in One] Tree view initialization failed:', e);
+    }
 
-    const container = getContainer();
-    this.queryExecutor = container.get<QueryExecutor>(Tokens.QueryExecutor);
-    this.safeQueryGuard = container.get<SafeQueryGuard>(Tokens.SafeQueryGuard);
-    this.queryHistory = container.get<QueryHistory>(Tokens.QueryHistory);
-    this.queryHistory.initialize(this.context);
-    this.statementDetector = container.get<SqlStatementDetector>(Tokens.SqlStatementDetector);
-    this.outputChannel = vscode.window.createOutputChannel('SQL All in One');
+    try {
+      const container = getContainer();
+      this.queryExecutor = container.get<QueryExecutor>(Tokens.QueryExecutor);
+      this.safeQueryGuard = container.get<SafeQueryGuard>(Tokens.SafeQueryGuard);
+      this.queryHistory = container.get<QueryHistory>(Tokens.QueryHistory);
+      this.queryHistory.initialize(this.context);
+      this.statementDetector = container.get<SqlStatementDetector>(Tokens.SqlStatementDetector);
+      this.outputChannel = vscode.window.createOutputChannel('SQL All in One');
 
-    this.setupSchemaCacheListeners();
+      this.setupSchemaCacheListeners();
+    } catch (e) {
+      console.error('[SQL All in One] Query/Schema initialization failed:', e);
+    }
 
     this.registerCommands();
+    this.initialized = true;
   }
 
   private setupSchemaCacheListeners(): void {
@@ -121,31 +160,6 @@ export class DatabaseModule {
     this.context.subscriptions.push(
       treeView.onDidCollapseElement((e) => handleToggle(e.element))
     );
-  }
-
-  private registerCommands(): void {
-    const connectionDisposables = registerConnectionCommands(this.context, this.treeProvider);
-    const { disposables: queryDisposables, getQueryResultPanel } = registerQueryCommands(
-      this.context,
-      this.queryExecutor,
-      this.safeQueryGuard,
-      this.queryHistory,
-      this.statementDetector,
-      this.outputChannel,
-    );
-    const exportDisposables = registerExportCommands(getQueryResultPanel);
-    const schemaDisposables = registerSchemaCommands(this.context, this.treeProvider, this.statementDetector, this.queryExecutor, this.outputChannel);
-
-    const allDisposables = [
-      ...connectionDisposables,
-      ...queryDisposables,
-      ...exportDisposables,
-      ...schemaDisposables,
-    ];
-
-    for (const disposable of allDisposables) {
-      this.context.subscriptions.push(disposable);
-    }
   }
 
   async dispose(): Promise<void> {
