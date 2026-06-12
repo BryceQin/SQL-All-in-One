@@ -16,6 +16,8 @@ import { QueryResultPanel, FilterCondition } from '../../views/queryResult/Query
 import type { QueryError } from '../adapters/IDatabaseAdapter';
 import { generateEditSql, executeInTransaction, getActiveAdapter } from '../query/DataEditService';
 import { t } from '../../i18n/index';
+import type { SqlStatementDetector } from '../query/SqlStatementDetector';
+import type { QueryExecutor } from '../query/QueryExecutor';
 
 
 export function registerSchemaCommands(
@@ -26,6 +28,7 @@ export function registerSchemaCommands(
     outputChannel: vscode.OutputChannel | undefined
 ): vscode.Disposable[] {
     const disposables: vscode.Disposable[] = [];
+    const treeProvider = dbModule.getTreeProvider();
 
     disposables.push(
         vscode.commands.registerCommand('hive-formatter.refreshSchema', async () => {
@@ -33,11 +36,9 @@ export function registerSchemaCommands(
             if (activeConn) {
                 getSchemaCache().invalidate(activeConn.id);
             }
-            treeProvider.refresh();
+            treeProvider?.refresh();
         })
     );
-
-    let queryResultPanel: QueryResultPanel | undefined;
 
     disposables.push(
         vscode.commands.registerCommand('hive-formatter.viewTableData', async (node?: TableTreeNode | ViewTreeNode) => {
@@ -58,7 +59,8 @@ export function registerSchemaCommands(
                 const quotedName = adapter.quoteIdentifier(node.databaseName) + '.' + adapter.quoteIdentifier(name);
                 const sql = `SELECT * FROM ${quotedName} LIMIT 100;`;
 
-                if (!queryResultPanel) {
+                let queryResultPanel = QueryResultPanel.currentPanel;
+                if (!queryResultPanel || queryResultPanel.isDisposed) {
                     queryResultPanel = QueryResultPanel.createOrShow(context.extensionUri, context);
                     queryResultPanel.onExecuteQuery = (_sql: string): void => {
                         vscode.commands.executeCommand('hive-formatter.executeQuery');
@@ -81,7 +83,7 @@ export function registerSchemaCommands(
                             if (!editAdapter) {
                                 return { success: false, errors: [t('database.noActiveAdapter')] };
                             }
-                            const currentResult = queryResultPanel?.getCurrentResult();
+                            const currentResult = QueryResultPanel.currentPanel?.getCurrentResult();
                             if (!currentResult) {
                                 return { success: false, errors: [t('database.noQueryResult')] };
                             }
@@ -155,35 +157,46 @@ export function registerSchemaCommands(
                     queryResultPanel.showLoading(sql);
                 }
 
-                queryResultPanel!.onExecutePanelSql = async (panelSql: string): Promise<void> => {
+                queryResultPanel.onExecutePanelSql = async (panelSql: string): Promise<void> => {
                     try {
+                        const currentPanel = QueryResultPanel.currentPanel;
+                        if (!currentPanel || currentPanel.isDisposed) return;
                         const panelConn = getConnectionManager().getAllConnections().find(c => c.id === node.connectionId);
                         const panelAdapter = getConnectionManager().getAdapter(node.connectionId);
                         if (!panelAdapter) {
-                            queryResultPanel?.showError({ code: 'NO_CONNECTION', message: t('database.noActiveAdapter'), sql: panelSql });
+                            currentPanel.showError({ code: 'NO_CONNECTION', message: t('database.noActiveAdapter'), sql: panelSql });
                             return;
                         }
-                        queryResultPanel?.showLoading(panelSql);
+                        currentPanel.showLoading(panelSql);
+                        if (!queryExecutor) {
+                            currentPanel.showError({ code: 'NO_EXECUTOR', message: t('database.noActiveAdapter'), sql: panelSql });
+                            return;
+                        }
                         const panelResult = await queryExecutor.execute(panelAdapter, panelSql, { database: node.databaseName }, node.connectionId);
+                        if (currentPanel.isDisposed) return;
                         if (panelResult.status === 'error') {
-                            outputChannel.appendLine(`❌ Error: ${panelResult.error?.message || t('database.unknownError')}`);
-                            outputChannel.appendLine(`   SQL: ${panelSql}`);
-                            queryResultPanel?.showError(panelResult.error as QueryError);
+                            outputChannel?.appendLine(`❌ Error: ${panelResult.error?.message || t('database.unknownError')}`);
+                            outputChannel?.appendLine(`   SQL: ${panelSql}`);
+                            currentPanel.showError(panelResult.error as QueryError);
                         } else {
-                            outputChannel.appendLine(`✅ ${t('database.queryExecutedSuccessfully', String(panelResult.executionTime), String(panelResult.rowCount))}`);
-                            outputChannel.appendLine(`   SQL: ${panelSql}`);
-                            queryResultPanel?.showResult(panelResult, panelConn?.name, panelConn?.color, name);
+                            outputChannel?.appendLine(`✅ ${t('database.queryExecutedSuccessfully', String(panelResult.executionTime), String(panelResult.rowCount))}`);
+                            outputChannel?.appendLine(`   SQL: ${panelSql}`);
+                            currentPanel.showResult(panelResult, panelConn?.name, panelConn?.color, name);
                         }
                     } catch (error) {
-                        queryResultPanel?.showError({ code: 'EXEC_ERROR', message: String(error), sql: panelSql });
+                        const currentPanel = QueryResultPanel.currentPanel;
+                        if (!currentPanel || currentPanel.isDisposed) return;
+                        currentPanel.showError({ code: 'EXEC_ERROR', message: String(error), sql: panelSql });
                     }
                 };
 
-                queryResultPanel!.setSqlAndExecute(sql);
+                if (queryResultPanel && !queryResultPanel.isDisposed) {
+                    queryResultPanel.setSqlAndExecute(sql);
+                }
             } catch (error) {
                 const msg = error instanceof Error ? error.message : String(error);
                 vscode.window.showErrorMessage(t('database.failedToViewTableData', msg));
-                outputChannel.appendLine(`❌ viewTableData error: ${msg}`);
+                outputChannel?.appendLine(`❌ viewTableData error: ${msg}`);
             }
         })
     );
@@ -244,7 +257,7 @@ export function registerSchemaCommands(
                 if (conn) {
                     const name = node instanceof TableTreeNode ? node.tableName : node.viewName;
                     const type = node instanceof TableTreeNode ? 'table' : 'view';
-                    await treeProvider.addFavorite(
+                    await treeProvider?.addFavorite(
                         node.connectionId,
                         conn.name,
                         node.databaseName,
@@ -260,7 +273,7 @@ export function registerSchemaCommands(
     disposables.push(
         vscode.commands.registerCommand('hive-formatter.removeFromFavorites', async (node?: FavoriteTreeNode) => {
             if (node) {
-                await treeProvider.removeFavorite(
+                await treeProvider?.removeFavorite(
                     node.connectionId,
                     node.databaseName,
                     node.objectType,
@@ -298,7 +311,7 @@ export function registerSchemaCommands(
 
                 try {
                     await manager.updateConnection(node.connectionId, updatedConfig);
-                    treeProvider.refresh();
+                    treeProvider?.refresh();
                     vscode.window.showInformationMessage(t('database.defaultDatabaseSet', node.databaseName));
                 } catch (error) {
                     vscode.window.showErrorMessage(t('database.failedToSetDefaultDatabase', String(error)));
@@ -402,7 +415,7 @@ export function registerSchemaCommands(
                 return;
             }
 
-            const statement = statementDetector.detectSelectionOrCurrent(
+            const statement = statementDetector!.detectSelectionOrCurrent(
                 editor.document,
                 editor.selection
             );

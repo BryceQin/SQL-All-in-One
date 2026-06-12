@@ -247,7 +247,7 @@ function registerServicesToContainer(extensionPath: string): void {
 }
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
-    console.log('[SQL All in One] v2.15.8 activate() START');
+    console.log('[SQL All in One] v2.15.12 activate() START');
     registerServicesToContainer(context.extensionPath);
     console.log('[SQL All in One] registerServicesToContainer done');
 

@@ -21,6 +21,7 @@ final_*.sql
 ultimate_*.sql
 docs/**
 esbuild.js
+node_modules/**
 out/commands/**
 out/completion/**
 out/config/**
@@ -36,8 +37,4 @@ out/parser/**
 out/providers/**
 out/utils/**
 out/test/**
-node_modules/**
-!node_modules/ssh2/**
-!node_modules/mysql2/**
-!node_modules/stream-shift/**
-!node_modules/iconv-lite/**
+
