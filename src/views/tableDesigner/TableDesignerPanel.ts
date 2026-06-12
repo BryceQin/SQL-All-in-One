@@ -299,7 +299,12 @@ export class TableDesignerPanel {
     }
 
     private _update(): void {
+        if (this._cachedHtml) {
+            this._panel.webview.html = this._cachedHtml;
+            return;
+        }
         this._getHtmlForWebview().then(html => {
+            this._cachedHtml = html;
             this._panel.webview.html = html;
         }).catch(e => {
             console.error('[SQL All in One] Failed to load TableDesigner panel HTML:', e);

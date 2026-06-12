@@ -65,7 +65,7 @@ export class RootTreeNode extends BaseTreeNode {
     readonly id: string = 'root';
     readonly label: string = 'SQL All in One';
     readonly contextValue?: string = 'root';
-    readonly collapsibleState?: vscode.TreeItemCollapsibleState = vscode.TreeItemCollapsibleState.Expanded;
+    override readonly collapsibleState?: vscode.TreeItemCollapsibleState = vscode.TreeItemCollapsibleState.Expanded;
 }
 
 export class FavoritesTreeNode extends BaseTreeNode {
@@ -73,8 +73,8 @@ export class FavoritesTreeNode extends BaseTreeNode {
     readonly id: string = 'favorites';
     readonly label: string = t('explorer.favorites');
     readonly contextValue?: string = 'favorites';
-    readonly collapsibleState?: vscode.TreeItemCollapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
-    readonly iconPath: vscode.ThemeIcon = new vscode.ThemeIcon('star-full');
+    override readonly collapsibleState?: vscode.TreeItemCollapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+    override readonly iconPath: vscode.ThemeIcon = new vscode.ThemeIcon('star-full');
     
     constructor(parent?: ITreeNode) {
         super({ parent });
@@ -86,7 +86,7 @@ export class GroupTreeNode extends BaseTreeNode {
     readonly id: string;
     readonly label: string;
     readonly contextValue?: string = 'group';
-    readonly collapsibleState?: vscode.TreeItemCollapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+    override readonly collapsibleState?: vscode.TreeItemCollapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
     readonly groupName: string;
     readonly color?: string;
     

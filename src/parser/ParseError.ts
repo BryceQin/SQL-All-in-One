@@ -3,7 +3,7 @@ import type { SqlDialect } from './dialectMapper'
 export class ParseError extends Error {
     readonly dialect: SqlDialect
     readonly sql: string
-    readonly cause: unknown
+    override readonly cause: unknown
 
     constructor(dialect: SqlDialect, sql: string, cause: unknown) {
         const message = cause instanceof Error ? cause.message : String(cause)

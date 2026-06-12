@@ -2,7 +2,7 @@ import * as vscode from 'vscode'
 import { BaseRule } from './BaseRule'
 import type { RuleContext } from './LintRule'
 import { isAstNode } from '../../parser/AstVisitor'
-import { getNodeLocation, getColumnLoc } from '../../parser/astUtils'
+import { getNodeLocation } from '../../parser/astUtils'
 import type { AstNode } from '../../parser/astTypes'
 
 export class ConsistentAliasingRule extends BaseRule {

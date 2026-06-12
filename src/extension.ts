@@ -264,9 +264,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         });
 
         const dbModule = new DatabaseModule(context);
-        dbModule.initialize().catch(e => {
-            getErrorHandler().handle(e, 'Database initialization', ErrorLevel.ERROR, ErrorCategory.CRITICAL);
-        });
+        await dbModule.initialize();
         context.subscriptions.push({
             dispose: () => {
                 dbModule.dispose().catch(e => {
