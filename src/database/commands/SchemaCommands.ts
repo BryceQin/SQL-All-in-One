@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { getConnectionManager } from '../connection/ConnectionManager';
 import { ConnectionConfig } from '../connection/ConnectionConfig';
-import { DatabaseTreeProvider } from '../../views/databaseExplorer/DatabaseTreeProvider';
+import { DatabaseModule } from '../DatabaseModule';
 import {
     ConnectionTreeNode,
     TableTreeNode,
@@ -10,10 +10,8 @@ import {
     DatabaseTreeNode,
     FavoriteTreeNode
 } from '../../views/databaseExplorer/treeNodes';
-import { SqlStatementDetector } from '../query/SqlStatementDetector';
 import { getSchemaCache } from '../schema/SchemaCache';
 import { TableDesignerPanel } from '../../views/tableDesigner/TableDesignerPanel';
-import { QueryExecutor } from '../query/QueryExecutor';
 import { QueryResultPanel, FilterCondition } from '../../views/queryResult/QueryResultPanel';
 import type { QueryError } from '../adapters/IDatabaseAdapter';
 import { generateEditSql, executeInTransaction, getActiveAdapter } from '../query/DataEditService';
@@ -22,10 +20,10 @@ import { t } from '../../i18n/index';
 
 export function registerSchemaCommands(
     context: vscode.ExtensionContext,
-    treeProvider: DatabaseTreeProvider,
-    statementDetector: SqlStatementDetector,
-    queryExecutor: QueryExecutor,
-    outputChannel: vscode.OutputChannel
+    dbModule: DatabaseModule,
+    statementDetector: SqlStatementDetector | undefined,
+    queryExecutor: QueryExecutor | undefined,
+    outputChannel: vscode.OutputChannel | undefined
 ): vscode.Disposable[] {
     const disposables: vscode.Disposable[] = [];
 

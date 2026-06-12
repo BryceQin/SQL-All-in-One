@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { getConnectionManager } from '../connection/ConnectionManager';
 import { getConnectionStore } from '../connection/ConnectionStore';
-import { DatabaseTreeProvider } from '../../views/databaseExplorer/DatabaseTreeProvider';
+import { DatabaseModule } from '../DatabaseModule';
 import { ConnectionTreeNode } from '../../views/databaseExplorer/treeNodes';
 import { openConfigEditorCommand } from '../../commands/configEditorCommand';
 import { t } from '../../i18n/index';
@@ -24,7 +24,7 @@ function showConnectionError(shortMessage: string, fullError: string): void {
 
 export function registerConnectionCommands(
     context: vscode.ExtensionContext,
-    treeProvider: DatabaseTreeProvider
+    dbModule: DatabaseModule
 ): vscode.Disposable[] {
     const disposables: vscode.Disposable[] = [];
 
@@ -104,7 +104,7 @@ export function registerConnectionCommands(
 
             try {
                 await manager.removeConnection(connectionId);
-                treeProvider.refresh();
+                dbModule.getTreeProvider()?.refresh();
                 vscode.window.showInformationMessage(t('database.connectionRemoved', connectionName!));
             } catch (error) {
                 vscode.window.showErrorMessage(t('database.failedToRemoveConnection', String(error)));
@@ -118,7 +118,7 @@ export function registerConnectionCommands(
                 try {
                     await getConnectionManager().connect(node.connectionId);
                     vscode.window.showInformationMessage(t('database.connected', node.connectionName));
-                    treeProvider.refresh();
+                    dbModule.getTreeProvider()?.refresh();
                 } catch (error) {
                     const fullError = error instanceof Error ? error.message : String(error);
                     const shortMessage = fullError.length > 80
@@ -138,7 +138,7 @@ export function registerConnectionCommands(
                 try {
                     await getConnectionManager().disconnect(node.connectionId);
                     vscode.window.showInformationMessage(t('database.disconnected', node.connectionName));
-                    treeProvider.refresh();
+                    dbModule.getTreeProvider()?.refresh();
                 } catch (error) {
                     vscode.window.showErrorMessage(t('database.disconnectFailed', String(error)));
                 }
@@ -237,7 +237,7 @@ export function registerConnectionCommands(
                 vscode.window.showInformationMessage(
                     t('database.importedConnections', String(result.added), String(result.skipped))
                 );
-                treeProvider.refresh();
+                dbModule.getTreeProvider()?.refresh();
             } catch (error) {
                 vscode.window.showErrorMessage(t('database.importFailed', String(error)));
             }
