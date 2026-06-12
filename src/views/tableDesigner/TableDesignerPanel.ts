@@ -82,6 +82,7 @@ export class TableDesignerPanel {
     private _database = '';
     private _tableName = '';
     private _originalStructure?: TableStructure;
+    private _cachedHtml: string | undefined;
 
     public static createOrShow(extensionUri: vscode.Uri, context: vscode.ExtensionContext): TableDesignerPanel {
         const column = vscode.window.activeTextEditor
@@ -117,7 +118,6 @@ export class TableDesignerPanel {
     ) {
         this._panel = panel;
         this._extensionUri = extensionUri;
-        // this.__context = context;
 
         this._update();
 

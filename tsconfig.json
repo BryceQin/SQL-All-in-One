@@ -15,7 +15,9 @@
         "resolveJsonModule": true,
         "esModuleInterop": true,
         "skipLibCheck": true,
-        "forceConsistentCasingInFileNames": true
+        "forceConsistentCasingInFileNames": true,
+        "noUncheckedIndexedAccess": true,
+        "noImplicitOverride": true
     },
     "include": ["src/**/*"],
     "exclude": [

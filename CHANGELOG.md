@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.15.4] - 2026-06-11
+
+### Bug Fix
+
+- 修复扩展激活事件缺少 `onView` 和 `onCommand` 声明，导致点击侧边栏数据库浏览器时扩展未激活，命令 `hive-formatter.addConnection` 等找不到的问题
+- Fix missing `onView` and `onCommand` activation events causing extension not to activate when clicking sidebar database explorer, resulting in "command not found" errors
+
+---
+
 ## [2.15.3] - 2026-06-11
 
 ### Bug Fix

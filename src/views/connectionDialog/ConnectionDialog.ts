@@ -228,7 +228,7 @@ export class ConnectionDialog {
                 'selectFile': t('connDialog.selectFile'),
                 'none': t('connDialog.none'),
             };
-            const i18nScript = '<script>window.__CONNECTION_DIALOG_I18N__ = ' + JSON.stringify(i18nData) + ';</script>';
+            const i18nScript = '<script nonce="' + nonce + '">window.__CONNECTION_DIALOG_I18N__ = ' + JSON.stringify(i18nData) + ';</script>';
             html = html.replace('{{I18N_INJECT}}', i18nScript);
 
             return html;
