@@ -2,6 +2,7 @@ import * as vscode from 'vscode'
 import { t } from '../i18n'
 import { isSqlDocument } from '../core/sqlDialects'
 import { getConfigManager } from '../core/configManager'
+import { getConnectionManager } from '../database/connection/ConnectionManager'
 
 export class StatusBarProvider {
     private statusBarItem: vscode.StatusBarItem
@@ -26,12 +27,23 @@ export class StatusBarProvider {
             }),
             vscode.window.onDidChangeActiveTextEditor(() => {
                 this.updateStatusBar()
+            }),
+            getConnectionManager().onDidChangeActiveConnection(() => {
+                this.updateStatusBar()
             })
         )
     }
 
+    private getEffectiveDialect(): string {
+        const activeConn = getConnectionManager().getActiveConnection()
+        if (activeConn?.dialect) {
+            return activeConn.dialect
+        }
+        return getConfigManager().get<string>('dialect', 'hive')
+    }
+
     private updateStatusBar(): void {
-        const dialect = getConfigManager().get<string>('dialect', 'hive')
+        const dialect = this.getEffectiveDialect()
         const activeEditor = vscode.window.activeTextEditor
 
         if (!activeEditor) {

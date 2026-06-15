@@ -12,7 +12,7 @@ import {
 } from '../../views/databaseExplorer/treeNodes';
 import { getSchemaCache } from '../schema/SchemaCache';
 import { TableDesignerPanel } from '../../views/tableDesigner/TableDesignerPanel';
-import { QueryResultPanel, FilterCondition } from '../../views/queryResult/QueryResultPanel';
+import { QueryResultPanel, FilterCondition, type PendingChange, type ForeignKeyOption } from '../../views/queryResult/QueryResultPanel';
 import type { QueryError } from '../adapters/IDatabaseAdapter';
 import { generateEditSql, executeInTransaction, getActiveAdapter } from '../query/DataEditService';
 import { t } from '../../i18n/index';
@@ -59,7 +59,7 @@ export function registerSchemaCommands(
                 const quotedName = adapter.quoteIdentifier(node.databaseName) + '.' + adapter.quoteIdentifier(name);
                 const sql = `SELECT * FROM ${quotedName} LIMIT 100;`;
 
-                let queryResultPanel = QueryResultPanel.currentPanel;
+                let queryResultPanel = QueryResultPanel.getCurrentInstance();
                 if (!queryResultPanel || queryResultPanel.isDisposed) {
                     queryResultPanel = QueryResultPanel.createOrShow(context.extensionUri, context);
                     queryResultPanel.onExecuteQuery = (_sql: string): void => {
@@ -77,13 +77,13 @@ export function registerSchemaCommands(
                     queryResultPanel.onRequestPage = (_page: number): void => {
                         vscode.commands.executeCommand('hive-formatter.executeQuery');
                     };
-                    queryResultPanel.onCommitChanges = async (changes, tableName, _database): Promise<{ success: boolean; errors?: string[] }> => {
+                    queryResultPanel.onCommitChanges = async (changes: PendingChange[], tableName: string, _database: string): Promise<{ success: boolean; errors?: string[] }> => {
                         try {
                             const editAdapter = getActiveAdapter();
                             if (!editAdapter) {
                                 return { success: false, errors: [t('database.noActiveAdapter')] };
                             }
-                            const currentResult = QueryResultPanel.currentPanel?.getCurrentResult();
+                            const currentResult = QueryResultPanel.getCurrentInstance()?.getCurrentResult();
                             if (!currentResult) {
                                 return { success: false, errors: [t('database.noQueryResult')] };
                             }
@@ -99,7 +99,7 @@ export function registerSchemaCommands(
                             return { success: false, errors: [(error as Error).message] };
                         }
                     };
-                    queryResultPanel.onRequestForeignKeyOptions = async (_column, referencedTable, database): Promise<import('../../views/queryResult/QueryResultPanel').ForeignKeyOption[]> => {
+                    queryResultPanel.onRequestForeignKeyOptions = async (_column: string, referencedTable: string, database: string): Promise<ForeignKeyOption[]> => {
                         try {
                             const fkAdapter = getActiveAdapter();
                             if (!fkAdapter) return [];
@@ -159,7 +159,7 @@ export function registerSchemaCommands(
 
                 queryResultPanel.onExecutePanelSql = async (panelSql: string): Promise<void> => {
                     try {
-                        const currentPanel = QueryResultPanel.currentPanel;
+                        const currentPanel = QueryResultPanel.getCurrentInstance();
                         if (!currentPanel || currentPanel.isDisposed) return;
                         const panelConn = getConnectionManager().getAllConnections().find(c => c.id === node.connectionId);
                         const panelAdapter = getConnectionManager().getAdapter(node.connectionId);
@@ -184,7 +184,7 @@ export function registerSchemaCommands(
                             currentPanel.showResult(panelResult, panelConn?.name, panelConn?.color, name);
                         }
                     } catch (error) {
-                        const currentPanel = QueryResultPanel.currentPanel;
+                        const currentPanel = QueryResultPanel.getCurrentInstance();
                         if (!currentPanel || currentPanel.isDisposed) return;
                         currentPanel.showError({ code: 'EXEC_ERROR', message: String(error), sql: panelSql });
                     }

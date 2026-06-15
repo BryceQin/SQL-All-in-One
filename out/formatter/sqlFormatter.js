@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.formatDialect = exports.format = exports.supportedDialects = void 0;
+exports.clearFormatterCache = clearFormatterCache;
 const dialectRegistry_1 = require("../core/dialectRegistry");
 const AstFormatter_1 = require("./AstFormatter");
 const validateConfig_1 = require("./validateConfig");
@@ -22,6 +23,7 @@ const format = (query, cfg = {}) => {
 exports.format = format;
 // AstFormatter 缓存：按方言和配置哈希缓存实例
 const formatterCache = new Map();
+const formatterCacheOrder = [];
 const MAX_FORMATTER_CACHE_SIZE = 50;
 let lastOptionsRef;
 let lastCacheKey;
@@ -32,78 +34,79 @@ function getFormatterCacheKey(dialect, options) {
             return lastCacheKey;
         }
     }
-    const relevantOptions = {
-        tabWidth: options.tabWidth,
-        useTabs: options.useTabs,
-        keywordCase: options.keywordCase,
-        identifierCase: options.identifierCase,
-        dataTypeCase: options.dataTypeCase,
-        functionCase: options.functionCase,
-        indentStyle: options.indentStyle,
-        logicalOperatorNewline: options.logicalOperatorNewline,
-        expressionWidth: options.expressionWidth,
-        linesBetweenQueries: options.linesBetweenQueries,
-        denseOperators: options.denseOperators,
-        newlineBeforeSemicolon: options.newlineBeforeSemicolon,
-        commaPosition: options.commaPosition,
-        alignColumnDefinitions: options.alignColumnDefinitions,
-        newlineAfterSelect: options.newlineAfterSelect,
-        newlineAfterFrom: options.newlineAfterFrom,
-        newlineBeforeWhere: options.newlineBeforeWhere,
-        newlineAfterWhere: options.newlineAfterWhere,
-        newlineBeforeOrderBy: options.newlineBeforeOrderBy,
-        newlineBeforeGroupBy: options.newlineBeforeGroupBy,
-        newlineBeforeHaving: options.newlineBeforeHaving,
-        newlineBeforeLimit: options.newlineBeforeLimit,
-        tabulateAlias: options.tabulateAlias,
-        newlineBeforeJoin: options.newlineBeforeJoin,
-        alignWhereClauses: options.alignWhereClauses,
-        alignCaseStatements: options.alignCaseStatements,
-        spaceBeforeComma: options.spaceBeforeComma,
-        spaceInsideParentheses: options.spaceInsideParentheses,
-        trimTrailingSpaces: options.trimTrailingSpaces,
-        semicolonAtEnd: options.semicolonAtEnd,
-        singleLineMaxLength: options.singleLineMaxLength,
-        nullCase: options.nullCase,
-        booleanCase: options.booleanCase,
-        newlineAfterGroupBy: options.newlineAfterGroupBy,
-        newlineAfterHaving: options.newlineAfterHaving,
-        newlineAfterOrderBy: options.newlineAfterOrderBy,
-        newlineAfterLimit: options.newlineAfterLimit,
-        newlineAfterJoin: options.newlineAfterJoin,
-        newlineBeforeSetOperation: options.newlineBeforeSetOperation,
-        newlineAfterSetOperation: options.newlineAfterSetOperation,
-        newlineBeforeOn: options.newlineBeforeOn,
-        newlineBeforeUsing: options.newlineBeforeUsing,
-        newlineBeforeWith: options.newlineBeforeWith,
-        newlineAfterWith: options.newlineAfterWith,
-        indentCteBody: options.indentCteBody,
-        newlineBetweenCtes: options.newlineBetweenCtes,
-        cteCommaPosition: options.cteCommaPosition,
-        indentJoinConditions: options.indentJoinConditions,
-        alignOnClauses: options.alignOnClauses,
-        alignInsertColumns: options.alignInsertColumns,
-        alignInsertValuesGroups: options.alignInsertValuesGroups,
-        newlineAfterInsertColumns: options.newlineAfterInsertColumns,
-        newlineBetweenValuesGroups: options.newlineBetweenValuesGroups,
-        newlineAfterCase: options.newlineAfterCase,
-        newlineAfterWhen: options.newlineAfterWhen,
-        newlineAfterThen: options.newlineAfterThen,
-        newlineAfterElse: options.newlineAfterElse,
-        indentWhen: options.indentWhen,
-        indentThen: options.indentThen,
-        newlineAfterIn: options.newlineAfterIn,
-        maxItemsInlineList: options.maxItemsInlineList,
-        subqueryParenStyle: options.subqueryParenStyle,
-        commentPosition: options.commentPosition,
-        blankLinesBeforeSetOperation: options.blankLinesBeforeSetOperation,
-        blankLinesAfterSetOperation: options.blankLinesAfterSetOperation,
-        newlineBeforeLateralView: options.newlineBeforeLateralView,
-        newlineBeforeDistributeBy: options.newlineBeforeDistributeBy,
-        newlineBeforeClusterBy: options.newlineBeforeClusterBy,
-        newlineBeforeSortBy: options.newlineBeforeSortBy
-    };
-    const key = `${dialect}:${JSON.stringify(relevantOptions)}`;
+    const parts = [
+        dialect,
+        String(options.tabWidth),
+        String(options.useTabs),
+        String(options.keywordCase),
+        String(options.identifierCase),
+        String(options.dataTypeCase),
+        String(options.functionCase),
+        String(options.indentStyle),
+        String(options.logicalOperatorNewline),
+        String(options.expressionWidth),
+        String(options.linesBetweenQueries),
+        String(options.denseOperators),
+        String(options.newlineBeforeSemicolon),
+        String(options.commaPosition),
+        String(options.alignColumnDefinitions),
+        String(options.newlineAfterSelect),
+        String(options.newlineAfterFrom),
+        String(options.newlineBeforeWhere),
+        String(options.newlineAfterWhere),
+        String(options.newlineBeforeOrderBy),
+        String(options.newlineBeforeGroupBy),
+        String(options.newlineBeforeHaving),
+        String(options.newlineBeforeLimit),
+        String(options.tabulateAlias),
+        String(options.newlineBeforeJoin),
+        String(options.alignWhereClauses),
+        String(options.alignCaseStatements),
+        String(options.spaceBeforeComma),
+        String(options.spaceInsideParentheses),
+        String(options.trimTrailingSpaces),
+        String(options.semicolonAtEnd),
+        String(options.singleLineMaxLength),
+        String(options.nullCase),
+        String(options.booleanCase),
+        String(options.newlineAfterGroupBy),
+        String(options.newlineAfterHaving),
+        String(options.newlineAfterOrderBy),
+        String(options.newlineAfterLimit),
+        String(options.newlineAfterJoin),
+        String(options.newlineBeforeSetOperation),
+        String(options.newlineAfterSetOperation),
+        String(options.newlineBeforeOn),
+        String(options.newlineBeforeUsing),
+        String(options.newlineBeforeWith),
+        String(options.newlineAfterWith),
+        String(options.indentCteBody),
+        String(options.newlineBetweenCtes),
+        String(options.cteCommaPosition),
+        String(options.indentJoinConditions),
+        String(options.alignOnClauses),
+        String(options.alignInsertColumns),
+        String(options.alignInsertValuesGroups),
+        String(options.newlineAfterInsertColumns),
+        String(options.newlineBetweenValuesGroups),
+        String(options.newlineAfterCase),
+        String(options.newlineAfterWhen),
+        String(options.newlineAfterThen),
+        String(options.newlineAfterElse),
+        String(options.indentWhen),
+        String(options.indentThen),
+        String(options.newlineAfterIn),
+        String(options.maxItemsInlineList),
+        String(options.subqueryParenStyle),
+        String(options.commentPosition),
+        String(options.blankLinesBeforeSetOperation),
+        String(options.blankLinesAfterSetOperation),
+        String(options.newlineBeforeLateralView),
+        String(options.newlineBeforeDistributeBy),
+        String(options.newlineBeforeClusterBy),
+        String(options.newlineBeforeSortBy),
+    ];
+    const key = parts.join('|');
     lastOptionsRef = new WeakRef(options);
     lastCacheKey = key;
     return key;
@@ -120,15 +123,30 @@ const formatDialect = (query, { dialect, ...cfg }) => {
     let formatter = formatterCache.get(cacheKey);
     if (!formatter) {
         if (formatterCache.size >= MAX_FORMATTER_CACHE_SIZE) {
-            const firstKey = formatterCache.keys().next().value;
-            if (firstKey !== undefined) {
-                formatterCache.delete(firstKey);
+            const evictKey = formatterCacheOrder.shift();
+            if (evictKey !== undefined) {
+                formatterCache.delete(evictKey);
             }
         }
         formatter = new AstFormatter_1.AstFormatter(options, dialect);
         formatterCache.set(cacheKey, formatter);
+        formatterCacheOrder.push(cacheKey);
+    }
+    else {
+        // LRU: 将已访问的 key 移到末尾
+        const idx = formatterCacheOrder.indexOf(cacheKey);
+        if (idx !== -1) {
+            formatterCacheOrder.splice(idx, 1);
+            formatterCacheOrder.push(cacheKey);
+        }
     }
     return formatter.format(query);
 };
 exports.formatDialect = formatDialect;
+function clearFormatterCache() {
+    formatterCache.clear();
+    formatterCacheOrder.length = 0;
+    lastOptionsRef = undefined;
+    lastCacheKey = undefined;
+}
 //# sourceMappingURL=sqlFormatter.js.map
