@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.15.22] - 2026-06-15
+
+### Bug Fix
+
+- 修复查询数据面板 CSP (Content Security Policy) 阻止内联样式导致语法高亮不生效和布局异常的问题：`style-src` 同时包含 `'nonce-xxx'` 和 `'unsafe-inline'` 时，根据 CSP 规范 `'unsafe-inline'` 会被忽略，Monaco 编辑器动态注入的内联样式全部被阻止；从 `style-src` 中移除 nonce，仅保留 `'unsafe-inline'`；从 `BaseWebviewPanel` 中移除给 `<style>` 标签添加 nonce 的逻辑；`script-src` 保留 nonce 确保脚本安全
+- 修复查询结果面板 `.tab-content` 的 `height: 100%` 与 `flex: 1` 冲突导致结果区域无法正确填充可用空间的问题：为 `.result-section .tab-content` 添加 `height: auto` 覆盖基础规则
+- Fix CSP blocking inline styles causing syntax highlighting failure and layout issues in query data panel: when `style-src` contains both `'nonce-xxx'` and `'unsafe-inline'`, `'unsafe-inline'` is ignored per CSP spec, blocking all Monaco editor dynamically injected inline styles; removed nonce from `style-src`, keeping only `'unsafe-inline'`; removed `<style>` nonce injection from `BaseWebviewPanel`; kept nonce in `script-src` for script security
+- Fix `.tab-content` `height: 100%` conflicting with `flex: 1` causing result area not filling available space: added `height: auto` to `.result-section .tab-content` to override base rule
+
+---
+
 ## [2.15.21] - 2026-06-15
 
 ### Bug Fix
