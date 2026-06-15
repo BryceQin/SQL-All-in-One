@@ -83,7 +83,7 @@ export abstract class BaseWebviewPanel implements vscode.Disposable {
         );
     }
 
-    protected async loadHtml(injections?: Array<{ placeholder: string; value: string }>): Promise<string> {
+    protected async loadHtml(injections?: { placeholder: string; value: string }[]): Promise<string> {
         if (this._cachedHtml) {
             return this._cachedHtml;
         }
@@ -128,7 +128,7 @@ export abstract class BaseWebviewPanel implements vscode.Disposable {
         this._panel.webview.html = html;
     }
 
-    protected async initializeHtml(injections?: Array<{ placeholder: string; value: string }>): Promise<void> {
+    protected async initializeHtml(injections?: { placeholder: string; value: string }[]): Promise<void> {
         if (this._cachedHtml) {
             this._panel.webview.html = this._cachedHtml;
             return;
