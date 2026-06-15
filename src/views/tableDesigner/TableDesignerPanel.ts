@@ -75,7 +75,6 @@ export class TableDesignerPanel extends BaseWebviewPanel {
 
     protected readonly panelConfig: WebviewPanelConfig = {
         viewType: TableDesignerPanel.viewType,
-        title: 'Table Designer',
         htmlFileName: 'table-designer.html',
         cssFileName: 'table-designer.css',
         jsFileName: 'table-designer.js',
@@ -284,7 +283,7 @@ export class TableDesignerPanel extends BaseWebviewPanel {
     }
 
     public override dispose(): void {
-        (this as unknown as { _originalStructure?: unknown })._originalStructure = undefined;
+        this._originalStructure = undefined;
         super.dispose();
     }
 

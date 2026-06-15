@@ -5,7 +5,6 @@ import * as path from 'path';
 
 export interface WebviewPanelConfig {
     viewType: string;
-    title: string;
     htmlFileName: string;
     cssFileName: string;
     jsFileName: string;
@@ -109,7 +108,7 @@ export abstract class BaseWebviewPanel implements vscode.Disposable {
 
             if (injections) {
                 for (const injection of injections) {
-                    html = html.replace(injection.placeholder, injection.value);
+                    html = html.replaceAll(injection.placeholder, injection.value);
                 }
             }
 

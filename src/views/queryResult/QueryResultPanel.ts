@@ -57,7 +57,6 @@ export class QueryResultPanel extends BaseWebviewPanel {
 
     protected readonly panelConfig: WebviewPanelConfig = {
         viewType: QueryResultPanel.viewType,
-        title: 'Query Result',
         htmlFileName: 'query-result.html',
         cssFileName: 'query-result.css',
         jsFileName: 'query-result.js',

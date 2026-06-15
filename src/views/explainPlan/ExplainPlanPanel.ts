@@ -8,7 +8,6 @@ export class ExplainPlanPanel extends BaseWebviewPanel {
 
     protected readonly panelConfig: WebviewPanelConfig = {
         viewType: ExplainPlanPanel.viewType,
-        title: 'EXPLAIN Plan',
         htmlFileName: 'explain-panel.html',
         cssFileName: 'explain-panel.css',
         jsFileName: 'explain-panel.js',

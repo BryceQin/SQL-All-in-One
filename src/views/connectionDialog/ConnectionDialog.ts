@@ -26,7 +26,6 @@ export class ConnectionDialog extends BaseWebviewPanel {
 
     protected readonly panelConfig: WebviewPanelConfig = {
         viewType: ConnectionDialog.viewType,
-        title: 'Connection Dialog',
         htmlFileName: 'connection-dialog.html',
         cssFileName: 'connection-dialog.css',
         jsFileName: 'connection-dialog.js',

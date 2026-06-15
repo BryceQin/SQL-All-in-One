@@ -40,7 +40,6 @@ export class DataTransferDialog extends BaseWebviewPanel {
 
     protected readonly panelConfig: WebviewPanelConfig = {
         viewType: DataTransferDialog.viewType,
-        title: 'Data Transfer',
         htmlFileName: 'data-transfer.html',
         cssFileName: 'data-transfer.css',
         jsFileName: 'data-transfer.js',
