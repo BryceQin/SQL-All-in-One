@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.15.19] - 2026-06-15
+
+### Bug Fix
+
+- 修复查询结果面板中 SQL 语法高亮不生效的问题：`languageData` 消息在 Webview 准备好之前发送导致丢失，改为在 `webviewReady` 事件后重新发送语言数据，确保 Monaco 编辑器正确注册 Monarch tokenizer
+- 修复查询结果只占下半部分一半、大量空白的问题：`renderVisibleRows()` 在 grid 容器从 `display:none` 切换为可见后同步调用，浏览器尚未完成布局计算导致 `clientHeight` 为 0，虚拟滚动仅渲染极少量行；改为 `requestAnimationFrame` 延迟渲染，并为 flex 子元素添加 `min-height: 0` 确保正确收缩
+- Fix SQL syntax highlighting not working in query result panel: `languageData` message was sent before Webview was ready and got lost; now re-send language data after `webviewReady` event to ensure Monaco editor registers Monarch tokenizer correctly
+- Fix query results only occupying half of the lower section with large blank space: `renderVisibleRows()` was called synchronously after grid container switched from `display:none` to visible, browser hadn't completed layout calculation causing `clientHeight` to be 0, virtual scroll only rendered minimal rows; changed to `requestAnimationFrame` deferred rendering and added `min-height: 0` to flex children for proper shrinking
+
+---
+
 ## [2.15.18] - 2026-06-15
 
 ### Bug Fix

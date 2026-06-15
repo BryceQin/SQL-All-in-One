@@ -1300,6 +1300,7 @@ body {
     flex: 1;
     overflow: hidden;
     position: relative;
+    min-height: 0;
 }
 
 .result-section .bottom-bar {

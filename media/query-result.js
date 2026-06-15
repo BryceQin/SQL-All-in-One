@@ -862,7 +862,9 @@ function handleConfig(data) {
 
 function renderGrid() {
     renderHeader();
-    renderVisibleRows();
+    requestAnimationFrame(function() {
+        renderVisibleRows();
+    });
 }
 
 function renderHeader() {
