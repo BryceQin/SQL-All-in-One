@@ -106,14 +106,15 @@ export abstract class BaseWebviewPanel implements vscode.Disposable {
 
             const nonce = crypto.randomUUID();
             html = html.replace(/\{\{CSP_NONCE\}\}/g, nonce);
-            html = html.replace(/<script(?=\s)/g, `<script nonce="${nonce}"`);
-            html = html.replace(/<style(?=\s)/g, `<style nonce="${nonce}"`);
 
             if (injections) {
                 for (const injection of injections) {
                     html = html.replace(injection.placeholder, injection.value);
                 }
             }
+
+            html = html.replace(/<script(?=[\s>])/g, `<script nonce="${nonce}"`);
+            html = html.replace(/<style(?=[\s>])/g, `<style nonce="${nonce}"`);
 
             this._cachedHtml = html;
             return html;

@@ -120,7 +120,7 @@ export class TableDesignerPanel extends BaseWebviewPanel {
             database: this._database,
             tableName: this._tableName,
         };
-        const configScript = '<script nonce="PLACEHOLDER">window.__TABLE_DESIGNER_CONFIG__ = ' + JSON.stringify(configData) + ';</script>';
+        const configScript = '<script>window.__TABLE_DESIGNER_CONFIG__ = ' + JSON.stringify(configData) + ';</script>';
         await this.initializeHtml([
             { placeholder: '{{CONFIG_INJECT}}', value: configScript },
         ]);
