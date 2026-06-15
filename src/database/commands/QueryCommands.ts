@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { getConnectionManager } from '../connection/ConnectionManager';
 import { DatabaseModule } from '../DatabaseModule';
 import type { SqlDialect } from '../../parser/dialectMapper';
-import { QueryResultPanel, FilterCondition } from '../../views/queryResult/QueryResultPanel';
+import { QueryResultPanel, FilterCondition, type PendingChange, type ForeignKeyOption } from '../../views/queryResult/QueryResultPanel';
 import type { QueryError, QueryRow } from '../adapters/IDatabaseAdapter';
 import { getSchemaCache } from '../schema/SchemaCache';
 import { getConfigManager } from '../../core/configManager';
@@ -46,16 +46,16 @@ export function registerQueryCommands(
 ): { disposables: vscode.Disposable[]; getQueryResultPanel: () => QueryResultPanel | undefined } {
     const disposables: vscode.Disposable[] = [];
 
-    const getQueryResultPanel = (): QueryResultPanel | undefined => QueryResultPanel.currentPanel;
-
-    const queryExecutor = dbModule.getQueryExecutor();
-    const safeQueryGuard = dbModule.getSafeQueryGuard();
-    const statementDetector = dbModule.getStatementDetector();
-    const queryHistory = dbModule.getQueryHistory();
-    const outputChannel = dbModule.getOutputChannel();
+    const getQueryResultPanel = (): QueryResultPanel | undefined => QueryResultPanel.getCurrentInstance();
 
     disposables.push(
         vscode.commands.registerCommand('hive-formatter.executeQuery', async () => {
+            const queryExecutor = dbModule.getQueryExecutor();
+            const safeQueryGuard = dbModule.getSafeQueryGuard();
+            const statementDetector = dbModule.getStatementDetector();
+            const queryHistory = dbModule.getQueryHistory();
+            const outputChannel = dbModule.getOutputChannel();
+
             if (!queryExecutor || !safeQueryGuard || !statementDetector || !queryHistory) {
                 vscode.window.showErrorMessage(t('database.noActiveAdapter'));
                 return;
@@ -115,7 +115,7 @@ export function registerQueryCommands(
                 if (!confirmed) return;
             }
 
-            let queryResultPanel = QueryResultPanel.currentPanel;
+            let queryResultPanel = QueryResultPanel.getCurrentInstance();
             if (!queryResultPanel || queryResultPanel.isDisposed) {
                 queryResultPanel = QueryResultPanel.createOrShow(
                     context.extensionUri,
@@ -140,14 +140,14 @@ export function registerQueryCommands(
                 queryResultPanel.showLoading(statement.sql);
             }
 
-            queryResultPanel.onCommitChanges = async (changes, tableName, _database): Promise<{ success: boolean; errors?: string[] }> => {
+            queryResultPanel.onCommitChanges = async (changes: PendingChange[], tableName: string, _database: string): Promise<{ success: boolean; errors?: string[] }> => {
                 try {
                     const adapter = getActiveAdapter();
                     if (!adapter) {
                         return { success: false, errors: [t('database.noActiveAdapter')] };
                     }
 
-                    const currentResult = QueryResultPanel.currentPanel?.getCurrentResult();
+                    const currentResult = QueryResultPanel.getCurrentInstance()?.getCurrentResult();
                     if (!currentResult) {
                         return { success: false, errors: [t('database.noQueryResult')] };
                     }
@@ -166,7 +166,7 @@ export function registerQueryCommands(
                 }
             };
 
-            queryResultPanel.onRequestForeignKeyOptions = async (_column, referencedTable, database): Promise<import('../../views/queryResult/QueryResultPanel').ForeignKeyOption[]> => {
+            queryResultPanel.onRequestForeignKeyOptions = async (_column: string, referencedTable: string, database: string): Promise<ForeignKeyOption[]> => {
                 try {
                     const adapter = getActiveAdapter();
                     if (!adapter) return [];
@@ -232,7 +232,7 @@ export function registerQueryCommands(
 
             queryResultPanel.onExecutePanelSql = async (sql: string): Promise<void> => {
                 try {
-                    const currentPanel = QueryResultPanel.currentPanel;
+                    const currentPanel = QueryResultPanel.getCurrentInstance();
                     if (!currentPanel || currentPanel.isDisposed) return;
 
                     const connectionManager = getConnectionManager();
@@ -251,28 +251,32 @@ export function registerQueryCommands(
                     }
 
                     currentPanel.showLoading(sql);
-                    const result = await queryExecutor.execute(
-                        panelAdapter,
-                        sql,
-                        { database: activeConn?.database },
-                        activeConn?.id
-                    );
+                    const panelQueryExecutor = dbModule.getQueryExecutor();
+                    const panelOutputChannel = dbModule.getOutputChannel();
+                    const result = panelQueryExecutor
+                        ? await panelQueryExecutor.execute(
+                            panelAdapter,
+                            sql,
+                            { database: activeConn?.database },
+                            activeConn?.id
+                        )
+                        : undefined;
 
                     if (currentPanel.isDisposed) return;
 
-                    if (result.status === 'error') {
-                        outputChannel?.appendLine(`❌ Error: ${result.error?.message || t('database.unknownError')}`);
-                        outputChannel?.appendLine(`   SQL: ${sql}`);
-                        currentPanel.showError(result.error as QueryError);
+                    if (!result || result.status === 'error') {
+                        panelOutputChannel?.appendLine(`❌ Error: ${result?.error?.message || t('database.unknownError')}`);
+                        panelOutputChannel?.appendLine(`   SQL: ${sql}`);
+                        currentPanel.showError((result?.error ?? { code: 'EXEC_ERROR', message: t('database.noActiveAdapter'), sql }) as QueryError);
                     } else {
-                        outputChannel?.appendLine(`✅ ${t('database.queryExecutedSuccessfully', String(result.executionTime), String(result.rowCount))}`);
-                        outputChannel?.appendLine(`   SQL: ${sql}`);
+                        panelOutputChannel?.appendLine(`✅ ${t('database.queryExecutedSuccessfully', String(result.executionTime), String(result.rowCount))}`);
+                        panelOutputChannel?.appendLine(`   SQL: ${sql}`);
                         const activeConfig = connectionManager.getActiveConnection();
                         currentPanel.showResult(result, activeConfig?.name, activeConfig?.color);
                     }
                 } catch (error) {
                     const msg = error instanceof Error ? error.message : String(error);
-                    const currentPanel = QueryResultPanel.currentPanel;
+                    const currentPanel = QueryResultPanel.getCurrentInstance();
                     if (!currentPanel || currentPanel.isDisposed) return;
                     currentPanel.showError({
                         code: 'EXEC_ERROR',
@@ -349,6 +353,7 @@ export function registerQueryCommands(
 
     disposables.push(
         vscode.commands.registerCommand('hive-formatter.cancelQuery', async () => {
+            const queryExecutor = dbModule.getQueryExecutor();
             if (!queryExecutor) {
                 vscode.window.showWarningMessage(t('database.noActiveAdapter'));
                 return;
@@ -382,6 +387,7 @@ export function registerQueryCommands(
 
     disposables.push(
         vscode.commands.registerCommand('hive-formatter.showQueryHistory', async () => {
+            const queryHistory = dbModule.getQueryHistory();
             if (!queryHistory) {
                 vscode.window.showWarningMessage(t('database.noActiveAdapter'));
                 return;
@@ -430,6 +436,7 @@ export function registerQueryCommands(
                 t('database.clear')
             );
             if (confirm === t('database.clear')) {
+                const queryHistory = dbModule.getQueryHistory();
                 if (queryHistory) {
                     await queryHistory.clear();
                 }

@@ -1,71 +1,58 @@
 import * as vscode from 'vscode';
-import * as crypto from 'crypto';
-import * as fs from 'fs';
-import * as path from 'path';
+import { BaseWebviewPanel, type WebviewPanelConfig } from '../BaseWebviewPanel';
 import { getConnectionManager } from '../../database/connection/ConnectionManager';
 import { ExplainPlan } from '../../database/query/ExplainPlan';
 
-export class ExplainPlanPanel {
-    public static currentPanel: ExplainPlanPanel | undefined;
+export class ExplainPlanPanel extends BaseWebviewPanel {
     public static readonly viewType = 'sqlAllInOneExplainPlan';
 
-    private readonly _panel: vscode.WebviewPanel;
-    private readonly _extensionUri: vscode.Uri;
-    private _disposables: vscode.Disposable[] = [];
-    private _cachedHtml: string | undefined;
+    protected readonly panelConfig: WebviewPanelConfig = {
+        viewType: ExplainPlanPanel.viewType,
+        htmlFileName: 'explain-panel.html',
+        cssFileName: 'explain-panel.css',
+        jsFileName: 'explain-panel.js',
+    };
 
-    public static createOrShow(extensionUri: vscode.Uri, context: vscode.ExtensionContext): ExplainPlanPanel {
+    public static createOrShow(extensionUri: vscode.Uri, _context: vscode.ExtensionContext): ExplainPlanPanel {
         const column = vscode.window.activeTextEditor
             ? vscode.window.activeTextEditor.viewColumn
             : undefined;
 
-        if (ExplainPlanPanel.currentPanel) {
-            ExplainPlanPanel.currentPanel._panel.reveal(column || vscode.ViewColumn.Two);
-            return ExplainPlanPanel.currentPanel;
+        const existing = BaseWebviewPanel.getExistingInstance<ExplainPlanPanel>(ExplainPlanPanel.viewType);
+        if (existing) {
+            BaseWebviewPanel.revealExisting(ExplainPlanPanel.viewType, column || vscode.ViewColumn.Two);
+            return existing;
         }
 
-        const panel = vscode.window.createWebviewPanel(
+        const panel = BaseWebviewPanel.createWebviewPanel(
             ExplainPlanPanel.viewType,
             'EXPLAIN Plan',
-            column ? column + 1 : vscode.ViewColumn.Two,
-            {
-                enableScripts: true,
-                localResourceRoots: [
-                    vscode.Uri.joinPath(extensionUri, 'media'),
-                ],
-                retainContextWhenHidden: true,
-            }
+            extensionUri,
+            { viewColumn: column ? column + 1 : vscode.ViewColumn.Two }
         );
 
-        ExplainPlanPanel.currentPanel = new ExplainPlanPanel(panel, extensionUri, context);
-        return ExplainPlanPanel.currentPanel;
+        const instance = new ExplainPlanPanel(panel, extensionUri);
+        BaseWebviewPanel.registerInstance(instance);
+        return instance;
     }
 
-    private constructor(
-        panel: vscode.WebviewPanel,
-        extensionUri: vscode.Uri,
-        _context: vscode.ExtensionContext
-    ) {
-        this._panel = panel;
-        this._extensionUri = extensionUri;
+    private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri) {
+        super(panel, extensionUri);
+        this._initialize();
+    }
 
-        this._update();
-
-        this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
-
-        this._panel.webview.onDidReceiveMessage(
-            async (message: { command?: string; sql?: string }) => {
-                switch (message.command) {
-                    case 'runAnalyze':
-                        if (message.sql) {
-                            this.showExplainPlan(message.sql, true);
-                        }
-                        break;
-                }
-            },
-            null,
-            this._disposables
-        );
+    private async _initialize(): Promise<void> {
+        await this.initializeHtml();
+        this.onDidReceiveMessage(async (message: unknown) => {
+            const msg = message as { command?: string; sql?: string };
+            switch (msg.command) {
+                case 'runAnalyze':
+                    if (msg.sql) {
+                        this.showExplainPlan(msg.sql, true);
+                    }
+                    break;
+            }
+        });
     }
 
     public async showExplainPlan(sql: string, useAnalyze = false): Promise<void> {
@@ -73,7 +60,7 @@ export class ExplainPlanPanel {
         const activeConfig = connectionManager.getActiveConnection();
 
         if (!activeConfig) {
-            this._panel.webview.postMessage({
+            this.postMessage({
                 command: 'explainError',
                 error: 'No active connection. Please connect to a database first.',
             });
@@ -82,7 +69,7 @@ export class ExplainPlanPanel {
 
         const adapter = connectionManager.getAdapter(activeConfig.id);
         if (!adapter) {
-            this._panel.webview.postMessage({
+            this.postMessage({
                 command: 'explainError',
                 error: 'No database adapter available. Please reconnect.',
             });
@@ -91,7 +78,7 @@ export class ExplainPlanPanel {
 
         const capabilities = adapter.getDialectCapabilities();
         if (!capabilities.supportsExplain) {
-            this._panel.webview.postMessage({
+            this.postMessage({
                 command: 'explainError',
                 error: 'EXPLAIN is not supported by this database dialect.',
             });
@@ -99,7 +86,7 @@ export class ExplainPlanPanel {
         }
 
         if (useAnalyze && !capabilities.supportsExplainAnalyze) {
-            this._panel.webview.postMessage({
+            this.postMessage({
                 command: 'explainError',
                 error: 'EXPLAIN ANALYZE is not supported by this database dialect.',
             });
@@ -108,7 +95,7 @@ export class ExplainPlanPanel {
 
         this._panel.title = useAnalyze ? 'EXPLAIN ANALYZE (Actual)' : 'EXPLAIN (Estimated)';
 
-        this._panel.webview.postMessage({
+        this.postMessage({
             command: 'loading',
             sql,
         });
@@ -123,7 +110,7 @@ export class ExplainPlanPanel {
             const parsed = ExplainPlan.parseMysqlExplain(result.raw);
             const suggestions = ExplainPlan.generateSuggestions(parsed);
 
-            this._panel.webview.postMessage({
+            this.postMessage({
                 command: 'explainResult',
                 data: {
                     sql,
@@ -135,67 +122,10 @@ export class ExplainPlanPanel {
                 },
             });
         } catch (error: unknown) {
-            this._panel.webview.postMessage({
+            this.postMessage({
                 command: 'explainError',
                 error: error instanceof Error ? error.message : String(error),
             });
-        }
-    }
-
-    public dispose(): void {
-        ExplainPlanPanel.currentPanel = undefined;
-        this._panel.dispose();
-
-        while (this._disposables.length) {
-            const x = this._disposables.pop();
-            if (x) {
-                x.dispose();
-            }
-        }
-    }
-
-    private _update(): void {
-        if (this._cachedHtml) {
-            this._panel.webview.html = this._cachedHtml;
-            return;
-        }
-        this._getHtmlForWebview().then(html => {
-            this._cachedHtml = html;
-            this._panel.webview.html = html;
-        }).catch(e => {
-            console.error('[SQL All in One] Failed to load ExplainPlan panel HTML:', e);
-        });
-    }
-
-    private async _getHtmlForWebview(): Promise<string> {
-        try {
-            const htmlPath = path.join(
-                this._extensionUri.fsPath,
-                'media',
-                'explain-panel.html'
-            );
-            let html = await fs.promises.readFile(htmlPath, 'utf-8');
-
-            const cssUri = this._panel.webview.asWebviewUri(
-                vscode.Uri.joinPath(this._extensionUri, 'media', 'explain-panel.css')
-            );
-            const jsUri = this._panel.webview.asWebviewUri(
-                vscode.Uri.joinPath(this._extensionUri, 'media', 'explain-panel.js')
-            );
-
-            html = html.replace('{{CSS_URI}}', cssUri.toString());
-            html = html.replace('{{JS_URI}}', jsUri.toString());
-            html = html.replace(/\{\{CSP_SOURCE\}\}/g, this._panel.webview.cspSource);
-
-            const nonce = crypto.randomUUID();
-            html = html.replace(/\{\{CSP_NONCE\}\}/g, nonce);
-            html = html.replace(/<script(?=\s)/g, `<script nonce="${nonce}"`);
-            html = html.replace(/<style(?=\s)/g, `<style nonce="${nonce}"`);
-
-            return html;
-        } catch (error) {
-            console.error('Failed to load EXPLAIN Plan panel HTML:', error);
-            return '<html><body><h2>Failed to load EXPLAIN Plan panel</h2><p>Please reinstall the extension.</p></body></html>';
         }
     }
 }

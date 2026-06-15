@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
-import * as fs from 'fs';
-import * as path from 'path';
+import { BaseWebviewPanel, type WebviewPanelConfig } from '../BaseWebviewPanel';
 import { getConnectionManager } from '../../database/connection/ConnectionManager';
 import { getSchemaCache } from '../../database/schema/SchemaCache';
 import type { IDatabaseAdapter, TableStructure, DataTypeCategory } from '../../database/adapters/IDatabaseAdapter';
@@ -71,85 +70,83 @@ interface DesignerMessage {
     sql?: string;
 }
 
-export class TableDesignerPanel {
-    public static currentPanel: TableDesignerPanel | undefined;
+export class TableDesignerPanel extends BaseWebviewPanel {
     public static readonly viewType = 'sqlAllInOneTableDesigner';
 
-    private readonly _panel: vscode.WebviewPanel;
-    private readonly _extensionUri: vscode.Uri;
-    private _disposables: vscode.Disposable[] = [];
+    protected readonly panelConfig: WebviewPanelConfig = {
+        viewType: TableDesignerPanel.viewType,
+        htmlFileName: 'table-designer.html',
+        cssFileName: 'table-designer.css',
+        jsFileName: 'table-designer.js',
+    };
+
     private _mode: 'create' | 'edit' = 'create';
     private _database = '';
     private _tableName = '';
     private _originalStructure?: TableStructure;
-    private _cachedHtml: string | undefined;
 
-    public static createOrShow(extensionUri: vscode.Uri, context: vscode.ExtensionContext): TableDesignerPanel {
+    public static createOrShow(extensionUri: vscode.Uri, _context: vscode.ExtensionContext): TableDesignerPanel {
         const column = vscode.window.activeTextEditor
             ? vscode.window.activeTextEditor.viewColumn
             : undefined;
 
-        if (TableDesignerPanel.currentPanel) {
-            TableDesignerPanel.currentPanel._panel.reveal(column || vscode.ViewColumn.Two);
-            return TableDesignerPanel.currentPanel;
+        const existing = BaseWebviewPanel.getExistingInstance<TableDesignerPanel>(TableDesignerPanel.viewType);
+        if (existing) {
+            BaseWebviewPanel.revealExisting(TableDesignerPanel.viewType, column || vscode.ViewColumn.Two);
+            return existing;
         }
 
-        const panel = vscode.window.createWebviewPanel(
+        const panel = BaseWebviewPanel.createWebviewPanel(
             TableDesignerPanel.viewType,
             'Table Designer',
-            column ? column + 1 : vscode.ViewColumn.Two,
-            {
-                enableScripts: true,
-                localResourceRoots: [
-                    vscode.Uri.joinPath(extensionUri, 'media'),
-                ],
-                retainContextWhenHidden: true,
-            }
+            extensionUri,
+            { viewColumn: column ? column + 1 : vscode.ViewColumn.Two }
         );
 
-        TableDesignerPanel.currentPanel = new TableDesignerPanel(panel, extensionUri, context);
-        return TableDesignerPanel.currentPanel;
+        const instance = new TableDesignerPanel(panel, extensionUri);
+        BaseWebviewPanel.registerInstance(instance);
+        return instance;
     }
 
-    private constructor(
-        panel: vscode.WebviewPanel,
-        extensionUri: vscode.Uri,
-        _context: vscode.ExtensionContext
-    ) {
-        this._panel = panel;
-        this._extensionUri = extensionUri;
+    private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri) {
+        super(panel, extensionUri);
+        this._initialize();
+    }
 
-        this._update();
-
-        this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
-
-        this._panel.webview.onDidReceiveMessage(
-            async (message: DesignerMessage) => {
-                switch (message.command) {
-                    case 'save':
-                        if (message.data) {
-                            await this._handleSave(message.data);
-                        }
-                        break;
-                    case 'requestTableList':
-                        await this._handleRequestTableList();
-                        break;
-                    case 'requestColumnList':
-                        await this._handleRequestColumnList(message.table ?? '');
-                        break;
-                    case 'exportSql':
-                        if (message.sql) {
-                            await this._handleExportSql(message.sql);
-                        }
-                        break;
-                    case 'close':
-                        this.dispose();
-                        break;
-                }
-            },
-            null,
-            this._disposables
-        );
+    private async _initialize(): Promise<void> {
+        const configData = {
+            mode: this._mode,
+            database: this._database,
+            tableName: this._tableName,
+        };
+        const configScript = '<script>window.__TABLE_DESIGNER_CONFIG__ = ' + JSON.stringify(configData) + ';</script>';
+        await this.initializeHtml([
+            { placeholder: '{{CONFIG_INJECT}}', value: configScript },
+        ]);
+        this.onDidReceiveMessage(async (message: unknown) => {
+            const msg = message as DesignerMessage;
+            switch (msg.command) {
+                case 'save':
+                    if (msg.data) {
+                        await this._handleSave(msg.data);
+                    }
+                    break;
+                case 'requestTableList':
+                    await this._handleRequestTableList();
+                    break;
+                case 'requestColumnList':
+                    await this._handleRequestColumnList(msg.table ?? '');
+                    break;
+                case 'exportSql':
+                    if (msg.sql) {
+                        await this._handleExportSql(msg.sql);
+                    }
+                    break;
+                case 'close':
+                    this.dispose();
+                    break;
+            }
+        });
     }
 
     public async openForCreate(database: string): Promise<void> {
@@ -185,7 +182,7 @@ export class TableDesignerPanel {
             mode: 'create',
         };
 
-        this._panel.webview.postMessage({
+        this.postMessage({
             command: 'tableStructure',
             data: emptyData,
             dataTypes: dataTypes,
@@ -278,77 +275,16 @@ export class TableDesignerPanel {
             originalStructure: structure,
         };
 
-        this._panel.webview.postMessage({
+        this.postMessage({
             command: 'tableStructure',
             data: designData,
             dataTypes: dataTypes,
         });
     }
 
-    public dispose(): void {
-        TableDesignerPanel.currentPanel = undefined;
-        (this as unknown as { _originalStructure?: unknown })._originalStructure = undefined;
-        this._panel.dispose();
-
-        while (this._disposables.length) {
-            const x = this._disposables.pop();
-            if (x) {
-                x.dispose();
-            }
-        }
-    }
-
-    private _update(): void {
-        if (this._cachedHtml) {
-            this._panel.webview.html = this._cachedHtml;
-            return;
-        }
-        this._getHtmlForWebview().then(html => {
-            this._cachedHtml = html;
-            this._panel.webview.html = html;
-        }).catch(e => {
-            console.error('[SQL All in One] Failed to load TableDesigner panel HTML:', e);
-        });
-    }
-
-    private async _getHtmlForWebview(): Promise<string> {
-        try {
-            const htmlPath = path.join(
-                this._extensionUri.fsPath,
-                'media',
-                'table-designer.html'
-            );
-            let html = await fs.promises.readFile(htmlPath, 'utf-8');
-
-            const cssUri = this._panel.webview.asWebviewUri(
-                vscode.Uri.joinPath(this._extensionUri, 'media', 'table-designer.css')
-            );
-            const jsUri = this._panel.webview.asWebviewUri(
-                vscode.Uri.joinPath(this._extensionUri, 'media', 'table-designer.js')
-            );
-
-            html = html.replace('{{CSS_URI}}', cssUri.toString());
-            html = html.replace('{{JS_URI}}', jsUri.toString());
-            html = html.replace(/\{\{CSP_SOURCE\}\}/g, this._panel.webview.cspSource);
-
-            const nonce = crypto.randomUUID();
-            html = html.replace(/\{\{CSP_NONCE\}\}/g, nonce);
-            html = html.replace(/<script(?=\s)/g, `<script nonce="${nonce}"`);
-            html = html.replace(/<style(?=\s)/g, `<style nonce="${nonce}"`);
-
-            const configData = {
-                mode: this._mode,
-                database: this._database,
-                tableName: this._tableName,
-            };
-            const configScript = '<script nonce="' + nonce + '">window.__TABLE_DESIGNER_CONFIG__ = ' + JSON.stringify(configData) + ';</script>';
-            html = html.replace('{{CONFIG_INJECT}}', configScript);
-
-            return html;
-        } catch (error) {
-            console.error('Failed to load Table Designer panel HTML:', error);
-            return '<html><body><h2>Failed to load Table Designer panel</h2><p>Please reinstall the extension.</p></body></html>';
-        }
+    public override dispose(): void {
+        this._originalStructure = undefined;
+        super.dispose();
     }
 
     private _getAdapter(): IDatabaseAdapter | undefined {
@@ -401,7 +337,7 @@ export class TableDesignerPanel {
     private async _handleSave(data: TableDesignData): Promise<void> {
         const validationError = this._validateDesign(data);
         if (validationError) {
-            this._panel.webview.postMessage({
+            this.postMessage({
                 command: 'saveResult',
                 success: false,
                 error: validationError,
@@ -411,7 +347,7 @@ export class TableDesignerPanel {
 
         const adapter = this._getAdapter();
         if (!adapter) {
-            this._panel.webview.postMessage({
+            this.postMessage({
                 command: 'saveResult',
                 success: false,
                 error: 'No active database connection',
@@ -427,7 +363,7 @@ export class TableDesignerPanel {
                 sql = this._generateAlterDDL(data);
             }
         } catch (error) {
-            this._panel.webview.postMessage({
+            this.postMessage({
                 command: 'saveResult',
                 success: false,
                 error: `Failed to generate DDL: ${(error as Error).message}`,
@@ -469,7 +405,7 @@ export class TableDesignerPanel {
                     : `Table \`${data.tableName}\` updated successfully`
             );
         } catch (error) {
-            this._panel.webview.postMessage({
+            this.postMessage({
                 command: 'saveResult',
                 success: false,
                 error: (error as Error).message,
@@ -480,7 +416,7 @@ export class TableDesignerPanel {
     private async _handleRequestTableList(): Promise<void> {
         const adapter = this._getAdapter();
         if (!adapter) {
-            this._panel.webview.postMessage({
+            this.postMessage({
                 command: 'tableList',
                 tables: [],
             });
@@ -489,12 +425,12 @@ export class TableDesignerPanel {
 
         try {
             const tables = await adapter.listTables(this._database);
-            this._panel.webview.postMessage({
+            this.postMessage({
                 command: 'tableList',
                 tables: tables.map(t => t.name),
             });
         } catch {
-            this._panel.webview.postMessage({
+            this.postMessage({
                 command: 'tableList',
                 tables: [],
             });
@@ -504,7 +440,7 @@ export class TableDesignerPanel {
     private async _handleRequestColumnList(table: string): Promise<void> {
         const adapter = this._getAdapter();
         if (!adapter) {
-            this._panel.webview.postMessage({
+            this.postMessage({
                 command: 'columnList',
                 table: table,
                 columns: [],
@@ -514,13 +450,13 @@ export class TableDesignerPanel {
 
         try {
             const structure = await adapter.describeTable(this._database, table);
-            this._panel.webview.postMessage({
+            this.postMessage({
                 command: 'columnList',
                 table: table,
                 columns: structure.columns.map(c => c.name),
             });
         } catch {
-            this._panel.webview.postMessage({
+            this.postMessage({
                 command: 'columnList',
                 table: table,
                 columns: [],

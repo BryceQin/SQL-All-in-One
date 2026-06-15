@@ -312,6 +312,8 @@ function init() {
     updateHeader();
     updateStatusBar();
     initSplitter();
+
+    vscode.postMessage({ command: 'webviewReady' });
 }
 
 function initGridDelegation() {
@@ -564,6 +566,7 @@ function executePanelSql() {
 
 function handleSetEditorSql(data) {
     var sql = data.sql || '';
+    state.currentSql = sql;
     if (monacoEditor || document.querySelector('.sql-editor-fallback')) {
         setEditorSql(sql);
     } else {
@@ -734,6 +737,11 @@ function handleQueryResult(data) {
     state.editingCell = null;
     state.formCurrentIndex = 0;
 
+    var commitDialogEl = document.getElementById('commitDialog');
+    if (commitDialogEl) commitDialogEl.style.display = 'none';
+    var blobDialogEl = document.getElementById('blobDialog');
+    if (blobDialogEl) blobDialogEl.style.display = 'none';
+
     var config = window.__CONFIG__ || {};
     if (config.editMode === 'editable') {
         state.editMode = true;
@@ -750,6 +758,8 @@ function handleQueryResult(data) {
 
     if (config.defaultView === 'form') {
         switchView('form');
+    } else if (state.currentView === 'form') {
+        switchView('grid');
     }
 
     addMessage(
@@ -803,6 +813,10 @@ function handleQueryResultEnd(data) {
 function handleQueryStart(data) {
     state.status = 'running';
     state.currentSql = data.sql || '';
+    var commitDialogEl = document.getElementById('commitDialog');
+    if (commitDialogEl) commitDialogEl.style.display = 'none';
+    var blobDialogEl = document.getElementById('blobDialog');
+    if (blobDialogEl) blobDialogEl.style.display = 'none';
     updateHeader();
     addMessage('info', t('resultPanel.queryStarted') + ': ' + (data.sql || '').substring(0, 200));
 }

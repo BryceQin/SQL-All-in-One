@@ -1,5 +1,31 @@
 # Changelog
 
+## [2.15.18] - 2026-06-15
+
+### Bug Fix
+
+- 修复查询执行命令（`Cmd+Shift+E` / `Cmd+Shift+R`）无响应的问题：命令注册时 `queryExecutor`、`safeQueryGuard`、`statementDetector`、`queryHistory`、`outputChannel` 在 `DatabaseModule.initialize()` 异步完成前被闭包捕获为 `undefined`，改为每次命令执行时通过 `dbModule.getXXX()` 延迟获取
+- 修复 `SchemaCommands` 中 `explainQuery`、`viewTableData` 等命令同样因初始化时序问题无法正常工作的问题
+- Fix query execution commands (`Cmd+Shift+E` / `Cmd+Shift+R`) not responding: `queryExecutor`, `safeQueryGuard`, `statementDetector`, `queryHistory`, `outputChannel` were captured as `undefined` in closures before `DatabaseModule.initialize()` completed asynchronously; changed to lazy getter via `dbModule.getXXX()` on each command invocation
+- Fix `explainQuery`, `viewTableData` and other commands in `SchemaCommands` also not working due to the same initialization timing issue
+
+---
+
+## [2.15.17] - 2026-06-15
+
+### Refactor
+
+- 提取 `BaseWebviewPanel` 抽象基类，统一 5 个 Webview Panel 的单例管理、HTML 加载、Nonce/CSP 安全处理和 Disposables 生命周期
+- 重构 ExplainPlanPanel、DataTransferDialog、TableDesignerPanel、ConnectionDialog、QueryResultPanel 继承 BaseWebviewPanel，消除约 400 行重复代码
+- 修复 QueryResultPanel `_postMessage` 方法递归调用自身的 bug
+- 增强 `onDidReceiveMessage` 错误处理，自动捕获未处理异常
+- Extract `BaseWebviewPanel` abstract base class, unifying singleton management, HTML loading, Nonce/CSP security handling, and Disposables lifecycle across 5 Webview Panels
+- Refactor ExplainPlanPanel, DataTransferDialog, TableDesignerPanel, ConnectionDialog, QueryResultPanel to extend BaseWebviewPanel, eliminating ~400 lines of duplicate code
+- Fix recursive `_postMessage` call bug in QueryResultPanel
+- Add automatic error handling wrapper for `onDidReceiveMessage` handlers
+
+---
+
 ## [2.15.14] - 2026-06-12
 
 ### Bug Fix

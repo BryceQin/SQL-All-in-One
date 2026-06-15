@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
-import * as crypto from 'crypto';
 import * as fs from 'fs';
-import * as path from 'path';
+import { BaseWebviewPanel, type WebviewPanelConfig } from '../BaseWebviewPanel';
 import { getConnectionManager } from '../../database/connection/ConnectionManager';
 import {
     importFromCsv,
@@ -36,145 +35,76 @@ interface DataTransferMessage {
     firstLineFilePath?: string;
 }
 
-export class DataTransferDialog {
-    public static currentPanel: DataTransferDialog | undefined;
+export class DataTransferDialog extends BaseWebviewPanel {
     public static readonly viewType = 'sqlAllInOneDataTransfer';
 
-    private readonly _panel: vscode.WebviewPanel;
-    private readonly _extensionUri: vscode.Uri;
-    private _disposables: vscode.Disposable[] = [];
-    private _cachedHtml: string | undefined;
+    protected readonly panelConfig: WebviewPanelConfig = {
+        viewType: DataTransferDialog.viewType,
+        htmlFileName: 'data-transfer.html',
+        cssFileName: 'data-transfer.css',
+        jsFileName: 'data-transfer.js',
+    };
 
-    public static createOrShow(extensionUri: vscode.Uri, context: vscode.ExtensionContext): DataTransferDialog {
+    public static createOrShow(extensionUri: vscode.Uri, _context: vscode.ExtensionContext): DataTransferDialog {
         const column = vscode.window.activeTextEditor
             ? vscode.window.activeTextEditor.viewColumn
             : undefined;
 
-        if (DataTransferDialog.currentPanel) {
-            DataTransferDialog.currentPanel._panel.reveal(column || vscode.ViewColumn.Two);
-            return DataTransferDialog.currentPanel;
+        const existing = BaseWebviewPanel.getExistingInstance<DataTransferDialog>(DataTransferDialog.viewType);
+        if (existing) {
+            BaseWebviewPanel.revealExisting(DataTransferDialog.viewType, column || vscode.ViewColumn.Two);
+            return existing;
         }
 
-        const panel = vscode.window.createWebviewPanel(
+        const panel = BaseWebviewPanel.createWebviewPanel(
             DataTransferDialog.viewType,
             'Data Transfer',
-            column ? column + 1 : vscode.ViewColumn.Two,
-            {
-                enableScripts: true,
-                localResourceRoots: [
-                    vscode.Uri.joinPath(extensionUri, 'media'),
-                ],
-                retainContextWhenHidden: true,
-            }
+            extensionUri,
+            { viewColumn: column ? column + 1 : vscode.ViewColumn.Two }
         );
 
-        DataTransferDialog.currentPanel = new DataTransferDialog(panel, extensionUri, context);
-        return DataTransferDialog.currentPanel;
+        const instance = new DataTransferDialog(panel, extensionUri);
+        BaseWebviewPanel.registerInstance(instance);
+        return instance;
     }
 
-    private constructor(
-        panel: vscode.WebviewPanel,
-        extensionUri: vscode.Uri,
-        _context: vscode.ExtensionContext
-    ) {
-        this._panel = panel;
-        this._extensionUri = extensionUri;
-        // this.__context = context;
-
-        this._update();
-
-        this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
-
-        this._panel.webview.onDidReceiveMessage(
-            async (message: DataTransferMessage) => {
-                switch (message.command) {
-                    case 'selectFile':
-                        await this._handleSelectFile();
-                        break;
-                    case 'requestTables':
-                        await this._handleRequestTables();
-                        break;
-                    case 'requestColumns':
-                        await this._handleRequestColumns(message.tableName ?? '');
-                        break;
-                    case 'requestPreview':
-                        await this._handleRequestPreview(message.filePath ?? '', message.format ?? '', message.previewRows ?? 10, message.delimiter);
-                        break;
-                    case 'startImport':
-                        if (message.config) {
-                            await this._handleStartImport(message.config);
-                        }
-                        break;
-                    case 'readFilePreview':
-                        await this._handleReadFilePreview(message.firstLineFilePath ?? '');
-                        break;
-                }
-            },
-            null,
-            this._disposables
-        );
+    private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri) {
+        super(panel, extensionUri);
+        this._initialize();
     }
 
-    public dispose(): void {
-        DataTransferDialog.currentPanel = undefined;
-        this._panel.dispose();
-
-        while (this._disposables.length) {
-            const x = this._disposables.pop();
-            if (x) {
-                x.dispose();
+    private async _initialize(): Promise<void> {
+        await this.initializeHtml();
+        this.onDidReceiveMessage(async (message: unknown) => {
+            const msg = message as DataTransferMessage;
+            switch (msg.command) {
+                case 'selectFile':
+                    await this._handleSelectFile();
+                    break;
+                case 'requestTables':
+                    await this._handleRequestTables();
+                    break;
+                case 'requestColumns':
+                    await this._handleRequestColumns(msg.tableName ?? '');
+                    break;
+                case 'requestPreview':
+                    await this._handleRequestPreview(msg.filePath ?? '', msg.format ?? '', msg.previewRows ?? 10, msg.delimiter);
+                    break;
+                case 'startImport':
+                    if (msg.config) {
+                        await this._handleStartImport(msg.config);
+                    }
+                    break;
+                case 'readFilePreview':
+                    await this._handleReadFilePreview(msg.firstLineFilePath ?? '');
+                    break;
             }
-        }
-    }
-
-    private _update(): void {
-        if (this._cachedHtml) {
-            this._panel.webview.html = this._cachedHtml;
-            return;
-        }
-        this._getHtmlForWebview().then(html => {
-            this._cachedHtml = html;
-            this._panel.webview.html = html;
-        }).catch(e => {
-            console.error('[SQL All in One] Failed to load DataTransferDialog HTML:', e);
         });
-    }
-
-    private async _getHtmlForWebview(): Promise<string> {
-        try {
-            const htmlPath = path.join(
-                this._extensionUri.fsPath,
-                'media',
-                'data-transfer.html'
-            );
-            let html = await fs.promises.readFile(htmlPath, 'utf-8');
-
-            const cssUri = this._panel.webview.asWebviewUri(
-                vscode.Uri.joinPath(this._extensionUri, 'media', 'data-transfer.css')
-            );
-            const jsUri = this._panel.webview.asWebviewUri(
-                vscode.Uri.joinPath(this._extensionUri, 'media', 'data-transfer.js')
-            );
-
-            html = html.replace('{{CSS_URI}}', cssUri.toString());
-            html = html.replace('{{JS_URI}}', jsUri.toString());
-            html = html.replace(/\{\{CSP_SOURCE\}\}/g, this._panel.webview.cspSource);
-
-            const nonce = crypto.randomUUID();
-            html = html.replace(/\{\{CSP_NONCE\}\}/g, nonce);
-            html = html.replace(/<script(?=\s)/g, `<script nonce="${nonce}"`);
-            html = html.replace(/<style(?=\s)/g, `<style nonce="${nonce}"`);
-
-            return html;
-        } catch (error) {
-            console.error('Failed to load Data Transfer dialog HTML:', error);
-            return '<html><body><h2>Failed to load Data Transfer dialog</h2><p>Please reinstall the extension.</p></body></html>';
-        }
     }
 
     private async _handleReadFilePreview(filePath: string): Promise<void> {
         if (!filePath) {
-            this._panel.webview.postMessage({
+            this.postMessage({
                 type: 'filePreview',
                 error: 'No file path provided.',
             });
@@ -183,7 +113,7 @@ export class DataTransferDialog {
 
         try {
             if (!fs.existsSync(filePath)) {
-                this._panel.webview.postMessage({
+                this.postMessage({
                     type: 'filePreview',
                     error: 'File not found: ' + filePath,
                 });
@@ -193,12 +123,12 @@ export class DataTransferDialog {
             const content = await fs.promises.readFile(filePath, 'utf-8');
             const firstLine = content.split(/\r?\n/)[0] || '';
 
-            this._panel.webview.postMessage({
+            this.postMessage({
                 type: 'filePreview',
                 firstLine,
             });
         } catch (error: unknown) {
-            this._panel.webview.postMessage({
+            this.postMessage({
                 type: 'filePreview',
                 error: error instanceof Error ? error.message : String(error),
             });
@@ -222,7 +152,7 @@ export class DataTransferDialog {
             } catch {
                 detectedFormat = 'csv';
             }
-            this._panel.webview.postMessage({
+            this.postMessage({
                 type: 'fileSelected',
                 filePath,
                 format: detectedFormat,
@@ -235,7 +165,7 @@ export class DataTransferDialog {
         const activeConfig = connectionManager.getActiveConnection();
 
         if (!activeConfig) {
-            this._panel.webview.postMessage({
+            this.postMessage({
                 type: 'tables',
                 tables: [],
                 error: 'No active connection. Please connect to a database first.',
@@ -245,7 +175,7 @@ export class DataTransferDialog {
 
         const adapter = connectionManager.getAdapter(activeConfig.id);
         if (!adapter) {
-            this._panel.webview.postMessage({
+            this.postMessage({
                 type: 'tables',
                 tables: [],
                 error: 'No database adapter available. Please reconnect.',
@@ -256,12 +186,12 @@ export class DataTransferDialog {
         try {
             const database = activeConfig.database || '';
             const tables = await adapter.listTables(database);
-            this._panel.webview.postMessage({
+            this.postMessage({
                 type: 'tables',
                 tables: tables.map((t) => t.name),
             });
         } catch (error: unknown) {
-            this._panel.webview.postMessage({
+            this.postMessage({
                 type: 'tables',
                 tables: [],
                 error: error instanceof Error ? error.message : String(error),
@@ -271,7 +201,7 @@ export class DataTransferDialog {
 
     private async _handleRequestColumns(tableName: string): Promise<void> {
         if (!tableName) {
-            this._panel.webview.postMessage({
+            this.postMessage({
                 type: 'columns',
                 columns: [],
                 error: 'No table specified.',
@@ -283,7 +213,7 @@ export class DataTransferDialog {
         const activeConfig = connectionManager.getActiveConnection();
 
         if (!activeConfig) {
-            this._panel.webview.postMessage({
+            this.postMessage({
                 type: 'columns',
                 columns: [],
                 error: 'No active connection.',
@@ -293,7 +223,7 @@ export class DataTransferDialog {
 
         const adapter = connectionManager.getAdapter(activeConfig.id);
         if (!adapter) {
-            this._panel.webview.postMessage({
+            this.postMessage({
                 type: 'columns',
                 columns: [],
                 error: 'No database adapter available.',
@@ -304,7 +234,7 @@ export class DataTransferDialog {
         try {
             const database = activeConfig.database || '';
             const structure = await adapter.describeTable(database, tableName);
-            this._panel.webview.postMessage({
+            this.postMessage({
                 type: 'columns',
                 columns: structure.columns.map((c) => ({
                     name: c.name,
@@ -314,7 +244,7 @@ export class DataTransferDialog {
                 })),
             });
         } catch (error: unknown) {
-            this._panel.webview.postMessage({
+            this.postMessage({
                 type: 'columns',
                 columns: [],
                 error: error instanceof Error ? error.message : String(error),
@@ -329,7 +259,7 @@ export class DataTransferDialog {
         delimiter?: string,
     ): Promise<void> {
         if (!filePath) {
-            this._panel.webview.postMessage({
+            this.postMessage({
                 type: 'previewError',
                 error: 'No file selected.',
             });
@@ -338,7 +268,7 @@ export class DataTransferDialog {
 
         try {
             if (!fs.existsSync(filePath)) {
-                this._panel.webview.postMessage({
+                this.postMessage({
                     type: 'previewError',
                     error: 'File not found: ' + filePath,
                 });
@@ -351,7 +281,7 @@ export class DataTransferDialog {
                 const content = await fs.promises.readFile(filePath, 'utf-8');
                 const lines = content.split(/\r?\n/).filter((l) => l.trim() !== '');
                 if (lines.length === 0) {
-                    this._panel.webview.postMessage({
+                    this.postMessage({
                         type: 'previewError',
                         error: 'File is empty.',
                     });
@@ -369,7 +299,7 @@ export class DataTransferDialog {
                     rows.push(parseCsvLine(lines[i], actualDelimiter));
                 }
 
-                this._panel.webview.postMessage({
+                this.postMessage({
                     type: 'preview',
                     headers,
                     rows,
@@ -379,7 +309,7 @@ export class DataTransferDialog {
                 const content = await fs.promises.readFile(filePath, 'utf-8');
                 const records = JSON.parse(content) as unknown[];
                 if (!Array.isArray(records) || records.length === 0) {
-                    this._panel.webview.postMessage({
+                    this.postMessage({
                         type: 'previewError',
                         error: 'JSON file must contain a non-empty array.',
                     });
@@ -392,7 +322,7 @@ export class DataTransferDialog {
                     return headers.map((h) => String(record[h] ?? ''));
                 });
 
-                this._panel.webview.postMessage({
+                this.postMessage({
                     type: 'preview',
                     headers,
                     rows,
@@ -407,7 +337,7 @@ export class DataTransferDialog {
 
                 const previewStatements = statements.slice(0, rowCount);
 
-                this._panel.webview.postMessage({
+                this.postMessage({
                     type: 'preview',
                     headers: ['Statement'],
                     rows: previewStatements.map((s) => [s.length > 200 ? s.substring(0, 200) + '...' : s]),
@@ -416,7 +346,7 @@ export class DataTransferDialog {
                 });
             }
         } catch (error: unknown) {
-            this._panel.webview.postMessage({
+            this.postMessage({
                 type: 'previewError',
                 error: error instanceof Error ? error.message : String(error),
             });
@@ -439,7 +369,7 @@ export class DataTransferDialog {
         const activeConfig = connectionManager.getActiveConnection();
 
         if (!activeConfig) {
-            this._panel.webview.postMessage({
+            this.postMessage({
                 type: 'importResult',
                 result: {
                     success: false,
@@ -454,7 +384,7 @@ export class DataTransferDialog {
 
         const adapter = connectionManager.getAdapter(activeConfig.id);
         if (!adapter) {
-            this._panel.webview.postMessage({
+            this.postMessage({
                 type: 'importResult',
                 result: {
                     success: false,
@@ -478,7 +408,7 @@ export class DataTransferDialog {
             async (progress, token) => {
                 try {
                     if (token.isCancellationRequested) {
-                        this._panel.webview.postMessage({
+                        this.postMessage({
                             type: 'importResult',
                             result: {
                                 success: false,
@@ -536,12 +466,12 @@ export class DataTransferDialog {
                         };
                     }
 
-                    this._panel.webview.postMessage({
+                    this.postMessage({
                         type: 'importResult',
                         result,
                     });
                 } catch (error: unknown) {
-                    this._panel.webview.postMessage({
+                    this.postMessage({
                         type: 'importResult',
                         result: {
                             success: false,
