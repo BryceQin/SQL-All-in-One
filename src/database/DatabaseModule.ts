@@ -65,7 +65,7 @@ export class DatabaseModule {
       this,
     );
     const exportDisposables = registerExportCommands(getQueryResultPanel);
-    const schemaDisposables = registerSchemaCommands(this.context, this, this.statementDetector, this.queryExecutor, this.outputChannel);
+    const schemaDisposables = registerSchemaCommands(this.context, this);
 
     const allDisposables = [
       ...connectionDisposables,

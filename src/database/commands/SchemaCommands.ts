@@ -16,16 +16,11 @@ import { QueryResultPanel, FilterCondition, type PendingChange, type ForeignKeyO
 import type { QueryError } from '../adapters/IDatabaseAdapter';
 import { generateEditSql, executeInTransaction, getActiveAdapter } from '../query/DataEditService';
 import { t } from '../../i18n/index';
-import type { SqlStatementDetector } from '../query/SqlStatementDetector';
-import type { QueryExecutor } from '../query/QueryExecutor';
 
 
 export function registerSchemaCommands(
     context: vscode.ExtensionContext,
-    dbModule: DatabaseModule,
-    statementDetector: SqlStatementDetector | undefined,
-    queryExecutor: QueryExecutor | undefined,
-    outputChannel: vscode.OutputChannel | undefined
+    dbModule: DatabaseModule
 ): vscode.Disposable[] {
     const disposables: vscode.Disposable[] = [];
     const treeProvider = dbModule.getTreeProvider();
@@ -168,6 +163,8 @@ export function registerSchemaCommands(
                             return;
                         }
                         currentPanel.showLoading(panelSql);
+                        const queryExecutor = dbModule.getQueryExecutor();
+                        const outputChannel = dbModule.getOutputChannel();
                         if (!queryExecutor) {
                             currentPanel.showError({ code: 'NO_EXECUTOR', message: t('database.noActiveAdapter'), sql: panelSql });
                             return;
@@ -195,6 +192,7 @@ export function registerSchemaCommands(
                 }
             } catch (error) {
                 const msg = error instanceof Error ? error.message : String(error);
+                const outputChannel = dbModule.getOutputChannel();
                 vscode.window.showErrorMessage(t('database.failedToViewTableData', msg));
                 outputChannel?.appendLine(`❌ viewTableData error: ${msg}`);
             }
@@ -415,7 +413,12 @@ export function registerSchemaCommands(
                 return;
             }
 
-            const statement = statementDetector!.detectSelectionOrCurrent(
+            const statementDetector = dbModule.getStatementDetector();
+            if (!statementDetector) {
+                vscode.window.showWarningMessage(t('database.noActiveAdapter'));
+                return;
+            }
+            const statement = statementDetector.detectSelectionOrCurrent(
                 editor.document,
                 editor.selection
             );

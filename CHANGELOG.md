@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.15.18] - 2026-06-15
+
+### Bug Fix
+
+- 修复查询执行命令（`Cmd+Shift+E` / `Cmd+Shift+R`）无响应的问题：命令注册时 `queryExecutor`、`safeQueryGuard`、`statementDetector`、`queryHistory`、`outputChannel` 在 `DatabaseModule.initialize()` 异步完成前被闭包捕获为 `undefined`，改为每次命令执行时通过 `dbModule.getXXX()` 延迟获取
+- 修复 `SchemaCommands` 中 `explainQuery`、`viewTableData` 等命令同样因初始化时序问题无法正常工作的问题
+- Fix query execution commands (`Cmd+Shift+E` / `Cmd+Shift+R`) not responding: `queryExecutor`, `safeQueryGuard`, `statementDetector`, `queryHistory`, `outputChannel` were captured as `undefined` in closures before `DatabaseModule.initialize()` completed asynchronously; changed to lazy getter via `dbModule.getXXX()` on each command invocation
+- Fix `explainQuery`, `viewTableData` and other commands in `SchemaCommands` also not working due to the same initialization timing issue
+
+---
+
 ## [2.15.17] - 2026-06-15
 
 ### Refactor
