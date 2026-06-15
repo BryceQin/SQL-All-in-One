@@ -436,7 +436,9 @@ function createMonacoInstance(monaco, container, sql) {
     var isDark = document.body.classList.contains('vscode-dark') ||
                  document.querySelector('[data-vscode-theme-kind="vscode-dark"]') ||
                  (window.__CONFIG__ && window.__CONFIG__.themeKind === 2);
-    var initialLanguage = (languageData && languageData.dialect) || state.dialect || 'sql';
+    var monacoBuiltinLanguages = { mysql: 'mysql', postgresql: 'pgsql', pgsql: 'pgsql', redshift: 'redshift', sql: 'sql' };
+    var dialectForMonaco = (languageData && languageData.dialect) || state.dialect || 'sql';
+    var initialLanguage = monacoBuiltinLanguages[ dialectForMonaco ] || 'sql';
     var customThemeName = 'vscode-sync-' + (isDark ? 'dark' : 'light');
     monacoRef.editor.defineTheme(customThemeName, buildVscodeTheme());
     monacoEditor = monaco.editor.create(container, {
@@ -483,7 +485,9 @@ function createMonacoInstance(monaco, container, sql) {
         registerLanguageFeatures(languageData);
         var model = monacoEditor.getModel();
         if (model) {
-            monacoRef.editor.setModelLanguage(model, languageData.dialect || 'mysql');
+            var dialect = languageData.dialect || 'mysql';
+            monacoRef.editor.setModelLanguage(model, dialect);
+            model.forceTokenization();
         }
     }
 
@@ -2319,6 +2323,7 @@ function handleLanguageData(data) {
         var model = monacoEditor.getModel();
         if (model) {
             monacoRef.editor.setModelLanguage(model, data.dialect || 'mysql');
+            model.forceTokenization();
         }
     }
 }
@@ -2567,6 +2572,7 @@ function registerLanguageFeatures(data) {
     var model = monacoEditor.getModel();
     if (model) {
         monacoRef.editor.setModelLanguage(model, dialect);
+        model.forceTokenization();
     }
 }
 
