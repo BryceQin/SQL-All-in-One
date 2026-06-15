@@ -487,7 +487,6 @@ function createMonacoInstance(monaco, container, sql) {
         if (model) {
             var dialect = languageData.dialect || 'mysql';
             monacoRef.editor.setModelLanguage(model, dialect);
-            model.forceTokenization();
         }
     }
 
@@ -2323,7 +2322,6 @@ function handleLanguageData(data) {
         var model = monacoEditor.getModel();
         if (model) {
             monacoRef.editor.setModelLanguage(model, data.dialect || 'mysql');
-            model.forceTokenization();
         }
     }
 }
@@ -2572,7 +2570,6 @@ function registerLanguageFeatures(data) {
     var model = monacoEditor.getModel();
     if (model) {
         monacoRef.editor.setModelLanguage(model, dialect);
-        model.forceTokenization();
     }
 }
 
