@@ -362,6 +362,7 @@ body {
 .tab-content {
   overflow: hidden;
   position: relative;
+  height: 100%;
 }
 
 .tab-page {
@@ -1197,7 +1198,7 @@ body {
 .sql-editor-section {
     display: flex;
     flex-direction: column;
-    height: 30%;
+    flex: 0 0 30%;
     min-height: 60px;
     overflow: hidden;
     border-bottom: none;

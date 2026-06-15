@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.15.20] - 2026-06-15
+
+### Bug Fix
+
+- 修复查询数据面板 SQL 语法高亮不生效的问题：Monaco 编辑器创建时对 Hive/Spark/FlinkSQL 等无内置支持的方言未回退到基础 SQL 高亮；MySQL/PostgreSQL 等有内置支持的方言未正确映射语言 ID；自定义 Monarch tokenizer 注册后未调用 `forceTokenization()` 强制刷新高亮
+- 修复查询结果网格只占下半部分一半、大量空白的问题：`.sql-editor-section` 使用 `height: 30%` 与 flex 布局冲突导致 `.result-section` 无法正确计算剩余空间，改为 `flex: 0 0 30%`；`.tab-content` 缺少 `height: 100%` 导致绝对定位的子元素无法正确填充
+- Fix SQL syntax highlighting not working in query data panel: Monaco editor didn't fall back to basic SQL highlighting for dialects without built-in support (Hive/Spark/FlinkSQL); MySQL/PostgreSQL built-in language IDs were not correctly mapped; `forceTokenization()` was not called after registering custom Monarch tokenizer
+- Fix query result grid only occupying half of the lower section with large blank space: `.sql-editor-section` using `height: 30%` conflicted with flex layout preventing `.result-section` from calculating remaining space correctly, changed to `flex: 0 0 30%`; `.tab-content` missing `height: 100%` prevented absolutely positioned children from filling correctly
+
+---
+
 ## [2.15.19] - 2026-06-15
 
 ### Bug Fix
