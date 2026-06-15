@@ -311,6 +311,7 @@ export class QueryResultPanel extends BaseWebviewPanel {
                     }
                     case 'webviewReady': {
                         this._webviewReady = true;
+                        this._sendLanguageData();
                         if (this._pendingSql) {
                             this.postMessage({
                                 type: 'setEditorSql',
