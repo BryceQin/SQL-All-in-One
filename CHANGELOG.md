@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.15.21] - 2026-06-15
+
+### Bug Fix
+
+- 修复查询数据面板 SQL 语法高亮不生效的根本原因：CSP（Content Security Policy）的 `style-src` 策略阻止了 Monaco 编辑器动态注入内联样式，导致 token 虽被正确识别但颜色无法渲染；在 CSP 中添加 `'unsafe-inline'` 允许 Monaco 注入高亮样式，同时添加 `font-src` 和 `connect-src` 解决字体和 source map 加载被阻止的问题
+- 修复 `model.forceTokenization()` 调用导致 `registerLanguageFeatures` 崩溃的问题：当前 Monaco 版本无此 API，移除调用后 `setModelLanguage` 会自动触发重新 tokenize
+- 修复查询结果网格只占下半部分一半、大量空白的问题：`.sql-editor-section` 使用 `height: 30%` 与 flex 布局冲突，改为 `flex: 0 0 30%`；`.tab-content` 缺少 `height: 100%` 导致绝对定位子元素无法正确填充
+- Fix root cause of SQL syntax highlighting not working in query data panel: CSP `style-src` policy blocked Monaco editor from injecting inline styles, causing tokens to be recognized but colors not rendered; added `'unsafe-inline'` to CSP `style-src` to allow Monaco highlighting styles, and added `font-src` and `connect-src` to fix blocked font and source map loading
+- Fix `model.forceTokenization()` crash in `registerLanguageFeatures`: current Monaco version lacks this API, removed the call as `setModelLanguage` automatically triggers re-tokenization
+- Fix query result grid only occupying half of the lower section with large blank space: `.sql-editor-section` using `height: 30%` conflicted with flex layout, changed to `flex: 0 0 30%`; `.tab-content` missing `height: 100%` prevented absolutely positioned children from filling correctly
+
+---
+
 ## [2.15.20] - 2026-06-15
 
 ### Bug Fix
