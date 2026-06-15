@@ -113,7 +113,6 @@ export abstract class BaseWebviewPanel implements vscode.Disposable {
             }
 
             html = html.replace(/<script(?=[\s>])/g, `<script nonce="${nonce}"`);
-            html = html.replace(/<style(?=[\s>])/g, `<style nonce="${nonce}"`);
 
             this._cachedHtml = html;
             return html;
