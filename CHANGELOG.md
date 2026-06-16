@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.15.23] - 2026-06-16
+
+### Enhancement
+
+- 查询数据面板 Monaco 编辑器的语法高亮颜色现在与 VS Code 编辑器使用的主题颜色保持一致：之前尝试读取不存在的 CSS 变量获取 token 颜色，导致始终回退到硬编码的默认值；现在从 VS Code 主题文件中读取 tokenColors 并传递给 webview，支持自定义主题和 `editor.tokenColorCustomizations` 用户覆盖
+- 取消当前行号的高亮/红色标识：`editorLineNumber.activeForeground` 现在与 `editorLineNumber.foreground` 使用相同颜色，当前行号不再有视觉区分
+- Query data panel Monaco editor syntax highlighting colors now match the VS Code editor theme: previously attempted to read non-existent CSS variables for token colors, always falling back to hardcoded defaults; now reads tokenColors from the VS Code theme file and passes them to the webview, supporting custom themes and `editor.tokenColorCustomizations` user overrides
+- Remove active line number highlight/red indicator: `editorLineNumber.activeForeground` now uses the same color as `editorLineNumber.foreground`, no visual distinction for the current line number
+
+---
+
 ## [2.15.22] - 2026-06-15
 
 ### Bug Fix

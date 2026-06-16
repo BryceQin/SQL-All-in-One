@@ -298,21 +298,23 @@ function buildVscodeTheme() {
     var editorBg = getColor('--vscode-editor-background', isDark ? '#1e1e1e' : '#ffffff');
     var gutterBg = getColor('--vscode-editorGutter-background', editorBg);
     var overviewBg = getColor('--vscode-editorOverviewRuler-background', isDark ? '#252526' : '#ffffff');
+    var tc = (window.__CONFIG__ && window.__CONFIG__.tokenColors) || {};
+    var lineNumColor = getColor('--vscode-editorLineNumber-foreground', isDark ? '#858585' : '#237893');
     return {
         base: base,
         inherit: true,
         rules: [
-            { token: 'keyword', foreground: getColor('--vscode-editorKeyword-foreground', isDark ? '#569cd6' : '#0000ff') },
-            { token: 'string', foreground: getColor('--vscode-string-foreground', isDark ? '#ce9178' : '#a31515') },
-            { token: 'string.sql', foreground: getColor('--vscode-string-foreground', isDark ? '#ce9178' : '#a31515') },
-            { token: 'comment', foreground: getColor('--vscode-editorComments-foreground', isDark ? '#6a9955' : '#008000') },
-            { token: 'number', foreground: getColor('--vscode-editorNumbers-foreground', isDark ? '#b5cea8' : '#098658') },
-            { token: 'type', foreground: getColor('--vscode-editorType-foreground', isDark ? '#4ec9b0' : '#267f99') },
-            { token: 'type.identifier', foreground: getColor('--vscode-editorType-foreground', isDark ? '#4ec9b0' : '#267f99') },
-            { token: 'function', foreground: getColor('--vscode-editorFunction-foreground', isDark ? '#dcdcaa' : '#795e26') },
-            { token: 'operator', foreground: getColor('--vscode-editorOperator-foreground', isDark ? '#d4d4d4' : '#000000') },
-            { token: 'delimiter', foreground: getColor('--vscode-editorBracketMatch-background', isDark ? '#d4d4d4' : '#000000') },
-            { token: 'variable', foreground: getColor('--vscode-editorVariable-foreground', isDark ? '#9cdcfe' : '#001080') },
+            { token: 'keyword', foreground: tc.keyword || getColor('--vscode-editorKeyword-foreground', isDark ? '#569cd6' : '#0000ff') },
+            { token: 'string', foreground: tc.string || getColor('--vscode-string-foreground', isDark ? '#ce9178' : '#a31515') },
+            { token: 'string.sql', foreground: tc.string || getColor('--vscode-string-foreground', isDark ? '#ce9178' : '#a31515') },
+            { token: 'comment', foreground: tc.comment || getColor('--vscode-editorComments-foreground', isDark ? '#6a9955' : '#008000') },
+            { token: 'number', foreground: tc.number || getColor('--vscode-editorNumbers-foreground', isDark ? '#b5cea8' : '#098658') },
+            { token: 'type', foreground: tc.type || getColor('--vscode-editorType-foreground', isDark ? '#4ec9b0' : '#267f99') },
+            { token: 'type.identifier', foreground: tc.type || getColor('--vscode-editorType-foreground', isDark ? '#4ec9b0' : '#267f99') },
+            { token: 'function', foreground: tc.function || getColor('--vscode-editorFunction-foreground', isDark ? '#dcdcaa' : '#795e26') },
+            { token: 'operator', foreground: tc.operator || getColor('--vscode-editorOperator-foreground', isDark ? '#d4d4d4' : '#000000') },
+            { token: 'delimiter', foreground: tc.delimiter || getColor('--vscode-editorBracketMatch-background', isDark ? '#d4d4d4' : '#000000') },
+            { token: 'variable', foreground: tc.variable || getColor('--vscode-editorVariable-foreground', isDark ? '#9cdcfe' : '#001080') },
             { token: '', foreground: getColor('--vscode-editor-foreground', isDark ? '#d4d4d4' : '#000000') },
         ],
         colors: {
@@ -322,8 +324,8 @@ function buildVscodeTheme() {
             'editor.selectionBackground': getColor('--vscode-editor-selectionBackground', isDark ? '#264f78' : '#add6ff'),
             'editorCursor.foreground': getColor('--vscode-editorCursor-foreground', isDark ? '#aeafad' : '#000000'),
             'editor.inactiveSelectionBackground': getColor('--vscode-editor-inactiveSelectionBackground', isDark ? '#3a3d41' : '#e5ebf1'),
-            'editorLineNumber.foreground': getColor('--vscode-editorLineNumber-foreground', isDark ? '#858585' : '#237893'),
-            'editorLineNumber.activeForeground': getColor('--vscode-editorLineNumber-activeForeground', isDark ? '#c6c6c6' : '#0b216f'),
+            'editorLineNumber.foreground': lineNumColor,
+            'editorLineNumber.activeForeground': lineNumColor,
             'editorIndentGuide.background1': getColor('--vscode-editorIndentGuide-background1', isDark ? '#404040' : '#e4e4e4'),
             'editorIndentGuide.activeBackground1': getColor('--vscode-editorIndentGuide-activeBackground1', isDark ? '#707070' : '#e4e4e4'),
             'editorGutter.background': gutterBg,
@@ -468,6 +470,9 @@ function handleSetEditorSql(data) {
 
 function handleThemeChange(data) {
     if (!monacoEditor || typeof monaco === 'undefined') return;
+    if (data.tokenColors && window.__CONFIG__) {
+        window.__CONFIG__.tokenColors = data.tokenColors;
+    }
     var isDark = data.kind === 2 || data.kind === 3;
     var customThemeName = 'vscode-sync-' + (isDark ? 'dark' : 'light');
     monaco.editor.defineTheme(customThemeName, buildVscodeTheme());
