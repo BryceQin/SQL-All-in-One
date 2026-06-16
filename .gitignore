@@ -9,8 +9,14 @@ hive-formatter-*.vsix
 vsc-extension-quickstart.md
 
 .vscode-test/**
+.vscode-test.mjs
 
 .yarnrc
 **/*.map
 out/
 test-*.js
+
+.superpowers/
+docs/superpowers/
+icon-design.svg
+.trae/
