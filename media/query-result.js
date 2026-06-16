@@ -345,29 +345,52 @@ function applyColumnWidths() {
     if (!_colWidths.length) return;
     var headerTable = document.getElementById('gridHeaderTable');
     var bodyTable = document.getElementById('gridBodyTable');
+
     var existingHeaderColgroup = headerTable.querySelector('colgroup');
     if (existingHeaderColgroup) existingHeaderColgroup.remove();
     var existingBodyColgroup = bodyTable.querySelector('colgroup');
     if (existingBodyColgroup) existingBodyColgroup.remove();
+
     var headerColgroup = document.createElement('colgroup');
     var bodyColgroup = document.createElement('colgroup');
+
+    var rowNumWidth = 44;
     var rowNumCol = document.createElement('col');
-    rowNumCol.style.width = '44px';
+    rowNumCol.style.width = rowNumWidth + 'px';
     headerColgroup.appendChild(rowNumCol);
     var bodyRowNumCol = document.createElement('col');
-    bodyRowNumCol.style.width = '44px';
+    bodyRowNumCol.style.width = rowNumWidth + 'px';
     bodyColgroup.appendChild(bodyRowNumCol);
+
+    var totalColWidth = 0;
     for (var i = 0; i < _colWidths.length; i++) {
-        var w = _colWidths[i] + 'px';
+        totalColWidth += _colWidths[i];
+    }
+    var totalWidth = rowNumWidth + totalColWidth;
+
+    var containerWidth = document.getElementById('gridContainer').clientWidth;
+    var tableWidth = Math.max(totalWidth, containerWidth);
+    var extra = tableWidth - totalWidth;
+    var extraPerCol = _colWidths.length > 0 ? extra / _colWidths.length : 0;
+
+    for (var i = 0; i < _colWidths.length; i++) {
+        var w = Math.ceil(_colWidths[i] + extraPerCol);
+        var wPx = w + 'px';
         var hCol = document.createElement('col');
-        hCol.style.width = w;
+        hCol.style.width = wPx;
         headerColgroup.appendChild(hCol);
         var bCol = document.createElement('col');
-        bCol.style.width = w;
+        bCol.style.width = wPx;
         bodyColgroup.appendChild(bCol);
     }
+
     headerTable.insertBefore(headerColgroup, headerTable.firstChild);
     bodyTable.insertBefore(bodyColgroup, bodyTable.firstChild);
+
+    headerTable.style.width = tableWidth + 'px';
+    bodyTable.style.width = tableWidth + 'px';
+    headerTable.style.minWidth = '';
+    bodyTable.style.minWidth = '';
 }
 
 function init() {
@@ -390,6 +413,7 @@ function init() {
 
     const gridBodyWrapper = document.getElementById('gridBodyWrapper');
     gridBodyWrapper.addEventListener('scroll', onGridScroll);
+    window.addEventListener('resize', onWindowResize);
     document.addEventListener('click', onDocumentClick);
     document.addEventListener('keydown', onKeyDown);
     initGridDelegation();
@@ -682,6 +706,14 @@ function handleThemeChange(data) {
 }
 
 var _scrollRafId = 0;
+var _resizeTimer = 0;
+
+function onWindowResize() {
+    clearTimeout(_resizeTimer);
+    _resizeTimer = setTimeout(function() {
+        applyColumnWidths();
+    }, 100);
+}
 
 function onGridScroll() {
     if (_scrollRafId) return;
