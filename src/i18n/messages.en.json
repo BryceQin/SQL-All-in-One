@@ -585,6 +585,7 @@
     "configEditor.expandAll": "Expand All",
     "configEditor.collapseAll": "Collapse All",
     "resultPanel.queryData": "Query Data",
+    "resultPanel.queryResult": "Query Result",
     "resultPanel.sqlEditor": "SQL Editor",
     "resultPanel.executePanel": "Execute",
     "resultPanel.stopPanel": "Stop",

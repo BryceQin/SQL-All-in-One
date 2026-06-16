@@ -2,7 +2,7 @@
     "name": "hive-formatter",
     "displayName": "SQL All in One",
     "description": "SQL All in One - 强大的 SQL 格式化、智能补全、语法检查、DDL 转换 VSCode 插件，支持 Hive、MySQL、SparkSQL、FlinkSQL、PostgreSQL、BigQuery、SQLite 等多种 SQL 方言",
-    "version": "2.15.24",
+    "version": "2.15.25",
     "publisher": "bryce-qin",
     "contributors": [
         "TalDu"
@@ -63,7 +63,7 @@
             "activitybar": [
                 {
                     "id": "hive-formatter",
-                    "title": "SQL All in One",
+                    "title": "%hive-formatter.viewsContainers.activitybar.title%",
                     "icon": "resources/database-icon.svg"
                 }
             ]
@@ -233,37 +233,37 @@
         ],
         "commands": [
             {
-                "title": "Format Selection (SQL All in One)",
-                "shortTitle": "Format SQL",
+                "title": "%hive-formatter.command.formatSelection.title%",
+                "shortTitle": "%hive-formatter.command.formatSelection.shortTitle%",
                 "command": "hive-formatter.format-selection"
             },
             {
-                "title": "MySQL to HiveSQL",
-                "shortTitle": "MySQL to Hive",
+                "title": "%hive-formatter.command.mysqlToHive.title%",
+                "shortTitle": "%hive-formatter.command.mysqlToHive.shortTitle%",
                 "command": "hive-formatter.mysql-to-hive"
             },
             {
-                "title": "HiveSQL to MySQL",
-                "shortTitle": "Hive to MySQL",
+                "title": "%hive-formatter.command.hiveToMysql.title%",
+                "shortTitle": "%hive-formatter.command.hiveToMysql.shortTitle%",
                 "command": "hive-formatter.hive-to-mysql"
             },
             {
-                "title": "SQL All in One Config",
-                "shortTitle": "Config Editor",
+                "title": "%hive-formatter.command.openConfigEditor.title%",
+                "shortTitle": "%hive-formatter.command.openConfigEditor.shortTitle%",
                 "command": "hive-formatter.open-config-editor"
             },
             {
-                "title": "Replace Parameter",
-                "shortTitle": "Replace Param",
+                "title": "%hive-formatter.command.replaceParameter.title%",
+                "shortTitle": "%hive-formatter.command.replaceParameter.shortTitle%",
                 "command": "hive-formatter.replaceParameter"
             },
             {
                 "command": "hive-formatter.toggleComment",
-                "title": "切换注释 (SQL All in One)"
+                "title": "%hive-formatter.command.toggleComment.title%"
             },
             {
                 "command": "hive-formatter.toggleAdvancedComment",
-                "title": "切换高级注释 (SQL All in One)"
+                "title": "%hive-formatter.command.toggleAdvancedComment.title%"
             },
             {
                 "command": "hive-formatter.addConnection",
@@ -425,7 +425,7 @@
             }
         ],
         "configuration": {
-            "title": "SQL All in One",
+            "title": "%hive-formatter.configuration.title%",
             "properties": {
                 "SQL-All-in-One.dialect": {
                     "type": "string",
@@ -1485,14 +1485,14 @@
                     "type": "number",
                     "default": 1000,
                     "minimum": 1,
-                    "description": "Maximum number of rows returned by query execution",
+                    "markdownDescription": "%hive-formatter.config.query.maxRows.markdownDescription%",
                     "order": 180
                 },
                 "SQL-All-in-One.query.timeout": {
                     "type": "number",
                     "default": 30000,
                     "minimum": 1000,
-                    "description": "Query execution timeout in milliseconds",
+                    "markdownDescription": "%hive-formatter.config.query.timeout.markdownDescription%",
                     "order": 181
                 },
                 "SQL-All-in-One.safetyGuard.level": {
@@ -1503,12 +1503,12 @@
                         "off"
                     ],
                     "enumDescriptions": [
-                        "Intercept all rules (warnings + confirmations require confirmation)",
-                        "Only intercept confirmation-level operations (default)",
-                        "No interception"
+                        "%hive-formatter.config.safetyGuard.level.enumDescriptions.strict%",
+                        "%hive-formatter.config.safetyGuard.level.enumDescriptions.moderate%",
+                        "%hive-formatter.config.safetyGuard.level.enumDescriptions.off%"
                     ],
                     "default": "moderate",
-                    "description": "Safety guard level for dangerous SQL operations",
+                    "markdownDescription": "%hive-formatter.config.safetyGuard.level.markdownDescription%",
                     "order": 190
                 },
                 "SQL-All-in-One.history.maxEntries": {
@@ -1516,7 +1516,7 @@
                     "default": 500,
                     "minimum": 10,
                     "maximum": 10000,
-                    "description": "Maximum number of query history entries",
+                    "markdownDescription": "%hive-formatter.config.history.maxEntries.markdownDescription%",
                     "order": 188
                 },
                 "SQL-All-in-One.execution.batchMode": {
@@ -1526,7 +1526,7 @@
                         "transaction"
                     ],
                     "default": "sequential",
-                    "description": "Batch execution mode: sequential or transaction",
+                    "markdownDescription": "%hive-formatter.config.execution.batchMode.markdownDescription%",
                     "order": 191
                 },
                 "SQL-All-in-One.execution.onError": {
@@ -1536,13 +1536,13 @@
                         "continue"
                     ],
                     "default": "stop",
-                    "description": "Error handling strategy for batch execution",
+                    "markdownDescription": "%hive-formatter.config.execution.onError.markdownDescription%",
                     "order": 192
                 },
                 "SQL-All-in-One.execution.saveProgress": {
                     "type": "boolean",
                     "default": true,
-                    "description": "Save batch execution progress for resumption",
+                    "markdownDescription": "%hive-formatter.config.execution.saveProgress.markdownDescription%",
                     "order": 193
                 },
                 "SQL-All-in-One.execution.cancelRetries": {
@@ -1550,14 +1550,14 @@
                     "default": 3,
                     "minimum": 0,
                     "maximum": 10,
-                    "description": "Number of retry attempts when cancelling a query",
+                    "markdownDescription": "%hive-formatter.config.execution.cancelRetries.markdownDescription%",
                     "order": 194
                 },
                 "SQL-All-in-One.execution.cancelRetryDelay": {
                     "type": "number",
                     "default": 500,
                     "minimum": 100,
-                    "description": "Delay between cancel retry attempts in milliseconds",
+                    "markdownDescription": "%hive-formatter.config.execution.cancelRetryDelay.markdownDescription%",
                     "order": 195
                 },
                 "SQL-All-in-One.query.pageSize": {
@@ -1565,7 +1565,7 @@
                     "default": 100,
                     "minimum": 10,
                     "maximum": 1000,
-                    "description": "Number of rows per page in the query result panel",
+                    "markdownDescription": "%hive-formatter.config.query.pageSize.markdownDescription%",
                     "order": 182
                 },
                 "SQL-All-in-One.export.defaultFormat": {
@@ -1577,43 +1577,43 @@
                         "ddl"
                     ],
                     "default": "csv",
-                    "description": "Default export format",
+                    "markdownDescription": "%hive-formatter.config.export.defaultFormat.markdownDescription%",
                     "order": 200
                 },
                 "SQL-All-in-One.export.csvDelimiter": {
                     "type": "string",
                     "default": ",",
-                    "description": "CSV delimiter character",
+                    "markdownDescription": "%hive-formatter.config.export.csvDelimiter.markdownDescription%",
                     "order": 201
                 },
                 "SQL-All-in-One.export.csvEncoding": {
                     "type": "string",
                     "default": "utf-8",
-                    "description": "CSV file encoding",
+                    "markdownDescription": "%hive-formatter.config.export.csvEncoding.markdownDescription%",
                     "order": 202
                 },
                 "SQL-All-in-One.export.includeHeaders": {
                     "type": "boolean",
                     "default": true,
-                    "description": "Include column headers in export",
+                    "markdownDescription": "%hive-formatter.config.export.includeHeaders.markdownDescription%",
                     "order": 203
                 },
                 "SQL-All-in-One.query.nullPlaceholder": {
                     "type": "string",
                     "default": "(NULL)",
-                    "description": "Display text for NULL values in the result panel",
+                    "markdownDescription": "%hive-formatter.config.query.nullPlaceholder.markdownDescription%",
                     "order": 183
                 },
                 "SQL-All-in-One.results.enablePreload": {
                     "type": "boolean",
                     "default": true,
-                    "description": "Enable scroll preloading for large result sets",
+                    "markdownDescription": "%hive-formatter.config.results.enablePreload.markdownDescription%",
                     "order": 230
                 },
                 "SQL-All-in-One.results.jsonPrettyPrint": {
                     "type": "boolean",
                     "default": true,
-                    "description": "Auto-format JSON values in the result panel",
+                    "markdownDescription": "%hive-formatter.config.results.jsonPrettyPrint.markdownDescription%",
                     "order": 231
                 },
                 "SQL-All-in-One.results.dateFormat": {
@@ -1624,14 +1624,14 @@
                         "relative"
                     ],
                     "default": "local",
-                    "description": "Date display format in the result panel",
+                    "markdownDescription": "%hive-formatter.config.results.dateFormat.markdownDescription%",
                     "order": 232
                 },
                 "SQL-All-in-One.results.longTextThreshold": {
                     "type": "number",
                     "default": 200,
                     "minimum": 50,
-                    "description": "Character threshold for truncating long text in the result panel",
+                    "markdownDescription": "%hive-formatter.config.results.longTextThreshold.markdownDescription%",
                     "order": 233
                 },
                 "SQL-All-in-One.dataEditor.editMode": {
@@ -1641,13 +1641,13 @@
                         "editable"
                     ],
                     "default": "readonly",
-                    "description": "Result panel edit mode (readonly or editable)",
+                    "markdownDescription": "%hive-formatter.config.dataEditor.editMode.markdownDescription%",
                     "order": 210
                 },
                 "SQL-All-in-One.dataEditor.autoCommit": {
                     "type": "boolean",
                     "default": true,
-                    "description": "Auto commit mode for data editor changes",
+                    "markdownDescription": "%hive-formatter.config.dataEditor.autoCommit.markdownDescription%",
                     "order": 211
                 },
                 "SQL-All-in-One.dataEditor.defaultView": {
@@ -1657,7 +1657,7 @@
                         "form"
                     ],
                     "default": "grid",
-                    "description": "Default view mode for result panel (grid or form)",
+                    "markdownDescription": "%hive-formatter.config.dataEditor.defaultView.markdownDescription%",
                     "order": 212
                 },
                 "SQL-All-in-One.dataEditor.optimisticLocking": {

@@ -1223,6 +1223,25 @@ body {
     letter-spacing: 0.5px;
 }
 
+.db-selector {
+    background: var(--input-bg);
+    color: var(--input-fg);
+    border: 1px solid var(--input-border);
+    border-radius: var(--radius-sm);
+    padding: 2px 8px;
+    font-size: 11px;
+    min-width: 120px;
+    max-width: 200px;
+    cursor: pointer;
+    outline: none;
+}
+.db-selector:focus {
+    border-color: var(--focus-border);
+}
+.db-selector:hover {
+    border-color: var(--border-hover);
+}
+
 .sql-editor-container {
     flex: 1;
     min-height: 0;

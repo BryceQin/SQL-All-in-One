@@ -47,6 +47,7 @@ type WebviewMessage =
     | { command: 'requestHover'; requestId: string; sql: string; position: { line: number; column: number }; dialect: string }
     | { command: 'requestFormat'; requestId: string; sql: string; dialect: string }
     | { command: 'requestDiagnostics'; requestId: string; sql: string; dialect: string }
+    | { command: 'changeDatabase'; database: string }
     | { command: 'webviewReady' };
 
 export class QueryResultPanel extends BaseWebviewPanel {
@@ -83,6 +84,7 @@ export class QueryResultPanel extends BaseWebviewPanel {
     public onCreateSavepoint?: (name: string) => Promise<void>;
     public onRollbackToSavepoint?: (name: string) => Promise<void>;
     public onExecutePanelSql?: (sql: string) => Promise<void>;
+    public onChangeDatabase?: (database: string) => Promise<void>;
 
     public static createOrShow(extensionUri: vscode.Uri, _context: vscode.ExtensionContext): QueryResultPanel {
         const column = vscode.window.activeTextEditor
@@ -97,7 +99,7 @@ export class QueryResultPanel extends BaseWebviewPanel {
 
         const panel = BaseWebviewPanel.createWebviewPanel(
             QueryResultPanel.viewType,
-            'Query Result',
+            t('resultPanel.queryResult'),
             extensionUri,
             { viewColumn: column ? column + 1 : vscode.ViewColumn.Two }
         );
@@ -265,6 +267,11 @@ export class QueryResultPanel extends BaseWebviewPanel {
                             await this.onExecutePanelSql(msg.sql);
                         }
                         break;
+                    case 'changeDatabase':
+                        if (this.onChangeDatabase) {
+                            await this.onChangeDatabase(msg.database);
+                        }
+                        break;
                     case 'requestCompletion': {
                         const items = await this._languageBridge.handleCompletionRequest(
                             msg.sql,
@@ -314,6 +321,7 @@ export class QueryResultPanel extends BaseWebviewPanel {
                     case 'webviewReady': {
                         this._webviewReady = true;
                         this._sendLanguageData();
+                        this._sendDatabaseList();
                         if (this._pendingSql) {
                             this.postMessage({
                                 type: 'setEditorSql',
@@ -473,6 +481,13 @@ export class QueryResultPanel extends BaseWebviewPanel {
         this._sendLanguageData();
     }
 
+    public sendDatabaseList(databases: string[], currentDatabase: string): void {
+        this.postMessage({
+            type: 'databaseList',
+            data: { databases, currentDatabase },
+        });
+    }
+
     public override dispose(): void {
         if (this._sendLanguageDataTimer) {
             clearTimeout(this._sendLanguageDataTimer);
@@ -494,6 +509,22 @@ export class QueryResultPanel extends BaseWebviewPanel {
             });
             this._sendLanguageDataTimer = undefined;
         }, 100);
+    }
+
+    private _sendDatabaseList(): void {
+        try {
+            const connectionManager = getConnectionManager();
+            const activeConn = connectionManager.getActiveConnection();
+            if (activeConn) {
+                const adapter = connectionManager.getAdapter(activeConn.id);
+                if (adapter) {
+                    adapter.listDatabases().then(dbs => {
+                        const databases = dbs.map(d => d.name);
+                        this.sendDatabaseList(databases, activeConn.database || '');
+                    }).catch(() => {});
+                }
+            }
+        } catch { /* ignore */ }
     }
 
     private async _handleExport(format: string, options?: Record<string, unknown>): Promise<void> {

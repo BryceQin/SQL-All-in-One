@@ -286,6 +286,21 @@ export function registerQueryCommands(
                 }
             };
 
+            queryResultPanel.onChangeDatabase = async (database: string): Promise<void> => {
+                const connectionManager = getConnectionManager();
+                const activeConn = connectionManager.getActiveConnection();
+                if (!activeConn) return;
+
+                const config = connectionManager.getAllConnections().find(c => c.id === activeConn.id);
+                if (!config) return;
+
+                const updatedConfig = { ...config, database };
+                try {
+                    await connectionManager.updateConnection(activeConn.id, updatedConfig);
+                    connectionManager.setActiveConnection(activeConn.id);
+                } catch { /* ignore */ }
+            };
+
             const activeConfig = connectionManager.getActiveConnection();
             const result = await queryExecutor.execute(
                 adapter,
