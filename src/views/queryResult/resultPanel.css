@@ -404,12 +404,11 @@ body {
 .grid-table {
   border-collapse: collapse;
   table-layout: fixed;
-  width: max-content;
-  min-width: 100%;
 }
 
 .grid-header-table {
   background: var(--surface2);
+  table-layout: fixed;
 }
 
 .grid-header-table th {
@@ -427,6 +426,8 @@ body {
   position: relative;
   vertical-align: middle;
   letter-spacing: 0.3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .grid-header-table th:hover {
@@ -532,12 +533,12 @@ body {
   background: var(--row-selected-bg);
 }
 
-.grid-body-table td:not(.row-num):not(.cell-null) {
-  min-width: 80px;
+.grid-body-table td:not(.row-num) {
+  overflow: hidden;
 }
 
 .grid-header-table th:not(.row-num-header) {
-  min-width: 80px;
+  overflow: hidden;
 }
 
 .empty-state {

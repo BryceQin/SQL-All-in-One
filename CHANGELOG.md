@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.15.27] - 2026-06-16
+
+### Bug Fix
+
+- 修复查询结果面板当数据值很长时列名与数据仍然错位的问题：移除 CSS 中 `width: max-content` 和 `min-width: 80px`，改为由 JS 精确计算两个表的相同像素宽度并通过 `<colgroup>` 统一分配；多余空间均匀分配到各列，确保表头和表体总宽度完全一致
+- 修复长值覆盖相邻空值列的问题：所有数据列统一添加 `overflow: hidden`，NULL 单元格不再因缺少 `min-width` 而被压缩；表头 `<th>` 也添加 `overflow: hidden` + `text-overflow: ellipsis`，与表体 `<td>` 保持一致
+- 修复窗口大小变化后列宽不再适配的问题：添加 `window.resize` 监听，自动重新计算并应用列宽
+- Fix query result panel column misalignment when data values are very long: removed CSS `width: max-content` and `min-width: 80px`, replaced with JS-calculated exact pixel widths for both tables via `<colgroup>`; extra space evenly distributed to all columns ensuring header and body total widths are identical
+- Fix long values overflowing into adjacent empty columns: all data columns now have `overflow: hidden`, NULL cells no longer compressed due to missing `min-width`; header `<th>` also gets `overflow: hidden` + `text-overflow: ellipsis` to match body `<td>`
+- Fix column widths not adapting after window resize: added `window.resize` listener to recalculate and apply column widths
+
+---
+
 ## [2.15.26] - 2026-06-16
 
 ### Bug Fix
