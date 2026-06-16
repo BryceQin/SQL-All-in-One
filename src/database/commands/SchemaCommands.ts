@@ -16,6 +16,7 @@ import { QueryResultPanel, FilterCondition, type PendingChange, type ForeignKeyO
 import type { QueryError } from '../adapters/IDatabaseAdapter';
 import { generateEditSql, executeInTransaction, getActiveAdapter } from '../query/DataEditService';
 import { t } from '../../i18n/index';
+import { getConfigManager } from '../../core/configManager';
 
 
 export function registerSchemaCommands(
@@ -52,7 +53,8 @@ export function registerSchemaCommands(
 
                 const name = node instanceof TableTreeNode ? node.tableName : node.viewName;
                 const quotedName = adapter.quoteIdentifier(node.databaseName) + '.' + adapter.quoteIdentifier(name);
-                const sql = `SELECT * FROM ${quotedName} LIMIT 100;`;
+                const maxRows = getConfigManager().get<number>('query.maxRows', 1000);
+                const sql = `SELECT * FROM ${quotedName} LIMIT ${maxRows};`;
 
                 let queryResultPanel = QueryResultPanel.getCurrentInstance();
                 if (!queryResultPanel || queryResultPanel.isDisposed) {
@@ -148,9 +150,35 @@ export function registerSchemaCommands(
                             await spAdapter.execute(`ROLLBACK TO SAVEPOINT ${name}`);
                         }
                     };
+                    queryResultPanel.onChangeDatabase = async (database: string): Promise<void> => {
+                        try {
+                            const connectionManager = getConnectionManager();
+                            const activeConfig = connectionManager.getAllConnections().find(c => c.id === node.connectionId);
+                            if (activeConfig) {
+                                const updatedConfig = { ...activeConfig, database: database || activeConfig.database };
+                                await connectionManager.updateConnection(node.connectionId, updatedConfig);
+                            }
+                            if (database) {
+                                const dbAdapter = connectionManager.getAdapter(node.connectionId);
+                                if (dbAdapter) {
+                                    const dbs = await dbAdapter.listDatabases();
+                                    queryResultPanel?.sendDatabaseList(dbs.map(d => d.name), database);
+                                }
+                            }
+                        } catch {
+                        }
+                    };
                 } else {
                     queryResultPanel.showLoading(sql);
                 }
+
+                try {
+                    const dbListAdapter = getConnectionManager().getAdapter(node.connectionId);
+                    if (dbListAdapter) {
+                        const dbs = await dbListAdapter.listDatabases();
+                        queryResultPanel?.sendDatabaseList(dbs.map(d => d.name), node.databaseName);
+                    }
+                } catch { }
 
                 queryResultPanel.onExecutePanelSql = async (panelSql: string): Promise<void> => {
                     try {
@@ -222,18 +250,188 @@ export function registerSchemaCommands(
     disposables.push(
         vscode.commands.registerCommand('hive-formatter.newQuery', async (node?: DatabaseTreeNode | ConnectionTreeNode) => {
             let database = '';
+            let connectionId = '';
             if (node instanceof DatabaseTreeNode) {
                 database = node.databaseName;
+                connectionId = node.connectionId;
+            } else if (node instanceof ConnectionTreeNode) {
+                connectionId = node.connectionId;
+                const activeConn = getConnectionManager().getActiveConnection();
+                database = activeConn?.database || '';
             }
-            const activeConn = getConnectionManager().getActiveConnection();
-            const newQueryAdapter = activeConn ? getConnectionManager().getAdapter(activeConn.id) : undefined;
-            const q = activeConn ? newQueryAdapter!.quoteIdentifier.bind(newQueryAdapter) : ((id: string): string => '`' + id.replace(/`/g, '``') + '`');
+
+            const connectionManager = getConnectionManager();
+            const activeConn = connectionManager.getActiveConnection();
+            if (!connectionId && activeConn) {
+                connectionId = activeConn.id;
+            }
+            if (!database && activeConn) {
+                database = activeConn.database || '';
+            }
+
+            const newQueryAdapter = connectionId ? connectionManager.getAdapter(connectionId) : undefined;
+            const q = newQueryAdapter ? newQueryAdapter.quoteIdentifier.bind(newQueryAdapter) : ((id: string): string => '`' + id.replace(/`/g, '``') + '`');
             const content = database ? `USE ${q(database)};\n\n` : '';
-            const document = await vscode.workspace.openTextDocument({
-                content,
-                language: 'sql'
-            });
-            await vscode.window.showTextDocument(document);
+
+            let queryResultPanel = QueryResultPanel.getCurrentInstance();
+            if (!queryResultPanel || queryResultPanel.isDisposed) {
+                queryResultPanel = QueryResultPanel.createOrShow(context.extensionUri, context);
+                queryResultPanel.onExecuteQuery = (_sql: string): void => {
+                    vscode.commands.executeCommand('hive-formatter.executeQuery');
+                };
+                queryResultPanel.onCancelQuery = (): void => {
+                    vscode.commands.executeCommand('hive-formatter.cancelQuery');
+                };
+                queryResultPanel.onRequestSort = (_column: string, _direction: string): void => {
+                    vscode.commands.executeCommand('hive-formatter.executeQuery');
+                };
+                queryResultPanel.onRequestFilter = (_conditions: FilterCondition[]): void => {
+                    vscode.commands.executeCommand('hive-formatter.executeQuery');
+                };
+                queryResultPanel.onRequestPage = (_page: number): void => {
+                    vscode.commands.executeCommand('hive-formatter.executeQuery');
+                };
+                queryResultPanel.onCommitChanges = async (changes: PendingChange[], tableName: string, _database: string): Promise<{ success: boolean; errors?: string[] }> => {
+                    try {
+                        const editAdapter = getActiveAdapter();
+                        if (!editAdapter) {
+                            return { success: false, errors: [t('database.noActiveAdapter')] };
+                        }
+                        const currentResult = QueryResultPanel.getCurrentInstance()?.getCurrentResult();
+                        if (!currentResult) {
+                            return { success: false, errors: [t('database.noQueryResult')] };
+                        }
+                        const statements = generateEditSql(
+                            changes,
+                            tableName,
+                            currentResult.columns,
+                            currentResult.rows,
+                            editAdapter.quoteIdentifier.bind(editAdapter)
+                        );
+                        return await executeInTransaction(editAdapter, statements);
+                    } catch (error) {
+                        return { success: false, errors: [(error as Error).message] };
+                    }
+                };
+                queryResultPanel.onRequestForeignKeyOptions = async (_column: string, referencedTable: string, db: string): Promise<ForeignKeyOption[]> => {
+                    try {
+                        const fkAdapter = getActiveAdapter();
+                        if (!fkAdapter) return [];
+                        const activeConfig = getConnectionManager().getActiveConnection();
+                        const structure = await fkAdapter.describeTable(db || activeConfig?.database || '', referencedTable);
+                        const pkCol = structure.columns.find(c => c.isPrimaryKey);
+                        let displayCol = structure.columns.find(c => c.comment && c.type.toUpperCase().includes('VARCHAR'));
+                        if (!displayCol) displayCol = structure.columns.find(c => !c.isPrimaryKey);
+                        if (!displayCol) displayCol = pkCol;
+                        if (!pkCol) return [];
+                        const fq = fkAdapter.quoteIdentifier.bind(fkAdapter);
+                        const fkSql = `SELECT ${fq(pkCol.name)}, ${fq(displayCol?.name || pkCol.name)} FROM ${fq(referencedTable)} LIMIT 100`;
+                        const result = await fkAdapter.execute(fkSql);
+                        return result.rows.map((row: Record<string, unknown>) => ({
+                            value: row[pkCol.name],
+                            displayText: row[displayCol?.name || pkCol.name] !== null && row[displayCol?.name || pkCol.name] !== undefined
+                                ? String(row[pkCol.name]) + ' - ' + String(row[displayCol?.name || pkCol.name])
+                                : String(row[pkCol.name]),
+                        }));
+                    } catch {
+                        return [];
+                    }
+                };
+                queryResultPanel.onBeginTransaction = async (): Promise<void> => {
+                    const txAdapter = getActiveAdapter();
+                    if (txAdapter) await txAdapter.beginTransaction();
+                };
+                queryResultPanel.onCommitTransaction = async (): Promise<void> => {
+                    const txAdapter = getActiveAdapter();
+                    if (txAdapter) await txAdapter.commit();
+                };
+                queryResultPanel.onRollbackTransaction = async (): Promise<void> => {
+                    const txAdapter = getActiveAdapter();
+                    if (txAdapter) await txAdapter.rollback();
+                };
+                queryResultPanel.onCreateSavepoint = async (name: string): Promise<void> => {
+                    const spAdapter = getActiveAdapter();
+                    if (spAdapter) {
+                        if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
+                            throw new Error(t('database.invalidSavepointName', name));
+                        }
+                        await spAdapter.execute(`SAVEPOINT ${name}`);
+                    }
+                };
+                queryResultPanel.onRollbackToSavepoint = async (name: string): Promise<void> => {
+                    const spAdapter = getActiveAdapter();
+                    if (spAdapter) {
+                        if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
+                            throw new Error(t('database.invalidSavepointName', name));
+                        }
+                        await spAdapter.execute(`ROLLBACK TO SAVEPOINT ${name}`);
+                    }
+                };
+                queryResultPanel.onExecutePanelSql = async (panelSql: string): Promise<void> => {
+                    try {
+                        const currentPanel = QueryResultPanel.getCurrentInstance();
+                        if (!currentPanel || currentPanel.isDisposed) return;
+                        const panelConn = connectionId ? connectionManager.getAllConnections().find(c => c.id === connectionId) : connectionManager.getActiveConnection();
+                        const panelAdapter = connectionId ? connectionManager.getAdapter(connectionId) : undefined;
+                        if (!panelAdapter) {
+                            currentPanel.showError({ code: 'NO_CONNECTION', message: t('database.noActiveAdapter'), sql: panelSql });
+                            return;
+                        }
+                        currentPanel.showLoading(panelSql);
+                        const queryExecutor = dbModule.getQueryExecutor();
+                        const outputChannel = dbModule.getOutputChannel();
+                        if (!queryExecutor) {
+                            currentPanel.showError({ code: 'NO_EXECUTOR', message: t('database.noActiveAdapter'), sql: panelSql });
+                            return;
+                        }
+                        const panelResult = await queryExecutor.execute(panelAdapter, panelSql, { database }, connectionId);
+                        if (currentPanel.isDisposed) return;
+                        if (panelResult.status === 'error') {
+                            outputChannel?.appendLine(`❌ Error: ${panelResult.error?.message || t('database.unknownError')}`);
+                            outputChannel?.appendLine(`   SQL: ${panelSql}`);
+                            currentPanel.showError(panelResult.error as QueryError);
+                        } else {
+                            outputChannel?.appendLine(`✅ ${t('database.queryExecutedSuccessfully', String(panelResult.executionTime), String(panelResult.rowCount))}`);
+                            outputChannel?.appendLine(`   SQL: ${panelSql}`);
+                            currentPanel.showResult(panelResult, panelConn?.name, panelConn?.color);
+                        }
+                    } catch (error) {
+                        const currentPanel = QueryResultPanel.getCurrentInstance();
+                        if (!currentPanel || currentPanel.isDisposed) return;
+                        currentPanel.showError({ code: 'EXEC_ERROR', message: String(error), sql: panelSql });
+                    }
+                };
+                queryResultPanel.onChangeDatabase = async (changedDb: string): Promise<void> => {
+                    try {
+                        const cm = getConnectionManager();
+                        const cfg = connectionId ? cm.getAllConnections().find(c => c.id === connectionId) : cm.getActiveConnection();
+                        if (cfg) {
+                            const updatedConfig = { ...cfg, database: changedDb || cfg.database };
+                            await cm.updateConnection(cfg.id, updatedConfig);
+                        }
+                        if (changedDb) {
+                            const dbAdapter = connectionId ? cm.getAdapter(connectionId) : undefined;
+                            if (dbAdapter) {
+                                const dbs = await dbAdapter.listDatabases();
+                                queryResultPanel?.sendDatabaseList(dbs.map(d => d.name), changedDb);
+                            }
+                        }
+                    } catch {
+                    }
+                };
+            }
+
+            try {
+                const dbListAdapter = connectionId ? connectionManager.getAdapter(connectionId) : undefined;
+                if (dbListAdapter) {
+                    const dbs = await dbListAdapter.listDatabases();
+                    queryResultPanel?.sendDatabaseList(dbs.map(d => d.name), database);
+                }
+            } catch { }
+
+            if (queryResultPanel && !queryResultPanel.isDisposed) {
+                queryResultPanel.setSql(content);
+            }
         })
     );
 

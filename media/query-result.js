@@ -75,7 +75,9 @@ const i18n = {
         'resultPanel.blobText': '文本',
         'resultPanel.blobHex': '十六进制',
         'resultPanel.blobImage': '图片',
-        'resultPanel.close': '关闭'
+        'resultPanel.close': '关闭',
+        'resultPanel.selectDatabase': '选择数据库',
+        'resultPanel.allDatabases': '所有数据库',
     },
     en: {
         'resultPanel.title': 'Query Result',
@@ -151,7 +153,9 @@ const i18n = {
         'resultPanel.blobText': 'Text',
         'resultPanel.blobHex': 'Hex',
         'resultPanel.blobImage': 'Image',
-        'resultPanel.close': 'Close'
+        'resultPanel.close': 'Close',
+        'resultPanel.selectDatabase': 'Select Database',
+        'resultPanel.allDatabases': 'All Databases',
     }
 };
 
@@ -231,6 +235,8 @@ const state = {
     validationErrors: {},
     monacoBasePath: '',
     dialect: 'mysql',
+    availableDatabases: [],
+    currentDatabase: '',
 };
 
 var monacoEditor = null;
@@ -281,8 +287,8 @@ function rebuildPendingChangeMap() {
     }
 }
 
-const ROW_HEIGHT = 28;
-const HEADER_HEIGHT = 48;
+const ROW_HEIGHT = 24;
+const HEADER_HEIGHT = 28;
 const BUFFER_ROWS = 5;
 
 function init() {
@@ -719,6 +725,9 @@ function handleMessage(event) {
             break;
         case 'diagnosticsResult':
             handleBridgeResponse(message.data);
+            break;
+        case 'databaseList':
+            handleDatabaseList(message.data);
             break;
     }
 }
@@ -2316,6 +2325,36 @@ function handleBridgeResponse(data) {
         pendingRequests.delete(data.requestId);
         pending.resolve(data);
     }
+}
+
+function onDatabaseChange() {
+    var selector = document.getElementById('dbSelector');
+    var selectedDb = selector.value;
+    state.currentDatabase = selectedDb;
+    vscode.postMessage({ command: 'changeDatabase', database: selectedDb });
+}
+
+function handleDatabaseList(data) {
+    state.availableDatabases = data.databases || [];
+    state.currentDatabase = data.currentDatabase || '';
+    renderDatabaseSelector();
+}
+
+function renderDatabaseSelector() {
+    var selector = document.getElementById('dbSelector');
+    if (!selector) return;
+    selector.innerHTML = '';
+    var defaultOpt = document.createElement('option');
+    defaultOpt.value = '';
+    defaultOpt.textContent = t('resultPanel.selectDatabase');
+    selector.appendChild(defaultOpt);
+    state.availableDatabases.forEach(function(db) {
+        var opt = document.createElement('option');
+        opt.value = db;
+        opt.textContent = db;
+        if (db === state.currentDatabase) opt.selected = true;
+        selector.appendChild(opt);
+    });
 }
 
 function handleLanguageData(data) {

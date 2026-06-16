@@ -209,5 +209,20 @@
     "hive-formatter.command.importData.title": "Import Data",
     "hive-formatter.command.showErrorLog.title": "Show Error Log (SQL All in One)",
     "hive-formatter.command.exportConnections.title": "Export Connections",
-    "hive-formatter.command.importConnections.title": "Import Connections"
+    "hive-formatter.command.importConnections.title": "Import Connections",
+
+    "hive-formatter.viewsContainers.activitybar.title": "SQL All in One",
+    "hive-formatter.configuration.title": "SQL All in One",
+    "hive-formatter.command.formatSelection.title": "Format Selection (SQL All in One)",
+    "hive-formatter.command.formatSelection.shortTitle": "Format SQL",
+    "hive-formatter.command.mysqlToHive.title": "MySQL to HiveSQL",
+    "hive-formatter.command.mysqlToHive.shortTitle": "MySQL to Hive",
+    "hive-formatter.command.hiveToMysql.title": "HiveSQL to MySQL",
+    "hive-formatter.command.hiveToMysql.shortTitle": "Hive to MySQL",
+    "hive-formatter.command.openConfigEditor.title": "SQL All in One Config",
+    "hive-formatter.command.openConfigEditor.shortTitle": "Config Editor",
+    "hive-formatter.command.replaceParameter.title": "Replace Parameter",
+    "hive-formatter.command.replaceParameter.shortTitle": "Replace Param",
+    "hive-formatter.command.toggleComment.title": "Toggle Comment (SQL All in One)",
+    "hive-formatter.command.toggleAdvancedComment.title": "Toggle Advanced Comment (SQL All in One)"
 }
