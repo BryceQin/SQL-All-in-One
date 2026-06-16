@@ -1236,7 +1236,7 @@ body {
 
 .sql-editor-container .monaco-editor .current-line,
 .sql-editor-container .monaco-editor .margin-view-overlays .current-line-margin {
-    background-color: var(--vscode-editor-lineHighlightBackground, rgba(255, 255, 255, 0.04)) !important;
+    background-color: transparent !important;
 }
 
 .sql-editor-container .monaco-editor .scroll-decoration {

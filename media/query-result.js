@@ -392,6 +392,7 @@ function buildVscodeTheme() {
     var overviewBg = getColor('--vscode-editorOverviewRuler-background', isDark ? '#252526' : '#ffffff');
     var tc = (window.__CONFIG__ && window.__CONFIG__.tokenColors) || {};
     var lineNumColor = getColor('--vscode-editorLineNumber-foreground', isDark ? '#858585' : '#237893');
+    var activeLineNumColor = getColor('--vscode-editorLineNumber-activeForeground', isDark ? '#c6c6c6' : '#0b216f');
     return {
         base: base,
         inherit: true,
@@ -412,12 +413,12 @@ function buildVscodeTheme() {
         colors: {
             'editor.background': editorBg,
             'editor.foreground': getColor('--vscode-editor-foreground', isDark ? '#d4d4d4' : '#000000'),
-            'editor.lineHighlightBackground': getColor('--vscode-editor-lineHighlightBackground', isDark ? '#2a2d2e' : '#f0f0f0'),
+            'editor.lineHighlightBackground': editorBg,
             'editor.selectionBackground': getColor('--vscode-editor-selectionBackground', isDark ? '#264f78' : '#add6ff'),
             'editorCursor.foreground': getColor('--vscode-editorCursor-foreground', isDark ? '#aeafad' : '#000000'),
             'editor.inactiveSelectionBackground': getColor('--vscode-editor-inactiveSelectionBackground', isDark ? '#3a3d41' : '#e5ebf1'),
             'editorLineNumber.foreground': lineNumColor,
-            'editorLineNumber.activeForeground': lineNumColor,
+            'editorLineNumber.activeForeground': activeLineNumColor,
             'editorIndentGuide.background1': getColor('--vscode-editorIndentGuide-background1', isDark ? '#404040' : '#e4e4e4'),
             'editorIndentGuide.activeBackground1': getColor('--vscode-editorIndentGuide-activeBackground1', isDark ? '#707070' : '#e4e4e4'),
             'editorGutter.background': gutterBg,

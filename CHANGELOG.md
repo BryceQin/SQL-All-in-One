@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.15.24] - 2026-06-16
+
+### Bug Fix
+
+- 修复查询数据面板当前行号后仍有红色高亮块的问题：`editor.lineHighlightBackground` 设为与编辑器背景色相同，CSS 中 `.current-line` 和 `.current-line-margin` 背景色设为 `transparent`，彻底消除 gutter 区域的当前行高亮红色背景
+- 恢复当前行号数字的视觉区分：`editorLineNumber.activeForeground` 恢复为 VS Code 主题的活跃行号颜色（比普通行号更亮），而非与普通行号相同
+- Fix red highlight block still appearing behind current line number in query data panel: set `editor.lineHighlightBackground` to editor background color, set `.current-line` and `.current-line-margin` background to `transparent` in CSS, completely removing the red background in the gutter area
+- Restore visual distinction for active line number: `editorLineNumber.activeForeground` now uses VS Code theme's active line number color (brighter than normal line numbers) instead of being the same as normal line numbers
+
+---
+
 ## [2.15.23] - 2026-06-16
 
 ### Enhancement
