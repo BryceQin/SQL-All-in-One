@@ -5,6 +5,7 @@ import type { QueryHistoryEntry } from '../../database/query/QueryResult';
 import { getLanguage, t } from '../../i18n';
 import { LanguageBridge } from './LanguageBridge';
 import { getConnectionManager } from '../../database/connection/ConnectionManager';
+import { getTokenColors } from '../../utils/themeColors';
 
 export interface FilterCondition {
     column: string;
@@ -118,7 +119,7 @@ export class QueryResultPanel extends BaseWebviewPanel {
             vscode.window.onDidChangeActiveColorTheme((theme) => {
                 this.postMessage({
                     type: 'themeChange',
-                    data: { kind: theme.kind },
+                    data: { kind: theme.kind, tokenColors: getTokenColors() },
                 });
             })
         );
@@ -154,6 +155,7 @@ export class QueryResultPanel extends BaseWebviewPanel {
             dialect: this._currentDialect,
             monacoBasePath: monacoBaseUri.toString(),
             themeKind: vscode.window.activeColorTheme.kind,
+            tokenColors: getTokenColors(),
             lang: getLanguage(),
         };
         const configJson = JSON.stringify(configData).replace(/<\/script>/gi, '<\\/script>');
