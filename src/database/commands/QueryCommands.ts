@@ -388,7 +388,7 @@ export function registerQueryCommands(
             const picked = await vscode.window.showQuickPick(
                 running.map((q) => ({
                     label: q.sql.substring(0, 80),
-                    description: `Running for ${Date.now() - q.startTime}ms`,
+                    description: t('database.runningFor', String(Date.now() - q.startTime)),
                     queryId: q.queryId,
                 })),
                 { placeHolder: t('database.selectQueryToCancel') }
@@ -417,7 +417,7 @@ export function registerQueryCommands(
                 entries.map((entry) => ({
                     label: entry.sql.substring(0, 80),
                     description: `${entry.connectionName} | ${entry.executionTime}ms | ${new Date(entry.executedAt).toLocaleString()}`,
-                    detail: entry.status === 'error' ? `Error: ${entry.errorMessage}` : `${entry.rowCount} rows`,
+                    detail: entry.status === 'error' ? t('database.errorDetail', entry.errorMessage || '') : t('database.rowCount', String(entry.rowCount)),
                     entry,
                 })),
                 { placeHolder: t('database.queryHistory') }

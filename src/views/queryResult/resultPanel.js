@@ -228,6 +228,85 @@ function getTypeColorInfo(type) {
 const ROW_HEIGHT = 28;
 const HEADER_HEIGHT = 48;
 const BUFFER_ROWS = 5;
+const COL_MIN_WIDTH = 80;
+const COL_MAX_WIDTH = 400;
+const COL_PADDING = 24;
+const COL_SAMPLE_ROWS = 50;
+
+var _colWidths = [];
+var _measureCanvas = null;
+
+function measureTextWidth(text, fontSize, fontWeight) {
+    if (!_measureCanvas) {
+        _measureCanvas = document.createElement('canvas');
+    }
+    var ctx = _measureCanvas.getContext('2d');
+    ctx.font = (fontWeight || '400') + ' ' + fontSize + 'px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    return ctx.measureText(text).width;
+}
+
+function calcColumnWidths() {
+    if (!state.columns.length) {
+        _colWidths = [];
+        return;
+    }
+    var widths = [];
+    var sampleEnd = Math.min(state.rows.length, COL_SAMPLE_ROWS);
+    for (var ci = 0; ci < state.columns.length; ci++) {
+        var col = state.columns[ci];
+        var maxW = 0;
+        var headerNameW = measureTextWidth(col.name || '', 11, '600');
+        var typeText = col.type || '';
+        var typeW = 0;
+        if (typeText) {
+            typeW = measureTextWidth(typeText, 9, '500') + 14;
+        }
+        maxW = Math.max(maxW, headerNameW + typeW + COL_PADDING);
+        for (var ri = 0; ri < sampleEnd; ri++) {
+            var val = state.rows[ri] ? state.rows[ri][ci] : null;
+            if (val === null || val === undefined) continue;
+            var display = String(val);
+            if (display.length > state.longTextThreshold) {
+                display = display.substring(0, state.longTextThreshold) + '...';
+            }
+            var cellW = measureTextWidth(display, 12, '400') + COL_PADDING;
+            if (cellW > maxW) maxW = cellW;
+        }
+        maxW = Math.max(maxW, COL_MIN_WIDTH);
+        if (maxW > COL_MAX_WIDTH) maxW = COL_MAX_WIDTH;
+        widths.push(Math.ceil(maxW));
+    }
+    _colWidths = widths;
+}
+
+function applyColumnWidths() {
+    if (!_colWidths.length) return;
+    var headerTable = document.getElementById('gridHeaderTable');
+    var bodyTable = document.getElementById('gridBodyTable');
+    var existingHeaderColgroup = headerTable.querySelector('colgroup');
+    if (existingHeaderColgroup) existingHeaderColgroup.remove();
+    var existingBodyColgroup = bodyTable.querySelector('colgroup');
+    if (existingBodyColgroup) existingBodyColgroup.remove();
+    var headerColgroup = document.createElement('colgroup');
+    var bodyColgroup = document.createElement('colgroup');
+    var rowNumCol = document.createElement('col');
+    rowNumCol.style.width = '44px';
+    headerColgroup.appendChild(rowNumCol);
+    var bodyRowNumCol = document.createElement('col');
+    bodyRowNumCol.style.width = '44px';
+    bodyColgroup.appendChild(bodyRowNumCol);
+    for (var i = 0; i < _colWidths.length; i++) {
+        var w = _colWidths[i] + 'px';
+        var hCol = document.createElement('col');
+        hCol.style.width = w;
+        headerColgroup.appendChild(hCol);
+        var bCol = document.createElement('col');
+        bCol.style.width = w;
+        bodyColgroup.appendChild(bCol);
+    }
+    headerTable.insertBefore(headerColgroup, headerTable.firstChild);
+    bodyTable.insertBefore(bodyColgroup, bodyTable.firstChild);
+}
 
 function init() {
     applyI18n();
@@ -481,6 +560,11 @@ function handleThemeChange(data) {
 }
 
 function onGridScroll() {
+    var bodyWrapper = document.getElementById('gridBodyWrapper');
+    var headerWrapper = document.getElementById('gridHeaderWrapper');
+    if (headerWrapper && bodyWrapper) {
+        headerWrapper.scrollLeft = bodyWrapper.scrollLeft;
+    }
     renderVisibleRows();
 }
 
@@ -669,9 +753,11 @@ function handleConfig(data) {
 }
 
 function renderGrid() {
+    calcColumnWidths();
     renderHeader();
     requestAnimationFrame(function() {
         renderVisibleRows();
+        applyColumnWidths();
     });
 }
 

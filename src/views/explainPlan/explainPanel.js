@@ -3,6 +3,113 @@ const vscode = acquireVsCodeApi();
 let currentView = 'visual';
 let currentSql = '';
 
+// --- i18n ---
+
+const i18nData = {
+    zh: {
+        'explainPanel.analyzeActual': 'EXPLAIN ANALYZE (实际)',
+        'explainPanel.estimated': 'EXPLAIN (预估)',
+        'explainPanel.unknownError': '未知错误',
+        'explainPanel.noNodes': '无执行计划节点。',
+        'explainPanel.rows': '行数:',
+        'explainPanel.cost': '成本:',
+        'explainPanel.key': '键:',
+        'explainPanel.noRawData': '无原始数据。',
+        'explainPanel.visual': '可视化',
+        'explainPanel.table': '表格',
+        'explainPanel.json': 'JSON',
+        'explainPanel.analyze': '分析',
+        'explainPanel.running': '正在执行 EXPLAIN...',
+        'explainPanel.plan': 'EXPLAIN 计划',
+        'explainPanel.id': 'ID',
+        'explainPanel.operation': '操作',
+        'explainPanel.tableCol': '表',
+        'explainPanel.rowsCol': '行数',
+        'explainPanel.costCol': '成本',
+        'explainPanel.keyCol': '键',
+        'explainPanel.extra': '额外信息',
+        'explainPanel.suggestions': '优化建议',
+        'explainPanel.title': 'EXPLAIN 计划',
+        'explainPanel.visualTree': '可视化树',
+        'explainPanel.tableView': '表格视图',
+        'explainPanel.jsonView': 'JSON 视图',
+        'explainPanel.runAnalyze': '运行 EXPLAIN ANALYZE',
+    },
+    en: {
+        'explainPanel.analyzeActual': 'EXPLAIN ANALYZE (Actual)',
+        'explainPanel.estimated': 'EXPLAIN (Estimated)',
+        'explainPanel.unknownError': 'Unknown error',
+        'explainPanel.noNodes': 'No execution plan nodes available.',
+        'explainPanel.rows': 'Rows:',
+        'explainPanel.cost': 'Cost:',
+        'explainPanel.key': 'Key:',
+        'explainPanel.noRawData': 'No raw data available.',
+        'explainPanel.visual': 'Visual',
+        'explainPanel.table': 'Table',
+        'explainPanel.json': 'JSON',
+        'explainPanel.analyze': 'Analyze',
+        'explainPanel.running': 'Running EXPLAIN...',
+        'explainPanel.plan': 'EXPLAIN Plan',
+        'explainPanel.id': 'ID',
+        'explainPanel.operation': 'Operation',
+        'explainPanel.tableCol': 'Table',
+        'explainPanel.rowsCol': 'Rows',
+        'explainPanel.costCol': 'Cost',
+        'explainPanel.keyCol': 'Key',
+        'explainPanel.extra': 'Extra',
+        'explainPanel.suggestions': 'Optimization Suggestions',
+        'explainPanel.title': 'EXPLAIN Plan',
+        'explainPanel.visualTree': 'Visual Tree',
+        'explainPanel.tableView': 'Table View',
+        'explainPanel.jsonView': 'JSON View',
+        'explainPanel.runAnalyze': 'Run EXPLAIN ANALYZE',
+    }
+};
+
+let lang = 'zh';
+
+function t(key) {
+    var dict = i18nData[lang] || i18nData['en'];
+    return dict[key] || i18nData['en'][key] || key;
+}
+
+function applyI18n() {
+    document.querySelectorAll('[data-i18n]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n');
+        var text = t(key);
+        if (text && text !== key) {
+            if (el.tagName === 'TITLE') {
+                document.title = text;
+            } else {
+                el.textContent = text;
+            }
+        }
+    });
+    document.querySelectorAll('[data-i18n-ph]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n-ph');
+        var text = t(key);
+        if (text && text !== key) {
+            el.placeholder = text;
+        }
+    });
+    document.querySelectorAll('[data-i18n-title]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n-title');
+        var text = t(key);
+        if (text && text !== key) {
+            el.title = text;
+        }
+    });
+}
+
+// --- Init config ---
+
+(function initConfig() {
+    var config = window.__CONFIG__ || {};
+    if (config.lang !== undefined) {
+        lang = config.lang.startsWith('zh') ? 'zh' : 'en';
+    }
+})();
+
 // --- Message handling ---
 
 window.addEventListener('message', (event) => {
@@ -45,7 +152,7 @@ function handleExplainResult(data) {
     headerSql.title = data.sql || '';
 
     const headerLabel = document.getElementById('headerLabel');
-    headerLabel.textContent = data.useAnalyze ? 'EXPLAIN ANALYZE (Actual)' : 'EXPLAIN (Estimated)';
+    headerLabel.textContent = data.useAnalyze ? t('explainPanel.analyzeActual') : t('explainPanel.estimated');
 
     renderVisualView(data.nodes || []);
     renderTableView(data.nodes || []);
@@ -58,7 +165,7 @@ function handleExplainResult(data) {
 function handleExplainError(error) {
     document.getElementById('loadingArea').style.display = 'none';
     document.getElementById('errorArea').style.display = 'flex';
-    document.getElementById('errorMessage').textContent = error || 'Unknown error';
+    document.getElementById('errorMessage').textContent = error || t('explainPanel.unknownError');
     document.getElementById('visualView').style.display = 'none';
     document.getElementById('tableView').style.display = 'none';
     document.getElementById('jsonView').style.display = 'none';
@@ -86,7 +193,7 @@ function renderVisualView(nodes) {
     container.innerHTML = '';
 
     if (!nodes || nodes.length === 0) {
-        container.innerHTML = '<div style="color:var(--text-secondary);padding:16px;">No execution plan nodes available.</div>';
+        container.innerHTML = '<div style="color:var(--text-secondary);padding:16px;">' + escapeHtml(t('explainPanel.noNodes')) + '</div>';
         return;
     }
 
@@ -124,21 +231,21 @@ function createNodeElement(node, depth) {
     if (node.rows != null) {
         const rowsItem = document.createElement('span');
         rowsItem.className = 'node-detail-item';
-        rowsItem.innerHTML = '<span class="node-detail-label">Rows:</span><span class="node-detail-value">' + escapeHtml(String(node.rows)) + '</span>';
+        rowsItem.innerHTML = '<span class="node-detail-label">' + escapeHtml(t('explainPanel.rows')) + '</span><span class="node-detail-value">' + escapeHtml(String(node.rows)) + '</span>';
         details.appendChild(rowsItem);
     }
 
     if (node.cost != null) {
         const costItem = document.createElement('span');
         costItem.className = 'node-detail-item';
-        costItem.innerHTML = '<span class="node-detail-label">Cost:</span><span class="node-detail-value">' + escapeHtml(String(node.cost)) + '</span>';
+        costItem.innerHTML = '<span class="node-detail-label">' + escapeHtml(t('explainPanel.cost')) + '</span><span class="node-detail-value">' + escapeHtml(String(node.cost)) + '</span>';
         details.appendChild(costItem);
     }
 
     if (node.key) {
         const keyItem = document.createElement('span');
         keyItem.className = 'node-detail-item';
-        keyItem.innerHTML = '<span class="node-detail-label">Key:</span><span class="node-detail-value">' + escapeHtml(String(node.key)) + '</span>';
+        keyItem.innerHTML = '<span class="node-detail-label">' + escapeHtml(t('explainPanel.key')) + '</span><span class="node-detail-value">' + escapeHtml(String(node.key)) + '</span>';
         details.appendChild(keyItem);
     }
 
@@ -176,7 +283,7 @@ function renderTableView(nodes) {
 
     if (flatNodes.length === 0) {
         const row = document.createElement('tr');
-        row.innerHTML = '<td colspan="7" style="text-align:center;color:var(--text-secondary);">No execution plan nodes available.</td>';
+        row.innerHTML = '<td colspan="7" style="text-align:center;color:var(--text-secondary);">' + escapeHtml(t('explainPanel.noNodes')) + '</td>';
         tbody.appendChild(row);
         return;
     }
@@ -236,7 +343,7 @@ function flattenNodes(nodes) {
 function renderJsonView(raw) {
     const pre = document.getElementById('jsonPre');
     if (!raw) {
-        pre.textContent = 'No raw data available.';
+        pre.textContent = t('explainPanel.noRawData');
         return;
     }
 
@@ -360,3 +467,4 @@ function bindActions() {
 }
 
 bindActions();
+applyI18n();

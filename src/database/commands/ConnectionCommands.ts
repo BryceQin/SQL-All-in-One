@@ -6,7 +6,14 @@ import { ConnectionTreeNode } from '../../views/databaseExplorer/treeNodes';
 import { openConfigEditorCommand } from '../../commands/configEditorCommand';
 import { t } from '../../i18n/index';
 
-const connectionOutputChannel = vscode.window.createOutputChannel('SQL All in One - Connection');
+let connectionOutputChannel: vscode.OutputChannel | undefined;
+
+function getConnectionOutputChannel(): vscode.OutputChannel {
+    if (!connectionOutputChannel) {
+        connectionOutputChannel = vscode.window.createOutputChannel(t('database.outputChannelConnection'));
+    }
+    return connectionOutputChannel;
+}
 
 function showConnectionError(shortMessage: string, fullError: string): void {
     if (shortMessage === fullError || fullError.length <= 80) {
@@ -15,9 +22,9 @@ function showConnectionError(shortMessage: string, fullError: string): void {
     }
     vscode.window.showErrorMessage(shortMessage, t('database.showDetails')).then(choice => {
         if (choice === t('database.showDetails')) {
-            connectionOutputChannel.clear();
-            connectionOutputChannel.appendLine(fullError);
-            connectionOutputChannel.show(true);
+            getConnectionOutputChannel().clear();
+            getConnectionOutputChannel().appendLine(fullError);
+            getConnectionOutputChannel().show(true);
         }
     });
 }
@@ -183,7 +190,7 @@ export function registerConnectionCommands(
                     }
                     vscode.window.showInformationMessage(parts.join(' | '));
                 } else {
-                    const fullError = result.error || 'Unknown error';
+                    const fullError = result.error || t('database.unknownError');
                     const shortMessage = fullError.length > 80
                         ? fullError.substring(0, 80) + '...'
                         : fullError;

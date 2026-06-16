@@ -63,7 +63,7 @@ export abstract class BaseTreeNode implements ITreeNode {
 export class RootTreeNode extends BaseTreeNode {
     readonly type: TreeNodeType = 'root';
     readonly id: string = 'root';
-    readonly label: string = 'SQL All in One';
+    readonly label: string = t('explorer.rootLabel');
     readonly contextValue?: string = 'root';
     override readonly collapsibleState?: vscode.TreeItemCollapsibleState = vscode.TreeItemCollapsibleState.Expanded;
 }
@@ -234,9 +234,9 @@ export class ObjectGroupTreeNode extends BaseTreeNode {
         super({
             iconPath,
             collapsibleState: vscode.TreeItemCollapsibleState.Collapsed,
-            description: `(${count})`,
+            description: t('explorer.objectGroupCount', String(count)),
             parent,
-            tooltip: `${label} (${count})`
+            tooltip: t('explorer.objectGroupTooltip', label, String(count))
         });
         
         this.groupType = groupType;
@@ -453,10 +453,10 @@ export class ColumnTreeNode extends BaseTreeNode {
             : columnInfo.type;
         
         const tags: string[] = [];
-        if (columnInfo.isPrimaryKey) tags.push('PK');
-        if (columnInfo.isUnique) tags.push('UK');
-        if (columnInfo.isAutoIncrement) tags.push('AI');
-        if (!columnInfo.nullable) tags.push('NOT NULL');
+        if (columnInfo.isPrimaryKey) tags.push(t('explorer.tagPK'));
+        if (columnInfo.isUnique) tags.push(t('explorer.tagUK'));
+        if (columnInfo.isAutoIncrement) tags.push(t('explorer.tagAI'));
+        if (!columnInfo.nullable) tags.push(t('explorer.tagNotNull'));
         const description = tags.length > 0 ? `${typeDisplay} ${tags.join(' ')}` : typeDisplay;
         
         const tooltipParts: string[] = [
@@ -506,8 +506,8 @@ export class IndexTreeNode extends BaseTreeNode {
     ) {
         const iconPath = new vscode.ThemeIcon('list-unordered');
         const tags: string[] = [];
-        if (indexInfo.isPrimary) tags.push('PRIMARY');
-        if (indexInfo.isUnique) tags.push('UNIQUE');
+        if (indexInfo.isPrimary) tags.push(t('explorer.tagPrimary'));
+        if (indexInfo.isUnique) tags.push(t('explorer.tagUnique'));
         const description = tags.length > 0
             ? `${tags.join(' ')} (${indexInfo.columns.join(', ')})`
             : `(${indexInfo.columns.join(', ')})`;
@@ -567,7 +567,7 @@ export class FavoriteTreeNode extends BaseTreeNode {
         super({
             iconPath,
             collapsibleState: vscode.TreeItemCollapsibleState.None,
-            description: `${connectionName}/${databaseName}`,
+            description: t('explorer.favoriteDescription', connectionName, databaseName),
             parent,
             tooltip: `${typeLabel}\n${t('explorer.connection', connectionName)}\n${t('explorer.database', databaseName)}`
         });
