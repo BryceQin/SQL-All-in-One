@@ -1,5 +1,194 @@
 const vscode = acquireVsCodeApi();
 
+var i18nData = {
+    zh: {
+        newTable: '新建表',
+        tableDesignerSuffix: ' - 表设计器',
+        tableDesigner: '表设计器',
+        fieldName: '字段名',
+        length: '长度',
+        default: '默认值',
+        comment: '注释',
+        primaryKey: '主键',
+        unique: '唯一',
+        autoIncrement: '自增',
+        deleteField: '删除字段',
+        indexName: '索引名',
+        deleteIndex: '删除索引',
+        fkName: '外键名',
+        selectPlaceholder: '-- 请选择 --',
+        deleteFk: '删除外键',
+        triggerName: '触发器名',
+        beginEnd: 'BEGIN ... END',
+        deleteTrigger: '删除触发器',
+        addAtLeastOneColumn: '-- 请至少添加一个列',
+        noChangesDetected: '-- 未检测到变更',
+        tableNameRequired: '表名不能为空',
+        fieldNameRequired: '字段名不能为空',
+        duplicateFieldName: '字段名重复',
+        indexNameRequired: '索引名不能为空',
+        duplicateIndexName: '索引名重复',
+        fkNameRequired: '外键名不能为空',
+        duplicateFkName: '外键名重复',
+        unknownError: '未知错误',
+        saveFailed: '保存失败: ',
+        save: '保存',
+        fields: '字段',
+        indexes: '索引',
+        foreignKeys: '外键',
+        triggers: '触发器',
+        options: '选项',
+        sql: 'SQL',
+        tableName: '表名',
+        addField: '+ 添加字段',
+        fieldNameHeader: '字段名',
+        type: '类型',
+        lengthHeader: '长度',
+        nullable: '允许为空',
+        defaultHeader: '默认值',
+        commentHeader: '注释',
+        constraints: '约束',
+        actions: '操作',
+        addIndex: '+ 添加索引',
+        indexNameHeader: '索引名',
+        columns: '列',
+        uniqueHeader: '唯一',
+        addForeignKey: '+ 添加外键',
+        fkNameHeader: '外键名',
+        referencedTable: '引用表',
+        referencedColumns: '引用列',
+        onDelete: 'ON DELETE',
+        onUpdate: 'ON UPDATE',
+        addTrigger: '+ 添加触发器',
+        triggerNameHeader: '触发器名',
+        timing: '时机',
+        event: '事件',
+        statement: '语句',
+        engine: '引擎',
+        charset: '字符集',
+        collation: '排序规则',
+        autoIncrementOption: '自增',
+        tableComment: '表注释',
+        sqlPreview: 'SQL 预览',
+        confirmSave: '确认保存',
+        sqlWillBeExecuted: '将执行以下 SQL:',
+        execute: '执行',
+        exportSqlOnly: '仅导出 SQL',
+        cancel: '取消',
+        columnReorderWarning: '列重排序警告',
+        reorderWarningText: '列顺序变更将重建表，对大表可能较慢。建议导出 SQL 后手动执行。',
+        continueBtn: '继续'
+    },
+    en: {
+        newTable: 'New Table',
+        tableDesignerSuffix: ' - Table Designer',
+        tableDesigner: 'Table Designer',
+        fieldName: 'field name',
+        length: 'length',
+        default: 'default',
+        comment: 'comment',
+        primaryKey: 'Primary Key',
+        unique: 'Unique',
+        autoIncrement: 'Auto Increment',
+        deleteField: 'Delete Field',
+        indexName: 'index name',
+        deleteIndex: 'Delete Index',
+        fkName: 'fk name',
+        selectPlaceholder: '-- select --',
+        deleteFk: 'Delete FK',
+        triggerName: 'trigger name',
+        beginEnd: 'BEGIN ... END',
+        deleteTrigger: 'Delete Trigger',
+        addAtLeastOneColumn: '-- Add at least one column',
+        noChangesDetected: '-- No changes detected',
+        tableNameRequired: 'Table name is required',
+        fieldNameRequired: 'Field name is required',
+        duplicateFieldName: 'Duplicate field name',
+        indexNameRequired: 'Index name is required',
+        duplicateIndexName: 'Duplicate index name',
+        fkNameRequired: 'FK name is required',
+        duplicateFkName: 'Duplicate FK name',
+        unknownError: 'Unknown error',
+        saveFailed: 'Save failed: ',
+        save: 'Save',
+        fields: 'Fields',
+        indexes: 'Indexes',
+        foreignKeys: 'Foreign Keys',
+        triggers: 'Triggers',
+        options: 'Options',
+        sql: 'SQL',
+        tableName: 'Table Name',
+        addField: '+ Add Field',
+        fieldNameHeader: 'Field Name',
+        type: 'Type',
+        lengthHeader: 'Length',
+        nullable: 'Nullable',
+        defaultHeader: 'Default',
+        commentHeader: 'Comment',
+        constraints: 'Constraints',
+        actions: 'Actions',
+        addIndex: '+ Add Index',
+        indexNameHeader: 'Index Name',
+        columns: 'Columns',
+        uniqueHeader: 'Unique',
+        addForeignKey: '+ Add Foreign Key',
+        fkNameHeader: 'FK Name',
+        referencedTable: 'Referenced Table',
+        referencedColumns: 'Referenced Columns',
+        onDelete: 'ON DELETE',
+        onUpdate: 'ON UPDATE',
+        addTrigger: '+ Add Trigger',
+        triggerNameHeader: 'Trigger Name',
+        timing: 'Timing',
+        event: 'Event',
+        statement: 'Statement',
+        engine: 'Engine',
+        charset: 'Charset',
+        collation: 'Collation',
+        autoIncrementOption: 'Auto Increment',
+        tableComment: 'Table Comment',
+        sqlPreview: 'SQL Preview',
+        confirmSave: 'Confirm Save',
+        sqlWillBeExecuted: 'The following SQL will be executed:',
+        execute: 'Execute',
+        exportSqlOnly: 'Export SQL Only',
+        cancel: 'Cancel',
+        columnReorderWarning: 'Column Reorder Warning',
+        reorderWarningText: 'Column order changes will rebuild the table, which may be slow for large tables. Consider exporting SQL and executing manually.',
+        continueBtn: 'Continue'
+    }
+};
+
+let lang = 'zh';
+function t(key) {
+    var dict = i18nData[lang] || i18nData['en'];
+    return dict[key] || i18nData['en'][key] || key;
+}
+
+function applyI18n() {
+    document.querySelectorAll('[data-i18n]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n');
+        var text = t(key);
+        if (text && text !== key) {
+            el.textContent = text;
+        }
+    });
+    document.querySelectorAll('[data-i18n-ph]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n-ph');
+        var text = t(key);
+        if (text && text !== key) {
+            el.placeholder = text;
+        }
+    });
+    document.querySelectorAll('[data-i18n-title]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n-title');
+        var text = t(key);
+        if (text && text !== key) {
+            el.title = text;
+        }
+    });
+}
+
 let idCounter = 0;
 
 let state = {
@@ -44,6 +233,7 @@ let debouncedGenerateDDL = debounce(function() {
 
 function init() {
     let config = window.__TABLE_DESIGNER_CONFIG__ || {};
+    lang = config.lang && config.lang.startsWith('zh') ? 'zh' : 'en';
     state.mode = config.mode || 'create';
     state.database = config.database || '';
     state.tableName = config.tableName || '';
@@ -62,8 +252,8 @@ function init() {
 
 function updateHeaderTitle() {
     let title = document.getElementById('headerTableName');
-    let name = state.tableName || 'New Table';
-    title.textContent = name + ' - Table Designer';
+    let name = state.tableName || t('newTable');
+    title.textContent = name + t('tableDesignerSuffix');
 }
 
 function updateTableName(value) {
@@ -198,7 +388,7 @@ function renderFields() {
         nameInput.type = 'text';
         nameInput.className = 'cell-input' + (state.errors['col_name_' + col.id] ? ' has-error' : '');
         nameInput.value = col.name;
-        nameInput.placeholder = 'field name';
+        nameInput.placeholder = t('fieldName');
         nameInput.oninput = function() { updateColumn(col.id, 'name', this.value); };
         tdName.appendChild(nameInput);
         if (state.errors['col_name_' + col.id]) {
@@ -233,7 +423,7 @@ function renderFields() {
         lengthInput.type = 'text';
         lengthInput.className = 'length-input' + (typeNeedsLength(col.type) ? '' : ' hidden');
         lengthInput.value = col.length;
-        lengthInput.placeholder = 'length';
+        lengthInput.placeholder = t('length');
         lengthInput.oninput = function() { updateColumn(col.id, 'length', this.value); };
         tdLength.appendChild(lengthInput);
         tr.appendChild(tdLength);
@@ -254,7 +444,7 @@ function renderFields() {
         defaultInput.type = 'text';
         defaultInput.className = 'cell-input';
         defaultInput.value = col.defaultValue;
-        defaultInput.placeholder = 'default';
+        defaultInput.placeholder = t('default');
         defaultInput.oninput = function() { updateColumn(col.id, 'defaultValue', this.value); };
         tdDefault.appendChild(defaultInput);
         tr.appendChild(tdDefault);
@@ -264,7 +454,7 @@ function renderFields() {
         commentInput.type = 'text';
         commentInput.className = 'cell-input';
         commentInput.value = col.comment;
-        commentInput.placeholder = 'comment';
+        commentInput.placeholder = t('comment');
         commentInput.oninput = function() { updateColumn(col.id, 'comment', this.value); };
         tdComment.appendChild(commentInput);
         tr.appendChild(tdComment);
@@ -276,21 +466,21 @@ function renderFields() {
         let pkBtn = document.createElement('button');
         pkBtn.className = 'constraint-btn' + (col.isPrimaryKey ? ' active' : '');
         pkBtn.textContent = 'PK';
-        pkBtn.title = 'Primary Key';
+        pkBtn.title = t('primaryKey');
         pkBtn.onclick = function() { toggleConstraint(col.id, 'isPrimaryKey'); };
         constraintsDiv.appendChild(pkBtn);
 
         let uqBtn = document.createElement('button');
         uqBtn.className = 'constraint-btn' + (col.isUnique ? ' active' : '');
         uqBtn.textContent = 'UQ';
-        uqBtn.title = 'Unique';
+        uqBtn.title = t('unique');
         uqBtn.onclick = function() { toggleConstraint(col.id, 'isUnique'); };
         constraintsDiv.appendChild(uqBtn);
 
         let aiBtn = document.createElement('button');
         aiBtn.className = 'constraint-btn' + (col.isAutoIncrement ? ' active' : '');
         aiBtn.textContent = 'AI';
-        aiBtn.title = 'Auto Increment';
+        aiBtn.title = t('autoIncrement');
         aiBtn.onclick = function() { toggleConstraint(col.id, 'isAutoIncrement'); };
         constraintsDiv.appendChild(aiBtn);
 
@@ -301,7 +491,7 @@ function renderFields() {
         let delBtn = document.createElement('button');
         delBtn.className = 'action-btn';
         delBtn.innerHTML = '&#10005;';
-        delBtn.title = 'Delete Field';
+        delBtn.title = t('deleteField');
         delBtn.onclick = function() { removeColumn(col.id); };
         tdActions.appendChild(delBtn);
         tr.appendChild(tdActions);
@@ -465,7 +655,7 @@ function renderIndexes() {
         nameInput.type = 'text';
         nameInput.className = 'cell-input' + (state.errors['idx_name_' + idx.id] ? ' has-error' : '');
         nameInput.value = idx.name;
-        nameInput.placeholder = 'index name';
+        nameInput.placeholder = t('indexName');
         nameInput.oninput = function() { updateIndex(idx.id, 'name', this.value); };
         tdName.appendChild(nameInput);
         if (state.errors['idx_name_' + idx.id]) {
@@ -522,7 +712,7 @@ function renderIndexes() {
         let delBtn = document.createElement('button');
         delBtn.className = 'action-btn';
         delBtn.innerHTML = '&#10005;';
-        delBtn.title = 'Delete Index';
+        delBtn.title = t('deleteIndex');
         delBtn.onclick = function() { removeIndex(idx.id); };
         tdActions.appendChild(delBtn);
         tr.appendChild(tdActions);
@@ -590,7 +780,7 @@ function renderForeignKeys() {
         nameInput.type = 'text';
         nameInput.className = 'cell-input' + (state.errors['fk_name_' + fk.id] ? ' has-error' : '');
         nameInput.value = fk.name;
-        nameInput.placeholder = 'fk name';
+        nameInput.placeholder = t('fkName');
         nameInput.oninput = function() { updateForeignKey(fk.id, 'name', this.value); };
         tdName.appendChild(nameInput);
         if (state.errors['fk_name_' + fk.id]) {
@@ -606,7 +796,7 @@ function renderForeignKeys() {
         colSelect.className = 'fk-columns-select';
         let emptyOpt = document.createElement('option');
         emptyOpt.value = '';
-        emptyOpt.textContent = '-- select --';
+        emptyOpt.textContent = t('selectPlaceholder');
         colSelect.appendChild(emptyOpt);
         state.columns.forEach(function(col) {
             if (!col.name) return;
@@ -625,7 +815,7 @@ function renderForeignKeys() {
         refTableSelect.className = 'fk-columns-select';
         let refEmptyOpt = document.createElement('option');
         refEmptyOpt.value = '';
-        refEmptyOpt.textContent = '-- select --';
+        refEmptyOpt.textContent = t('selectPlaceholder');
         refTableSelect.appendChild(refEmptyOpt);
         state.availableTables.forEach(function(t) {
             let opt = document.createElement('option');
@@ -643,7 +833,7 @@ function renderForeignKeys() {
         refColSelect.className = 'fk-columns-select';
         let refColEmptyOpt = document.createElement('option');
         refColEmptyOpt.value = '';
-        refColEmptyOpt.textContent = '-- select --';
+        refColEmptyOpt.textContent = t('selectPlaceholder');
         refColSelect.appendChild(refColEmptyOpt);
         let refCols = state.availableColumns[fk.referencedTable] || [];
         refCols.forEach(function(c) {
@@ -689,7 +879,7 @@ function renderForeignKeys() {
         let delBtn = document.createElement('button');
         delBtn.className = 'action-btn';
         delBtn.innerHTML = '&#10005;';
-        delBtn.title = 'Delete FK';
+        delBtn.title = t('deleteFk');
         delBtn.onclick = function() { removeForeignKey(fk.id); };
         tdActions.appendChild(delBtn);
         tr.appendChild(tdActions);
@@ -735,7 +925,7 @@ function renderTriggers() {
         nameInput.type = 'text';
         nameInput.className = 'cell-input';
         nameInput.value = trg.name;
-        nameInput.placeholder = 'trigger name';
+        nameInput.placeholder = t('triggerName');
         nameInput.oninput = function() { updateTrigger(trg.id, 'name', this.value); };
         tdName.appendChild(nameInput);
         tr.appendChild(tdName);
@@ -772,7 +962,7 @@ function renderTriggers() {
         let stmtTextarea = document.createElement('textarea');
         stmtTextarea.className = 'statement-textarea';
         stmtTextarea.value = trg.statement;
-        stmtTextarea.placeholder = 'BEGIN ... END';
+        stmtTextarea.placeholder = t('beginEnd');
         stmtTextarea.oninput = function() { updateTrigger(trg.id, 'statement', this.value); };
         tdStatement.appendChild(stmtTextarea);
         tr.appendChild(tdStatement);
@@ -781,7 +971,7 @@ function renderTriggers() {
         let delBtn = document.createElement('button');
         delBtn.className = 'action-btn';
         delBtn.innerHTML = '&#10005;';
-        delBtn.title = 'Delete Trigger';
+        delBtn.title = t('deleteTrigger');
         delBtn.onclick = function() { removeTrigger(trg.id); };
         tdActions.appendChild(delBtn);
         tr.appendChild(tdActions);
@@ -814,7 +1004,7 @@ function generateDDL() {
 }
 
 function generateCreateDDL() {
-    if (state.columns.length === 0) return '-- Add at least one column';
+    if (state.columns.length === 0) return t('addAtLeastOneColumn');
 
     let lines = [];
     let pkCols = [];
@@ -988,7 +1178,7 @@ function generateAlterDDL() {
         }
     });
 
-    if (stmts.length === 0) return '-- No changes detected';
+    if (stmts.length === 0) return t('noChangesDetected');
 
     return stmts.join(';\n') + ';';
 }
@@ -1111,7 +1301,7 @@ function validate() {
     let valid = true;
 
     if (!state.tableName || !state.tableName.trim()) {
-        state.errors['tableName'] = 'Table name is required';
+        state.errors['tableName'] = t('tableNameRequired');
         document.getElementById('tableNameInput').classList.add('has-error');
         valid = false;
     } else {
@@ -1125,10 +1315,10 @@ function validate() {
     let colNames = {};
     state.columns.forEach(function(col) {
         if (!col.name || !col.name.trim()) {
-            state.errors['col_name_' + col.id] = 'Field name is required';
+            state.errors['col_name_' + col.id] = t('fieldNameRequired');
             valid = false;
         } else if (colNames[col.name]) {
-            state.errors['col_name_' + col.id] = 'Duplicate field name';
+            state.errors['col_name_' + col.id] = t('duplicateFieldName');
             valid = false;
         } else {
             colNames[col.name] = true;
@@ -1138,10 +1328,10 @@ function validate() {
     let idxNames = {};
     state.indexes.forEach(function(idx) {
         if (!idx.name || !idx.name.trim()) {
-            state.errors['idx_name_' + idx.id] = 'Index name is required';
+            state.errors['idx_name_' + idx.id] = t('indexNameRequired');
             valid = false;
         } else if (idxNames[idx.name]) {
-            state.errors['idx_name_' + idx.id] = 'Duplicate index name';
+            state.errors['idx_name_' + idx.id] = t('duplicateIndexName');
             valid = false;
         } else {
             idxNames[idx.name] = true;
@@ -1151,10 +1341,10 @@ function validate() {
     let fkNames = {};
     state.foreignKeys.forEach(function(fk) {
         if (!fk.name || !fk.name.trim()) {
-            state.errors['fk_name_' + fk.id] = 'FK name is required';
+            state.errors['fk_name_' + fk.id] = t('fkNameRequired');
             valid = false;
         } else if (fkNames[fk.name]) {
-            state.errors['fk_name_' + fk.id] = 'Duplicate FK name';
+            state.errors['fk_name_' + fk.id] = t('duplicateFkName');
             valid = false;
         } else {
             fkNames[fk.name] = true;
@@ -1346,10 +1536,10 @@ function handleSaveResult(message) {
     if (message.success) {
         vscode.postMessage({ command: 'close' });
     } else {
-        let errorMsg = message.error || 'Unknown error';
+        let errorMsg = message.error || t('unknownError');
         let errorDiv = document.createElement('div');
         errorDiv.className = 'error-message';
-        errorDiv.textContent = 'Save failed: ' + errorMsg;
+        errorDiv.textContent = t('saveFailed') + errorMsg;
         errorDiv.style.position = 'fixed';
         errorDiv.style.bottom = '210px';
         errorDiv.style.left = '12px';
@@ -1418,3 +1608,4 @@ function bindActions() {
 
 bindActions();
 init();
+applyI18n();

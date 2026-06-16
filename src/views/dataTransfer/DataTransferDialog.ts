@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import { BaseWebviewPanel, type WebviewPanelConfig } from '../BaseWebviewPanel';
 import { getConnectionManager } from '../../database/connection/ConnectionManager';
+import { getLanguage } from '../../i18n';
 import {
     importFromCsv,
     importFromJson,
@@ -74,7 +75,12 @@ export class DataTransferDialog extends BaseWebviewPanel {
     }
 
     private async _initialize(): Promise<void> {
-        await this.initializeHtml();
+        const configData = { lang: getLanguage() };
+        const configJson = JSON.stringify(configData).replace(/<\/script>/gi, '<\\/script>');
+        const configScript = '<script>window.__DATA_TRANSFER_CONFIG__ = ' + configJson + ';</script>';
+        await this.initializeHtml([
+            { placeholder: '{{CONFIG_INJECT}}', value: configScript },
+        ]);
         this.onDidReceiveMessage(async (message: unknown) => {
             const msg = message as DataTransferMessage;
             switch (msg.command) {

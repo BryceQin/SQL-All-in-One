@@ -1,5 +1,128 @@
 const vscode = acquireVsCodeApi();
 
+const i18nData = {
+    zh: {
+        'dataTransfer.title': '数据传输',
+        'dataTransfer.source': '源',
+        'dataTransfer.target': '目标',
+        'dataTransfer.mapping': '映射',
+        'dataTransfer.options': '选项',
+        'dataTransfer.preview': '预览',
+        'dataTransfer.filePath': '文件路径',
+        'dataTransfer.selectFilePh': '选择数据文件...',
+        'dataTransfer.selectFile': '选择文件',
+        'dataTransfer.format': '格式',
+        'dataTransfer.targetTable': '目标表',
+        'dataTransfer.selectTablePh': '-- 请选择表 --',
+        'dataTransfer.newTableName': '或创建新表',
+        'dataTransfer.newTableNamePh': '输入新表名...',
+        'dataTransfer.sourceColumn': '源列',
+        'dataTransfer.targetColumn': '目标列',
+        'dataTransfer.selectFileAndTable': '请先选择文件和目标表。',
+        'dataTransfer.onError': '错误处理',
+        'dataTransfer.skipInvalidRows': '跳过无效行',
+        'dataTransfer.abortOnError': '出错时中止',
+        'dataTransfer.batchSize': '批处理大小',
+        'dataTransfer.previewRows': '预览行数',
+        'dataTransfer.csvDelimiter': 'CSV 分隔符',
+        'dataTransfer.encoding': '编码',
+        'dataTransfer.dataPreview': '数据预览',
+        'dataTransfer.importing': '正在导入...',
+        'dataTransfer.startImport': '开始导入',
+        'dataTransfer.skipOption': '-- 跳过 --',
+        'dataTransfer.noPreviewData': '无预览数据。',
+        'dataTransfer.importSuccessful': '导入成功',
+        'dataTransfer.totalRows': '总行数',
+        'dataTransfer.imported': '已导入',
+        'dataTransfer.skipped': '已跳过',
+        'dataTransfer.importFailed': '导入失败',
+        'dataTransfer.importingData': '正在导入数据...',
+        'dataTransfer.loadingPreview': '加载预览...',
+    },
+    en: {
+        'dataTransfer.title': 'Data Transfer',
+        'dataTransfer.source': 'Source',
+        'dataTransfer.target': 'Target',
+        'dataTransfer.mapping': 'Mapping',
+        'dataTransfer.options': 'Options',
+        'dataTransfer.preview': 'Preview',
+        'dataTransfer.filePath': 'File Path',
+        'dataTransfer.selectFilePh': 'Select a data file...',
+        'dataTransfer.selectFile': 'Select File',
+        'dataTransfer.format': 'Format',
+        'dataTransfer.targetTable': 'Target Table',
+        'dataTransfer.selectTablePh': '-- Select a table --',
+        'dataTransfer.newTableName': 'Or Create New Table',
+        'dataTransfer.newTableNamePh': 'Enter new table name...',
+        'dataTransfer.sourceColumn': 'Source Column',
+        'dataTransfer.targetColumn': 'Target Column',
+        'dataTransfer.selectFileAndTable': 'Select a file and target table first.',
+        'dataTransfer.onError': 'On Error',
+        'dataTransfer.skipInvalidRows': 'Skip invalid rows',
+        'dataTransfer.abortOnError': 'Abort on error',
+        'dataTransfer.batchSize': 'Batch Size',
+        'dataTransfer.previewRows': 'Preview Rows',
+        'dataTransfer.csvDelimiter': 'CSV Delimiter',
+        'dataTransfer.encoding': 'Encoding',
+        'dataTransfer.dataPreview': 'Data Preview',
+        'dataTransfer.importing': 'Importing...',
+        'dataTransfer.startImport': 'Start Import',
+        'dataTransfer.skipOption': '-- Skip --',
+        'dataTransfer.noPreviewData': 'No preview data available.',
+        'dataTransfer.importSuccessful': 'Import Successful',
+        'dataTransfer.totalRows': 'Total Rows',
+        'dataTransfer.imported': 'Imported',
+        'dataTransfer.skipped': 'Skipped',
+        'dataTransfer.importFailed': 'Import Failed',
+        'dataTransfer.importingData': 'Importing data...',
+        'dataTransfer.loadingPreview': 'Loading preview...',
+    }
+};
+
+let lang = 'zh';
+function t(key) {
+    var dict = i18nData[lang] || i18nData['en'];
+    return dict[key] || i18nData['en'][key] || key;
+}
+
+function applyI18n() {
+    document.querySelectorAll('[data-i18n]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n');
+        var text = t(key);
+        if (text && text !== key) {
+            if (el.tagName === 'OPTION') {
+                el.textContent = text;
+            } else if (el.tagName === 'TITLE') {
+                document.title = text;
+            } else {
+                el.textContent = text;
+            }
+        }
+    });
+    document.querySelectorAll('[data-i18n-ph]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n-ph');
+        var text = t(key);
+        if (text && text !== key) {
+            el.placeholder = text;
+        }
+    });
+    document.querySelectorAll('[data-i18n-title]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n-title');
+        var text = t(key);
+        if (text && text !== key) {
+            el.title = text;
+        }
+    });
+}
+
+// Read language from injected config
+(function initLang() {
+    var config = window.__DATA_TRANSFER_CONFIG__ || {};
+    if (config.lang) {
+        lang = config.lang.startsWith('zh') ? 'zh' : 'en';
+    }
+})();
+
 let currentStep = 1;
 const totalSteps = 5;
 
@@ -133,7 +256,7 @@ function renderMapping() {
     var container = document.getElementById('mappingContainer');
 
     if (sourceColumns.length === 0) {
-        container.innerHTML = '<div class="mapping-empty">Select a file and target table first.</div>';
+        container.innerHTML = '<div class="mapping-empty">' + t('dataTransfer.selectFileAndTable') + '</div>';
         return;
     }
 
@@ -157,7 +280,7 @@ function renderMapping() {
 
         var skipOpt = document.createElement('option');
         skipOpt.value = '__skip__';
-        skipOpt.textContent = '-- Skip --';
+        skipOpt.textContent = t('dataTransfer.skipOption');
         targetSelect.appendChild(skipOpt);
 
         targetColumns.forEach(function(tgtCol) {
@@ -201,7 +324,7 @@ function renderPreview(headers, rows, format) {
     wrapper.innerHTML = '';
 
     if (!headers || headers.length === 0) {
-        wrapper.innerHTML = '<div class="mapping-empty">No preview data available.</div>';
+        wrapper.innerHTML = '<div class="mapping-empty">' + t('dataTransfer.noPreviewData') + '</div>';
         return;
     }
 
@@ -245,11 +368,11 @@ function showImportResult(result) {
     if (result.success) {
         section.classList.add('import-result-success');
         section.innerHTML =
-            '<div class="import-result-title">Import Successful</div>' +
+            '<div class="import-result-title">' + t('dataTransfer.importSuccessful') + '</div>' +
             '<div class="import-result-stats">' +
-            '<div class="import-result-stat"><span class="import-result-stat-value">' + result.totalRows + '</span><span class="import-result-stat-label">Total Rows</span></div>' +
-            '<div class="import-result-stat"><span class="import-result-stat-value">' + result.importedRows + '</span><span class="import-result-stat-label">Imported</span></div>' +
-            '<div class="import-result-stat"><span class="import-result-stat-value">' + result.skippedRows + '</span><span class="import-result-stat-label">Skipped</span></div>' +
+            '<div class="import-result-stat"><span class="import-result-stat-value">' + result.totalRows + '</span><span class="import-result-stat-label">' + t('dataTransfer.totalRows') + '</span></div>' +
+            '<div class="import-result-stat"><span class="import-result-stat-value">' + result.importedRows + '</span><span class="import-result-stat-label">' + t('dataTransfer.imported') + '</span></div>' +
+            '<div class="import-result-stat"><span class="import-result-stat-value">' + result.skippedRows + '</span><span class="import-result-stat-label">' + t('dataTransfer.skipped') + '</span></div>' +
             '</div>';
     } else {
         section.classList.add('import-result-error');
@@ -262,11 +385,11 @@ function showImportResult(result) {
             errorHtml += '</div>';
         }
         section.innerHTML =
-            '<div class="import-result-title">Import Failed</div>' +
+            '<div class="import-result-title">' + t('dataTransfer.importFailed') + '</div>' +
             '<div class="import-result-stats">' +
-            '<div class="import-result-stat"><span class="import-result-stat-value">' + result.totalRows + '</span><span class="import-result-stat-label">Total Rows</span></div>' +
-            '<div class="import-result-stat"><span class="import-result-stat-value">' + result.importedRows + '</span><span class="import-result-stat-label">Imported</span></div>' +
-            '<div class="import-result-stat"><span class="import-result-stat-value">' + result.skippedRows + '</span><span class="import-result-stat-label">Skipped</span></div>' +
+            '<div class="import-result-stat"><span class="import-result-stat-value">' + result.totalRows + '</span><span class="import-result-stat-label">' + t('dataTransfer.totalRows') + '</span></div>' +
+            '<div class="import-result-stat"><span class="import-result-stat-value">' + result.importedRows + '</span><span class="import-result-stat-label">' + t('dataTransfer.imported') + '</span></div>' +
+            '<div class="import-result-stat"><span class="import-result-stat-value">' + result.skippedRows + '</span><span class="import-result-stat-label">' + t('dataTransfer.skipped') + '</span></div>' +
             '</div>' +
             errorHtml;
     }
@@ -299,7 +422,7 @@ function startImport() {
     resultSection.style.display = 'none';
     progressSection.style.display = '';
     progressBar.classList.add('indeterminate');
-    progressText.textContent = 'Importing data...';
+    progressText.textContent = t('dataTransfer.importingData');
 
     var btnStartImport = document.getElementById('btnStartImport');
     btnStartImport.disabled = true;
@@ -374,7 +497,7 @@ window.addEventListener('message', function(event) {
                 tables = message.tables || [];
             }
             var tableSelect = document.getElementById('targetTable');
-            tableSelect.innerHTML = '<option value="">-- Select a table --</option>';
+            tableSelect.innerHTML = '<option value="">' + t('dataTransfer.selectTablePh') + '</option>';
             tables.forEach(function(t) {
                 var opt = document.createElement('option');
                 opt.value = t;
@@ -420,6 +543,7 @@ window.addEventListener('message', function(event) {
 // Initialize
 updateStepDisplay();
 updateCsvOptionsVisibility();
+applyI18n();
 
 // Listen for newTableName changes
 document.getElementById('newTableName').addEventListener('input', function() {

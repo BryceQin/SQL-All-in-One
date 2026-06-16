@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { BaseWebviewPanel, type WebviewPanelConfig } from '../BaseWebviewPanel';
 import { getConnectionManager } from '../../database/connection/ConnectionManager';
 import { ExplainPlan } from '../../database/query/ExplainPlan';
+import { getLanguage } from '../../i18n';
 
 export class ExplainPlanPanel extends BaseWebviewPanel {
     public static readonly viewType = 'sqlAllInOneExplainPlan';
@@ -42,7 +43,14 @@ export class ExplainPlanPanel extends BaseWebviewPanel {
     }
 
     private async _initialize(): Promise<void> {
-        await this.initializeHtml();
+        // Build config injection (no nonce — base class regex adds it)
+        const configData = { lang: getLanguage() };
+        const configJson = JSON.stringify(configData).replace(/<\/script>/gi, '<\\/script>');
+        const configScript = '<script>window.__CONFIG__ = ' + configJson + ';</script>';
+
+        await this.initializeHtml([
+            { placeholder: '{{CONFIG_INJECT}}', value: configScript },
+        ]);
         this.onDidReceiveMessage(async (message: unknown) => {
             const msg = message as { command?: string; sql?: string };
             switch (msg.command) {

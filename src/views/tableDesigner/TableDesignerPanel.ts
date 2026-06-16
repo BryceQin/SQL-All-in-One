@@ -3,6 +3,7 @@ import { BaseWebviewPanel, type WebviewPanelConfig } from '../BaseWebviewPanel';
 import { getConnectionManager } from '../../database/connection/ConnectionManager';
 import { getSchemaCache } from '../../database/schema/SchemaCache';
 import type { IDatabaseAdapter, TableStructure, DataTypeCategory } from '../../database/adapters/IDatabaseAdapter';
+import { getLanguage } from '../../i18n/index.js';
 
 interface ColumnDesign {
     id: string;
@@ -118,6 +119,7 @@ export class TableDesignerPanel extends BaseWebviewPanel {
             mode: this._mode,
             database: this._database,
             tableName: this._tableName,
+            lang: getLanguage(),
         };
         const configScript = '<script>window.__TABLE_DESIGNER_CONFIG__ = ' + JSON.stringify(configData) + ';</script>';
         await this.initializeHtml([

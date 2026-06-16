@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.15.26] - 2026-06-16
+
+### Bug Fix
+
+- 修复查询结果面板列宽不随数据内容自适应的问题：表头和表体使用两个独立的 `<table>` 元素且均设置 `table-layout: fixed`，当数据值比列名长时两个表各自计算列宽导致列名与数据错位；新增基于 Canvas API 的文本宽度测量和列宽自动计算（采样前 50 行），通过 `<colgroup>` 将计算出的宽度同步应用到表头和表体，确保列宽一致
+- 修复查询结果面板水平滚动时表头不跟随移动的问题：在 `onGridScroll` 中同步表头容器的 `scrollLeft` 与表体容器
+- Fix query result panel column widths not adapting to data content: header and body use two separate `<table>` elements both with `table-layout: fixed`, when data values are longer than column names the two tables calculate column widths independently causing misalignment; added Canvas API-based text width measurement and auto column width calculation (sampling first 50 rows), applying calculated widths to both header and body via `<colgroup>` to ensure consistent column widths
+- Fix query result panel header not following horizontal scroll: sync header container `scrollLeft` with body container in `onGridScroll`
+
+---
+
 ## [2.15.25] - 2026-06-16
 
 ### Enhancement

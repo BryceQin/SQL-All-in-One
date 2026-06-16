@@ -13,45 +13,45 @@
     <div class="header-bar">
       <div class="header-title">
         <span class="header-icon">&#128203;</span>
-        <span id="headerTableName">Table Designer</span>
+        <span id="headerTableName" data-i18n="tableDesigner">Table Designer</span>
       </div>
       <div class="header-actions">
-        <button class="btn btn-primary" id="btnSave" data-action="handleSave">Save</button>
+        <button class="btn btn-primary" id="btnSave" data-action="handleSave" data-i18n="save">Save</button>
         <button class="btn btn-secondary" id="btnClose" data-action="handleClose">&#10005;</button>
       </div>
     </div>
 
     <div class="tab-bar">
-      <button class="tab-btn active" data-tab="fields" data-action="switchTab" data-action-arg="fields">Fields</button>
-      <button class="tab-btn" data-tab="indexes" data-action="switchTab" data-action-arg="indexes">Indexes</button>
-      <button class="tab-btn" data-tab="foreignKeys" data-action="switchTab" data-action-arg="foreignKeys">Foreign Keys</button>
-      <button class="tab-btn" data-tab="triggers" data-action="switchTab" data-action-arg="triggers">Triggers</button>
-      <button class="tab-btn" data-tab="options" data-action="switchTab" data-action-arg="options">Options</button>
-      <button class="tab-btn" data-tab="sql" data-action="switchTab" data-action-arg="sql">SQL</button>
+      <button class="tab-btn active" data-tab="fields" data-action="switchTab" data-action-arg="fields" data-i18n="fields">Fields</button>
+      <button class="tab-btn" data-tab="indexes" data-action="switchTab" data-action-arg="indexes" data-i18n="indexes">Indexes</button>
+      <button class="tab-btn" data-tab="foreignKeys" data-action="switchTab" data-action-arg="foreignKeys" data-i18n="foreignKeys">Foreign Keys</button>
+      <button class="tab-btn" data-tab="triggers" data-action="switchTab" data-action-arg="triggers" data-i18n="triggers">Triggers</button>
+      <button class="tab-btn" data-tab="options" data-action="switchTab" data-action-arg="options" data-i18n="options">Options</button>
+      <button class="tab-btn" data-tab="sql" data-action="switchTab" data-action-arg="sql" data-i18n="sql">SQL</button>
     </div>
 
     <div class="tab-content">
       <div class="tab-page active" id="pageFields">
         <div class="table-name-row">
-          <label class="table-name-label">Table Name</label>
+          <label class="table-name-label" data-i18n="tableName">Table Name</label>
           <input type="text" class="table-name-input" id="tableNameInput" data-action="updateTableName">
         </div>
         <div class="fields-toolbar">
-          <button class="btn btn-secondary btn-add" data-action="addColumn">+ Add Field</button>
+          <button class="btn btn-secondary btn-add" data-action="addColumn" data-i18n="addField">+ Add Field</button>
         </div>
         <div class="fields-table-wrapper">
           <table class="design-table fields-table">
             <thead>
               <tr>
                 <th class="th-drag"></th>
-                <th class="th-name">Field Name</th>
-                <th class="th-type">Type</th>
-                <th class="th-length">Length</th>
-                <th class="th-nullable">Nullable</th>
-                <th class="th-default">Default</th>
-                <th class="th-comment">Comment</th>
-                <th class="th-constraints">Constraints</th>
-                <th class="th-actions">Actions</th>
+                <th class="th-name" data-i18n="fieldNameHeader">Field Name</th>
+                <th class="th-type" data-i18n="type">Type</th>
+                <th class="th-length" data-i18n="lengthHeader">Length</th>
+                <th class="th-nullable" data-i18n="nullable">Nullable</th>
+                <th class="th-default" data-i18n="defaultHeader">Default</th>
+                <th class="th-comment" data-i18n="commentHeader">Comment</th>
+                <th class="th-constraints" data-i18n="constraints">Constraints</th>
+                <th class="th-actions" data-i18n="actions">Actions</th>
               </tr>
             </thead>
             <tbody id="fieldsBody"></tbody>
@@ -61,17 +61,17 @@
 
       <div class="tab-page" id="pageIndexes">
         <div class="fields-toolbar">
-          <button class="btn btn-secondary btn-add" data-action="addIndex">+ Add Index</button>
+          <button class="btn btn-secondary btn-add" data-action="addIndex" data-i18n="addIndex">+ Add Index</button>
         </div>
         <div class="fields-table-wrapper">
           <table class="design-table indexes-table">
             <thead>
               <tr>
-                <th class="th-name">Index Name</th>
-                <th class="th-type">Type</th>
-                <th class="th-columns">Columns</th>
-                <th class="th-unique">Unique</th>
-                <th class="th-actions">Actions</th>
+                <th class="th-name" data-i18n="indexNameHeader">Index Name</th>
+                <th class="th-type" data-i18n="type">Type</th>
+                <th class="th-columns" data-i18n="columns">Columns</th>
+                <th class="th-unique" data-i18n="uniqueHeader">Unique</th>
+                <th class="th-actions" data-i18n="actions">Actions</th>
               </tr>
             </thead>
             <tbody id="indexesBody"></tbody>
@@ -81,19 +81,19 @@
 
       <div class="tab-page" id="pageForeignKeys">
         <div class="fields-toolbar">
-          <button class="btn btn-secondary btn-add" data-action="addForeignKey">+ Add Foreign Key</button>
+          <button class="btn btn-secondary btn-add" data-action="addForeignKey" data-i18n="addForeignKey">+ Add Foreign Key</button>
         </div>
         <div class="fields-table-wrapper">
           <table class="design-table fk-table">
             <thead>
               <tr>
-                <th class="th-name">FK Name</th>
-                <th class="th-columns">Columns</th>
-                <th class="th-ref-table">Referenced Table</th>
-                <th class="th-ref-columns">Referenced Columns</th>
-                <th class="th-on-delete">ON DELETE</th>
-                <th class="th-on-update">ON UPDATE</th>
-                <th class="th-actions">Actions</th>
+                <th class="th-name" data-i18n="fkNameHeader">FK Name</th>
+                <th class="th-columns" data-i18n="columns">Columns</th>
+                <th class="th-ref-table" data-i18n="referencedTable">Referenced Table</th>
+                <th class="th-ref-columns" data-i18n="referencedColumns">Referenced Columns</th>
+                <th class="th-on-delete" data-i18n="onDelete">ON DELETE</th>
+                <th class="th-on-update" data-i18n="onUpdate">ON UPDATE</th>
+                <th class="th-actions" data-i18n="actions">Actions</th>
               </tr>
             </thead>
             <tbody id="foreignKeysBody"></tbody>
@@ -153,7 +153,7 @@
             </select>
           </div>
           <div class="option-row">
-            <label class="option-label">Collation</label>
+            <label class="option-label" data-i18n="collation">Collation</label>
             <select class="option-select" id="optCollation" data-action="updateOption" data-action-arg="collation">
               <option value="utf8mb4_general_ci">utf8mb4_general_ci</option>
               <option value="utf8mb4_unicode_ci">utf8mb4_unicode_ci</option>
@@ -167,7 +167,7 @@
             </select>
           </div>
           <div class="option-row">
-            <label class="option-label">Auto Increment</label>
+            <label class="option-label" data-i18n="autoIncrementOption">Auto Increment</label>
             <input type="number" class="option-input" id="optAutoIncrement" data-action="updateOption" data-action-arg="autoIncrement">
           </div>
           <div class="option-row">
@@ -183,35 +183,35 @@
     </div>
 
     <div class="sql-preview-bar">
-      <div class="sql-preview-header">SQL Preview</div>
+      <div class="sql-preview-header" data-i18n="sqlPreview">SQL Preview</div>
       <pre class="sql-preview-code"><code id="sqlPreviewBottom"></code></pre>
     </div>
 
     <div class="dialog-overlay" id="saveDialog" style="display:none;">
       <div class="dialog">
-        <div class="dialog-header">Confirm Save</div>
+        <div class="dialog-header" data-i18n="confirmSave">Confirm Save</div>
         <div class="dialog-body">
-          <div class="dialog-label">The following SQL will be executed:</div>
+          <div class="dialog-label" data-i18n="sqlWillBeExecuted">The following SQL will be executed:</div>
           <pre class="dialog-sql" id="saveSqlPreview"></pre>
         </div>
         <div class="dialog-footer">
-          <button class="btn btn-primary" data-action="confirmSave">Execute</button>
-          <button class="btn btn-secondary" data-action="exportSqlOnly">Export SQL Only</button>
-          <button class="btn btn-secondary" data-action="cancelSave">Cancel</button>
+          <button class="btn btn-primary" data-action="confirmSave" data-i18n="execute">Execute</button>
+          <button class="btn btn-secondary" data-action="exportSqlOnly" data-i18n="exportSqlOnly">Export SQL Only</button>
+          <button class="btn btn-secondary" data-action="cancelSave" data-i18n="cancel">Cancel</button>
         </div>
       </div>
     </div>
 
     <div class="dialog-overlay" id="reorderDialog" style="display:none;">
       <div class="dialog">
-        <div class="dialog-header">Column Reorder Warning</div>
+        <div class="dialog-header" data-i18n="columnReorderWarning">Column Reorder Warning</div>
         <div class="dialog-body">
-          <div class="dialog-warning">Column order changes will rebuild the table, which may be slow for large tables. Consider exporting SQL and executing manually.</div>
+          <div class="dialog-warning" data-i18n="reorderWarningText">Column order changes will rebuild the table, which may be slow for large tables. Consider exporting SQL and executing manually.</div>
         </div>
         <div class="dialog-footer">
-          <button class="btn btn-primary" data-action="confirmReorder">Continue</button>
-          <button class="btn btn-secondary" data-action="exportReorderSql">Export SQL Only</button>
-          <button class="btn btn-secondary" data-action="cancelReorder">Cancel</button>
+          <button class="btn btn-primary" data-action="confirmReorder" data-i18n="continueBtn">Continue</button>
+          <button class="btn btn-secondary" data-action="exportReorderSql" data-i18n="exportSqlOnly">Export SQL Only</button>
+          <button class="btn btn-secondary" data-action="cancelReorder" data-i18n="cancel">Cancel</button>
         </div>
       </div>
     </div>

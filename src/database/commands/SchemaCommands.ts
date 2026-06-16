@@ -484,7 +484,7 @@ export function registerSchemaCommands(
         vscode.commands.registerCommand('hive-formatter.revealInExplorer', async (node?: FavoriteTreeNode) => {
             if (node) {
                 vscode.window.showInformationMessage(
-                    `${node.objectType}: ${node.objectName} | Connection: ${node.connectionName} | Database: ${node.databaseName}`
+                    t('explorer.revealInfo', node.objectType, node.objectName, node.connectionName, node.databaseName)
                 );
             }
         })
