@@ -11,6 +11,15 @@ const DEFAULT_CONFIG: LintRuleConfig = { enabled: false, severity: vscode.Diagno
 export class RuleRegistry {
   private rules = new Map<string, LintRule>();
   private rulesByType = new Map<string, LintRule[]>();
+  private enabledRulesCache = new Map<string, LintRule[]>();
+  private enabledGlobalRulesCache: LintRule[] | null = null;
+  private cacheValid = false;
+
+  private invalidateCache(): void {
+    this.enabledRulesCache.clear();
+    this.enabledGlobalRulesCache = null;
+    this.cacheValid = false;
+  }
 
   register(rule: LintRule): void {
     this.rules.set(rule.id, rule);
@@ -24,6 +33,7 @@ export class RuleRegistry {
         list.push(rule);
       }
     }
+    this.invalidateCache();
   }
 
   getRuleById(ruleId: string): LintRule | undefined {
@@ -31,13 +41,28 @@ export class RuleRegistry {
   }
 
   getEnabledRulesForType(type: string): LintRule[] {
+    if (this.cacheValid) {
+      const cached = this.enabledRulesCache.get(type);
+      if (cached !== undefined) return cached;
+    }
+
     const rules = this.rulesByType.get(type) || [];
-    return rules.filter(r => r.isEnabled());
+    const enabled = rules.filter(r => r.isEnabled());
+    this.enabledRulesCache.set(type, enabled);
+    if (!this.cacheValid) this.cacheValid = true;
+    return enabled;
   }
 
   getEnabledGlobalRules(): LintRule[] {
-    return Array.from(this.rules.values())
+    if (this.cacheValid && this.enabledGlobalRulesCache !== null) {
+      return this.enabledGlobalRulesCache;
+    }
+
+    const enabled = Array.from(this.rules.values())
       .filter(r => r.applicableTypes.length === 0 && r.isEnabled());
+    this.enabledGlobalRulesCache = enabled;
+    if (!this.cacheValid) this.cacheValid = true;
+    return enabled;
   }
 
   runRules(context: RuleContext): vscode.Diagnostic[] {
@@ -88,6 +113,7 @@ export class RuleRegistry {
   reloadConfig(): void {
     this.rules.clear();
     this.rulesByType.clear();
+    this.invalidateCache();
     this.registerAllRules();
   }
 }

@@ -521,7 +521,7 @@ export class QueryResultPanel extends BaseWebviewPanel {
                     adapter.listDatabases().then(dbs => {
                         const databases = dbs.map(d => d.name);
                         this.sendDatabaseList(databases, activeConn.database || '');
-                    }).catch(() => {});
+                    }).catch((_e) => { /* ignore */ });
                 }
             }
         } catch { /* ignore */ }

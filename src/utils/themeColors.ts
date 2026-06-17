@@ -137,7 +137,8 @@ export function getTokenColors(): TokenColorMap | undefined {
  */
 function findThemeExtension(themeName: string): vscode.Extension<unknown> | undefined {
     for (const ext of vscode.extensions.all) {
-        const contributes = ext.packageJSON?.contributes as { themes?: { label?: string; id?: string }[] } | undefined;
+        const pkgJson = ext.packageJSON as Record<string, unknown> | undefined;
+        const contributes = pkgJson?.contributes as { themes?: { label?: string; id?: string }[] } | undefined;
         if (!contributes?.themes) {
             continue;
         }
@@ -157,7 +158,8 @@ function resolveThemeFilePath(
     ext: vscode.Extension<unknown>,
     themeName: string
 ): string | undefined {
-    const contributes = ext.packageJSON?.contributes as { themes?: { label?: string; id?: string; path?: string }[] } | undefined;
+    const pkgJson = ext.packageJSON as Record<string, unknown> | undefined;
+    const contributes = pkgJson?.contributes as { themes?: { label?: string; id?: string; path?: string }[] } | undefined;
     if (!contributes?.themes) {
         return undefined;
     }

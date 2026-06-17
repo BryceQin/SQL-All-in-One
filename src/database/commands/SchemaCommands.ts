@@ -168,7 +168,8 @@ export function registerSchemaCommands(
                                     queryResultPanel?.sendDatabaseList(dbs.map(d => d.name), database);
                                 }
                             }
-                        } catch {
+                        } catch (_e) {
+                            // ignore errors during database list refresh
                         }
                     };
                 } else {
@@ -181,7 +182,7 @@ export function registerSchemaCommands(
                         const dbs = await dbListAdapter.listDatabases();
                         queryResultPanel?.sendDatabaseList(dbs.map(d => d.name), node.databaseName);
                     }
-                } catch { }
+                } catch (_e) { /* ignore */ }
 
                 queryResultPanel.onExecutePanelSql = async (panelSql: string): Promise<void> => {
                     try {
@@ -237,6 +238,26 @@ export function registerSchemaCommands(
                 if (adapter) {
                     try {
                         const ddl = await adapter.getTableDDL(node.databaseName, node.tableName);
+                        const document = await vscode.workspace.openTextDocument({
+                            content: ddl,
+                            language: 'sql'
+                        });
+                        await vscode.window.showTextDocument(document);
+                    } catch (error) {
+                        vscode.window.showErrorMessage(t('database.failedToGetDdl', String(error)));
+                    }
+                }
+            }
+        })
+    );
+
+    disposables.push(
+        vscode.commands.registerCommand('hive-formatter.viewViewDDL', async (node?: ViewTreeNode) => {
+            if (node) {
+                const adapter = getConnectionManager().getAdapter(node.connectionId);
+                if (adapter) {
+                    try {
+                        const ddl = await adapter.getViewDDL(node.databaseName, node.viewName);
                         const document = await vscode.workspace.openTextDocument({
                             content: ddl,
                             language: 'sql'
@@ -479,7 +500,8 @@ export function registerSchemaCommands(
                                 queryResultPanel?.sendDatabaseList(dbs.map(d => d.name), changedDb);
                             }
                         }
-                    } catch {
+                    } catch (_e) {
+                        // ignore errors during database list refresh
                     }
                 };
             }
@@ -490,7 +512,7 @@ export function registerSchemaCommands(
                     const dbs = await dbListAdapter.listDatabases();
                     queryResultPanel?.sendDatabaseList(dbs.map(d => d.name), database);
                 }
-            } catch { }
+            } catch (_e) { /* ignore */ }
 
             if (queryResultPanel && !queryResultPanel.isDisposed) {
                 queryResultPanel.setSql(content);

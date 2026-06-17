@@ -10,10 +10,10 @@ export class QueryExecutor {
     private runningQueries = new Map<string, RunningQuery>();
     private readonly _onDidStartQuery = new EventEmitter<QueryStartEvent>();
     private readonly _onDidEndQuery = new EventEmitter<QueryEndEvent>();
-    private cachedMaxRows: number = 1000;
-    private cachedTimeout: number = 30000;
-    private cachedCancelRetries: number = 3;
-    private cachedCancelRetryDelay: number = 500;
+    private cachedMaxRows = 1000;
+    private cachedTimeout = 30000;
+    private cachedCancelRetries = 3;
+    private cachedCancelRetryDelay = 500;
     private configDisposable: vscode.Disposable | undefined;
 
     readonly onDidStartQuery = this._onDidStartQuery.event;

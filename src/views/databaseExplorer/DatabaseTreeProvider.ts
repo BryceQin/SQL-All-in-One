@@ -399,7 +399,7 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
 
             const [tables, views, functions, procedures, triggers] = await Promise.all([
                 this.schemaCache.getTables(parent.connectionId, parent.databaseName),
-                adapter.listViews(parent.databaseName),
+                this.schemaCache.getViews(parent.connectionId, parent.databaseName),
                 this.schemaCache.getFunctions(parent.connectionId, parent.databaseName),
                 this.schemaCache.getProcedures(parent.connectionId, parent.databaseName),
                 adapter.listTriggers(parent.databaseName)
@@ -458,7 +458,7 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
                     break;
 
                 case 'views':
-                    views = await adapter.listViews(parent.databaseName);
+                    views = await this.schemaCache.getViews(parent.connectionId, parent.databaseName);
                     for (const view of views) {
                         children.push(new ViewTreeNode(
                             view.name,

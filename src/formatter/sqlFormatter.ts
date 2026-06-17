@@ -47,6 +47,31 @@ const MAX_FORMATTER_CACHE_SIZE = 50
 let lastOptionsRef: WeakRef<object> | undefined;
 let lastCacheKey: string | undefined;
 
+const RELEVANT_KEYS: (keyof FormatOptions)[] = [
+    'tabWidth', 'useTabs', 'keywordCase', 'identifierCase', 'dataTypeCase',
+    'functionCase', 'indentStyle', 'logicalOperatorNewline', 'expressionWidth',
+    'linesBetweenQueries', 'denseOperators', 'newlineBeforeSemicolon',
+    'commaPosition', 'alignColumnDefinitions', 'newlineAfterSelect',
+    'newlineAfterFrom', 'newlineBeforeWhere', 'newlineAfterWhere',
+    'newlineBeforeOrderBy', 'newlineBeforeGroupBy', 'newlineBeforeHaving',
+    'newlineBeforeLimit', 'tabulateAlias', 'newlineBeforeJoin',
+    'alignWhereClauses', 'alignCaseStatements', 'spaceBeforeComma',
+    'spaceInsideParentheses', 'trimTrailingSpaces', 'semicolonAtEnd',
+    'singleLineMaxLength', 'nullCase', 'booleanCase', 'newlineAfterGroupBy',
+    'newlineAfterHaving', 'newlineAfterOrderBy', 'newlineAfterLimit',
+    'newlineAfterJoin', 'newlineBeforeSetOperation', 'newlineAfterSetOperation',
+    'newlineBeforeOn', 'newlineBeforeUsing', 'newlineBeforeWith',
+    'newlineAfterWith', 'indentCteBody', 'newlineBetweenCtes',
+    'cteCommaPosition', 'indentJoinConditions', 'alignOnClauses',
+    'alignInsertColumns', 'alignInsertValuesGroups', 'newlineAfterInsertColumns',
+    'newlineBetweenValuesGroups', 'newlineAfterCase', 'newlineAfterWhen',
+    'newlineAfterThen', 'newlineAfterElse', 'indentWhen', 'indentThen',
+    'newlineAfterIn', 'maxItemsInlineList', 'subqueryParenStyle',
+    'commentPosition', 'blankLinesBeforeSetOperation',
+    'blankLinesAfterSetOperation', 'newlineBeforeLateralView',
+    'newlineBeforeDistributeBy', 'newlineBeforeClusterBy', 'newlineBeforeSortBy',
+]
+
 function getFormatterCacheKey(dialect: string, options: FormatOptions): string {
     if (lastOptionsRef) {
         const cached = lastOptionsRef.deref();
@@ -54,78 +79,10 @@ function getFormatterCacheKey(dialect: string, options: FormatOptions): string {
             return lastCacheKey;
         }
     }
-    const parts = [
-        dialect,
-        String(options.tabWidth),
-        String(options.useTabs),
-        String(options.keywordCase),
-        String(options.identifierCase),
-        String(options.dataTypeCase),
-        String(options.functionCase),
-        String(options.indentStyle),
-        String(options.logicalOperatorNewline),
-        String(options.expressionWidth),
-        String(options.linesBetweenQueries),
-        String(options.denseOperators),
-        String(options.newlineBeforeSemicolon),
-        String(options.commaPosition),
-        String(options.alignColumnDefinitions),
-        String(options.newlineAfterSelect),
-        String(options.newlineAfterFrom),
-        String(options.newlineBeforeWhere),
-        String(options.newlineAfterWhere),
-        String(options.newlineBeforeOrderBy),
-        String(options.newlineBeforeGroupBy),
-        String(options.newlineBeforeHaving),
-        String(options.newlineBeforeLimit),
-        String(options.tabulateAlias),
-        String(options.newlineBeforeJoin),
-        String(options.alignWhereClauses),
-        String(options.alignCaseStatements),
-        String(options.spaceBeforeComma),
-        String(options.spaceInsideParentheses),
-        String(options.trimTrailingSpaces),
-        String(options.semicolonAtEnd),
-        String(options.singleLineMaxLength),
-        String(options.nullCase),
-        String(options.booleanCase),
-        String(options.newlineAfterGroupBy),
-        String(options.newlineAfterHaving),
-        String(options.newlineAfterOrderBy),
-        String(options.newlineAfterLimit),
-        String(options.newlineAfterJoin),
-        String(options.newlineBeforeSetOperation),
-        String(options.newlineAfterSetOperation),
-        String(options.newlineBeforeOn),
-        String(options.newlineBeforeUsing),
-        String(options.newlineBeforeWith),
-        String(options.newlineAfterWith),
-        String(options.indentCteBody),
-        String(options.newlineBetweenCtes),
-        String(options.cteCommaPosition),
-        String(options.indentJoinConditions),
-        String(options.alignOnClauses),
-        String(options.alignInsertColumns),
-        String(options.alignInsertValuesGroups),
-        String(options.newlineAfterInsertColumns),
-        String(options.newlineBetweenValuesGroups),
-        String(options.newlineAfterCase),
-        String(options.newlineAfterWhen),
-        String(options.newlineAfterThen),
-        String(options.newlineAfterElse),
-        String(options.indentWhen),
-        String(options.indentThen),
-        String(options.newlineAfterIn),
-        String(options.maxItemsInlineList),
-        String(options.subqueryParenStyle),
-        String(options.commentPosition),
-        String(options.blankLinesBeforeSetOperation),
-        String(options.blankLinesAfterSetOperation),
-        String(options.newlineBeforeLateralView),
-        String(options.newlineBeforeDistributeBy),
-        String(options.newlineBeforeClusterBy),
-        String(options.newlineBeforeSortBy),
-    ];
+    const parts = [dialect];
+    for (const key of RELEVANT_KEYS) {
+        parts.push(String(options[key]));
+    }
     const key = parts.join('|');
     lastOptionsRef = new WeakRef(options as object);
     lastCacheKey = key;

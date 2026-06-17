@@ -15,9 +15,9 @@ export class SqlDiagnosticsProvider {
     private linter: SqlLinter
     private configChangeDisposable: vscode.Disposable
 
-    private debounceTimer: ReturnType<typeof setTimeout> | null = null
+    private debounceTimers = new Map<string, ReturnType<typeof setTimeout>>()
     private readonly DEBOUNCE_MS = 300
-    private currentCancellationSource: vscode.CancellationTokenSource | null = null
+    private cancellationSources = new Map<string, vscode.CancellationTokenSource>()
 
     constructor() {
         this.diagnosticCollection =
@@ -43,21 +43,25 @@ export class SqlDiagnosticsProvider {
     }
 
     public debouncedProvideDiagnostics(document: vscode.TextDocument): void {
-        if (this.currentCancellationSource) {
-            this.currentCancellationSource.cancel()
-            this.currentCancellationSource.dispose()
-            this.currentCancellationSource = null
+        const key = document.uri.toString()
+
+        const existingSource = this.cancellationSources.get(key)
+        if (existingSource) {
+            existingSource.cancel()
+            existingSource.dispose()
+            this.cancellationSources.delete(key)
         }
 
-        if (this.debounceTimer) {
-            clearTimeout(this.debounceTimer)
+        const existingTimer = this.debounceTimers.get(key)
+        if (existingTimer) {
+            clearTimeout(existingTimer)
         }
-        this.debounceTimer = setTimeout(() => {
+        this.debounceTimers.set(key, setTimeout(() => {
             const source = new vscode.CancellationTokenSource()
-            this.currentCancellationSource = source
+            this.cancellationSources.set(key, source)
             this.provideDiagnostics(document, source.token)
-            this.debounceTimer = null
-        }, this.DEBOUNCE_MS)
+            this.debounceTimers.delete(key)
+        }, this.DEBOUNCE_MS))
     }
 
     public async provideDiagnostics(document: vscode.TextDocument, token?: vscode.CancellationToken): Promise<void> {
@@ -110,6 +114,12 @@ export class SqlDiagnosticsProvider {
             }
 
             this.diagnosticCollection.set(document.uri, diagnostics)
+
+            const key = document.uri.toString()
+            const source = this.cancellationSources.get(key)
+            if (source && source.token === token) {
+                this.cancellationSources.delete(key)
+            }
         })
     }
 
@@ -171,12 +181,15 @@ export class SqlDiagnosticsProvider {
     }
 
     public dispose(): void {
-        if (this.debounceTimer) clearTimeout(this.debounceTimer)
-        if (this.currentCancellationSource) {
-            this.currentCancellationSource.cancel()
-            this.currentCancellationSource.dispose()
-            this.currentCancellationSource = null
+        for (const timer of this.debounceTimers.values()) {
+            clearTimeout(timer)
         }
+        this.debounceTimers.clear()
+        for (const source of this.cancellationSources.values()) {
+            source.cancel()
+            source.dispose()
+        }
+        this.cancellationSources.clear()
         this.configChangeDisposable.dispose()
         this.diagnosticCollection.dispose()
     }

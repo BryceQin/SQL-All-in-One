@@ -146,7 +146,7 @@ export class DocumentAstCache {
     } {
         const key = `${document.uri.toString()}::${dialect}`;
         const version = document.version;
-        const cached = this.cache.get(key);
+        const cached = this.cache.peek(key);
 
         if (cached && cached.version === version) {
             return { success: true, ast: cached.ast, error: null };
@@ -180,7 +180,7 @@ export class DocumentAstCache {
         const key = `${document.uri.toString()}::${dialect}`;
         const version = document.version;
 
-        const cached = this.cache.get(key);
+        const cached = this.cache.peek(key);
         if (cached && cached.version === version) {
             if (cached.symbolIndex) {
                 return cached.symbolIndex;
@@ -198,7 +198,7 @@ export class DocumentAstCache {
 
         const symbolIndex = buildIndex(result.ast, document);
 
-        const updatedCached = this.cache.get(key);
+        const updatedCached = this.cache.peek(key);
         if (updatedCached && updatedCached.version === version) {
             updatedCached.symbolIndex = symbolIndex;
         }

@@ -21,6 +21,7 @@ export class ConnectionStore {
     private groups = new Map<string, ConnectionGroup>();
     private secretStorage: vscode.SecretStorage | null = null;
     private saveTimer: ReturnType<typeof setTimeout> | null = null;
+    private pendingSaveResolve: (() => void) | null = null;
     private readonly SAVE_DEBOUNCE_MS = 300;
 
     constructor() {
@@ -64,17 +65,19 @@ export class ConnectionStore {
         try {
             await fs.promises.access(this.configFilePath);
             return;
-        } catch {
+        } catch (_e) {
+            // config file does not exist yet, proceed with migration
         }
         try {
             const content = await fs.promises.readFile(this.legacyConfigFilePath, 'utf8');
-            const data = JSON.parse(content);
-            if (data && typeof data === 'object' && Array.isArray(data.connections)) {
+            const data: unknown = JSON.parse(content);
+            if (data && typeof data === 'object' && Array.isArray((data as Record<string, unknown>).connections)) {
                 await this.ensureConfigDir();
                 await fs.promises.writeFile(this.configFilePath, content, 'utf8');
                 try {
                     await fs.promises.chmod(this.configFilePath, 0o600);
-                } catch {
+                } catch (_e) {
+                    // chmod not supported on all platforms
                 }
                 console.info('[SQL All in One] Migrated connections from ~/.sql-all-in-one to ~/.hive-formatter');
             }
@@ -139,10 +142,16 @@ export class ConnectionStore {
     async save(): Promise<void> {
         if (this.saveTimer) {
             clearTimeout(this.saveTimer);
+            if (this.pendingSaveResolve) {
+                this.pendingSaveResolve();
+                this.pendingSaveResolve = null;
+            }
         }
         return new Promise<void>((resolve, reject) => {
+            this.pendingSaveResolve = resolve;
             this.saveTimer = setTimeout(async () => {
                 this.saveTimer = null;
+                this.pendingSaveResolve = null;
                 try {
                     const data: ConnectionsFile = {
                         version: 1,
@@ -165,6 +174,10 @@ export class ConnectionStore {
         if (this.saveTimer) {
             clearTimeout(this.saveTimer);
             this.saveTimer = null;
+            if (this.pendingSaveResolve) {
+                this.pendingSaveResolve();
+                this.pendingSaveResolve = null;
+            }
         }
         const data: ConnectionsFile = {
             version: 1,

@@ -64,7 +64,8 @@ export class SchemaCache {
         const entry = cache.get(cacheKey);
         if (!this.isExpired(entry)) return entry.data;
 
-        const pending = this.pendingRequests.get(cacheKey);
+        const pendingKey = `${ttlType}:${cacheKey}`;
+        const pending = this.pendingRequests.get(pendingKey);
         if (pending) return pending as Promise<T>;
 
         const request = (async (): Promise<T> => {
@@ -75,11 +76,11 @@ export class SchemaCache {
                 }
                 return data;
             } finally {
-                this.pendingRequests.delete(cacheKey);
+                this.pendingRequests.delete(pendingKey);
             }
         })();
 
-        this.pendingRequests.set(cacheKey, request);
+        this.pendingRequests.set(pendingKey, request);
         return request;
     }
 
@@ -202,10 +203,14 @@ export class SchemaCache {
     }
 
     private invalidateByPrefix(cache: Map<string, CacheEntry<unknown>>, prefix: string): void {
-        for (const key of [...cache.keys()]) {
+        const keysToDelete: string[] = [];
+        for (const key of cache.keys()) {
             if (key === prefix || key.startsWith(prefix + ':')) {
-                cache.delete(key);
+                keysToDelete.push(key);
             }
+        }
+        for (const key of keysToDelete) {
+            cache.delete(key);
         }
     }
 
