@@ -56,21 +56,24 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
         for (const dName of Object.values(sqlDialects)) {
             dialectNames.add(dName)
         }
+        let commonSnippets: Record<string, SnippetDef> | undefined
+        try {
+            const cp = path.join(extensionPath, 'snippets', 'common.json')
+            const cc = await fs.promises.readFile(cp, 'utf-8')
+            commonSnippets = JSON.parse(cc) as Record<string, SnippetDef>
+        } catch { /* common snippets not found */ }
         for (const dName of dialectNames) {
             try {
                 const merged: Record<string, SnippetDef> = {}
                 const usedPrefixes = new Set<string>()
-                try {
-                    const cp = path.join(extensionPath, 'snippets', 'common.json')
-                    const cc = await fs.promises.readFile(cp, 'utf-8')
-                    const commonSnippets = JSON.parse(cc) as Record<string, SnippetDef>
+                if (commonSnippets) {
                     for (const [key, val] of Object.entries(commonSnippets)) {
                         if (!usedPrefixes.has(val.prefix)) {
                             merged[key] = val
                             usedPrefixes.add(val.prefix)
                         }
                     }
-                } catch { /* common snippets not found */ }
+                }
                 try {
                     const dp = path.join(extensionPath, 'snippets', `${dName}.json`)
                     const dc = await fs.promises.readFile(dp, 'utf-8')
@@ -102,7 +105,8 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
         const dName = sqlDialects[langId as keyof typeof sqlDialects] || 'hive'
         if (cached) return { dialect: cached, dName }
         const dc = allDialects[dName as keyof typeof allDialects]
-        const dialect = createDialect((dc ?? allDialects.hive) as DialectOptions)
+        const dialectOpts = (dc ? dc.get() : allDialects.hive.get()) as DialectOptions
+        const dialect = createDialect(dialectOpts)
         this.dialectCache.set(langId, dialect)
         return { dialect, dName }
     }
@@ -120,6 +124,9 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
     ): Promise<vscode.CompletionItem[] | null | undefined> {
         return getPerformanceMonitor().measureAsync('SqlCompletionProvider.provideCompletionItems', async () => {
             try {
+                const text = doc.getText()
+                if (!text.trim()) return []
+
                 await this.ensureSnippetsLoaded()
                 const cfgMgr = getConfigManager()
                 if (!cfgMgr.get('enableCompletion', true)) return []
@@ -182,7 +189,7 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
                 }, 'snippet completion')
                 if (token.isCancellationRequested) return []
 
-                const textContent = doc.getText().trim();
+                const textContent = text.trim()
                 this.tryCollect(items, () => {
                     if (!cfg.cteNames || !textContent) return []
                     if (parseResult.success && parseResult.ast) {

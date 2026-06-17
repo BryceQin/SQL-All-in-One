@@ -69,6 +69,9 @@ export function walkAst(
             if (childKey === 'type' || childKey === 'loc') {
                 continue
             }
+            if (typeof childValue === 'string' || typeof childValue === 'number' || typeof childValue === 'boolean') {
+                continue
+            }
             if (Array.isArray(childValue)) {
                 for (let j = childValue.length - 1; j >= 0; j--) {
                     stack.push(childValue[j], currentNode, childKey, 0)

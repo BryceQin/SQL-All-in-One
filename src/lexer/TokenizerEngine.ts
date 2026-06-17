@@ -148,45 +148,25 @@ export default class TokenizerEngine {
         const tokens: Token[] = []
         let token: Token | undefined
 
-        // 新增：计数器，防止无限循环导致程序卡死
-        // let loopCount = 0;
-        // const MAX_LOOP = 1000; // 设定最大循环次数
+        const MAX_ITERATIONS = input.length * 2
+        let iterations = 0
 
-        // 2. 循环分析：直到处理完输入字符串的所有字符
         while (this.index < this.input.length) {
-            // console.log(
-            //     `循环次数: ${loopCount}, 当前index: ${this.index}, 输入长度: ${this.input.length}`
-            // );
-            // // 新增：超过最大循环次数，强制终止并抛出错误
-            // if (loopCount++ > MAX_LOOP) {
-            //     throw new Error(
-            //         `疑似死循环！index=${
-            //             this.index
-            //         } 长时间未递增，输入内容: ${input.slice(
-            //             this.index,
-            //             this.index + 20
-            //         )}`
-            //     );
-            // }
-            // 2.1 跳过当前位置的所有空白字符（空格、制表符、换行符等）
-            const precedingWhitespace = this.getWhitespace()
-            // console.log(`跳过空白后index: ${this.index}`); // 检查空白处理是否递增index
+            if (++iterations > MAX_ITERATIONS) {
+                throw new Error(
+                    `Tokenizer dead loop detected at index ${this.index} for dialect "${this.dialectName}": ${input.slice(this.index, this.index + 20)}`,
+                )
+            }
 
-            // 2.2 若跳过空白后仍未到输入末尾，尝试匹配下一个 Token
+            const precedingWhitespace = this.getWhitespace()
+
             if (this.index < this.input.length) {
-                // 2.3 获取下一个有效 Token
                 token = this.getNextToken()
 
-                // console.log(
-                //     `匹配Token后index: ${this.index}, Token: ${token?.type}`
-                // ); // 检查Token匹配是否递增index
-
-                // 2.4 匹配失败：抛出解析错误
                 if (!token) {
                     throw this.createParseError()
                 }
 
-                // 2.5 收集 Token：合并空白信息，推入结果数组
                 tokens.push({ ...token, precedingWhitespace })
             }
         }

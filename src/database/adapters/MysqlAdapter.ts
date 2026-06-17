@@ -399,7 +399,7 @@ export class MysqlAdapter implements IDatabaseAdapter {
             return [];
         }
 
-        const sql = `SELECT TABLE_NAME, VIEW_DEFINITION, TABLE_COMMENT FROM INFORMATION_SCHEMA.VIEWS WHERE TABLE_SCHEMA = ? ORDER BY TABLE_NAME`;
+        const sql = `SELECT TABLE_NAME, TABLE_COMMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_TYPE = 'VIEW' ORDER BY TABLE_NAME`;
         const result = await this.execute(sql, [{ value: db }]);
         if (result.status !== 'success') {
             return [];
@@ -407,7 +407,6 @@ export class MysqlAdapter implements IDatabaseAdapter {
 
         return result.rows.map((row: QueryRow) => ({
             name: row.TABLE_NAME as string,
-            definition: row.VIEW_DEFINITION as string,
             comment: row.TABLE_COMMENT as string,
         }));
     }

@@ -39,12 +39,6 @@ export class LRUCache<K, V> {
       return undefined;
     }
 
-    // If the key is already the most recently inserted, skip delete+set
-    const lastKey = Array.from(this.cache.keys()).pop();
-    if (lastKey === key) {
-      return entry.value;
-    }
-
     this.cache.delete(key);
     this.cache.set(key, entry);
     return entry.value;
@@ -59,9 +53,6 @@ export class LRUCache<K, V> {
       return false;
     }
 
-    // Update access order to be consistent with get()
-    this.cache.delete(key);
-    this.cache.set(key, entry);
     return true;
 }
 
@@ -91,45 +82,35 @@ export class LRUCache<K, V> {
     }
   }
 
-  *entries(): IterableIterator<[K, V]> {
+  private purgeAndGetEntries(): [K, LRUCacheEntry<V>][] {
     if (this.maxAge >= Infinity) {
-      for (const [key, entry] of this.cache) {
-        yield [key, entry.value];
+      return Array.from(this.cache.entries());
+    }
+    const now = Date.now();
+    const expiredKeys: K[] = [];
+    const validEntries: [K, LRUCacheEntry<V>][] = [];
+    for (const [key, entry] of this.cache) {
+      if (now - entry.timestamp > this.maxAge) {
+        expiredKeys.push(key);
+      } else {
+        validEntries.push([key, entry]);
       }
-    } else {
-      const now = Date.now();
-      const expiredKeys: K[] = [];
-      for (const [key, entry] of this.cache) {
-        if (now - entry.timestamp > this.maxAge) {
-          expiredKeys.push(key);
-        } else {
-          yield [key, entry.value];
-        }
-      }
-      for (const key of expiredKeys) {
-        this.cache.delete(key);
-      }
+    }
+    for (const key of expiredKeys) {
+      this.cache.delete(key);
+    }
+    return validEntries;
+  }
+
+  *entries(): IterableIterator<[K, V]> {
+    for (const [key, entry] of this.purgeAndGetEntries()) {
+      yield [key, entry.value];
     }
   }
 
   *values(): IterableIterator<V> {
-    if (this.maxAge >= Infinity) {
-      for (const entry of this.cache.values()) {
-        yield entry.value;
-      }
-    } else {
-      const now = Date.now();
-      const expiredKeys: K[] = [];
-      for (const [key, entry] of this.cache) {
-        if (now - entry.timestamp > this.maxAge) {
-          expiredKeys.push(key);
-        } else {
-          yield entry.value;
-        }
-      }
-      for (const key of expiredKeys) {
-        this.cache.delete(key);
-      }
+    for (const [, entry] of this.purgeAndGetEntries()) {
+      yield entry.value;
     }
   }
 

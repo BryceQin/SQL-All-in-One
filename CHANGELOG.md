@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.15.30] - 2026-06-17
+
+### Bug Fix
+
+- 修复所有 ESLint 错误和警告：空 catch 块添加注释和参数、移除冗余类型注解、修复 unsafe any 访问、修复空箭头函数
+- Fix all ESLint errors and warnings: add comments and parameters to empty catch blocks, remove redundant type annotations, fix unsafe any access, fix empty arrow function
+
+---
+
 ## [2.15.29] - 2026-06-17
 
 ### Enhancement

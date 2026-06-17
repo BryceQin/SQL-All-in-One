@@ -2,7 +2,7 @@
     "name": "hive-formatter",
     "displayName": "SQL All in One",
     "description": "SQL All in One - 强大的 SQL 格式化、智能补全、语法检查、DDL 转换 VSCode 插件，支持 Hive、MySQL、SparkSQL、FlinkSQL、PostgreSQL、BigQuery、SQLite 等多种 SQL 方言",
-    "version": "2.15.29",
+    "version": "2.15.30",
     "publisher": "bryce-qin",
     "contributors": [
         "TalDu"
@@ -289,6 +289,10 @@
             {
                 "command": "hive-formatter.viewTableDDL",
                 "title": "%hive-formatter.command.viewTableDDL.title%"
+            },
+            {
+                "command": "hive-formatter.viewViewDDL",
+                "title": "%hive-formatter.command.viewViewDDL.title%"
             },
             {
                 "command": "hive-formatter.viewFunctionDDL",
@@ -1790,6 +1794,11 @@
                     "command": "hive-formatter.viewTableData",
                     "when": "view == hive-formatter.databaseExplorer && viewItem == view",
                     "group": "3_table@1"
+                },
+                {
+                    "command": "hive-formatter.viewViewDDL",
+                    "when": "view == hive-formatter.databaseExplorer && viewItem == view",
+                    "group": "3_table@2"
                 },
                 {
                     "command": "hive-formatter.viewFunctionDDL",
