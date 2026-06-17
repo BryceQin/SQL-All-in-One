@@ -114,6 +114,9 @@
 
 - 树形视图：数据库、表、视图、列、函数、存储过程、触发器
 - 查看表数据、查看 DDL
+- **函数/存储过程可展开查看参数列表和返回类型**
+- **触发器可展开查看时机、事件和执行语句**
+- **点击函数/存储过程/触发器查看定义代码（DDL）**
 - 复制列名
 - 添加/移除收藏
 - 设置默认数据库
@@ -631,7 +634,7 @@ MIT License
 | | |
 |---|---|
 | **Publisher** | bryce-qin |
-| **Version** | 2.15.26 |
+| **Version** | 2.15.28 |
 | **License** | MIT |
 | **Repository** | [GitHub](https://github.com/BryceQin/SQL-All-in-One) |
 | **VSCode Engine** | ^1.85.0 |
@@ -734,6 +737,9 @@ MIT License
 
 - Tree view of databases, tables, views, columns, functions, procedures, triggers
 - View table data, view DDL
+- **Expand functions/procedures to view parameter list and return type**
+- **Expand triggers to view timing, event, and execution statement**
+- **Click functions/procedures/triggers to view definition code (DDL)**
 - Copy column name
 - Add/remove favorites
 - Set default database

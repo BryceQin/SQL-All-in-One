@@ -8,7 +8,10 @@ import {
     ViewTreeNode,
     ColumnTreeNode,
     DatabaseTreeNode,
-    FavoriteTreeNode
+    FavoriteTreeNode,
+    FunctionTreeNode,
+    ProcedureTreeNode,
+    TriggerTreeNode
 } from '../../views/databaseExplorer/treeNodes';
 import { getSchemaCache } from '../schema/SchemaCache';
 import { TableDesignerPanel } from '../../views/tableDesigner/TableDesignerPanel';
@@ -234,6 +237,66 @@ export function registerSchemaCommands(
                 if (adapter) {
                     try {
                         const ddl = await adapter.getTableDDL(node.databaseName, node.tableName);
+                        const document = await vscode.workspace.openTextDocument({
+                            content: ddl,
+                            language: 'sql'
+                        });
+                        await vscode.window.showTextDocument(document);
+                    } catch (error) {
+                        vscode.window.showErrorMessage(t('database.failedToGetDdl', String(error)));
+                    }
+                }
+            }
+        })
+    );
+
+    disposables.push(
+        vscode.commands.registerCommand('hive-formatter.viewFunctionDDL', async (node?: FunctionTreeNode) => {
+            if (node) {
+                const adapter = getConnectionManager().getAdapter(node.connectionId);
+                if (adapter) {
+                    try {
+                        const ddl = await adapter.getFunctionDDL(node.databaseName, node.functionName);
+                        const document = await vscode.workspace.openTextDocument({
+                            content: ddl,
+                            language: 'sql'
+                        });
+                        await vscode.window.showTextDocument(document);
+                    } catch (error) {
+                        vscode.window.showErrorMessage(t('database.failedToGetDdl', String(error)));
+                    }
+                }
+            }
+        })
+    );
+
+    disposables.push(
+        vscode.commands.registerCommand('hive-formatter.viewProcedureDDL', async (node?: ProcedureTreeNode) => {
+            if (node) {
+                const adapter = getConnectionManager().getAdapter(node.connectionId);
+                if (adapter) {
+                    try {
+                        const ddl = await adapter.getProcedureDDL(node.databaseName, node.procedureName);
+                        const document = await vscode.workspace.openTextDocument({
+                            content: ddl,
+                            language: 'sql'
+                        });
+                        await vscode.window.showTextDocument(document);
+                    } catch (error) {
+                        vscode.window.showErrorMessage(t('database.failedToGetDdl', String(error)));
+                    }
+                }
+            }
+        })
+    );
+
+    disposables.push(
+        vscode.commands.registerCommand('hive-formatter.viewTriggerDDL', async (node?: TriggerTreeNode) => {
+            if (node) {
+                const adapter = getConnectionManager().getAdapter(node.connectionId);
+                if (adapter) {
+                    try {
+                        const ddl = await adapter.getTriggerDDL(node.databaseName, node.triggerName);
                         const document = await vscode.workspace.openTextDocument({
                             content: ddl,
                             language: 'sql'

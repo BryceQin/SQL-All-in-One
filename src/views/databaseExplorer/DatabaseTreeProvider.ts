@@ -14,7 +14,10 @@ import {
     ProcedureTreeNode,
     TriggerTreeNode,
     ColumnTreeNode,
-    IndexTreeNode
+    IndexTreeNode,
+    RoutineParameterTreeNode,
+    RoutineReturnTreeNode,
+    TriggerDetailTreeNode
 } from './treeNodes';
 import { ConnectionManager, getConnectionManager } from '../../database/connection/ConnectionManager';
 import { ConnectionConfig } from '../../database/adapters/IDatabaseAdapter';
@@ -182,6 +185,27 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
                 arguments: [element]
             };
         }
+        if (element instanceof FunctionTreeNode) {
+            return {
+                command: 'hive-formatter.viewFunctionDDL',
+                title: t('explorer.cmd.viewDefinition'),
+                arguments: [element]
+            };
+        }
+        if (element instanceof ProcedureTreeNode) {
+            return {
+                command: 'hive-formatter.viewProcedureDDL',
+                title: t('explorer.cmd.viewDefinition'),
+                arguments: [element]
+            };
+        }
+        if (element instanceof TriggerTreeNode) {
+            return {
+                command: 'hive-formatter.viewTriggerDDL',
+                title: t('explorer.cmd.viewDefinition'),
+                arguments: [element]
+            };
+        }
         if (element instanceof ColumnTreeNode) {
             return {
                 command: 'hive-formatter.copyColumnName',
@@ -230,6 +254,18 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
 
         if (element instanceof TableTreeNode) {
             return this.getTableChildren(element);
+        }
+
+        if (element instanceof FunctionTreeNode) {
+            return this.getFunctionChildren(element);
+        }
+
+        if (element instanceof ProcedureTreeNode) {
+            return this.getProcedureChildren(element);
+        }
+
+        if (element instanceof TriggerTreeNode) {
+            return this.getTriggerChildren(element);
         }
 
         return [];
@@ -530,6 +566,140 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
             return children;
         } catch (error) {
             handleError(error, 'DatabaseTreeProvider.getTableChildren', ErrorCategory.FEATURE);
+            return [];
+        }
+    }
+
+    private async getFunctionChildren(parent: FunctionTreeNode): Promise<ITreeNode[]> {
+        const cacheKey = parent.id;
+        const cached = this.nodeCache.get(cacheKey);
+        if (cached !== undefined) {
+            return cached;
+        }
+
+        try {
+            const adapter = this.connectionManager.getAdapter(parent.connectionId);
+            if (!adapter) {
+                return [];
+            }
+
+            const children: ITreeNode[] = [];
+
+            const parameters = await adapter.getRoutineParameters(parent.databaseName, parent.functionName, 'FUNCTION');
+            for (const param of parameters) {
+                children.push(new RoutineParameterTreeNode(
+                    param,
+                    parent.connectionId,
+                    parent.databaseName,
+                    parent
+                ));
+            }
+
+            if (parent.returns) {
+                children.push(new RoutineReturnTreeNode(
+                    parent.returns,
+                    parent.connectionId,
+                    parent.databaseName,
+                    parent
+                ));
+            }
+
+            this.nodeCache.set(cacheKey, children);
+            return children;
+        } catch (error) {
+            handleError(error, 'DatabaseTreeProvider.getFunctionChildren', ErrorCategory.FEATURE);
+            return [];
+        }
+    }
+
+    private async getProcedureChildren(parent: ProcedureTreeNode): Promise<ITreeNode[]> {
+        const cacheKey = parent.id;
+        const cached = this.nodeCache.get(cacheKey);
+        if (cached !== undefined) {
+            return cached;
+        }
+
+        try {
+            const adapter = this.connectionManager.getAdapter(parent.connectionId);
+            if (!adapter) {
+                return [];
+            }
+
+            const children: ITreeNode[] = [];
+
+            const parameters = await adapter.getRoutineParameters(parent.databaseName, parent.procedureName, 'PROCEDURE');
+            for (const param of parameters) {
+                children.push(new RoutineParameterTreeNode(
+                    param,
+                    parent.connectionId,
+                    parent.databaseName,
+                    parent
+                ));
+            }
+
+            this.nodeCache.set(cacheKey, children);
+            return children;
+        } catch (error) {
+            handleError(error, 'DatabaseTreeProvider.getProcedureChildren', ErrorCategory.FEATURE);
+            return [];
+        }
+    }
+
+    private async getTriggerChildren(parent: TriggerTreeNode): Promise<ITreeNode[]> {
+        const cacheKey = parent.id;
+        const cached = this.nodeCache.get(cacheKey);
+        if (cached !== undefined) {
+            return cached;
+        }
+
+        try {
+            const adapter = this.connectionManager.getAdapter(parent.connectionId);
+            if (!adapter) {
+                return [];
+            }
+
+            const children: ITreeNode[] = [];
+
+            if (parent.timing) {
+                children.push(new TriggerDetailTreeNode(
+                    'timing',
+                    parent.timing,
+                    parent.connectionId,
+                    parent.databaseName,
+                    parent
+                ));
+            }
+
+            if (parent.event) {
+                children.push(new TriggerDetailTreeNode(
+                    'event',
+                    parent.event,
+                    parent.connectionId,
+                    parent.databaseName,
+                    parent
+                ));
+            }
+
+            try {
+                const triggers = await adapter.listTriggers(parent.databaseName);
+                const triggerInfo = triggers.find(t => t.name === parent.triggerName);
+                if (triggerInfo?.statement) {
+                    children.push(new TriggerDetailTreeNode(
+                        'statement',
+                        triggerInfo.statement,
+                        parent.connectionId,
+                        parent.databaseName,
+                        parent
+                    ));
+                }
+            } catch {
+                // statement is optional
+            }
+
+            this.nodeCache.set(cacheKey, children);
+            return children;
+        } catch (error) {
+            handleError(error, 'DatabaseTreeProvider.getTriggerChildren', ErrorCategory.FEATURE);
             return [];
         }
     }

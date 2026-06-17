@@ -1,5 +1,23 @@
 # Changelog
 
+## [2.15.28] - 2026-06-17
+
+### Enhancement
+
+- 数据库浏览器新增函数/存储过程/触发器查看定义功能：点击函数、存储过程或触发器节点，在新编辑器中打开其 DDL 定义代码
+- 函数节点可展开查看参数列表（含方向 IN/OUT/INOUT 和数据类型）及返回类型
+- 存储过程节点可展开查看参数列表（含方向和数据类型）
+- 触发器节点可展开查看时机（BEFORE/AFTER）、事件（INSERT/UPDATE/DELETE）和执行语句
+- 函数/存储过程/触发器右键菜单新增"查看函数定义"/"查看存储过程定义"/"查看触发器定义"选项
+- 新增 `IDatabaseAdapter.getFunctionDDL`、`getProcedureDDL`、`getTriggerDDL`、`getRoutineParameters` 接口方法
+- MySQL 适配器实现 `SHOW CREATE FUNCTION`、`SHOW CREATE PROCEDURE`、`SHOW CREATE TRIGGER` 和 `INFORMATION_SCHEMA.PARAMETERS` 查询
+
+### Bug Fix
+
+- 修复数据库浏览器中点击函数/存储过程/触发器节点无任何反应的问题：之前这些节点未绑定点击命令、无右键菜单、不可展开
+
+---
+
 ## [2.15.27] - 2026-06-16
 
 ### Bug Fix

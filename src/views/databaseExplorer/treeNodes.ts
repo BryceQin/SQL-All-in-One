@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { ColumnInfo, IndexInfo } from '../../database/adapters/IDatabaseAdapter';
+import { ColumnInfo, IndexInfo, RoutineParameterInfo } from '../../database/adapters/IDatabaseAdapter';
 import { t } from '../../i18n';
 
 export type TreeNodeType =
@@ -15,6 +15,9 @@ export type TreeNodeType =
     | 'trigger'
     | 'column'
     | 'index'
+    | 'routineParameter'
+    | 'routineReturn'
+    | 'triggerDetail'
     | 'favorites';
 
 export interface ITreeNode {
@@ -337,7 +340,7 @@ export class FunctionTreeNode extends BaseTreeNode {
     ) {
         super({
             iconPath: new vscode.ThemeIcon('zap'),
-            collapsibleState: vscode.TreeItemCollapsibleState.None,
+            collapsibleState: vscode.TreeItemCollapsibleState.Collapsed,
             description: returns,
             parent,
             tooltip: returns ? `${t('explorer.function', functionName)}\n${t('explorer.returns', returns)}` : t('explorer.function', functionName)
@@ -369,7 +372,7 @@ export class ProcedureTreeNode extends BaseTreeNode {
     ) {
         super({
             iconPath: new vscode.ThemeIcon('settings-gear'),
-            collapsibleState: vscode.TreeItemCollapsibleState.None,
+            collapsibleState: vscode.TreeItemCollapsibleState.Collapsed,
             parent,
             tooltip: t('explorer.procedure', procedureName)
         });
@@ -403,7 +406,7 @@ export class TriggerTreeNode extends BaseTreeNode {
     ) {
         super({
             iconPath: new vscode.ThemeIcon('bell'),
-            collapsibleState: vscode.TreeItemCollapsibleState.None,
+            collapsibleState: vscode.TreeItemCollapsibleState.Collapsed,
             description: event ? `${timing || ''} ${event}`.trim() : undefined,
             parent,
             tooltip: t('explorer.trigger', triggerName)
@@ -582,5 +585,129 @@ export class FavoriteTreeNode extends BaseTreeNode {
         this.id = `favorite-${connectionId}-${databaseName}-${objectName}`;
         this.contextValue = objectType;
         this.isAvailable = isAvailable;
+    }
+}
+
+export class RoutineParameterTreeNode extends BaseTreeNode {
+    readonly type: TreeNodeType = 'routineParameter';
+    readonly id: string;
+    readonly label: string;
+    readonly contextValue?: string = 'routineParameter';
+    readonly parameterInfo: RoutineParameterInfo;
+    readonly connectionId: string;
+    readonly databaseName: string;
+
+    constructor(
+        parameterInfo: RoutineParameterInfo,
+        connectionId: string,
+        databaseName: string,
+        parent?: ITreeNode
+    ) {
+        const directionIcon = parameterInfo.direction === 'IN'
+            ? new vscode.ThemeIcon('arrow-right')
+            : parameterInfo.direction === 'OUT'
+                ? new vscode.ThemeIcon('arrow-left')
+                : new vscode.ThemeIcon('arrow-both');
+
+        super({
+            iconPath: directionIcon,
+            collapsibleState: vscode.TreeItemCollapsibleState.None,
+            description: `${parameterInfo.direction} ${parameterInfo.type}`,
+            parent,
+            tooltip: `${t('explorer.parameter', parameterInfo.name)}\n${t('explorer.type', parameterInfo.type)}\n${t('explorer.direction', parameterInfo.direction)}`
+        });
+
+        this.parameterInfo = parameterInfo;
+        this.connectionId = connectionId;
+        this.databaseName = databaseName;
+        this.label = parameterInfo.name;
+        this.id = `param-${connectionId}-${databaseName}-${parameterInfo.name}-${parameterInfo.direction}`;
+    }
+}
+
+export class RoutineReturnTreeNode extends BaseTreeNode {
+    readonly type: TreeNodeType = 'routineReturn';
+    readonly id: string;
+    readonly label: string;
+    readonly contextValue?: string = 'routineReturn';
+    readonly returnType: string;
+    readonly connectionId: string;
+    readonly databaseName: string;
+
+    constructor(
+        returnType: string,
+        connectionId: string,
+        databaseName: string,
+        parent?: ITreeNode
+    ) {
+        super({
+            iconPath: new vscode.ThemeIcon('return'),
+            collapsibleState: vscode.TreeItemCollapsibleState.None,
+            description: returnType,
+            parent,
+            tooltip: `${t('explorer.returns', returnType)}`
+        });
+
+        this.returnType = returnType;
+        this.connectionId = connectionId;
+        this.databaseName = databaseName;
+        this.label = t('explorer.returnType');
+        this.id = `return-${connectionId}-${databaseName}-${returnType}`;
+    }
+}
+
+export class TriggerDetailTreeNode extends BaseTreeNode {
+    readonly type: TreeNodeType = 'triggerDetail';
+    readonly id: string;
+    readonly label: string;
+    readonly contextValue?: string = 'triggerDetail';
+    readonly detailType: 'event' | 'timing' | 'statement';
+    readonly detailValue: string;
+    readonly connectionId: string;
+    readonly databaseName: string;
+
+    constructor(
+        detailType: 'event' | 'timing' | 'statement',
+        detailValue: string,
+        connectionId: string,
+        databaseName: string,
+        parent?: ITreeNode
+    ) {
+        let iconPath: vscode.ThemeIcon;
+        let label: string;
+        let description: string;
+
+        switch (detailType) {
+            case 'event':
+                iconPath = new vscode.ThemeIcon('bolt');
+                label = t('explorer.triggerEvent');
+                description = detailValue;
+                break;
+            case 'timing':
+                iconPath = new vscode.ThemeIcon('clock');
+                label = t('explorer.triggerTiming');
+                description = detailValue;
+                break;
+            case 'statement':
+                iconPath = new vscode.ThemeIcon('file-code');
+                label = t('explorer.triggerStatement');
+                description = detailValue.length > 50 ? detailValue.substring(0, 50) + '...' : detailValue;
+                break;
+        }
+
+        super({
+            iconPath,
+            collapsibleState: vscode.TreeItemCollapsibleState.None,
+            description,
+            parent,
+            tooltip: detailValue
+        });
+
+        this.detailType = detailType;
+        this.detailValue = detailValue;
+        this.connectionId = connectionId;
+        this.databaseName = databaseName;
+        this.label = label;
+        this.id = `trigger-detail-${connectionId}-${databaseName}-${detailType}`;
     }
 }
