@@ -2,7 +2,7 @@
     "name": "hive-formatter",
     "displayName": "SQL All in One",
     "description": "SQL All in One - 强大的 SQL 格式化、智能补全、语法检查、DDL 转换 VSCode 插件，支持 Hive、MySQL、SparkSQL、FlinkSQL、PostgreSQL、BigQuery、SQLite 等多种 SQL 方言",
-    "version": "2.15.28",
+    "version": "2.15.29",
     "publisher": "bryce-qin",
     "contributors": [
         "TalDu"
@@ -23,7 +23,7 @@
         "Formatters",
         "Snippets",
         "Other",
-        "Databases"
+        "Programming Languages"
     ],
     "keywords": [
         "sql",
@@ -40,19 +40,6 @@
         "snippets",
         "linter",
         "intellisense"
-    ],
-    "activationEvents": [
-        "onLanguage:sql",
-        "onLanguage:hive",
-        "onLanguage:mysql",
-        "onLanguage:spark",
-        "onLanguage:flinksql",
-        "onLanguage:postgresql",
-        "onLanguage:bigquery",
-        "onLanguage:sqlite",
-        "onView:hive-formatter.databaseExplorer",
-        "onCommand:hive-formatter.addConnection",
-        "onCommand:hive-formatter.format-selection"
     ],
     "main": "./out/extension.js",
     "extensionKind": [
