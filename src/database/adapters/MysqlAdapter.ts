@@ -1,4 +1,4 @@
-import type { IDatabaseAdapter, IPoolStatus, ConnectionConfig, QueryResult, QueryRow, QueryParam, SqlStatement, ColumnMeta, DatabaseInfo, TableInfo, ViewInfo, FunctionInfo, ProcedureInfo, TriggerInfo, TableStructure, ColumnInfo, IndexInfo, ForeignKeyInfo, DialectCapabilities, DataTypeCategory, ExplainResult, ExplainNode, TestConnectionResult } from './IDatabaseAdapter';
+import type { IDatabaseAdapter, IPoolStatus, ConnectionConfig, QueryResult, QueryRow, QueryParam, SqlStatement, ColumnMeta, DatabaseInfo, TableInfo, ViewInfo, FunctionInfo, ProcedureInfo, TriggerInfo, RoutineParameterInfo, TableStructure, ColumnInfo, IndexInfo, ForeignKeyInfo, DialectCapabilities, DataTypeCategory, ExplainResult, ExplainNode, TestConnectionResult } from './IDatabaseAdapter';
 import type { Pool, PoolOptions, PoolConnection, RowDataPacket, FieldPacket, ResultSetHeader } from 'mysql2/promise';
 import { t } from '../../i18n/index';
 
@@ -583,6 +583,54 @@ export class MysqlAdapter implements IDatabaseAdapter {
         }
 
         return (result.rows[0]['Create View'] ?? '') as string;
+    }
+
+    async getFunctionDDL(database: string, functionName: string, _schema?: string): Promise<string> {
+        const sql = `SHOW CREATE FUNCTION ${this.quoteIdentifier(database)}.${this.quoteIdentifier(functionName)}`;
+        const result = await this.execute(sql);
+        if (result.status !== 'success' || result.rows.length === 0) {
+            return '';
+        }
+
+        return (result.rows[0]['Create Function'] ?? '') as string;
+    }
+
+    async getProcedureDDL(database: string, procedureName: string, _schema?: string): Promise<string> {
+        const sql = `SHOW CREATE PROCEDURE ${this.quoteIdentifier(database)}.${this.quoteIdentifier(procedureName)}`;
+        const result = await this.execute(sql);
+        if (result.status !== 'success' || result.rows.length === 0) {
+            return '';
+        }
+
+        return (result.rows[0]['Create Procedure'] ?? '') as string;
+    }
+
+    async getTriggerDDL(database: string, triggerName: string, _schema?: string): Promise<string> {
+        const sql = `SHOW CREATE TRIGGER ${this.quoteIdentifier(database)}.${this.quoteIdentifier(triggerName)}`;
+        const result = await this.execute(sql);
+        if (result.status !== 'success' || result.rows.length === 0) {
+            return '';
+        }
+
+        return (result.rows[0]['SQL Original Statement'] ?? result.rows[0]['Create Trigger'] ?? '') as string;
+    }
+
+    async getRoutineParameters(database: string, routineName: string, routineType: 'FUNCTION' | 'PROCEDURE', _schema?: string): Promise<RoutineParameterInfo[]> {
+        const sql = `SELECT PARAMETER_NAME, DATA_TYPE, DTD_IDENTIFIER, PARAMETER_MODE FROM INFORMATION_SCHEMA.PARAMETERS WHERE SPECIFIC_SCHEMA = ? AND SPECIFIC_NAME = ? AND ROUTINE_TYPE = ? AND PARAMETER_NAME IS NOT NULL ORDER BY ORDINAL_POSITION`;
+        const result = await this.execute(sql, [
+            { value: database },
+            { value: routineName },
+            { value: routineType }
+        ]);
+        if (result.status !== 'success') {
+            return [];
+        }
+
+        return result.rows.map((row: QueryRow) => ({
+            name: row.PARAMETER_NAME as string,
+            type: (row.DTD_IDENTIFIER as string) || (row.DATA_TYPE as string),
+            direction: (row.PARAMETER_MODE as 'IN' | 'OUT' | 'INOUT') || 'IN',
+        }));
     }
 
     async getExplainPlan(database: string, sql: string): Promise<ExplainResult> {
