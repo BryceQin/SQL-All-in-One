@@ -13,7 +13,7 @@ import { registerConnectionCommands } from './commands/ConnectionCommands';
 import { registerQueryCommands } from './commands/QueryCommands';
 import { registerExportCommands } from './commands/ExportCommands';
 import { registerSchemaCommands } from './commands/SchemaCommands';
-import { TableTreeNode } from '../views/databaseExplorer/treeNodes';
+import { TableTreeNode, FunctionTreeNode, ProcedureTreeNode, TriggerTreeNode } from '../views/databaseExplorer/treeNodes';
 import { getContainer, Tokens } from '../core/diContainer';
 
 export class DatabaseModule {
@@ -149,12 +149,29 @@ export class DatabaseModule {
     let ignoreNodeId: string | null = null;
     const DOUBLE_CLICK_THRESHOLD = 500;
 
+    const getDoubleClickCommand = (element: unknown): string | null => {
+      if (element instanceof TableTreeNode) {
+        return 'hive-formatter.viewTableData';
+      }
+      if (element instanceof FunctionTreeNode) {
+        return 'hive-formatter.viewFunctionDDL';
+      }
+      if (element instanceof ProcedureTreeNode) {
+        return 'hive-formatter.viewProcedureDDL';
+      }
+      if (element instanceof TriggerTreeNode) {
+        return 'hive-formatter.viewTriggerDDL';
+      }
+      return null;
+    };
+
     const handleToggle = (element: unknown): void => {
-      if (!(element instanceof TableTreeNode)) {
+      const command = getDoubleClickCommand(element);
+      if (!command) {
         return;
       }
-      const nodeId = element.id;
-      if (ignoreNodeId === nodeId) {
+      const nodeId = (element as { id?: string })?.id;
+      if (!nodeId || ignoreNodeId === nodeId) {
         return;
       }
       const now = Date.now();
@@ -162,7 +179,7 @@ export class DatabaseModule {
         lastToggleNodeId = null;
         lastToggleTime = 0;
         ignoreNodeId = nodeId;
-        vscode.commands.executeCommand('hive-formatter.viewTableData', element);
+        vscode.commands.executeCommand(command, element);
         const node = element;
         setTimeout(() => {
           treeView.reveal(node, { expand: true }).then(undefined, (_e) => undefined);
