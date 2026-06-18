@@ -995,6 +995,17 @@
                     "markdownDescription": "%hive-formatter.config.headerModifier.markdownDescription%",
                     "order": 242
                 },
+                "SQL-All-in-One.performance.monitorLevel": {
+                    "type": "string",
+                    "enum": [
+                        "off",
+                        "light",
+                        "full"
+                    ],
+                    "default": "light",
+                    "markdownDescription": "%hive-formatter.config.performance.monitorLevel.markdownDescription%",
+                    "order": 250
+                },
                 "SQL-All-in-One.completion.commentSnippets": {
                     "type": "boolean",
                     "default": true,
@@ -1854,9 +1865,10 @@
         }
     },
     "scripts": {
-        "vscode:prepublish": "node esbuild.js --minify",
-        "esbuild-base": "node esbuild.js",
-        "esbuild": "node esbuild.js",
+        "generate-snippets": "npx tsx scripts/generate-snippets.ts",
+        "vscode:prepublish": "npm run generate-snippets && node esbuild.js --minify",
+        "esbuild-base": "npm run generate-snippets && node esbuild.js",
+        "esbuild": "npm run generate-snippets && node esbuild.js",
         "compile": "tsc -p ./",
         "watch": "tsc -watch -p ./",
         "pretest": "npm run compile && npm run lint",

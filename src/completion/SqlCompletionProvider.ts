@@ -1,6 +1,4 @@
 import * as vscode from 'vscode'
-import * as fs from 'fs'
-import * as path from 'path'
 import { sqlDialects, toSqlDialect } from '../core/sqlDialects'
 import { createDialect, type Dialect, type DialectOptions } from '../languages/dialect'
 import { keywordMap, functionSigMap } from '../languages/dialectData'
@@ -18,77 +16,52 @@ import { SchemaCompletionProvider } from './SchemaCompletionProvider'
 import { getConnectionManager } from '../database/connection/ConnectionManager'
 import { getDocumentAstCache } from '../parser/DocumentAstCache'
 import type { SqlDialect } from '../parser/dialectMapper'
-
-interface SnippetDef { prefix: string; body: string[]; description: string }
+import { snippetData } from './generated/snippetData'
 
 export class SqlCompletionProvider implements vscode.CompletionItemProvider {
-    private extensionPath: string
     private dialectCache = new Map<string, Dialect>()
     private snippetItemsMap = new Map<string, vscode.CompletionItem[]>()
     private keywordItemsCache = new Map<string, vscode.CompletionItem[]>()
     private functionItemsCache = new Map<string, vscode.CompletionItem[]>()
     private schemaCompletionProvider: SchemaCompletionProvider
     private configChangeDisposable: vscode.Disposable
-    private snippetsLoaded = false
-    private snippetsLoading: Promise<void> | null = null
 
-    constructor(extensionPath: string) {
-        this.extensionPath = extensionPath
+    constructor(_extensionPath: string) {
         this.schemaCompletionProvider = new SchemaCompletionProvider()
         this.configChangeDisposable = getConfigManager().onConfigChange(() => {
             this.keywordItemsCache.clear()
             this.functionItemsCache.clear()
         })
+        this.initSnippetItems()
     }
 
-    private async ensureSnippetsLoaded(): Promise<void> {
-        if (this.snippetsLoaded) return
-        if (!this.snippetsLoading) {
-            this.snippetsLoading = this.loadSnippets(this.extensionPath).then(() => {
-                this.snippetsLoaded = true
-            })
-        }
-        await this.snippetsLoading
-    }
-
-    private async loadSnippets(extensionPath: string): Promise<void> {
+    private initSnippetItems(): void {
         const dialectNames = new Set<string>()
         for (const dName of Object.values(sqlDialects)) {
             dialectNames.add(dName)
         }
-        let commonSnippets: Record<string, SnippetDef> | undefined
-        try {
-            const cp = path.join(extensionPath, 'snippets', 'common.json')
-            const cc = await fs.promises.readFile(cp, 'utf-8')
-            commonSnippets = JSON.parse(cc) as Record<string, SnippetDef>
-        } catch { /* common snippets not found */ }
+        const commonSnippets = snippetData['common']
         for (const dName of dialectNames) {
-            try {
-                const merged: Record<string, SnippetDef> = {}
-                const usedPrefixes = new Set<string>()
-                if (commonSnippets) {
-                    for (const [key, val] of Object.entries(commonSnippets)) {
-                        if (!usedPrefixes.has(val.prefix)) {
-                            merged[key] = val
-                            usedPrefixes.add(val.prefix)
-                        }
+            const merged: Record<string, import('./generated/snippetData').SnippetDef> = {}
+            const usedPrefixes = new Set<string>()
+            if (commonSnippets) {
+                for (const [key, val] of Object.entries(commonSnippets)) {
+                    if (!usedPrefixes.has(val.prefix)) {
+                        merged[key] = val
+                        usedPrefixes.add(val.prefix)
                     }
                 }
-                try {
-                    const dp = path.join(extensionPath, 'snippets', `${dName}.json`)
-                    const dc = await fs.promises.readFile(dp, 'utf-8')
-                    const dialectSnippets = JSON.parse(dc) as Record<string, SnippetDef>
-                    for (const [key, val] of Object.entries(dialectSnippets)) {
-                        if (!usedPrefixes.has(val.prefix)) {
-                            merged[key] = val
-                            usedPrefixes.add(val.prefix)
-                        }
-                    }
-                } catch { /* dialect snippets not found */ }
-                this.snippetItemsMap.set(dName, getSnippetItems(merged))
-            } catch {
-                this.snippetItemsMap.set(dName, [])
             }
+            const dialectSnippets = snippetData[dName]
+            if (dialectSnippets) {
+                for (const [key, val] of Object.entries(dialectSnippets)) {
+                    if (!usedPrefixes.has(val.prefix)) {
+                        merged[key] = val
+                        usedPrefixes.add(val.prefix)
+                    }
+                }
+            }
+            this.snippetItemsMap.set(dName, getSnippetItems(merged))
         }
     }
 
@@ -126,7 +99,6 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
             try {
                 if (doc.lineCount === 0) return []
 
-                await this.ensureSnippetsLoaded()
                 const cfgMgr = getConfigManager()
                 if (!cfgMgr.get('enableCompletion', true)) return []
                 if (token.isCancellationRequested) return []
@@ -145,14 +117,13 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
                 const sqlDialect = toSqlDialect(doc.languageId) as SqlDialect
                 const parseResult = getDocumentAstCache().getOrParse(doc, sqlDialect)
 
-                if (cfg.schema && getConnectionManager().getActiveConnection()) {
-                    try {
-                        const schemaItems = await this.schemaCompletionProvider.provideCompletionItems(doc, pos, token, parseResult)
-                        if (schemaItems) items.push(...schemaItems)
-                    } catch (e) { handleError(e, 'schema completion', ErrorCategory.SUB_ITEM) }
-                }
-                if (token.isCancellationRequested) return []
+                // Start schema fetch early (network I/O) so it overlaps with local work
+                const activeConnection = getConnectionManager().getActiveConnection()
+                const schemaPromise = cfg.schema && activeConnection
+                    ? this.schemaCompletionProvider.provideCompletionItems(doc, pos, token, parseResult).catch(() => null)
+                    : Promise.resolve(null)
 
+                // Collect local items (synchronous, fast)
                 this.tryCollect(items, () => {
                     if (!cfg.keywords) return []
                     let kwItems = this.keywordItemsCache.get(dName)
@@ -208,6 +179,11 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
                     if (!cfg.commentSnippets) return []
                     return getCommentCompletionItems(doc, pos)
                 }, 'comment snippet completion')
+
+                // Await schema result (network I/O started earlier)
+                if (token.isCancellationRequested) return []
+                const schemaItems = await schemaPromise
+                if (schemaItems) items.unshift(...schemaItems) // schema items first for relevance
 
                 return items
             } catch (e) {
