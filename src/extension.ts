@@ -38,6 +38,8 @@ import { clearParameterScanCache } from './hover/ParameterHoverResolver';
 import { clearFormatterCache } from './formatter/sqlFormatter';
 import { invalidateRuleDefinitions } from './linter/lintRules';
 import { invalidateTokenColorCache } from './utils/themeColors';
+import { AstDiagnosticsProvider } from './providers/AstDiagnosticsProvider';
+import { SqlLinter } from './providers/SqlLinter';
 
 function createLazyProvider<T>(container: ReturnType<typeof getContainer>, token: string, context: vscode.ExtensionContext): () => T {
     let instance: T | undefined;
@@ -225,6 +227,8 @@ function registerServicesToContainer(extensionPath: string): void {
   container.registerSingleton(Tokens.SqlStatementDetector, () => new SqlStatementDetector());
 
   container.registerSingleton(Tokens.SqlDiagnosticsProvider, () => new SqlDiagnosticsProvider());
+  container.registerSingleton(Tokens.AstDiagnosticsProvider, () => new AstDiagnosticsProvider());
+  container.registerSingleton(Tokens.SqlLinter, () => new SqlLinter());
   container.registerSingleton(Tokens.StatusBarProvider, () => new StatusBarProvider());
   container.registerSingleton(Tokens.ParameterHighlighter, () => new SqlParameterHighlighter());
   container.registerSingleton(Tokens.CompletionProvider, () => new SqlCompletionProvider(extensionPath));
@@ -265,6 +269,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         });
 
         const dbModule = new DatabaseModule(context);
+        getContainer().register(Tokens.DatabaseModule, dbModule);
         dbModule.registerCommands();
         dbModule.initialize().catch(e => {
             console.error('[SQL All in One] Database initialization failed:', e);

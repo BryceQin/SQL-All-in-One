@@ -12,6 +12,7 @@ interface CacheEntry<T> {
 type InvalidateScope = 'database' | 'table' | 'column' | 'function' | 'procedure' | 'view';
 
 export class SchemaCache {
+    private static readonly MAX_ENTRIES_PER_CACHE = 200;
     private databaseCache = new Map<string, CacheEntry<DatabaseInfo[]>>();
     private tableCache = new Map<string, CacheEntry<TableInfo[]>>();
     private columnCache = new Map<string, CacheEntry<ColumnInfo[]>>();
@@ -72,6 +73,9 @@ export class SchemaCache {
             try {
                 const data = await fetcher();
                 if (!this.disposed) {
+                    if (cache.size >= SchemaCache.MAX_ENTRIES_PER_CACHE) {
+                        this.evictExpiredEntries(cache);
+                    }
                     cache.set(cacheKey, { data, expireAt: Date.now() + this.getTtl(ttlType) * 1000 });
                 }
                 return data;
@@ -82,6 +86,21 @@ export class SchemaCache {
 
         this.pendingRequests.set(pendingKey, request);
         return request;
+    }
+
+    private evictExpiredEntries<T>(cache: Map<string, CacheEntry<T>>): void {
+        const now = Date.now();
+        for (const [key, entry] of cache) {
+            if (now > entry.expireAt) {
+                cache.delete(key);
+            }
+        }
+        if (cache.size >= SchemaCache.MAX_ENTRIES_PER_CACHE) {
+            const oldestKey = cache.keys().next().value;
+            if (oldestKey !== undefined) {
+                cache.delete(oldestKey);
+            }
+        }
     }
 
     async getDatabases(connectionId: string): Promise<DatabaseInfo[]> {

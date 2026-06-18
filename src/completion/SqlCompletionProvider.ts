@@ -124,8 +124,7 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
     ): Promise<vscode.CompletionItem[] | null | undefined> {
         return getPerformanceMonitor().measureAsync('SqlCompletionProvider.provideCompletionItems', async () => {
             try {
-                const text = doc.getText()
-                if (!text.trim()) return []
+                if (doc.lineCount === 0) return []
 
                 await this.ensureSnippetsLoaded()
                 const cfgMgr = getConfigManager()
@@ -189,7 +188,7 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
                 }, 'snippet completion')
                 if (token.isCancellationRequested) return []
 
-                const textContent = text.trim()
+                const textContent = doc.getText().trim()
                 this.tryCollect(items, () => {
                     if (!cfg.cteNames || !textContent) return []
                     if (parseResult.success && parseResult.ast) {

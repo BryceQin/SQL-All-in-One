@@ -1,5 +1,28 @@
 # Changelog
 
+## [2.15.33] - 2026-06-18
+
+### Performance
+
+- `LRUCache.has()` 消除重复 Map 查找：先 `get()` 获取 entry 再判断存在性，与 `peek()` 模式一致
+- `MysqlAdapter.describeTable()` 四个独立查询（columns/indexes/foreignKeys/triggers）从串行改为 `Promise.all()` 并行执行
+- `SqlCompletionProvider.provideCompletionItems()` 空文档检查从 `doc.getText().trim()` 改为 `doc.lineCount === 0`，避免大文件不必要的全文字符串分配
+
+### Architecture
+
+- `ConnectionManager` 8 个独立 Map（adapters/connectionStates/retryAttempts/retryTimers/sshTunnels/healthCheckTimers/consecutiveHealthFailures/isHealthChecking）合并为 `Map<string, ConnectionRuntimeState>` 统一对象，减少状态管理复杂度和遗漏清理风险
+- `DatabaseModule` 注册到 DI 容器（`Tokens.DatabaseModule`），统一生命周期管理方式
+- `AstDiagnosticsProvider` 和 `SqlLinter` 注册到 DI 容器，`SqlDiagnosticsProvider` 从容器获取依赖，与其他 Provider 管理模式保持一致，提升可测试性
+
+### Code Quality
+
+- `DIContainer.get()` 单例解析后不再删除工厂引用，支持单例被 dispose 后重新创建
+- `MysqlAdapter.getPoolStatus()` 抽取 `readPoolInternals()` 方法，隔离 mysql2 内部私有属性访问
+- `SchemaCache` 添加 `MAX_ENTRIES_PER_CACHE = 200` 容量限制，超限时先清理过期条目再 LRU 淘汰
+- `ConnectionManager.connect()` 异常路径添加 `connectConfig.password = undefined`，与成功路径保持一致的安全实践
+
+---
+
 ## [2.15.32] - 2026-06-18
 
 ### Performance
