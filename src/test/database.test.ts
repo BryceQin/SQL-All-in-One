@@ -68,10 +68,10 @@ suite('Database Adapter Layer', () => {
             assert.ok(adapter);
         });
 
-        test('should return connection id', () => {
+        test('should return connection id from config', () => {
             const id = adapter.getConnectionId();
             assert.strictEqual(typeof id, 'string');
-            assert.ok(id.startsWith('mysql-'));
+            assert.strictEqual(id, 'test');
         });
 
         test('should return connection state as disconnected initially', () => {
@@ -96,6 +96,63 @@ suite('Database Adapter Layer', () => {
         test('should quote identifiers with backticks', () => {
             assert.strictEqual(adapter.quoteIdentifier('table'), '`table`');
             assert.strictEqual(adapter.quoteIdentifier('my`table'), '`my``table`');
+        });
+
+        test('should reject empty identifier in getTableDDL', async () => {
+            await assert.rejects(
+                () => adapter.getTableDDL('', 'testtable'),
+                /Invalid identifier/
+            );
+        });
+
+        test('should reject empty identifier in getViewDDL', async () => {
+            await assert.rejects(
+                () => adapter.getViewDDL('testdb', ''),
+                /Invalid identifier/
+            );
+        });
+
+        test('should reject empty identifier in getFunctionDDL', async () => {
+            await assert.rejects(
+                () => adapter.getFunctionDDL('testdb', ''),
+                /Invalid identifier/
+            );
+        });
+
+        test('should reject empty identifier in getProcedureDDL', async () => {
+            await assert.rejects(
+                () => adapter.getProcedureDDL('testdb', ''),
+                /Invalid identifier/
+            );
+        });
+
+        test('should reject empty identifier in getTriggerDDL', async () => {
+            await assert.rejects(
+                () => adapter.getTriggerDDL('testdb', ''),
+                /Invalid identifier/
+            );
+        });
+
+        test('should reject identifier exceeding maximum length in getTableDDL', async () => {
+            const longName = 'a'.repeat(65);
+            await assert.rejects(
+                () => adapter.getTableDDL('testdb', longName),
+                /Invalid identifier.*maximum length/
+            );
+        });
+
+        test('should reject identifier containing null bytes in getTableDDL', async () => {
+            await assert.rejects(
+                () => adapter.getTableDDL('test\x00db', 'testtable'),
+                /Invalid identifier.*null bytes/
+            );
+        });
+
+        test('should accept valid identifiers in getTableDDL without throwing', async () => {
+            // This will fail because there's no connection, but it should NOT throw
+            // a validateIdentifier error - it should just return empty string
+            const ddl = await adapter.getTableDDL('testdb', 'testtable');
+            assert.strictEqual(ddl, '');
         });
 
         test('should return NOT_CONNECTED error when executing without connection', async () => {

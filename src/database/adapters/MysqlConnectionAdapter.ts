@@ -1,26 +1,16 @@
-import type { IConnectionAdapter, IPoolStatus, ConnectionConfig, TestConnectionResult } from './IDatabaseAdapter';
+import type { ConnectionConfig, TestConnectionResult } from './IDatabaseAdapter';
 import type { PoolOptions, RowDataPacket } from 'mysql2/promise';
 import type { MysqlSharedContext } from './MysqlSharedContext';
 import { t } from '../../i18n/index';
 
-export class MysqlConnectionAdapter implements IConnectionAdapter {
+/**
+ * MySQL-specific connection pool operations.
+ * Used internally by MysqlAdapter; common lifecycle logic lives in BaseDatabaseAdapter.
+ */
+export class MysqlConnectionAdapter {
     constructor(private shared: MysqlSharedContext) {}
 
-    getConnectionId(): string {
-        return this.shared.connectionId;
-    }
-
-    isConnected(): boolean {
-        return this.shared.pool !== null;
-    }
-
     async connect(config: ConnectionConfig): Promise<void> {
-        if (this.shared.pool) {
-            await this.disconnect();
-        }
-
-        this.shared.config = config;
-
         const poolOptions = this.createPoolOptions(config);
 
         try {
@@ -45,7 +35,6 @@ export class MysqlConnectionAdapter implements IConnectionAdapter {
             this.shared.totalConnectionCount = minConnections;
             this.shared.activeConnectionCount = 0;
             this.shared.lastActivityTime = Date.now();
-            this.startReapTimer();
         } catch (error: unknown) {
             this.shared.pool = null;
             throw this.formatConnectionError(error, config);
@@ -63,16 +52,10 @@ export class MysqlConnectionAdapter implements IConnectionAdapter {
             this.shared.transactionConnection = null;
         }
 
-        this.stopReapTimer();
-
         if (this.shared.pool) {
             await this.shared.pool.end();
             this.shared.pool = null;
         }
-
-        this.shared.activeConnectionCount = 0;
-        this.shared.totalConnectionCount = 0;
-        this.shared.config = null;
     }
 
     async testConnection(config: ConnectionConfig): Promise<TestConnectionResult> {
@@ -122,46 +105,27 @@ export class MysqlConnectionAdapter implements IConnectionAdapter {
         }
     }
 
-    getPoolStatus(): IPoolStatus {
-        if (!this.shared.pool) {
-            return {
-                totalConnections: 0,
-                activeConnections: 0,
-                idleConnections: 0,
-                waitingRequests: 0,
-                connectionLimit: this.shared.config?.poolConfig?.maxConnections ?? 5,
-                acquireTimeout: this.shared.config?.poolConfig?.acquireTimeout ?? 60000,
-            };
-        }
-
-        const { totalConnections, idleConnections, waitingRequests } = this.readPoolInternals();
-
-        return {
-            totalConnections,
-            activeConnections: this.shared.activeConnectionCount,
-            idleConnections,
-            waitingRequests,
-            connectionLimit: this.shared.config?.poolConfig?.maxConnections ?? 5,
-            acquireTimeout: this.shared.config?.poolConfig?.acquireTimeout ?? 60000,
-        };
+    /**
+     * Reaps idle connections by recreating the pool.
+     * Called by MysqlAdapter's reap timer callback.
+     */
+    async reapIdleConnections(): Promise<void> {
+        if (!this.shared.pool) return;
+        const config = this.shared.config;
+        await this.shared.pool.end();
+        const mysql = await import('mysql2/promise');
+        const poolOptions = this.createPoolOptions(config);
+        this.shared.pool = mysql.createPool(poolOptions);
+        this.shared.totalConnectionCount = 0;
+        this.shared.activeConnectionCount = 0;
+        this.shared.lastActivityTime = Date.now();
     }
 
-    private formatConnectionError(error: unknown, config: ConnectionConfig): Error {
+    formatConnectionError(error: unknown, config: ConnectionConfig): Error {
         const msg = error instanceof Error ? error.message : String(error);
         const hostPort = `${config.host}:${config.port}`;
 
-        if (msg.includes('ECONNREFUSED')) {
-            return new Error(t('database.connectionRefused', hostPort));
-        }
-        if (msg.includes('ETIMEDOUT') || msg.includes('connectTimeout')) {
-            return new Error(t('database.connectionTimedOut', hostPort));
-        }
-        if (msg.includes('EHOSTUNREACH')) {
-            return new Error(t('database.hostUnreachable', hostPort));
-        }
-        if (msg.includes('ENOTFOUND')) {
-            return new Error(t('database.hostNotFound', config.host));
-        }
+        // MySQL-specific errors
         if (msg.includes('ER_ACCESS_DENIED_ERROR') || msg.includes('Access denied')) {
             return new Error(t('database.accessDenied', config.username, hostPort));
         }
@@ -179,6 +143,20 @@ export class MysqlConnectionAdapter implements IConnectionAdapter {
         }
         if (msg.includes('ER_BAD_DB_ERROR')) {
             return new Error(t('database.databaseNotExist', config.database || '(none)', hostPort));
+        }
+
+        // Common network errors (same patterns as BaseDatabaseAdapter)
+        if (msg.includes('ECONNREFUSED')) {
+            return new Error(t('database.connectionRefused', hostPort));
+        }
+        if (msg.includes('ETIMEDOUT') || msg.includes('connectTimeout')) {
+            return new Error(t('database.connectionTimedOut', hostPort));
+        }
+        if (msg.includes('EHOSTUNREACH')) {
+            return new Error(t('database.hostUnreachable', hostPort));
+        }
+        if (msg.includes('ENOTFOUND')) {
+            return new Error(t('database.hostNotFound', config.host));
         }
 
         return error instanceof Error ? error : new Error(msg);
@@ -245,52 +223,5 @@ export class MysqlConnectionAdapter implements IConnectionAdapter {
         }
 
         return options;
-    }
-
-    private startReapTimer(): void {
-        this.stopReapTimer();
-        const reapInterval = this.shared.config?.poolConfig?.reapInterval ?? 60000;
-        const idleTimeout = this.shared.config?.poolConfig?.idleTimeout ?? 300000;
-
-        this.shared.reapTimer = setInterval(() => {
-            this.reapIdleConnections(idleTimeout);
-        }, reapInterval);
-    }
-
-    private stopReapTimer(): void {
-        if (this.shared.reapTimer) {
-            clearInterval(this.shared.reapTimer);
-            this.shared.reapTimer = null;
-        }
-    }
-
-    private async reapIdleConnections(idleTimeout: number): Promise<void> {
-        if (!this.shared.pool) return;
-        const now = Date.now();
-        if (now - this.shared.lastActivityTime > idleTimeout) {
-            const status = this.getPoolStatus();
-            if (status.activeConnections === 0 && status.idleConnections > 0) {
-                try {
-                    const config = this.shared.config!;
-                    await this.shared.pool.end();
-                    const mysql = await import('mysql2/promise');
-                    const poolOptions = this.createPoolOptions(config);
-                    this.shared.pool = mysql.createPool(poolOptions);
-                    this.shared.totalConnectionCount = 0;
-                    this.shared.activeConnectionCount = 0;
-                    this.shared.lastActivityTime = Date.now();
-                } catch (e) {
-                    console.debug('[SQL All in One] Reap idle connections error:', e);
-                }
-            }
-        }
-    }
-
-    private readPoolInternals(): { totalConnections: number; idleConnections: number; waitingRequests: number } {
-        return {
-            totalConnections: this.shared.totalConnectionCount,
-            idleConnections: Math.max(0, this.shared.totalConnectionCount - this.shared.activeConnectionCount),
-            waitingRequests: 0, // We can't track this without internal access
-        };
     }
 }
