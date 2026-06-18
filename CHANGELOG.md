@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.15.32] - 2026-06-18
+
+### Performance
+
+- LRUCache.get() 优化：追踪 lastKey 避免热路径缓存命中时的 delete+set 开销；has() 先用 cache.has() 快速判断；deleteByPrefix() 改为遍历时直接删除消除中间数组分配；purgeAndGetEntries() 原地删除过期条目减少内存分配
+- Formatter 缓存 LRU 从 O(n) 数组 indexOf+splice 改为 O(1) Map delete+set，移除 formatterCacheOrder 数组
+- SchemaProvider MRU 从 O(n) Set+Array（indexOf/splice）改为 O(1) Map（delete/set），减少内存占用
+- PerformanceMonitor 统计读写改用 peek() 替代 get() 避免 LRU 重排开销；recordMeasurement 添加禁用守卫
+- 标识符补全缓存 CompletionItem 数组，命中时直接返回避免重复创建；getColumnCompletionForAlias 优先使用缓存列名；新增 clearIdentifierCache() 清理接口
+- AstLinter.walkForSubStatements 复用单个 RuleContext 对象，仅更新 node 属性，减少大文件 GC 压力
+- DocumentAstCache.SymbolIndex 新增 aliasMap 字段，一次构建多次复用；SchemaCompletionProvider 和 SchemaHoverResolver 改用 getOrBuildAliasMap() 替代 parseAliasMapFromAst() 消除冗余 AST 遍历
+
+---
+
 ## [2.15.31] - 2026-06-18
 
 ### Performance

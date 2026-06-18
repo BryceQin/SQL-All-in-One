@@ -41,7 +41,6 @@ export const format = (
 
 // AstFormatter 缓存：按方言和配置哈希缓存实例
 const formatterCache = new Map<string, AstFormatter>()
-const formatterCacheOrder: string[] = []
 const MAX_FORMATTER_CACHE_SIZE = 50
 
 let lastOptionsRef: WeakRef<object> | undefined;
@@ -106,24 +105,19 @@ export const formatDialect = (
 
     const cacheKey = getFormatterCacheKey(dialect, options)
     let formatter = formatterCache.get(cacheKey)
-    
+
     if (!formatter) {
         if (formatterCache.size >= MAX_FORMATTER_CACHE_SIZE) {
-            const evictKey = formatterCacheOrder.shift()
+            const evictKey = formatterCache.keys().next().value
             if (evictKey !== undefined) {
                 formatterCache.delete(evictKey)
             }
         }
         formatter = new AstFormatter(options, dialect)
         formatterCache.set(cacheKey, formatter)
-        formatterCacheOrder.push(cacheKey)
     } else {
-        // LRU: 将已访问的 key 移到末尾
-        const idx = formatterCacheOrder.indexOf(cacheKey)
-        if (idx !== -1) {
-            formatterCacheOrder.splice(idx, 1)
-            formatterCacheOrder.push(cacheKey)
-        }
+        formatterCache.delete(cacheKey)
+        formatterCache.set(cacheKey, formatter)
     }
     
     return formatter.format(query)
@@ -131,7 +125,6 @@ export const formatDialect = (
 
 export function clearFormatterCache(): void {
     formatterCache.clear();
-    formatterCacheOrder.length = 0;
     lastOptionsRef = undefined;
     lastCacheKey = undefined;
 }

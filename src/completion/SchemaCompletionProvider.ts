@@ -54,9 +54,7 @@ export class SchemaCompletionProvider {
 
         const clauseType = this.determineClauseTypeFromAst(parseResult, position, textBeforeCursor)
         const prefix = this.extractPrefix(textBeforeCursor)
-        const aliasMap = parseResult.success && parseResult.ast
-            ? this.schemaProvider.parseAliasMapFromAst(parseResult.ast as import('node-sql-parser').AST[] | import('node-sql-parser').AST)
-            : new Map<string, string>()
+        const aliasMap = getDocumentAstCache().getOrBuildAliasMap(document, dialectName as SqlDialect)
 
         const context: CompletionContext = {
             connectionId: activeConn.id,
