@@ -5,6 +5,7 @@ import { getConnectionManager } from '../connection/ConnectionManager';
 import { QueryOptions, QueryStartEvent, QueryEndEvent, RunningQuery } from './QueryResult';
 import { getConfigManager } from '../../core/configManager';
 import { t } from '../../i18n/index';
+import { generateShortId } from '../../utils/idGenerator';
 
 export class QueryExecutor {
     private runningQueries = new Map<string, RunningQuery>();
@@ -211,7 +212,7 @@ export class QueryExecutor {
     }
 
     private generateQueryId(): string {
-        return `q-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+        return generateShortId('query');
     }
 
     private getConfigMaxRows(): number {

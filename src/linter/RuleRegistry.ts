@@ -13,12 +13,13 @@ export class RuleRegistry {
   private rulesByType = new Map<string, LintRule[]>();
   private enabledRulesCache = new Map<string, LintRule[]>();
   private enabledGlobalRulesCache: LintRule[] | null = null;
-  private cacheValid = false;
+  private cacheVersion = 0;
+  private cacheValidVersion = -1;
 
   private invalidateCache(): void {
     this.enabledRulesCache.clear();
     this.enabledGlobalRulesCache = null;
-    this.cacheValid = false;
+    this.cacheVersion++;
   }
 
   register(rule: LintRule): void {
@@ -41,7 +42,7 @@ export class RuleRegistry {
   }
 
   getEnabledRulesForType(type: string): LintRule[] {
-    if (this.cacheValid) {
+    if (this.cacheValidVersion === this.cacheVersion) {
       const cached = this.enabledRulesCache.get(type);
       if (cached !== undefined) return cached;
     }
@@ -49,19 +50,19 @@ export class RuleRegistry {
     const rules = this.rulesByType.get(type) || [];
     const enabled = rules.filter(r => r.isEnabled());
     this.enabledRulesCache.set(type, enabled);
-    if (!this.cacheValid) this.cacheValid = true;
+    this.cacheValidVersion = this.cacheVersion;
     return enabled;
   }
 
   getEnabledGlobalRules(): LintRule[] {
-    if (this.cacheValid && this.enabledGlobalRulesCache !== null) {
+    if (this.cacheValidVersion === this.cacheVersion && this.enabledGlobalRulesCache !== null) {
       return this.enabledGlobalRulesCache;
     }
 
     const enabled = Array.from(this.rules.values())
       .filter(r => r.applicableTypes.length === 0 && r.isEnabled());
     this.enabledGlobalRulesCache = enabled;
-    if (!this.cacheValid) this.cacheValid = true;
+    this.cacheValidVersion = this.cacheVersion;
     return enabled;
   }
 

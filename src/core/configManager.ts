@@ -68,9 +68,8 @@ export class ConfigManager {
     }
 
     get<T>(section: string, defaultValue: T): T {
-        const cached = this.cache.get(section);
-        if (cached !== undefined) {
-            return cached as T;
+        if (this.cache.has(section)) {
+            return this.cache.get(section) as T;
         }
         const config = this.getConfig();
         let value = config.get<T>(section, defaultValue);
@@ -86,9 +85,8 @@ export class ConfigManager {
     }
 
     getSection<T extends Record<string, unknown>>(section: string, defaultValue: T): T {
-        const cached = this.cache.get(section);
-        if (cached !== undefined) {
-            return cached as T;
+        if (this.cache.has(section)) {
+            return this.cache.get(section) as T;
         }
         const config = this.getConfig();
         const value = config.get<T>(section, defaultValue);
@@ -98,9 +96,8 @@ export class ConfigManager {
 
     getSectionKeys<T extends Record<string, unknown>>(prefix: string, keys: string[], defaults: T): T {
         const cacheKey = `__sectionKeys::${prefix}::${keys.slice().sort().join(',')}`;
-        const cached = this.cache.get(cacheKey);
-        if (cached !== undefined) {
-            return cached as T;
+        if (this.cache.has(cacheKey)) {
+            return this.cache.get(cacheKey) as T;
         }
         const config = this.getConfig();
         const result = {} as Record<string, unknown>;

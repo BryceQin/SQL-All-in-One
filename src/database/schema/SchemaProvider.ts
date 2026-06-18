@@ -9,7 +9,6 @@ import type { AstNode } from '../../parser/astTypes';
 import type { AST } from 'node-sql-parser';
 import { handleError, ErrorCategory } from '../../core/errorHandler';
 import { getContainer, Tokens } from '../../core/diContainer';
-import { LRUCache } from '../../utils/lruCache';
 
 export type ClauseType =
     | 'USE'
@@ -36,7 +35,25 @@ export interface CompletionContext {
 export class SchemaProvider {
     private static readonly MRU_MAX_SIZE = 50;
     private schemaCache = getSchemaCache();
-    private mruCache = new LRUCache<string, number>({ maxSize: SchemaProvider.MRU_MAX_SIZE, maxAge: Infinity });
+    private mruKeys = new Set<string>();
+    private mruOrder: string[] = [];
+
+    private addToMru(key: string): void {
+        if (this.mruKeys.has(key)) {
+            const idx = this.mruOrder.indexOf(key);
+            if (idx >= 0) this.mruOrder.splice(idx, 1);
+        }
+        this.mruOrder.unshift(key);
+        this.mruKeys.add(key);
+        while (this.mruOrder.length > SchemaProvider.MRU_MAX_SIZE) {
+            const removed = this.mruOrder.pop()!;
+            this.mruKeys.delete(removed);
+        }
+    }
+
+    private isInMru(key: string): boolean {
+        return this.mruKeys.has(key);
+    }
 
     async getCompletionItems(context: CompletionContext): Promise<vscode.CompletionItem[]> {
         const items: vscode.CompletionItem[] = [];
@@ -242,7 +259,7 @@ export class SchemaProvider {
                     item.documentation = new vscode.MarkdownString(docParts.join(' | '));
                 }
                 const pkSort = col.isPrimaryKey ? '0' : '1';
-                const mruSort = this.mruCache.has(`${tableName}.${col.name}`.toLowerCase()) ? '0' : '1';
+                const mruSort = this.isInMru(`${tableName}.${col.name}`.toLowerCase()) ? '0' : '1';
                 item.sortText = `${mruSort}${pkSort}${col.name}`;
                 items.push(item);
                 this.touchMru(`${tableName}.${col.name}`);
@@ -322,7 +339,7 @@ export class SchemaProvider {
 
     private touchMru(key: string): void {
         const lowerKey = key.toLowerCase();
-        this.mruCache.set(lowerKey, Date.now());
+        this.addToMru(lowerKey);
     }
 
     async getTableHoverInfo(tableName: string, database: string): Promise<vscode.MarkdownString | null> {
@@ -399,7 +416,8 @@ export class SchemaProvider {
     }
 
     dispose(): void {
-        this.mruCache.clear();
+        this.mruKeys.clear();
+        this.mruOrder = [];
     }
 }
 

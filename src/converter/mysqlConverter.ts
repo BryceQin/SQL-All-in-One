@@ -2,6 +2,10 @@ import { MYSQL_TO_HIVE_TYPES } from './typeMappings'
 import { MYSQL_TO_HIVE_FUNCTIONS, convertIfnullToCoalesce } from './functionMappings'
 import { SqlParser } from './sqlParser'
 
+const MYSQL_TYPE_REGEXES: [RegExp, string][] = Object.entries(MYSQL_TO_HIVE_TYPES).map(
+  ([mysqlType, hiveType]) => [new RegExp(`\\b${mysqlType}\\b`, 'gi'), hiveType]
+)
+
 export class MysqlToHiveConverter {
   private yearPlaceholders: { placeholder: string; original: string }[] = []
   private yearIndex = 0
@@ -114,8 +118,7 @@ export class MysqlToHiveConverter {
   private convertDataTypes(item: string): string {
     let result = item
 
-    for (const [mysqlType, hiveType] of Object.entries(MYSQL_TO_HIVE_TYPES)) {
-      const regex = new RegExp(`\\b${mysqlType}\\b`, 'gi')
+    for (const [regex, hiveType] of MYSQL_TYPE_REGEXES) {
       result = result.replace(regex, hiveType)
     }
 

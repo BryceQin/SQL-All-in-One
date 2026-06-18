@@ -89,10 +89,8 @@ export class DataExporter {
                     obj[col.name] = this.convertJsonValue(value);
                 }
                 const jsonStr = JSON.stringify(obj, null, indent > 0 ? indent : undefined);
-                const line = indent > 0
-                    ? '  ' + jsonStr.split('\n').join('\n  ')
-                    : jsonStr;
-                stream.write((i > 0 ? ',' : '') + '\n' + line);
+                const suffix = i < rows.length - 1 ? ',' : '';
+                stream.write((i > 0 ? '\n' : '') + jsonStr + suffix);
             }
 
             stream.write('\n]');
@@ -122,20 +120,27 @@ export class DataExporter {
 
         const q = adapter ? adapter.quoteIdentifier.bind(adapter) : ((id: string): string => '`' + id.replace(/`/g, '``') + '`');
         const columnNames = columns.map((col) => q(col.name)).join(', ');
-        const lines: string[] = [];
+        const stream = fs.createWriteStream(uri.fsPath, 'utf-8');
 
-        for (let i = 0; i < rows.length; i += batchSize) {
-            const batch = rows.slice(i, i + batchSize);
-            const valueGroups = batch.map((row) => {
-                const values = columns.map((col) => formatSqlValue(row[col.name]));
-                return `(${values.join(', ')})`;
+        try {
+            for (let i = 0; i < rows.length; i += batchSize) {
+                const batch = rows.slice(i, i + batchSize);
+                const valueGroups = batch.map((row) => {
+                    const values = columns.map((col) => formatSqlValue(row[col.name]));
+                    return `(${values.join(', ')})`;
+                });
+                stream.write(`INSERT INTO ${q(tableName)} (${columnNames}) VALUES ${valueGroups.join(', ')};\n`);
+            }
+
+            await new Promise<void>((resolve, reject) => {
+                stream.end(() => resolve());
+                stream.on('error', reject);
             });
-            lines.push(`INSERT INTO ${q(tableName)} (${columnNames}) VALUES ${valueGroups.join(', ')};`);
+            vscode.window.setStatusBarMessage(t('database.exportCompleted'), 3000);
+        } catch (error) {
+            stream.destroy();
+            throw error;
         }
-
-        const content = lines.join('\n');
-        await fs.promises.writeFile(uri.fsPath, content, 'utf-8');
-        vscode.window.setStatusBarMessage(t('database.exportCompleted'), 3000);
     }
 
     async exportToDdl(adapter: IDatabaseAdapter, database: string, table: string): Promise<void> {

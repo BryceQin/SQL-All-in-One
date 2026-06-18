@@ -1,5 +1,4 @@
 import * as vscode from 'vscode';
-import * as fs from 'fs';
 import * as path from 'path';
 
 /**
@@ -80,39 +79,38 @@ interface ThemeFile {
  *  5. Merge editor.tokenColorCustomizations on top.
  *  6. Return the color map, or undefined on any failure.
  */
-export function getTokenColors(): TokenColorMap | undefined {
+let cachedColors: TokenColorMap | undefined;
+let cachedThemeName: string | undefined;
+
+export function invalidateTokenColorCache(): void {
+    cachedColors = undefined;
+    cachedThemeName = undefined;
+}
+
+export async function getTokenColors(): Promise<TokenColorMap | undefined> {
+    const themeName = vscode.workspace
+        .getConfiguration('workbench')
+        .get<string>('colorTheme');
+    if (!themeName) return undefined;
+
+    if (cachedColors && cachedThemeName === themeName) {
+        return cachedColors;
+    }
+
     try {
-        // 1. Get current theme name
-        const themeName = vscode.workspace
-            .getConfiguration('workbench')
-            .get<string>('colorTheme');
-        if (!themeName) {
-            return undefined;
-        }
-
-        // 2. Find the extension that contributes this theme
         const themeExtension = findThemeExtension(themeName);
-        if (!themeExtension) {
-            return undefined;
-        }
+        if (!themeExtension) return undefined;
 
-        // 3. Read and parse the theme file
         const themeFilePath = resolveThemeFilePath(themeExtension, themeName);
-        if (!themeFilePath) {
-            return undefined;
-        }
+        if (!themeFilePath) return undefined;
 
-        const themeContent = fs.readFileSync(themeFilePath, 'utf-8');
-        // Strip BOM if present
+        const fsPromises = await import('fs/promises');
+        const themeContent = await fsPromises.readFile(themeFilePath, 'utf-8');
         const cleanContent = themeContent.replace(/^\uFEFF/, '');
         const themeJson = JSON.parse(cleanContent) as ThemeFile;
-
         const tokenColors = themeJson.tokenColors ?? [];
-
-        // 4. Resolve scopes to Monaco token types
         const colorMap = resolveTokenColors(tokenColors);
 
-        // 5. Merge editor.tokenColorCustomizations
         const customizations = vscode.workspace
             .getConfiguration('editor')
             .get<{ tokenColors?: TokenColorSetting[] }>('tokenColorCustomizations');
@@ -120,16 +118,19 @@ export function getTokenColors(): TokenColorMap | undefined {
             mergeTokenColors(colorMap, customizations.tokenColors);
         }
 
-        // 6. Return only if we resolved at least some colors
         const hasAnyColor = Object.values(colorMap).some((v) => v !== undefined);
-        if (!hasAnyColor) {
-            return undefined;
-        }
+        if (!hasAnyColor) return undefined;
 
-        return colorMap as TokenColorMap;
+        cachedColors = colorMap as TokenColorMap;
+        cachedThemeName = themeName;
+        return cachedColors;
     } catch {
         return undefined;
     }
+}
+
+export function getTokenColorsSync(): TokenColorMap | undefined {
+    return cachedColors;
 }
 
 /**

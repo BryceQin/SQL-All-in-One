@@ -1,5 +1,7 @@
 import { SqlTextScanner } from '../utils/sqlTextScanner'
 
+const CREATE_TABLE_REGEX = /CREATE\s+TABLE/i
+
 export interface CreateTableInfo {
   before: string
   content: string
@@ -10,7 +12,7 @@ export interface CreateTableInfo {
 
 export class SqlParser {
   static findCreateTable(sql: string): CreateTableInfo | null {
-    const createStart = sql.search(/CREATE\s+TABLE/i)
+    const createStart = sql.search(CREATE_TABLE_REGEX)
     if (createStart === -1) {
       return null
     }

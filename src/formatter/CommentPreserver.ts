@@ -151,9 +151,15 @@ function restoreStandalone(slot: CommentSlot, text: string): string {
     return restoreInline(slot.original, escapedId, text)
 }
 
+const hasWordRegexCache = new Map<string, RegExp>();
 function hasWord(line: string, word: string): boolean {
-    const escaped = escapeRegExp(word)
-    return new RegExp(`\\b${escaped}\\b`, 'i').test(line)
+    let regex = hasWordRegexCache.get(word);
+    if (!regex) {
+        const escaped = escapeRegExp(word);
+        regex = new RegExp(`\\b${escaped}\\b`, 'i');
+        hasWordRegexCache.set(word, regex);
+    }
+    return regex.test(line);
 }
 
 function restoreInline(

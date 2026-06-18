@@ -5,50 +5,51 @@ export interface CommentInfo {
     text: string
 }
 
+export interface QuoteState {
+    inSingleQuote: boolean
+    inDoubleQuote: boolean
+}
+
+export function updateQuoteState(ch: string, nextCh: string | undefined, state: QuoteState): void {
+    if (state.inSingleQuote) {
+        if (ch === "'" && nextCh === "'") return
+        if (ch === "'") state.inSingleQuote = false
+        return
+    }
+    if (state.inDoubleQuote) {
+        if (ch === '"' && nextCh === '"') return
+        if (ch === '"') state.inDoubleQuote = false
+        return
+    }
+    if (ch === "'") { state.inSingleQuote = true; return }
+    if (ch === '"') { state.inDoubleQuote = true; return }
+}
+
 export class SqlTextScanner {
     static findAllComments(sql: string): CommentInfo[] {
         const comments: CommentInfo[] = []
         let i = 0
         const len = sql.length
-        let inSingleQuote = false
-        let inDoubleQuote = false
+        const state: QuoteState = { inSingleQuote: false, inDoubleQuote: false }
 
         while (i < len) {
             const ch = sql[i]
+            const nextCh = i + 1 < len ? sql[i + 1] : undefined
 
-            if (inSingleQuote) {
-                if (ch === "'" && i + 1 < len && sql[i + 1] === "'") {
+            if (state.inSingleQuote || state.inDoubleQuote) {
+                const prevSingle = state.inSingleQuote
+                const prevDouble = state.inDoubleQuote
+                updateQuoteState(ch, nextCh, state)
+                if ((prevSingle && ch === "'" && nextCh === "'") ||
+                    (prevDouble && ch === '"' && nextCh === '"')) {
                     i += 2
-                    continue
+                } else {
+                    i++
                 }
-                if (ch === "'") {
-                    inSingleQuote = false
-                }
-                i++
                 continue
             }
 
-            if (inDoubleQuote) {
-                if (ch === '"') {
-                    inDoubleQuote = false
-                }
-                i++
-                continue
-            }
-
-            if (ch === "'") {
-                inSingleQuote = true
-                i++
-                continue
-            }
-
-            if (ch === '"') {
-                inDoubleQuote = true
-                i++
-                continue
-            }
-
-            if (ch === '-' && i + 1 < len && sql[i + 1] === '-') {
+            if (ch === '-' && nextCh === '-') {
                 const start = i
                 i += 2
                 while (i < len && sql[i] !== '\n') {
@@ -63,7 +64,7 @@ export class SqlTextScanner {
                 continue
             }
 
-            if (ch === '/' && i + 1 < len && sql[i + 1] === '*') {
+            if (ch === '/' && nextCh === '*') {
                 const start = i
                 i += 2
                 while (i < len) {
@@ -82,6 +83,7 @@ export class SqlTextScanner {
                 continue
             }
 
+            updateQuoteState(ch, nextCh, state)
             i++
         }
 
@@ -90,42 +92,23 @@ export class SqlTextScanner {
 
     static findStatementEnd(sql: string, startIndex: number): number {
         let depth = 0
-        let inSingleQuote = false
-        let inDoubleQuote = false
+        const state: QuoteState = { inSingleQuote: false, inDoubleQuote: false }
         let i = startIndex
 
         while (i < sql.length) {
             const ch = sql[i]
+            const nextCh = i + 1 < sql.length ? sql[i + 1] : undefined
 
-            if (inSingleQuote) {
-                if (ch === "'" && i + 1 < sql.length && sql[i + 1] === "'") {
+            if (state.inSingleQuote || state.inDoubleQuote) {
+                const prevSingle = state.inSingleQuote
+                const prevDouble = state.inDoubleQuote
+                updateQuoteState(ch, nextCh, state)
+                if ((prevSingle && ch === "'" && nextCh === "'") ||
+                    (prevDouble && ch === '"' && nextCh === '"')) {
                     i += 2
-                    continue
+                } else {
+                    i++
                 }
-                if (ch === "'") {
-                    inSingleQuote = false
-                }
-                i++
-                continue
-            }
-
-            if (inDoubleQuote) {
-                if (ch === '"') {
-                    inDoubleQuote = false
-                }
-                i++
-                continue
-            }
-
-            if (ch === "'") {
-                inSingleQuote = true
-                i++
-                continue
-            }
-
-            if (ch === '"') {
-                inDoubleQuote = true
-                i++
                 continue
             }
 
@@ -136,6 +119,7 @@ export class SqlTextScanner {
                 return i
             }
 
+            updateQuoteState(ch, nextCh, state)
             i++
         }
 
@@ -143,56 +127,44 @@ export class SqlTextScanner {
     }
 
     static removeCommentsAndStrings(sql: string): string {
-        let result = ''
+        const parts: string[] = []
+        let lastEnd = 0
         let i = 0
         const len = sql.length
-        let inSingleQuote = false
-        let inDoubleQuote = false
+        const state: QuoteState = { inSingleQuote: false, inDoubleQuote: false }
 
         while (i < len) {
             const ch = sql[i]
+            const nextCh = i + 1 < len ? sql[i + 1] : undefined
 
-            if (inSingleQuote) {
-                if (ch === "'" && i + 1 < len && sql[i + 1] === "'") {
+            if (state.inSingleQuote || state.inDoubleQuote) {
+                const prevSingle = state.inSingleQuote
+                const prevDouble = state.inDoubleQuote
+                updateQuoteState(ch, nextCh, state)
+                if ((prevSingle && ch === "'" && nextCh === "'") ||
+                    (prevDouble && ch === '"' && nextCh === '"')) {
                     i += 2
-                    continue
-                }
-                if (ch === "'") {
-                    inSingleQuote = false
-                }
-                i++
-                continue
-            }
-
-            if (inDoubleQuote) {
-                if (ch === '"') {
-                    inDoubleQuote = false
-                }
-                i++
-                continue
-            }
-
-            if (ch === "'") {
-                inSingleQuote = true
-                i++
-                continue
-            }
-
-            if (ch === '"') {
-                inDoubleQuote = true
-                i++
-                continue
-            }
-
-            if (ch === '-' && i + 1 < len && sql[i + 1] === '-') {
-                i += 2
-                while (i < len && sql[i] !== '\n') {
+                } else {
+                    if ((prevSingle || prevDouble) && !state.inSingleQuote && !state.inDoubleQuote) {
+                        lastEnd = i + 1
+                    }
                     i++
                 }
                 continue
             }
 
-            if (ch === '/' && i + 1 < len && sql[i + 1] === '*') {
+            if (ch === '-' && nextCh === '-') {
+                parts.push(sql.substring(lastEnd, i))
+                i += 2
+                while (i < len && sql[i] !== '\n') {
+                    i++
+                }
+                lastEnd = i
+                continue
+            }
+
+            if (ch === '/' && nextCh === '*') {
+                parts.push(sql.substring(lastEnd, i))
                 i += 2
                 while (i < len) {
                     if (sql[i] === '*' && i + 1 < len && sql[i + 1] === '/') {
@@ -201,13 +173,24 @@ export class SqlTextScanner {
                     }
                     i++
                 }
+                lastEnd = i
                 continue
             }
 
-            result += ch
+            if (ch === "'" || ch === '"') {
+                parts.push(sql.substring(lastEnd, i))
+                updateQuoteState(ch, nextCh, state)
+                i++
+                continue
+            }
+
             i++
         }
 
-        return result
+        if (!state.inSingleQuote && !state.inDoubleQuote) {
+            parts.push(sql.substring(lastEnd, len))
+        }
+
+        return parts.join('')
     }
 }

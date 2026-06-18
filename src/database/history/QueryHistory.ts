@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { QueryHistoryEntry } from '../query/QueryResult';
+import { generateShortId } from '../../utils/idGenerator';
 
 const STORAGE_KEY = 'hive-formatter.queryHistory';
 const MAX_SQL_LENGTH = 2000;
@@ -65,7 +66,7 @@ export class QueryHistory {
     }
 
     private generateId(): string {
-        return `h-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+        return generateShortId('history');
     }
 
     private getMaxEntries(): number {
