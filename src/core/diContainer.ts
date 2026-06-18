@@ -27,6 +27,7 @@ import type { QueryHistory } from '../database/history/QueryHistory';
 import type { SqlStatementDetector } from '../database/query/SqlStatementDetector';
 import type { SchemaProvider } from '../database/schema/SchemaProvider';
 import type { SchemaCache } from '../database/schema/SchemaCache';
+import type { DatabaseModule } from '../database/DatabaseModule';
 
 export interface TokenMap {
     ConfigManager: ConfigManager;
@@ -58,6 +59,7 @@ export interface TokenMap {
     SqlStatementDetector: SqlStatementDetector;
     SchemaProvider: SchemaProvider;
     SchemaCache: SchemaCache;
+    DatabaseModule: DatabaseModule;
 }
 
 export class DIContainer {
@@ -95,7 +97,6 @@ export class DIContainer {
                 const factory = this.singletons.get(token) as () => T;
                 const instance = factory();
                 this.services.set(token, instance);
-                this.singletons.delete(token);
                 return instance;
             } finally {
                 this.creating.delete(token);
@@ -206,6 +207,7 @@ export const Tokens = {
     SqlStatementDetector: 'SqlStatementDetector',
     SchemaProvider: 'SchemaProvider',
     SchemaCache: 'SchemaCache',
+    DatabaseModule: 'DatabaseModule',
 } as const;
 
 export type Token = typeof Tokens[keyof typeof Tokens];

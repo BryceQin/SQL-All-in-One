@@ -52,9 +52,10 @@ export class LRUCache<K, V> {
   }
 
   has(key: K): boolean {
-    if (!this.cache.has(key)) return false;
+    const entry = this.cache.get(key);
+    if (!entry) return false;
 
-    if (this.maxAge < Infinity && Date.now() - this.cache.get(key)!.timestamp > this.maxAge) {
+    if (this.maxAge < Infinity && Date.now() - entry.timestamp > this.maxAge) {
       this.cache.delete(key);
       if (this.lastKey === key) this.lastKey = undefined;
       return false;

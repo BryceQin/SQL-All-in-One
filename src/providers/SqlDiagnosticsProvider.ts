@@ -8,10 +8,11 @@ import { AstDiagnosticsProvider } from "./AstDiagnosticsProvider"
 import { getDocumentAstCache } from "../parser/DocumentAstCache"
 import { getConfigManager } from "../core/configManager"
 import { getPerformanceMonitor } from '../core/performanceMonitor'
+import { getContainer, Tokens } from "../core/diContainer"
 
 export class SqlDiagnosticsProvider {
     private diagnosticCollection: vscode.DiagnosticCollection
-    private astDiagnosticsProvider = new AstDiagnosticsProvider()
+    private astDiagnosticsProvider: AstDiagnosticsProvider
     private linter: SqlLinter
     private configChangeDisposable: vscode.Disposable
 
@@ -22,7 +23,9 @@ export class SqlDiagnosticsProvider {
     constructor() {
         this.diagnosticCollection =
             vscode.languages.createDiagnosticCollection("hive-formatter")
-        this.linter = new SqlLinter()
+        const container = getContainer()
+        this.astDiagnosticsProvider = container.get<AstDiagnosticsProvider>(Tokens.AstDiagnosticsProvider)
+        this.linter = container.get<SqlLinter>(Tokens.SqlLinter)
 
         this.configChangeDisposable = getConfigManager().onConfigChange(() => {
             const configManager = getConfigManager()

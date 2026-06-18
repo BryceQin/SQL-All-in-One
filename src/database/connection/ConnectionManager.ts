@@ -24,17 +24,21 @@ export interface ActiveConnectionEvent {
     newId?: string;
 }
 
+interface ConnectionRuntimeState {
+    adapter?: IDatabaseAdapter;
+    state: ConnectionState;
+    retryAttempts: number;
+    retryTimer?: ReturnType<typeof setTimeout>;
+    sshTunnel?: SshTunnel;
+    healthCheckTimer?: ReturnType<typeof setInterval>;
+    consecutiveHealthFailures: number;
+    isHealthChecking: boolean;
+}
+
 export class ConnectionManager {
     private connectionStore: ConnectionStore;
-    private adapters = new Map<string, IDatabaseAdapter>();
-    private connectionStates = new Map<string, ConnectionState>();
+    private runtimeStates = new Map<string, ConnectionRuntimeState>();
     private activeConnectionId?: string;
-    private retryAttempts = new Map<string, number>();
-    private retryTimers = new Map<string, ReturnType<typeof setTimeout>>();
-    private sshTunnels = new Map<string, SshTunnel>();
-    private healthCheckTimers = new Map<string, ReturnType<typeof setInterval>>();
-    private consecutiveHealthFailures = new Map<string, number>();
-    private isHealthChecking = new Map<string, boolean>();
 
     private readonly _onDidChangeConnections = new EventEmitter<ConnectionEvent>();
     private readonly _onDidChangeConnectionState = new EventEmitter<ConnectionStateEvent>();
@@ -46,6 +50,20 @@ export class ConnectionManager {
 
     constructor() {
         this.connectionStore = getConnectionStore();
+    }
+
+    private getOrCreateRuntime(id: string): ConnectionRuntimeState {
+        let runtime = this.runtimeStates.get(id);
+        if (!runtime) {
+            runtime = {
+                state: 'disconnected',
+                retryAttempts: 0,
+                consecutiveHealthFailures: 0,
+                isHealthChecking: false,
+            };
+            this.runtimeStates.set(id, runtime);
+        }
+        return runtime;
     }
 
     async initialize(): Promise<void> {
@@ -71,7 +89,8 @@ export class ConnectionManager {
     }
 
     async updateConnection(id: string, config: ConnectionConfig, password?: string): Promise<void> {
-        const oldState = this.connectionStates.get(id) || 'disconnected';
+        const runtime = this.runtimeStates.get(id);
+        const oldState = runtime?.state || 'disconnected';
         if (oldState !== 'disconnected') {
             await this.disconnect(id);
         }
@@ -81,8 +100,8 @@ export class ConnectionManager {
     }
 
     async connect(id: string): Promise<void> {
-        const oldState = this.connectionStates.get(id) || 'disconnected';
-        if (oldState === 'connected' || oldState === 'connecting') {
+        const runtime = this.getOrCreateRuntime(id);
+        if (runtime.state === 'connected' || runtime.state === 'connecting') {
             return;
         }
 
@@ -95,7 +114,6 @@ export class ConnectionManager {
         }
 
         const password = await this.connectionStore.getPassword(id);
-        // SECURITY: connectConfig contains the password — never log or serialize this object.
         const connectConfig: ConnectionConfig = { ...config, password };
 
         if (config.ssh?.enabled) {
@@ -114,7 +132,7 @@ export class ConnectionManager {
                     config.connectTimeout
                 );
 
-                this.sshTunnels.set(id, tunnel);
+                runtime.sshTunnel = tunnel;
                 connectConfig.host = tunnelResult.localHost;
                 connectConfig.port = tunnelResult.localPort;
             } catch (error: unknown) {
@@ -127,13 +145,11 @@ export class ConnectionManager {
             const adapter = AdapterFactory.create(config.dialect, connectConfig);
             await adapter.connect(connectConfig);
 
-            // Clear password from the local config copy after connection is established
-            // to reduce the window in which it is held in memory.
             connectConfig.password = undefined;
 
-            this.adapters.set(id, adapter);
+            runtime.adapter = adapter;
             this.updateConnectionState(id, 'connected');
-            this.retryAttempts.delete(id);
+            runtime.retryAttempts = 0;
 
             this.startHealthCheck(id, connectConfig);
 
@@ -141,6 +157,7 @@ export class ConnectionManager {
                 this.setActiveConnection(id);
             }
         } catch (error: unknown) {
+            connectConfig.password = undefined;
             await this.closeSshTunnel(id);
             this.updateConnectionState(id, 'error');
             const errorMessage = error instanceof Error ? error.message : String(error);
@@ -153,20 +170,20 @@ export class ConnectionManager {
     }
 
     async disconnect(id: string): Promise<void> {
-        const oldState = this.connectionStates.get(id) || 'disconnected';
+        const runtime = this.runtimeStates.get(id);
+        const oldState = runtime?.state || 'disconnected';
         this.stopHealthCheck(id);
         if (oldState === 'disconnected') {
             return;
         }
 
-        const adapter = this.adapters.get(id);
-        if (adapter) {
+        if (runtime?.adapter) {
             try {
-                await adapter.disconnect();
+                await runtime.adapter.disconnect();
             } catch (e) {
                 handleError(e, 'ConnectionManager.disconnect', ErrorCategory.FEATURE);
             }
-            this.adapters.delete(id);
+            runtime.adapter = undefined;
         }
 
         await this.closeSshTunnel(id);
@@ -182,7 +199,7 @@ export class ConnectionManager {
     }
 
     async disconnectAll(): Promise<void> {
-        const ids = Array.from(this.adapters.keys());
+        const ids = Array.from(this.runtimeStates.keys());
         const results = await Promise.allSettled(
             ids.map(id => this.disconnect(id))
         );
@@ -219,12 +236,10 @@ export class ConnectionManager {
                     sshConfig.password = config.ssh.password;
                 }
                 const tunnelResult = await tunnel.open(sshConfig, config.host, config.port);
-                // SECURITY: connectConfig contains the password — never log or serialize this object.
                 const connectConfig: ConnectionConfig = { ...config, password: pass, host: tunnelResult.localHost, port: tunnelResult.localPort };
                 try {
                     const adapter = AdapterFactory.create(config.dialect, connectConfig);
                     const result = await adapter.testConnection(connectConfig);
-                    // Clear password after use
                     connectConfig.password = undefined;
                     return result;
                 } finally {
@@ -235,21 +250,19 @@ export class ConnectionManager {
             }
         }
 
-        // SECURITY: connectConfig contains the password — never log or serialize this object.
         const connectConfig: ConnectionConfig = { ...config, password: pass };
         const adapter = AdapterFactory.create(config.dialect, connectConfig);
         const result = await adapter.testConnection(connectConfig);
-        // Clear password after use
         connectConfig.password = undefined;
         return result;
     }
 
     getAdapter(id: string): IDatabaseAdapter | undefined {
-        return this.adapters.get(id);
+        return this.runtimeStates.get(id)?.adapter;
     }
 
     getState(id: string): ConnectionState {
-        return this.connectionStates.get(id) || 'disconnected';
+        return this.runtimeStates.get(id)?.state || 'disconnected';
     }
 
     getAllConnections(): ConnectionConfig[] {
@@ -274,41 +287,41 @@ export class ConnectionManager {
     }
 
     getPoolStatus(id: string): IPoolStatus | undefined {
-        const adapter = this.adapters.get(id);
+        const adapter = this.runtimeStates.get(id)?.adapter;
         if (!adapter) return undefined;
         return adapter.getPoolStatus();
     }
 
     private updateConnectionState(id: string, newState: ConnectionState): void {
-        const oldState = this.connectionStates.get(id) || 'disconnected';
+        const runtime = this.getOrCreateRuntime(id);
+        const oldState = runtime.state;
         if (oldState === newState) {
             return;
         }
 
-        this.connectionStates.set(id, newState);
+        runtime.state = newState;
         this._onDidChangeConnectionState.fire({ connectionId: id, oldState, newState });
     }
 
     private scheduleRetry(id: string): void {
         const maxAttempts = 3;
         const maxDelay = 30000;
-        const attempts = (this.retryAttempts.get(id) || 0) + 1;
+        const runtime = this.getOrCreateRuntime(id);
+        const attempts = runtime.retryAttempts + 1;
         if (attempts > maxAttempts) {
             return;
         }
 
-        this.retryAttempts.set(id, attempts);
+        runtime.retryAttempts = attempts;
         const delay = Math.min(Math.pow(2, attempts) * 1000, maxDelay);
 
-        const existingTimer = this.retryTimers.get(id);
-        if (existingTimer) {
-            clearTimeout(existingTimer);
+        if (runtime.retryTimer) {
+            clearTimeout(runtime.retryTimer);
         }
 
-        const timer = setTimeout(async () => {
-            this.retryTimers.delete(id);
-            const state = this.connectionStates.get(id);
-            if (state === 'error') {
+        runtime.retryTimer = setTimeout(async () => {
+            runtime.retryTimer = undefined;
+            if (runtime.state === 'error') {
                 try {
                     await this.connect(id);
                 } catch (e) {
@@ -316,28 +329,27 @@ export class ConnectionManager {
                 }
             }
         }, delay);
-
-        this.retryTimers.set(id, timer);
     }
 
     cancelRetry(id: string): void {
-        const timer = this.retryTimers.get(id);
-        if (timer) {
-            clearTimeout(timer);
-            this.retryTimers.delete(id);
+        const runtime = this.runtimeStates.get(id);
+        if (!runtime) return;
+        if (runtime.retryTimer) {
+            clearTimeout(runtime.retryTimer);
+            runtime.retryTimer = undefined;
         }
-        this.retryAttempts.delete(id);
+        runtime.retryAttempts = 0;
     }
 
     private async closeSshTunnel(id: string): Promise<void> {
-        const tunnel = this.sshTunnels.get(id);
-        if (tunnel) {
+        const runtime = this.runtimeStates.get(id);
+        if (runtime?.sshTunnel) {
             try {
-                await tunnel.close();
+                await runtime.sshTunnel.close();
             } catch (e) {
                 handleError(e, 'ConnectionManager.closeSshTunnel', ErrorCategory.FEATURE);
             }
-            this.sshTunnels.delete(id);
+            runtime.sshTunnel = undefined;
         }
     }
 
@@ -348,7 +360,10 @@ export class ConnectionManager {
         } catch {
             // ignore disconnect error on unhealthy connection
         }
-        this.adapters.delete(id);
+        const runtime = this.runtimeStates.get(id);
+        if (runtime) {
+            runtime.adapter = undefined;
+        }
         await this.closeSshTunnel(id);
         this.updateConnectionState(id, 'error');
         this.scheduleRetry(id);
@@ -358,12 +373,17 @@ export class ConnectionManager {
         this.stopHealthCheck(id);
         const interval = config.poolConfig?.keepAliveInterval ?? 30000;
         const timer = setInterval(async () => {
-            if (this.isHealthChecking.get(id)) {
+            const runtime = this.runtimeStates.get(id);
+            if (!runtime) {
+                this.stopHealthCheck(id);
                 return;
             }
-            this.isHealthChecking.set(id, true);
+            if (runtime.isHealthChecking) {
+                return;
+            }
+            runtime.isHealthChecking = true;
             try {
-                const adapter = this.adapters.get(id);
+                const adapter = runtime.adapter;
                 if (!adapter) {
                     this.stopHealthCheck(id);
                     return;
@@ -371,72 +391,67 @@ export class ConnectionManager {
                 try {
                     const healthy = await adapter.checkConnectionHealth();
                     if (healthy) {
-                        this.consecutiveHealthFailures.set(id, 0);
+                        runtime.consecutiveHealthFailures = 0;
                     } else {
-                        const failures = (this.consecutiveHealthFailures.get(id) ?? 0) + 1;
-                        this.consecutiveHealthFailures.set(id, failures);
-                        if (failures >= 2) {
+                        runtime.consecutiveHealthFailures += 1;
+                        if (runtime.consecutiveHealthFailures >= 2) {
                             await this.handleUnhealthyConnection(id, adapter);
                         }
                     }
                 } catch {
-                    const failures = (this.consecutiveHealthFailures.get(id) ?? 0) + 1;
-                    this.consecutiveHealthFailures.set(id, failures);
+                    runtime.consecutiveHealthFailures += 1;
                     console.warn(`Health check failed for connection ${id}:`);
-                    if (failures >= 2) {
+                    if (runtime.consecutiveHealthFailures >= 2) {
                         await this.handleUnhealthyConnection(id, adapter);
                     }
                 }
             } finally {
-                this.isHealthChecking.set(id, false);
+                runtime.isHealthChecking = false;
             }
         }, interval);
-        this.healthCheckTimers.set(id, timer);
+        const runtime = this.getOrCreateRuntime(id);
+        runtime.healthCheckTimer = timer;
     }
 
     private stopHealthCheck(id: string): void {
-        const timer = this.healthCheckTimers.get(id);
-        if (timer) {
-            clearInterval(timer);
-            this.healthCheckTimers.delete(id);
+        const runtime = this.runtimeStates.get(id);
+        if (runtime) {
+            if (runtime.healthCheckTimer) {
+                clearInterval(runtime.healthCheckTimer);
+                runtime.healthCheckTimer = undefined;
+            }
+            runtime.consecutiveHealthFailures = 0;
+            runtime.isHealthChecking = false;
         }
-        this.consecutiveHealthFailures.delete(id);
-        this.isHealthChecking.delete(id);
     }
 
     async dispose(): Promise<void> {
-        for (const timer of this.retryTimers.values()) {
-            clearTimeout(timer);
+        for (const runtime of this.runtimeStates.values()) {
+            if (runtime.retryTimer) {
+                clearTimeout(runtime.retryTimer);
+            }
+            if (runtime.healthCheckTimer) {
+                clearInterval(runtime.healthCheckTimer);
+            }
         }
-        this.retryTimers.clear();
-
-        for (const timer of this.healthCheckTimers.values()) {
-            clearInterval(timer);
-        }
-        this.healthCheckTimers.clear();
 
         await Promise.allSettled(
-            Array.from(this.adapters.values()).map(adapter =>
-                adapter.disconnect().catch((_e) => undefined)
-            )
+            Array.from(this.runtimeStates.values())
+                .filter(r => r.adapter)
+                .map(r => r.adapter!.disconnect().catch((_e) => undefined))
         );
-        this.adapters.clear();
 
         await Promise.allSettled(
-            Array.from(this.sshTunnels.values()).map(tunnel =>
-                tunnel.close().catch((_e) => undefined)
-            )
+            Array.from(this.runtimeStates.values())
+                .filter(r => r.sshTunnel)
+                .map(r => r.sshTunnel!.close().catch((_e) => undefined))
         );
-        this.sshTunnels.clear();
 
         this._onDidChangeConnections.dispose();
         this._onDidChangeConnectionState.dispose();
         this._onDidChangeActiveConnection.dispose();
 
-        this.connectionStates.clear();
-        this.retryAttempts.clear();
-        this.consecutiveHealthFailures.clear();
-        this.isHealthChecking.clear();
+        this.runtimeStates.clear();
     }
 }
 

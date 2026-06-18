@@ -470,10 +470,12 @@ export class MysqlAdapter implements IDatabaseAdapter {
     }
 
     async describeTable(database: string, table: string, _schema?: string): Promise<TableStructure> {
-        const columns = await this.describeTableColumns(database, table);
-        const indexes = await this.describeTableIndexes(database, table);
-        const foreignKeys = await this.describeTableForeignKeys(database, table);
-        const triggers = await this.listTriggers(database);
+        const [columns, indexes, foreignKeys, triggers] = await Promise.all([
+            this.describeTableColumns(database, table),
+            this.describeTableIndexes(database, table),
+            this.describeTableForeignKeys(database, table),
+            this.listTriggers(database),
+        ]);
 
         return {
             columns,
@@ -986,29 +988,7 @@ export class MysqlAdapter implements IDatabaseAdapter {
             };
         }
 
-        const pool = this.pool as unknown as { _allConnections?: unknown[]; _freeConnections?: unknown[]; _connectionQueue?: unknown[]; connectionLimit?: number };
-        let totalConnections: number | 'unknown' = 'unknown';
-        let idleConnections: number | 'unknown' = 'unknown';
-        let waitingRequests: number | 'unknown' = 'unknown';
-
-        try {
-            totalConnections = pool._allConnections?.length ?? 0;
-        } catch (e) {
-            console.warn('[SQL All in One] Failed to access pool._allConnections, mysql2 internal API may have changed:', e);
-            totalConnections = 'unknown';
-        }
-        try {
-            idleConnections = pool._freeConnections?.length ?? 0;
-        } catch (e) {
-            console.warn('[SQL All in One] Failed to access pool._freeConnections, mysql2 internal API may have changed:', e);
-            idleConnections = 'unknown';
-        }
-        try {
-            waitingRequests = pool._connectionQueue?.length ?? 0;
-        } catch (e) {
-            console.warn('[SQL All in One] Failed to access pool._connectionQueue, mysql2 internal API may have changed:', e);
-            waitingRequests = 'unknown';
-        }
+        const { totalConnections, idleConnections, waitingRequests } = this.readPoolInternals();
 
         const activeConnections: number | 'unknown' =
             totalConnections === 'unknown' || idleConnections === 'unknown'
@@ -1023,5 +1003,30 @@ export class MysqlAdapter implements IDatabaseAdapter {
             connectionLimit: this.config?.poolConfig?.maxConnections ?? 5,
             acquireTimeout: this.config?.poolConfig?.acquireTimeout ?? 60000,
         };
+    }
+
+    private readPoolInternals(): { totalConnections: number | 'unknown'; idleConnections: number | 'unknown'; waitingRequests: number | 'unknown' } {
+        const pool = this.pool as unknown as { _allConnections?: unknown[]; _freeConnections?: unknown[]; _connectionQueue?: unknown[] };
+        let totalConnections: number | 'unknown' = 'unknown';
+        let idleConnections: number | 'unknown' = 'unknown';
+        let waitingRequests: number | 'unknown' = 'unknown';
+
+        try {
+            totalConnections = pool._allConnections?.length ?? 0;
+        } catch (e) {
+            console.warn('[SQL All in One] Failed to access pool._allConnections, mysql2 internal API may have changed:', e);
+        }
+        try {
+            idleConnections = pool._freeConnections?.length ?? 0;
+        } catch (e) {
+            console.warn('[SQL All in One] Failed to access pool._freeConnections, mysql2 internal API may have changed:', e);
+        }
+        try {
+            waitingRequests = pool._connectionQueue?.length ?? 0;
+        } catch (e) {
+            console.warn('[SQL All in One] Failed to access pool._connectionQueue, mysql2 internal API may have changed:', e);
+        }
+
+        return { totalConnections, idleConnections, waitingRequests };
     }
 }
