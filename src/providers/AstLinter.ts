@@ -13,6 +13,8 @@ export class AstLinter {
 
     lint(sql: string, dialect: SqlDialect, document?: vscode.TextDocument, preParsedAst?: unknown[]): vscode.Diagnostic[] {
         const diagnostics: vscode.Diagnostic[] = []
+        const globalContext: RuleContext = { sql, dialect, document, node: {} as AstNode }
+        diagnostics.push(...this.registry.runGlobalRules(globalContext))
         const astList = resolveAstList(sql, dialect, preParsedAst)
 
         for (const ast of astList) {
@@ -22,9 +24,6 @@ export class AstLinter {
             const node = ast as AstNode
             this.processStatement(node, sql, dialect, diagnostics, document)
         }
-
-        const globalContext: RuleContext = { sql, dialect, document, node: {} as AstNode }
-        diagnostics.push(...this.registry.runGlobalRules(globalContext))
 
         return diagnostics
     }

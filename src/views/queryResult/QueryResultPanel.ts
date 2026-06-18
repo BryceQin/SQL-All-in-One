@@ -118,10 +118,10 @@ export class QueryResultPanel extends BaseWebviewPanel {
     private async _initialize(): Promise<void> {
         // Register theme change listener
         this._disposables.push(
-            vscode.window.onDidChangeActiveColorTheme((theme) => {
+            vscode.window.onDidChangeActiveColorTheme(async (theme) => {
                 this.postMessage({
                     type: 'themeChange',
-                    data: { kind: theme.kind, tokenColors: getTokenColors() },
+                    data: { kind: theme.kind, tokenColors: await getTokenColors() },
                 });
             })
         );
@@ -157,7 +157,7 @@ export class QueryResultPanel extends BaseWebviewPanel {
             dialect: this._currentDialect,
             monacoBasePath: monacoBaseUri.toString(),
             themeKind: vscode.window.activeColorTheme.kind,
-            tokenColors: getTokenColors(),
+            tokenColors: await getTokenColors(),
             lang: getLanguage(),
         };
         const configJson = JSON.stringify(configData).replace(/<\/script>/gi, '<\\/script>');

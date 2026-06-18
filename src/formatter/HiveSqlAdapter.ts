@@ -110,12 +110,24 @@ function extractWholeStatements(sql: string, slots: ReplacementSlot[], counter: 
             }
         }
 
-        for (let i = matches.length - 1; i >= 0; i--) {
-            const match = matches[i]
+        if (matches.length === 0) continue
+
+        const replacements: { index: number; end: number; replacement: string }[] = []
+        for (const match of matches) {
             const id = nextId('stmt', counter)
             slots.push({ id, original: match.text })
-            result = result.substring(0, match.index) + `SELECT * FROM ${id}` + result.substring(match.end)
+            replacements.push({ index: match.index, end: match.end, replacement: `SELECT * FROM ${id}` })
         }
+
+        const parts: string[] = []
+        let lastEnd = 0
+        for (const rep of replacements) {
+            parts.push(result.substring(lastEnd, rep.index))
+            parts.push(rep.replacement)
+            lastEnd = rep.end
+        }
+        parts.push(result.substring(lastEnd))
+        result = parts.join('')
     }
 
     return result

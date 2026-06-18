@@ -8,7 +8,7 @@ export default class InlineLayout extends Layout {
     // Keeps track of the trailing whitespace,
     // so that we can decrease length when encountering WS.NO_SPACE,
     // but only when there actually is a space to remove.
-    private trailingSpace = false
+    private pendingTrailingSpace = false
     private expressionWidth: number
 
     constructor(expressionWidth: number) {
@@ -33,7 +33,7 @@ export default class InlineLayout extends Layout {
         // 普通字符串：直接累加长度，重置尾随空格标记
         if (typeof item === "string") {
             this.length += item.length
-            this.trailingSpace = false
+            this.pendingTrailingSpace = false
         } else if (item === WS.MANDATORY_NEWLINE || item === WS.NEWLINE) {
             // 换行符：禁止单行布局，直接抛错
             throw new InlineLayoutError()
@@ -43,14 +43,14 @@ export default class InlineLayout extends Layout {
             item === WS.SPACE
         ) {
             // 缩进/空格：仅当无尾随空格时，长度+1，标记尾随空格
-            if (!this.trailingSpace) {
+            if (!this.pendingTrailingSpace) {
                 this.length++
-                this.trailingSpace = true
+                this.pendingTrailingSpace = true
             }
         } else if (item === WS.NO_NEWLINE || item === WS.NO_SPACE) {
             // 移除空格：仅当有尾随空格时，长度-1，重置尾随空格标记
-            if (this.trailingSpace) {
-                this.trailingSpace = false
+            if (this.pendingTrailingSpace) {
+                this.pendingTrailingSpace = false
                 this.length--
             }
         }

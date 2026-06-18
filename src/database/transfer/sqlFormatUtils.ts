@@ -1,3 +1,5 @@
+const SINGLE_QUOTE_REGEX = /'/g;
+
 export function formatSqlValue(value: unknown): string {
     if (value === null || value === undefined) {
         return 'NULL';
@@ -11,5 +13,5 @@ export function formatSqlValue(value: unknown): string {
     if (value instanceof Date) {
         return `'${value.toISOString()}'`;
     }
-    return `'${String(value).replace(/'/g, "''")}'`;
+    return `'${String(value).replace(SINGLE_QUOTE_REGEX, "''")}'`;
 }

@@ -1,6 +1,10 @@
 import { HIVE_TO_MYSQL_TYPES } from './typeMappings'
 import { HIVE_TO_MYSQL_FUNCTIONS, convertCoalesceToIfnull } from './functionMappings'
 
+const HIVE_TYPE_REGEXES: [RegExp, string][] = Object.entries(HIVE_TO_MYSQL_TYPES).map(
+  ([hiveType, mysqlType]) => [new RegExp(`\\b${hiveType}\\b`, 'gi'), mysqlType]
+)
+
 export class HiveToMysqlConverter {
   convert(sql: string): string {
     let converted = sql
@@ -24,8 +28,7 @@ export class HiveToMysqlConverter {
   private convertDataTypes(sql: string): string {
     let result = sql
 
-    for (const [hiveType, mysqlType] of Object.entries(HIVE_TO_MYSQL_TYPES)) {
-      const regex = new RegExp(`\\b${hiveType}\\b`, 'gi')
+    for (const [regex, mysqlType] of HIVE_TYPE_REGEXES) {
       result = result.replace(regex, mysqlType)
     }
 

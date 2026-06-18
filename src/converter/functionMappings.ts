@@ -3,8 +3,18 @@ export interface FunctionMapping {
   replacement: string
 }
 
+const funcCallRegexCache = new Map<string, RegExp>();
+function getFuncCallRegex(funcName: string): RegExp {
+    let regex = funcCallRegexCache.get(funcName);
+    if (!regex) {
+        regex = new RegExp(`\\b${funcName}\\s*\\(`, 'gi');
+        funcCallRegexCache.set(funcName, regex);
+    }
+    return regex;
+}
+
 export function matchFunctionCall(sql: string, funcName: string): { index: number; end: number; args: string[] } | null {
-  const regex = new RegExp(`\\b${funcName}\\s*\\(`, 'gi')
+  const regex = getFuncCallRegex(funcName)
   const match = regex.exec(sql)
   if (!match) return null
 

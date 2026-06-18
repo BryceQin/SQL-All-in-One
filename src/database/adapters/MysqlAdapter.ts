@@ -1,6 +1,7 @@
 import type { IDatabaseAdapter, IPoolStatus, ConnectionConfig, QueryResult, QueryRow, QueryParam, SqlStatement, ColumnMeta, DatabaseInfo, TableInfo, ViewInfo, FunctionInfo, ProcedureInfo, TriggerInfo, RoutineParameterInfo, TableStructure, ColumnInfo, IndexInfo, ForeignKeyInfo, DialectCapabilities, DataTypeCategory, ExplainResult, ExplainNode, TestConnectionResult } from './IDatabaseAdapter';
 import type { Pool, PoolOptions, PoolConnection, RowDataPacket, FieldPacket, ResultSetHeader } from 'mysql2/promise';
 import { t } from '../../i18n/index';
+import { generateShortId } from '../../utils/idGenerator';
 
 export class MysqlAdapter implements IDatabaseAdapter {
     private connectionId: string;
@@ -13,7 +14,7 @@ export class MysqlAdapter implements IDatabaseAdapter {
 
     constructor(config: ConnectionConfig) {
         this.config = config;
-        this.connectionId = `mysql-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+        this.connectionId = generateShortId('conn');
     }
 
     getConnectionId(): string {
@@ -168,7 +169,7 @@ export class MysqlAdapter implements IDatabaseAdapter {
 
     async execute(sql: string, params?: QueryParam[]): Promise<QueryResult> {
         const startTime = Date.now();
-        const queryId = `q-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+        const queryId = generateShortId('query');
 
         if (!this.pool) {
             const executionTime = Date.now() - startTime;

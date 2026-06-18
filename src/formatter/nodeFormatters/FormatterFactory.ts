@@ -4,11 +4,15 @@ import { SelectFormatter } from './SelectFormatter';
 import { DDLFormatter } from './DDLFormatter';
 import { InsertFormatter } from './InsertFormatter';
 
+function buildCacheKey(type: string, cfg: FormatOptions, indent: Indentation): string {
+    return `${type}_${indent.getSingleIndent()}_${cfg.keywordCase}_${cfg.functionCase}_${cfg.indentStyle}`;
+}
+
 export class FormatterFactory {
     private instances = new Map<string, SelectFormatter | DDLFormatter | InsertFormatter>();
 
     getSelectFormatter(cfg: FormatOptions, indent: Indentation): SelectFormatter {
-        const key = `select_${indent.getSingleIndent()}`;
+        const key = buildCacheKey('select', cfg, indent);
         let instance = this.instances.get(key) as SelectFormatter | undefined;
         if (!instance) {
             instance = new SelectFormatter(cfg, indent, this);
@@ -20,7 +24,7 @@ export class FormatterFactory {
     }
 
     getDDLFormatter(cfg: FormatOptions, indent: Indentation): DDLFormatter {
-        const key = `ddl_${indent.getSingleIndent()}`;
+        const key = buildCacheKey('ddl', cfg, indent);
         let instance = this.instances.get(key) as DDLFormatter | undefined;
         if (!instance) {
             instance = new DDLFormatter(cfg, indent, this);
@@ -32,7 +36,7 @@ export class FormatterFactory {
     }
 
     getInsertFormatter(cfg: FormatOptions, indent: Indentation): InsertFormatter {
-        const key = `insert_${indent.getSingleIndent()}`;
+        const key = buildCacheKey('insert', cfg, indent);
         let instance = this.instances.get(key) as InsertFormatter | undefined;
         if (!instance) {
             instance = new InsertFormatter(cfg, indent, this);

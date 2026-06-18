@@ -37,6 +37,7 @@ import { SqlStatementDetector } from './database/query/SqlStatementDetector';
 import { clearParameterScanCache } from './hover/ParameterHoverResolver';
 import { clearFormatterCache } from './formatter/sqlFormatter';
 import { invalidateRuleDefinitions } from './linter/lintRules';
+import { invalidateTokenColorCache } from './utils/themeColors';
 
 function createLazyProvider<T>(container: ReturnType<typeof getContainer>, token: string, context: vscode.ExtensionContext): () => T {
     let instance: T | undefined;
@@ -279,6 +280,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
         context.subscriptions.push(getConfigManager());
         context.subscriptions.push(getDocumentAstCache());
+        context.subscriptions.push(
+            vscode.workspace.onDidChangeConfiguration(e => {
+                if (e.affectsConfiguration('workbench.colorTheme')) {
+                    invalidateTokenColorCache();
+                }
+            })
+        );
     } catch (e) {
         console.error('[SQL All in One] activate() ERROR:', e);
         getErrorHandler().handle(e, 'Extension activation', ErrorLevel.FATAL, ErrorCategory.CRITICAL);

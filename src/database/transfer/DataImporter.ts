@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as readline from 'readline';
 import { IDatabaseAdapter, QueryParam } from '../adapters/IDatabaseAdapter';
 import { t } from '../../i18n/index';
+import { SqlTextScanner } from '../../utils/sqlTextScanner';
 
 // ---------------------------------------------------------------------------
 // Interfaces
@@ -545,8 +546,9 @@ export async function importFromSql(
             currentStatement = line;
         }
 
-        while (currentStatement.includes(';')) {
-            const semiIdx = currentStatement.indexOf(';');
+        while (true) {
+            const semiIdx = SqlTextScanner.findStatementEnd(currentStatement, 0);
+            if (semiIdx >= currentStatement.length) break;
             const segment = currentStatement.substring(0, semiIdx).trim();
             currentStatement = currentStatement.substring(semiIdx + 1);
             if (segment.length === 0) {

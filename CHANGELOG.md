@@ -1,5 +1,36 @@
 # Changelog
 
+## [2.15.31] - 2026-06-18
+
+### Performance
+
+- themeColors 主题颜色获取添加缓存，避免每次调用都遍历扩展和读取文件；改用异步 fs/promises.readFile 替代同步 fs.readFileSync，避免阻塞扩展主线程；添加主题变更监听自动失效缓存
+- AstLinter 全局规则（applicableTypes 为空的规则）改为只在顶层执行一次，避免在 walkForSubStatements 中对每个子节点重复执行全文正则扫描
+- HiveSqlAdapter.extractWholeStatements 中 O(n²) 字符串拼接改为数组收集 + join 一次性构建
+- sqlTextScanner.removeCommentsAndStrings 中 O(n²) 逐字符拼接改为数组收集 + join
+- 7 处正则表达式在函数内重复创建改为模块级常量或缓存（sqlFormatUtils、hiveConverter、mysqlConverter、functionMappings、sqlParser、CommentPreserver、FormatterFactory）
+- SchemaProvider MRU 缓存从 LRUCache<number>（存储无用时间戳）改为 Set<string> + 顺序数组
+- DataExporter.exportToInsert 和 exportToJson 改为流式写入，避免大数据集全量内存构建
+
+### Bug Fix
+
+- SQL 导入（DataImporter）分号分割不处理字符串/注释内分号的问题，改用 SqlTextScanner.findStatementEnd 安全分割，修复潜在的 SQL 注入风险
+- RuleRegistry 缓存策略使用布尔值 cacheValid 在注册新规则后查询新类型时可能返回过期缓存，改为版本号机制
+- ConfigManager.get/getSection/getSectionKeys 使用 `cached !== undefined` 判断缓存命中，当配置值为 undefined 时永远不命中，改用 `cache.has()` 检查
+- sqlTextScanner 双引号转义处理不一致：单引号支持 '' 转义但双引号不支持 "" 转义，现已统一处理
+
+### Refactor
+
+- 提取 QueryResultPanel 回调工厂函数 setupQueryResultPanelCallbacks，消除 QueryCommands.ts 和 SchemaCommands.ts 间约 300 行重复代码
+- 提取 viewDDL 命令工厂函数 createViewDDLCommand，消除 5 个 viewXxxDDL 命令的重复模式
+- 提取引号状态追踪共享函数 updateQuoteState，统一 sqlTextScanner 三个方法中的重复逻辑
+- 统一 ID 生成：新建 idGenerator.ts 共享模块，MysqlAdapter/QueryExecutor/QueryHistory 统一使用 generateShortId
+- DI 容器添加 TokenMap 类型映射和 get 方法重载，增强编译时类型安全
+- FormatterFactory 缓存键加入 keywordCase/functionCase/indentStyle，避免不同配置共享 formatter 实例
+- InlineLayout.trailingSpace 重命名为 pendingTrailingSpace，更清晰表达语义
+
+---
+
 ## [2.15.30] - 2026-06-17
 
 ### Bug Fix
