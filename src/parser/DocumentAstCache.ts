@@ -14,6 +14,7 @@ export interface SymbolIndex {
     cteDefinitions: Map<string, vscode.Location>;
     tableAliasDefinitions: Map<string, vscode.Location>;
     columnAliasDefinitions: Map<string, vscode.Location>;
+    aliasMap: Map<string, string>;
 }
 
 interface CacheEntry {
@@ -28,6 +29,7 @@ function buildIndex(ast: unknown[] | unknown, document: vscode.TextDocument): Sy
         cteDefinitions: new Map(),
         tableAliasDefinitions: new Map(),
         columnAliasDefinitions: new Map(),
+        aliasMap: new Map(),
     };
 
     const astList = Array.isArray(ast) ? ast : [ast];
@@ -85,9 +87,14 @@ function processSelectForIndex(node: AstNode, document: vscode.TextDocument, ind
             if (item == null || typeof item !== 'object') continue;
             const fromEntry = item as Record<string, unknown>;
 
-            if (fromEntry.as) {
-                const aliasName = extractName(fromEntry.as);
+            const aliasSource = fromEntry.as || fromEntry.alias;
+            if (aliasSource) {
+                const aliasName = extractName(aliasSource);
                 if (aliasName) {
+                    const tableName = extractName(fromEntry.table);
+                    if (tableName) {
+                        index.aliasMap.set(aliasName.toLowerCase(), tableName);
+                    }
                     const loc = fromEntry.loc as { start?: AstLocation; end?: AstLocation } | undefined;
                     const location = loc
                         ? toVscodeLocationFromLoc(loc, document)
@@ -204,6 +211,11 @@ export class DocumentAstCache {
         }
 
         return symbolIndex;
+    }
+
+    getOrBuildAliasMap(document: vscode.TextDocument, dialect: SqlDialect): Map<string, string> {
+        const index = this.getOrBuildSymbolIndex(document, dialect);
+        return index ? index.aliasMap : new Map<string, string>();
     }
 
     invalidate(uri: vscode.Uri): void {

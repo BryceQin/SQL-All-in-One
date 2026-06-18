@@ -35,24 +35,19 @@ export interface CompletionContext {
 export class SchemaProvider {
     private static readonly MRU_MAX_SIZE = 50;
     private schemaCache = getSchemaCache();
-    private mruKeys = new Set<string>();
-    private mruOrder: string[] = [];
+    private mruMap = new Map<string, true>();
 
     private addToMru(key: string): void {
-        if (this.mruKeys.has(key)) {
-            const idx = this.mruOrder.indexOf(key);
-            if (idx >= 0) this.mruOrder.splice(idx, 1);
-        }
-        this.mruOrder.unshift(key);
-        this.mruKeys.add(key);
-        while (this.mruOrder.length > SchemaProvider.MRU_MAX_SIZE) {
-            const removed = this.mruOrder.pop()!;
-            this.mruKeys.delete(removed);
+        this.mruMap.delete(key);
+        this.mruMap.set(key, true);
+        if (this.mruMap.size > SchemaProvider.MRU_MAX_SIZE) {
+            const oldest = this.mruMap.keys().next().value as string;
+            this.mruMap.delete(oldest);
         }
     }
 
     private isInMru(key: string): boolean {
-        return this.mruKeys.has(key);
+        return this.mruMap.has(key);
     }
 
     async getCompletionItems(context: CompletionContext): Promise<vscode.CompletionItem[]> {
@@ -416,8 +411,7 @@ export class SchemaProvider {
     }
 
     dispose(): void {
-        this.mruKeys.clear();
-        this.mruOrder = [];
+        this.mruMap.clear();
     }
 }
 

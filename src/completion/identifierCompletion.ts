@@ -17,6 +17,8 @@ interface IdentifierCache {
     uri: string;
     tableNames: string[];
     columnNames: string[];
+    tableItems: vscode.CompletionItem[] | null;
+    columnItems: vscode.CompletionItem[] | null;
 }
 
 let _identifierCache: IdentifierCache | null = null;
@@ -39,21 +41,42 @@ export function getIdentifierItems(
     }
 
     const ctx = getClauseContext(text, offset, tokenizer)
+    const uri = document.uri.toString()
+    const version = document.version
 
-    if (_identifierCache && _identifierCache.uri === document.uri.toString() && _identifierCache.version === document.version) {
-        return getCompletionForContextFromCache(ctx, _identifierCache)
+    if (_identifierCache && _identifierCache.uri === uri && _identifierCache.version === version) {
+        if (ctx === 'from') return _identifierCache.tableItems ?? []
+        if (ctx === 'select' || ctx === 'where') return _identifierCache.columnItems ?? []
+        return []
     }
 
     const tableNames = extractTableNames(text)
     const columnNames = findColumns(text)
+    const tableItems = tableNames.map((tbl) => {
+        const item = new vscode.CompletionItem(tbl, vscode.CompletionItemKind.Class)
+        item.detail = t('completion.tableName')
+        item.sortText = `4_${tbl}`
+        return item
+    })
+    const columnItems = columnNames.map((col) => {
+        const item = new vscode.CompletionItem(col, vscode.CompletionItemKind.Field)
+        item.detail = t('completion.columnName')
+        item.sortText = `4_${col}`
+        return item
+    })
+
     _identifierCache = {
-        version: document.version,
-        uri: document.uri.toString(),
+        version,
+        uri,
         tableNames,
         columnNames,
+        tableItems,
+        columnItems,
     }
 
-    return getCompletionForContextFromCache(ctx, _identifierCache)
+    if (ctx === 'from') return tableItems
+    if (ctx === 'select' || ctx === 'where') return columnItems
+    return []
 }
 
 function getClauseContext(text: string, offset: number, _tokenizer: Tokenizer): ClauseContext {
@@ -84,7 +107,7 @@ function getColumnCompletionForAlias(alias: string, text: string): vscode.Comple
     const joinMatch = text.match(new RegExp(`\\bJOIN\\s+(\\w+)\\s+(?:AS\\s+)?${escapedAlias}\\b`, 'i'))
     if (!fromMatch && !joinMatch) return []
 
-    const columns = findColumns(text)
+    const columns = _identifierCache?.columnNames ?? findColumns(text)
     return columns.map((col) => {
         const item = new vscode.CompletionItem(col, vscode.CompletionItemKind.Field)
         item.detail = `${alias}.${col}`
@@ -109,24 +132,8 @@ function findColumns(text: string): string[] {
     return [...cols]
 }
 
-function getCompletionForContextFromCache(ctx: ClauseContext, cache: IdentifierCache): vscode.CompletionItem[] {
-    if (ctx === 'from') {
-        return cache.tableNames.map((tbl) => {
-            const item = new vscode.CompletionItem(tbl, vscode.CompletionItemKind.Class)
-            item.detail = t('completion.tableName')
-            item.sortText = `4_${tbl}`
-            return item
-        })
-    }
-    if (ctx === 'select' || ctx === 'where') {
-        return cache.columnNames.map((col) => {
-            const item = new vscode.CompletionItem(col, vscode.CompletionItemKind.Field)
-            item.detail = t('completion.columnName')
-            item.sortText = `4_${col}`
-            return item
-        })
-    }
-    return []
+export function clearIdentifierCache(): void {
+    _identifierCache = null
 }
 
 function extractTableNames(text: string): string[] {

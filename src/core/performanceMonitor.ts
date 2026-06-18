@@ -41,7 +41,8 @@ export class PerformanceMonitor {
     }
 
     private recordMeasurement(name: string, duration: number): void {
-        const existing = this.aggregateStats.get(name);
+        if (!this.enabled) return;
+        const existing = this.aggregateStats.peek(name);
         if (existing) {
             existing.count += 1;
             existing.totalDuration += duration;
@@ -68,7 +69,7 @@ export class PerformanceMonitor {
     minDuration: number;
   } {
     if (name) {
-      const stats = this.aggregateStats.get(name);
+      const stats = this.aggregateStats.peek(name);
       if (!stats) {
         return { count: 0, avgDuration: 0, maxDuration: 0, minDuration: 0 };
       }

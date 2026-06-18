@@ -9,7 +9,6 @@ import { isAstNode } from '../parser/AstVisitor'
 import type { AstNode } from '../parser/astTypes'
 import { extractTableNamesFromAst } from '../completion/AstCompletionProvider'
 import { getDocumentAstCache } from '../parser/DocumentAstCache'
-import type { AST } from 'node-sql-parser'
 
 export class SchemaHoverResolver implements HoverResolver {
     private schemaProvider: SchemaProvider
@@ -94,7 +93,8 @@ export class SchemaHoverResolver implements HoverResolver {
         document: vscode.TextDocument,
         position: vscode.Position,
     ): Promise<string[]> {
-        const aliasMap = this.schemaProvider.parseAliasMapFromAst(ast as AST[] | AST)
+        const dialectName = sqlDialects[document.languageId as keyof typeof sqlDialects] || 'mysql'
+        const aliasMap = getDocumentAstCache().getOrBuildAliasMap(document, dialectName as SqlDialect)
 
         const lineText = document.lineAt(position.line).text
         const textBeforeCursor = lineText.substring(0, position.character)

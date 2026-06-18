@@ -7,6 +7,7 @@ export class LRUCache<K, V> {
   private cache = new Map<K, LRUCacheEntry<V>>();
   private maxSize: number;
   private maxAge: number;
+  private lastKey: K | undefined;
 
   constructor(options: { maxSize?: number; maxAge?: number } = {}) {
     this.maxSize = options.maxSize ?? 100;
@@ -25,6 +26,7 @@ export class LRUCache<K, V> {
       value,
       timestamp: Date.now(),
     });
+    this.lastKey = key;
   }
 
   get(key: K): V | undefined {
@@ -36,31 +38,37 @@ export class LRUCache<K, V> {
 
     if (this.maxAge < Infinity && Date.now() - entry.timestamp > this.maxAge) {
       this.cache.delete(key);
+      if (this.lastKey === key) this.lastKey = undefined;
       return undefined;
     }
 
-    this.cache.delete(key);
-    this.cache.set(key, entry);
+    if (this.lastKey !== key) {
+      this.cache.delete(key);
+      this.cache.set(key, entry);
+      this.lastKey = key;
+    }
+
     return entry.value;
   }
 
   has(key: K): boolean {
-    const entry = this.cache.get(key);
-    if (!entry) return false;
+    if (!this.cache.has(key)) return false;
 
-    if (this.maxAge < Infinity && Date.now() - entry.timestamp > this.maxAge) {
+    if (this.maxAge < Infinity && Date.now() - this.cache.get(key)!.timestamp > this.maxAge) {
       this.cache.delete(key);
+      if (this.lastKey === key) this.lastKey = undefined;
       return false;
     }
 
     return true;
-}
+  }
 
   peek(key: K): V | undefined {
     const entry = this.cache.get(key);
     if (!entry) return undefined;
     if (this.maxAge < Infinity && Date.now() - entry.timestamp > this.maxAge) {
       this.cache.delete(key);
+      if (this.lastKey === key) this.lastKey = undefined;
       return undefined;
     }
     return entry.value;
@@ -68,17 +76,15 @@ export class LRUCache<K, V> {
 
   delete(key: K): void {
     this.cache.delete(key);
+    if (this.lastKey === key) this.lastKey = undefined;
   }
 
   deleteByPrefix(prefix: string): void {
-    const keysToDelete: K[] = [];
     for (const key of this.cache.keys()) {
       if (String(key).startsWith(prefix)) {
-        keysToDelete.push(key);
+        this.cache.delete(key);
+        if (this.lastKey === key) this.lastKey = undefined;
       }
-    }
-    for (const key of keysToDelete) {
-      this.cache.delete(key);
     }
   }
 
@@ -87,19 +93,13 @@ export class LRUCache<K, V> {
       return Array.from(this.cache.entries());
     }
     const now = Date.now();
-    const expiredKeys: K[] = [];
-    const validEntries: [K, LRUCacheEntry<V>][] = [];
     for (const [key, entry] of this.cache) {
       if (now - entry.timestamp > this.maxAge) {
-        expiredKeys.push(key);
-      } else {
-        validEntries.push([key, entry]);
+        this.cache.delete(key);
+        if (this.lastKey === key) this.lastKey = undefined;
       }
     }
-    for (const key of expiredKeys) {
-      this.cache.delete(key);
-    }
-    return validEntries;
+    return Array.from(this.cache.entries());
   }
 
   *entries(): IterableIterator<[K, V]> {
@@ -116,6 +116,7 @@ export class LRUCache<K, V> {
 
   clear(): void {
     this.cache.clear();
+    this.lastKey = undefined;
   }
 
   size(): number {

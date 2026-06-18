@@ -35,12 +35,12 @@ export class AstLinter {
     }
 
     private walkForSubStatements(root: AstNode, sql: string, dialect: SqlDialect, diagnostics: vscode.Diagnostic[], document?: vscode.TextDocument): void {
+        const reusableContext: RuleContext = { sql, dialect, document, node: root }
         walkAst(root, {
             enter: (child) => {
                 if (child !== root && isAstNode(child)) {
-                    const childNode = child as AstNode
-                    const childContext: RuleContext = { sql, dialect, document, node: childNode }
-                    diagnostics.push(...this.registry.runRules(childContext))
+                    reusableContext.node = child as AstNode
+                    diagnostics.push(...this.registry.runRules(reusableContext))
                 }
             },
         })

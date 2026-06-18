@@ -21,11 +21,13 @@ function makeSymbolIndex(overrides?: {
     ctes?: Map<string, vscode.Location>
     tableAliases?: Map<string, vscode.Location>
     columnAliases?: Map<string, vscode.Location>
+    aliasMap?: Map<string, string>
 }): SymbolIndex {
     return {
         cteDefinitions: overrides?.ctes ?? new Map<string, vscode.Location>(),
         tableAliasDefinitions: overrides?.tableAliases ?? new Map<string, vscode.Location>(),
         columnAliasDefinitions: overrides?.columnAliases ?? new Map<string, vscode.Location>(),
+        aliasMap: overrides?.aliasMap ?? new Map<string, string>(),
     }
 }
 
@@ -83,14 +85,16 @@ suite('Navigation Module - Pure Logic Tests', () => {
     // ============================================================
     suite('SymbolIndex', () => {
 
-        test('empty SymbolIndex has three empty Maps', () => {
+        test('empty SymbolIndex has four empty Maps', () => {
             const index = makeSymbolIndex()
             assert.ok(index.cteDefinitions instanceof Map)
             assert.ok(index.tableAliasDefinitions instanceof Map)
             assert.ok(index.columnAliasDefinitions instanceof Map)
+            assert.ok(index.aliasMap instanceof Map)
             assert.strictEqual(index.cteDefinitions.size, 0)
             assert.strictEqual(index.tableAliasDefinitions.size, 0)
             assert.strictEqual(index.columnAliasDefinitions.size, 0)
+            assert.strictEqual(index.aliasMap.size, 0)
         })
 
         test('SymbolIndex supports adding entries to cteDefinitions', () => {
