@@ -100,6 +100,7 @@
     "hive-formatter.config.enableSmartCommentToggle.markdownDescription": "Whether to enable SQL-aware smart comment toggling (falls back to VSCode default behavior when disabled).",
     "hive-formatter.config.headerAuthor.markdownDescription": "Author name in file header comment (leaves placeholder empty for input when blank).",
     "hive-formatter.config.headerModifier.markdownDescription": "Modifier name in file header comment (falls back to headerAuthor value when blank).",
+    "hive-formatter.config.performance.monitorLevel.markdownDescription": "Performance monitoring level. 'light' only records slow operations, 'full' records all operations, 'off' disables monitoring.",
     "hive-formatter.config.completion.commentSnippets.markdownDescription": "Whether to include comment template snippets in the completion list.",
     "hive-formatter.config.completion.schema.markdownDescription": "Whether to enable Schema-aware completion (table names, column names from connected database).",
     "hive-formatter.config.schemaCache.databaseTtl.markdownDescription": "Cache TTL (seconds) for database list.",

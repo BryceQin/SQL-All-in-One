@@ -33,6 +33,7 @@ import { SqlStatementDetector } from './database/query/SqlStatementDetector';
 import { clearParameterScanCache } from './hover/ParameterHoverResolver';
 import { clearFormatterCache } from './formatter/sqlFormatter';
 import { invalidateRuleDefinitions } from './linter/lintRules';
+import { BaseWebviewPanel } from './views/BaseWebviewPanel';
 import { invalidateTokenColorCache } from './utils/themeColors';
 import { AstDiagnosticsProvider } from './providers/AstDiagnosticsProvider';
 import { SqlLinter } from './providers/SqlLinter';
@@ -44,49 +45,54 @@ import { ProviderModule } from './modules/ProviderModule';
 function registerServicesToContainer(extensionPath: string): void {
   const container = getContainer();
 
+  // Core services (no DI dependencies)
   container.registerSingleton(Tokens.ConfigManager, createConfigManager);
   container.registerSingleton(Tokens.ParserEngine, createParserEngine);
-  container.registerSingleton(Tokens.RuleRegistry, createRuleRegistry);
   container.registerSingleton(Tokens.ErrorHandler, createErrorHandler);
-  container.registerSingleton(Tokens.PerformanceMonitor, createPerformanceMonitor);
-  container.registerSingleton(Tokens.DocumentAstCache, createDocumentAstCache);
-  container.registerSingleton(Tokens.ConnectionManager, createConnectionManager);
   container.registerSingleton(Tokens.ConnectionStore, createConnectionStore);
-  container.registerSingleton(Tokens.SchemaProvider, createSchemaProvider);
-  container.registerSingleton(Tokens.SchemaCache, createSchemaCache);
-
-  container.registerSingleton(Tokens.QueryExecutor, () => new QueryExecutor());
-  container.registerSingleton(Tokens.SafeQueryGuard, () => new SafeQueryGuard());
   container.registerSingleton(Tokens.QueryHistory, () => new QueryHistory());
-  container.registerSingleton(Tokens.SqlStatementDetector, () => new SqlStatementDetector());
+  container.registerSingleton(Tokens.AstDiagnosticsProvider, () => new AstDiagnosticsProvider());
+  container.registerSingleton(Tokens.ParameterHighlighter, () => new SqlParameterHighlighter());
+  container.registerSingleton(Tokens.CodeActionProvider, () => new SqlCodeActionProvider());
+
+  // Core services (with dependencies)
+  container.registerSingleton(Tokens.PerformanceMonitor, createPerformanceMonitor, [Tokens.ConfigManager]);
+  container.registerSingleton(Tokens.RuleRegistry, createRuleRegistry, [Tokens.ConfigManager]);
+  container.registerSingleton(Tokens.DocumentAstCache, createDocumentAstCache, [Tokens.PerformanceMonitor, Tokens.ParserEngine]);
+
+  // Database services
+  container.registerSingleton(Tokens.ConnectionManager, createConnectionManager, [Tokens.ConnectionStore, Tokens.DialectAdapterFactory]);
+  container.registerSingleton(Tokens.SchemaCache, createSchemaCache, [Tokens.ConfigManager, Tokens.ConnectionManager]);
+  container.registerSingleton(Tokens.SchemaProvider, createSchemaProvider, [Tokens.SchemaCache, Tokens.ConnectionManager, Tokens.ParserEngine]);
+  container.registerSingleton(Tokens.QueryExecutor, () => new QueryExecutor(), [Tokens.ConfigManager, Tokens.ConnectionManager]);
+  container.registerSingleton(Tokens.SafeQueryGuard, () => new SafeQueryGuard(), [Tokens.ConfigManager, Tokens.ConnectionManager, Tokens.ParserEngine]);
+  container.registerSingleton(Tokens.SqlStatementDetector, () => new SqlStatementDetector(), [Tokens.ParserEngine]);
 
   // Register AdapterFactory in the DI container
   AdapterFactory.register('mysql', MysqlAdapter);
   container.register(Tokens.DialectAdapterFactory, AdapterFactory);
 
-  container.registerSingleton(Tokens.SqlDiagnosticsProvider, () => new SqlDiagnosticsProvider());
-  container.registerSingleton(Tokens.AstDiagnosticsProvider, () => new AstDiagnosticsProvider());
-  container.registerSingleton(Tokens.SqlLinter, () => new SqlLinter());
-  container.registerSingleton(Tokens.StatusBarProvider, () => new StatusBarProvider());
-  container.registerSingleton(Tokens.ParameterHighlighter, () => new SqlParameterHighlighter());
-  container.registerSingleton(Tokens.CompletionProvider, () => new SqlCompletionProvider(extensionPath));
-  container.registerSingleton(Tokens.CodeActionProvider, () => new SqlCodeActionProvider());
-  container.registerSingleton(Tokens.FoldingRangeProvider, () => new SqlFoldingRangeProvider());
-  container.registerSingleton(Tokens.OutlineProvider, () => new SqlOutlineProvider());
-  container.registerSingleton(Tokens.HoverProvider, () => new SqlHoverProvider());
-  container.registerSingleton(Tokens.AstNavigator, () => new AstNavigator());
+  // Provider services
+  container.registerSingleton(Tokens.SqlLinter, () => new SqlLinter(), [Tokens.RuleRegistry]);
+  container.registerSingleton(Tokens.AstNavigator, () => new AstNavigator(), [Tokens.DocumentAstCache]);
+  container.registerSingleton(Tokens.SqlDiagnosticsProvider, () => new SqlDiagnosticsProvider(), [Tokens.AstDiagnosticsProvider, Tokens.SqlLinter, Tokens.ConfigManager, Tokens.DocumentAstCache, Tokens.PerformanceMonitor]);
+  container.registerSingleton(Tokens.StatusBarProvider, () => new StatusBarProvider(), [Tokens.ConfigManager, Tokens.ConnectionManager]);
+  container.registerSingleton(Tokens.CompletionProvider, () => new SqlCompletionProvider(extensionPath), [Tokens.ConfigManager, Tokens.PerformanceMonitor, Tokens.ConnectionManager, Tokens.DocumentAstCache]);
+  container.registerSingleton(Tokens.FoldingRangeProvider, () => new SqlFoldingRangeProvider(), [Tokens.DocumentAstCache]);
+  container.registerSingleton(Tokens.OutlineProvider, () => new SqlOutlineProvider(), [Tokens.DocumentAstCache, Tokens.ConfigManager]);
+  container.registerSingleton(Tokens.HoverProvider, () => new SqlHoverProvider(), [Tokens.ConfigManager, Tokens.ConnectionManager, Tokens.PerformanceMonitor]);
   container.registerSingleton(Tokens.DefinitionProvider, () => {
     const nav = container.get<AstNavigator>(Tokens.AstNavigator);
     return new SqlDefinitionProvider(nav);
-  });
+  }, [Tokens.AstNavigator]);
   container.registerSingleton(Tokens.ReferenceProvider, () => {
     const nav = container.get<AstNavigator>(Tokens.AstNavigator);
     return new SqlReferenceProvider(nav);
-  });
+  }, [Tokens.AstNavigator]);
   container.registerSingleton(Tokens.RenameProvider, () => {
     const nav = container.get<AstNavigator>(Tokens.AstNavigator);
     return new SqlRenameProvider(nav);
-  });
+  }, [Tokens.AstNavigator]);
 }
 
 let moduleRegistry: ModuleRegistry | undefined;
@@ -135,6 +141,8 @@ export function deactivate(): Thenable<void> {
   clearParameterScanCache();
   clearFormatterCache();
   invalidateRuleDefinitions();
+  // Dispose any lingering webview panels to avoid leaking static instance references.
+  BaseWebviewPanel.disposeAll();
   const registry = moduleRegistry;
   moduleRegistry = undefined;
   return Promise.all([

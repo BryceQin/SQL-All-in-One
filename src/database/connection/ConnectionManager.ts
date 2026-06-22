@@ -86,6 +86,10 @@ export class ConnectionManager {
         }
 
         this._onDidChangeConnections.fire({ type: 'remove', connectionId: id });
+
+        // disconnect() already stops health check and retry timers;
+        // clean up runtime state to prevent memory leak from accumulated entries
+        this.runtimeStates.delete(id);
     }
 
     async updateConnection(id: string, config: ConnectionConfig, password?: string): Promise<void> {
@@ -357,8 +361,9 @@ export class ConnectionManager {
         this.stopHealthCheck(id);
         try {
             await adapter.disconnect();
-        } catch {
-            // ignore disconnect error on unhealthy connection
+        } catch (e) {
+            // ignore disconnect error on unhealthy connection; log for debugging
+            console.debug('[SQL All in One] ConnectionManager.handleUnhealthyConnection disconnect failed:', e)
         }
         const runtime = this.runtimeStates.get(id);
         if (runtime) {
@@ -398,9 +403,9 @@ export class ConnectionManager {
                             await this.handleUnhealthyConnection(id, adapter);
                         }
                     }
-                } catch {
+                } catch (e) {
                     runtime.consecutiveHealthFailures += 1;
-                    console.warn(`Health check failed for connection ${id}:`);
+                    console.warn(`Health check failed for connection ${id}:`, e);
                     if (runtime.consecutiveHealthFailures >= 2) {
                         await this.handleUnhealthyConnection(id, adapter);
                     }

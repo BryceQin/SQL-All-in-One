@@ -95,7 +95,8 @@ function getClauseContext(text: string, offset: number, _tokenizer: Tokenizer): 
         if (lastMatch === 'GROUP BY' || lastMatch === 'ORDER BY') return 'select'
         if (lastMatch === 'INSERT' || lastMatch === 'UPDATE' || lastMatch === 'DELETE' ||
             lastMatch === 'CREATE' || lastMatch === 'ALTER' || lastMatch === 'DROP') return 'unknown'
-    } catch {
+    } catch (e) {
+        console.debug('[SQL All in One] inferClauseType failed:', e)
         return 'unknown'
     }
     return 'unknown'

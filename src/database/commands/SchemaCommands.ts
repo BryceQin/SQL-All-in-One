@@ -190,7 +190,7 @@ export function registerSchemaCommands(
                     const dbs = await dbListAdapter.listDatabases();
                     queryResultPanel?.sendDatabaseList(dbs.map(d => d.name), database);
                 }
-            } catch (_e) { /* ignore */ }
+            } catch (_e) { /* ignore: database list is best-effort */ console.debug('[SQL All in One] Failed to list databases for table designer:', _e) }
 
             if (queryResultPanel && !queryResultPanel.isDisposed) {
                 queryResultPanel.setSql(content);

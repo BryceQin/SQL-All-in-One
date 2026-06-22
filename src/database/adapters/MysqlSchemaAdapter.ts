@@ -130,6 +130,8 @@ export class MysqlSchemaAdapter implements ISchemaAdapter {
                 const parsed = JSON.parse(raw) as Record<string, unknown>;
                 nodes = this.parseExplainNodes(parsed);
             } catch (_e) {
+                // EXPLAIN JSON may be malformed or non-JSON; fall back to empty nodes
+                console.debug('[SQL All in One] Failed to parse EXPLAIN JSON, falling back to empty nodes:', _e)
                 nodes = [];
             }
 

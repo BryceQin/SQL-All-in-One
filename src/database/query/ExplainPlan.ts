@@ -76,8 +76,9 @@ export class ExplainPlan {
             try {
                 const parsed: unknown = JSON.parse(raw);
                 return ExplainPlan.parseMysqlJsonExplain(parsed as MysqlExplainJsonRoot | MysqlExplainJsonRoot[]);
-            } catch {
+            } catch (e) {
                 // Not valid JSON, treat as raw text
+                console.debug('[SQL All in One] ExplainPlan.parseMysqlExplain JSON.parse failed, treating as raw text:', e)
                 return { format: 'mysql', raw: raw, nodes: [] };
             }
         }

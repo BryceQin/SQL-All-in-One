@@ -3,6 +3,7 @@ import type { DatabaseInfo, TableInfo, ColumnInfo, FunctionInfo, ProcedureInfo, 
 import { getConnectionManager } from '../connection/ConnectionManager';
 import { getConfigManager } from '../../core/configManager';
 import { getContainer, Tokens } from '../../core/diContainer';
+import { LRUCache } from '../../utils/lruCache';
 
 interface CacheEntry<T> {
     data: T;
@@ -13,12 +14,12 @@ type InvalidateScope = 'database' | 'table' | 'column' | 'function' | 'procedure
 
 export class SchemaCache {
     private static readonly MAX_ENTRIES_PER_CACHE = 200;
-    private databaseCache = new Map<string, CacheEntry<DatabaseInfo[]>>();
-    private tableCache = new Map<string, CacheEntry<TableInfo[]>>();
-    private columnCache = new Map<string, CacheEntry<ColumnInfo[]>>();
-    private functionCache = new Map<string, CacheEntry<FunctionInfo[]>>();
-    private procedureCache = new Map<string, CacheEntry<ProcedureInfo[]>>();
-    private viewCache = new Map<string, CacheEntry<ViewInfo[]>>();
+    private databaseCache = new LRUCache<string, CacheEntry<DatabaseInfo[]>>({ maxSize: SchemaCache.MAX_ENTRIES_PER_CACHE, maxAge: Infinity });
+    private tableCache = new LRUCache<string, CacheEntry<TableInfo[]>>({ maxSize: SchemaCache.MAX_ENTRIES_PER_CACHE, maxAge: Infinity });
+    private columnCache = new LRUCache<string, CacheEntry<ColumnInfo[]>>({ maxSize: SchemaCache.MAX_ENTRIES_PER_CACHE, maxAge: Infinity });
+    private functionCache = new LRUCache<string, CacheEntry<FunctionInfo[]>>({ maxSize: SchemaCache.MAX_ENTRIES_PER_CACHE, maxAge: Infinity });
+    private procedureCache = new LRUCache<string, CacheEntry<ProcedureInfo[]>>({ maxSize: SchemaCache.MAX_ENTRIES_PER_CACHE, maxAge: Infinity });
+    private viewCache = new LRUCache<string, CacheEntry<ViewInfo[]>>({ maxSize: SchemaCache.MAX_ENTRIES_PER_CACHE, maxAge: Infinity });
     private pendingRequests = new Map<string, Promise<unknown>>();
     private cachedTtls: Record<string, number> = {};
     private ttlConfigDisposable: vscode.Disposable | undefined;
@@ -57,13 +58,20 @@ export class SchemaCache {
     }
 
     private async cachedFetch<T>(
-        cache: Map<string, CacheEntry<T>>,
+        cache: LRUCache<string, CacheEntry<T>>,
         cacheKey: string,
         ttlType: string,
         fetcher: () => Promise<T>
     ): Promise<T> {
-        const entry = cache.get(cacheKey);
-        if (!this.isExpired(entry)) return entry.data;
+        // Lazy per-entry expiry check: O(1). LRUCache is configured with
+        // maxAge: Infinity (expiry is tracked via CacheEntry.expireAt), so we
+        // must inspect the entry ourselves and evict the single stale entry
+        // instead of scanning the whole cache.
+        const entry = cache.peek(cacheKey);
+        if (entry && !this.isExpired(entry)) return entry.data;
+        if (entry) {
+            cache.delete(cacheKey);
+        }
 
         const pendingKey = `${ttlType}:${cacheKey}`;
         const pending = this.pendingRequests.get(pendingKey);
@@ -73,9 +81,6 @@ export class SchemaCache {
             try {
                 const data = await fetcher();
                 if (!this.disposed) {
-                    if (cache.size >= SchemaCache.MAX_ENTRIES_PER_CACHE) {
-                        this.evictExpiredEntries(cache);
-                    }
                     cache.set(cacheKey, { data, expireAt: Date.now() + this.getTtl(ttlType) * 1000 });
                 }
                 return data;
@@ -86,21 +91,6 @@ export class SchemaCache {
 
         this.pendingRequests.set(pendingKey, request);
         return request;
-    }
-
-    private evictExpiredEntries<T>(cache: Map<string, CacheEntry<T>>): void {
-        const now = Date.now();
-        for (const [key, entry] of cache) {
-            if (now > entry.expireAt) {
-                cache.delete(key);
-            }
-        }
-        if (cache.size >= SchemaCache.MAX_ENTRIES_PER_CACHE) {
-            const oldestKey = cache.keys().next().value;
-            if (oldestKey !== undefined) {
-                cache.delete(oldestKey);
-            }
-        }
     }
 
     async getDatabases(connectionId: string): Promise<DatabaseInfo[]> {
@@ -221,16 +211,8 @@ export class SchemaCache {
         }
     }
 
-    private invalidateByPrefix(cache: Map<string, CacheEntry<unknown>>, prefix: string): void {
-        const keysToDelete: string[] = [];
-        for (const key of cache.keys()) {
-            if (key === prefix || key.startsWith(prefix + ':')) {
-                keysToDelete.push(key);
-            }
-        }
-        for (const key of keysToDelete) {
-            cache.delete(key);
-        }
+    private invalidateByPrefix(cache: LRUCache<string, CacheEntry<unknown>>, prefix: string): void {
+        cache.deleteByPrefix(prefix);
     }
 
     async prefetchOnConnect(connectionId: string, database: string): Promise<void> {
@@ -239,13 +221,17 @@ export class SchemaCache {
         if (!enabled) return;
 
         try {
+            // Phase 1: Fetch table list
             const tables = await this.getTables(connectionId, database);
-            const columnPromises = tables.slice(0, 20).map(t =>
+            // Phase 2: Prefetch columns for the first 5 tables only.
+            // Further prefetching happens on-demand when users expand tree nodes.
+            const columnPromises = tables.slice(0, 5).map(t =>
                 this.getColumns(connectionId, database, t.name).catch(() => [])
             );
             await Promise.allSettled(columnPromises);
-        } catch {
+        } catch (e) {
             // prefetch failure should not affect normal usage
+            console.debug('[SQL All in One] SchemaCache prefetchOnConnect failed:', e)
         }
     }
 

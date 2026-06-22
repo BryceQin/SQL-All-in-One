@@ -61,7 +61,7 @@ function validateParamTypes(paramTypes: ParamTypes): boolean {
         // 数组中每一项的 regex 属性，都不能是空字符串，且必须是合法正则
         return paramTypes.custom.every((p) => {
             if (!p.regex || p.regex === "") return false
-            try { new RegExp(p.regex); return true } catch { return false }
+            try { new RegExp(p.regex); return true } catch (e) { console.debug('[SQL All in One] validateParamTypes: invalid regex:', p.regex, e); return false }
         })
     }
     // 无自定义规则 → 校验通过

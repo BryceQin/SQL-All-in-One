@@ -1,5 +1,8 @@
 import { getContainer, Tokens } from './diContainer';
+import { getConfigManager } from './configManager';
 import { LRUCache } from '../utils/lruCache';
+
+export type MonitorLevel = 'off' | 'light' | 'full';
 
 interface AggregateStats {
   count: number;
@@ -11,15 +14,43 @@ interface AggregateStats {
 export class PerformanceMonitor {
     private static readonly MAX_STATS_ENTRIES = 200;
     private aggregateStats = new LRUCache<string, AggregateStats>({ maxSize: PerformanceMonitor.MAX_STATS_ENTRIES, maxAge: 3600000 });
-    private enabled = false;
+    private monitorLevel: MonitorLevel = 'light';
     private slowThreshold = 100;
+    private configDisposable: import('vscode').Disposable | undefined;
 
-    setEnabled(enabled: boolean): void { this.enabled = enabled; }
+    constructor() {
+        this.refreshConfig();
+        try {
+            this.configDisposable = getConfigManager().onConfigChange(() => {
+                this.refreshConfig();
+            });
+        } catch (e) {
+            // ConfigManager may not be available in tests
+            console.debug('[SQL All in One] PerformanceMonitor: ConfigManager not available for config change subscription:', e)
+        }
+    }
 
-    isEnabled(): boolean { return this.enabled; }
+    private refreshConfig(): void {
+        try {
+            const cfg = getConfigManager();
+            this.monitorLevel = cfg.get<MonitorLevel>('performance.monitorLevel', 'light');
+        } catch (e) {
+            // ConfigManager may not be available in tests
+            console.debug('[SQL All in One] PerformanceMonitor: ConfigManager not available for config refresh:', e)
+        }
+    }
+
+    setMonitorLevel(level: MonitorLevel): void { this.monitorLevel = level; }
+
+    getMonitorLevel(): MonitorLevel { return this.monitorLevel; }
+
+    /** @deprecated Use setMonitorLevel instead */
+    setEnabled(enabled: boolean): void { this.monitorLevel = enabled ? 'full' : 'off'; }
+
+    isEnabled(): boolean { return this.monitorLevel !== 'off'; }
 
     measure<T>(name: string, fn: () => T): T {
-        if (!this.enabled) return fn();
+        if (this.monitorLevel === 'off') return fn();
         const start = performance.now();
         try {
             return fn();
@@ -30,7 +61,7 @@ export class PerformanceMonitor {
     }
 
     async measureAsync<T>(name: string, fn: () => Promise<T>): Promise<T> {
-        if (!this.enabled) return fn();
+        if (this.monitorLevel === 'off') return fn();
         const start = performance.now();
         try {
             return await fn();
@@ -41,7 +72,8 @@ export class PerformanceMonitor {
     }
 
     private recordMeasurement(name: string, duration: number): void {
-        if (!this.enabled) return;
+        if (this.monitorLevel === 'off') return;
+        if (this.monitorLevel === 'light' && duration <= this.slowThreshold) return;
         const existing = this.aggregateStats.peek(name);
         if (existing) {
             existing.count += 1;
@@ -115,6 +147,8 @@ export class PerformanceMonitor {
 
   dispose(): void {
     this.aggregateStats.clear();
+    this.configDisposable?.dispose();
+    this.configDisposable = undefined;
   }
 }
 

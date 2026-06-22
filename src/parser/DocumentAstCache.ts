@@ -17,11 +17,24 @@ export interface SymbolIndex {
     aliasMap: Map<string, string>;
 }
 
+interface StatementCache {
+    text: string;
+    ast: AST[] | AST;
+    range: { start: number; end: number };
+    /** 1-based absolute line number of the statement start in the document. */
+    startLine: number;
+    /** 1-based absolute column number of the statement start in the document. */
+    startCol: number;
+}
+
 interface CacheEntry {
     version: number;
     ast: AST[] | AST;
     timestamp: number;
     symbolIndex?: SymbolIndex;
+    /** Per-statement cache for incremental re-parsing. Only set when more than 1 statement
+     *  and the split count matches the AST array length. */
+    statements?: StatementCache[];
 }
 
 function buildIndex(ast: unknown[] | unknown, document: vscode.TextDocument): SymbolIndex {
@@ -128,6 +141,224 @@ function processSelectForIndex(node: AstNode, document: vscode.TextDocument, ind
     }
 }
 
+// ---------------------------------------------------------------------------
+// Statement-level incremental parsing helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Try to match a PostgreSQL dollar-quote opening delimiter at position `start`.
+ *
+ * A dollar-quote delimiter has the form `$<tag>$` where `<tag>` is an optional
+ * identifier (must start with a letter or underscore, followed by letters,
+ * digits, or underscores). The empty tag (`$$`) is also valid.
+ *
+ * Returns the delimiter string and the index just past it, or `null` if the
+ * text at `start` is not a dollar-quote opening delimiter.
+ */
+function matchDollarQuoteDelimiter(
+    text: string,
+    start: number,
+    len: number,
+): { delimiter: string; nextIndex: number } | null {
+    if (text[start] !== '$') return null;
+    let j = start + 1;
+    // Optional tag: must start with a letter or underscore, then identifier chars.
+    if (j < len && /[A-Za-z_]/.test(text[j])) {
+        j++;
+        while (j < len && /[A-Za-z0-9_]/.test(text[j])) {
+            j++;
+        }
+    }
+    // The opening delimiter must be terminated by '$'.
+    if (j < len && text[j] === '$') {
+        const delimiter = text.substring(start, j + 1);
+        return { delimiter, nextIndex: j + 1 };
+    }
+    return null;
+}
+
+/**
+ * Split SQL text into individual statements, respecting strings and comments.
+ * Returns each statement's text and its character-offset range in the original text.
+ * @internal Exported for testing only.
+ */
+export function splitSqlStatements(text: string): { text: string; start: number; end: number }[] {
+    const statements: { text: string; start: number; end: number }[] = [];
+    let statementStart = 0;
+    let i = 0;
+    const len = text.length;
+
+    while (i < len) {
+        const ch = text[i];
+
+        // Single-line comment: --
+        if (ch === '-' && i + 1 < len && text[i + 1] === '-') {
+            i += 2;
+            while (i < len && text[i] !== '\n') i++;
+            continue;
+        }
+
+        // Multi-line comment: /* */
+        if (ch === '/' && i + 1 < len && text[i + 1] === '*') {
+            i += 2;
+            while (i < len && !(text[i] === '*' && i + 1 < len && text[i + 1] === '/')) i++;
+            i += 2; // skip */
+            continue;
+        }
+
+        // Single-quoted string (with '' escape)
+        if (ch === "'") {
+            i++;
+            while (i < len) {
+                if (text[i] === "'") {
+                    if (i + 1 < len && text[i + 1] === "'") {
+                        i += 2; // escaped quote
+                        continue;
+                    }
+                    i++; // closing quote
+                    break;
+                }
+                i++;
+            }
+            continue;
+        }
+
+        // Double-quoted string
+        if (ch === '"') {
+            i++;
+            while (i < len && text[i] !== '"') i++;
+            i++;
+            continue;
+        }
+
+        // Backtick-quoted identifier
+        if (ch === '`') {
+            i++;
+            while (i < len && text[i] !== '`') i++;
+            i++;
+            continue;
+        }
+
+        // PostgreSQL dollar-quoted string: $$...$$ or $tag$...$tag$
+        if (ch === '$') {
+            const delimMatch = matchDollarQuoteDelimiter(text, i, len);
+            if (delimMatch) {
+                const closeIdx = text.indexOf(delimMatch.delimiter, delimMatch.nextIndex);
+                if (closeIdx === -1) {
+                    // Unterminated dollar-quoted string – consume the rest of the text.
+                    i = len;
+                } else {
+                    i = closeIdx + delimMatch.delimiter.length;
+                }
+                continue;
+            }
+        }
+
+        // Semicolon – end of statement
+        if (ch === ';') {
+            const stmtText = text.substring(statementStart, i + 1);
+            // Only add if there is real SQL content (not just whitespace + semicolons)
+            const content = stmtText.replace(/;/g, '').trim();
+            if (content.length > 0) {
+                statements.push({
+                    text: stmtText,
+                    start: statementStart,
+                    end: i + 1,
+                });
+            }
+            statementStart = i + 1;
+        }
+
+        i++;
+    }
+
+    // Handle the last statement (without trailing semicolon)
+    if (statementStart < len) {
+        const lastStmt = text.substring(statementStart);
+        if (lastStmt.trim().length > 0) {
+            statements.push({
+                text: lastStmt,
+                start: statementStart,
+                end: len,
+            });
+        }
+    }
+
+    return statements;
+}
+
+/**
+ * Compute 1-based line and column numbers for a character offset in the given text.
+ * @internal Exported for testing only.
+ */
+export function computeLineColumn(text: string, offset: number): { line: number; column: number } {
+    let line = 1;
+    let lastNewlinePos = -1;
+    for (let i = 0; i < offset && i < text.length; i++) {
+        if (text[i] === '\n') {
+            line++;
+            lastNewlinePos = i;
+        }
+    }
+    const column = offset - lastNewlinePos; // 1-based
+    return { line, column };
+}
+
+/**
+ * Adjust all `loc` properties in an AST in-place so that locations are
+ * shifted from the old absolute start position to the new absolute start position.
+ *
+ * For newly parsed statements (locations start at line 1, col 1):
+ *   pass oldStartLine=1, oldStartCol=1, newStartLine/newStartCol = absolute position.
+ *
+ * For reused cached statements whose document offset changed:
+ *   pass the old and new absolute start positions.
+ *
+ * @internal Exported for testing only.
+ */
+export function adjustAstLocationsInPlace(
+    ast: unknown,
+    oldStartLine: number,
+    oldStartCol: number,
+    newStartLine: number,
+    newStartCol: number,
+): void {
+    const lineDelta = newStartLine - oldStartLine;
+    const colDelta = newStartCol - oldStartCol;
+    if (lineDelta === 0 && colDelta === 0) return;
+
+    function adjust(obj: unknown): void {
+        if (obj == null || typeof obj !== 'object') return;
+        if (Array.isArray(obj)) {
+            for (const item of obj) adjust(item);
+            return;
+        }
+        const record = obj as Record<string, unknown>;
+        const loc = record.loc;
+        if (loc != null && typeof loc === 'object') {
+            const l = loc as { start?: { line: number; column: number }; end?: { line: number; column: number } };
+            if (l.start && l.start.line > 0) {
+                if (l.start.line === oldStartLine) {
+                    l.start.column += colDelta;
+                }
+                l.start.line += lineDelta;
+            }
+            if (l.end && l.end.line > 0) {
+                if (l.end.line === oldStartLine) {
+                    l.end.column += colDelta;
+                }
+                l.end.line += lineDelta;
+            }
+        }
+        for (const key of Object.keys(record)) {
+            if (key === 'loc') continue;
+            adjust(record[key]);
+        }
+    }
+
+    adjust(ast);
+}
+
 export class DocumentAstCache {
     private cache: LRUCache<string, CacheEntry>;
     private disposables: vscode.Disposable[] = [];
@@ -135,7 +366,9 @@ export class DocumentAstCache {
 
     constructor() {
         this.cache = new LRUCache<string, CacheEntry>({
-            maxSize: 50,
+            // Increased from 50 to 100 to reduce cache thrashing when frequently
+            // switching between many open SQL files.
+            maxSize: 100,
             maxAge: 30000,
         });
 
@@ -155,18 +388,133 @@ export class DocumentAstCache {
         const version = document.version;
         const cached = this.cache.peek(key);
 
+        // Cache hit – same document version
         if (cached && cached.version === version) {
             return { success: true, ast: cached.ast, error: null };
         }
 
+        const fullText = document.getText();
         const engine = getParserEngine();
-        const result = engine.tryAstify(document.getText(), dialect);
+
+        // ----- Incremental re-parse (statement-level caching) -----
+        // Only attempt when we have a previous statement cache with >1 statement.
+        if (cached?.statements && cached.statements.length > 1) {
+            const newStmts = splitSqlStatements(fullText);
+            const oldStmts = cached.statements;
+
+            // Same statement count → compare texts and only re-parse changed ones
+            if (newStmts.length === oldStmts.length) {
+                const changedIndices = new Set<number>();
+                for (let i = 0; i < newStmts.length; i++) {
+                    if (newStmts[i].text !== oldStmts[i].text) {
+                        changedIndices.add(i);
+                    }
+                }
+
+                // Incremental is worthwhile only when some (not all) statements changed
+                if (changedIndices.size > 0 && changedIndices.size < newStmts.length) {
+                    try {
+                        const mergedAst: AST[] = [];
+                        let incrementalOk = true;
+
+                        for (let i = 0; i < newStmts.length; i++) {
+                            const newAbsPos = computeLineColumn(fullText, newStmts[i].start);
+
+                            if (changedIndices.has(i)) {
+                                // Re-parse this statement individually
+                                const result = engine.tryAstify(newStmts[i].text, dialect);
+                                if (!result.success || !result.ast) {
+                                    incrementalOk = false;
+                                    break;
+                                }
+                                // Normalise to a flat array of AST nodes
+                                const stmtAstList = Array.isArray(result.ast) ? result.ast : [result.ast];
+                                // Adjust locations from relative (line 1, col 1) to absolute
+                                for (const node of stmtAstList) {
+                                    adjustAstLocationsInPlace(node, 1, 1, newAbsPos.line, newAbsPos.column);
+                                }
+                                mergedAst.push(...stmtAstList);
+                            } else {
+                                // Reuse cached AST – adjust locations if offset shifted
+                                const oldStmt = oldStmts[i];
+                                const cachedAstList = Array.isArray(oldStmt.ast) ? oldStmt.ast : [oldStmt.ast];
+                                for (const node of cachedAstList) {
+                                    adjustAstLocationsInPlace(
+                                        node,
+                                        oldStmt.startLine,
+                                        oldStmt.startCol,
+                                        newAbsPos.line,
+                                        newAbsPos.column,
+                                    );
+                                }
+                                mergedAst.push(...cachedAstList);
+                            }
+                        }
+
+                        if (incrementalOk) {
+                            const finalAst: AST[] | AST = mergedAst.length === 1 ? mergedAst[0] : mergedAst;
+
+                            // Build updated per-statement caches
+                            const newStatementCaches: StatementCache[] = newStmts.map((stmt, idx) => {
+                                const absPos = computeLineColumn(fullText, stmt.start);
+                                // The merged AST may have more elements than statements if a
+                                // single statement parse returned multiple AST nodes, but for
+                                // the common case (1:1) we map by index.
+                                const stmtAst = idx < mergedAst.length ? mergedAst[idx] : mergedAst[0];
+                                return {
+                                    text: stmt.text,
+                                    ast: stmtAst,
+                                    range: { start: stmt.start, end: stmt.end },
+                                    startLine: absPos.line,
+                                    startCol: absPos.column,
+                                };
+                            });
+
+                            this.cache.set(key, {
+                                version,
+                                ast: finalAst,
+                                timestamp: Date.now(),
+                                statements: newStatementCaches,
+                            });
+
+                            return { success: true, ast: finalAst, error: null };
+                        }
+                    } catch (e) {
+                        // Fall through to full parse on any unexpected error
+                        console.debug('[SQL All in One] DocumentAstCache incremental parse failed, falling back to full parse:', e)
+                    }
+                }
+            }
+        }
+
+        // ----- Full parse (original behaviour) -----
+        const result = engine.tryAstify(fullText, dialect);
 
         if (result.success && result.ast) {
+            // Build per-statement cache for future incremental parsing
+            const stmts = splitSqlStatements(fullText);
+            const astList = Array.isArray(result.ast) ? result.ast : [result.ast];
+
+            // Only cache statements when the count matches (ensures 1:1 mapping)
+            let statementCaches: StatementCache[] | undefined;
+            if (stmts.length === astList.length && stmts.length > 1) {
+                statementCaches = stmts.map((stmt, i) => {
+                    const absPos = computeLineColumn(fullText, stmt.start);
+                    return {
+                        text: stmt.text,
+                        ast: astList[i] as AST,
+                        range: { start: stmt.start, end: stmt.end },
+                        startLine: absPos.line,
+                        startCol: absPos.column,
+                    };
+                });
+            }
+
             this.cache.set(key, {
                 version,
                 ast: result.ast,
                 timestamp: Date.now(),
+                statements: statementCaches,
             });
         }
 

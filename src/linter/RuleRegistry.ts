@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import type { LintRule, RuleContext } from './rules/LintRule';
-import { loadRuleConfigs, type LintRuleConfig, type LintRuleDefinition } from './lintRules';
+import { loadRuleConfigs, setDefinitionsProvider, type LintRuleConfig, type LintRuleDefinition } from './lintRules';
 import { getContainer, Tokens } from '../core/diContainer';
 import { getConfigManager } from '../core/configManager';
 import { RULES } from './rules/index';
@@ -103,12 +103,31 @@ export class RuleRegistry {
     const lintKeys = Object.keys(RULES).map(k => `lint.${k}`);
     getConfigManager().registerLintKeys(lintKeys);
 
+    // Step 1: Instantiate all rules with DEFAULT_CONFIG and register them.
+    // This creates each rule instance only once.
+    for (const [, RuleClass] of Object.entries(RULES)) {
+      this.register(new RuleClass(DEFAULT_CONFIG));
+    }
+
+    // Step 2: Set the definitions provider so that buildRuleDefinitions() in lintRules.ts
+    // can extract metadata from these already-instantiated rules instead of creating
+    // separate instances.
+    setDefinitionsProvider(() => this.getRuleDefinitions());
+
+    // Step 3: Load configs using definitions from the registered instances.
+    // Now loadRuleConfigs() -> getRuleDefinitions() -> buildRuleDefinitions()
+    // will use the provider (our getRuleDefinitions()) instead of instantiating rules again.
     const configs = loadRuleConfigs();
 
-    for (const [key, RuleClass] of Object.entries(RULES)) {
+    // Step 4: Update each rule's config from the loaded configs.
+    for (const [key] of Object.entries(RULES)) {
+      const rule = this.getRuleById(key as string);
       const config = configs.get(key as string) ?? DEFAULT_CONFIG;
-      this.register(new RuleClass(config));
+      rule?.updateConfig(config);
     }
+
+    // Invalidate caches since configs changed after initial registration
+    this.invalidateCache();
   }
 
   reloadConfig(): void {

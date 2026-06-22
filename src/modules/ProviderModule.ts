@@ -102,6 +102,8 @@ export class ProviderModule implements Activatable {
     const lazyCompletionProvider: vscode.CompletionItemProvider = {
       provideCompletionItems: (doc, pos, token, _ctx) =>
         getCompletionProvider()?.provideCompletionItems(doc, pos, token),
+      resolveCompletionItem: (item, token) =>
+        getCompletionProvider()?.resolveCompletionItem(item, token) ?? item,
     };
 
     for (const lang of sqlLanguages) {

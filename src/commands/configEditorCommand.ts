@@ -79,7 +79,8 @@ export class ConfigEditorPanel {
                                 await this._updateConfig(message.data)
                             }
                             this._panel.webview.postMessage({ command: 'saveResult', success: true })
-                        } catch {
+                        } catch (e) {
+                            console.debug('[SQL All in One] ConfigEditor updateConfig failed:', e)
                             this._panel.webview.postMessage({ command: 'saveResult', success: false })
                         }
                         break
@@ -197,7 +198,8 @@ export class ConfigEditorPanel {
             html = html.replace(/\{\{CSP_SOURCE\}\}/g, this._panel.webview.cspSource)
 
             return html
-        } catch {
+        } catch (e) {
+            console.debug('[SQL All in One] ConfigEditorPanel._getHtmlForWebview failed:', e)
             return '<html><body><h2>' + t('configEditor.loadFailed') + '</h2><p>' + t('configEditor.reinstall') + '</p></body></html>'
         }
     }
@@ -250,7 +252,7 @@ export class ConfigEditorPanel {
             if (item.type === 'string' && value === '') {
                 value = undefined
             }
-            try { await config.update(configKey, value, vscode.ConfigurationTarget.Global) } catch { /* skip */ }
+            try { await config.update(configKey, value, vscode.ConfigurationTarget.Global) } catch (e) { /* skip: best-effort config update */ console.debug('[SQL All in One] ConfigEditor config update skipped:', configKey, e) }
         }
 
         for (const rule of LINT_RULES) {
@@ -258,7 +260,7 @@ export class ConfigEditorPanel {
             const severity = data[rule.severityKey]
             try {
                 await config.update(rule.configKey, { enabled, severity }, vscode.ConfigurationTarget.Global)
-            } catch { /* skip */ }
+            } catch (e) { /* skip: best-effort lint rule update */ console.debug('[SQL All in One] ConfigEditor lint rule update skipped:', rule.configKey, e) }
         }
 
         vscode.window.showInformationMessage(t('notification.configSaved'))
@@ -324,7 +326,8 @@ export class ConfigEditorPanel {
                 connections,
                 groups
             })
-        } catch {
+        } catch (e) {
+            console.debug('[SQL All in One] ConfigEditor _sendConnectionsList failed:', e)
             this._panel.webview.postMessage({
                 command: 'connectionsList',
                 connections: [],
@@ -352,8 +355,9 @@ export class ConfigEditorPanel {
                     groups: store.getGroups()
                 })
             }
-        } catch {
-            // ignore
+        } catch (e) {
+            // ignore: best-effort connection detail lookup
+            console.debug('[SQL All in One] ConfigEditor _handleEditConnection failed:', e)
         }
     }
 

@@ -22,7 +22,8 @@ export class SqlOutlineProvider implements vscode.DocumentSymbolProvider {
                 return this.provideDocumentSymbolsFromAst(document, result.ast)
             }
             return []
-        } catch {
+        } catch (e) {
+            console.debug('[SQL All in One] SqlOutlineProvider.provideDocumentSymbols failed:', e)
             return []
         }
     }

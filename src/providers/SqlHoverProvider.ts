@@ -52,7 +52,7 @@ export class SqlHoverProvider implements vscode.HoverProvider {
                 try {
                     const schemaResult = await this.schemaResolver.resolve(word, dialectName as SqlLanguage, document, position)
                     if (schemaResult) return schemaResult
-                } catch { /* schema hover failed, fallback */ }
+                } catch (e) { /* schema hover failed, fallback */ console.debug('[SQL All in One] SqlHoverProvider schema hover failed:', e) }
             }
 
             for (const resolver of this.staticResolvers) {

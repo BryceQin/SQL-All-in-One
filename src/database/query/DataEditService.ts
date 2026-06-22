@@ -121,7 +121,7 @@ export async function executeInTransaction(
             await adapter.rollback();
         } catch (rollbackError) {
             console.error('Rollback failed, disconnecting adapter:', rollbackError);
-            try { await adapter.disconnect(); } catch { /* ignore */ }
+            try { await adapter.disconnect(); } catch (e) { /* ignore: best-effort cleanup */ console.debug('[SQL All in One] DataEditService disconnect after rollback failure:', e) }
         }
         return { success: false, errors: [(error as Error).message] };
     }

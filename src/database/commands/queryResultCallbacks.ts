@@ -82,7 +82,8 @@ export function setupQueryResultPanelCallbacks(
                     ? String(row[pkCol.name]) + ' - ' + String(row[displayCol?.name || pkCol.name])
                     : String(row[pkCol.name]),
             }));
-        } catch {
+        } catch (e) {
+            console.debug('[SQL All in One] onRequestForeignKeyOptions failed:', e)
             return [];
         }
     };
@@ -222,6 +223,6 @@ export function setupQueryResultPanelCallbacks(
                 await connectionManager.updateConnection(activeConn.id, updatedConfig);
                 connectionManager.setActiveConnection(activeConn.id);
             }
-        } catch { /* ignore */ }
+        } catch (e) { /* ignore: database change is best-effort */ console.debug('[SQL All in One] onChangeDatabase failed:', e) }
     };
 }

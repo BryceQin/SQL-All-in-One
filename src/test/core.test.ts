@@ -645,4 +645,272 @@ suite('DIContainer', () => {
         const result = container.get<string>('token')
         assert.strictEqual(result, 'second')
     })
+
+    // ========================================================================
+    // Lifecycle Management Enhancement Tests
+    // ========================================================================
+
+    test('registerSingleton accepts optional dependencies parameter', () => {
+        container.registerSingleton('SvcA', () => ({ name: 'A' }), ['SvcB'])
+        container.registerSingleton('SvcB', () => ({ name: 'B' }))
+
+        const a = container.get<{ name: string }>('SvcA')
+        const b = container.get<{ name: string }>('SvcB')
+        assert.strictEqual(a.name, 'A')
+        assert.strictEqual(b.name, 'B')
+    })
+
+    test('disposeAll() disposes in topological order - dependents first', () => {
+        const disposeOrder: string[] = []
+
+        const svcA = {
+            name: 'A',
+            dispose: (): void => { disposeOrder.push('A') }
+        }
+        const svcB = {
+            name: 'B',
+            dispose: (): void => { disposeOrder.push('B') }
+        }
+        const svcC = {
+            name: 'C',
+            dispose: (): void => { disposeOrder.push('C') }
+        }
+
+        // C depends on B, B depends on A
+        // Dispose order should be: C first, then B, then A
+        container.register('A', svcA)
+        container.register('B', svcB)
+        container.register('C', svcC)
+        container.registerSingleton('C', () => svcC, ['B'])
+        container.registerSingleton('B', () => svcB, ['A'])
+
+        // Force instances into services map (registerSingleton already does this on get)
+        // Since we used register() for the instances, they're already in services.
+        // We need to set up dependencyMap properly. Let's use registerSingleton properly.
+        container.disposeAll()
+
+        // C should be disposed before B, B before A
+        assert.strictEqual(disposeOrder.indexOf('C') < disposeOrder.indexOf('B'), true, 'C should be disposed before B')
+        assert.strictEqual(disposeOrder.indexOf('B') < disposeOrder.indexOf('A'), true, 'B should be disposed before A')
+    })
+
+    test('disposeAll() falls back to reverse insertion order when no dependencies declared', () => {
+        const disposeOrder: string[] = []
+
+        container.register('X', {
+            name: 'X',
+            dispose: (): void => { disposeOrder.push('X') }
+        })
+        container.register('Y', {
+            name: 'Y',
+            dispose: (): void => { disposeOrder.push('Y') }
+        })
+        container.register('Z', {
+            name: 'Z',
+            dispose: (): void => { disposeOrder.push('Z') }
+        })
+
+        container.disposeAll()
+
+        // Reverse insertion order: Z, Y, X
+        assert.deepStrictEqual(disposeOrder, ['Z', 'Y', 'X'])
+    })
+
+    test('disposeAll() handles circular dependency fallback', () => {
+        const disposeOrder: string[] = []
+
+        const svcA = {
+            name: 'A',
+            dispose: (): void => { disposeOrder.push('A') }
+        }
+        const svcB = {
+            name: 'B',
+            dispose: (): void => { disposeOrder.push('B') }
+        }
+
+        container.register('A', svcA)
+        container.register('B', svcB)
+        // A depends on B, B depends on A = circular
+        container.registerSingleton('A', () => svcA, ['B'])
+        container.registerSingleton('B', () => svcB, ['A'])
+
+        // Should not throw, falls back to reverse insertion order for the cycle
+        container.disposeAll()
+
+        // Both should still be disposed
+        assert.strictEqual(disposeOrder.length, 2)
+        assert.strictEqual(disposeOrder.includes('A'), true)
+        assert.strictEqual(disposeOrder.includes('B'), true)
+    })
+
+    test('unregister() cleans up dependencyMap', () => {
+        container.registerSingleton('SvcA', () => ({ name: 'A' }), ['SvcB'])
+        container.registerSingleton('SvcB', () => ({ name: 'B' }))
+
+        // Force creation
+        container.get<{ name: string }>('SvcA')
+        container.get<{ name: string }>('SvcB')
+
+        container.unregister('SvcA')
+
+        // SvcA should be gone
+        assert.strictEqual(container.has('SvcA'), false)
+        // SvcB should still exist
+        assert.strictEqual(container.has('SvcB'), true)
+    })
+
+    test('disposeAll() clears dependencyMap', () => {
+        container.registerSingleton('SvcA', () => ({ name: 'A' }), ['SvcB'])
+        container.registerSingleton('SvcB', () => ({ name: 'B' }))
+
+        container.get<{ name: string }>('SvcA')
+        container.get<{ name: string }>('SvcB')
+
+        container.disposeAll()
+
+        // After disposeAll, everything should be cleared
+        assert.strictEqual(container.has('SvcA'), false)
+        assert.strictEqual(container.has('SvcB'), false)
+
+        // Re-registering without dependencies should work (dependencyMap was cleared)
+        container.registerSingleton('SvcA', () => ({ name: 'A' }))
+        const a = container.get<{ name: string }>('SvcA')
+        assert.strictEqual(a.name, 'A')
+    })
+
+    test('asyncDisposeAll() awaits async dispose methods', async () => {
+        let asyncDisposeCompleted = false
+
+        const asyncSvc = {
+            name: 'asyncSvc',
+            dispose: (): Promise<void> => {
+                return new Promise((resolve) => {
+                    setTimeout(() => {
+                        asyncDisposeCompleted = true
+                        resolve()
+                    }, 10)
+                })
+            }
+        }
+
+        container.register('asyncSvc', asyncSvc)
+
+        await container.asyncDisposeAll()
+
+        assert.strictEqual(asyncDisposeCompleted, true, 'async dispose should have completed')
+    })
+
+    test('asyncDisposeAll() handles sync dispose methods too', async () => {
+        let syncDisposed = false
+
+        const syncSvc = {
+            name: 'syncSvc',
+            dispose: (): void => { syncDisposed = true }
+        }
+
+        container.register('syncSvc', syncSvc)
+
+        await container.asyncDisposeAll()
+
+        assert.strictEqual(syncDisposed, true)
+    })
+
+    test('asyncDisposeAll() disposes in topological order', async () => {
+        const disposeOrder: string[] = []
+
+        const svcA = {
+            name: 'A',
+            dispose: (): void => { disposeOrder.push('A') }
+        }
+        const svcB = {
+            name: 'B',
+            dispose: (): void => { disposeOrder.push('B') }
+        }
+        const svcC = {
+            name: 'C',
+            dispose: (): Promise<void> => {
+                return new Promise((resolve) => {
+                    disposeOrder.push('C')
+                    resolve()
+                })
+            }
+        }
+
+        // C depends on B, B depends on A
+        container.register('A', svcA)
+        container.register('B', svcB)
+        container.register('C', svcC)
+        container.registerSingleton('C', () => svcC, ['B'])
+        container.registerSingleton('B', () => svcB, ['A'])
+
+        await container.asyncDisposeAll()
+
+        assert.strictEqual(disposeOrder.indexOf('C') < disposeOrder.indexOf('B'), true, 'C should be disposed before B')
+        assert.strictEqual(disposeOrder.indexOf('B') < disposeOrder.indexOf('A'), true, 'B should be disposed before A')
+    })
+
+    test('asyncDisposeAll() uses Promise.allSettled for parallel disposal at same level', async () => {
+        const disposeTimes = new Map<string, number>()
+
+        const svcB1 = {
+            name: 'B1',
+            dispose: (): Promise<void> => {
+                return new Promise((resolve) => {
+                    setTimeout(() => { disposeTimes.set('B1', Date.now()); resolve() }, 20)
+                })
+            }
+        }
+        const svcB2 = {
+            name: 'B2',
+            dispose: (): Promise<void> => {
+                return new Promise((resolve) => {
+                    setTimeout(() => { disposeTimes.set('B2', Date.now()); resolve() }, 20)
+                })
+            }
+        }
+        const svcA = {
+            name: 'A',
+            dispose: (): void => { disposeTimes.set('A', Date.now()) }
+        }
+
+        // B1 and B2 both depend on A, so they're at the same level and can be parallel
+        container.register('A', svcA)
+        container.register('B1', svcB1)
+        container.register('B2', svcB2)
+        container.registerSingleton('B1', () => svcB1, ['A'])
+        container.registerSingleton('B2', () => svcB2, ['A'])
+
+        await container.asyncDisposeAll()
+
+        // Both B1 and B2 should have been disposed before A
+        const b1Time = disposeTimes.get('B1')!
+        const b2Time = disposeTimes.get('B2')!
+        const aTime = disposeTimes.get('A')!
+
+        assert.strictEqual(b1Time < aTime, true, 'B1 should be disposed before A')
+        assert.strictEqual(b2Time < aTime, true, 'B2 should be disposed before A')
+
+        // B1 and B2 should have been disposed roughly in parallel (within 15ms of each other)
+        const parallelDelta = Math.abs(b1Time - b2Time)
+        assert.strictEqual(parallelDelta < 15, true, `B1 and B2 should be disposed in parallel, delta was ${parallelDelta}ms`)
+    })
+
+    test('asyncDisposeAll() ignores errors from failing dispose', async () => {
+        const failSvc = {
+            name: 'failSvc',
+            dispose: (): Promise<void> => {
+                return Promise.reject(new Error('dispose failed'))
+            }
+        }
+        const okSvc = {
+            name: 'okSvc',
+            dispose: (): void => { /* ok */ }
+        }
+
+        container.register('failSvc', failSvc)
+        container.register('okSvc', okSvc)
+
+        // Should not throw
+        await container.asyncDisposeAll()
+    })
 })

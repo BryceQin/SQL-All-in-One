@@ -147,7 +147,8 @@ export class LanguageBridge implements vscode.Disposable {
         try {
             const diagnostics = this._linter.lint(sql, dialect as SqlDialect);
             return MonacoDataAdapter.toMonacoDiagnostics(diagnostics);
-        } catch {
+        } catch (e) {
+            console.debug('[SQL All in One] LanguageBridge.handleDiagnosticsRequest failed:', e)
             return [];
         }
     }
@@ -171,7 +172,7 @@ export class LanguageBridge implements vscode.Disposable {
                             description: def.description,
                         });
                     }
-                } catch { /* skip invalid snippet files */ }
+                } catch (e) { /* skip invalid snippet files */ console.debug('[SQL All in One] LanguageBridge skipped invalid snippet file:', name, e) }
             }
         }
         this._snippetCache.set(dialect, snippets);

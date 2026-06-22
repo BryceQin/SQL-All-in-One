@@ -19,5 +19,6 @@ export interface LintRule {
     readonly defaultEnabled: boolean
     isEnabled(): boolean
     getSeverity(): vscode.DiagnosticSeverity
+    updateConfig(config: { enabled: boolean; severity: vscode.DiagnosticSeverity }): void
     check(context: RuleContext): vscode.Diagnostic[]
 }

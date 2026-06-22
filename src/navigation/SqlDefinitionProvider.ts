@@ -16,7 +16,8 @@ export class SqlDefinitionProvider implements vscode.DefinitionProvider {
 
             const loc = this.navigator.getDefinition(ctx.word, ctx.index)
             return loc || null
-        } catch {
+        } catch (e) {
+            console.debug('[SQL All in One] SqlDefinitionProvider.provideDefinition failed:', e)
             return null
         }
     }

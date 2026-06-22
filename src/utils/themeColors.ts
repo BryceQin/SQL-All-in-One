@@ -124,7 +124,8 @@ export async function getTokenColors(): Promise<TokenColorMap | undefined> {
         cachedColors = colorMap as TokenColorMap;
         cachedThemeName = themeName;
         return cachedColors;
-    } catch {
+    } catch (e) {
+        console.debug('[SQL All in One] getTokenColors failed:', e)
         return undefined;
     }
 }

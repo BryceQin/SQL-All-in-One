@@ -21,7 +21,8 @@ export class SqlRenameProvider implements vscode.RenameProvider {
             const range = document.getWordRangeAtPosition(position)
             if (!range) return null
             return range
-        } catch {
+        } catch (e) {
+            console.debug('[SQL All in One] SqlRenameProvider.prepareRename failed:', e)
             return null
         }
     }

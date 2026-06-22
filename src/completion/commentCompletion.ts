@@ -12,8 +12,9 @@ export function getCommentCompletionItems(
         const { inputTables, outputTables } = extractTableDependencies(doc.getText())
 
         return [createHeaderItem(doc, author, modifier, inputTables, outputTables)]
-    } catch {
+    } catch (e) {
         // 如果出错，返回一个绝对可靠的简单 header 作为 fallback
+        console.debug('[SQL All in One] getCommentCompletionItems failed, returning safe fallback:', e)
         const item = new vscode.CompletionItem('header', vscode.CompletionItemKind.Snippet)
         item.filterText = 'header'
         item.sortText = '0_header'

@@ -23,11 +23,15 @@ export class FormatterModule implements Activatable {
       }),
     );
 
-    // Register formatting providers
+    // Register formatting providers.
+    // A single shared SqlFormattingProvider instance serves all SQL languages:
+    // the dialect is resolved from each document's languageId at format time,
+    // and the underlying AstFormatter cache is keyed per (dialect, options).
+    const formattingProvider = new SqlFormattingProvider();
     context.subscriptions.push(
-      ...Object.entries(sqlDialects).map(([vscodeLang, sqlDialectName]) =>
-        vscode.languages.registerDocumentFormattingEditProvider(vscodeLang, new SqlFormattingProvider(sqlDialectName)),
-      ),
+        ...Object.entries(sqlDialects).map(([vscodeLang]) =>
+            vscode.languages.registerDocumentFormattingEditProvider(vscodeLang, formattingProvider),
+        ),
     );
   }
 }

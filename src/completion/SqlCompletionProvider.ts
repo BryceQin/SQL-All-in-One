@@ -18,59 +18,152 @@ import { getDocumentAstCache } from '../parser/DocumentAstCache'
 import type { SqlDialect } from '../parser/dialectMapper'
 import { snippetData } from './generated/snippetData'
 
+/**
+ * Module-level lazy caches for static completion items (keywords, functions,
+ * snippets). These depend only on the SQL dialect (and i18n locale), not on
+ * document content or cursor position, so they are built once per dialect and
+ * reused across every `provideCompletionItems` call.
+ *
+ * They are populated lazily (not at module load) because i18n is only
+ * initialized during extension activation, and cleared on config change
+ * (e.g. displayLanguage switch) via {@link SqlCompletionProvider}'s config
+ * change subscription.
+ */
+const staticKeywordItemsCache = new Map<string, vscode.CompletionItem[]>()
+const staticFunctionItemsCache = new Map<string, vscode.CompletionItem[]>()
+const staticSnippetItemsCache = new Map<string, vscode.CompletionItem[]>()
+
+/**
+ * Build (once) and return the cached static keyword/dataType completion items
+ * for a dialect.
+ */
+function getStaticKeywordItems(dName: string): vscode.CompletionItem[] {
+    let items = staticKeywordItemsCache.get(dName)
+    if (!items) {
+        const kd = keywordMap[dName]
+        if (kd) {
+            items = getKeywordItems(kd.keywords, kd.dataTypes, dName)
+        } else {
+            items = []
+        }
+        staticKeywordItemsCache.set(dName, items)
+    }
+    return items
+}
+
+/**
+ * Build (once) and return the cached static function completion items for a
+ * dialect.
+ */
+function getStaticFunctionItems(dName: string): vscode.CompletionItem[] {
+    let items = staticFunctionItemsCache.get(dName)
+    if (!items) {
+        const sigs = functionSigMap[dName]
+        if (sigs) {
+            items = getFunctionItems(sigs)
+        } else {
+            items = []
+        }
+        staticFunctionItemsCache.set(dName, items)
+    }
+    return items
+}
+
+/**
+ * Build (once) and return the cached static snippet completion items for a
+ * dialect, merging common + dialect-specific snippets (common first).
+ */
+function getStaticSnippetItems(dName: string): vscode.CompletionItem[] {
+    let items = staticSnippetItemsCache.get(dName)
+    if (!items) {
+        const merged: Record<string, import('./generated/snippetData').SnippetDef> = {}
+        const usedPrefixes = new Set<string>()
+        const commonSnippets = snippetData['common']
+        if (commonSnippets) {
+            for (const [key, val] of Object.entries(commonSnippets)) {
+                if (!usedPrefixes.has(val.prefix)) {
+                    merged[key] = val
+                    usedPrefixes.add(val.prefix)
+                }
+            }
+        }
+        const dialectSnippets = snippetData[dName]
+        if (dialectSnippets) {
+            for (const [key, val] of Object.entries(dialectSnippets)) {
+                if (!usedPrefixes.has(val.prefix)) {
+                    merged[key] = val
+                    usedPrefixes.add(val.prefix)
+                }
+            }
+        }
+        items = getSnippetItems(merged)
+        staticSnippetItemsCache.set(dName, items)
+    }
+    return items
+}
+
+/**
+ * Clear all module-level static completion item caches. Called when the
+ * configuration changes (e.g. displayLanguage) so items are rebuilt with the
+ * new locale on next use.
+ */
+function clearStaticCompletionCaches(): void {
+    staticKeywordItemsCache.clear()
+    staticFunctionItemsCache.clear()
+    staticSnippetItemsCache.clear()
+}
+
+/**
+ * Create a shallow copy of a cached static {@link vscode.CompletionItem}.
+ *
+ * VSCode (and the completion list machinery) may mutate returned items (e.g.
+ * resolving documentation, setting `preselect`, adjusting `sortText`). To keep
+ * the module-level caches immutable we hand out fresh item objects that reuse
+ * the immutable configuration (label, kind, detail, documentation,
+ * insertText, sortText) of the cached template.
+ *
+ * `insertText` (SnippetString) and `documentation` (MarkdownString) are
+ * reused by reference: they are treated as read-only by VSCode after item
+ * construction and copying them would defeat the memory-saving purpose of the
+ * cache.
+ */
+function cloneStaticItem(template: vscode.CompletionItem): vscode.CompletionItem {
+    const copy = new vscode.CompletionItem(template.label, template.kind)
+    copy.insertText = template.insertText
+    copy.detail = template.detail
+    copy.documentation = template.documentation
+    copy.sortText = template.sortText
+    return copy
+}
+
+/**
+ * Append shallow copies of cached static items to `target`. Avoids allocating a
+ * new intermediate array for the static slice on every keystroke.
+ */
+function appendClonedStaticItems(target: vscode.CompletionItem[], templates: vscode.CompletionItem[]): void {
+    for (const template of templates) {
+        target.push(cloneStaticItem(template))
+    }
+}
+
 export class SqlCompletionProvider implements vscode.CompletionItemProvider {
     private dialectCache = new Map<string, Dialect>()
-    private snippetItemsMap = new Map<string, vscode.CompletionItem[]>()
-    private keywordItemsCache = new Map<string, vscode.CompletionItem[]>()
-    private functionItemsCache = new Map<string, vscode.CompletionItem[]>()
     private schemaCompletionProvider: SchemaCompletionProvider
     private configChangeDisposable: vscode.Disposable
 
     constructor(_extensionPath: string) {
         this.schemaCompletionProvider = new SchemaCompletionProvider()
         this.configChangeDisposable = getConfigManager().onConfigChange(() => {
-            this.keywordItemsCache.clear()
-            this.functionItemsCache.clear()
+            // Static items embed i18n labels; rebuild them when config (e.g.
+            // displayLanguage) changes.
+            clearStaticCompletionCaches()
         })
-        this.initSnippetItems()
-    }
-
-    private initSnippetItems(): void {
-        const dialectNames = new Set<string>()
-        for (const dName of Object.values(sqlDialects)) {
-            dialectNames.add(dName)
-        }
-        const commonSnippets = snippetData['common']
-        for (const dName of dialectNames) {
-            const merged: Record<string, import('./generated/snippetData').SnippetDef> = {}
-            const usedPrefixes = new Set<string>()
-            if (commonSnippets) {
-                for (const [key, val] of Object.entries(commonSnippets)) {
-                    if (!usedPrefixes.has(val.prefix)) {
-                        merged[key] = val
-                        usedPrefixes.add(val.prefix)
-                    }
-                }
-            }
-            const dialectSnippets = snippetData[dName]
-            if (dialectSnippets) {
-                for (const [key, val] of Object.entries(dialectSnippets)) {
-                    if (!usedPrefixes.has(val.prefix)) {
-                        merged[key] = val
-                        usedPrefixes.add(val.prefix)
-                    }
-                }
-            }
-            this.snippetItemsMap.set(dName, getSnippetItems(merged))
-        }
     }
 
     public dispose(): void {
         this.configChangeDisposable.dispose()
         this.dialectCache.clear()
-        this.snippetItemsMap.clear()
-        this.keywordItemsCache.clear()
-        this.functionItemsCache.clear()
+        clearStaticCompletionCaches()
     }
 
     private getDialect(langId: string): { dialect: Dialect; dName: string } {
@@ -123,42 +216,30 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
                     ? this.schemaCompletionProvider.provideCompletionItems(doc, pos, token, parseResult).catch(() => null)
                     : Promise.resolve(null)
 
-                // Collect local items (synchronous, fast)
-                this.tryCollect(items, () => {
-                    if (!cfg.keywords) return []
-                    let kwItems = this.keywordItemsCache.get(dName)
-                    if (!kwItems) {
-                        const kd = keywordMap[dName]
-                        if (kd) {
-                            kwItems = getKeywordItems(kd.keywords, kd.dataTypes, dName)
-                            this.keywordItemsCache.set(dName, kwItems)
-                        }
-                    }
-                    return kwItems || []
-                }, 'keyword completion')
+                // Collect static items (cached at module level, cloned to avoid
+                // mutation by VSCode). These depend only on the dialect.
+                if (cfg.keywords) {
+                    try {
+                        appendClonedStaticItems(items, getStaticKeywordItems(dName))
+                    } catch (e) { handleError(e, 'keyword completion', ErrorCategory.SUB_ITEM) }
+                }
                 if (token.isCancellationRequested) return []
 
-                this.tryCollect(items, () => {
-                    if (!cfg.functions) return []
-                    let fnItems = this.functionItemsCache.get(dName)
-                    if (!fnItems) {
-                        const sigs = functionSigMap[dName]
-                        if (sigs) {
-                            fnItems = getFunctionItems(sigs)
-                            this.functionItemsCache.set(dName, fnItems)
-                        }
-                    }
-                    return fnItems || []
-                }, 'function completion')
+                if (cfg.functions) {
+                    try {
+                        appendClonedStaticItems(items, getStaticFunctionItems(dName))
+                    } catch (e) { handleError(e, 'function completion', ErrorCategory.SUB_ITEM) }
+                }
                 if (token.isCancellationRequested) return []
 
-                this.tryCollect(items, () => {
-                    if (!cfg.snippets) return []
-                    const snippets = this.snippetItemsMap.get(dName)
-                    return snippets || []
-                }, 'snippet completion')
+                if (cfg.snippets) {
+                    try {
+                        appendClonedStaticItems(items, getStaticSnippetItems(dName))
+                    } catch (e) { handleError(e, 'snippet completion', ErrorCategory.SUB_ITEM) }
+                }
                 if (token.isCancellationRequested) return []
 
+                // Collect dynamic items (depend on document content / position).
                 const textContent = doc.getText().trim()
                 this.tryCollect(items, () => {
                     if (!cfg.cteNames || !textContent) return []
@@ -191,5 +272,16 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
                 return []
             }
         })
+    }
+
+    /**
+     * Delegates schema completion item resolution to
+     * {@link SchemaCompletionProvider.resolveCompletionItem}, which updates the
+     * MRU cache when the user actually interacts with a schema item. Only items
+     * carrying schema MRU data are affected; non-schema items pass through
+     * unchanged.
+     */
+    resolveCompletionItem(item: vscode.CompletionItem, token: vscode.CancellationToken): vscode.ProviderResult<vscode.CompletionItem> {
+        return this.schemaCompletionProvider.resolveCompletionItem(item, token)
     }
 }

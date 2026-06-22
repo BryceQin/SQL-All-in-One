@@ -19,7 +19,8 @@ export class SqlFoldingRangeProvider implements vscode.FoldingRangeProvider {
                 return this.provideFoldingRangesFromAst(result.ast)
             }
             return []
-        } catch {
+        } catch (e) {
+            console.debug('[SQL All in One] SqlFoldingRangeProvider.provideFoldingRanges failed:', e)
             return []
         }
     }

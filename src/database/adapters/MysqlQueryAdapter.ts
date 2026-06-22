@@ -38,8 +38,8 @@ export class MysqlQueryAdapter implements IQueryAdapter {
 
             if (!this.shared.transactionConnection && this.shared.pool) {
                 acquiredConn = await this.acquireConnectionWithTimeout(acquireTimeout);
-                queryConn = acquiredConn;
                 this.shared.activeConnectionCount++;
+                queryConn = acquiredConn;
                 this.shared.activeQueryThreadIds.set(queryId, (acquiredConn as unknown as { threadId: number }).threadId);
             }
 

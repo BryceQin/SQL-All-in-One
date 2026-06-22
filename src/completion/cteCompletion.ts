@@ -46,8 +46,9 @@ function extractCteNamesAstFirst(text: string, document: vscode.TextDocument): s
                 return astNames
             }
         }
-    } catch {
+    } catch (e) {
         // fallback to regex
+        console.debug('[SQL All in One] extractCteNames AST parse failed, falling back to regex:', e)
     }
 
     return extractCteNamesRegex(text)

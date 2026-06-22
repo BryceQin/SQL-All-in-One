@@ -12,6 +12,14 @@ import { NestedComment } from "./NestedComment"
 // 可选 TokenRule：允许 regex 字段为 undefined（构建规则时可能动态禁用某些规则）
 type OptionalTokenRule = Optional<TokenRule, "regex">
 
+// 解析后的参数类型：数组字段保证非空，positional 保持可选（与原 buildParamRulesImpl 内部逻辑一致）
+type ResolvedParamTypes = Omit<ParamTypes, "named" | "quoted" | "numbered" | "custom"> & {
+    named: NonNullable<ParamTypes["named"]>
+    quoted: NonNullable<ParamTypes["quoted"]>
+    numbered: NonNullable<ParamTypes["numbered"]>
+    custom: NonNullable<ParamTypes["custom"]>
+}
+
 export default class Tokenizer {
     // 缓存：仅依赖 TokenizerOptions 的前置规则（无需每次 tokenize 重新构建）
     private rulesBeforeParams: TokenRule[]
@@ -19,10 +27,10 @@ export default class Tokenizer {
     private rulesAfterParams: TokenRule[]
     // 缓存：参数规则（基于 paramTypes 构建，按需缓存）
     private cachedParamRules: ReturnType<typeof this.buildParamRulesImpl> | null = null
-    private cachedParamTypes: ParamTypes | undefined
+    private cachedParamTypes: ResolvedParamTypes | undefined
     // 缓存：完整的规则数组（前置 + 参数 + 后置），避免每次 tokenize 重新拼接
     private cachedFullRules: TokenRule[] | null = null
-    private cachedFullRulesParamTypes: ParamTypes | undefined
+    private cachedFullRulesParamTypes: ResolvedParamTypes | undefined
 
     private cfg: TokenizerOptions
     private dialectName: string
@@ -271,7 +279,7 @@ export default class Tokenizer {
     }
 
     // 解析参数类型：优先使用 paramTypesOverrides（动态覆盖），其次使用 cfg.paramTypes（默认配置），最后兜底为空数组/undefined
-    private resolveParamTypes(paramTypesOverrides?: ParamTypes): ParamTypes {
+    public resolveParamTypes(paramTypesOverrides?: ParamTypes): ResolvedParamTypes {
         return {
             named: paramTypesOverrides?.named || this.cfg.paramTypes?.named || [],
             quoted: paramTypesOverrides?.quoted || this.cfg.paramTypes?.quoted || [],
@@ -283,22 +291,12 @@ export default class Tokenizer {
         }
     }
 
-    // 优先使用 paramTypesOverrides（动态覆盖），其次使用 cfg.paramTypes（默认配置），最后兜底为空数组 /undefined，确保灵活性
+    // 构建参数规则（带缓存）：解析 paramTypes 后委托给 buildParamRulesImpl，命中缓存时直接复用
     private buildParamRules(
         cfg: TokenizerOptions,
         paramTypesOverrides?: ParamTypes,
     ): TokenRule[] {
-        const paramTypes = {
-            named: paramTypesOverrides?.named || cfg.paramTypes?.named || [],
-            quoted: paramTypesOverrides?.quoted || cfg.paramTypes?.quoted || [],
-            numbered:
-                paramTypesOverrides?.numbered || cfg.paramTypes?.numbered || [],
-            positional:
-                typeof paramTypesOverrides?.positional === 'boolean'
-                    ? paramTypesOverrides.positional
-                    : cfg.paramTypes?.positional,
-            custom: paramTypesOverrides?.custom || cfg.paramTypes?.custom || [],
-        }
+        const paramTypes = this.resolveParamTypes(paramTypesOverrides)
 
         if (
             this.cachedParamRules &&
@@ -308,40 +306,26 @@ export default class Tokenizer {
             return this.cachedParamRules
         }
 
-        this.cachedParamRules = this.buildParamRulesImpl(cfg, paramTypesOverrides)
+        this.cachedParamRules = this.buildParamRulesImpl(cfg, paramTypes)
         this.cachedParamTypes = paramTypes
         return this.cachedParamRules
     }
 
-    private paramTypesEqual(a: ParamTypes, b: ParamTypes): boolean {
+    private paramTypesEqual(a: ResolvedParamTypes, b: ResolvedParamTypes): boolean {
         return (
-            arraysEqual(a.named ?? [], b.named ?? []) &&
-            arraysEqual(a.quoted ?? [], b.quoted ?? []) &&
-            arraysEqual(a.numbered ?? [], b.numbered ?? []) &&
+            arraysEqual(a.named, b.named) &&
+            arraysEqual(a.quoted, b.quoted) &&
+            arraysEqual(a.numbered, b.numbered) &&
             a.positional === b.positional &&
-            arraysEqual(a.custom ?? [], b.custom ?? [])
+            arraysEqual(a.custom, b.custom)
         )
     }
 
-    // 优先使用 paramTypesOverrides（动态覆盖），其次使用 cfg.paramTypes（默认配置），最后兜底为空数组 /undefined，确保灵活性
+    // 构建参数规则：基于已解析的 paramTypes 生成各类参数匹配规则（命名/带引号/编号/位置/自定义）
     private buildParamRulesImpl(
         cfg: TokenizerOptions,
-        paramTypesOverrides?: ParamTypes,
+        paramTypes: ResolvedParamTypes,
     ): TokenRule[] {
-        // Each dialect has its own default parameter types (if any),
-        // but these can be overriden by the user of the library.
-        const paramTypes = {
-            named: paramTypesOverrides?.named || cfg.paramTypes?.named || [],
-            quoted: paramTypesOverrides?.quoted || cfg.paramTypes?.quoted || [],
-            numbered:
-                paramTypesOverrides?.numbered || cfg.paramTypes?.numbered || [],
-            positional:
-                typeof paramTypesOverrides?.positional === "boolean"
-                    ? paramTypesOverrides.positional
-                    : cfg.paramTypes?.positional,
-            custom: paramTypesOverrides?.custom || cfg.paramTypes?.custom || [],
-        }
-
         return this.validRules([
             // 匹配命名参数（如 :user_id）
             {

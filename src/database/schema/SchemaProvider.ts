@@ -9,6 +9,8 @@ import type { AstNode } from '../../parser/astTypes';
 import type { AST } from 'node-sql-parser';
 import { handleError, ErrorCategory } from '../../core/errorHandler';
 import { getContainer, Tokens } from '../../core/diContainer';
+import { MruTracker } from './MruTracker';
+import { HoverInfoProvider } from './HoverInfoProvider';
 
 export type ClauseType =
     | 'USE'
@@ -32,23 +34,58 @@ export interface CompletionContext {
     aliasMap: Map<string, string>;
 }
 
+/**
+ * Data attached to schema completion items so that `resolveCompletionItem`
+ * can update the MRU cache when the user actually interacts with an item
+ * (instead of updating MRU during item generation, which is a read operation
+ * that should not produce side effects).
+ */
+export interface SchemaMruData {
+    type: 'database' | 'table' | 'column';
+    key: string;
+}
+
+/**
+ * Attach MRU metadata to a completion item's `data` field. The `data` field
+ * exists on {@link vscode.CompletionItem} at runtime but is not declared on
+ * the installed `@types/vscode` (1.85) class definition, so we cast to a
+ * writable shape.
+ */
+function setMruData(item: vscode.CompletionItem, data: SchemaMruData): void {
+    (item as vscode.CompletionItem & { data?: unknown }).data = data;
+}
+
+/**
+ * Read MRU metadata previously attached via {@link setMruData}. Returns
+ * `undefined` for non-schema items (e.g. keywords, snippets).
+ */
+function getMruData(item: vscode.CompletionItem): SchemaMruData | undefined {
+    const data = (item as vscode.CompletionItem & { data?: unknown }).data;
+    if (data && typeof data === 'object' && 'type' in data && 'key' in data) {
+        return data as SchemaMruData;
+    }
+    return undefined;
+}
+
+/**
+ * Generates schema completion items (databases, tables, views, columns,
+ * procedures, functions) and resolves them on selection.
+ *
+ * Responsibilities are split across collaborating classes held by
+ * composition:
+ * - {@link MruTracker} owns the most-recently-used cache used to bias
+ *   column sorting and updated when the user selects an item.
+ * - {@link HoverInfoProvider} renders hover documentation for tables and
+ *   columns.
+ *
+ * The public surface (including {@link getTableHoverInfo} and
+ * {@link getColumnHoverInfo}) is preserved so existing callers are
+ * unaffected by the split.
+ */
 export class SchemaProvider {
-    private static readonly MRU_MAX_SIZE = 50;
     private schemaCache = getSchemaCache();
-    private mruMap = new Map<string, true>();
-
-    private addToMru(key: string): void {
-        this.mruMap.delete(key);
-        this.mruMap.set(key, true);
-        if (this.mruMap.size > SchemaProvider.MRU_MAX_SIZE) {
-            const oldest = this.mruMap.keys().next().value as string;
-            this.mruMap.delete(oldest);
-        }
-    }
-
-    private isInMru(key: string): boolean {
-        return this.mruMap.has(key);
-    }
+    private mruTracker = new MruTracker();
+    private hoverInfoProvider = new HoverInfoProvider();
 
     async getCompletionItems(context: CompletionContext): Promise<vscode.CompletionItem[]> {
         const items: vscode.CompletionItem[] = [];
@@ -89,7 +126,8 @@ export class SchemaProvider {
         if (!activeConn) return [];
         try {
             return await this.schemaCache.getColumns(activeConn.id, database, table);
-        } catch {
+        } catch (e) {
+            console.debug('[SQL All in One] SchemaProvider.getTableColumns failed:', e)
             return [];
         }
     }
@@ -152,8 +190,8 @@ export class SchemaProvider {
                     item.documentation = new vscode.MarkdownString(parts.join(' | '));
                 }
                 item.sortText = `0${db.name}`;
+                setMruData(item, { type: 'database', key: db.name.toLowerCase() });
                 items.push(item);
-                this.touchMru(db.name);
             }
         } catch (e) { handleError(e, 'SchemaProvider.addDatabaseItems', ErrorCategory.FEATURE); }
     }
@@ -171,8 +209,8 @@ export class SchemaProvider {
                     item.documentation = new vscode.MarkdownString(tbl.comment);
                 }
                 item.sortText = `0${tbl.name}`;
+                setMruData(item, { type: 'table', key: tbl.name.toLowerCase() });
                 items.push(item);
-                this.touchMru(tbl.name);
             }
         } catch (e) { handleError(e, 'SchemaProvider.addTableItems', ErrorCategory.FEATURE); }
     }
@@ -254,10 +292,10 @@ export class SchemaProvider {
                     item.documentation = new vscode.MarkdownString(docParts.join(' | '));
                 }
                 const pkSort = col.isPrimaryKey ? '0' : '1';
-                const mruSort = this.isInMru(`${tableName}.${col.name}`.toLowerCase()) ? '0' : '1';
+                const mruSort = this.mruTracker.isInMru(`${tableName}.${col.name}`.toLowerCase()) ? '0' : '1';
                 item.sortText = `${mruSort}${pkSort}${col.name}`;
+                setMruData(item, { type: 'column', key: `${tableName}.${col.name}`.toLowerCase() });
                 items.push(item);
-                this.touchMru(`${tableName}.${col.name}`);
             }
         } catch (e) { handleError(e, 'SchemaProvider.addColumnsForTable', ErrorCategory.FEATURE); }
     }
@@ -332,86 +370,29 @@ export class SchemaProvider {
         return items;
     }
 
-    private touchMru(key: string): void {
-        const lowerKey = key.toLowerCase();
-        this.addToMru(lowerKey);
+    /**
+     * Called when the user actually selects a completion item.
+     * Updates the MRU cache based on the item's data, avoiding side effects
+     * during item generation.
+     */
+    resolveCompletionItem(item: vscode.CompletionItem): vscode.CompletionItem {
+        const data = getMruData(item);
+        if (data && data.key) {
+            this.mruTracker.addToMru(data.key);
+        }
+        return item;
     }
 
     async getTableHoverInfo(tableName: string, database: string): Promise<vscode.MarkdownString | null> {
-        const activeConn = getConnectionManager().getActiveConnection();
-        if (!activeConn) return null;
-        const adapter = getConnectionManager().getAdapter(activeConn.id);
-        if (!adapter) return null;
-
-        try {
-            const structure = await adapter.describeTable(database, tableName);
-            const md = new vscode.MarkdownString();
-            md.isTrusted = true;
-            md.appendMarkdown(`### 📋 ${tableName}\n\n`);
-            md.appendMarkdown(`---\n\n`);
-
-            const metaParts: string[] = [];
-            if (structure.engine) metaParts.push(`Engine: ${structure.engine}`);
-            if (structure.rowCount !== undefined) metaParts.push(`Rows: ${structure.rowCount}`);
-            if (structure.charset) metaParts.push(`Charset: ${structure.charset}`);
-            if (structure.comment) metaParts.push(`Comment: ${structure.comment}`);
-            if (metaParts.length > 0) {
-                md.appendMarkdown(metaParts.join(' | ') + '\n\n');
-            }
-
-            md.appendMarkdown('| Column | Type | Nullable | Key | Default | Comment |\n');
-            md.appendMarkdown('|--------|------|----------|-----|---------|---------|\n');
-            for (const col of structure.columns) {
-                const key = col.isPrimaryKey ? '**PK**' : col.isUnique ? 'UQ' : '';
-                const nullable = col.nullable ? '✓' : '✗';
-                const defaultVal = col.defaultValue !== undefined ? String(col.defaultValue) : '';
-                const comment = col.comment || '';
-                md.appendMarkdown(`| ${col.name} | ${col.type} | ${nullable} | ${key} | ${defaultVal} | ${comment} |\n`);
-            }
-
-            return md;
-        } catch (e) {
-            handleError(e, 'SchemaProvider.getTableHoverInfo', ErrorCategory.FEATURE);
-            return null;
-        }
+        return this.hoverInfoProvider.getTableHoverInfo(tableName, database);
     }
 
     async getColumnHoverInfo(columnName: string, tableName: string, database: string): Promise<vscode.MarkdownString | null> {
-        const activeConn = getConnectionManager().getActiveConnection();
-        if (!activeConn) return null;
-
-        try {
-            const columns = await this.schemaCache.getColumns(activeConn.id, database, tableName);
-            const col = columns.find(c => c.name.toLowerCase() === columnName.toLowerCase());
-            if (!col) return null;
-
-            const md = new vscode.MarkdownString();
-            md.isTrusted = true;
-            md.appendMarkdown(`### 🔹 ${col.name}\n\n`);
-            md.appendMarkdown(`---\n\n`);
-
-            const parts: string[] = [];
-            parts.push(`**Type**: \`${col.type}\``);
-            parts.push(`**Nullable**: ${col.nullable ? 'Yes' : 'No'}`);
-            if (col.isPrimaryKey) parts.push('**Key**: PK');
-            if (col.isUnique) parts.push('**Key**: UQ');
-            if (col.defaultValue !== undefined) parts.push(`**Default**: \`${col.defaultValue}\``);
-            if (col.isAutoIncrement) parts.push('**Auto Increment**: Yes');
-            if (col.comment) parts.push(`**Comment**: ${col.comment}`);
-            if (col.referencedTable) parts.push(`**References**: \`${col.referencedTable}\``);
-
-            md.appendMarkdown(parts.join(' | ') + '\n\n');
-            md.appendMarkdown(`*Table: \`${tableName}\`*`);
-
-            return md;
-        } catch (e) {
-            handleError(e, 'SchemaProvider.getColumnHoverInfo', ErrorCategory.FEATURE);
-            return null;
-        }
+        return this.hoverInfoProvider.getColumnHoverInfo(columnName, tableName, database);
     }
 
     dispose(): void {
-        this.mruMap.clear();
+        this.mruTracker.dispose();
     }
 }
 

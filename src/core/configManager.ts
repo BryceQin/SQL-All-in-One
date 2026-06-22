@@ -3,13 +3,11 @@ import { initI18n } from '../i18n';
 import { getContainer, Tokens } from './diContainer';
 import { LRUCache } from '../utils/lruCache';
 
-type ConfigListener = () => void;
-
 export class ConfigManager {
     private static readonly MAX_CACHE_SIZE = 500;
     private cache = new LRUCache<string, unknown>({ maxSize: ConfigManager.MAX_CACHE_SIZE });
     private disposables: vscode.Disposable[] = [];
-    private listeners: ConfigListener[] = [];
+    private _onDidChangeConfig = new vscode.EventEmitter<void>();
     private validators = new Map<string, (value: unknown) => boolean>();
     private lastConfigSnapshot = new Map<string, unknown>();
     private lintRuleKeys: string[] = [];
@@ -46,18 +44,45 @@ export class ConfigManager {
         this.disposables.push(
             vscode.workspace.onDidChangeConfiguration((e) => {
                 if (e.affectsConfiguration('SQL-All-in-One')) {
-                    this.cache.clear();
+                    // Selective per-key invalidation: only remove cache entries
+                    // for config sections that actually changed.
+                    const keysToDelete: string[] = [];
+                    for (const [cacheKey] of this.cache.entries()) {
+                        if (cacheKey.startsWith('__sectionKeys::')) {
+                            // Parse: __sectionKeys::prefix::key1,key2,key3
+                            const parts = cacheKey.split('::');
+                            const prefix = parts[1];
+                            const keys = parts[2].split(',');
+                            const affected = keys.some(key => {
+                                const section = prefix
+                                    ? `SQL-All-in-One.${prefix}.${key}`
+                                    : `SQL-All-in-One.${key}`;
+                                return e.affectsConfiguration(section);
+                            });
+                            if (affected) {
+                                keysToDelete.push(cacheKey);
+                            }
+                        } else {
+                            // Regular cache key — check the section directly
+                            if (e.affectsConfiguration(`SQL-All-in-One.${cacheKey}`)) {
+                                keysToDelete.push(cacheKey);
+                            }
+                        }
+                    }
+                    for (const key of keysToDelete) {
+                        this.cache.delete(key);
+                    }
+
                     this.config = undefined;
                     if (e.affectsConfiguration('SQL-All-in-One.displayLanguage')) {
                         try {
                             initI18n();
-                        } catch {
-                            // ignore
+                        } catch (e) {
+                            // ignore: i18n reinit failure is non-fatal
+                            console.debug('[SQL All in One] ConfigManager i18n reinit failed:', e)
                         }
                     }
-                    for (const listener of this.listeners) {
-                        listener();
-                    }
+                    this._onDidChangeConfig.fire();
                 }
             })
         );
@@ -109,16 +134,8 @@ export class ConfigManager {
         return result as T;
     }
 
-    onConfigChange(listener: ConfigListener): vscode.Disposable {
-        this.listeners.push(listener);
-        return {
-            dispose: (): void => {
-                const idx = this.listeners.indexOf(listener);
-                if (idx >= 0) {
-                    this.listeners.splice(idx, 1);
-                }
-            },
-        };
+    onConfigChange(listener: () => void): vscode.Disposable {
+        return this._onDidChangeConfig.event(listener);
     }
 
     private getConfigSnapshot(): Map<string, unknown> {
@@ -174,7 +191,7 @@ export class ConfigManager {
 
     dispose(): void {
         this.disposables.forEach((d) => { d.dispose(); });
-        this.listeners.length = 0;
+        this._onDidChangeConfig.dispose();
     }
 }
 

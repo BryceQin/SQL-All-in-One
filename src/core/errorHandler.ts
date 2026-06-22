@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { t } from '../i18n';
 import { getContainer, Tokens } from './diContainer';
+import { LRUCache } from '../utils/lruCache';
 
 export enum ErrorLevel {
     DEBUG = 'debug',
@@ -30,14 +31,14 @@ export interface FormatterError {
 }
 
 export class ErrorHandler {
-    private listeners: ((error: FormatterError) => void)[] = [];
+    private _onError = new vscode.EventEmitter<FormatterError>();
     private errorHistory: FormatterError[];
     private historyStart = 0;
     private historyCount = 0;
     private readonly maxHistorySize = 100;
     private showNotifications = true;
     private outputChannel: vscode.OutputChannel | undefined;
-    private lastNotificationTime = new Map<string, number>();
+    private lastNotificationTime = new LRUCache<string, number>({ maxSize: 200, maxAge: 60000 });
     private readonly NOTIFICATION_THROTTLE_MS = 5000;
 
     constructor() {
@@ -137,13 +138,8 @@ export class ErrorHandler {
     }
 
     addListener(listener: (error: FormatterError) => void): () => void {
-        this.listeners.push(listener);
-        return () => {
-            const idx = this.listeners.indexOf(listener);
-            if (idx >= 0) {
-                this.listeners.splice(idx, 1);
-            }
-        };
+        const disposable = this._onError.event(listener);
+        return () => { disposable.dispose(); };
     }
 
     getHistory(): FormatterError[] {
@@ -177,7 +173,9 @@ export class ErrorHandler {
         } else {
             try {
                 message = JSON.stringify(error);
-            } catch {
+            } catch (e) {
+                // JSON.stringify may fail on circular references; fall back to String()
+                console.debug('[SQL All in One] ErrorHandler.normalizeError JSON.stringify failed:', e)
                 message = String(error);
             }
         }
@@ -223,13 +221,7 @@ export class ErrorHandler {
     }
 
     private notifyListeners(error: FormatterError): void {
-        for (const listener of this.listeners) {
-            try {
-                listener(error);
-            } catch (listenerError) {
-                console.warn('[SQL All in One] Error in listener:', listenerError);
-            }
-        }
+        this._onError.fire(error);
     }
 
     private maybeShowNotification(error: FormatterError): void {
@@ -244,12 +236,6 @@ export class ErrorHandler {
             return;
         }
         this.lastNotificationTime.set(key, now);
-        if (this.lastNotificationTime.size > 200) {
-            const oldestKey = this.lastNotificationTime.keys().next().value;
-            if (oldestKey !== undefined) {
-                this.lastNotificationTime.delete(oldestKey);
-            }
-        }
 
         switch (error.level) {
             case ErrorLevel.FATAL:
@@ -286,7 +272,7 @@ export class ErrorHandler {
         if (this.outputChannel) {
             this.outputChannel.dispose();
         }
-        this.listeners.length = 0;
+        this._onError.dispose();
         this.errorHistory = new Array<FormatterError>(this.maxHistorySize);
         this.historyStart = 0;
         this.historyCount = 0;

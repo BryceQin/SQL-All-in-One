@@ -27,7 +27,9 @@ export function initI18n(): void {
         } else {
             currentLang = 'en';
         }
-    } catch {
+    } catch (e) {
+        // ConfigManager may not be available yet; fall back to Chinese
+        console.debug('[SQL All in One] i18n init failed, falling back to zh:', e)
         currentLang = 'zh';
     }
 

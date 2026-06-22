@@ -100,7 +100,9 @@ export class MysqlConnectionAdapter {
             } finally {
                 conn.release();
             }
-        } catch {
+        } catch (e) {
+            // Health check failure means connection is not available
+            console.debug('[SQL All in One] MysqlConnectionAdapter.checkConnectionHealth failed:', e)
             return false;
         }
     }
