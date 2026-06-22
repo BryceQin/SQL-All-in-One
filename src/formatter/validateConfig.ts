@@ -6,6 +6,7 @@ import type { ParamItems } from "./Params"
 // SQL参数的匹配规则类型
 import type { ParamTypes } from "../lexer/TokenizerOptions"
 import { t } from "../i18n"
+import { handleError, ErrorCategory } from "../core/errorHandler"
 
 // 自定义错误类
 export class ConfigError extends Error {}
@@ -33,7 +34,7 @@ export function validateConfig(cfg: FormatOptions): FormatOptions {
     }
     // 校验 cfg.params 参数合法性，非法则【控制台警告】
     if (cfg.params && !validateParams(cfg.params)) {
-        console.warn(t('validate.paramsStringType'))
+        handleError(new Error(t('validate.paramsStringType')), 'validateConfig.validateParams', ErrorCategory.CONFIG)
     }
 
     // 校验 cfg.paramTypes 参数规则合法性，非法则抛错
@@ -61,7 +62,7 @@ function validateParamTypes(paramTypes: ParamTypes): boolean {
         // 数组中每一项的 regex 属性，都不能是空字符串，且必须是合法正则
         return paramTypes.custom.every((p) => {
             if (!p.regex || p.regex === "") return false
-            try { new RegExp(p.regex); return true } catch (e) { console.debug('[SQL All in One] validateParamTypes: invalid regex:', p.regex, e); return false }
+            try { new RegExp(p.regex); return true } catch (e) { handleError(e, `validateConfig.validateParamTypes (regex: ${p.regex})`, ErrorCategory.CONFIG); return false }
         })
     }
     // 无自定义规则 → 校验通过

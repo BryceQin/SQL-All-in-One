@@ -5,6 +5,7 @@ import type { SqlDialect } from './dialectMapper';
 import type { ParseError } from './ParseError';
 import { LRUCache } from '../utils/lruCache';
 import { getPerformanceMonitor } from '../core/performanceMonitor';
+import { handleError, ErrorCategory } from '../core/errorHandler';
 import { getContainer, Tokens } from '../core/diContainer';
 import { isAstNode } from './AstVisitor';
 import { extractName, toVscodeLocationFromLoc } from './astUtils';
@@ -481,7 +482,7 @@ export class DocumentAstCache {
                         }
                     } catch (e) {
                         // Fall through to full parse on any unexpected error
-                        console.debug('[SQL All in One] DocumentAstCache incremental parse failed, falling back to full parse:', e)
+                        handleError(e, 'DocumentAstCache.incrementalParse', ErrorCategory.PARSE)
                     }
                 }
             }

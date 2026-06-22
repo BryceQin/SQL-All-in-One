@@ -3,6 +3,7 @@ import type { DatabaseInfo, TableInfo, ColumnInfo, FunctionInfo, ProcedureInfo, 
 import { getConnectionManager } from '../connection/ConnectionManager';
 import { getConfigManager } from '../../core/configManager';
 import { getContainer, Tokens } from '../../core/diContainer';
+import { handleError, ErrorCategory } from '../../core/errorHandler';
 import { LRUCache } from '../../utils/lruCache';
 
 interface CacheEntry<T> {
@@ -231,7 +232,7 @@ export class SchemaCache {
             await Promise.allSettled(columnPromises);
         } catch (e) {
             // prefetch failure should not affect normal usage
-            console.debug('[SQL All in One] SchemaCache prefetchOnConnect failed:', e)
+            handleError(e, 'SchemaCache.prefetchOnConnect', ErrorCategory.FEATURE)
         }
     }
 

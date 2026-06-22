@@ -5,6 +5,7 @@ import type { SqlDialect } from '../../parser/dialectMapper';
 import { getConnectionManager } from '../connection/ConnectionManager';
 import { t } from '../../i18n';
 import { getConfigManager } from '../../core/configManager';
+import { handleError, ErrorCategory } from '../../core/errorHandler';
 
 // 预编译的正则表达式常量，避免每次调用 analyzeWithRegex 时重复创建 RegExp 对象
 const DELETE_PATTERN = /^\s*DELETE\s+/i;
@@ -27,7 +28,7 @@ export class SafeQueryGuard {
             if (activeConn?.dialect) {
                 return activeConn.dialect as SqlDialect;
             }
-        } catch (e) { console.warn('Failed to infer dialect:', e); }
+        } catch (e) { handleError(e, 'SafeQueryGuard.inferDialect', ErrorCategory.PARSE); }
         return 'sql';
     }
 
@@ -98,7 +99,7 @@ export class SafeQueryGuard {
                 }
             }
         } catch (e) {
-            console.warn('AST parsing failed, falling back to regex:', e);
+            handleError(e, 'SafeQueryGuard.parseStatements', ErrorCategory.PARSE);
             return this.analyzeWithRegex(sql, level, warnings, confirmations);
         }
 

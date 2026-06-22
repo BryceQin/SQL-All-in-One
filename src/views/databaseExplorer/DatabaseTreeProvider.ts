@@ -560,7 +560,7 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
                 }
             } catch (e) {
                 // Index info is optional, columns are already loaded from cache
-                console.debug('[SQL All in One] DatabaseTreeProvider.getTableChildren index info load failed:', e)
+                handleError(e, 'DatabaseTreeProvider.getTableChildren.indexInfo', ErrorCategory.SUB_ITEM)
             }
 
             this.nodeCache.set(cacheKey, children);
@@ -695,7 +695,7 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
                 }
             } catch (e) {
                 // statement is optional
-                console.debug('[SQL All in One] DatabaseTreeProvider.getTriggerChildren statement load failed:', e)
+                handleError(e, 'DatabaseTreeProvider.getTriggerChildren.statementLoad', ErrorCategory.SUB_ITEM)
             }
 
             this.nodeCache.set(cacheKey, children);

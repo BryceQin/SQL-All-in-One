@@ -13,6 +13,7 @@ import {
     type CsvImportOptions,
     type JsonImportOptions,
 } from '../../database/transfer/DataImporter';
+import { handleError, ErrorCategory } from '../../core/errorHandler';
 
 interface DataTransferMessage {
     command: string;
@@ -157,7 +158,7 @@ export class DataTransferDialog extends BaseWebviewPanel {
                 detectedFormat = detectFileFormat(filePath);
             } catch (e) {
                 // Format detection failed; default to CSV
-                console.debug('[SQL All in One] DataTransferDialog detectFileFormat failed, defaulting to csv:', e)
+                handleError(e, 'DataTransferDialog.detectFileFormat', ErrorCategory.SUB_ITEM)
                 detectedFormat = 'csv';
             }
             this.postMessage({

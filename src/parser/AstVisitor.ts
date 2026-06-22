@@ -1,3 +1,5 @@
+import { debugLog } from '../core/errorHandler';
+
 function isPlainObject(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
@@ -37,7 +39,7 @@ export function walkAst(
         const currentNode = stack.pop()
 
         if (stack.length / 4 > 10000) {
-            console.warn('SQL All in One: AST depth exceeded maximum, stopping traversal')
+            debugLog('AST depth exceeded maximum, stopping traversal', 'AstVisitor.traverse')
             return
         }
 

@@ -6,6 +6,7 @@ import { getLanguage, t } from '../../i18n';
 import { LanguageBridge } from './LanguageBridge';
 import { getConnectionManager } from '../../database/connection/ConnectionManager';
 import { getTokenColors } from '../../utils/themeColors';
+import { handleError, ErrorCategory } from '../../core/errorHandler';
 
 export interface FilterCondition {
     column: string;
@@ -348,7 +349,7 @@ export class QueryResultPanel extends BaseWebviewPanel {
                     this._sendLanguageData();
                 }
             }
-        } catch (e) { /* ignore: dialect detection is best-effort */ console.debug('[SQL All in One] QueryResultPanel dialect detection failed:', e) }
+        } catch (e) { /* ignore: dialect detection is best-effort */ handleError(e, 'QueryResultPanel.dialectDetection', ErrorCategory.SUB_ITEM) }
 
         const metadata = {
             queryId: result.queryId,
@@ -521,10 +522,10 @@ export class QueryResultPanel extends BaseWebviewPanel {
                     adapter.listDatabases().then(dbs => {
                         const databases = dbs.map(d => d.name);
                         this.sendDatabaseList(databases, activeConn.database || '');
-                    }).catch((_e) => { /* ignore: database list prefetch is best-effort */ console.debug('[SQL All in One] QueryResultPanel database list prefetch failed:', _e) });
+                    }).catch((_e) => { /* ignore: database list prefetch is best-effort */ handleError(_e, 'QueryResultPanel.databaseListPrefetch', ErrorCategory.SUB_ITEM) });
                 }
             }
-        } catch (e) { /* ignore: database list is best-effort */ console.debug('[SQL All in One] QueryResultPanel sendDatabaseList failed:', e) }
+        } catch (e) { /* ignore: database list is best-effort */ handleError(e, 'QueryResultPanel.sendDatabaseList', ErrorCategory.SUB_ITEM) }
     }
 
     private async _handleExport(format: string, options?: Record<string, unknown>): Promise<void> {
@@ -657,7 +658,7 @@ export class QueryResultPanel extends BaseWebviewPanel {
                 });
             } catch (e) {
                 // Text preview failed; fall back to hex representation
-                console.debug('[SQL All in One] Blob text preview failed, falling back to hex:', e)
+                handleError(e, 'QueryResultPanel.blobTextPreview', ErrorCategory.SUB_ITEM)
                 this.postMessage({
                     type: 'blobPreview',
                     data: { rowIndex, colIndex, content: buffer.toString('hex'), mode: 'hex' },

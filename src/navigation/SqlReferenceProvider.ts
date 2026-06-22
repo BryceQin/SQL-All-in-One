@@ -1,6 +1,7 @@
 import * as vscode from 'vscode'
 import type { AstNavigator } from './AstNavigator'
 import { getNavigationContext } from './guard'
+import { handleError, ErrorCategory } from '../core/errorHandler'
 
 export class SqlReferenceProvider implements vscode.ReferenceProvider {
     constructor(private navigator: AstNavigator) {}
@@ -31,7 +32,7 @@ export class SqlReferenceProvider implements vscode.ReferenceProvider {
 
             return locations.length > 0 ? locations : null
         } catch (e) {
-            console.debug('[SQL All in One] SqlReferenceProvider.provideReferences failed:', e)
+            handleError(e, 'SqlReferenceProvider.provideReferences', ErrorCategory.FEATURE)
             return null
         }
     }

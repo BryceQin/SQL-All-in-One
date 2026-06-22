@@ -1,9 +1,9 @@
 import * as assert from 'assert'
 import { LRUCache } from '../utils/lruCache'
 import { Lazy, lazy, lazyAsync } from '../utils/lazy'
-import { DIContainer } from '../core/diContainer'
+import { DIContainer, getContainer, Tokens } from '../core/diContainer'
 import { ConfigManager } from '../core/configManager'
-import { ErrorHandler, ErrorLevel, ErrorCategory } from '../core/errorHandler'
+import { ErrorHandler, ErrorLevel, ErrorCategory, debugLog } from '../core/errorHandler'
 import { initI18nForTest } from '../i18n'
 
 // ============================================================================
@@ -121,6 +121,11 @@ suite('ErrorHandler', () => {
     setup(() => {
         initI18nForTest('zh')
         errorHandler = new ErrorHandler()
+        getContainer().register(Tokens.ErrorHandler, errorHandler)
+    })
+
+    teardown(() => {
+        getContainer().unregister(Tokens.ErrorHandler)
     })
 
     test('try() returns function result on success', () => {
@@ -279,6 +284,105 @@ suite('ErrorHandler', () => {
         errorHandler.handle('listener test', 'ctx')
 
         assert.strictEqual(received, 'listener test')
+    })
+
+    test('isDebugEnabled() returns false by default', () => {
+        assert.strictEqual(errorHandler.isDebugEnabled(), false)
+    })
+
+    test('setDebugEnabled(true) enables debug logging', () => {
+        errorHandler.setDebugEnabled(true)
+        assert.strictEqual(errorHandler.isDebugEnabled(), true)
+    })
+
+    test('setDebugEnabled(false) disables debug logging', () => {
+        errorHandler.setDebugEnabled(true)
+        assert.strictEqual(errorHandler.isDebugEnabled(), true)
+        errorHandler.setDebugEnabled(false)
+        assert.strictEqual(errorHandler.isDebugEnabled(), false)
+    })
+
+    test('debugLog does not record to error history', () => {
+        const originalDebug = console.debug
+        console.debug = (): void => { /* no-op */ }
+
+        try {
+            errorHandler.setDebugEnabled(true)
+            debugLog('debug message', 'debug-context')
+
+            const history = errorHandler.getHistory()
+            assert.strictEqual(history.length, 0, 'debugLog should not record to error history')
+        } finally {
+            console.debug = originalDebug
+        }
+    })
+
+    test('debugLog does not fire error events', () => {
+        const originalDebug = console.debug
+        console.debug = (): void => { /* no-op */ }
+
+        let eventFired = false
+        errorHandler.addListener(() => {
+            eventFired = true
+        })
+
+        try {
+            errorHandler.setDebugEnabled(true)
+            debugLog('debug message', 'debug-context')
+
+            assert.strictEqual(eventFired, false, 'debugLog should not fire error events')
+        } finally {
+            console.debug = originalDebug
+        }
+    })
+
+    test('debugLog does nothing when debug is disabled', () => {
+        const originalDebug = console.debug
+        let callCount = 0
+        console.debug = (): void => { callCount++ }
+
+        try {
+            errorHandler.setDebugEnabled(false)
+            debugLog('debug message', 'debug-context')
+
+            assert.strictEqual(callCount, 0, 'console.debug should not be called when debug is disabled')
+        } finally {
+            console.debug = originalDebug
+        }
+    })
+
+    test('debugLog outputs to console.debug with correct format when enabled', () => {
+        const originalDebug = console.debug
+        let capturedArgs: unknown[] = []
+        console.debug = (...args: unknown[]): void => { capturedArgs = args }
+
+        try {
+            errorHandler.setDebugEnabled(true)
+            debugLog('test message', 'test-context', { key: 'value' })
+
+            assert.strictEqual(capturedArgs.length, 2, 'console.debug should be called with message and data')
+            assert.strictEqual(capturedArgs[0], '[SQL All in One] [test-context] test message')
+            assert.deepStrictEqual(capturedArgs[1], { key: 'value' })
+        } finally {
+            console.debug = originalDebug
+        }
+    })
+
+    test('debugLog works without data parameter', () => {
+        const originalDebug = console.debug
+        let capturedArgs: unknown[] = []
+        console.debug = (...args: unknown[]): void => { capturedArgs = args }
+
+        try {
+            errorHandler.setDebugEnabled(true)
+            debugLog('no data message', 'no-data-context')
+
+            assert.strictEqual(capturedArgs.length, 2, 'console.debug should be called with message and undefined data')
+            assert.strictEqual(capturedArgs[0], '[SQL All in One] [DEBUG] [no-data-context] no data message')
+            assert.strictEqual(capturedArgs[1], undefined)
+        } finally {
+            console.debug = originalDebug
+        }
     })
 })
 
