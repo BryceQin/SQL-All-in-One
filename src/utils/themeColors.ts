@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import { handleError, ErrorCategory } from '../core/errorHandler';
 
 /**
  * Mapping from Monaco token types to their resolved hex colors.
@@ -125,7 +126,7 @@ export async function getTokenColors(): Promise<TokenColorMap | undefined> {
         cachedThemeName = themeName;
         return cachedColors;
     } catch (e) {
-        console.debug('[SQL All in One] getTokenColors failed:', e)
+        handleError(e, 'themeColors.getTokenColors', ErrorCategory.FEATURE)
         return undefined;
     }
 }

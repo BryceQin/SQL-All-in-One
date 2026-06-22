@@ -3,6 +3,7 @@ import Indentation from '../Indentation';
 import { formatKeyword, formatFunctionName, hasProperty, isLogicalOperator } from './CommonFormatter';
 import { AstNodeType } from '../AstNodeTypes';
 import type { AstNode } from '../../parser/astTypes';
+import { handleError, ErrorCategory } from '../../core/errorHandler';
 
 export type SubqueryFormatter = (expr: unknown) => string;
 
@@ -352,7 +353,7 @@ export class ExpressionFormatter {
             return JSON.stringify(expr);
         } catch (e) {
             // JSON.stringify may fail on circular references; fall back to String()
-            console.debug('[SQL All in One] ExpressionFormatter.formatUnknown JSON.stringify failed:', e)
+            handleError(e, 'ExpressionFormatter.formatUnknown', ErrorCategory.FORMAT)
             return String(expr);
         }
     }

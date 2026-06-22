@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import messagesEn from './messages.en.json';
 import messagesZh from './messages.zh.json';
+import { handleError, ErrorCategory, debugLog } from '../core/errorHandler';
 
 type Language = 'zh' | 'en';
 export type MessageKey = keyof typeof messagesEn;
@@ -29,7 +30,7 @@ export function initI18n(): void {
         }
     } catch (e) {
         // ConfigManager may not be available yet; fall back to Chinese
-        console.debug('[SQL All in One] i18n init failed, falling back to zh:', e)
+        handleError(e, 'i18n.init', ErrorCategory.FEATURE)
         currentLang = 'zh';
     }
 
@@ -47,7 +48,7 @@ export function t(key: MessageKey, ...args: string[]): string {
         template = messageBundles.en[key];  // fallback to English
     }
     if (template === undefined) {
-        console.warn(`[i18n] Missing translation key: ${key}`);
+        debugLog(`Missing translation key: ${key}`, 'i18n.translate');
         return key;
     }
     args.forEach((arg, i) => {
@@ -66,7 +67,7 @@ export function tAny(key: string, ...args: string[]): string {
         template = (messageBundles.en as Record<string, string>)[key];  // fallback to English
     }
     if (template === undefined) {
-        console.warn(`[i18n] Missing translation key: ${key}`);
+        debugLog(`Missing translation key: ${key}`, 'i18n.translate');
         return key;
     }
     args.forEach((arg, i) => {
