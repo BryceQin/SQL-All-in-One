@@ -124,6 +124,10 @@ suite('ErrorHandler', () => {
         getContainer().register(Tokens.ErrorHandler, errorHandler)
     })
 
+    teardown(() => {
+        getContainer().unregister(Tokens.ErrorHandler)
+    })
+
     test('try() returns function result on success', () => {
         const result = errorHandler.try(
             () => 42,

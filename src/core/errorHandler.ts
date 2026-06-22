@@ -307,5 +307,5 @@ export function debugLog(message: string, context: string, data?: unknown): void
     if (!handler.isDebugEnabled()) {
         return;
     }
-    console.debug(`[SQL All in One] [${context}] ${message}`, data);
+    console.debug(`[SQL All in One] [DEBUG] [${context}] ${message}`, data);
 }
