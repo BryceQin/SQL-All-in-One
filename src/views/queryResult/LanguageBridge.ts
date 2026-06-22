@@ -8,6 +8,7 @@ import { SqlHoverProvider } from '../../providers/SqlHoverProvider';
 import { formatEditorText } from '../../utils/formatEditorText';
 import { getContainer, Tokens } from '../../core/diContainer';
 import { createConfig } from '../../core/config';
+import { handleError, ErrorCategory } from '../../core/errorHandler';
 import { InMemoryDocument } from './InMemoryDocument';
 import { MonacoDataAdapter, type MonacoCompletionItem, type MonacoDiagnostic } from './MonacoDataAdapter';
 import { keywordMap, functionSigMap } from '../../languages/dialectData';
@@ -97,7 +98,7 @@ export class LanguageBridge implements vscode.Disposable {
                 cts.dispose();
             }
         } catch (e) {
-            console.warn('[SQL All in One] LanguageBridge completion failed:', e instanceof Error ? e.message : String(e));
+            handleError(e, 'LanguageBridge.handleCompletionRequest', ErrorCategory.SUB_ITEM);
             return [];
         }
     }
@@ -122,7 +123,7 @@ export class LanguageBridge implements vscode.Disposable {
                 cts.dispose();
             }
         } catch (e) {
-            console.warn('[SQL All in One] LanguageBridge hover failed:', e instanceof Error ? e.message : String(e));
+            handleError(e, 'LanguageBridge.handleHoverRequest', ErrorCategory.SUB_ITEM);
             return null;
         }
     }
@@ -138,7 +139,7 @@ export class LanguageBridge implements vscode.Disposable {
             const config = createConfig(extensionSettings, formattingOptions, languageId);
             return formatEditorText(sql, config);
         } catch (e) {
-            console.warn('[SQL All in One] LanguageBridge format failed:', e instanceof Error ? e.message : String(e));
+            handleError(e, 'LanguageBridge.handleFormatRequest', ErrorCategory.FORMAT);
             return sql;
         }
     }
@@ -148,7 +149,7 @@ export class LanguageBridge implements vscode.Disposable {
             const diagnostics = this._linter.lint(sql, dialect as SqlDialect);
             return MonacoDataAdapter.toMonacoDiagnostics(diagnostics);
         } catch (e) {
-            console.debug('[SQL All in One] LanguageBridge.handleDiagnosticsRequest failed:', e)
+            handleError(e, 'LanguageBridge.handleDiagnosticsRequest', ErrorCategory.PARSE);
             return [];
         }
     }
@@ -172,7 +173,7 @@ export class LanguageBridge implements vscode.Disposable {
                             description: def.description,
                         });
                     }
-                } catch (e) { /* skip invalid snippet files */ console.debug('[SQL All in One] LanguageBridge skipped invalid snippet file:', name, e) }
+                } catch (e) { /* skip invalid snippet files */ handleError(e, 'LanguageBridge._loadSnippets', ErrorCategory.SUB_ITEM); }
             }
         }
         this._snippetCache.set(dialect, snippets);
