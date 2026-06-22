@@ -1,6 +1,6 @@
 import * as vscode from 'vscode'
 import { walkAst, isAstNode } from '../parser/AstVisitor'
-import { lineColFromIndex } from '../lexer/lineColFromIndex'
+import { lineColFromIndexFast, precomputeLineOffsets } from '../lexer/lineColFromIndex'
 import { t } from '../i18n'
 import type { AstNode } from '../parser/astTypes'
 import { getNodeLocation, createDiagnostic, resolveAstList } from '../parser/astUtils'
@@ -215,11 +215,16 @@ export class AstDiagnosticsProvider {
     private checkExtraCommasInText(sql: string, diagnostics: vscode.Diagnostic[]): void {
         const strippedRanges = this.getNonStringCommentRanges(sql)
 
+        // Precompute line-start offsets once so each match position can be
+        // converted to line/col via O(log n) binary search instead of O(n)
+        // linear scan per match.
+        const lineStarts = precomputeLineOffsets(sql)
+
         const pattern = /,\s*([);])/g
         let match: RegExpExecArray | null
         while ((match = pattern.exec(sql)) !== null) {
             if (this.isInRange(match.index, strippedRanges)) {
-                const lineCol = lineColFromIndex(sql, match.index)
+                const lineCol = lineColFromIndexFast(lineStarts, match.index)
                 const isParen = match[1] === ')'
                 diagnostics.push(
                     createDiagnostic(
@@ -239,24 +244,25 @@ export class AstDiagnosticsProvider {
     private getNonStringCommentRanges(sql: string): [number, number][] {
         const ranges: [number, number][] = []
         let inString = false
-        let stringChar = ''
+        let stringChar = 0
         let inLineComment = false
         let inBlockComment = false
         let rangeStart = 0
+        const len = sql.length
 
-        for (let i = 0; i < sql.length; i++) {
-            const char = sql[i]
-            const nextChar = i + 1 < sql.length ? sql[i + 1] : ''
+        for (let i = 0; i < len; i++) {
+            const charCode = sql.charCodeAt(i)
+            const nextCharCode = i + 1 < len ? sql.charCodeAt(i + 1) : 0
 
             if (inLineComment) {
-                if (char === '\n') {
+                if (charCode === 10) {
                     inLineComment = false
                     rangeStart = i + 1
                 }
                 continue
             }
             if (inBlockComment) {
-                if (char === '*' && nextChar === '/') {
+                if (charCode === 42 && nextCharCode === 47) {
                     inBlockComment = false
                     i++
                     rangeStart = i + 1
@@ -264,8 +270,8 @@ export class AstDiagnosticsProvider {
                 continue
             }
             if (inString) {
-                if (char === stringChar) {
-                    if (nextChar === stringChar) {
+                if (charCode === stringChar) {
+                    if (nextCharCode === stringChar) {
                         i++
                     } else {
                         inString = false
@@ -275,23 +281,23 @@ export class AstDiagnosticsProvider {
                 continue
             }
 
-            if (char === "'" || char === '"') {
+            if (charCode === 39 || charCode === 34) {
                 ranges.push([rangeStart, i])
                 inString = true
-                stringChar = char
-            } else if (char === '-' && nextChar === '-') {
+                stringChar = charCode
+            } else if (charCode === 45 && nextCharCode === 45) {
                 ranges.push([rangeStart, i])
                 inLineComment = true
                 i++
-            } else if (char === '/' && nextChar === '*') {
+            } else if (charCode === 47 && nextCharCode === 42) {
                 ranges.push([rangeStart, i])
                 inBlockComment = true
                 i++
             }
         }
 
-        if (!inString && !inLineComment && !inBlockComment && rangeStart < sql.length) {
-            ranges.push([rangeStart, sql.length])
+        if (!inString && !inLineComment && !inBlockComment && rangeStart < len) {
+            ranges.push([rangeStart, len])
         }
 
         return ranges

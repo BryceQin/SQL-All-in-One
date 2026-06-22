@@ -1,3 +1,5 @@
+import { debugLog } from '../core/errorHandler';
+
 function isPlainObject(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
@@ -12,6 +14,7 @@ export interface AstVisitor {
 }
 
 export const MAX_AST_DEPTH = 1000
+const MAX_STACK_DEPTH = 40000
 
 export function walkAst(
     node: unknown,
@@ -19,27 +22,21 @@ export function walkAst(
     _parent?: Record<string, unknown> | null,
     _key?: string | null,
 ): void {
-    // Flat array: each task uses 4 consecutive slots [node, parent, key, phase]
-    // phase: 0 = enter, 1 = leave
     const stack: unknown[] = []
     stack.push(node, _parent ?? null, _key ?? null, 0)
 
-    // Reusable buffer for collecting an object's own enumerable keys.
-    // Using for...in into a shared buffer avoids the per-node temporary arrays
-    // (one outer array + N [key, value] pairs) that Object.entries() would
-    // allocate on every visited node, which is costly during deep traversal.
     const keysBuffer: string[] = []
 
     while (stack.length > 0) {
+        if (stack.length > MAX_STACK_DEPTH) {
+            debugLog('AST depth exceeded maximum, stopping traversal', 'AstVisitor.traverse')
+            return
+        }
+
         const phase = stack.pop() as number
         const key = stack.pop()
         const parent = stack.pop()
         const currentNode = stack.pop()
-
-        if (stack.length / 4 > 10000) {
-            console.warn('SQL All in One: AST depth exceeded maximum, stopping traversal')
-            return
-        }
 
         if (phase === 1) {
             if (isAstNode(currentNode)) {

@@ -167,7 +167,14 @@ export default class TokenizerEngine {
                     throw this.createParseError()
                 }
 
-                tokens.push({ ...token, precedingWhitespace })
+                tokens.push({
+                    type: token.type,
+                    raw: token.raw,
+                    text: token.text,
+                    start: token.start,
+                    key: token.key,
+                    precedingWhitespace,
+                })
             }
         }
         // 3. 返回结构化 Token 流

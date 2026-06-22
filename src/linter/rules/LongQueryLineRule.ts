@@ -14,15 +14,31 @@ export class LongQueryLineRule extends BaseRule {
 
     check(context: RuleContext): vscode.Diagnostic[] {
         const diagnostics: vscode.Diagnostic[] = []
-        const lines = context.sql.split('\n')
+        const sql = context.sql
         const cfgMgr = getConfigManager()
         const maxLength = cfgMgr.get<number>('singleLineMaxLength', 80)
 
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i]
-            if (line.length > maxLength && !line.trimStart().startsWith('--') && !line.trimStart().startsWith('#')) {
-                const loc = { line: i + 1, column: 0 }
-                diagnostics.push(this.addDiagnostic(loc, line.length, 'linter.longSingleLine', String(i + 1), String(maxLength)))
+        let lineStart = 0
+        let lineNum = 1
+        const len = sql.length
+
+        for (let i = 0; i <= len; i++) {
+            if (i === len || sql.charCodeAt(i) === 10) {
+                const lineLength = i - lineStart
+                if (lineLength > maxLength) {
+                    const trimmedStart = lineStart
+                    let trimEnd = trimmedStart
+                    while (trimEnd < i && (sql.charCodeAt(trimEnd) === 32 || sql.charCodeAt(trimEnd) === 9)) {
+                        trimEnd++
+                    }
+                    const firstTwo = sql.substring(trimEnd, trimEnd + 2)
+                    if (firstTwo !== '--' && sql.charCodeAt(trimEnd) !== 35) {
+                        const loc = { line: lineNum, column: 0 }
+                        diagnostics.push(this.addDiagnostic(loc, lineLength, 'linter.longSingleLine', String(lineNum), String(maxLength)))
+                    }
+                }
+                lineStart = i + 1
+                lineNum++
             }
         }
         return diagnostics

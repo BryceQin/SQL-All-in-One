@@ -6,6 +6,7 @@ import { isAstNode } from '../parser/AstVisitor'
 import { getNodeLocation, getStatementEndLocation, extractName, extractTableName } from '../parser/astUtils'
 import type { AstNode, AstLocation } from '../parser/astTypes'
 import { getConfigManager } from '../core/configManager'
+import { handleError, ErrorCategory } from '../core/errorHandler'
 
 export class SqlOutlineProvider implements vscode.DocumentSymbolProvider {
     provideDocumentSymbols(
@@ -23,7 +24,7 @@ export class SqlOutlineProvider implements vscode.DocumentSymbolProvider {
             }
             return []
         } catch (e) {
-            console.debug('[SQL All in One] SqlOutlineProvider.provideDocumentSymbols failed:', e)
+            handleError(e, 'SqlOutlineProvider.provideDocumentSymbols', ErrorCategory.FEATURE)
             return []
         }
     }

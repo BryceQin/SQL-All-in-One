@@ -5,6 +5,7 @@ import type { SqlDialect } from './dialectMapper';
 import type { ParseError } from './ParseError';
 import { LRUCache } from '../utils/lruCache';
 import { getPerformanceMonitor } from '../core/performanceMonitor';
+import { handleError, ErrorCategory } from '../core/errorHandler';
 import { getContainer, Tokens } from '../core/diContainer';
 import { isAstNode } from './AstVisitor';
 import { extractName, toVscodeLocationFromLoc } from './astUtils';
@@ -160,17 +161,25 @@ function matchDollarQuoteDelimiter(
     start: number,
     len: number,
 ): { delimiter: string; nextIndex: number } | null {
-    if (text[start] !== '$') return null;
+    if (text.charCodeAt(start) !== 36) return null; // '$'
     let j = start + 1;
     // Optional tag: must start with a letter or underscore, then identifier chars.
-    if (j < len && /[A-Za-z_]/.test(text[j])) {
-        j++;
-        while (j < len && /[A-Za-z0-9_]/.test(text[j])) {
+    if (j < len) {
+        const c = text.charCodeAt(j);
+        if ((c >= 65 && c <= 90) || (c >= 97 && c <= 122) || c === 95) {
             j++;
+            while (j < len) {
+                const cc = text.charCodeAt(j);
+                if ((cc >= 65 && cc <= 90) || (cc >= 97 && cc <= 122) || (cc >= 48 && cc <= 57) || cc === 95) {
+                    j++;
+                } else {
+                    break;
+                }
+            }
         }
     }
     // The opening delimiter must be terminated by '$'.
-    if (j < len && text[j] === '$') {
+    if (j < len && text.charCodeAt(j) === 36) {
         const delimiter = text.substring(start, j + 1);
         return { delimiter, nextIndex: j + 1 };
     }
@@ -189,29 +198,29 @@ export function splitSqlStatements(text: string): { text: string; start: number;
     const len = text.length;
 
     while (i < len) {
-        const ch = text[i];
+        const code = text.charCodeAt(i);
 
         // Single-line comment: --
-        if (ch === '-' && i + 1 < len && text[i + 1] === '-') {
+        if (code === 45 && i + 1 < len && text.charCodeAt(i + 1) === 45) {
             i += 2;
-            while (i < len && text[i] !== '\n') i++;
+            while (i < len && text.charCodeAt(i) !== 10) i++;
             continue;
         }
 
         // Multi-line comment: /* */
-        if (ch === '/' && i + 1 < len && text[i + 1] === '*') {
+        if (code === 47 && i + 1 < len && text.charCodeAt(i + 1) === 42) {
             i += 2;
-            while (i < len && !(text[i] === '*' && i + 1 < len && text[i + 1] === '/')) i++;
+            while (i < len && !(text.charCodeAt(i) === 42 && i + 1 < len && text.charCodeAt(i + 1) === 47)) i++;
             i += 2; // skip */
             continue;
         }
 
         // Single-quoted string (with '' escape)
-        if (ch === "'") {
+        if (code === 39) {
             i++;
             while (i < len) {
-                if (text[i] === "'") {
-                    if (i + 1 < len && text[i + 1] === "'") {
+                if (text.charCodeAt(i) === 39) {
+                    if (i + 1 < len && text.charCodeAt(i + 1) === 39) {
                         i += 2; // escaped quote
                         continue;
                     }
@@ -224,23 +233,23 @@ export function splitSqlStatements(text: string): { text: string; start: number;
         }
 
         // Double-quoted string
-        if (ch === '"') {
+        if (code === 34) {
             i++;
-            while (i < len && text[i] !== '"') i++;
+            while (i < len && text.charCodeAt(i) !== 34) i++;
             i++;
             continue;
         }
 
         // Backtick-quoted identifier
-        if (ch === '`') {
+        if (code === 96) {
             i++;
-            while (i < len && text[i] !== '`') i++;
+            while (i < len && text.charCodeAt(i) !== 96) i++;
             i++;
             continue;
         }
 
         // PostgreSQL dollar-quoted string: $$...$$ or $tag$...$tag$
-        if (ch === '$') {
+        if (code === 36) {
             const delimMatch = matchDollarQuoteDelimiter(text, i, len);
             if (delimMatch) {
                 const closeIdx = text.indexOf(delimMatch.delimiter, delimMatch.nextIndex);
@@ -255,7 +264,7 @@ export function splitSqlStatements(text: string): { text: string; start: number;
         }
 
         // Semicolon – end of statement
-        if (ch === ';') {
+        if (code === 59) {
             const stmtText = text.substring(statementStart, i + 1);
             // Only add if there is real SQL content (not just whitespace + semicolons)
             const content = stmtText.replace(/;/g, '').trim();
@@ -294,14 +303,56 @@ export function splitSqlStatements(text: string): { text: string; start: number;
 export function computeLineColumn(text: string, offset: number): { line: number; column: number } {
     let line = 1;
     let lastNewlinePos = -1;
-    for (let i = 0; i < offset && i < text.length; i++) {
-        if (text[i] === '\n') {
+    const limit = Math.min(offset, text.length);
+    for (let i = 0; i < limit; i++) {
+        if (text.charCodeAt(i) === 10) {
             line++;
             lastNewlinePos = i;
         }
     }
     const column = offset - lastNewlinePos; // 1-based
     return { line, column };
+}
+
+/**
+ * Precompute the character offset of the start of each line.
+ * Returns an array where index `i` is the offset of line `i+1`.
+ * Line 1 always starts at offset 0.
+ * @internal Exported for testing only.
+ */
+export function precomputeLineOffsets(text: string): number[] {
+    const offsets: number[] = [0];
+    for (let i = 0; i < text.length; i++) {
+        if (text.charCodeAt(i) === 10) {
+            offsets.push(i + 1);
+        }
+    }
+    return offsets;
+}
+
+/**
+ * Compute 1-based line and column for `offset` using a precomputed line-offsets
+ * array (from {@link precomputeLineOffsets}). Uses binary search for O(log n)
+ * lookup, which is significantly faster than the linear scan in
+ * {@link computeLineColumn} when many lookups are needed.
+ * @internal Exported for testing only.
+ */
+export function computeLineColumnFast(
+    lineOffsets: number[],
+    offset: number,
+): { line: number; column: number } {
+    let low = 0;
+    let high = lineOffsets.length - 1;
+    while (low < high) {
+        const mid = (low + high + 1) >>> 1;
+        if (lineOffsets[mid] <= offset) {
+            low = mid;
+        } else {
+            high = mid - 1;
+        }
+    }
+    const lineStart = lineOffsets[low];
+    return { line: low + 1, column: offset - lineStart + 1 };
 }
 
 /**
@@ -417,8 +468,10 @@ export class DocumentAstCache {
                         const mergedAst: AST[] = [];
                         let incrementalOk = true;
 
+                        const lineOffsets = precomputeLineOffsets(fullText);
+
                         for (let i = 0; i < newStmts.length; i++) {
-                            const newAbsPos = computeLineColumn(fullText, newStmts[i].start);
+                            const newAbsPos = computeLineColumnFast(lineOffsets, newStmts[i].start);
 
                             if (changedIndices.has(i)) {
                                 // Re-parse this statement individually
@@ -456,7 +509,7 @@ export class DocumentAstCache {
 
                             // Build updated per-statement caches
                             const newStatementCaches: StatementCache[] = newStmts.map((stmt, idx) => {
-                                const absPos = computeLineColumn(fullText, stmt.start);
+                                const absPos = computeLineColumnFast(lineOffsets, stmt.start);
                                 // The merged AST may have more elements than statements if a
                                 // single statement parse returned multiple AST nodes, but for
                                 // the common case (1:1) we map by index.
@@ -481,7 +534,7 @@ export class DocumentAstCache {
                         }
                     } catch (e) {
                         // Fall through to full parse on any unexpected error
-                        console.debug('[SQL All in One] DocumentAstCache incremental parse failed, falling back to full parse:', e)
+                        handleError(e, 'DocumentAstCache.incrementalParse', ErrorCategory.PARSE)
                     }
                 }
             }
@@ -498,8 +551,9 @@ export class DocumentAstCache {
             // Only cache statements when the count matches (ensures 1:1 mapping)
             let statementCaches: StatementCache[] | undefined;
             if (stmts.length === astList.length && stmts.length > 1) {
+                const lineOffsets = precomputeLineOffsets(fullText);
                 statementCaches = stmts.map((stmt, i) => {
-                    const absPos = computeLineColumn(fullText, stmt.start);
+                    const absPos = computeLineColumnFast(lineOffsets, stmt.start);
                     return {
                         text: stmt.text,
                         ast: astList[i] as AST,

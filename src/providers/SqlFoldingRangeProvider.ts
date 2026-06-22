@@ -4,6 +4,7 @@ import { toSqlDialect } from '../core/sqlDialects'
 import { isAstNode, walkAst } from '../parser/AstVisitor'
 import { getNodeLocation, getStatementEndLocation } from '../parser/astUtils'
 import type { AstNode } from '../parser/astTypes'
+import { handleError, ErrorCategory } from '../core/errorHandler'
 
 export class SqlFoldingRangeProvider implements vscode.FoldingRangeProvider {
     provideFoldingRanges(
@@ -20,7 +21,7 @@ export class SqlFoldingRangeProvider implements vscode.FoldingRangeProvider {
             }
             return []
         } catch (e) {
-            console.debug('[SQL All in One] SqlFoldingRangeProvider.provideFoldingRanges failed:', e)
+            handleError(e, 'SqlFoldingRangeProvider.provideFoldingRanges', ErrorCategory.FEATURE)
             return []
         }
     }

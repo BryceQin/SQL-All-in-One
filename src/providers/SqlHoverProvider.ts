@@ -10,6 +10,7 @@ import { extractWordAtPosition } from '../hover/hoverUtils'
 import { getConfigManager } from '../core/configManager'
 import { getConnectionManager } from '../database/connection/ConnectionManager'
 import { getPerformanceMonitor } from '../core/performanceMonitor'
+import { handleError, ErrorCategory } from '../core/errorHandler'
 
 export class SqlHoverProvider implements vscode.HoverProvider {
     private docResolvers: HoverResolver[]
@@ -52,7 +53,7 @@ export class SqlHoverProvider implements vscode.HoverProvider {
                 try {
                     const schemaResult = await this.schemaResolver.resolve(word, dialectName as SqlLanguage, document, position)
                     if (schemaResult) return schemaResult
-                } catch (e) { /* schema hover failed, fallback */ console.debug('[SQL All in One] SqlHoverProvider schema hover failed:', e) }
+                } catch (e) { /* schema hover failed, fallback */ handleError(e, 'SqlHoverProvider.provideHover', ErrorCategory.SUB_ITEM) }
             }
 
             for (const resolver of this.staticResolvers) {

@@ -13,6 +13,7 @@ import { DDLFormatter } from './nodeFormatters/DDLFormatter';
 import { ExpressionFormatter } from './nodeFormatters/ExpressionFormatter';
 import { formatKeyword } from './nodeFormatters/CommonFormatter';
 import { AstNodeType } from './AstNodeTypes';
+import { handleError, ErrorCategory } from '../core/errorHandler';
 
 export class AstFormatter {
     private cfg: FormatOptions;
@@ -191,7 +192,7 @@ export class AstFormatter {
             return engine.sqlify(stmt as unknown as AST, this.dialect);
         } catch (e) {
             // sqlify failed for unsupported statement; emit a comment placeholder
-            console.debug('[SQL All in One] AstFormatter.formatUnknown sqlify failed:', e)
+            handleError(e, 'AstFormatter.formatUnknown', ErrorCategory.FORMAT)
             const type = String((stmt as Record<string, unknown>).type || ((stmt as Record<string, unknown>).ast as Record<string, unknown> | undefined)?.['type'] || 'unknown');
             return `/* unsupported: ${type} */`;
         }

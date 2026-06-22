@@ -1,5 +1,43 @@
 # Changelog
 
+## [2.18.0] - 2026-06-22
+
+### Performance
+
+- **NestedComment 嵌套注释匹配优化**：将逐字符正则 `exec`（`ANY_CHAR`）改为 `String.indexOf` 批量跳过普通字符，直接定位下一个 `/*` 或 `*/` 标记。扁平长注释（500 字符）提速约 100x，深层嵌套注释提速约 5.7x
+- **lineColFromIndex 行列计算优化**：新增 `lineColFromIndexFast` + `precomputeLineOffsets`，复用已有的 `precomputeLineStarts` + `lineFromOffset` 二分查找实现，将 O(n) 线性扫描降为 O(log n)。`AstDiagnosticsProvider.checkExtraCommasInText` 中对每个匹配逗号的行列计算，从 O(n×m) 降为 O(n + m·log n)，2000 行 SQL 上 2000 次查找从 278ms 降至 0.24ms（约 1150x），单次查找从 0.72ms 降至 0.0001ms（约 5700x）
+- **Lint 规则行号计算优化**：`CommentedOutCodeRule`、`ExpiredTodoRule`、`UppercaseKeywordsRule` 将 `sql.substring(0, idx).split('\n').length` 的 O(n) 行号计算替换为预计算 `lineStarts` + `lineFromOffset` 的 O(log n) 查找，消除每次匹配的重复字符串分割
+- **LongQueryLineRule 单行长度检查优化**：移除 `sql.split('\n')` 全量分割，改为单次遍历按 `\n` 切分行，避免大文件产生大数组分配；使用 `charCodeAt` 替代 `substring` + `trimStart` + `startsWith` 做前缀判断
+- **TokenizerEngine 实例复用**：`Tokenizer.tokenize` 缓存 `TokenizerEngine` 实例，当规则未变化时复用同一实例，避免每次分词重复实例化对象
+- **TokenizerEngine Token 对象构造优化**：将 `{ ...token, precedingWhitespace }` 展开改为显式字段赋值，避免展开运算符的额外对象分配
+- **DocumentAstCache dollar-quote 解析优化**：`matchDollarQuoteDelimiter` 将字符比较和正则测试（`/[A-Za-z_]/.test`）替换为 `charCodeAt` 范围判断，减少正则调用开销
+- **AstVisitor 栈深度保护优化**：`walkAst` 的深度检查从 `stack.length / 4 > 10000`（每次除法）改为 `stack.length > MAX_STACK_DEPTH`（常量比较），并提升上限到 40000 以支持更深的 AST
+
+### Benchmark
+
+- 新增 `perf.optimization.benchmark.ts`：对比优化前后实现，覆盖 NestedComment（扁平/嵌套）、lineColFromIndex（批量/单次查找）场景，并包含正确性验证（边界用例、未闭合注释、嵌套闭合等）
+
+---
+
+## [2.17.0] - 2026-06-22
+
+### Refactor
+
+- 统一错误处理策略：将 25 个文件中约 40 处 `console.debug`/`console.warn`/`console.error` 调用替换为统一的 `handleError` 函数，错误自动记录到 "SQL All in One Errors" 输出通道，用户无需开发者工具即可查看错误历史
+- 新增 `debugLog` 函数：为纯调试/信息性日志（如缺失翻译键、AST 深度超限）提供统一入口，通过 `isDebugEnabled` 控制，不记录到错误历史、不触发通知，避免污染错误追踪
+- `ErrorHandler` 扩展调试日志支持：新增 `debugEnabled` 字段、`isDebugEnabled()`/`setDebugEnabled()` 方法和 `debugLog()` 导出函数，`debugLog` 在 DI 容器未注册时安全降级
+- 错误分类规范化：使用 `ErrorCategory`（CRITICAL/FEATURE/SUB_ITEM/PARSE/FORMAT/CONFIG）统一分类，上下文字符串遵循 `ClassName.methodName` 命名约定
+
+### 涉及模块
+
+- **LanguageBridge**：补全、Hover、格式化、诊断、snippet 加载错误统一处理
+- **Webview 面板**：TableDesignerPanel、QueryResultPanel、BaseWebviewPanel、DataTransferDialog 错误统一处理
+- **Provider/Navigation**：SqlHoverProvider、SqlOutlineProvider、SqlFoldingRangeProvider、SqlRenameProvider、SqlReferenceProvider、SqlDefinitionProvider 错误统一处理
+- **数据库/解析器/查询**：DocumentAstCache、SchemaCache、QueryExecutor、SafeQueryGuard、SqlStatementDetector、DatabaseTreeProvider 错误统一处理
+- **其他模块**：themeColors、i18n、validateConfig、ExpressionFormatter、AstFormatter、AstVisitor 错误统一处理
+
+---
+
 ## [2.16.0] - 2026-06-18
 
 ### Performance

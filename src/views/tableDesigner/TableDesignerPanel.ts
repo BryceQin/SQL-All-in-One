@@ -4,6 +4,7 @@ import { getConnectionManager } from '../../database/connection/ConnectionManage
 import { getSchemaCache } from '../../database/schema/SchemaCache';
 import type { IDatabaseAdapter, TableStructure, DataTypeCategory } from '../../database/adapters/IDatabaseAdapter';
 import { getLanguage } from '../../i18n/index.js';
+import { handleError, ErrorCategory } from '../../core/errorHandler';
 
 interface ColumnDesign {
     id: string;
@@ -164,7 +165,7 @@ export class TableDesignerPanel extends BaseWebviewPanel {
             try {
                 dataTypes = adapter.getSupportedDataTypes();
             } catch (e) {
-                console.debug('[SQL All in One] TableDesignerPanel getSupportedDataTypes failed:', e)
+                handleError(e, 'TableDesignerPanel.getSupportedDataTypes', ErrorCategory.SUB_ITEM)
                 dataTypes = [];
             }
         }
@@ -208,7 +209,7 @@ export class TableDesignerPanel extends BaseWebviewPanel {
         try {
             dataTypes = adapter.getSupportedDataTypes();
         } catch (e) {
-            console.debug('[SQL All in One] TableDesignerPanel getSupportedDataTypes failed:', e)
+            handleError(e, 'TableDesignerPanel.getSupportedDataTypes', ErrorCategory.SUB_ITEM)
             dataTypes = [];
         }
 
@@ -434,7 +435,7 @@ export class TableDesignerPanel extends BaseWebviewPanel {
                 tables: tables.map(t => t.name),
             });
         } catch (e) {
-            console.debug('[SQL All in One] TableDesignerPanel _handleRequestTableList failed:', e)
+            handleError(e, 'TableDesignerPanel._handleRequestTableList', ErrorCategory.FEATURE)
             this.postMessage({
                 command: 'tableList',
                 tables: [],
@@ -461,7 +462,7 @@ export class TableDesignerPanel extends BaseWebviewPanel {
                 columns: structure.columns.map(c => c.name),
             });
         } catch (e) {
-            console.debug('[SQL All in One] TableDesignerPanel _handleRequestColumnList failed:', e)
+            handleError(e, 'TableDesignerPanel._handleRequestColumnList', ErrorCategory.FEATURE)
             this.postMessage({
                 command: 'columnList',
                 table: table,

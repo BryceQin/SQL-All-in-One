@@ -31,6 +31,10 @@ export default class Tokenizer {
     // 缓存：完整的规则数组（前置 + 参数 + 后置），避免每次 tokenize 重新拼接
     private cachedFullRules: TokenRule[] | null = null
     private cachedFullRulesParamTypes: ResolvedParamTypes | undefined
+    // 缓存：可复用的 TokenizerEngine 实例。JS 单线程且 tokenize 不会递归调用，
+    // 因此复用同一实例避免每次 tokenize 都分配新对象。
+    private cachedEngine: TokenizerEngine | null = null
+    private cachedEngineRules: TokenRule[] | null = null
 
     private cfg: TokenizerOptions
     private dialectName: string
@@ -56,10 +60,16 @@ export default class Tokenizer {
             this.cachedFullRulesParamTypes = paramTypes
         }
 
-        // 3. 实例化底层 TokenizerEngine，执行分词
-        const tokens = new TokenizerEngine(this.cachedFullRules, this.dialectName).tokenize(
-            input,
-        )
+        // 3. 复用 TokenizerEngine 实例（当规则未变化时），执行分词
+        let engine: TokenizerEngine
+        if (this.cachedEngine && this.cachedEngineRules === this.cachedFullRules) {
+            engine = this.cachedEngine
+        } else {
+            engine = new TokenizerEngine(this.cachedFullRules, this.dialectName)
+            this.cachedEngine = engine
+            this.cachedEngineRules = this.cachedFullRules
+        }
+        const tokens = engine.tokenize(input)
 
         // 4. 可选后置处理：若配置了 postProcess 函数，执行后返回，否则直接返回原始 Token 数组
         return this.cfg.postProcess ? this.cfg.postProcess(tokens) : tokens
