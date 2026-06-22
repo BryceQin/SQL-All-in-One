@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { getParserEngine } from '../../parser/SqlParserEngine';
 import { toSqlDialect, isSqlDocument } from '../../core/dialectRegistry';
 import { DetectedStatement, StatementType } from './QueryResult';
+import { handleError, ErrorCategory } from '../../core/errorHandler';
 
 const statementTypeMap: Record<string, StatementType> = {
     SELECT: 'SELECT',
@@ -149,7 +150,7 @@ export class SqlStatementDetector {
 
             return statements;
         } catch (e) {
-            console.debug('[SQL All in One] SqlStatementDetector.detectStatements failed:', e)
+            handleError(e, 'SqlStatementDetector.detectStatements', ErrorCategory.PARSE)
             return [];
         }
     }

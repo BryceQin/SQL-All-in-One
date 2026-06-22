@@ -4,6 +4,7 @@ import { IDatabaseAdapter, QueryResult } from '../adapters/IDatabaseAdapter';
 import { getConnectionManager } from '../connection/ConnectionManager';
 import { QueryOptions, QueryStartEvent, QueryEndEvent, RunningQuery } from './QueryResult';
 import { getConfigManager } from '../../core/configManager';
+import { handleError, ErrorCategory } from '../../core/errorHandler';
 import { t } from '../../i18n/index';
 import { generateShortId } from '../../utils/idGenerator';
 
@@ -138,7 +139,7 @@ export class QueryExecutor {
                         await adapter.cancelQuery(queryId);
                         return;
                     } catch (e) {
-                        console.debug(`[SQL All in One] Cancel query attempt ${attempt + 1} failed:`, e)
+                        handleError(e, 'QueryExecutor.cancelQueryAttempt', ErrorCategory.SUB_ITEM)
                         if (attempt < maxRetries - 1) {
                             const backoffDelay = retryDelay * Math.pow(2, attempt);
                             await this.delay(backoffDelay);
@@ -217,7 +218,7 @@ export class QueryExecutor {
                     }
                 } catch (e) {
                     // best effort: log but do not propagate cancel failure
-                    console.debug('[SQL All in One] Timeout cancel attempt (best effort) failed:', e)
+                    handleError(e, 'QueryExecutor.timeoutCancel', ErrorCategory.SUB_ITEM)
                 }
             };
 
