@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.17.0] - 2026-06-22
+
+### Refactor
+
+- 统一错误处理策略：将 25 个文件中约 40 处 `console.debug`/`console.warn`/`console.error` 调用替换为统一的 `handleError` 函数，错误自动记录到 "SQL All in One Errors" 输出通道，用户无需开发者工具即可查看错误历史
+- 新增 `debugLog` 函数：为纯调试/信息性日志（如缺失翻译键、AST 深度超限）提供统一入口，通过 `isDebugEnabled` 控制，不记录到错误历史、不触发通知，避免污染错误追踪
+- `ErrorHandler` 扩展调试日志支持：新增 `debugEnabled` 字段、`isDebugEnabled()`/`setDebugEnabled()` 方法和 `debugLog()` 导出函数，`debugLog` 在 DI 容器未注册时安全降级
+- 错误分类规范化：使用 `ErrorCategory`（CRITICAL/FEATURE/SUB_ITEM/PARSE/FORMAT/CONFIG）统一分类，上下文字符串遵循 `ClassName.methodName` 命名约定
+
+### 涉及模块
+
+- **LanguageBridge**：补全、Hover、格式化、诊断、snippet 加载错误统一处理
+- **Webview 面板**：TableDesignerPanel、QueryResultPanel、BaseWebviewPanel、DataTransferDialog 错误统一处理
+- **Provider/Navigation**：SqlHoverProvider、SqlOutlineProvider、SqlFoldingRangeProvider、SqlRenameProvider、SqlReferenceProvider、SqlDefinitionProvider 错误统一处理
+- **数据库/解析器/查询**：DocumentAstCache、SchemaCache、QueryExecutor、SafeQueryGuard、SqlStatementDetector、DatabaseTreeProvider 错误统一处理
+- **其他模块**：themeColors、i18n、validateConfig、ExpressionFormatter、AstFormatter、AstVisitor 错误统一处理
+
+---
+
 ## [2.16.0] - 2026-06-18
 
 ### Performance
