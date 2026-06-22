@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
+import { handleError, ErrorCategory } from '../core/errorHandler';
 
 export interface WebviewPanelConfig {
     viewType: string;
@@ -136,7 +137,7 @@ export abstract class BaseWebviewPanel implements vscode.Disposable {
             this._cachedHtml = html;
             return html;
         } catch (error) {
-            console.error(`Failed to load ${this.panelConfig.viewType} HTML:`, error);
+            handleError(error, 'BaseWebviewPanel.loadHtml', ErrorCategory.CRITICAL);
             return `<html><body><h2>Failed to load panel</h2><p>Please reinstall the extension.</p></body></html>`;
         }
     }
@@ -162,7 +163,7 @@ export abstract class BaseWebviewPanel implements vscode.Disposable {
             this._panel.webview.postMessage(message);
         } catch (e) {
             // Webview may be disposed between the check and the call
-            console.debug('[SQL All in One] BaseWebviewPanel.postMessage failed (webview likely disposed):', e)
+            handleError(e, 'BaseWebviewPanel.postMessage', ErrorCategory.SUB_ITEM)
         }
     }
 
