@@ -3,6 +3,7 @@ import type { AstNavigator, SymbolIndex } from './AstNavigator'
 import { getNavigationContext } from './guard'
 import { toSqlDialect } from '../core/sqlDialects'
 import { getReservedWordSet } from '../languages/keywords/reservedWords'
+import { handleError, ErrorCategory } from '../core/errorHandler'
 
 export class SqlRenameProvider implements vscode.RenameProvider {
     constructor(private navigator: AstNavigator) {}
@@ -22,7 +23,7 @@ export class SqlRenameProvider implements vscode.RenameProvider {
             if (!range) return null
             return range
         } catch (e) {
-            console.debug('[SQL All in One] SqlRenameProvider.prepareRename failed:', e)
+            handleError(e, 'SqlRenameProvider.prepareRename', ErrorCategory.FEATURE)
             return null
         }
     }
