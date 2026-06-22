@@ -6,7 +6,7 @@ import type { ParamItems } from "./Params"
 // SQL参数的匹配规则类型
 import type { ParamTypes } from "../lexer/TokenizerOptions"
 import { t } from "../i18n"
-import { handleError, ErrorCategory, debugLog } from "../core/errorHandler"
+import { handleError, ErrorCategory } from "../core/errorHandler"
 
 // 自定义错误类
 export class ConfigError extends Error {}
@@ -34,7 +34,7 @@ export function validateConfig(cfg: FormatOptions): FormatOptions {
     }
     // 校验 cfg.params 参数合法性，非法则【控制台警告】
     if (cfg.params && !validateParams(cfg.params)) {
-        debugLog(t('validate.paramsStringType'), 'validateConfig')
+        handleError(new Error(t('validate.paramsStringType')), 'validateConfig.validateParams', ErrorCategory.CONFIG)
     }
 
     // 校验 cfg.paramTypes 参数规则合法性，非法则抛错
