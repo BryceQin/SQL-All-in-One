@@ -30,6 +30,11 @@ export abstract class BaseWebviewPanel implements vscode.Disposable {
 
     protected static getExistingInstance<T extends BaseWebviewPanel>(viewType: string): T | undefined {
         const instance = BaseWebviewPanel._instances.get(viewType);
+        if (instance && instance._isDisposed) {
+            // Defensive cleanup: instance was disposed but not removed from the map.
+            BaseWebviewPanel._instances.delete(viewType);
+            return undefined;
+        }
         return instance as T | undefined;
     }
 
@@ -42,16 +47,30 @@ export abstract class BaseWebviewPanel implements vscode.Disposable {
     }
 
     protected static hasInstance(viewType: string): boolean {
-        return BaseWebviewPanel._instances.has(viewType);
+        return BaseWebviewPanel.getExistingInstance(viewType) !== undefined;
     }
 
     protected static revealExisting(viewType: string, viewColumn?: vscode.ViewColumn): boolean {
-        const instance = BaseWebviewPanel._instances.get(viewType);
-        if (instance && !instance._isDisposed) {
+        const instance = BaseWebviewPanel.getExistingInstance<BaseWebviewPanel>(viewType);
+        if (instance) {
             instance._panel.reveal(viewColumn);
             return true;
         }
         return false;
+    }
+
+    /**
+     * Disposes all live panel instances and clears the static instance map.
+     * Intended to be called on extension deactivation to prevent leaks when
+     * individual `onDidDispose` events are not reliably fired.
+     */
+    public static disposeAll(): void {
+        for (const instance of [...BaseWebviewPanel._instances.values()]) {
+            if (!instance._isDisposed) {
+                instance.dispose();
+            }
+        }
+        BaseWebviewPanel._instances.clear();
     }
 
     protected static createWebviewPanel(
@@ -141,8 +160,9 @@ export abstract class BaseWebviewPanel implements vscode.Disposable {
         }
         try {
             this._panel.webview.postMessage(message);
-        } catch {
+        } catch (e) {
             // Webview may be disposed between the check and the call
+            console.debug('[SQL All in One] BaseWebviewPanel.postMessage failed (webview likely disposed):', e)
         }
     }
 

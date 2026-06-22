@@ -21,11 +21,34 @@ export interface LintRuleConfig {
 const DEFAULT_CONFIG: LintRuleConfig = { enabled: false, severity: vscode.DiagnosticSeverity.Warning }
 
 /**
- * Build rule definitions dynamically from the RULES registry.
- * Each rule class is instantiated with a default config and its metadata is extracted.
- * This eliminates the need to maintain a separate BUILT_IN_RULES array.
+ * Provider function that returns rule definitions from the RuleRegistry's
+ * already-instantiated rules, avoiding duplicate instantiation.
+ * Set by RuleRegistry.registerAllRules() after rules are registered.
+ */
+let _definitionsProvider: (() => LintRuleDefinition[]) | undefined
+
+/**
+ * Set the definitions provider (called by RuleRegistry after rules are registered).
+ * This allows buildRuleDefinitions() to extract metadata from the RuleRegistry's
+ * existing rule instances instead of creating separate instances.
+ */
+export function setDefinitionsProvider(provider: (() => LintRuleDefinition[]) | undefined): void {
+    _definitionsProvider = provider
+    _cachedDefinitions = undefined
+}
+
+/**
+ * Build rule definitions dynamically.
+ * If a definitions provider is available (set by RuleRegistry), uses it to extract
+ * metadata from already-instantiated rules. Otherwise, falls back to instantiating
+ * each rule class with a default config to extract metadata.
  */
 function buildRuleDefinitions(): LintRuleDefinition[] {
+    if (_definitionsProvider) {
+        return _definitionsProvider()
+    }
+
+    // Fallback: instantiate rules to extract metadata (used before RuleRegistry is initialized)
     const definitions: LintRuleDefinition[] = []
 
     for (const [, RuleClass] of Object.entries(RULES)) {

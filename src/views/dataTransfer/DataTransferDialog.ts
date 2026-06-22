@@ -155,7 +155,9 @@ export class DataTransferDialog extends BaseWebviewPanel {
             let detectedFormat: string;
             try {
                 detectedFormat = detectFileFormat(filePath);
-            } catch {
+            } catch (e) {
+                // Format detection failed; default to CSV
+                console.debug('[SQL All in One] DataTransferDialog detectFileFormat failed, defaulting to csv:', e)
                 detectedFormat = 'csv';
             }
             this.postMessage({

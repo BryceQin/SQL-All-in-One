@@ -30,7 +30,8 @@ export class SqlReferenceProvider implements vscode.ReferenceProvider {
             }
 
             return locations.length > 0 ? locations : null
-        } catch {
+        } catch (e) {
+            console.debug('[SQL All in One] SqlReferenceProvider.provideReferences failed:', e)
             return null
         }
     }

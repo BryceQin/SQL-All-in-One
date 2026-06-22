@@ -24,6 +24,12 @@ export function walkAst(
     const stack: unknown[] = []
     stack.push(node, _parent ?? null, _key ?? null, 0)
 
+    // Reusable buffer for collecting an object's own enumerable keys.
+    // Using for...in into a shared buffer avoids the per-node temporary arrays
+    // (one outer array + N [key, value] pairs) that Object.entries() would
+    // allocate on every visited node, which is costly during deep traversal.
+    const keysBuffer: string[] = []
+
     while (stack.length > 0) {
         const phase = stack.pop() as number
         const key = stack.pop()
@@ -44,9 +50,15 @@ export function walkAst(
 
         if (!isAstNode(currentNode)) {
             if (isPlainObject(currentNode)) {
-                const entries = Object.entries(currentNode as Record<string, unknown>)
-                for (let i = entries.length - 1; i >= 0; i--) {
-                    const [, childValue] = entries[i]
+                keysBuffer.length = 0
+                for (const childKey in currentNode) {
+                    if (Object.prototype.hasOwnProperty.call(currentNode, childKey)) {
+                        keysBuffer.push(childKey)
+                    }
+                }
+                for (let i = keysBuffer.length - 1; i >= 0; i--) {
+                    const childKey = keysBuffer[i]
+                    const childValue = (currentNode as Record<string, unknown>)[childKey]
                     if (Array.isArray(childValue)) {
                         for (let j = childValue.length - 1; j >= 0; j--) {
                             stack.push(childValue[j], currentNode, key, 0)
@@ -63,12 +75,18 @@ export function walkAst(
 
         stack.push(currentNode, parent, key, 1)
 
-        const entries = Object.entries(currentNode)
-        for (let i = entries.length - 1; i >= 0; i--) {
-            const [childKey, childValue] = entries[i]
+        keysBuffer.length = 0
+        for (const childKey in currentNode) {
+            if (Object.prototype.hasOwnProperty.call(currentNode, childKey)) {
+                keysBuffer.push(childKey)
+            }
+        }
+        for (let i = keysBuffer.length - 1; i >= 0; i--) {
+            const childKey = keysBuffer[i]
             if (childKey === 'type' || childKey === 'loc') {
                 continue
             }
+            const childValue = currentNode[childKey]
             if (typeof childValue === 'string' || typeof childValue === 'number' || typeof childValue === 'boolean') {
                 continue
             }

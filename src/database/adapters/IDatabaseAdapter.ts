@@ -19,9 +19,9 @@ export type {
 }
 
 export interface IPoolStatus {
-    totalConnections: number | 'unknown';
-    activeConnections: number | 'unknown';
-    idleConnections: number | 'unknown';
+    totalConnections: number;
+    activeConnections: number;
+    idleConnections: number;
     waitingRequests: number | 'unknown';
     connectionLimit: number;
     acquireTimeout: number;

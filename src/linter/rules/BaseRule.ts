@@ -20,6 +20,10 @@ export abstract class BaseRule implements LintRule {
         this.config = config
     }
 
+    updateConfig(config: LintRuleConfig): void {
+        this.config = config
+    }
+
     isEnabled(): boolean {
         return this.config.enabled
     }

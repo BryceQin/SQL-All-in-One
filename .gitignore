@@ -8,6 +8,10 @@ src/parser/grammar.ts
 hive-formatter-*.vsix
 vsc-extension-quickstart.md
 
+# Auto-generated snippet data (kept in git since build may not run in all environments)
+# To regenerate: npm run generate-snippets
+# src/completion/generated/
+
 .vscode-test/**
 .vscode-test.mjs
 

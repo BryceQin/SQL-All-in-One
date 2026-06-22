@@ -1,5 +1,47 @@
 # Changelog
 
+## [2.16.0] - 2026-06-18
+
+### Performance
+
+- `walkAst` 遍历优化：将每节点 `Object.entries()` 临时数组分配改为可复用的 `keysBuffer` + `for...in`，跳过 `type`/`loc` 属性，减少大文件（1000+ 节点）Lint 时的 GC 压力
+- `SchemaCache.cachedFetch` 移除 O(n) 全量过期清理（`evictExpiredEntries`），改为单条目惰性过期检查（`peek` + `isExpired`），表数量多时查询延迟降低；同时移除冗余的 30 秒定时器
+- `PerformanceMonitor.measure/measureAsync` 在 `off` 模式下直接 `return fn()`，避免 `try/finally` 和 `performance.now()` 调用开销
+- `SqlCompletionProvider` 静态补全项（关键字、函数、片段）改为模块级懒加载缓存 + 克隆复用，仅动态项（CTE、identifier、comment、schema）实时构建，减少每次按键的内存分配
+- `SafeQueryGuard.analyzeWithRegex` 中 8 个正则提取为模块级静态常量，避免每次调用重新编译，安全检查耗时减半
+
+### Concurrency & Correctness
+
+- `MysqlQueryAdapter.execute` 连接计数器一致性修复：`activeConnectionCount++` 移到 `acquireConnectionWithTimeout` 成功后执行，`finally` 中检查 `acquiredConn` 存在性再递减，避免获取连接失败时计数器变为负数
+- `ConnectionManager.removeConnection` 添加 `runtimeStates.delete(id)`，清理连接移除后的无用运行时状态，消除长期使用的内存泄漏
+- `QueryExecutor.raceExecution` 中 `attemptCancel` 添加 `void` 标记 + 双重 `settled` 检查，避免 Promise resolve 后仍执行取消导致的资源浪费和日志混乱
+
+### Code Quality
+
+- `SchemaProvider` 消除 `touchMru` 副作用：MRU 更新从补全项生成阶段推迟到 `resolveCompletionItem`（用户实际选择补全项时），通过 `CompletionItem.data` 字段携带元数据，读操作不再产生副作用
+- `sqlFormatter.hashOptions` 哈希碰撞修复：对 `undefined`/`null` 使用固定哨兵值（`__undef__`/`__null__`），其他值加类型前缀，避免不同类型值产生相同哈希导致格式化器实例复用错误
+- 全项目 58 处静默 `catch {}` 审计改进：添加 `console.debug` 错误记录保留上下文，保留合理控制流（如 `fs.access` 文件存在检查）并添加注释说明
+
+### Resource Management
+
+- `sqlFormatter.formatterCache` 从普通 `Map` + 手动 FIFO 淘汰替换为项目已有的 `LRUCache`，确保热点格式化器实例不被淘汰，提升缓存命中率
+- `BaseWebviewPanel` 静态实例泄漏防护：`getExistingInstance` 添加防御性清理（检查 `_isDisposed`），新增 `disposeAll()` 兜底方法，`deactivate()` 中调用确保扩展卸载时清理残留面板
+- `DocumentAstCache.maxSize` 从 50 提升到 100，减少多文件工作区频繁切换文件时的缓存抖动
+
+### Architecture
+
+- `DIContainer` 依赖声明完善：为 `extension.ts` 中所有有依赖的 `registerSingleton` 调用补充 `dependencies` 参数，确保 Kahn 拓扑排序销毁顺序正确（被依赖的服务后销毁）
+- `IDatabaseAdapter` 接口隔离：拆分为 `IConnectionAdapter`、`IQueryAdapter`、`IMetadataAdapter`、`ISchemaAdapter` 四个子接口，`IDatabaseAdapter` 继承所有子接口保持对外兼容
+- `SchemaProvider` 职责拆分：提取 `MruTracker` 类管理 MRU 状态，提取 `HoverInfoProvider` 类处理 Hover 信息生成，`SchemaProvider` 仅保留补全项生成逻辑
+- `FormatterModule` 实例复用：`SqlFormattingProvider` 改为无状态共享单例，通过 `document.languageId` 在格式化时解析方言，避免为每种 SQL 语言创建独立实例
+
+### Refactor
+
+- `Tokenizer` 消除重复逻辑：提取 `resolveParamTypes` 为公共方法，`buildParamRules` 和 `buildParamRulesImpl` 共用，消除三处重复的 `paramTypes` 解析代码
+- `splitSqlStatements` 增强 PostgreSQL 兼容性：增加对 dollar-quoted 字符串（`$$...$$` 和 `$tag$...$tag$`）的识别，避免字符串内分号被误判为语句分隔符
+
+---
+
 ## [2.15.33] - 2026-06-18
 
 ### Performance

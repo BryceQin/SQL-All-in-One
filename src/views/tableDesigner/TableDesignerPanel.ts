@@ -163,7 +163,8 @@ export class TableDesignerPanel extends BaseWebviewPanel {
         if (adapter) {
             try {
                 dataTypes = adapter.getSupportedDataTypes();
-            } catch {
+            } catch (e) {
+                console.debug('[SQL All in One] TableDesignerPanel getSupportedDataTypes failed:', e)
                 dataTypes = [];
             }
         }
@@ -206,7 +207,8 @@ export class TableDesignerPanel extends BaseWebviewPanel {
         let dataTypes: DataTypeCategory[] = [];
         try {
             dataTypes = adapter.getSupportedDataTypes();
-        } catch {
+        } catch (e) {
+            console.debug('[SQL All in One] TableDesignerPanel getSupportedDataTypes failed:', e)
             dataTypes = [];
         }
 
@@ -431,7 +433,8 @@ export class TableDesignerPanel extends BaseWebviewPanel {
                 command: 'tableList',
                 tables: tables.map(t => t.name),
             });
-        } catch {
+        } catch (e) {
+            console.debug('[SQL All in One] TableDesignerPanel _handleRequestTableList failed:', e)
             this.postMessage({
                 command: 'tableList',
                 tables: [],
@@ -457,7 +460,8 @@ export class TableDesignerPanel extends BaseWebviewPanel {
                 table: table,
                 columns: structure.columns.map(c => c.name),
             });
-        } catch {
+        } catch (e) {
+            console.debug('[SQL All in One] TableDesignerPanel _handleRequestColumnList failed:', e)
             this.postMessage({
                 command: 'columnList',
                 table: table,

@@ -6,6 +6,16 @@ import { getConnectionManager } from '../connection/ConnectionManager';
 import { t } from '../../i18n';
 import { getConfigManager } from '../../core/configManager';
 
+// 预编译的正则表达式常量，避免每次调用 analyzeWithRegex 时重复创建 RegExp 对象
+const DELETE_PATTERN = /^\s*DELETE\s+/i;
+const UPDATE_PATTERN = /^\s*UPDATE\s+/i;
+const DROP_PATTERN = /^\s*DROP\s+/i;
+const TRUNCATE_PATTERN = /^\s*TRUNCATE\s+/i;
+const GRANT_PATTERN = /^\s*GRANT\s+/i;
+const REVOKE_PATTERN = /^\s*REVOKE\s+/i;
+const ALTER_PATTERN = /^\s*ALTER\s+/i;
+const WHERE_PATTERN = /\bWHERE\b/i;
+
 export class SafeQueryGuard {
     private getSafetyLevel(): SafetyLevel {
         return getConfigManager().get<SafetyLevel>('safetyGuard.level', 'moderate');
@@ -101,7 +111,7 @@ export class SafeQueryGuard {
         warnings: SafetyWarning[],
         confirmations: SafetyConfirmation[]
     ): SafetyCheckResult {
-        if (/^\s*DELETE\s+/i.test(sql) && !/\bWHERE\b/i.test(sql)) {
+        if (DELETE_PATTERN.test(sql) && !WHERE_PATTERN.test(sql)) {
             warnings.push({
                 rule: 'delete_without_where',
                 message: t('safety.deleteWithoutWhere'),
@@ -110,7 +120,7 @@ export class SafeQueryGuard {
             });
         }
 
-        if (/^\s*UPDATE\s+/i.test(sql) && !/\bWHERE\b/i.test(sql)) {
+        if (UPDATE_PATTERN.test(sql) && !WHERE_PATTERN.test(sql)) {
             warnings.push({
                 rule: 'update_without_where',
                 message: t('safety.updateWithoutWhere'),
@@ -119,7 +129,7 @@ export class SafeQueryGuard {
             });
         }
 
-        if (/^\s*DROP\s+/i.test(sql)) {
+        if (DROP_PATTERN.test(sql)) {
             confirmations.push({
                 rule: 'drop_statement',
                 message: t('safety.dropDetected'),
@@ -127,7 +137,7 @@ export class SafeQueryGuard {
             });
         }
 
-        if (/^\s*TRUNCATE\s+/i.test(sql)) {
+        if (TRUNCATE_PATTERN.test(sql)) {
             confirmations.push({
                 rule: 'truncate_statement',
                 message: t('safety.truncateDetected'),
@@ -135,7 +145,7 @@ export class SafeQueryGuard {
             });
         }
 
-        if (/^\s*GRANT\s+/i.test(sql)) {
+        if (GRANT_PATTERN.test(sql)) {
             confirmations.push({
                 rule: 'grant_statement',
                 message: t('safety.grantStatement'),
@@ -143,7 +153,7 @@ export class SafeQueryGuard {
             });
         }
 
-        if (/^\s*REVOKE\s+/i.test(sql)) {
+        if (REVOKE_PATTERN.test(sql)) {
             confirmations.push({
                 rule: 'revoke_statement',
                 message: t('safety.revokeStatement'),
@@ -151,7 +161,7 @@ export class SafeQueryGuard {
             });
         }
 
-        if (/^\s*ALTER\s+/i.test(sql)) {
+        if (ALTER_PATTERN.test(sql)) {
             confirmations.push({
                 rule: 'alter_statement',
                 message: t('safety.alterStatement'),

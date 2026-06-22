@@ -348,7 +348,7 @@ export class QueryResultPanel extends BaseWebviewPanel {
                     this._sendLanguageData();
                 }
             }
-        } catch { /* ignore */ }
+        } catch (e) { /* ignore: dialect detection is best-effort */ console.debug('[SQL All in One] QueryResultPanel dialect detection failed:', e) }
 
         const metadata = {
             queryId: result.queryId,
@@ -521,10 +521,10 @@ export class QueryResultPanel extends BaseWebviewPanel {
                     adapter.listDatabases().then(dbs => {
                         const databases = dbs.map(d => d.name);
                         this.sendDatabaseList(databases, activeConn.database || '');
-                    }).catch((_e) => { /* ignore */ });
+                    }).catch((_e) => { /* ignore: database list prefetch is best-effort */ console.debug('[SQL All in One] QueryResultPanel database list prefetch failed:', _e) });
                 }
             }
-        } catch { /* ignore */ }
+        } catch (e) { /* ignore: database list is best-effort */ console.debug('[SQL All in One] QueryResultPanel sendDatabaseList failed:', e) }
     }
 
     private async _handleExport(format: string, options?: Record<string, unknown>): Promise<void> {
@@ -655,7 +655,9 @@ export class QueryResultPanel extends BaseWebviewPanel {
                     type: 'blobPreview',
                     data: { rowIndex, colIndex, content: text, mode: 'text' },
                 });
-            } catch {
+            } catch (e) {
+                // Text preview failed; fall back to hex representation
+                console.debug('[SQL All in One] Blob text preview failed, falling back to hex:', e)
                 this.postMessage({
                     type: 'blobPreview',
                     data: { rowIndex, colIndex, content: buffer.toString('hex'), mode: 'hex' },

@@ -10,7 +10,9 @@ interface ParamScanResult {
 }
 
 const scanCache = new LRUCache<string, { version: number; result: Map<string, ParamScanResult> }>({
-    maxSize: 50,
+    // Increased from 50 to 100 to reduce cache thrashing when frequently
+    // switching between many open SQL files.
+    maxSize: 100,
     maxAge: 300000,
 })
 

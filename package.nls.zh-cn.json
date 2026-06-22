@@ -100,6 +100,7 @@
     "hive-formatter.config.enableSmartCommentToggle.markdownDescription": "是否启用 SQL 感知的智能注释切换（关闭后回退到 VSCode 默认行为）",
     "hive-formatter.config.headerAuthor.markdownDescription": "文件头注释中的作者名（为空时 header Snippet 的「作者」留空等待输入）",
     "hive-formatter.config.headerModifier.markdownDescription": "文件头注释中的修改人（为空时回退取 headerAuthor 的值）",
+    "hive-formatter.config.performance.monitorLevel.markdownDescription": "性能监控级别。'light' 仅记录慢操作，'full' 记录所有操作，'off' 禁用监控。",
     "hive-formatter.config.completion.commentSnippets.markdownDescription": "补全列表中是否包含注释模板片段",
     "hive-formatter.config.completion.schema.markdownDescription": "是否启用 Schema 感知补全（从已连接数据库获取真实表名、列名）",
     "hive-formatter.config.schemaCache.databaseTtl.markdownDescription": "数据库列表缓存 TTL（秒）",

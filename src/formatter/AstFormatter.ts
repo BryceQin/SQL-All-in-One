@@ -189,7 +189,9 @@ export class AstFormatter {
         const engine = getParserEngine();
         try {
             return engine.sqlify(stmt as unknown as AST, this.dialect);
-        } catch {
+        } catch (e) {
+            // sqlify failed for unsupported statement; emit a comment placeholder
+            console.debug('[SQL All in One] AstFormatter.formatUnknown sqlify failed:', e)
             const type = String((stmt as Record<string, unknown>).type || ((stmt as Record<string, unknown>).ast as Record<string, unknown> | undefined)?.['type'] || 'unknown');
             return `/* unsupported: ${type} */`;
         }

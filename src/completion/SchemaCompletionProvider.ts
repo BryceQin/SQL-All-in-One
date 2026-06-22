@@ -67,8 +67,24 @@ export class SchemaCompletionProvider {
         try {
             const items = await this.schemaProvider.getCompletionItems(context)
             return items
-        } catch {
+        } catch (e) {
+            console.debug('[SQL All in One] SchemaCompletionProvider.getCompletionItems failed:', e)
             return []
+        }
+    }
+
+    /**
+     * Called by VSCode when a completion item is being shown/selected. Delegates
+     * to {@link SchemaProvider.resolveCompletionItem} which updates the MRU
+     * cache based on the item's data. This keeps MRU updates out of item
+     * generation (a read operation) and ties them to actual user interaction.
+     */
+    resolveCompletionItem(item: vscode.CompletionItem, _token: vscode.CancellationToken): vscode.ProviderResult<vscode.CompletionItem> {
+        try {
+            return this.schemaProvider.resolveCompletionItem(item)
+        } catch (e) {
+            console.debug('[SQL All in One] SchemaCompletionProvider.resolveCompletionItem failed:', e)
+            return item
         }
     }
 

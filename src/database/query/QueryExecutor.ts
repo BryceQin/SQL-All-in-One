@@ -137,7 +137,8 @@ export class QueryExecutor {
                     try {
                         await adapter.cancelQuery(queryId);
                         return;
-                    } catch {
+                    } catch (e) {
+                        console.debug(`[SQL All in One] Cancel query attempt ${attempt + 1} failed:`, e)
                         if (attempt < maxRetries - 1) {
                             const backoffDelay = retryDelay * Math.pow(2, attempt);
                             await this.delay(backoffDelay);
@@ -170,6 +171,7 @@ export class QueryExecutor {
         return new Promise<QueryResult>((resolve, reject) => {
             let timer: ReturnType<typeof setTimeout> | undefined;
             let cancellationDisposable: vscode.Disposable | undefined;
+            let settled = false;
 
             const cleanup = (): void => {
                 if (timer !== undefined) {
@@ -182,32 +184,60 @@ export class QueryExecutor {
                 }
             };
 
+            const settleResolve = (result: QueryResult): void => {
+                if (settled) {
+                    return;
+                }
+                settled = true;
+                cleanup();
+                resolve(result);
+            };
+
+            const settleReject = (error: unknown): void => {
+                if (settled) {
+                    return;
+                }
+                settled = true;
+                cleanup();
+                reject(error);
+            };
+
             const attemptCancel = async (): Promise<void> => {
+                if (settled) {
+                    return;
+                }
                 try {
                     const capabilities = adapter.getDialectCapabilities();
                     if (capabilities.supportsCancel) {
+                        // 在实际发起取消前再次检查，避免在调度期间 Promise 已 resolve
+                        if (settled) {
+                            return;
+                        }
                         await adapter.cancelQuery(queryId);
                     }
-                } catch {
-                    // best effort
+                } catch (e) {
+                    // best effort: log but do not propagate cancel failure
+                    console.debug('[SQL All in One] Timeout cancel attempt (best effort) failed:', e)
                 }
             };
 
             timer = setTimeout(() => {
-                cleanup();
-                attemptCancel();
-                reject(new Error(t('database.queryTimedOut', String(options.timeout))));
+                if (!settled) {
+                    void attemptCancel();
+                }
+                settleReject(new Error(t('database.queryTimedOut', String(options.timeout))));
             }, options.timeout);
 
             cancellationDisposable = token.onCancellationRequested(() => {
-                cleanup();
-                attemptCancel();
-                reject(new Error(t('database.queryWasCancelled')));
+                if (!settled) {
+                    void attemptCancel();
+                }
+                settleReject(new Error(t('database.queryWasCancelled')));
             });
 
             adapter.execute(sql, options.params)
-                .then((result) => { cleanup(); resolve(result); })
-                .catch((error: unknown) => { cleanup(); reject(error); });
+                .then((result) => settleResolve(result))
+                .catch((error: unknown) => settleReject(error));
         });
     }
 

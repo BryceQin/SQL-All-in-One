@@ -5,6 +5,7 @@ import { AstFormatter } from "./AstFormatter"
 import { ConfigError, validateConfig } from "./validateConfig"
 import { t } from "../i18n"
 import { getFormatterDefaultOptions } from "../config/configDefinitions"
+import { LRUCache } from "../utils/lruCache"
 
 export type { SqlLanguage }
 
@@ -40,11 +41,8 @@ export const format = (
 }
 
 // AstFormatter 缓存：按方言和配置哈希缓存实例
-const formatterCache = new Map<string, AstFormatter>()
 const MAX_FORMATTER_CACHE_SIZE = 50
-
-let lastOptionsRef: WeakRef<object> | undefined;
-let lastCacheKey: string | undefined;
+const formatterCache = new LRUCache<string, AstFormatter>({ maxSize: MAX_FORMATTER_CACHE_SIZE, maxAge: Infinity })
 
 const RELEVANT_KEYS: (keyof FormatOptions)[] = [
     'tabWidth', 'useTabs', 'keywordCase', 'identifierCase', 'dataTypeCase',
@@ -71,21 +69,35 @@ const RELEVANT_KEYS: (keyof FormatOptions)[] = [
     'newlineBeforeDistributeBy', 'newlineBeforeClusterBy', 'newlineBeforeSortBy',
 ]
 
-function getFormatterCacheKey(dialect: string, options: FormatOptions): string {
-    if (lastOptionsRef) {
-        const cached = lastOptionsRef.deref();
-        if (cached === options && lastCacheKey) {
-            return lastCacheKey;
-        }
+function stringHash(str: string): number {
+    let hash = 2166136261; // FNV offset basis
+    for (let i = 0; i < str.length; i++) {
+        hash ^= str.charCodeAt(i);
+        hash = Math.imul(hash, 16777619); // FNV prime
     }
-    const parts = [dialect];
+    return hash >>> 0; // ensure unsigned
+}
+
+function hashOptions(dialect: string, options: FormatOptions): string {
+    let hash = 2166136261; // FNV offset basis
+    hash ^= stringHash(dialect);
     for (const key of RELEVANT_KEYS) {
-        parts.push(String(options[key]));
+        const val = options[key];
+        // Use distinct sentinel strings for undefined/null to avoid collisions
+        // with the literal strings "undefined"/"null". Also prefix with the
+        // value's type so that e.g. the number 1 and the string "1" hash
+        // differently (String(1) === String("1") === "1" otherwise).
+        let valStr: string;
+        if (val === undefined) {
+            valStr = "__undef__";
+        } else if (val === null) {
+            valStr = "__null__";
+        } else {
+            valStr = `${typeof val}:${String(val)}`;
+        }
+        hash ^= stringHash(valStr);
     }
-    const key = parts.join('|');
-    lastOptionsRef = new WeakRef(options as object);
-    lastCacheKey = key;
-    return key;
+    return `${dialect}:${hash >>> 0}`;
 }
 
 export const formatDialect = (
@@ -103,30 +115,21 @@ export const formatDialect = (
         ...cfg,
     })
 
-    const cacheKey = getFormatterCacheKey(dialect, options)
+    const cacheKey = hashOptions(dialect, options)
+    // LRUCache.get() already promotes the entry to MRU on access, and
+    // set() handles LRU eviction internally, so no manual FIFO logic needed.
     let formatter = formatterCache.get(cacheKey)
 
     if (!formatter) {
-        if (formatterCache.size >= MAX_FORMATTER_CACHE_SIZE) {
-            const evictKey = formatterCache.keys().next().value
-            if (evictKey !== undefined) {
-                formatterCache.delete(evictKey)
-            }
-        }
         formatter = new AstFormatter(options, dialect)
         formatterCache.set(cacheKey, formatter)
-    } else {
-        formatterCache.delete(cacheKey)
-        formatterCache.set(cacheKey, formatter)
     }
-    
+
     return formatter.format(query)
 }
 
 export function clearFormatterCache(): void {
     formatterCache.clear();
-    lastOptionsRef = undefined;
-    lastCacheKey = undefined;
 }
 
 export type FormatFn = typeof format

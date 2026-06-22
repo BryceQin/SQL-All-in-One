@@ -28,6 +28,7 @@ import type { SqlStatementDetector } from '../database/query/SqlStatementDetecto
 import type { SchemaProvider } from '../database/schema/SchemaProvider';
 import type { SchemaCache } from '../database/schema/SchemaCache';
 import type { DatabaseModule } from '../database/DatabaseModule';
+import type { AdapterFactory } from '../database/adapters/AdapterFactory';
 
 export interface TokenMap {
     ConfigManager: ConfigManager;
@@ -60,6 +61,7 @@ export interface TokenMap {
     SchemaProvider: SchemaProvider;
     SchemaCache: SchemaCache;
     DatabaseModule: DatabaseModule;
+    DialectAdapterFactory: typeof AdapterFactory;
 }
 
 export class DIContainer {
@@ -67,6 +69,7 @@ export class DIContainer {
     private factories = new Map<string, () => unknown>();
     private singletons = new Map<string, () => unknown>();
     private creating = new Set<string>();
+    private dependencyMap = new Map<string, string[]>();
 
     register<T>(token: string, service: T): void {
         this.services.set(token, service);
@@ -76,8 +79,11 @@ export class DIContainer {
         this.factories.set(token, factory);
     }
 
-    registerSingleton<T>(token: string, factory: () => T): void {
+    registerSingleton<T>(token: string, factory: () => T, dependencies?: string[]): void {
         this.singletons.set(token, factory);
+        if (dependencies && dependencies.length > 0) {
+            this.dependencyMap.set(token, dependencies);
+        }
     }
 
     get<T extends keyof TokenMap>(token: T): TokenMap[T];
@@ -131,7 +137,8 @@ export class DIContainer {
     tryGet<T>(token: string): T | undefined {
         try {
             return this.get(token);
-        } catch {
+        } catch (e) {
+            console.debug('[SQL All in One] DIContainer.tryGet failed for token:', token, e)
             return undefined;
         }
     }
@@ -144,14 +151,107 @@ export class DIContainer {
         ) {
             try {
                 (service as { dispose: () => void }).dispose();
-            } catch {
-                // ignore dispose errors
+            } catch (e) {
+                // ignore dispose errors; log for debugging
+                console.debug('[SQL All in One] DIContainer.disposeService failed:', e)
             }
         }
     }
 
+    private async disposeServiceAsync(service: unknown): Promise<void> {
+        if (
+            service !== null &&
+            service !== undefined &&
+            typeof (service as Record<string, unknown>).dispose === 'function'
+        ) {
+            try {
+                const result = (service as { dispose: () => unknown }).dispose();
+                if (result instanceof Promise) {
+                    await result;
+                }
+            } catch (e) {
+                // ignore dispose errors; log for debugging
+                console.debug('[SQL All in One] DIContainer.disposeServiceAsync failed:', e)
+            }
+        }
+    }
+
+    /**
+     * Compute a topological dispose order based on declared dependencies.
+     * Services with no dependents are disposed first; services that others
+     * depend upon are disposed last.  If a circular dependency is detected
+     * among a subset of services, those services fall back to reverse
+     * insertion order.
+     */
+    private computeDisposeOrder(): string[] {
+        const serviceKeys = Array.from(this.services.keys());
+
+        // Only consider keys that have a dependency declaration
+        const keysWithDeps = serviceKeys.filter((k) => this.dependencyMap.has(k));
+
+        if (keysWithDeps.length === 0) {
+            // No dependency info – fall back to reverse insertion order
+            return serviceKeys.reverse();
+        }
+
+        // Build adjacency: edge A -> B means "A depends on B" (B must be disposed after A)
+        const inDegree = new Map<string, number>();
+        const dependents = new Map<string, Set<string>>(); // reverse edges: B -> {A} (who depends on B)
+
+        for (const key of serviceKeys) {
+            inDegree.set(key, 0);
+            dependents.set(key, new Set());
+        }
+
+        for (const key of keysWithDeps) {
+            const deps = this.dependencyMap.get(key) ?? [];
+            for (const dep of deps) {
+                if (this.services.has(dep)) {
+                    // key depends on dep → dep must be disposed AFTER key
+                    // So in the dispose graph, key -> dep (key must come before dep)
+                    dependents.get(dep)!.add(key);
+                    inDegree.set(key, (inDegree.get(key) ?? 0) + 1);
+                }
+            }
+        }
+
+        // Kahn's algorithm – produces topological order for dispose (dependents first)
+        const queue: string[] = [];
+        for (const [key, deg] of inDegree) {
+            if (deg === 0) {
+                queue.push(key);
+            }
+        }
+
+        const sorted: string[] = [];
+        const visited = new Set<string>();
+
+        while (queue.length > 0) {
+            const current = queue.shift()!;
+            sorted.push(current);
+            visited.add(current);
+
+            for (const dependent of dependents.get(current) ?? []) {
+                const newDeg = (inDegree.get(dependent) ?? 1) - 1;
+                inDegree.set(dependent, newDeg);
+                if (newDeg === 0) {
+                    queue.push(dependent);
+                }
+            }
+        }
+
+        // Any keys not visited are part of a cycle – append in reverse insertion order
+        const cyclicKeys = serviceKeys.filter((k) => !visited.has(k)).reverse();
+
+        // Keys without dependency declarations that weren't part of the topo sort
+        // should be placed before the sorted ones (they have no declared deps,
+        // so they can be disposed first).  But Kahn's already handles them
+        // (they have inDegree 0).  We just need to handle cyclic ones.
+        return [...sorted, ...cyclicKeys];
+    }
+
     disposeAll(): void {
-        const disposeOrder = Array.from(this.services.keys()).reverse();
+        const disposeOrder = this.computeDisposeOrder();
         for (const key of disposeOrder) {
             const service = this.services.get(key);
             this.disposeService(service);
@@ -160,6 +260,103 @@ export class DIContainer {
         this.factories.clear();
         this.singletons.clear();
         this.creating.clear();
+        this.dependencyMap.clear();
+    }
+
+    async asyncDisposeAll(): Promise<void> {
+        const disposeOrder = this.computeDisposeOrder();
+
+        // Group services by dependency level for parallel disposal.
+        // We compute levels via BFS on the dependency graph so that
+        // services at the same level can be disposed concurrently.
+        const levels = this.computeDisposeLevels(disposeOrder);
+
+        for (const level of levels) {
+            const results = await Promise.allSettled(
+                level.map(async (key) => {
+                    const service = this.services.get(key);
+                    await this.disposeServiceAsync(service);
+                })
+            );
+            // Log any rejections (already caught inside disposeServiceAsync, but just in case)
+            for (const result of results) {
+                if (result.status === 'rejected') {
+                    // Already handled inside disposeServiceAsync, but we don't want
+                    // unhandled promise rejections
+                }
+            }
+        }
+
+        this.services.clear();
+        this.factories.clear();
+        this.singletons.clear();
+        this.creating.clear();
+        this.dependencyMap.clear();
+    }
+
+    /**
+     * Given the topological dispose order, group keys into levels.
+     * Level 0 = services with no dependents (can be disposed first, in parallel).
+     * Level N = services whose dependents are all at levels less than N.
+     */
+    private computeDisposeLevels(disposeOrder: string[]): string[][] {
+        if (disposeOrder.length === 0) {
+            return [];
+        }
+
+        // Build reverse map: for each key, what depends on it?
+        const isDependedUpon = new Map<string, Set<string>>();
+        for (const key of disposeOrder) {
+            isDependedUpon.set(key, new Set());
+        }
+        for (const key of disposeOrder) {
+            const deps = this.dependencyMap.get(key) ?? [];
+            for (const dep of deps) {
+                if (isDependedUpon.has(dep)) {
+                    isDependedUpon.get(dep)!.add(key);
+                }
+            }
+        }
+
+        // Compute level for each key: level = max(level of dependents) + 1
+        // Keys with no dependents get level 0
+        const levels = new Map<string, number>();
+        const computed = new Set<string>();
+
+        const computeLevel = (key: string): number => {
+            if (computed.has(key)) {
+                return levels.get(key) ?? 0;
+            }
+            computed.add(key);
+            const deps = isDependedUpon.get(key);
+            if (!deps || deps.size === 0) {
+                levels.set(key, 0);
+                return 0;
+            }
+            let maxDepLevel = 0;
+            for (const dep of deps) {
+                maxDepLevel = Math.max(maxDepLevel, computeLevel(dep) + 1);
+            }
+            levels.set(key, maxDepLevel);
+            return maxDepLevel;
+        };
+
+        for (const key of disposeOrder) {
+            computeLevel(key);
+        }
+
+        // Group by level
+        const maxLevel = Math.max(...levels.values(), 0);
+        const result: string[][] = [];
+        for (let i = 0; i <= maxLevel; i++) {
+            result.push([]);
+        }
+        for (const key of disposeOrder) {
+            const level = levels.get(key) ?? 0;
+            result[level].push(key);
+        }
+
+        return result.filter((level) => level.length > 0);
     }
 
     clear(): void {
@@ -172,6 +369,7 @@ export class DIContainer {
         this.services.delete(token);
         this.singletons.delete(token);
         this.factories.delete(token);
+        this.dependencyMap.delete(token);
     }
 }
 
@@ -208,6 +406,7 @@ export const Tokens = {
     SchemaProvider: 'SchemaProvider',
     SchemaCache: 'SchemaCache',
     DatabaseModule: 'DatabaseModule',
+    DialectAdapterFactory: 'DialectAdapterFactory',
 } as const;
 
 export type Token = typeof Tokens[keyof typeof Tokens];

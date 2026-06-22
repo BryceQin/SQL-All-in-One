@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
-import { MysqlAdapter } from './adapters/MysqlAdapter';
-import { AdapterFactory } from './adapters/AdapterFactory';
+import type { Activatable } from '../core/Activatable';
 import { getConnectionManager } from './connection/ConnectionManager';
 import { getConnectionStore } from './connection/ConnectionStore';
 import { DatabaseTreeProvider } from '../views/databaseExplorer/DatabaseTreeProvider';
@@ -14,20 +13,30 @@ import { registerQueryCommands } from './commands/QueryCommands';
 import { registerExportCommands } from './commands/ExportCommands';
 import { registerSchemaCommands } from './commands/SchemaCommands';
 import { TableTreeNode, FunctionTreeNode, ProcedureTreeNode, TriggerTreeNode } from '../views/databaseExplorer/treeNodes';
-import { getContainer, Tokens } from '../core/diContainer';
+import { getErrorHandler, ErrorLevel, ErrorCategory } from '../core/errorHandler';
 
-export class DatabaseModule {
+export class DatabaseModule implements Activatable {
   private context: vscode.ExtensionContext;
+  private queryExecutor: QueryExecutor;
+  private safeQueryGuard: SafeQueryGuard;
+  private queryHistory: QueryHistory;
+  private statementDetector: SqlStatementDetector;
   private treeProvider!: DatabaseTreeProvider;
-  private queryExecutor!: QueryExecutor;
-  private safeQueryGuard!: SafeQueryGuard;
-  private queryHistory!: QueryHistory;
-  private statementDetector!: SqlStatementDetector;
   private outputChannel!: vscode.OutputChannel;
   private initialized = false;
 
-  constructor(context: vscode.ExtensionContext) {
+  constructor(
+    context: vscode.ExtensionContext,
+    queryExecutor: QueryExecutor,
+    safeQueryGuard: SafeQueryGuard,
+    queryHistory: QueryHistory,
+    statementDetector: SqlStatementDetector,
+  ) {
     this.context = context;
+    this.queryExecutor = queryExecutor;
+    this.safeQueryGuard = safeQueryGuard;
+    this.queryHistory = queryHistory;
+    this.statementDetector = statementDetector;
   }
 
   getTreeProvider(): DatabaseTreeProvider | undefined {
@@ -80,8 +89,6 @@ export class DatabaseModule {
   }
 
   async initialize(): Promise<void> {
-    AdapterFactory.register('mysql', MysqlAdapter);
-
     const connectionStore = getConnectionStore();
     connectionStore.setSecretStorage(this.context.secrets);
 
@@ -105,12 +112,7 @@ export class DatabaseModule {
     }
 
     try {
-      const container = getContainer();
-      this.queryExecutor = container.get<QueryExecutor>(Tokens.QueryExecutor);
-      this.safeQueryGuard = container.get<SafeQueryGuard>(Tokens.SafeQueryGuard);
-      this.queryHistory = container.get<QueryHistory>(Tokens.QueryHistory);
       this.queryHistory.initialize(this.context);
-      this.statementDetector = container.get<SqlStatementDetector>(Tokens.SqlStatementDetector);
       this.outputChannel = vscode.window.createOutputChannel('SQL All in One');
 
       this.setupSchemaCacheListeners();
@@ -200,6 +202,20 @@ export class DatabaseModule {
     this.context.subscriptions.push(
       treeView.onDidCollapseElement((e) => handleToggle(e.element))
     );
+  }
+
+  async activate(_context: vscode.ExtensionContext): Promise<void> {
+    this.registerCommands();
+    try {
+      await this.initialize();
+    } catch (e) {
+      console.error('[SQL All in One] Database initialization failed:', e);
+      getErrorHandler().handle(e, 'Database initialization', ErrorLevel.ERROR, ErrorCategory.CRITICAL);
+    }
+  }
+
+  async deactivate(): Promise<void> {
+    await this.dispose();
   }
 
   async dispose(): Promise<void> {

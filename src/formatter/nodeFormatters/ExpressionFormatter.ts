@@ -350,7 +350,9 @@ export class ExpressionFormatter {
         if (typeof expr === 'string') return expr;
         try {
             return JSON.stringify(expr);
-        } catch {
+        } catch (e) {
+            // JSON.stringify may fail on circular references; fall back to String()
+            console.debug('[SQL All in One] ExpressionFormatter.formatUnknown JSON.stringify failed:', e)
             return String(expr);
         }
     }

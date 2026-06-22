@@ -148,7 +148,8 @@ export class SqlStatementDetector {
             }
 
             return statements;
-        } catch {
+        } catch (e) {
+            console.debug('[SQL All in One] SqlStatementDetector.detectStatements failed:', e)
             return [];
         }
     }
