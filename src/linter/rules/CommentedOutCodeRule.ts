@@ -3,6 +3,7 @@ import type { RuleContext } from './LintRule'
 import { BaseRule } from './BaseRule'
 import type { AstLocation } from '../../parser/astTypes'
 import { getConfigManager } from '../../core/configManager'
+import { precomputeLineStarts, lineFromOffset } from '../../utils/lineIndex'
 
 const SQL_KEYWORDS_FOR_COMMENT_CHECK = ['SELECT', 'FROM', 'WHERE', 'JOIN', 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'DROP', 'ALTER', 'GROUP BY', 'ORDER BY', 'HAVING', 'UNION']
 const SQL_KEYWORD_REGEXES = SQL_KEYWORDS_FOR_COMMENT_CHECK.map(kw => ({
@@ -25,6 +26,8 @@ export class CommentedOutCodeRule extends BaseRule {
         const ruleConfig = getConfigManager().get<{ enabled?: boolean; severity?: string; thresholdLines?: number }>('lint.commented_out_code', { enabled: true, severity: 'information', thresholdLines: 3 })
         const thresholdLines = ruleConfig.thresholdLines ?? 3
 
+        const lineStarts = precomputeLineStarts(sql)
+
         const blockCommentPattern = /\/\*([\s\S]*?)\*\//g
         let match
         while ((match = blockCommentPattern.exec(sql)) !== null) {
@@ -34,7 +37,7 @@ export class CommentedOutCodeRule extends BaseRule {
             }
 
             const lines = content.split('\n').filter(l => l.trim().length > 0)
-            const startLine = sql.substring(0, match.index).split('\n').length
+            const startLine = lineFromOffset(lineStarts, match.index)
             const loc: AstLocation = { line: startLine, column: 1 }
             diagnostics.push(this.addDiagnostic(loc, 2, 'linter.commentedOutCode.description', String(lines.length)))
         }
@@ -45,7 +48,7 @@ export class CommentedOutCodeRule extends BaseRule {
                 continue
             }
 
-            const startLine = sql.substring(0, group.startIndex).split('\n').length
+            const startLine = lineFromOffset(lineStarts, group.startIndex)
             const loc: AstLocation = { line: startLine, column: 1 }
             diagnostics.push(this.addDiagnostic(loc, 2, 'linter.commentedOutCode.description', String(group.lineCount)))
         }

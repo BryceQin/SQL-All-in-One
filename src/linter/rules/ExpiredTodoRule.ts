@@ -3,6 +3,7 @@ import type { RuleContext } from './LintRule'
 import { BaseRule } from './BaseRule'
 import type { AstLocation } from '../../parser/astTypes'
 import { getConfigManager } from '../../core/configManager'
+import { precomputeLineStarts, lineFromOffset } from '../../utils/lineIndex'
 
 export class ExpiredTodoRule extends BaseRule {
     readonly id = 'expired_todo'
@@ -17,6 +18,8 @@ export class ExpiredTodoRule extends BaseRule {
         const diagnostics: vscode.Diagnostic[] = []
         const ruleConfig = getConfigManager().get<{ enabled?: boolean; severity?: string; gracePeriodDays?: number }>('lint.expired_todo', { enabled: true, severity: 'information', gracePeriodDays: 7 })
         const gracePeriod = ruleConfig.gracePeriodDays ?? 7
+
+        const lineStarts = precomputeLineStarts(context.sql)
 
         const patterns = [
             /--\s*(TODO|FIXME)\s*\(\s*(\d{4}[-/]\d{2}[-/]\d{2})\s*\):?\s*.*/gi,
@@ -43,7 +46,7 @@ export class ExpiredTodoRule extends BaseRule {
                     continue
                 }
 
-                const startLine = context.sql.substring(0, match.index).split('\n').length
+                const startLine = lineFromOffset(lineStarts, match.index)
                 const loc: AstLocation = { line: startLine, column: 1 }
                 diagnostics.push(this.addDiagnostic(loc, match[0].length, 'linter.expiredTodo.description', dateStr, String(diffDays)))
             }
