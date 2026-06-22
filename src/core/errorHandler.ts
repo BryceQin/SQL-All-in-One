@@ -37,6 +37,7 @@ export class ErrorHandler {
     private historyCount = 0;
     private readonly maxHistorySize = 100;
     private showNotifications = true;
+    private debugEnabled = false;
     private outputChannel: vscode.OutputChannel | undefined;
     private lastNotificationTime = new LRUCache<string, number>({ maxSize: 200, maxAge: 60000 });
     private readonly NOTIFICATION_THROTTLE_MS = 5000;
@@ -154,6 +155,14 @@ export class ErrorHandler {
     clearHistory(): void {
         this.historyStart = 0;
         this.historyCount = 0;
+    }
+
+    isDebugEnabled(): boolean {
+        return this.debugEnabled;
+    }
+
+    setDebugEnabled(enabled: boolean): void {
+        this.debugEnabled = enabled;
     }
 
     private normalizeError(
@@ -291,4 +300,12 @@ export function getErrorHandler(): ErrorHandler {
 export function handleError(error: unknown, context: string, category: ErrorCategory): void {
     const level = category === ErrorCategory.CRITICAL ? ErrorLevel.ERROR : ErrorLevel.WARNING;
     getErrorHandler().handle(error, context, level, category);
+}
+
+export function debugLog(message: string, context: string, data?: unknown): void {
+    const handler = getErrorHandler();
+    if (!handler.isDebugEnabled()) {
+        return;
+    }
+    console.debug(`[SQL All in One] [${context}] ${message}`, data);
 }
