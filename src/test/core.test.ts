@@ -378,7 +378,7 @@ suite('ErrorHandler', () => {
             debugLog('no data message', 'no-data-context')
 
             assert.strictEqual(capturedArgs.length, 2, 'console.debug should be called with message and undefined data')
-            assert.strictEqual(capturedArgs[0], '[SQL All in One] [no-data-context] no data message')
+            assert.strictEqual(capturedArgs[0], '[SQL All in One] [DEBUG] [no-data-context] no data message')
             assert.strictEqual(capturedArgs[1], undefined)
         } finally {
             console.debug = originalDebug

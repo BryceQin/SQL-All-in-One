@@ -303,8 +303,8 @@ export function handleError(error: unknown, context: string, category: ErrorCate
 }
 
 export function debugLog(message: string, context: string, data?: unknown): void {
-    const handler = getErrorHandler();
-    if (!handler.isDebugEnabled()) {
+    const handler = getContainer().tryGet<ErrorHandler>(Tokens.ErrorHandler);
+    if (!handler || !handler.isDebugEnabled()) {
         return;
     }
     console.debug(`[SQL All in One] [DEBUG] [${context}] ${message}`, data);
