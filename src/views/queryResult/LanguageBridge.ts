@@ -173,7 +173,7 @@ export class LanguageBridge implements vscode.Disposable {
                             description: def.description,
                         });
                     }
-                } catch (e) { /* skip invalid snippet files */ handleError(e, 'LanguageBridge._loadSnippets', ErrorCategory.SUB_ITEM); }
+                } catch (e) { /* skip invalid snippet files */ handleError(e, `LanguageBridge._loadSnippets (${name})`, ErrorCategory.SUB_ITEM); }
             }
         }
         this._snippetCache.set(dialect, snippets);
