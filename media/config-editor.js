@@ -1354,11 +1354,24 @@ function changeLanguage(lang) {
             vscode.postMessage({ command: 'previewFormat', sql, config });
         }
 
+        var SQL_KEYWORDS = ['SELECT','FROM','WHERE','ORDER','BY','GROUP','HAVING','LIMIT','JOIN','LEFT','RIGHT','INNER','OUTER','ON','AS','AND','OR','NOT','IN','IS','NULL','LIKE','BETWEEN','CASE','WHEN','THEN','ELSE','END','UNION','ALL','DISTINCT','INSERT','INTO','VALUES','UPDATE','SET','DELETE','CREATE','TABLE','DROP','ALTER','ADD','PRIMARY','KEY','FOREIGN','REFERENCES','INDEX','VIEW','DATABASE','SCHEMA','IF','EXISTS','DEFAULT','CONSTRAINT','CHECK','UNIQUE','CASCADE','WITH','RECURSIVE','OVER','PARTITION','ROW_NUMBER','RANK','DENSE_RANK','LATERAL','VIEW','DISTRIBUTE','CLUSTER','SORT'];
+
+        function highlightSql(sql) {
+            var escaped = escapeHtml(sql);
+            var keywordPattern = new RegExp('\\b(' + SQL_KEYWORDS.join('|') + ')\\b', 'gi');
+            escaped = escaped.replace(keywordPattern, '<span class="tok-keyword">$1</span>');
+            escaped = escaped.replace(/('(?:[^']|'')*')/g, '<span class="tok-string">$1</span>');
+            escaped = escaped.replace(/(--[^\n]*)/g, '<span class="tok-comment">$1</span>');
+            escaped = escaped.replace(/(\/\*[\s\S]*?\*\/)/g, '<span class="tok-comment">$1</span>');
+            escaped = escaped.replace(/\b(\d+(?:\.\d+)?)\b/g, '<span class="tok-number">$1</span>');
+            return escaped;
+        }
+
         function showPreviewResult(result) {
             const resultEl = document.getElementById('previewResult');
             resultEl.classList.remove('empty');
             resultEl.classList.add('success');
-            resultEl.textContent = result;
+            resultEl.innerHTML = highlightSql(result);
             setTimeout(() => { resultEl.classList.remove('success'); }, 1000);
         }
 
