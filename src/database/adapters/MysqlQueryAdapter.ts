@@ -38,12 +38,14 @@ export class MysqlQueryAdapter implements IQueryAdapter {
 
             if (!this.shared.transactionConnection && this.shared.pool) {
                 acquiredConn = await this.acquireConnectionWithTimeout(acquireTimeout);
-                this.shared.activeConnectionCount++;
                 queryConn = acquiredConn;
-                this.shared.activeQueryThreadIds.set(queryId, (acquiredConn as unknown as { threadId: number }).threadId);
             }
 
             try {
+                if (acquiredConn) {
+                    this.shared.activeConnectionCount++;
+                    this.shared.activeQueryThreadIds.set(queryId, (acquiredConn as unknown as { threadId: number }).threadId);
+                }
                 const [result, fields] = await queryConn.query(sql, values);
                 const executionTime = Date.now() - startTime;
 
