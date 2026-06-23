@@ -2,7 +2,7 @@
     "name": "hive-formatter",
     "displayName": "SQL All in One",
     "description": "SQL All in One - 强大的 SQL 格式化、智能补全、语法检查、DDL 转换 VSCode 插件，支持 Hive、MySQL、SparkSQL、FlinkSQL、PostgreSQL、BigQuery、SQLite 等多种 SQL 方言",
-    "version": "2.19.0",
+    "version": "2.20.0",
     "publisher": "bryce-qin",
     "contributors": [
         "TalDu"
@@ -1893,8 +1893,10 @@
         "all": true
     },
     "devDependencies": {
+        "@types/better-sqlite3": "^7.6.12",
         "@types/mocha": "^10.0.10",
         "@types/node": "22.x",
+        "@types/pg": "^8.11.10",
         "@types/ssh2": "^1.15.5",
         "@types/vscode": "^1.85.0",
         "@vscode/test-cli": "^0.0.12",
@@ -1909,8 +1911,10 @@
         "typescript-eslint": "^8.52.0"
     },
     "dependencies": {
+        "better-sqlite3": "^11.7.0",
         "mysql2": "^3.22.4",
         "node-sql-parser": "^5.4.0",
+        "pg": "^8.13.0",
         "ssh2": "^1.17.0"
     }
 }

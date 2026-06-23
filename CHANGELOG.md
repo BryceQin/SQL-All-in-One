@@ -1,5 +1,30 @@
 # Changelog
 
+## [2.20.0] - 2026-06-23
+
+### Features
+
+- **PostgreSQL 数据库适配器**：新增完整的 PostgreSQL 适配器实现，基于 `pg` 连接池，支持连接池管理、SSL、SSH 隧道、事务（BEGIN/COMMIT/ROLLBACK）、查询取消（`pg_cancel_backend`）、元数据查询（数据库/Schema/表/视图/函数/存储过程/触发器）、Schema 描述（列/索引/外键）、DDL 生成、EXPLAIN 执行计划、行数统计、数据类型定义
+- **SQLite 数据库适配器**：新增完整的 SQLite 适配器实现，基于 `better-sqlite3`，支持文件路径连接、WAL 模式、事务、查询中断（`interrupt()`）、元数据查询（表/视图/触发器）、Schema 描述、DDL 生成、EXPLAIN QUERY PLAN、行数统计、数据类型定义
+- **隐式交叉连接检测规则**：新增 `implicit_cross_join` Lint 规则，检测缺少 ON 或 USING 子句的 JOIN 语句（产生隐式交叉连接），默认启用，级别为 Warning
+- **已弃用函数检测规则**：新增 `deprecated_function` Lint 规则，检测 `LENGTH()`、`GREATEST()`、`LEAST()` 等可能存在跨方言行为差异或 NULL 陷阱的函数，默认启用，级别为 Info
+- **PostgreSQL 布尔比较检测规则**：新增 `postgres_boolean_comparison` Lint 规则（仅 PostgreSQL 方言），检测 `= TRUE` / `= FALSE` 比较并建议直接使用布尔列，默认启用，级别为 Hint
+- **连接对话框 UI**：启用 PostgreSQL 和 SQLite 方言选择，修复 SQLite 文件浏览按钮的元素 ID 映射问题
+
+### Tests
+
+- 新增 `dialectLint.test.ts`：8 个测试用例，覆盖隐式交叉连接、已弃用函数、PostgreSQL 布尔比较的检测与不误报场景
+- 新增 `queryCancel.test.ts`：4 个测试用例，覆盖超时取消、显式取消、不支持取消时跳过、运行中查询跟踪场景
+
+### Dependencies
+
+- 新增 `pg` ^8.13.0（PostgreSQL 客户端）
+- 新增 `better-sqlite3` ^11.7.0（SQLite 客户端）
+- 新增 `@types/pg` ^8.11.10、`@types/better-sqlite3` ^7.6.12（类型定义）
+- `esbuild` 配置将 `pg`、`better-sqlite3` 标记为 external（原生模块不打包）
+
+---
+
 ## [2.19.0] - 2026-06-22
 
 ### Performance
