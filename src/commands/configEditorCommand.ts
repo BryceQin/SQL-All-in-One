@@ -8,6 +8,7 @@ import messagesEn from '../i18n/messages.en.json'
 import messagesZh from '../i18n/messages.zh.json'
 import { ALL_CONFIG_ITEMS, LINT_RULES, getDefaultConfig, getConfigKey } from '../config/configDefinitions'
 import { ConnectionConfig } from '../database/connection/ConnectionConfig'
+import { AdapterFactory } from '../database/adapters/AdapterFactory'
 
 interface ConfigEditorMessage {
     command: string;
@@ -135,6 +136,9 @@ export class ConfigEditorPanel {
                         if (message.id) {
                             await this._handleTestExistingConnection(message.id)
                         }
+                        break
+                    case 'getSupportedDialects':
+                        await this._sendSupportedDialects()
                         break
                 }
             },
@@ -470,6 +474,25 @@ export class ConfigEditorPanel {
                 command: 'connectionTestResult',
                 success: false,
                 error: (error as Error).message
+            })
+        }
+    }
+
+    private async _sendSupportedDialects(): Promise<void> {
+        try {
+            const supported = AdapterFactory.getAllMetadata()
+            const known = ['mysql', 'hive', 'spark', 'flinksql', 'postgresql', 'bigquery', 'sqlite']
+            this._panel.webview.postMessage({
+                command: 'supportedDialects',
+                supported,
+                known
+            })
+        } catch (e) {
+            console.debug('[SQL All in One] ConfigEditor _sendSupportedDialects failed:', e)
+            this._panel.webview.postMessage({
+                command: 'supportedDialects',
+                supported: [],
+                known: ['mysql', 'hive', 'spark', 'flinksql', 'postgresql', 'bigquery', 'sqlite']
             })
         }
     }

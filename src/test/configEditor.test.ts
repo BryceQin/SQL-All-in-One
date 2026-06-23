@@ -1,5 +1,7 @@
 import * as vscode from 'vscode'
 import * as assert from 'assert'
+import { AdapterFactory } from '../database/adapters/AdapterFactory'
+import { MysqlAdapter } from '../database/adapters/MysqlAdapter'
 
 const EXTENSION_IDS = ['bryce-qin.hive-formatter', 'bryce-qin.hive-formatter']
 
@@ -111,6 +113,26 @@ suite('ConfigEditorPanel 测试', () => {
                     await restoreConfig.update('dialect', originalDialect, vscode.ConfigurationTarget.Global)
                 }
             }
+        })
+    })
+
+    suite('连接类型动态加载测试', () => {
+        test('getSupportedDialects 应返回已注册方言', async function() {
+            this.timeout(10000)
+
+            AdapterFactory.register('mysql', MysqlAdapter, MysqlAdapter.getDialectMetadata)
+
+            const allMeta = AdapterFactory.getAllMetadata()
+            assert.ok(allMeta.length > 0, '应至少有一个方言元数据')
+            const mysqlMeta = allMeta.find(m => m.dialect === 'mysql')
+            assert.ok(mysqlMeta, '应包含 mysql')
+            assert.strictEqual(mysqlMeta!.displayName, 'MySQL')
+        })
+
+        test('getRegisteredDialects 应包含 mysql', async function() {
+            this.timeout(5000)
+            const dialects = AdapterFactory.getRegisteredDialects()
+            assert.ok(dialects.includes('mysql'), '应包含 mysql')
         })
     })
 })
