@@ -732,3 +732,14 @@ body {
     border-radius: 2px;
     padding: 0 1px;
 }
+
+.ci-modified-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--warning-color);
+    margin-left: 6px;
+    box-shadow: 0 0 4px var(--warning-dim);
+    flex-shrink: 0;
+}

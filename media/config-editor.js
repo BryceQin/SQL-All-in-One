@@ -75,6 +75,7 @@ function changeLanguage(lang) {
     vscode.postMessage({ command: 'changeLanguage', lang: lang });
 }
 
+        let initialConfigSnapshot = {};
         let currentConfig = {
             enableSmartCommentToggle: true,
             headerAuthor: '',
@@ -87,8 +88,41 @@ function changeLanguage(lang) {
         let isDirty = false;
         var searchDebounceTimer = null;
 
+        function clearAllModifiedDots() {
+            document.querySelectorAll('.ci-modified-dot').forEach(function(dot) { dot.remove(); });
+        }
+
+        function updateModifiedDots() {
+            clearAllModifiedDots();
+            Object.keys(currentConfig).forEach(function(key) {
+                var el = document.getElementById(key);
+                if (!el) return;
+                var currentVal = el.type === 'checkbox' ? el.checked : el.value;
+                var initialVal = initialConfigSnapshot[key];
+                if (String(currentVal) !== String(initialVal)) {
+                    var label = el.closest('.config-item, .toggle-row, .lint-rule');
+                    if (label && !label.querySelector('.ci-modified-dot')) {
+                        var dot = document.createElement('span');
+                        dot.className = 'ci-modified-dot';
+                        dot.title = getI18nDict()['configEditor.conn.modified'] || '已修改';
+                        label.appendChild(dot);
+                    }
+                }
+            });
+        }
+
+        function locateModified() {
+            var firstModified = document.querySelector('.ci-modified-dot');
+            if (firstModified) {
+                firstModified.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+                showToast(getI18nDict()['configEditor.noModified'] || '无修改项', 'success');
+            }
+        }
+
         function markDirty() {
             isDirty = true;
+            updateModifiedDots();
             var saveBtn = document.querySelector('[data-action="saveConfig"]');
             if (saveBtn) saveBtn.classList.add('btn-dirty');
         }
@@ -1085,6 +1119,8 @@ function changeLanguage(lang) {
 
         function loadConfig(config) {
             currentConfig = { ...config };
+            initialConfigSnapshot = JSON.parse(JSON.stringify(config));
+            clearAllModifiedDots();
             Object.keys(config).forEach(key => {
                 const el = document.getElementById(key);
                 if (el) {
