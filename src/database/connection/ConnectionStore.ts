@@ -21,7 +21,9 @@ export class ConnectionStore {
     private groups = new Map<string, ConnectionGroup>();
     private secretStorage: vscode.SecretStorage | null = null;
     private saveTimer: ReturnType<typeof setTimeout> | null = null;
-    private pendingSaveResolve: (() => void) | null = null;
+    private savePromise: Promise<void> | null = null;
+    private saveResolve: (() => void) | null = null;
+    private saveReject: ((e: unknown) => void) | null = null;
     private readonly SAVE_DEBOUNCE_MS = 300;
 
     constructor() {
@@ -140,18 +142,23 @@ export class ConnectionStore {
     }
 
     async save(): Promise<void> {
+        if (this.savePromise) {
+            return this.savePromise.then(() => this.scheduleSave());
+        }
+        return this.scheduleSave();
+    }
+
+    private scheduleSave(): Promise<void> {
         if (this.saveTimer) {
             clearTimeout(this.saveTimer);
-            if (this.pendingSaveResolve) {
-                this.pendingSaveResolve();
-                this.pendingSaveResolve = null;
-            }
+            this.saveTimer = null;
+            this.settlePendingSave(true);
         }
-        return new Promise<void>((resolve, reject) => {
-            this.pendingSaveResolve = resolve;
+        this.savePromise = new Promise<void>((resolve, reject) => {
+            this.saveResolve = resolve;
+            this.saveReject = reject;
             this.saveTimer = setTimeout(async () => {
                 this.saveTimer = null;
-                this.pendingSaveResolve = null;
                 try {
                     const data: ConnectionsFile = {
                         version: 1,
@@ -162,23 +169,35 @@ export class ConnectionStore {
                         })),
                     };
                     await this.saveToFile(data);
-                    resolve();
+                    this.settlePendingSave(true);
                 } catch (error) {
-                    reject(error);
+                    this.settlePendingSave(false, error);
                 }
             }, this.SAVE_DEBOUNCE_MS);
         });
+        return this.savePromise;
+    }
+
+    private settlePendingSave(success: boolean, error?: unknown): void {
+        if (!this.saveResolve || !this.saveReject) return;
+        const resolve = this.saveResolve;
+        const reject = this.saveReject;
+        this.savePromise = null;
+        this.saveResolve = null;
+        this.saveReject = null;
+        if (success) {
+            resolve();
+        } else {
+            reject(error);
+        }
     }
 
     async saveImmediate(): Promise<void> {
         if (this.saveTimer) {
             clearTimeout(this.saveTimer);
             this.saveTimer = null;
-            if (this.pendingSaveResolve) {
-                this.pendingSaveResolve();
-                this.pendingSaveResolve = null;
-            }
         }
+        this.settlePendingSave(true);
         const data: ConnectionsFile = {
             version: 1,
             groups: Array.from(this.groups.values()),
