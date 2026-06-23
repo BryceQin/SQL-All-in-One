@@ -725,3 +725,10 @@ body {
     .header-logo { width: 30px; height: 30px; font-size: 15px; }
     .header h1 { font-size: 15px; }
 }
+
+.search-mark {
+    background: var(--warning-dim);
+    color: var(--warning-color);
+    border-radius: 2px;
+    padding: 0 1px;
+}

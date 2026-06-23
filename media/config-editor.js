@@ -1415,6 +1415,23 @@ function changeLanguage(lang) {
             currentActiveTab = tabName;
         }
 
+        function highlightSearchMatch(text, query) {
+            if (!query) return escapeHtml(text);
+            var escaped = escapeHtml(text);
+            var lowerText = escaped.toLowerCase();
+            var lowerQuery = query.toLowerCase();
+            var result = '';
+            var idx = 0;
+            var pos;
+            while ((pos = lowerText.indexOf(lowerQuery, idx)) !== -1) {
+                result += escaped.substring(idx, pos);
+                result += '<mark class="search-mark">' + escaped.substring(pos, pos + query.length) + '</mark>';
+                idx = pos + query.length;
+            }
+            result += escaped.substring(idx);
+            return result;
+        }
+
         function searchConfig(query) {
             var searchEmpty = document.getElementById('searchEmpty');
             var searchClear = document.getElementById('searchClear');
@@ -1423,6 +1440,11 @@ function changeLanguage(lang) {
                 // Show all groups/items
                 document.querySelectorAll('.search-hidden').forEach(function(el) {
                     el.classList.remove('search-hidden');
+                });
+                document.querySelectorAll('.search-mark').forEach(function(mark) {
+                    var parent = mark.parentNode;
+                    parent.replaceChild(document.createTextNode(mark.textContent), mark);
+                    parent.normalize();
                 });
                 if (searchEmpty) searchEmpty.style.display = 'none';
                 if (searchClear) searchClear.style.display = 'none';
@@ -1472,6 +1494,11 @@ function changeLanguage(lang) {
                         var itemText = item.textContent.toLowerCase();
                         if (itemText.indexOf(lowerQuery) !== -1) {
                             item.classList.remove('search-hidden');
+                            var labelText = item.querySelector('.ci-label-text, .toggle-label, .lint-rule-name');
+                            if (labelText && !labelText.querySelector('mark')) {
+                                var originalText = labelText.textContent;
+                                labelText.innerHTML = highlightSearchMatch(originalText, query);
+                            }
                             hasVisibleItem = true;
                         } else {
                             item.classList.add('search-hidden');
