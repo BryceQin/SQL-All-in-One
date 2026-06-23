@@ -152,10 +152,26 @@ body {
 
 .tab-bar {
     display: flex;
-    gap: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
     padding: 0 12px;
     background: rgba(255,255,255,0.01);
     border-bottom: 1px solid var(--border);
+}
+.tab-bar-left {
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.tab-bar-left::-webkit-scrollbar { display: none; }
+.tab-bar-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+    padding-left: 12px;
+    border-left: 1px solid var(--border);
 }
 .tab-btn {
     display: inline-flex;
@@ -660,4 +676,14 @@ body {
     display: flex;
     gap: 6px;
     flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+    .tab-bar { padding: 0 8px; gap: 8px; }
+    .tab-bar-actions .btn-sm { padding: 4px 8px; font-size: 11px; }
+    .tab-btn { padding: 6px 10px; }
+}
+
+@media (max-width: 480px) {
+    .tab-bar-actions .btn-label-collapse { display: none; }
 }
