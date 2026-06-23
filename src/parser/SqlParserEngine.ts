@@ -40,7 +40,14 @@ export class SqlParserEngine {
     }
 
     private makeCacheKey(sql: string, dialect: SqlDialect): string {
-        return `${dialect}::${sql.length}::${sql}`;
+        const FNV_OFFSET = 2166136261;
+        const FNV_PRIME = 16777619;
+        let hash = FNV_OFFSET;
+        for (let i = 0; i < sql.length; i++) {
+            hash ^= sql.charCodeAt(i);
+            hash = Math.imul(hash, FNV_PRIME);
+        }
+        return `${dialect}::${sql.length}::${hash >>> 0}`;
     }
 
     astify(sql: string, dialect: SqlDialect): AST[] | AST {
