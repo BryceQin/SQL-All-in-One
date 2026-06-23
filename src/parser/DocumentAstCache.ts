@@ -492,15 +492,16 @@ export class DocumentAstCache {
                                 const oldStmt = oldStmts[i];
                                 const cachedAstList = Array.isArray(oldStmt.ast) ? oldStmt.ast : [oldStmt.ast];
                                 for (const node of cachedAstList) {
+                                    const clonedNode: AST = JSON.parse(JSON.stringify(node));
                                     adjustAstLocationsInPlace(
-                                        node,
+                                        clonedNode,
                                         oldStmt.startLine,
                                         oldStmt.startCol,
                                         newAbsPos.line,
                                         newAbsPos.column,
                                     );
+                                    mergedAst.push(clonedNode);
                                 }
-                                mergedAst.push(...cachedAstList);
                             }
                         }
 

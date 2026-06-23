@@ -278,4 +278,26 @@ suite('DocumentAstCache - Statement-level Incremental Parsing', () => {
         assert.strictEqual(asts[1].loc.start.line, 6)
         assert.strictEqual(asts[1].loc.start.column, 1) // not on oldStartLine
     })
+
+    test('adjustAstLocationsInPlace does not mutate cached AST on incremental re-parse', () => {
+        const cachedNode = {
+            type: 'select',
+            loc: {
+                start: { line: 1, column: 1 },
+                end: { line: 1, column: 10 },
+            },
+        } as unknown as import('node-sql-parser').AST;
+
+        const originalStartLine = (cachedNode as unknown as { loc: { start: { line: number } } }).loc.start.line;
+
+        const clonedNode: import('node-sql-parser').AST = JSON.parse(JSON.stringify(cachedNode));
+        adjustAstLocationsInPlace(clonedNode, 1, 1, 5, 3);
+
+        const mutatedStartLine = (cachedNode as unknown as { loc: { start: { line: number } } }).loc.start.line;
+        assert.strictEqual(
+            mutatedStartLine,
+            originalStartLine,
+            '缓存 AST 节点不应被就地修改 — 应使用深拷贝'
+        );
+    })
 })
