@@ -1139,6 +1139,7 @@ function changeLanguage(lang) {
             if (langSelect) {
                 langSelect.value = i18nData.lang || 'zh';
             }
+            restoreGroupStates();
         }
 
         function collectConfig() {
@@ -1328,6 +1329,42 @@ function changeLanguage(lang) {
             setTimeout(() => { toast.classList.remove('show'); }, 2000);
         }
 
+        var GROUP_STATE_PREFIX = 'configEditor.groupState.';
+
+        function getGroupStateKey(group) {
+            var title = group.querySelector('.cg-title');
+            return title ? title.getAttribute('data-i18n') || title.textContent : '';
+        }
+
+        function saveGroupState(group, isOpen) {
+            var key = getGroupStateKey(group);
+            if (key) {
+                try { localStorage.setItem(GROUP_STATE_PREFIX + key, isOpen ? '1' : '0'); } catch (e) {}
+            }
+        }
+
+        function loadGroupState(group) {
+            var key = getGroupStateKey(group);
+            if (!key) return null;
+            try { return localStorage.getItem(GROUP_STATE_PREFIX + key); } catch (e) { return null; }
+        }
+
+        function restoreGroupStates() {
+            document.querySelectorAll('.config-group').forEach(function(group) {
+                var saved = loadGroupState(group);
+                if (saved === null) return;
+                var arrow = group.querySelector('.cg-arrow');
+                var body = group.querySelector('.cg-body');
+                if (saved === '1') {
+                    if (arrow) arrow.classList.add('open');
+                    if (body) body.classList.add('open');
+                } else {
+                    if (arrow) arrow.classList.remove('open');
+                    if (body) body.classList.remove('open');
+                }
+            });
+        }
+
         function toggleGroup(header) {
             const arrow = header.querySelector('.cg-arrow');
             const body = header.nextElementSibling;
@@ -1339,6 +1376,8 @@ function changeLanguage(lang) {
                 arrow.classList.add('open');
                 body.classList.add('open');
             }
+            var group = header.closest('.config-group');
+            if (group) saveGroupState(group, !isOpen);
         }
 
         function expandAll() {
