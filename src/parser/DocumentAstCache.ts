@@ -446,11 +446,12 @@ export class DocumentAstCache {
 
         const fullText = document.getText();
         const engine = getParserEngine();
+        const allStmts = splitSqlStatements(fullText);
 
         // ----- Incremental re-parse (statement-level caching) -----
         // Only attempt when we have a previous statement cache with >1 statement.
         if (cached?.statements && cached.statements.length > 1) {
-            const newStmts = splitSqlStatements(fullText);
+            const newStmts = allStmts;
             const oldStmts = cached.statements;
 
             // Same statement count → compare texts and only re-parse changed ones
@@ -546,7 +547,7 @@ export class DocumentAstCache {
 
         if (result.success && result.ast) {
             // Build per-statement cache for future incremental parsing
-            const stmts = splitSqlStatements(fullText);
+            const stmts = allStmts;
             const astList = Array.isArray(result.ast) ? result.ast : [result.ast];
 
             // Only cache statements when the count matches (ensures 1:1 mapping)
