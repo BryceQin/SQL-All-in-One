@@ -44,24 +44,30 @@
                 </div>
             </div>
             <div class="toolbar-actions">
-                <button class="btn btn-ghost btn-sm" data-action="expandAll" data-i18n="configEditor.expandAll">全部展开</button>
-                <button class="btn btn-ghost btn-sm" data-action="collapseAll" data-i18n="configEditor.collapseAll">全部折叠</button>
+                <button class="btn btn-ghost btn-sm" data-action="locateModified" data-i18n="configEditor.conn.locateModified" aria-label="定位修改项">定位修改项</button>
             </div>
         </div>
 
         <div class="tab-bar">
-            <button class="tab-btn active" data-action="switchTab" data-action-arg="formatting">
-                <span class="tab-icon">✨</span>
-                <span class="tab-label" data-i18n="configEditor.tab.formatting">格式化</span>
-            </button>
-            <button class="tab-btn" data-action="switchTab" data-action-arg="editor">
-                <span class="tab-icon">📝</span>
-                <span class="tab-label" data-i18n="configEditor.tab.editor">编辑器</span>
-            </button>
-            <button class="tab-btn" data-action="switchTab" data-action-arg="database">
-                <span class="tab-icon">🗄️</span>
-                <span class="tab-label" data-i18n="configEditor.tab.database">数据库</span>
-            </button>
+            <div class="tab-bar-left" role="tablist" aria-label="配置分类">
+                <button class="tab-btn active" data-action="switchTab" data-action-arg="formatting" role="tab" aria-selected="true">
+                    <span class="tab-icon">✨</span>
+                    <span class="tab-label" data-i18n="configEditor.tab.formatting">格式化</span>
+                </button>
+                <button class="tab-btn" data-action="switchTab" data-action-arg="editor" role="tab" aria-selected="false">
+                    <span class="tab-icon">📝</span>
+                    <span class="tab-label" data-i18n="configEditor.tab.editor">编辑器</span>
+                </button>
+                <button class="tab-btn" data-action="switchTab" data-action-arg="database" role="tab" aria-selected="false">
+                    <span class="tab-icon">🗄️</span>
+                    <span class="tab-label" data-i18n="configEditor.tab.database">数据库</span>
+                </button>
+            </div>
+            <div class="tab-bar-actions">
+                <button class="btn btn-ghost btn-sm" data-action="expandAll" data-i18n="configEditor.expandAll" aria-label="全部展开">全部展开</button>
+                <button class="btn btn-ghost btn-sm" data-action="collapseAll" data-i18n="configEditor.collapseAll" aria-label="全部折叠">全部折叠</button>
+                <button class="btn btn-ghost btn-sm" data-action="resetConfig" data-i18n="configEditor.resetDefault" aria-label="重置默认">重置默认</button>
+            </div>
         </div>
 
         <!-- ═══ Tab: 格式化 ═══ -->
