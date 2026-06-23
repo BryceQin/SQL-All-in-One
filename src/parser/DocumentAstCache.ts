@@ -10,6 +10,7 @@ import { getContainer, Tokens } from '../core/diContainer';
 import { isAstNode } from './AstVisitor';
 import { extractName, toVscodeLocationFromLoc } from './astUtils';
 import type { AstNode, AstLocation } from './astTypes';
+import { precomputeLineOffsets } from '../lexer/lineColFromIndex';
 
 export interface SymbolIndex {
     cteDefinitions: Map<string, vscode.Location>;
@@ -187,6 +188,21 @@ function matchDollarQuoteDelimiter(
 }
 
 /**
+ * Check whether the substring `text[start..end)` contains any character other
+ * than semicolons and whitespace. Avoids allocating a substring + regex replace
+ * + trim just to detect empty statements.
+ */
+function hasSqlContent(text: string, start: number, end: number): boolean {
+    for (let i = start; i < end; i++) {
+        const c = text.charCodeAt(i);
+        if (c !== 59 && c !== 32 && c !== 9 && c !== 10 && c !== 13) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
  * Split SQL text into individual statements, respecting strings and comments.
  * Returns each statement's text and its character-offset range in the original text.
  * @internal Exported for testing only.
@@ -265,12 +281,9 @@ export function splitSqlStatements(text: string): { text: string; start: number;
 
         // Semicolon – end of statement
         if (code === 59) {
-            const stmtText = text.substring(statementStart, i + 1);
-            // Only add if there is real SQL content (not just whitespace + semicolons)
-            const content = stmtText.replace(/;/g, '').trim();
-            if (content.length > 0) {
+            if (hasSqlContent(text, statementStart, i + 1)) {
                 statements.push({
-                    text: stmtText,
+                    text: text.substring(statementStart, i + 1),
                     start: statementStart,
                     end: i + 1,
                 });
@@ -312,22 +325,6 @@ export function computeLineColumn(text: string, offset: number): { line: number;
     }
     const column = offset - lastNewlinePos; // 1-based
     return { line, column };
-}
-
-/**
- * Precompute the character offset of the start of each line.
- * Returns an array where index `i` is the offset of line `i+1`.
- * Line 1 always starts at offset 0.
- * @internal Exported for testing only.
- */
-export function precomputeLineOffsets(text: string): number[] {
-    const offsets: number[] = [0];
-    for (let i = 0; i < text.length; i++) {
-        if (text.charCodeAt(i) === 10) {
-            offsets.push(i + 1);
-        }
-    }
-    return offsets;
 }
 
 /**
@@ -401,8 +398,9 @@ export function adjustAstLocationsInPlace(
                 l.end.line += lineDelta;
             }
         }
-        for (const key of Object.keys(record)) {
+        for (const key in record) {
             if (key === 'loc') continue;
+            if (!Object.prototype.hasOwnProperty.call(record, key)) continue;
             adjust(record[key]);
         }
     }

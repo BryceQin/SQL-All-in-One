@@ -68,7 +68,7 @@ export class SchemaCache {
         // maxAge: Infinity (expiry is tracked via CacheEntry.expireAt), so we
         // must inspect the entry ourselves and evict the single stale entry
         // instead of scanning the whole cache.
-        const entry = cache.peek(cacheKey);
+        const entry = cache.get(cacheKey);
         if (entry && !this.isExpired(entry)) return entry.data;
         if (entry) {
             cache.delete(cacheKey);

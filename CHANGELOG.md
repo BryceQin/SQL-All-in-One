@@ -1,5 +1,37 @@
 # Changelog
 
+## [2.19.0] - 2026-06-22
+
+### Performance
+
+- **node-sql-parser 懒加载**：将 `node-sql-parser`（~5MB）的顶层 `import` 改为 `getParser()` 中的 `require()` 延迟加载，扩展激活时不再加载解析器模块，激活时间减少 50-200ms
+- **ssh2 原生模块懒加载**：将 `ssh2` 的顶层 `import` 改为 `open()` 方法中的 `await import()` 动态加载，不使用 SSH 隧道的用户不再加载原生模块
+- **Token 双重分配消除**：`TokenizerEngine.tokenize` 不再创建新对象复制 `match()` 结果，直接在已有 Token 上设置 `precedingWhitespace`，减少 50% 的 Token 对象分配
+- **引号参数正则缓存**：`Tokenizer` 中 `QUOTED_PARAMETER` 的 `key` 函数不再每次调用都 `new RegExp(...)`，改为按 `quoteChar` 缓存正则表达式
+- **splitSqlStatements 字符串分配优化**：用 `hasSqlContent()` 字符扫描替代 `stmtText.replace(/;/g, '').trim()`，每个分号减少 2 次中间字符串分配
+- **AST 位置调整属性遍历优化**：`adjustAstLocationsInPlace` 用 `for...in` + `hasOwnProperty` 替代 `Object.keys()`，避免每个 AST 节点分配数组
+- **ExplicitColumnAliasingRule 算法复杂度优化**：将 `sql.split('\n')` 从列循环内移到循环外，复杂度从 O(C×n) 降为 O(n)
+- **FormatterFactory 格式化器实例复用**：通过 `FormatterFactory` 缓存和复用 `SelectFormatter`、`InsertFormatter`、`DDLFormatter` 实例，带 `inUse` 标记防止递归冲突，消除嵌套子查询/CTE/集合操作的 O(n) 实例分配
+
+### Stability
+
+- **修复破坏性连接池回收**：`MysqlConnectionAdapter.reapIdleConnections` 不再调用 `pool.end()`（销毁所有连接包括活跃的）并重建池，改为 no-op（mysql2 的 `enableKeepAlive` 已处理空闲连接驱逐），消除回收周期中的查询中断和短暂不可用窗口
+- **SchemaCache LRU 最近性修复**：`cachedFetch` 从 `peek()` 改为 `get()`，使频繁访问的 schema 条目更新 LRU 位置，提高缓存命中率，避免活跃条目被过早驱逐
+
+### Code Quality
+
+- **移除死代码**：删除从未在生产代码中调用的 `SqlParserEngine.parse()` 方法、`ParseResult` 接口和 `TableColumnAst` 类型导入
+- **移除重复实现**：删除 `DocumentAstCache` 中与 `lineColFromIndex` 重复的 `precomputeLineOffsets` 函数，改为从共享位置导入
+- **移除热循环冗余检查**：移除 `TokenizerEngine.tokenize` 中的 `MAX_ITERATIONS` 计数器（零长度匹配保护已处理死循环场景）
+- **Webview 面板内存优化**：仅 `QueryResultPanel` 保留 `retainContextWhenHidden: true`，其他面板（ConnectionDialog、DataTransferDialog 等）默认为 `false`，减少隐藏面板的内存占用
+- **.vscodeignore 优化**：新增排除 `scripts/**`、`.github/**`、`CHANGELOG.md`、`CONTRIBUTING.md`，减小 VSIX 安装包
+
+### Benchmark
+
+- 新增 `perf.comprehensive.benchmark.ts`：综合性能基准测试套件，覆盖行偏移计算、行列查找、嵌套注释扫描、语句分割、属性遍历等场景
+
+---
+
 ## [2.18.0] - 2026-06-22
 
 ### Performance

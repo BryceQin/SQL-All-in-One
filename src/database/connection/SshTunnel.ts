@@ -2,7 +2,7 @@ import * as net from 'net';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { Client, ClientChannel } from 'ssh2';
+import type { Client, ClientChannel } from 'ssh2';
 import type { SshConfig } from './ConnectionConfig';
 import { t } from '../../i18n';
 
@@ -38,6 +38,7 @@ export class SshTunnel {
             return { localHost: '127.0.0.1', localPort: this._localPort };
         }
 
+        const { Client } = await import('ssh2');
         const client = new Client();
 
         const connectOptions: SshConnectOptions = {

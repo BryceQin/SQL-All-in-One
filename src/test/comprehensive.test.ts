@@ -698,16 +698,14 @@ suite('SqlParserEngine Tests', () => {
 
     test('parse returns full result with table and column lists', () => {
         const engine = getParserEngine()
-        const result = engine.parse('SELECT id, name FROM users', 'mysql')
-        assert.ok(result.ast, 'Should have AST')
-        assert.ok(Array.isArray(result.tableList), 'Should have tableList')
-        assert.ok(Array.isArray(result.columnList), 'Should have columnList')
+        const ast = engine.astify('SELECT id, name FROM users', 'mysql')
+        assert.ok(ast, 'Should return AST')
     })
 
     test('parse throws ParseError for invalid SQL', () => {
         const engine = getParserEngine()
         assert.throws(
-            () => engine.parse('NOT VALID SQL !!!', 'mysql'),
+            () => engine.astify('NOT VALID SQL !!!', 'mysql'),
             ParseError,
         )
     })

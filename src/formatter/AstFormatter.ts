@@ -7,10 +7,8 @@ import { isAstNode } from '../parser/AstVisitor';
 import type { AstNode } from '../parser/astTypes';
 import Layout, { WS } from './Layout';
 import Indentation from './Indentation';
-import { SelectFormatter } from './nodeFormatters/SelectFormatter';
-import { InsertFormatter } from './nodeFormatters/InsertFormatter';
-import { DDLFormatter } from './nodeFormatters/DDLFormatter';
 import { ExpressionFormatter } from './nodeFormatters/ExpressionFormatter';
+import { FormatterFactory } from './nodeFormatters/FormatterFactory';
 import { formatKeyword } from './nodeFormatters/CommonFormatter';
 import { AstNodeType } from './AstNodeTypes';
 import { handleError, ErrorCategory } from '../core/errorHandler';
@@ -19,18 +17,14 @@ export class AstFormatter {
     private cfg: FormatOptions;
     private dialect: SqlDialect;
     private indent: Indentation;
-    private selectFormatter: SelectFormatter;
-    private insertFormatter: InsertFormatter;
-    private ddlFormatter: DDLFormatter;
+    private factory: FormatterFactory;
     private expressionFormatter: ExpressionFormatter;
 
     constructor(cfg: FormatOptions, dialect: SqlDialect) {
         this.cfg = cfg;
         this.dialect = dialect;
         this.indent = new Indentation(indentString(cfg));
-        this.selectFormatter = new SelectFormatter(cfg, this.indent);
-        this.insertFormatter = new InsertFormatter(cfg, this.indent);
-        this.ddlFormatter = new DDLFormatter(cfg, this.indent);
+        this.factory = new FormatterFactory();
         this.expressionFormatter = new ExpressionFormatter(cfg, this.indent);
     }
 
@@ -58,10 +52,10 @@ export class AstFormatter {
         const type = stmt.type as string;
         switch (type) {
             case AstNodeType.SELECT:
-                return this.selectFormatter.format(stmt as AstNode);
+                return this.factory.getSelectFormatter(this.cfg, this.indent).format(stmt as AstNode);
             case AstNodeType.INSERT:
             case AstNodeType.REPLACE:
-                return this.insertFormatter.format(stmt as AstNode);
+                return this.factory.getInsertFormatter(this.cfg, this.indent).format(stmt as AstNode);
             case AstNodeType.UPDATE:
                 return this.formatUpdate(stmt);
             case AstNodeType.DELETE:
@@ -69,7 +63,7 @@ export class AstFormatter {
             case AstNodeType.CREATE:
             case AstNodeType.ALTER:
             case AstNodeType.DROP:
-                return this.ddlFormatter.format(stmt as AstNode);
+                return this.factory.getDDLFormatter(this.cfg, this.indent).format(stmt as AstNode);
             case AstNodeType.USE:
                 return this.formatUse(stmt);
             default:

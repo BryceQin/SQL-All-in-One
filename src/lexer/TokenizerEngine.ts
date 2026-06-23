@@ -148,16 +148,7 @@ export default class TokenizerEngine {
         const tokens: Token[] = []
         let token: Token | undefined
 
-        const MAX_ITERATIONS = input.length * 2
-        let iterations = 0
-
         while (this.index < this.input.length) {
-            if (++iterations > MAX_ITERATIONS) {
-                throw new Error(
-                    `Tokenizer dead loop detected at index ${this.index} for dialect "${this.dialectName}": ${input.slice(this.index, this.index + 20)}`,
-                )
-            }
-
             const precedingWhitespace = this.getWhitespace()
 
             if (this.index < this.input.length) {
@@ -167,14 +158,8 @@ export default class TokenizerEngine {
                     throw this.createParseError()
                 }
 
-                tokens.push({
-                    type: token.type,
-                    raw: token.raw,
-                    text: token.text,
-                    start: token.start,
-                    key: token.key,
-                    precedingWhitespace,
-                })
+                token.precedingWhitespace = precedingWhitespace
+                tokens.push(token)
             }
         }
         // 3. 返回结构化 Token 流

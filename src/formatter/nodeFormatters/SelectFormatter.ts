@@ -40,44 +40,50 @@ export class SelectFormatter {
     }
 
     public format(stmt: unknown): string {
-        this.layout.clear();
-        const typed = asSelectStmt(stmt);
+        try {
+            this.layout.clear();
+            const typed = asSelectStmt(stmt);
 
-        if (typed && typed.with) {
-            this.formatWith(typed.with);
+            if (typed && typed.with) {
+                this.formatWith(typed.with);
+            }
+
+            this.formatSelectClause(stmt);
+
+            if (typed && typed.from) {
+                this.formatFromClause(typed.from);
+            }
+
+            if (typed && typed.where) {
+                this.formatWhereClause(typed.where);
+            }
+
+            if (typed && typed.groupby) {
+                this.formatGroupByClause(typed.groupby);
+            }
+
+            if (typed && typed.having) {
+                this.formatHavingClause(typed.having);
+            }
+
+            if (typed && typed.orderby) {
+                this.formatOrderByClause(typed.orderby);
+            }
+
+            if (typed && typed.limit) {
+                this.formatLimitClause(typed.limit);
+            }
+
+            if (typed && typed._next) {
+                this.formatSetOperation(stmt);
+            }
+
+            return this.layout.toString().trimEnd();
+        } finally {
+            if (this.factory) {
+                this.factory.releaseInstance(this);
+            }
         }
-
-        this.formatSelectClause(stmt);
-
-        if (typed && typed.from) {
-            this.formatFromClause(typed.from);
-        }
-
-        if (typed && typed.where) {
-            this.formatWhereClause(typed.where);
-        }
-
-        if (typed && typed.groupby) {
-            this.formatGroupByClause(typed.groupby);
-        }
-
-        if (typed && typed.having) {
-            this.formatHavingClause(typed.having);
-        }
-
-        if (typed && typed.orderby) {
-            this.formatOrderByClause(typed.orderby);
-        }
-
-        if (typed && typed.limit) {
-            this.formatLimitClause(typed.limit);
-        }
-
-        if (typed && typed._next) {
-            this.formatSetOperation(stmt);
-        }
-
-        return this.layout.toString().trimEnd();
     }
 
     private formatSelectClause(stmt: unknown): void {

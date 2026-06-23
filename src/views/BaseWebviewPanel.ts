@@ -74,6 +74,16 @@ export abstract class BaseWebviewPanel implements vscode.Disposable {
         BaseWebviewPanel._instances.clear();
     }
 
+    /**
+     * Whether the webview's JavaScript state should be kept alive when the
+     * panel is hidden. Defaults to `false` to avoid unnecessary memory usage;
+     * panels with ongoing operations (e.g. long-running queries) should
+     * override this to return `true`.
+     */
+    protected static shouldRetainContextWhenHidden(): boolean {
+        return false;
+    }
+
     protected static createWebviewPanel(
         viewType: string,
         title: string,
@@ -97,7 +107,7 @@ export abstract class BaseWebviewPanel implements vscode.Disposable {
             {
                 enableScripts: true,
                 localResourceRoots: resourceRoots,
-                retainContextWhenHidden: true,
+                retainContextWhenHidden: this.shouldRetainContextWhenHidden(),
             }
         );
     }

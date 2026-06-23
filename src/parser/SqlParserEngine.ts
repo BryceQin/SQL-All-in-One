@@ -1,16 +1,10 @@
-import { Parser } from 'node-sql-parser';
-import type { AST, TableColumnAst } from 'node-sql-parser';
+import type { Parser } from 'node-sql-parser';
+import type { AST } from 'node-sql-parser';
 import type { SqlDialect } from './dialectMapper';
 import { toNodeSqlParserDialect } from './dialectMapper';
 import { ParseError } from './ParseError';
 import { getContainer, Tokens } from '../core/diContainer';
 import { LRUCache } from '../utils/lruCache';
-
-export interface ParseResult {
-    ast: AST[] | AST;
-    tableList: string[];
-    columnList: string[];
-}
 
 interface AstifyCacheEntry {
     ast: AST[] | AST;
@@ -24,6 +18,10 @@ export class SqlParserEngine {
 
     private getParser(): Parser {
         if (!this.parser) {
+            // Lazy-load node-sql-parser to defer ~5MB module evaluation
+            // until first parse, reducing extension activation time.
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
+            const { Parser } = require('node-sql-parser') as typeof import('node-sql-parser');
             this.parser = new Parser();
         }
         return this.parser;
@@ -67,22 +65,6 @@ export class SqlParserEngine {
         return this.getParser().sqlify(ast, {
             database: toNodeSqlParserDialect(dialect),
         });
-    }
-
-    parse(sql: string, dialect: SqlDialect): ParseResult {
-        try {
-            const result: TableColumnAst = this.getParser().parse(sql, {
-                database: toNodeSqlParserDialect(dialect),
-                parseOptions: { includeLocations: true },
-            });
-            return {
-                ast: result.ast,
-                tableList: result.tableList,
-                columnList: result.columnList,
-            };
-        } catch (e) {
-            throw new ParseError(dialect, sql, e);
-        }
     }
 
     tryAstify(sql: string, dialect: SqlDialect): { success: boolean; ast: AST[] | AST | null; error: ParseError | null } {

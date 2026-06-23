@@ -54,6 +54,15 @@ type WebviewMessage =
 export class QueryResultPanel extends BaseWebviewPanel {
     public static readonly viewType = 'sqlAllInOneQueryResult';
 
+    /**
+     * The query result panel runs long-lived operations (queries, transactions,
+     * language-server bridges) and must keep its JavaScript state alive when
+     * hidden, so override the base default.
+     */
+    protected static override shouldRetainContextWhenHidden(): boolean {
+        return true;
+    }
+
     public static getCurrentInstance(): QueryResultPanel | undefined {
         return BaseWebviewPanel.getExistingInstance<QueryResultPanel>(QueryResultPanel.viewType);
     }
@@ -98,7 +107,7 @@ export class QueryResultPanel extends BaseWebviewPanel {
             return existing;
         }
 
-        const panel = BaseWebviewPanel.createWebviewPanel(
+        const panel = QueryResultPanel.createWebviewPanel(
             QueryResultPanel.viewType,
             t('resultPanel.queryResult'),
             extensionUri,

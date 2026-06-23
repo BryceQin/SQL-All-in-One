@@ -35,33 +35,39 @@ export class InsertFormatter {
     }
 
     public format(stmt: AstNode): string {
-        this.layout.clear();
-        const kw = stmt.type === 'replace' ? 'REPLACE' : 'INSERT';
-        this.layout.add(formatKeyword(kw, this.cfg.keywordCase));
+        try {
+            this.layout.clear();
+            const kw = stmt.type === 'replace' ? 'REPLACE' : 'INSERT';
+            this.layout.add(formatKeyword(kw, this.cfg.keywordCase));
 
-        if (stmt.prefix) {
-            this.layout.add(WS.SPACE, formatKeyword(String(stmt.prefix).toUpperCase(), this.cfg.keywordCase));
+            if (stmt.prefix) {
+                this.layout.add(WS.SPACE, formatKeyword(String(stmt.prefix).toUpperCase(), this.cfg.keywordCase));
+            }
+
+            this.formatTableRef(stmt.table);
+
+            if (stmt.columns && Array.isArray(stmt.columns) && (stmt.columns as AstNode[]).length > 0) {
+                this.formatColumns(stmt.columns as AstNode[]);
+            }
+
+            if (stmt.values) {
+                this.formatValues(stmt.values as Record<string, unknown>);
+            }
+
+            if (stmt.on_duplicate_update) {
+                this.formatOnDuplicateUpdate(stmt.on_duplicate_update as Record<string, unknown>);
+            }
+
+            if (stmt.returning) {
+                this.formatReturning(stmt.returning as Record<string, unknown>);
+            }
+
+            return this.layout.toString().trimEnd();
+        } finally {
+            if (this.factory) {
+                this.factory.releaseInstance(this);
+            }
         }
-
-        this.formatTableRef(stmt.table);
-
-        if (stmt.columns && Array.isArray(stmt.columns) && (stmt.columns as AstNode[]).length > 0) {
-            this.formatColumns(stmt.columns as AstNode[]);
-        }
-
-        if (stmt.values) {
-            this.formatValues(stmt.values as Record<string, unknown>);
-        }
-
-        if (stmt.on_duplicate_update) {
-            this.formatOnDuplicateUpdate(stmt.on_duplicate_update as Record<string, unknown>);
-        }
-
-        if (stmt.returning) {
-            this.formatReturning(stmt.returning as Record<string, unknown>);
-        }
-
-        return this.layout.toString().trimEnd();
     }
 
     private formatTableRef(table: unknown): void {

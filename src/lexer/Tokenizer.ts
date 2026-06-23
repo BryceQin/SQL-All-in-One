@@ -9,6 +9,9 @@ import type { Optional } from "./utils"
 import { equalizeWhitespace } from "./utils"
 import { NestedComment } from "./NestedComment"
 
+// 缓存：QUOTED_PARAMETER 的转义正则按 quoteChar 复用，避免每次都 new RegExp
+const quotedParamEscapeRegexCache = new Map<string, RegExp>()
+
 // 可选 TokenRule：允许 regex 字段为 undefined（构建规则时可能动态禁用某些规则）
 type OptionalTokenRule = Optional<TokenRule, "regex">
 
@@ -355,15 +358,16 @@ export default class Tokenizer {
                     regex.stringPattern(cfg.identTypes),
                 ),
                 // 去除引号并还原转义字符，提取核心参数名
-                key: (v): string =>
-                    (({ tokenKey, quoteChar }: { tokenKey: string; quoteChar: string }): string =>
-                        tokenKey.replace(
-                            new RegExp(escapeRegExp("\\" + quoteChar), "gu"),
-                            quoteChar,
-                        ))({
-                        tokenKey: v.slice(2, -1),
-                        quoteChar: v.slice(-1),
-                    }),
+                key: (v): string => {
+                    const tokenKey = v.slice(2, -1)
+                    const quoteChar = v.slice(-1)
+                    let re = quotedParamEscapeRegexCache.get(quoteChar)
+                    if (!re) {
+                        re = new RegExp(escapeRegExp("\\" + quoteChar), "gu")
+                        quotedParamEscapeRegexCache.set(quoteChar, re)
+                    }
+                    return tokenKey.replace(re, quoteChar)
+                },
             },
             // 匹配编号参数（如 :1、?1）
             {

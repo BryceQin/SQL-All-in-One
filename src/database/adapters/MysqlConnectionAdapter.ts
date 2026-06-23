@@ -112,14 +112,11 @@ export class MysqlConnectionAdapter {
      * Called by MysqlAdapter's reap timer callback.
      */
     async reapIdleConnections(): Promise<void> {
+        // mysql2 with enableKeepAlive:true handles idle connection eviction
+        // internally. Manual pool destruction is harmful: it kills active
+        // queries and creates a brief unavailability window. This method
+        // is now a no-op, retained for API compatibility.
         if (!this.shared.pool) return;
-        const config = this.shared.config;
-        await this.shared.pool.end();
-        const mysql = await import('mysql2/promise');
-        const poolOptions = this.createPoolOptions(config);
-        this.shared.pool = mysql.createPool(poolOptions);
-        this.shared.totalConnectionCount = 0;
-        this.shared.activeConnectionCount = 0;
         this.shared.lastActivityTime = Date.now();
     }
 

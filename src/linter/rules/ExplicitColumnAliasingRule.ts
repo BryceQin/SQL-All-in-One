@@ -20,6 +20,9 @@ export class ExplicitColumnAliasingRule extends BaseRule {
             return diagnostics
         }
 
+        const sql = context.sql
+        const lines = sql.split('\n')
+
         for (const col of columns) {
             if (col == null || typeof col !== 'object') {
                 continue
@@ -44,13 +47,11 @@ export class ExplicitColumnAliasingRule extends BaseRule {
                 continue
             }
 
-            const sql = context.sql
             const loc = getColumnLoc(colObj)
             if (!loc) {
                 continue
             }
 
-            const lines = sql.split('\n')
             const lineIdx = loc.line - 1
             if (lineIdx < 0 || lineIdx >= lines.length) {
                 continue

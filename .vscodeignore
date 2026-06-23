@@ -37,4 +37,8 @@ out/parser/**
 out/providers/**
 out/utils/**
 out/test/**
+scripts/**
+.github/**
+CHANGELOG.md
+CONTRIBUTING.md
 

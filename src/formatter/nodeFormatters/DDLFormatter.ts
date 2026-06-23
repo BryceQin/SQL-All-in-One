@@ -39,16 +39,22 @@ export class DDLFormatter {
     }
 
     public format(stmt: AstNode): string {
-        this.layout.clear();
-        switch (stmt.type) {
-            case 'create':
-                return this.formatCreate(stmt);
-            case 'alter':
-                return this.formatAlter(stmt);
-            case 'drop':
-                return this.formatDrop(stmt);
-            default:
-                return this.formatUnknown(stmt);
+        try {
+            this.layout.clear();
+            switch (stmt.type) {
+                case 'create':
+                    return this.formatCreate(stmt);
+                case 'alter':
+                    return this.formatAlter(stmt);
+                case 'drop':
+                    return this.formatDrop(stmt);
+                default:
+                    return this.formatUnknown(stmt);
+            }
+        } finally {
+            if (this.factory) {
+                this.factory.releaseInstance(this);
+            }
         }
     }
 
