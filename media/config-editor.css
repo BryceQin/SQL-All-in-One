@@ -248,6 +248,11 @@ body {
     font-size: 13px;
 }
 .preview-result.success { border-color: rgba(78,201,176,0.3); box-shadow: 0 0 0 2px var(--success-dim); }
+.preview-result .tok-keyword { color: #569cd6; font-weight: 600; }
+.preview-result .tok-string { color: #ce9178; }
+.preview-result .tok-comment { color: #6a9955; font-style: italic; }
+.preview-result .tok-number { color: #b5cea8; }
+.preview-result .tok-operator { color: #d4d4d4; }
 
 .config-section {
     background: var(--surface); border: 1px solid var(--border);
