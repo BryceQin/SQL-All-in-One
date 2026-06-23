@@ -743,3 +743,14 @@ body {
     box-shadow: 0 0 4px var(--warning-dim);
     flex-shrink: 0;
 }
+
+.conn-item-state {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 0 4px currentColor;
+}
+.conn-state-connected { background: var(--success-color); color: var(--success-color); }
+.conn-state-disconnected { background: var(--text-secondary); color: var(--text-secondary); opacity: 0.5; }
+.conn-state-failed { background: var(--error-color); color: var(--error-color); }

@@ -1660,6 +1660,21 @@ function changeLanguage(lang) {
             postgresql: 'postgres', bigquery: 'bigquery', sqlite: ''
         };
 
+        function formatRelativeTime(timestamp) {
+            if (!timestamp) return '';
+            var diff = Date.now() - timestamp;
+            var minutes = Math.floor(diff / 60000);
+            if (minutes < 1) return getI18nDict()['configEditor.conn.justNow'] || '刚刚';
+            if (minutes < 60) return minutes + (getI18nDict()['configEditor.conn.minutesAgo'] || ' 分钟前');
+            var hours = Math.floor(minutes / 60);
+            if (hours < 24) return hours + (getI18nDict()['configEditor.conn.hoursAgo'] || ' 小时前');
+            var days = Math.floor(hours / 24);
+            return days + (getI18nDict()['configEditor.conn.daysAgo'] || ' 天前');
+        }
+
+        var connectionStates = {};
+        var connectionTestTimes = {};
+
         function renderConnections(connections, groups) {
             var list = document.getElementById('connList');
             var empty = document.getElementById('connEmpty');
@@ -1681,6 +1696,10 @@ function changeLanguage(lang) {
             empty.style.display = 'none';
             var html = '';
             connections.forEach(function(conn) {
+                var state = connectionStates[conn.id] || 'disconnected';
+                var stateClass = state === 'connected' ? 'conn-state-connected' : (state === 'failed' ? 'conn-state-failed' : 'conn-state-disconnected');
+                var testTime = connectionTestTimes[conn.id];
+                var testTimeText = testTime ? (getI18nDict()['configEditor.conn.recentlyTested'] || '{0}前测试').replace('{0}', formatRelativeTime(testTime)) : '';
                 var colorStyle = conn.color ? 'background:' + conn.color : 'background:var(--text-secondary);opacity:0.3';
                 var detail = conn.dialect.toUpperCase();
                 if (conn.dialect !== 'sqlite') {
@@ -1690,8 +1709,10 @@ function changeLanguage(lang) {
                     detail += ' · ' + (conn.database || '');
                 }
                 if (conn.ssh && conn.ssh.enabled) detail += ' · SSH';
+                if (testTimeText) detail += ' · ' + testTimeText;
                 html += '<div class="conn-item" data-conn-id="' + conn.id + '">'
                     + '<div class="conn-item-color" style="' + colorStyle + '"></div>'
+                    + '<div class="conn-item-state ' + stateClass + '" title="' + state + '"></div>'
                     + '<div class="conn-item-info">'
                     + '<div class="conn-item-name">' + escapeHtml(conn.name) + '</div>'
                     + '<div class="conn-item-detail">' + detail + '</div>'
@@ -2037,6 +2058,9 @@ function changeLanguage(lang) {
         function handleConnectionTestResult(message) {
             var result = document.getElementById('connFormResult');
             if (message.success) {
+                if (connFormState.editId) {
+                    connectionTestTimes[connFormState.editId] = Date.now();
+                }
                 var parts = [getI18nDict()['configEditor.conn.testSuccess'] || '连接成功'];
                 if (message.serverVersion) parts.push(message.serverVersion);
                 if (message.latency !== undefined) parts.push(message.latency + 'ms');
