@@ -1064,6 +1064,11 @@ function changeLanguage(lang) {
                         vscode.postMessage({ command: 'getConnections' });
                     }
                     break;
+                case 'supportedDialects':
+                    supportedDialects = message.supported || [];
+                    knownDialects = message.known || knownDialects;
+                    renderCfDialect();
+                    break;
                 case 'editConnectionDetail':
                     handleEditConnectionDetail(message);
                     break;
@@ -1550,6 +1555,15 @@ function changeLanguage(lang) {
             }
         });
 
+        let supportedDialects = [];
+        let knownDialects = ['mysql', 'hive', 'spark', 'flinksql', 'postgresql', 'bigquery', 'sqlite'];
+        let showMoreDialects = false;
+
+        const DIALECT_DISPLAY_NAMES = {
+            mysql: 'MySQL', hive: 'Hive', spark: 'Spark', flinksql: 'FlinkSQL',
+            postgresql: 'PostgreSQL', bigquery: 'BigQuery', sqlite: 'SQLite'
+        };
+
         let connFormState = {
             mode: 'create',
             editId: null,
@@ -1723,6 +1737,41 @@ function changeLanguage(lang) {
             updateConnFormDialectUI();
             updateConnFormSshUI();
             updateConnFormSslUI();
+        }
+
+        function renderCfDialect() {
+            var select = document.getElementById('cfDialect');
+            if (!select) return;
+            var currentValue = select.value;
+            select.innerHTML = '';
+
+            supportedDialects.forEach(function(meta) {
+                var opt = document.createElement('option');
+                opt.value = meta.dialect;
+                opt.textContent = meta.displayName || DIALECT_DISPLAY_NAMES[meta.dialect] || meta.dialect;
+                select.appendChild(opt);
+            });
+
+            if (showMoreDialects) {
+                knownDialects.forEach(function(key) {
+                    var isSupported = supportedDialects.some(function(m) { return m.dialect === key; });
+                    if (!isSupported) {
+                        var opt = document.createElement('option');
+                        opt.value = key;
+                        opt.textContent = (DIALECT_DISPLAY_NAMES[key] || key) + ' (' + (getI18nDict()['configEditor.conn.unsupportedDialect'] || '不支持') + ')';
+                        opt.disabled = true;
+                        opt.className = 'dialect-unsupported';
+                        select.appendChild(opt);
+                    }
+                });
+            }
+
+            if (currentValue && supportedDialects.some(function(m) { return m.dialect === currentValue; })) {
+                select.value = currentValue;
+            } else if (supportedDialects.length > 0) {
+                select.value = supportedDialects[0].dialect;
+            }
+            updateConnFormDialectUI();
         }
 
         function updateConnFormDialectUI() {
@@ -1968,6 +2017,16 @@ function changeLanguage(lang) {
             document.getElementById('cfSshPassphrase').addEventListener('input', function() {
                 connFormState.sshPassphraseChanged = true;
             });
+            var showMoreBtn = document.getElementById('cfShowMoreDialects');
+            if (showMoreBtn) {
+                showMoreBtn.addEventListener('click', function() {
+                    showMoreDialects = !showMoreDialects;
+                    renderCfDialect();
+                    this.textContent = showMoreDialects
+                        ? (getI18nDict()['configEditor.conn.hideMoreDialects'] || '收起更多')
+                        : (getI18nDict()['configEditor.conn.showMoreDialects'] || '显示更多');
+                });
+            }
         }
 
         initConnectionFormEvents();
@@ -1993,3 +2052,4 @@ function changeLanguage(lang) {
 
         vscode.postMessage({ command: 'getCurrentConfig' });
         vscode.postMessage({ command: 'getConnections' });
+        vscode.postMessage({ command: 'getSupportedDialects' });
