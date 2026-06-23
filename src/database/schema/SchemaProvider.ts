@@ -262,10 +262,9 @@ export class SchemaProvider {
                 );
             } else {
                 const limitedTables = tables.slice(0, 10);
-                await Promise.all(
-                    limitedTables.map(tbl =>
-                        this.addColumnsForTable(items, context, tbl.name, prefix)
-                    )
+                await this.parallelWithLimit(
+                    limitedTables.map((tbl): (() => Promise<void>) => () => this.addColumnsForTable(items, context, tbl.name, prefix)),
+                    3
                 );
             }
         } catch (e) { handleError(e, 'SchemaProvider.addColumnItems', ErrorCategory.FEATURE); }
@@ -368,6 +367,26 @@ export class SchemaProvider {
             items.push(hintItem);
         }
         return items;
+    }
+
+    private async parallelWithLimit<T>(tasks: (() => Promise<T>)[], limit: number): Promise<T[]> {
+        const results: T[] = new Array<T>(tasks.length);
+        let nextIndex = 0;
+        const safeLimit = Math.max(1, limit);
+
+        const worker = async (): Promise<void> => {
+            while (nextIndex < tasks.length) {
+                const index = nextIndex++;
+                results[index] = await tasks[index]();
+            }
+        };
+
+        const workers: Promise<void>[] = [];
+        for (let i = 0; i < Math.min(safeLimit, tasks.length); i++) {
+            workers.push(worker());
+        }
+        await Promise.all(workers);
+        return results;
     }
 
     /**
