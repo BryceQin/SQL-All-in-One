@@ -69,7 +69,7 @@ function registerServicesToContainer(extensionPath: string): void {
   container.registerSingleton(Tokens.SqlStatementDetector, () => new SqlStatementDetector(), [Tokens.ParserEngine]);
 
   // Register AdapterFactory in the DI container
-  AdapterFactory.register('mysql', MysqlAdapter);
+  AdapterFactory.register('mysql', MysqlAdapter, MysqlAdapter.getDialectMetadata);
   container.register(Tokens.DialectAdapterFactory, AdapterFactory);
 
   // Provider services

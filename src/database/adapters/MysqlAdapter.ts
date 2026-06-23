@@ -117,4 +117,17 @@ export class MysqlAdapter extends BaseDatabaseAdapter {
             }
         }
     }
+
+    static getDialectMetadata(): import('./IDatabaseAdapter').DialectMetadata {
+        return {
+            dialect: 'mysql',
+            displayName: 'MySQL',
+            defaultPort: 3306,
+            defaultUsername: 'root',
+            iconKey: 'mysql',
+            supportsSshTunnel: true,
+            supportsSsl: true,
+            isFileBased: false
+        };
+    }
 }
