@@ -475,15 +475,11 @@
                                         </div>
                                         <div class="conn-form-row">
                                             <label class="conn-form-label" data-i18n="configEditor.conn.lbl.dialect">方言</label>
-                                            <select class="config-select" id="cfDialect">
-                                                <option value="mysql">MySQL</option>
-                                                <option value="hive">Hive</option>
-                                                <option value="spark">Spark</option>
-                                                <option value="flinksql">FlinkSQL</option>
-                                                <option value="postgresql">PostgreSQL</option>
-                                                <option value="bigquery">BigQuery</option>
-                                                <option value="sqlite">SQLite</option>
-                                            </select>
+                                            <div class="conn-form-input-group">
+                                                <select class="config-select" id="cfDialect" aria-label="方言"></select>
+                                                <button class="btn btn-ghost btn-sm" type="button" id="cfShowMoreDialects" data-i18n="configEditor.conn.showMoreDialects" aria-label="显示更多连接类型">显示更多</button>
+                                            </div>
+                                            <div class="dialect-unsupported-hint" id="cfDialectHint" style="display:none;" data-i18n="configEditor.conn.unsupportedDialect">当前版本暂不支持该连接类型</div>
                                         </div>
                                         <div class="conn-form-row">
                                             <label class="conn-form-label" data-i18n="configEditor.conn.lbl.group">分组</label>
