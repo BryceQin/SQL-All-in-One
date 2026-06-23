@@ -2174,6 +2174,22 @@ function changeLanguage(lang) {
 
         bindActions();
 
+        document.querySelectorAll('input[type="number"]').forEach(function(input) {
+            input.addEventListener('wheel', function(e) {
+                if (document.activeElement !== this) return;
+                e.preventDefault();
+                var step = parseFloat(this.step) || 1;
+                var min = this.min !== '' ? parseFloat(this.min) : -Infinity;
+                var max = this.max !== '' ? parseFloat(this.max) : Infinity;
+                var current = parseFloat(this.value) || 0;
+                var next = e.deltaY < 0 ? current + step : current - step;
+                if (next < min) next = min;
+                if (next > max) next = max;
+                this.value = next;
+                this.dispatchEvent(new Event('input'));
+            });
+        });
+
         (function initTabKeyboardNav() {
             var tabLeft = document.querySelector('.tab-bar-left');
             if (!tabLeft) return;
@@ -2201,6 +2217,11 @@ function changeLanguage(lang) {
             if ((e.ctrlKey || e.metaKey) && e.key === 's') {
                 e.preventDefault();
                 saveConfig();
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+                e.preventDefault();
+                var searchInput = document.getElementById('searchInput');
+                if (searchInput) searchInput.focus();
             }
         });
 
