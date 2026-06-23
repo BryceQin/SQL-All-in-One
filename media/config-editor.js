@@ -1405,8 +1405,10 @@ function changeLanguage(lang) {
             // Update tab button active state
             document.querySelectorAll('.tab-btn').forEach(function(btn) {
                 btn.classList.remove('active');
+                btn.setAttribute('aria-selected', 'false');
                 if (btn.getAttribute('data-action-arg') === tabName) {
                     btn.classList.add('active');
+                    btn.setAttribute('aria-selected', 'true');
                 }
             });
 
@@ -2045,6 +2047,19 @@ function changeLanguage(lang) {
         initConnectionFormEvents();
 
         bindActions();
+
+        (function initTabKeyboardNav() {
+            var tabLeft = document.querySelector('.tab-bar-left');
+            if (!tabLeft) return;
+            tabLeft.addEventListener('keydown', function(e) {
+                if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+                var tabs = Array.from(tabLeft.querySelectorAll('.tab-btn'));
+                var currentIndex = tabs.findIndex(function(t) { return t.classList.contains('active'); });
+                var nextIndex = e.key === 'ArrowRight' ? (currentIndex + 1) % tabs.length : (currentIndex - 1 + tabs.length) % tabs.length;
+                tabs[nextIndex].focus();
+                switchTab(tabs[nextIndex].getAttribute('data-action-arg'));
+            });
+        })();
 
         document.querySelectorAll('.config-input, .config-select').forEach(function(el) {
             if (el.id && el.id.startsWith('cf')) return;
