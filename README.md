@@ -11,7 +11,7 @@
 | | |
 |---|---|
 | **发布者** | bryce-qin |
-| **版本** | 2.19.0 |
+| **版本** | 2.20.0 |
 | **许可证** | MIT |
 | **仓库** | [GitHub](https://github.com/BryceQin/SQL-All-in-One) |
 | **VSCode 引擎** | ^1.85.0 |
@@ -47,6 +47,8 @@
 #### 1. 数据库连接与管理
 
 - MySQL 数据库连接，支持连接池、SSL、SSH 隧道
+- PostgreSQL 数据库连接，支持连接池、SSL、SSH 隧道、查询取消（v2.20 新增）
+- SQLite 数据库连接，支持文件路径、WAL 模式、查询中断（v2.20 新增）
 - 图形化连接对话框（v2.1 新增，替代逐步输入框）
 - 连接生命周期管理（添加/编辑/删除/连接/断开）
 - 连接池健康检查、空闲检查、自动重连
@@ -297,6 +299,9 @@ LIMIT 10;
 | `redundant_distinct` | 冗余 DISTINCT | ✅ | Warning |
 | `date_function_usage` | 日期函数用法提示 | ✅ | Info |
 | `wildcard_in_update` | UPDATE 中使用通配符 | ✅ | Error |
+| `implicit_cross_join` | 隐式交叉连接（JOIN 缺少 ON/USING） | ✅ | Warning |
+| `deprecated_function` | 已弃用函数（LENGTH/GREATEST/LEAST） | ✅ | Info |
+| `postgres_boolean_comparison` | PostgreSQL 布尔比较（= TRUE/FALSE） | ✅ | Hint |
 
 部分规则支持子选项：
 
@@ -634,7 +639,7 @@ MIT License
 | | |
 |---|---|
 | **Publisher** | bryce-qin |
-| **Version** | 2.19.0 |
+| **Version** | 2.20.0 |
 | **License** | MIT |
 | **Repository** | [GitHub](https://github.com/BryceQin/SQL-All-in-One) |
 | **VSCode Engine** | ^1.85.0 |
@@ -670,6 +675,8 @@ MIT License
 #### 1. Database Connection & Management
 
 - MySQL database connection with connection pool, SSL support, SSH tunnel
+- PostgreSQL database connection with connection pool, SSL, SSH tunnel, query cancel (new in v2.20)
+- SQLite database connection with file path, WAL mode, query interrupt (new in v2.20)
 - Graphical connection dialog (new in v2.1, replaced step-by-step input boxes)
 - Connection lifecycle management (add/edit/remove/connect/disconnect)
 - Connection pool with health check, idle check, auto-reconnect
@@ -920,6 +927,9 @@ Each rule supports `enabled` / `severity` configuration:
 | `redundant_distinct` | Redundant DISTINCT | ✅ | Warning |
 | `date_function_usage` | Date function usage hints | ✅ | Info |
 | `wildcard_in_update` | Wildcard in UPDATE | ✅ | Error |
+| `implicit_cross_join` | Implicit cross join (JOIN without ON/USING) | ✅ | Warning |
+| `deprecated_function` | Deprecated function (LENGTH/GREATEST/LEAST) | ✅ | Info |
+| `postgres_boolean_comparison` | PostgreSQL boolean comparison (= TRUE/FALSE) | ✅ | Hint |
 
 Some rules support sub-options:
 

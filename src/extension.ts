@@ -22,6 +22,8 @@ import { SqlRenameProvider } from './navigation/SqlRenameProvider';
 import { DatabaseModule } from './database/DatabaseModule';
 import { AdapterFactory } from './database/adapters/AdapterFactory';
 import { MysqlAdapter } from './database/adapters/MysqlAdapter';
+import { PostgresAdapter } from './database/adapters/PostgresAdapter';
+import { SqliteAdapter } from './database/adapters/SqliteAdapter';
 import { createConnectionManager } from './database/connection/ConnectionManager';
 import { createConnectionStore } from './database/connection/ConnectionStore';
 import { createSchemaProvider } from './database/schema/SchemaProvider';
@@ -70,6 +72,8 @@ function registerServicesToContainer(extensionPath: string): void {
 
   // Register AdapterFactory in the DI container
   AdapterFactory.register('mysql', MysqlAdapter);
+  AdapterFactory.register('postgresql', PostgresAdapter);
+  AdapterFactory.register('sqlite', SqliteAdapter);
   container.register(Tokens.DialectAdapterFactory, AdapterFactory);
 
   // Provider services

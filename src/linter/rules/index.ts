@@ -29,6 +29,9 @@ import { UppercaseKeywordsRule } from './UppercaseKeywordsRule'
 import { ConsistentAliasingRule } from './ConsistentAliasingRule'
 import { ExplicitColumnAliasingRule } from './ExplicitColumnAliasingRule'
 import { LongQueryLineRule } from './LongQueryLineRule'
+import { ImplicitCrossJoinRule } from './ImplicitCrossJoinRule'
+import { DeprecatedFunctionRule } from './DeprecatedFunctionRule'
+import { PostgresBooleanComparisonRule } from './PostgresBooleanComparisonRule'
 import type { LintRule } from './LintRule'
 import type { LintRuleConfig } from '../lintRules'
 
@@ -66,6 +69,9 @@ export const RULES: Record<string, RuleConstructor> = {
   'consistent_aliasing': ConsistentAliasingRule,
   'explicit_column_aliasing': ExplicitColumnAliasingRule,
   'long_query_line': LongQueryLineRule,
+  'implicit_cross_join': ImplicitCrossJoinRule,
+  'deprecated_function': DeprecatedFunctionRule,
+  'postgres_boolean_comparison': PostgresBooleanComparisonRule,
 } as const;
 
 export type RuleKey = keyof typeof RULES;
