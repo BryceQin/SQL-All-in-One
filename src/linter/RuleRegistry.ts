@@ -131,10 +131,12 @@ export class RuleRegistry {
   }
 
   reloadConfig(): void {
-    this.rules.clear();
-    this.rulesByType.clear();
+    const configs = loadRuleConfigs();
+    for (const [key, rule] of this.rules) {
+      const config = configs.get(key) ?? DEFAULT_CONFIG;
+      rule.updateConfig(config);
+    }
     this.invalidateCache();
-    this.registerAllRules();
   }
 }
 
