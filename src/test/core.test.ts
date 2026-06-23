@@ -5,6 +5,7 @@ import { DIContainer, getContainer, Tokens } from '../core/diContainer'
 import { ConfigManager } from '../core/configManager'
 import { ErrorHandler, ErrorLevel, ErrorCategory, debugLog } from '../core/errorHandler'
 import { initI18nForTest } from '../i18n'
+import { SqlParserEngine } from '../parser/SqlParserEngine'
 
 // ============================================================================
 // ConfigManager Tests
@@ -1016,5 +1017,44 @@ suite('DIContainer', () => {
 
         // Should not throw
         await container.asyncDisposeAll()
+    })
+})
+
+// ============================================================================
+// SqlParserEngine Cache Key Tests
+// ============================================================================
+
+suite('SqlParserEngine Cache Key', () => {
+
+    let engine: SqlParserEngine
+
+    setup(() => {
+        engine = new SqlParserEngine()
+    })
+
+    teardown(() => {
+        engine.dispose()
+    })
+
+    test('astify caches by hash key — same SQL returns cached AST', () => {
+        const sql = 'SELECT 1'
+        const ast1 = engine.astify(sql, 'mysql')
+        const ast2 = engine.astify(sql, 'mysql')
+        assert.strictEqual(ast1, ast2)
+    })
+
+    test('astify cache key length is bounded regardless of SQL size', () => {
+        const longSql = 'SELECT ' + '1, '.repeat(35000) + '1'
+        assert.ok(longSql.length > 100000, '测试 SQL 应超过 100KB')
+
+        const ast1 = engine.astify(longSql, 'mysql')
+        const ast2 = engine.astify(longSql, 'mysql')
+        assert.strictEqual(ast1, ast2, '长 SQL 应命中缓存')
+    })
+
+    test('different SQL with same length produces different cache entries', () => {
+        const ast1 = engine.astify('SELECT 1', 'mysql')
+        const ast2 = engine.astify('SELECT 2', 'mysql')
+        assert.notStrictEqual(ast1, ast2)
     })
 })

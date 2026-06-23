@@ -1,5 +1,25 @@
 # Changelog
 
+## [2.21.0] - 2026-06-23
+
+### Bug Fixes
+
+- **DocumentAstCache 增量解析 AST 就地修改修复**：增量解析复用缓存 AST 时，`adjustAstLocationsInPlace` 直接修改缓存中的 AST 节点 `loc` 属性，导致 linter/hover/navigation 等多个消费者引用同一缓存时位置信息错位。现改为深拷贝（`JSON.parse(JSON.stringify)`）后再调整位置，原始缓存 AST 不被修改
+- **ConnectionStore.save() 竞态条件修复**：debounce 时提前 resolve 前一个 Promise 但数据尚未写入磁盘，调用方可能误以为保存已完成。现改用 Promise 链 + `settlePendingSave` 保存 resolve/reject 句柄，确保所有调用方的 Promise 在数据实际写入磁盘后才 settle；同时修复 `saveImmediate()` 清除定时器后旧 Promise 永不 settle 导致调用方永久挂起的 Critical bug
+- **MysqlQueryAdapter 连接计数泄漏修复**：`activeConnectionCount++` 原在 try 块外执行，若 `acquireConnectionWithTimeout` 成功后、进入 try 块前发生异常，计数会泄漏。现将计数和 `activeQueryThreadIds.set()` 移入 try 块内并加 `if (acquiredConn)` 守卫，与 finally 中的 `--` 正确配对
+
+### Performance
+
+- **SqlParserEngine 缓存键内存优化**：`makeCacheKey` 原将完整 SQL 文本作为缓存键，100KB SQL 文件每条键占 100KB+，50 条缓存最坏占 5MB+ 内存。现改用 FNV-1a 哈希（offset basis 2166136261，prime 16777619），键长度从 O(n) 降为 O(1)，大 SQL 文件场景内存占用降低约 99%
+- **DocumentAstCache splitSqlStatements 复用**：`getOrParseInternal` 中增量解析条件不满足时 fall through 到全量解析，`splitSqlStatements` 被重复调用两次。现提前计算一次并复用，大文件减少一次 O(n) 重复扫描
+- **SchemaProvider 列补全并发限制**：无别名映射时并行获取前 10 个表的列信息，首次访问触发 10 个并发数据库查询。现通过 `parallelWithLimit`（index 指针驱动的 worker 池）限制并发数为 3，减轻数据库瞬时压力
+
+### Code Quality
+
+- **RuleRegistry.reloadConfig 原地更新优化**：原实现销毁所有规则实例并重新创建（`rules.clear()` + `registerAllRules()`），配置变更时产生不必要的 GC 压力。现改为遍历现有规则调用 `updateConfig`，复用实例仅更新配置
+
+---
+
 ## [2.20.0] - 2026-06-23
 
 ### Features
