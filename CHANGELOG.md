@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.23.0] - 2026-06-24
+
+### Features
+
+- **MySQL ↔ Hive SQL 转换架构重构**：基于可插拔节点转换器（Node Transformer）模式重构 DDL/DML 转换引擎，AST 优先转换、正则回退兜底，支持 CREATE TABLE、SELECT、INSERT、UPDATE、DELETE、CREATE VIEW 等全语句类型
+- **AST 转换引擎（AstTransformEngine）**：新增转换引擎与 6 个节点转换器——`FunctionTransformer`（函数映射：NOW→CURRENT_TIMESTAMP、IFNULL→COALESCE、IF→CASE WHEN 参数重组）、`TypeTransformer`（类型映射：DATETIME↔TIMESTAMP、VARCHAR→STRING、STRING→VARCHAR(255)，复杂类型 ARRAY/MAP/STRUCT→JSON 时发出警告）、`ColumnAttrTransformer`（列属性剥离：AUTO_INCREMENT、NOT NULL、UNSIGNED、COLLATE 等）、`TableOptionTransformer`（表选项过滤：ENGINE、STORED AS 等）、`ConstraintTransformer`（约束/索引移除：PRIMARY KEY、KEY）、`ClauseTransformer`（Hive 子句移除：DISTRIBUTE BY、SORT BY、CLUSTER BY）
+- **交互式回退机制**：AST 解析失败时弹出「回退正则转换 / 查看错误详情 / 取消」三选项对话框，用户可选择兼容模式继续转换或查看详细错误
+- **右键菜单与命令面板入口**：编辑器右键菜单与命令面板新增「MySQL → Hive」与「Hive → MySQL」转换命令，按 SQL 文件类型上下文显示
+- **类型映射增强**：`HIVE_TO_MYSQL_TYPES` 从 7 项扩展至 17 项（新增 TINYINT、SMALLINT、INT、BIGINT、FLOAT、DOUBLE、DECIMAL、DATE、TIMESTAMP→DATETIME、CHAR→CHAR(255)），新增 `HIVE_COMPLEX_TYPES` 集合用于复杂类型警告
+- **函数映射增强**：新增 `MYSQL_TO_HIVE_FUNCTION_NAMES` 与 `HIVE_TO_MYSQL_FUNCTION_NAMES` AST 函数名映射表，覆盖 NOW、CURDATE、IFNULL、GROUP_CONCAT、STR_TO_DATE、CURRENT_TIMESTAMP、COLLECT_LIST、GET_JSON_OBJECT 等函数
+
+### Code Quality
+
+- **AstConverter 向后兼容委托**：`AstConverter` 内部委托给 `DialectConverter`，`ConvertResult` 新增 `usedFallback` 与 `warnings` 字段，`convertCreateTable`/`tryConvertCreateTable` 接口签名保持不变
+- **AST 深拷贝防缓存污染**：`SqlParserEngine.astify` 缓存 AST，转换器直接修改会导致跨调用污染；`DialectConverter` 转换前深拷贝 AST
+- **国际化消息补充**：新增 8 条转换相关中英文消息（AST 失败提示、回退选项、回退成功、警告计数、复杂类型警告）
+
+---
+
 ## [2.22.1] - 2026-06-24
 
 ### Bug Fixes

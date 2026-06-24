@@ -1067,10 +1067,10 @@ suite('AstConverter Tests', () => {
         assert.ok(result.includes('VARCHAR(255)'), 'STRING should become VARCHAR(255)')
     })
 
-    test('convertCreateTable Hive to MySQL - TIMESTAMP stays TIMESTAMP', () => {
+    test('convertCreateTable Hive to MySQL - TIMESTAMP becomes DATETIME', () => {
         const sql = 'CREATE TABLE events (id INT, created_at TIMESTAMP);'
         const result = converter.convertCreateTable(sql, 'hive', 'mysql')
-        assert.ok(result.toUpperCase().includes('TIMESTAMP'), 'TIMESTAMP should be preserved')
+        assert.ok(result.toUpperCase().includes('DATETIME'), 'TIMESTAMP should become DATETIME')
     })
 
     test('convertCreateTable throws when no CREATE TABLE found', () => {

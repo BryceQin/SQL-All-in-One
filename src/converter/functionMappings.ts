@@ -141,7 +141,40 @@ export const MYSQL_TO_HIVE_FUNCTIONS: FunctionMapping[] = [
   {
     pattern: /\s*-\s*INTERVAL\s+(\d+)\s+(DAY|WEEK|MONTH|YEAR|HOUR|MINUTE|SECOND)/gi,
     replacement: " - INTERVAL '$1' $2"
+  },
+  {
+    pattern: /\bGROUP_CONCAT\s*\(/gi,
+    replacement: 'COLLECT_LIST('
+  },
+  {
+    pattern: /\bSTR_TO_DATE\s*\(/gi,
+    replacement: 'FROM_UNIXTIME(UNIX_TIMESTAMP('
   }
+]
+
+export interface AstFunctionNameMapping {
+  from: string
+  to: string
+}
+
+export const MYSQL_TO_HIVE_FUNCTION_NAMES: AstFunctionNameMapping[] = [
+  { from: 'NOW', to: 'CURRENT_TIMESTAMP' },
+  { from: 'CURDATE', to: 'CURRENT_DATE' },
+  { from: 'IFNULL', to: 'COALESCE' },
+  { from: 'GROUP_CONCAT', to: 'COLLECT_LIST' },
+  { from: 'STR_TO_DATE', to: 'FROM_UNIXTIME' },
+  { from: 'UNIX_TIMESTAMP', to: 'UNIX_TIMESTAMP' },
+  { from: 'DATE_FORMAT', to: 'DATE_FORMAT' },
+  { from: 'CURTIME', to: 'FROM_UNIXTIME' }
+]
+
+export const HIVE_TO_MYSQL_FUNCTION_NAMES: AstFunctionNameMapping[] = [
+  { from: 'CURRENT_TIMESTAMP', to: 'NOW' },
+  { from: 'CURRENT_DATE', to: 'CURDATE' },
+  { from: 'COALESCE', to: 'IFNULL' },
+  { from: 'COLLECT_LIST', to: 'GROUP_CONCAT' },
+  { from: 'GET_JSON_OBJECT', to: 'JSON_EXTRACT' },
+  { from: 'DATE_FORMAT', to: 'DATE_FORMAT' }
 ]
 
 export function convertIfnullToCoalesce(sql: string): string {

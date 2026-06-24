@@ -2,7 +2,7 @@
     "name": "hive-formatter",
     "displayName": "SQL All in One",
     "description": "SQL All in One - 强大的 SQL 格式化、智能补全、语法检查、DDL 转换 VSCode 插件，支持 Hive、MySQL、SparkSQL、FlinkSQL、PostgreSQL、BigQuery、SQLite 等多种 SQL 方言",
-    "version": "2.22.1",
+    "version": "2.23.0",
     "publisher": "bryce-qin",
     "contributors": [
         "TalDu"
@@ -1738,6 +1738,26 @@
                     "command": "hive-formatter.toggleAdvancedComment",
                     "when": "editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite/",
                     "group": "1_comment@2"
+                },
+                {
+                    "command": "hive-formatter.mysql-to-hive",
+                    "when": "editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite/",
+                    "group": "9_conversion@1"
+                },
+                {
+                    "command": "hive-formatter.hive-to-mysql",
+                    "when": "editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite/",
+                    "group": "9_conversion@2"
+                }
+            ],
+            "commandPalette": [
+                {
+                    "command": "hive-formatter.mysql-to-hive",
+                    "when": "editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite/"
+                },
+                {
+                    "command": "hive-formatter.hive-to-mysql",
+                    "when": "editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite/"
                 }
             ],
             "view/title": [

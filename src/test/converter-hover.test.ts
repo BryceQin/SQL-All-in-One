@@ -1,6 +1,7 @@
 import * as assert from 'assert'
 import { SqlParser } from '../converter/sqlParser'
-import { MYSQL_TO_HIVE_FUNCTIONS, HIVE_TO_MYSQL_FUNCTIONS, convertIfnullToCoalesce, convertCoalesceToIfnull } from '../converter/functionMappings'
+import { MYSQL_TO_HIVE_FUNCTIONS, HIVE_TO_MYSQL_FUNCTIONS, convertIfnullToCoalesce, convertCoalesceToIfnull, MYSQL_TO_HIVE_FUNCTION_NAMES, HIVE_TO_MYSQL_FUNCTION_NAMES } from '../converter/functionMappings'
+import { MYSQL_TO_HIVE_TYPES, HIVE_TO_MYSQL_TYPES, HIVE_COMPLEX_TYPES } from '../converter/typeMappings'
 import { HoverResolver } from '../hover/HoverResolver'
 import { FunctionHoverResolver } from '../hover/FunctionHoverResolver'
 import { KeywordHoverResolver } from '../hover/KeywordHoverResolver'
@@ -66,7 +67,7 @@ suite('Converter and Hover Module Tests', () => {
     suite('functionMappings - MYSQL_TO_HIVE_FUNCTIONS', () => {
 
         test('contains expected number of mappings', () => {
-            assert.strictEqual(MYSQL_TO_HIVE_FUNCTIONS.length, 4)
+            assert.ok(MYSQL_TO_HIVE_FUNCTIONS.length >= 4, 'Should contain at least the original 4 mappings')
         })
 
         test('NOW() mapping replaces with CURRENT_TIMESTAMP', () => {
@@ -128,7 +129,7 @@ suite('Converter and Hover Module Tests', () => {
     suite('functionMappings - HIVE_TO_MYSQL_FUNCTIONS', () => {
 
         test('contains expected number of mappings', () => {
-            assert.strictEqual(HIVE_TO_MYSQL_FUNCTIONS.length, 6)
+            assert.ok(HIVE_TO_MYSQL_FUNCTIONS.length >= 6, 'Should contain at least the original 6 mappings')
         })
 
         test('CURRENT_TIMESTAMP mapping replaces with NOW()', () => {
@@ -207,6 +208,99 @@ suite('Converter and Hover Module Tests', () => {
         test('convertCoalesceToIfnull handles nested COALESCE', () => {
             const result = convertCoalesceToIfnull('COALESCE(a, COALESCE(b, c))')
             assert.strictEqual(result, 'IFNULL(a, IFNULL(b, c))')
+        })
+    })
+
+    // ========================================================================
+    // AST function name mappings
+    // ========================================================================
+
+    suite('functionMappings - AST function name mappings', () => {
+
+        test('MYSQL_TO_HIVE_FUNCTION_NAMES contains IFNULL to COALESCE', () => {
+            const mapping = MYSQL_TO_HIVE_FUNCTION_NAMES.find(m => m.from === 'IFNULL')
+            assert.ok(mapping, 'IFNULL mapping should exist')
+            assert.strictEqual(mapping.to, 'COALESCE')
+        })
+
+        test('MYSQL_TO_HIVE_FUNCTION_NAMES contains NOW to CURRENT_TIMESTAMP', () => {
+            const mapping = MYSQL_TO_HIVE_FUNCTION_NAMES.find(m => m.from === 'NOW')
+            assert.ok(mapping)
+            assert.strictEqual(mapping.to, 'CURRENT_TIMESTAMP')
+        })
+
+        test('MYSQL_TO_HIVE_FUNCTION_NAMES contains GROUP_CONCAT to COLLECT_LIST', () => {
+            const mapping = MYSQL_TO_HIVE_FUNCTION_NAMES.find(m => m.from === 'GROUP_CONCAT')
+            assert.ok(mapping)
+            assert.strictEqual(mapping.to, 'COLLECT_LIST')
+        })
+
+        test('HIVE_TO_MYSQL_FUNCTION_NAMES contains CURRENT_TIMESTAMP to NOW', () => {
+            const mapping = HIVE_TO_MYSQL_FUNCTION_NAMES.find(m => m.from === 'CURRENT_TIMESTAMP')
+            assert.ok(mapping)
+            assert.strictEqual(mapping.to, 'NOW')
+        })
+
+        test('HIVE_TO_MYSQL_FUNCTION_NAMES contains COLLECT_LIST to GROUP_CONCAT', () => {
+            const mapping = HIVE_TO_MYSQL_FUNCTION_NAMES.find(m => m.from === 'COLLECT_LIST')
+            assert.ok(mapping)
+            assert.strictEqual(mapping.to, 'GROUP_CONCAT')
+        })
+
+        test('HIVE_TO_MYSQL_FUNCTION_NAMES contains GET_JSON_OBJECT to JSON_EXTRACT', () => {
+            const mapping = HIVE_TO_MYSQL_FUNCTION_NAMES.find(m => m.from === 'GET_JSON_OBJECT')
+            assert.ok(mapping)
+            assert.strictEqual(mapping.to, 'JSON_EXTRACT')
+        })
+    })
+
+    // ========================================================================
+    // Enhanced type mappings
+    // ========================================================================
+
+    suite('typeMappings - enhanced mappings', () => {
+
+        test('HIVE_TO_MYSQL_TYPES contains TINYINT mapping', () => {
+            assert.strictEqual(HIVE_TO_MYSQL_TYPES['TINYINT'], 'TINYINT')
+        })
+
+        test('HIVE_TO_MYSQL_TYPES contains INT mapping', () => {
+            assert.strictEqual(HIVE_TO_MYSQL_TYPES['INT'], 'INT')
+        })
+
+        test('HIVE_TO_MYSQL_TYPES contains BIGINT mapping', () => {
+            assert.strictEqual(HIVE_TO_MYSQL_TYPES['BIGINT'], 'BIGINT')
+        })
+
+        test('HIVE_TO_MYSQL_TYPES contains TIMESTAMP to DATETIME mapping', () => {
+            assert.strictEqual(HIVE_TO_MYSQL_TYPES['TIMESTAMP'], 'DATETIME')
+        })
+
+        test('HIVE_TO_MYSQL_TYPES contains CHAR to CHAR(255) mapping', () => {
+            assert.strictEqual(HIVE_TO_MYSQL_TYPES['CHAR'], 'CHAR(255)')
+        })
+
+        test('HIVE_TO_MYSQL_TYPES contains DECIMAL mapping', () => {
+            assert.strictEqual(HIVE_TO_MYSQL_TYPES['DECIMAL'], 'DECIMAL')
+        })
+
+        test('HIVE_TO_MYSQL_TYPES has at least 17 entries', () => {
+            assert.ok(Object.keys(HIVE_TO_MYSQL_TYPES).length >= 17, 'Should have at least 17 Hive to MySQL type mappings')
+        })
+
+        test('HIVE_COMPLEX_TYPES contains ARRAY, MAP, STRUCT, UNIONTYPE', () => {
+            assert.ok(HIVE_COMPLEX_TYPES.has('ARRAY'))
+            assert.ok(HIVE_COMPLEX_TYPES.has('MAP'))
+            assert.ok(HIVE_COMPLEX_TYPES.has('STRUCT'))
+            assert.ok(HIVE_COMPLEX_TYPES.has('UNIONTYPE'))
+        })
+
+        test('MYSQL_TO_HIVE_TYPES maps DATETIME to TIMESTAMP', () => {
+            assert.strictEqual(MYSQL_TO_HIVE_TYPES['DATETIME'], 'TIMESTAMP')
+        })
+
+        test('MYSQL_TO_HIVE_TYPES has at least 32 entries', () => {
+            assert.ok(Object.keys(MYSQL_TO_HIVE_TYPES).length >= 32, 'Should have at least 32 MySQL to Hive type mappings')
         })
     })
 

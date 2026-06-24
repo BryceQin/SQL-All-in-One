@@ -11,7 +11,7 @@
 | | |
 |---|---|
 | **发布者** | bryce-qin |
-| **版本** | 2.22.1 |
+| **版本** | 2.23.0 |
 | **许可证** | MIT |
 | **仓库** | [GitHub](https://github.com/BryceQin/SQL-All-in-One) |
 | **VSCode 引擎** | ^1.85.0 |
@@ -332,7 +332,10 @@ LIMIT 10;
 
 #### 13. DDL 转换
 
-- 基于 AST 的 MySQL ↔ Hive CREATE TABLE 转换
+- 基于 AST 的 MySQL ↔ Hive SQL 转换，支持 CREATE TABLE、SELECT、INSERT、UPDATE、DELETE、CREATE VIEW 等全语句类型
+- 可插拔节点转换器架构：函数映射（NOW→CURRENT_TIMESTAMP、IFNULL→COALESCE、IF→CASE WHEN）、类型映射（DATETIME↔TIMESTAMP、VARCHAR→STRING）、列属性剥离、表选项过滤、约束移除、Hive 子句移除
+- AST 解析失败时交互式回退正则转换，复杂类型（ARRAY/MAP/STRUCT）转换时发出警告
+- 右键菜单与命令面板入口：MySQL → Hive、Hive → MySQL
 - 数据类型映射
 - 表选项过滤
 - 列属性剥离
@@ -639,7 +642,7 @@ MIT License
 | | |
 |---|---|
 | **Publisher** | bryce-qin |
-| **Version** | 2.22.1 |
+| **Version** | 2.23.0 |
 | **License** | MIT |
 | **Repository** | [GitHub](https://github.com/BryceQin/SQL-All-in-One) |
 | **VSCode Engine** | ^1.85.0 |
@@ -960,7 +963,10 @@ Shared AstNavigator navigation engine.
 
 #### 13. DDL Conversion
 
-- AST-based MySQL ↔ Hive CREATE TABLE conversion
+- AST-based MySQL ↔ Hive SQL conversion, supporting CREATE TABLE, SELECT, INSERT, UPDATE, DELETE, CREATE VIEW and other statement types
+- Pluggable node transformer architecture: function mapping (NOW→CURRENT_TIMESTAMP, IFNULL→COALESCE, IF→CASE WHEN), type mapping (DATETIME↔TIMESTAMP, VARCHAR→STRING), column attribute stripping, table option filtering, constraint removal, Hive clause removal
+- Interactive regex fallback when AST parsing fails, with warnings for complex types (ARRAY/MAP/STRUCT)
+- Right-click menu and command palette entries: MySQL → Hive, Hive → MySQL
 - Data type mapping
 - Table option filtering
 - Column attribute stripping

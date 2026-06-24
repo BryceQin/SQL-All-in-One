@@ -42,5 +42,18 @@ export const HIVE_TO_MYSQL_TYPES: TypeMapping = {
   'ARRAY': 'JSON',
   'MAP': 'JSON',
   'STRUCT': 'JSON',
-  'UNIONTYPE': 'JSON'
+  'UNIONTYPE': 'JSON',
+  'TINYINT': 'TINYINT',
+  'SMALLINT': 'SMALLINT',
+  'INT': 'INT',
+  'INTEGER': 'INT',
+  'BIGINT': 'BIGINT',
+  'FLOAT': 'FLOAT',
+  'DOUBLE': 'DOUBLE',
+  'DECIMAL': 'DECIMAL',
+  'DATE': 'DATE',
+  'TIMESTAMP': 'DATETIME',
+  'CHAR': 'CHAR(255)'
 }
+
+export const HIVE_COMPLEX_TYPES = new Set(['ARRAY', 'MAP', 'STRUCT', 'UNIONTYPE'])

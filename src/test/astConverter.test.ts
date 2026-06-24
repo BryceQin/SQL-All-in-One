@@ -85,10 +85,10 @@ suite('AstConverter Test Suite', () => {
         assert.ok(result.error !== null, 'Error should not be null')
     })
 
-    test('convertCreateTable Hive to MySQL - TIMESTAMP stays TIMESTAMP', () => {
+    test('convertCreateTable Hive to MySQL - TIMESTAMP becomes DATETIME', () => {
         const sql = 'CREATE TABLE events (id INT, created_at TIMESTAMP);'
         const result = converter.convertCreateTable(sql, 'hive', 'mysql')
-        assert.ok(result.toUpperCase().includes('TIMESTAMP'), 'TIMESTAMP should be preserved')
+        assert.ok(result.toUpperCase().includes('DATETIME'), 'TIMESTAMP should become DATETIME')
     })
 
     test('convertCreateTable Hive to MySQL - DATE stays DATE', () => {
