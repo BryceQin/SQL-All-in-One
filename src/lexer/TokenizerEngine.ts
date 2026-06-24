@@ -1,5 +1,5 @@
 import type { Token, TokenType } from "./token"
-import { lineColFromIndex } from "./lineColFromIndex"
+import { lineColFromIndexFast, precomputeLineOffsets } from "./lineColFromIndex"
 import { WHITESPACE_REGEX } from "./regexUtil"
 import { t } from "../i18n"
 
@@ -54,7 +54,8 @@ export default class TokenizerEngine {
         // 截取当前位置后 10 个字符作为错误上下文，便于定位
         const text = this.input.slice(this.index, this.index + 10)
         // 转换为 1-based 行号列号（用户友好）
-        const { line, col } = lineColFromIndex(this.input, this.index)
+        const lineStarts = precomputeLineOffsets(this.input)
+        const { line, col } = lineColFromIndexFast(lineStarts, this.index)
         return new Error(
             t('lexer.parseError', String(line), String(col), text, this.dialectInfo()),
         )

@@ -44,24 +44,30 @@
                 </div>
             </div>
             <div class="toolbar-actions">
-                <button class="btn btn-ghost btn-sm" data-action="expandAll" data-i18n="configEditor.expandAll">全部展开</button>
-                <button class="btn btn-ghost btn-sm" data-action="collapseAll" data-i18n="configEditor.collapseAll">全部折叠</button>
+                <button class="btn btn-ghost btn-sm" data-action="locateModified" data-i18n="configEditor.conn.locateModified" aria-label="定位修改项">定位修改项</button>
             </div>
         </div>
 
         <div class="tab-bar">
-            <button class="tab-btn active" data-action="switchTab" data-action-arg="formatting">
-                <span class="tab-icon">✨</span>
-                <span class="tab-label" data-i18n="configEditor.tab.formatting">格式化</span>
-            </button>
-            <button class="tab-btn" data-action="switchTab" data-action-arg="editor">
-                <span class="tab-icon">📝</span>
-                <span class="tab-label" data-i18n="configEditor.tab.editor">编辑器</span>
-            </button>
-            <button class="tab-btn" data-action="switchTab" data-action-arg="database">
-                <span class="tab-icon">🗄️</span>
-                <span class="tab-label" data-i18n="configEditor.tab.database">数据库</span>
-            </button>
+            <div class="tab-bar-left" role="tablist" aria-label="配置分类">
+                <button class="tab-btn active" data-action="switchTab" data-action-arg="formatting" role="tab" aria-selected="true">
+                    <span class="tab-icon">✨</span>
+                    <span class="tab-label" data-i18n="configEditor.tab.formatting">格式化</span>
+                </button>
+                <button class="tab-btn" data-action="switchTab" data-action-arg="editor" role="tab" aria-selected="false">
+                    <span class="tab-icon">📝</span>
+                    <span class="tab-label" data-i18n="configEditor.tab.editor">编辑器</span>
+                </button>
+                <button class="tab-btn" data-action="switchTab" data-action-arg="database" role="tab" aria-selected="false">
+                    <span class="tab-icon">🗄️</span>
+                    <span class="tab-label" data-i18n="configEditor.tab.database">数据库</span>
+                </button>
+            </div>
+            <div class="tab-bar-actions">
+                <button class="btn btn-ghost btn-sm" data-action="expandAll" data-i18n="configEditor.expandAll" aria-label="全部展开">全部展开</button>
+                <button class="btn btn-ghost btn-sm" data-action="collapseAll" data-i18n="configEditor.collapseAll" aria-label="全部折叠">全部折叠</button>
+                <button class="btn btn-ghost btn-sm" data-action="resetConfig" data-i18n="configEditor.resetDefault" aria-label="重置默认">重置默认</button>
+            </div>
         </div>
 
         <!-- ═══ Tab: 格式化 ═══ -->
@@ -81,7 +87,7 @@
                     </div>
                     <div class="preview-col">
                         <div class="preview-col-label" data-i18n="configEditor.preview.outputLabel">格式化结果</div>
-                        <div class="preview-result empty" id="previewResult" data-i18n="configEditor.previewPlaceholder">Click Format Preview to see result</div>
+                        <div class="preview-result empty" id="previewResult" aria-live="polite" data-i18n="configEditor.previewPlaceholder">Click Format Preview to see result</div>
                     </div>
                 </div>
             </div>
@@ -475,15 +481,11 @@
                                         </div>
                                         <div class="conn-form-row">
                                             <label class="conn-form-label" data-i18n="configEditor.conn.lbl.dialect">方言</label>
-                                            <select class="config-select" id="cfDialect">
-                                                <option value="mysql">MySQL</option>
-                                                <option value="hive">Hive</option>
-                                                <option value="spark">Spark</option>
-                                                <option value="flinksql">FlinkSQL</option>
-                                                <option value="postgresql">PostgreSQL</option>
-                                                <option value="bigquery">BigQuery</option>
-                                                <option value="sqlite">SQLite</option>
-                                            </select>
+                                            <div class="conn-form-input-group">
+                                                <select class="config-select" id="cfDialect" aria-label="方言"></select>
+                                                <button class="btn btn-ghost btn-sm" type="button" id="cfShowMoreDialects" data-i18n="configEditor.conn.showMoreDialects" aria-label="显示更多连接类型">显示更多</button>
+                                            </div>
+                                            <div class="dialect-unsupported-hint" id="cfDialectHint" style="display:none;" data-i18n="configEditor.conn.unsupportedDialect">当前版本暂不支持该连接类型</div>
                                         </div>
                                         <div class="conn-form-row">
                                             <label class="conn-form-label" data-i18n="configEditor.conn.lbl.group">分组</label>

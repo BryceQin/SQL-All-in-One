@@ -3,7 +3,7 @@ import { LRUCache } from '../utils/lruCache'
 import { Lazy, lazy, lazyAsync } from '../utils/lazy'
 import { DIContainer, getContainer, Tokens } from '../core/diContainer'
 import { ConfigManager } from '../core/configManager'
-import { ErrorHandler, ErrorLevel, ErrorCategory, debugLog } from '../core/errorHandler'
+import { ErrorHandler, ErrorLevel, ErrorCategory, debugLog, createErrorHandler } from '../core/errorHandler'
 import { initI18nForTest } from '../i18n'
 import { SqlParserEngine } from '../parser/SqlParserEngine'
 
@@ -127,6 +127,7 @@ suite('ErrorHandler', () => {
 
     teardown(() => {
         getContainer().unregister(Tokens.ErrorHandler)
+        getContainer().registerSingleton(Tokens.ErrorHandler, createErrorHandler)
     })
 
     test('try() returns function result on success', () => {
@@ -353,26 +354,34 @@ suite('ErrorHandler', () => {
     })
 
     test('debugLog outputs to console.debug with correct format when enabled', () => {
-        const originalDebug = console.debug
+        const originalDescriptor = Object.getOwnPropertyDescriptor(console, 'debug')
         let capturedArgs: unknown[] = []
-        console.debug = (...args: unknown[]): void => { capturedArgs = args }
+        const stub = (...args: unknown[]): void => { capturedArgs = args }
+        // In the VS Code extension host `console.debug` is an accessor property
+        // (getter/setter), so a plain assignment (`console.debug = fn`) does not
+        // override what callers read back. Replace it with a plain data property
+        // so the stub is actually invoked.
+        Object.defineProperty(console, 'debug', { value: stub, configurable: true, writable: true })
 
         try {
             errorHandler.setDebugEnabled(true)
             debugLog('test message', 'test-context', { key: 'value' })
 
             assert.strictEqual(capturedArgs.length, 2, 'console.debug should be called with message and data')
-            assert.strictEqual(capturedArgs[0], '[SQL All in One] [test-context] test message')
+            assert.strictEqual(capturedArgs[0], '[SQL All in One] [DEBUG] [test-context] test message')
             assert.deepStrictEqual(capturedArgs[1], { key: 'value' })
         } finally {
-            console.debug = originalDebug
+            if (originalDescriptor) {
+                Object.defineProperty(console, 'debug', originalDescriptor)
+            }
         }
     })
 
     test('debugLog works without data parameter', () => {
-        const originalDebug = console.debug
+        const originalDescriptor = Object.getOwnPropertyDescriptor(console, 'debug')
         let capturedArgs: unknown[] = []
-        console.debug = (...args: unknown[]): void => { capturedArgs = args }
+        const stub = (...args: unknown[]): void => { capturedArgs = args }
+        Object.defineProperty(console, 'debug', { value: stub, configurable: true, writable: true })
 
         try {
             errorHandler.setDebugEnabled(true)
@@ -382,7 +391,9 @@ suite('ErrorHandler', () => {
             assert.strictEqual(capturedArgs[0], '[SQL All in One] [DEBUG] [no-data-context] no data message')
             assert.strictEqual(capturedArgs[1], undefined)
         } finally {
-            console.debug = originalDebug
+            if (originalDescriptor) {
+                Object.defineProperty(console, 'debug', originalDescriptor)
+            }
         }
     })
 })
@@ -987,13 +998,19 @@ suite('DIContainer', () => {
 
         await container.asyncDisposeAll()
 
-        // Both B1 and B2 should have been disposed before A
+        // Both B1 and B2 should have been disposed before (or at the same
+        // millisecond as) A. The dispose order is guaranteed by the level
+        // computation (B1/B2 at level 0, A at level 1), but because A's
+        // synchronous dispose runs in the same event-loop tick right after
+        // the awaited B1/B2 promises resolve, Date.now() may report the same
+        // millisecond for all three. Use <= so the assertion reflects the
+        // guaranteed ordering rather than sub-millisecond timing.
         const b1Time = disposeTimes.get('B1')!
         const b2Time = disposeTimes.get('B2')!
         const aTime = disposeTimes.get('A')!
 
-        assert.strictEqual(b1Time < aTime, true, 'B1 should be disposed before A')
-        assert.strictEqual(b2Time < aTime, true, 'B2 should be disposed before A')
+        assert.strictEqual(b1Time <= aTime, true, 'B1 should be disposed before A')
+        assert.strictEqual(b2Time <= aTime, true, 'B2 should be disposed before A')
 
         // B1 and B2 should have been disposed roughly in parallel (within 15ms of each other)
         const parallelDelta = Math.abs(b1Time - b2Time)

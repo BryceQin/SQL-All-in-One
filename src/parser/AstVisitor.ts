@@ -25,8 +25,6 @@ export function walkAst(
     const stack: unknown[] = []
     stack.push(node, _parent ?? null, _key ?? null, 0)
 
-    const keysBuffer: string[] = []
-
     while (stack.length > 0) {
         if (stack.length > MAX_STACK_DEPTH) {
             debugLog('AST depth exceeded maximum, stopping traversal', 'AstVisitor.traverse')
@@ -47,14 +45,9 @@ export function walkAst(
 
         if (!isAstNode(currentNode)) {
             if (isPlainObject(currentNode)) {
-                keysBuffer.length = 0
-                for (const childKey in currentNode) {
-                    if (Object.prototype.hasOwnProperty.call(currentNode, childKey)) {
-                        keysBuffer.push(childKey)
-                    }
-                }
-                for (let i = keysBuffer.length - 1; i >= 0; i--) {
-                    const childKey = keysBuffer[i]
+                const childKeys = Object.keys(currentNode)
+                for (let i = childKeys.length - 1; i >= 0; i--) {
+                    const childKey = childKeys[i]
                     const childValue = (currentNode as Record<string, unknown>)[childKey]
                     if (Array.isArray(childValue)) {
                         for (let j = childValue.length - 1; j >= 0; j--) {
@@ -72,28 +65,25 @@ export function walkAst(
 
         stack.push(currentNode, parent, key, 1)
 
-        keysBuffer.length = 0
-        for (const childKey in currentNode) {
-            if (Object.prototype.hasOwnProperty.call(currentNode, childKey)) {
-                keysBuffer.push(childKey)
-            }
-        }
-        for (let i = keysBuffer.length - 1; i >= 0; i--) {
-            const childKey = keysBuffer[i]
+        const childKeys = Object.keys(currentNode)
+        for (let i = childKeys.length - 1; i >= 0; i--) {
+            const childKey = childKeys[i]
             if (childKey === 'type' || childKey === 'loc') {
                 continue
             }
             const childValue = currentNode[childKey]
-            if (typeof childValue === 'string' || typeof childValue === 'number' || typeof childValue === 'boolean') {
+            const childType = typeof childValue
+            if (childType === 'string' || childType === 'number' || childType === 'boolean') {
+                continue
+            }
+            if (childValue == null) {
                 continue
             }
             if (Array.isArray(childValue)) {
                 for (let j = childValue.length - 1; j >= 0; j--) {
                     stack.push(childValue[j], currentNode, childKey, 0)
                 }
-            } else if (isAstNode(childValue)) {
-                stack.push(childValue, currentNode, childKey, 0)
-            } else if (isPlainObject(childValue)) {
+            } else if (childType === 'object') {
                 stack.push(childValue, currentNode, childKey, 0)
             }
         }

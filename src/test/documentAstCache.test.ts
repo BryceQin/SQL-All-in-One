@@ -290,7 +290,7 @@ suite('DocumentAstCache - Statement-level Incremental Parsing', () => {
 
         const originalStartLine = (cachedNode as unknown as { loc: { start: { line: number } } }).loc.start.line;
 
-        const clonedNode: import('node-sql-parser').AST = JSON.parse(JSON.stringify(cachedNode));
+        const clonedNode: import('node-sql-parser').AST = JSON.parse(JSON.stringify(cachedNode)) as import('node-sql-parser').AST;
         adjustAstLocationsInPlace(clonedNode, 1, 1, 5, 3);
 
         const mutatedStartLine = (cachedNode as unknown as { loc: { start: { line: number } } }).loc.start.line;

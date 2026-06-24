@@ -243,7 +243,7 @@ export class QueryExecutor {
     }
 
     private generateQueryId(): string {
-        return generateShortId('query');
+        return generateShortId('q');
     }
 
     private getConfigMaxRows(): number {

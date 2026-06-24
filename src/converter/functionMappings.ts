@@ -116,7 +116,8 @@ export function replaceFunctionCall(sql: string, funcName: string, replacer: (ar
     const match = matchFunctionCall(remaining, funcName)
     if (!match) break
 
-    const replacement = replacer(match.args)
+    const recursivelyProcessedArgs = match.args.map(arg => replaceFunctionCall(arg, funcName, replacer))
+    const replacement = replacer(recursivelyProcessedArgs)
     result = result.substring(0, offset + match.index) + replacement + result.substring(offset + match.end)
     offset += match.index + replacement.length
   }

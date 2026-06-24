@@ -75,6 +75,7 @@ function changeLanguage(lang) {
     vscode.postMessage({ command: 'changeLanguage', lang: lang });
 }
 
+        let initialConfigSnapshot = {};
         let currentConfig = {
             enableSmartCommentToggle: true,
             headerAuthor: '',
@@ -87,8 +88,41 @@ function changeLanguage(lang) {
         let isDirty = false;
         var searchDebounceTimer = null;
 
+        function clearAllModifiedDots() {
+            document.querySelectorAll('.ci-modified-dot').forEach(function(dot) { dot.remove(); });
+        }
+
+        function updateModifiedDots() {
+            clearAllModifiedDots();
+            Object.keys(currentConfig).forEach(function(key) {
+                var el = document.getElementById(key);
+                if (!el) return;
+                var currentVal = el.type === 'checkbox' ? el.checked : el.value;
+                var initialVal = initialConfigSnapshot[key];
+                if (String(currentVal) !== String(initialVal)) {
+                    var label = el.closest('.config-item, .toggle-row, .lint-rule');
+                    if (label && !label.querySelector('.ci-modified-dot')) {
+                        var dot = document.createElement('span');
+                        dot.className = 'ci-modified-dot';
+                        dot.title = getI18nDict()['configEditor.conn.modified'] || '已修改';
+                        label.appendChild(dot);
+                    }
+                }
+            });
+        }
+
+        function locateModified() {
+            var firstModified = document.querySelector('.ci-modified-dot');
+            if (firstModified) {
+                firstModified.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+                showToast(getI18nDict()['configEditor.noModified'] || '无修改项', 'success');
+            }
+        }
+
         function markDirty() {
             isDirty = true;
+            updateModifiedDots();
             var saveBtn = document.querySelector('[data-action="saveConfig"]');
             if (saveBtn) saveBtn.classList.add('btn-dirty');
         }
@@ -1064,6 +1098,11 @@ function changeLanguage(lang) {
                         vscode.postMessage({ command: 'getConnections' });
                     }
                     break;
+                case 'supportedDialects':
+                    supportedDialects = message.supported || [];
+                    knownDialects = message.known || knownDialects;
+                    renderCfDialect();
+                    break;
                 case 'editConnectionDetail':
                     handleEditConnectionDetail(message);
                     break;
@@ -1080,6 +1119,8 @@ function changeLanguage(lang) {
 
         function loadConfig(config) {
             currentConfig = { ...config };
+            initialConfigSnapshot = JSON.parse(JSON.stringify(config));
+            clearAllModifiedDots();
             Object.keys(config).forEach(key => {
                 const el = document.getElementById(key);
                 if (el) {
@@ -1098,6 +1139,7 @@ function changeLanguage(lang) {
             if (langSelect) {
                 langSelect.value = i18nData.lang || 'zh';
             }
+            restoreGroupStates();
         }
 
         function collectConfig() {
@@ -1287,6 +1329,42 @@ function changeLanguage(lang) {
             setTimeout(() => { toast.classList.remove('show'); }, 2000);
         }
 
+        var GROUP_STATE_PREFIX = 'configEditor.groupState.';
+
+        function getGroupStateKey(group) {
+            var title = group.querySelector('.cg-title');
+            return title ? title.getAttribute('data-i18n') || title.textContent : '';
+        }
+
+        function saveGroupState(group, isOpen) {
+            var key = getGroupStateKey(group);
+            if (key) {
+                try { localStorage.setItem(GROUP_STATE_PREFIX + key, isOpen ? '1' : '0'); } catch (e) {}
+            }
+        }
+
+        function loadGroupState(group) {
+            var key = getGroupStateKey(group);
+            if (!key) return null;
+            try { return localStorage.getItem(GROUP_STATE_PREFIX + key); } catch (e) { return null; }
+        }
+
+        function restoreGroupStates() {
+            document.querySelectorAll('.config-group').forEach(function(group) {
+                var saved = loadGroupState(group);
+                if (saved === null) return;
+                var arrow = group.querySelector('.cg-arrow');
+                var body = group.querySelector('.cg-body');
+                if (saved === '1') {
+                    if (arrow) arrow.classList.add('open');
+                    if (body) body.classList.add('open');
+                } else {
+                    if (arrow) arrow.classList.remove('open');
+                    if (body) body.classList.remove('open');
+                }
+            });
+        }
+
         function toggleGroup(header) {
             const arrow = header.querySelector('.cg-arrow');
             const body = header.nextElementSibling;
@@ -1298,6 +1376,8 @@ function changeLanguage(lang) {
                 arrow.classList.add('open');
                 body.classList.add('open');
             }
+            var group = header.closest('.config-group');
+            if (group) saveGroupState(group, !isOpen);
         }
 
         function expandAll() {
@@ -1349,11 +1429,24 @@ function changeLanguage(lang) {
             vscode.postMessage({ command: 'previewFormat', sql, config });
         }
 
+        var SQL_KEYWORDS = ['SELECT','FROM','WHERE','ORDER','BY','GROUP','HAVING','LIMIT','JOIN','LEFT','RIGHT','INNER','OUTER','ON','AS','AND','OR','NOT','IN','IS','NULL','LIKE','BETWEEN','CASE','WHEN','THEN','ELSE','END','UNION','ALL','DISTINCT','INSERT','INTO','VALUES','UPDATE','SET','DELETE','CREATE','TABLE','DROP','ALTER','ADD','PRIMARY','KEY','FOREIGN','REFERENCES','INDEX','VIEW','DATABASE','SCHEMA','IF','EXISTS','DEFAULT','CONSTRAINT','CHECK','UNIQUE','CASCADE','WITH','RECURSIVE','OVER','PARTITION','ROW_NUMBER','RANK','DENSE_RANK','LATERAL','VIEW','DISTRIBUTE','CLUSTER','SORT'];
+
+        function highlightSql(sql) {
+            var escaped = escapeHtml(sql);
+            var keywordPattern = new RegExp('\\b(' + SQL_KEYWORDS.join('|') + ')\\b', 'gi');
+            escaped = escaped.replace(keywordPattern, '<span class="tok-keyword">$1</span>');
+            escaped = escaped.replace(/('(?:[^']|'')*')/g, '<span class="tok-string">$1</span>');
+            escaped = escaped.replace(/(--[^\n]*)/g, '<span class="tok-comment">$1</span>');
+            escaped = escaped.replace(/(\/\*[\s\S]*?\*\/)/g, '<span class="tok-comment">$1</span>');
+            escaped = escaped.replace(/\b(\d+(?:\.\d+)?)\b/g, '<span class="tok-number">$1</span>');
+            return escaped;
+        }
+
         function showPreviewResult(result) {
             const resultEl = document.getElementById('previewResult');
             resultEl.classList.remove('empty');
             resultEl.classList.add('success');
-            resultEl.textContent = result;
+            resultEl.innerHTML = highlightSql(result);
             setTimeout(() => { resultEl.classList.remove('success'); }, 1000);
         }
 
@@ -1387,12 +1480,31 @@ function changeLanguage(lang) {
             // Update tab button active state
             document.querySelectorAll('.tab-btn').forEach(function(btn) {
                 btn.classList.remove('active');
+                btn.setAttribute('aria-selected', 'false');
                 if (btn.getAttribute('data-action-arg') === tabName) {
                     btn.classList.add('active');
+                    btn.setAttribute('aria-selected', 'true');
                 }
             });
 
             currentActiveTab = tabName;
+        }
+
+        function highlightSearchMatch(text, query) {
+            if (!query) return escapeHtml(text);
+            var escaped = escapeHtml(text);
+            var lowerText = escaped.toLowerCase();
+            var lowerQuery = query.toLowerCase();
+            var result = '';
+            var idx = 0;
+            var pos;
+            while ((pos = lowerText.indexOf(lowerQuery, idx)) !== -1) {
+                result += escaped.substring(idx, pos);
+                result += '<mark class="search-mark">' + escaped.substring(pos, pos + query.length) + '</mark>';
+                idx = pos + query.length;
+            }
+            result += escaped.substring(idx);
+            return result;
         }
 
         function searchConfig(query) {
@@ -1403,6 +1515,11 @@ function changeLanguage(lang) {
                 // Show all groups/items
                 document.querySelectorAll('.search-hidden').forEach(function(el) {
                     el.classList.remove('search-hidden');
+                });
+                document.querySelectorAll('.search-mark').forEach(function(mark) {
+                    var parent = mark.parentNode;
+                    parent.replaceChild(document.createTextNode(mark.textContent), mark);
+                    parent.normalize();
                 });
                 if (searchEmpty) searchEmpty.style.display = 'none';
                 if (searchClear) searchClear.style.display = 'none';
@@ -1452,6 +1569,11 @@ function changeLanguage(lang) {
                         var itemText = item.textContent.toLowerCase();
                         if (itemText.indexOf(lowerQuery) !== -1) {
                             item.classList.remove('search-hidden');
+                            var labelText = item.querySelector('.ci-label-text, .toggle-label, .lint-rule-name');
+                            if (labelText && !labelText.querySelector('mark')) {
+                                var originalText = labelText.textContent;
+                                labelText.innerHTML = highlightSearchMatch(originalText, query);
+                            }
                             hasVisibleItem = true;
                         } else {
                             item.classList.add('search-hidden');
@@ -1550,6 +1672,15 @@ function changeLanguage(lang) {
             }
         });
 
+        let supportedDialects = [];
+        let knownDialects = ['mysql', 'hive', 'spark', 'flinksql', 'postgresql', 'bigquery', 'sqlite'];
+        let showMoreDialects = false;
+
+        const DIALECT_DISPLAY_NAMES = {
+            mysql: 'MySQL', hive: 'Hive', spark: 'Spark', flinksql: 'FlinkSQL',
+            postgresql: 'PostgreSQL', bigquery: 'BigQuery', sqlite: 'SQLite'
+        };
+
         let connFormState = {
             mode: 'create',
             editId: null,
@@ -1567,6 +1698,21 @@ function changeLanguage(lang) {
             mysql: 'root', hive: 'hive', spark: 'spark', flinksql: 'flink',
             postgresql: 'postgres', bigquery: 'bigquery', sqlite: ''
         };
+
+        function formatRelativeTime(timestamp) {
+            if (!timestamp) return '';
+            var diff = Date.now() - timestamp;
+            var minutes = Math.floor(diff / 60000);
+            if (minutes < 1) return getI18nDict()['configEditor.conn.justNow'] || '刚刚';
+            if (minutes < 60) return minutes + (getI18nDict()['configEditor.conn.minutesAgo'] || ' 分钟前');
+            var hours = Math.floor(minutes / 60);
+            if (hours < 24) return hours + (getI18nDict()['configEditor.conn.hoursAgo'] || ' 小时前');
+            var days = Math.floor(hours / 24);
+            return days + (getI18nDict()['configEditor.conn.daysAgo'] || ' 天前');
+        }
+
+        var connectionStates = {};
+        var connectionTestTimes = {};
 
         function renderConnections(connections, groups) {
             var list = document.getElementById('connList');
@@ -1589,6 +1735,10 @@ function changeLanguage(lang) {
             empty.style.display = 'none';
             var html = '';
             connections.forEach(function(conn) {
+                var state = connectionStates[conn.id] || 'disconnected';
+                var stateClass = state === 'connected' ? 'conn-state-connected' : (state === 'failed' ? 'conn-state-failed' : 'conn-state-disconnected');
+                var testTime = connectionTestTimes[conn.id];
+                var testTimeText = testTime ? (getI18nDict()['configEditor.conn.recentlyTested'] || '{0}前测试').replace('{0}', formatRelativeTime(testTime)) : '';
                 var colorStyle = conn.color ? 'background:' + conn.color : 'background:var(--text-secondary);opacity:0.3';
                 var detail = conn.dialect.toUpperCase();
                 if (conn.dialect !== 'sqlite') {
@@ -1598,8 +1748,10 @@ function changeLanguage(lang) {
                     detail += ' · ' + (conn.database || '');
                 }
                 if (conn.ssh && conn.ssh.enabled) detail += ' · SSH';
+                if (testTimeText) detail += ' · ' + testTimeText;
                 html += '<div class="conn-item" data-conn-id="' + conn.id + '">'
                     + '<div class="conn-item-color" style="' + colorStyle + '"></div>'
+                    + '<div class="conn-item-state ' + stateClass + '" title="' + state + '"></div>'
                     + '<div class="conn-item-info">'
                     + '<div class="conn-item-name">' + escapeHtml(conn.name) + '</div>'
                     + '<div class="conn-item-detail">' + detail + '</div>'
@@ -1723,6 +1875,41 @@ function changeLanguage(lang) {
             updateConnFormDialectUI();
             updateConnFormSshUI();
             updateConnFormSslUI();
+        }
+
+        function renderCfDialect() {
+            var select = document.getElementById('cfDialect');
+            if (!select) return;
+            var currentValue = select.value;
+            select.innerHTML = '';
+
+            supportedDialects.forEach(function(meta) {
+                var opt = document.createElement('option');
+                opt.value = meta.dialect;
+                opt.textContent = meta.displayName || DIALECT_DISPLAY_NAMES[meta.dialect] || meta.dialect;
+                select.appendChild(opt);
+            });
+
+            if (showMoreDialects) {
+                knownDialects.forEach(function(key) {
+                    var isSupported = supportedDialects.some(function(m) { return m.dialect === key; });
+                    if (!isSupported) {
+                        var opt = document.createElement('option');
+                        opt.value = key;
+                        opt.textContent = (DIALECT_DISPLAY_NAMES[key] || key) + ' (' + (getI18nDict()['configEditor.conn.unsupportedDialect'] || '不支持') + ')';
+                        opt.disabled = true;
+                        opt.className = 'dialect-unsupported';
+                        select.appendChild(opt);
+                    }
+                });
+            }
+
+            if (currentValue && supportedDialects.some(function(m) { return m.dialect === currentValue; })) {
+                select.value = currentValue;
+            } else if (supportedDialects.length > 0) {
+                select.value = supportedDialects[0].dialect;
+            }
+            updateConnFormDialectUI();
         }
 
         function updateConnFormDialectUI() {
@@ -1910,6 +2097,9 @@ function changeLanguage(lang) {
         function handleConnectionTestResult(message) {
             var result = document.getElementById('connFormResult');
             if (message.success) {
+                if (connFormState.editId) {
+                    connectionTestTimes[connFormState.editId] = Date.now();
+                }
                 var parts = [getI18nDict()['configEditor.conn.testSuccess'] || '连接成功'];
                 if (message.serverVersion) parts.push(message.serverVersion);
                 if (message.latency !== undefined) parts.push(message.latency + 'ms');
@@ -1968,11 +2158,50 @@ function changeLanguage(lang) {
             document.getElementById('cfSshPassphrase').addEventListener('input', function() {
                 connFormState.sshPassphraseChanged = true;
             });
+            var showMoreBtn = document.getElementById('cfShowMoreDialects');
+            if (showMoreBtn) {
+                showMoreBtn.addEventListener('click', function() {
+                    showMoreDialects = !showMoreDialects;
+                    renderCfDialect();
+                    this.textContent = showMoreDialects
+                        ? (getI18nDict()['configEditor.conn.hideMoreDialects'] || '收起更多')
+                        : (getI18nDict()['configEditor.conn.showMoreDialects'] || '显示更多');
+                });
+            }
         }
 
         initConnectionFormEvents();
 
         bindActions();
+
+        document.querySelectorAll('input[type="number"]').forEach(function(input) {
+            input.addEventListener('wheel', function(e) {
+                if (document.activeElement !== this) return;
+                e.preventDefault();
+                var step = parseFloat(this.step) || 1;
+                var min = this.min !== '' ? parseFloat(this.min) : -Infinity;
+                var max = this.max !== '' ? parseFloat(this.max) : Infinity;
+                var current = parseFloat(this.value) || 0;
+                var next = e.deltaY < 0 ? current + step : current - step;
+                if (next < min) next = min;
+                if (next > max) next = max;
+                this.value = next;
+                this.dispatchEvent(new Event('input'));
+            });
+        });
+
+        (function initTabKeyboardNav() {
+            var tabLeft = document.querySelector('.tab-bar-left');
+            if (!tabLeft) return;
+            tabLeft.addEventListener('keydown', function(e) {
+                if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+                var tabs = Array.from(tabLeft.querySelectorAll('.tab-btn'));
+                var currentIndex = tabs.findIndex(function(t) { return t.classList.contains('active'); });
+                var nextIndex = e.key === 'ArrowRight' ? (currentIndex + 1) % tabs.length : (currentIndex - 1 + tabs.length) % tabs.length;
+                tabs[nextIndex].focus();
+                switchTab(tabs[nextIndex].getAttribute('data-action-arg'));
+            });
+        })();
 
         document.querySelectorAll('.config-input, .config-select').forEach(function(el) {
             if (el.id && el.id.startsWith('cf')) return;
@@ -1989,7 +2218,13 @@ function changeLanguage(lang) {
                 e.preventDefault();
                 saveConfig();
             }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+                e.preventDefault();
+                var searchInput = document.getElementById('searchInput');
+                if (searchInput) searchInput.focus();
+            }
         });
 
         vscode.postMessage({ command: 'getCurrentConfig' });
         vscode.postMessage({ command: 'getConnections' });
+        vscode.postMessage({ command: 'getSupportedDialects' });

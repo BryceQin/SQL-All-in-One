@@ -69,23 +69,18 @@ const RELEVANT_KEYS: (keyof FormatOptions)[] = [
     'newlineBeforeDistributeBy', 'newlineBeforeClusterBy', 'newlineBeforeSortBy',
 ]
 
-function stringHash(str: string): number {
-    let hash = 2166136261; // FNV offset basis
-    for (let i = 0; i < str.length; i++) {
-        hash ^= str.charCodeAt(i);
-        hash = Math.imul(hash, 16777619); // FNV prime
-    }
-    return hash >>> 0; // ensure unsigned
-}
-
 function hashOptions(dialect: string, options: FormatOptions): string {
-    let hash = 2166136261; // FNV offset basis
-    hash ^= stringHash(dialect);
+    // Build a deterministic, collision-free cache key by serialising the
+    // dialect and every relevant option with its type prefix.  Unlike a
+    // numeric hash this cannot produce false cache hits between differing
+    // option sets (e.g. semicolonAtEnd true vs false), which previously
+    // caused incorrect formatting output to be returned from the cache.
+    const parts: string[] = [dialect];
     for (const key of RELEVANT_KEYS) {
         const val = options[key];
         // Use distinct sentinel strings for undefined/null to avoid collisions
         // with the literal strings "undefined"/"null". Also prefix with the
-        // value's type so that e.g. the number 1 and the string "1" hash
+        // value's type so that e.g. the number 1 and the string "1" serialise
         // differently (String(1) === String("1") === "1" otherwise).
         let valStr: string;
         if (val === undefined) {
@@ -95,9 +90,9 @@ function hashOptions(dialect: string, options: FormatOptions): string {
         } else {
             valStr = `${typeof val}:${String(val)}`;
         }
-        hash ^= stringHash(valStr);
+        parts.push(`${key}=${valStr}`);
     }
-    return `${dialect}:${hash >>> 0}`;
+    return parts.join('|');
 }
 
 export const formatDialect = (

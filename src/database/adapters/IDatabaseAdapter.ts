@@ -246,3 +246,14 @@ export interface ExplainNode {
     children: ExplainNode[];
 }
 
+export interface DialectMetadata {
+    dialect: string;
+    displayName: string;
+    defaultPort: number;
+    defaultUsername: string;
+    iconKey: string;
+    supportsSshTunnel: boolean;
+    supportsSsl: boolean;
+    isFileBased: boolean;
+}
+

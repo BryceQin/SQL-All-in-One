@@ -125,12 +125,24 @@ const parseTerm = (text: string, index: number): [Phrase, number] => {
     }
     // 纯文本（字母、数字、下划线、空格）
     else {
-        let word = '';
-        while (text[index] && /[A-Za-z0-9_ ]/.test(text[index])) {
-            word += text[index];
-            index++;
+        const start = index;
+        const len = text.length;
+        while (index < len) {
+            const code = text.charCodeAt(index);
+            // A-Z, a-z, 0-9, _, space
+            if (
+                (code >= 65 && code <= 90) ||
+                (code >= 97 && code <= 122) ||
+                (code >= 48 && code <= 57) ||
+                code === 95 ||
+                code === 32
+            ) {
+                index++;
+            } else {
+                break;
+            }
         }
-        return [word, index];
+        return [text.substring(start, index), index];
     }
 };
 

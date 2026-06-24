@@ -112,6 +112,7 @@ function init() {
     updateSslFieldsVisibility();
     updateHeaderTitle();
     applyI18n();
+    vscode.postMessage({ command: 'getSupportedDialects' });
 }
 
 function applyI18n() {
@@ -162,17 +163,33 @@ function updateHeaderTitle() {
     }
 }
 
+let supportedDialectKeys = ['mysql'];
+let showMoreDialects = false;
+
 function renderDialectGrid() {
     let grid = document.getElementById('dialectGrid');
     grid.innerHTML = '';
 
     Object.keys(DIALECT_INFO).forEach(function(key) {
         let info = DIALECT_INFO[key];
+        let isSupported = supportedDialectKeys.indexOf(key) !== -1;
+        let shouldShow = isSupported || showMoreDialects;
+        if (!shouldShow) return;
+
         let card = document.createElement('div');
-        card.className = 'dialect-card' + (state.dialect === key ? ' active' : '');
+        card.className = 'dialect-card' + (state.dialect === key ? ' active' : '') + (isSupported ? '' : ' disabled');
         card.setAttribute('data-dialect', key);
+        if (!isSupported) {
+            card.setAttribute('title', t('conn.unsupportedDialect') || '当前版本暂不支持该连接类型');
+        }
         card.innerHTML = '<div class="dialect-card-icon">' + info.icon + '</div><div class="dialect-card-name">' + info.name + '</div>';
-        card.onclick = function() { selectDialect(key); };
+        if (isSupported) {
+            card.onclick = function() { selectDialect(key); };
+        } else {
+            card.onclick = function() {
+                alert(t('conn.unsupportedDialect') || '当前版本暂不支持该连接类型');
+            };
+        }
         grid.appendChild(card);
     });
 }
@@ -601,6 +618,10 @@ window.addEventListener('message', function(event) {
                     input.dispatchEvent(new Event('input'));
                 }
             }
+            break;
+        case 'supportedDialects':
+            supportedDialectKeys = message.supported.map(function(m) { return m.dialect; });
+            renderDialectGrid();
             break;
     }
 });

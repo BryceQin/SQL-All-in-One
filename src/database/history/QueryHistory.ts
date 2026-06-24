@@ -66,7 +66,7 @@ export class QueryHistory {
     }
 
     private generateId(): string {
-        return generateShortId('history');
+        return generateShortId('h');
     }
 
     private getMaxEntries(): number {

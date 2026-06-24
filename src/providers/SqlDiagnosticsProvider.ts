@@ -1,7 +1,7 @@
 import * as vscode from "vscode"
 import { isSqlDocument } from "../core/sqlDialects"
 import { toSqlDialect } from "../core/sqlDialects"
-import { lineColFromIndex } from "../lexer/lineColFromIndex"
+import { lineColFromIndexFast, precomputeLineOffsets } from "../lexer/lineColFromIndex"
 import { t } from "../i18n"
 import { SqlLinter } from "./SqlLinter"
 import { AstDiagnosticsProvider } from "./AstDiagnosticsProvider"
@@ -152,7 +152,8 @@ export class SqlDiagnosticsProvider {
             const positionMatch = error.message.match(/at position (\d+)/)
             if (positionMatch) {
                 const position = parseInt(positionMatch[1], 10)
-                const lineCol = lineColFromIndex(text, position)
+                const lineStarts = precomputeLineOffsets(text)
+                const lineCol = lineColFromIndexFast(lineStarts, position)
                 line = lineCol.line - 1
                 col = lineCol.col - 1
                 message = `【第 ${lineCol.line} 行】${message}`

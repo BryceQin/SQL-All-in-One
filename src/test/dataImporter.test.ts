@@ -11,7 +11,7 @@ import {
     type CsvImportOptions,
     type JsonImportOptions,
 } from '../database/transfer/DataImporter';
-import type { IDatabaseAdapter } from '../database/adapters/IDatabaseAdapter';
+import type { IDatabaseAdapter, QueryParam } from '../database/adapters/IDatabaseAdapter';
 
 const mockQueryResult: import('../database/adapters/IDatabaseAdapter').QueryResult = {
     queryId: 'mock-qid',
@@ -22,7 +22,7 @@ const mockQueryResult: import('../database/adapters/IDatabaseAdapter').QueryResu
     executionTime: 0,
 };
 
-function createMockAdapter(executeFn: (sql: string) => Promise<import('../database/adapters/IDatabaseAdapter').QueryResult>): IDatabaseAdapter {
+function createMockAdapter(executeFn: (sql: string, params?: QueryParam[]) => Promise<import('../database/adapters/IDatabaseAdapter').QueryResult>): IDatabaseAdapter {
     return {
         connect: async () => { /* noop */ },
         disconnect: async () => { /* noop */ },
@@ -530,8 +530,10 @@ suite('DataImporter - SQL value formatting', () => {
         ]));
 
         const executedSqls: string[] = [];
-        const adapter = createMockAdapter(async (sql: string) => {
+        const executedParams: QueryParam[][] = [];
+        const adapter = createMockAdapter(async (sql: string, params?: QueryParam[]) => {
             executedSqls.push(sql);
+            if (params) { executedParams.push(params); }
             return mockQueryResult;
         });
 
@@ -542,7 +544,13 @@ suite('DataImporter - SQL value formatting', () => {
 
         await importFromJson(adapter, 'users', filePath, options);
         assert.ok(executedSqls.length > 0);
-        assert.ok(executedSqls[0].includes('NULL'), 'Should format null as NULL in SQL');
+        // The importer uses parameterized queries (? placeholders) to prevent
+        // SQL injection, so NULL values are passed as null params rather than
+        // inlined into the SQL text.
+        assert.ok(executedSqls[0].includes('?'), 'Should use parameterized placeholders');
+        const params = executedParams[0];
+        const nullParam = params.find((p) => p.value === null);
+        assert.ok(nullParam, 'Should pass null as a parameter value');
 
         fs.rmSync(tempDir, { recursive: true, force: true });
     });
@@ -555,8 +563,10 @@ suite('DataImporter - SQL value formatting', () => {
         ]));
 
         const executedSqls: string[] = [];
-        const adapter = createMockAdapter(async (sql: string) => {
+        const executedParams: QueryParam[][] = [];
+        const adapter = createMockAdapter(async (sql: string, params?: QueryParam[]) => {
             executedSqls.push(sql);
+            if (params) { executedParams.push(params); }
             return mockQueryResult;
         });
 
@@ -567,7 +577,11 @@ suite('DataImporter - SQL value formatting', () => {
 
         await importFromJson(adapter, 'users', filePath, options);
         assert.ok(executedSqls.length > 0);
-        assert.ok(executedSqls[0].includes("O''Brien"), 'Should escape single quotes');
+        // With parameterized queries the raw string value is passed as a param,
+        // so single quotes do not need to be escaped in the SQL text.
+        const params = executedParams[0];
+        const nameParam = params.find((p) => p.value === "O'Brien");
+        assert.ok(nameParam, 'Should pass the string value (with single quote) as a parameter');
 
         fs.rmSync(tempDir, { recursive: true, force: true });
     });
@@ -580,8 +594,10 @@ suite('DataImporter - SQL value formatting', () => {
         ]));
 
         const executedSqls: string[] = [];
-        const adapter = createMockAdapter(async (sql: string) => {
+        const executedParams: QueryParam[][] = [];
+        const adapter = createMockAdapter(async (sql: string, params?: QueryParam[]) => {
             executedSqls.push(sql);
+            if (params) { executedParams.push(params); }
             return mockQueryResult;
         });
 
@@ -592,8 +608,11 @@ suite('DataImporter - SQL value formatting', () => {
 
         await importFromJson(adapter, 'users', filePath, options);
         assert.ok(executedSqls.length > 0);
-        assert.ok(executedSqls[0].includes('30'), 'Should include number without quotes');
-        assert.ok(executedSqls[0].includes('95.5'), 'Should include decimal number');
+        // Numbers are passed as numeric params (not quoted strings) via the
+        // parameterized query interface.
+        const params = executedParams[0];
+        assert.ok(params.some((p) => p.value === 30), 'Should pass integer as a numeric parameter');
+        assert.ok(params.some((p) => p.value === 95.5), 'Should pass decimal as a numeric parameter');
 
         fs.rmSync(tempDir, { recursive: true, force: true });
     });
