@@ -1,5 +1,32 @@
 # Changelog
 
+## [2.22.0] - 2026-06-24
+
+### Features
+
+- **配置编辑器方言动态渲染**：新增 `DialectMetadata` 接口与 `AdapterFactory` 元数据方法，配置编辑器与连接对话框改为动态渲染方言网格/下拉列表，并支持"显示更多方言"按钮，避免硬编码方言列表
+- **连接状态指示器**：连接对话框新增连接状态指示器，配置编辑器新增相对测试时间显示
+- **配置变更追踪**：配置编辑器新增变更追踪功能，修改项以圆点标记并支持定位操作；配置分组折叠状态持久化到 localStorage
+- **搜索结果高亮**：配置编辑器搜索结果以 `<mark>` 标签高亮显示
+- **数字输入滚轮调节与 Ctrl+F 搜索快捷键**：配置编辑器数字输入框支持滚轮调节，新增 Ctrl+F 搜索快捷键
+- **SQL 语法高亮**：预览结果中新增 SQL 语法高亮，支持 token 颜色配置
+- **无障碍增强**：新增 `aria-live`、`aria-selected` 属性与键盘导航支持
+- **tab-bar 布局重构**：集成操作按钮与 aria 属性，响应式断点适配预览与配置区域
+- **PostgreSQL 与 SQLite 适配器**：新增 PostgreSQL 和 SQLite 数据库适配器，扩展支持的方言范围
+
+### Bug Fixes
+
+- **SQL 格式化器缓存键哈希冲突修复**：`hashOptions` 原使用 32 位 FNV-1a 哈希通过 XOR 组合各选项值，不同选项集（如 `semicolonAtEnd: true` 与 `false`）可能产生相同缓存键，导致返回错误配置的格式化器（如 `semicolonAtEnd: false` 时仍附加分号）。现改为确定性的字符串序列化缓存键（`dialect|key=type:value|...`），彻底消除哈希冲突
+- **debugLog 测试桩在 VS Code 扩展宿主失效修复**：VS Code 扩展宿主中 `console.debug` 为访问器属性（getter/setter），普通赋值无法覆盖调用方读取的值。测试改用 `Object.defineProperty` 替换为数据属性，确保桩函数被实际调用
+- **asyncDisposeAll 时序断言修复**：销毁顺序由层级计算保证（依赖项先于被依赖项销毁），但被依赖项的同步销毁与依赖项的异步销毁可能落在同一事件循环 tick，`Date.now()` 返回相同毫秒。将严格小于（`<`）改为小于等于（`<=`）以反映保证的顺序而非亚毫秒计时
+- **DataImporter 测试适配参数化查询**：测试原期望内联 SQL 值（NULL、转义引号、数字），但实现已改用参数化查询（`?` 占位符）防 SQL 注入。更新测试验证值通过 params 正确传递
+
+### Code Quality
+
+- **DocumentAstCache 深拷贝类型安全**：`JSON.parse(JSON.stringify(node))` 返回 `any`，添加 `as AST` 类型断言消除 `no-unsafe-assignment` 警告
+
+---
+
 ## [2.20.0] - 2026-06-23
 
 ### Features

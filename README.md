@@ -11,7 +11,7 @@
 | | |
 |---|---|
 | **发布者** | bryce-qin |
-| **版本** | 2.20.0 |
+| **版本** | 2.22.0 |
 | **许可证** | MIT |
 | **仓库** | [GitHub](https://github.com/BryceQin/SQL-All-in-One) |
 | **VSCode 引擎** | ^1.85.0 |
@@ -639,7 +639,7 @@ MIT License
 | | |
 |---|---|
 | **Publisher** | bryce-qin |
-| **Version** | 2.20.0 |
+| **Version** | 2.22.0 |
 | **License** | MIT |
 | **Repository** | [GitHub](https://github.com/BryceQin/SQL-All-in-One) |
 | **VSCode Engine** | ^1.85.0 |
