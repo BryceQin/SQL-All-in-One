@@ -93,4 +93,17 @@ export class SqliteAdapter extends BaseDatabaseAdapter {
             console.debug('[SQL All in One] SQLite reap idle connections error:', e);
         }
     }
+
+    static getDialectMetadata(): import('./IDatabaseAdapter').DialectMetadata {
+        return {
+            dialect: 'sqlite',
+            displayName: 'SQLite',
+            defaultPort: 0,
+            defaultUsername: '',
+            iconKey: 'sqlite',
+            supportsSshTunnel: false,
+            supportsSsl: false,
+            isFileBased: true
+        };
+    }
 }

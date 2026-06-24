@@ -100,4 +100,17 @@ export class PostgresAdapter extends BaseDatabaseAdapter {
             }
         }
     }
+
+    static getDialectMetadata(): import('./IDatabaseAdapter').DialectMetadata {
+        return {
+            dialect: 'postgresql',
+            displayName: 'PostgreSQL',
+            defaultPort: 5432,
+            defaultUsername: 'postgres',
+            iconKey: 'postgresql',
+            supportsSshTunnel: true,
+            supportsSsl: true,
+            isFileBased: false
+        };
+    }
 }

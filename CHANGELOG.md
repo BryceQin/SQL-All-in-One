@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.22.1] - 2026-06-24
+
+### Bug Fixes
+
+- **连接对话框仅显示 MySQL 修复**：新建数据连接时数据库类型仅显示 MySQL，PostgreSQL 与 SQLite 虽已实现适配器却不可选。根因为连接对话框前端在初始化时向后端发送 `getSupportedDialects` 消息以动态获取已注册方言，但后端 `ConnectionDialog` 未处理该消息，导致前端 `supportedDialectKeys` 永久保持默认值 `['mysql']`。同时 `PostgresAdapter` 与 `SqliteAdapter` 缺少 `getDialectMetadata` 静态方法且未在 `AdapterFactory` 注册元数据提供者，`getAllMetadata()` 无法返回二者。现补全消息处理、为两个适配器新增元数据方法并在 `extension.ts` 注册元数据提供者，连接对话框现可正确显示并选择 MySQL、PostgreSQL、SQLite
+
+### Code Quality
+
+- **Lint 预存警告清除**：移除自动生成文件 `snippetData.ts` 中多余的 `eslint-disable` 指令（从生成器 `generate-snippets.ts` 源头修复并重新生成）；为 `queryCancel.test.ts` 中 8 个有意的空函数（mock no-op、永不 resolve 的 Promise、rejection 吞噬）添加说明性注释，消除 `no-empty-function` 警告。`npm run lint` 现零警告零错误
+
+---
+
 ## [2.22.0] - 2026-06-24
 
 ### Features

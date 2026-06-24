@@ -5,6 +5,7 @@ import { getConnectionManager } from '../../database/connection/ConnectionManage
 import { getConnectionStore } from '../../database/connection/ConnectionStore';
 import { ConnectionConfig, ConnectionGroup } from '../../database/connection/ConnectionConfig';
 import { DatabaseTreeProvider } from '../databaseExplorer/DatabaseTreeProvider';
+import { AdapterFactory } from '../../database/adapters/AdapterFactory';
 import { t } from '../../i18n';
 
 interface ConnectionDialogConfig {
@@ -164,6 +165,9 @@ export class ConnectionDialog extends BaseWebviewPanel {
                 case 'browseFile':
                     await this._handleBrowseFile(msg.data as { field: string });
                     break;
+                case 'getSupportedDialects':
+                    await this._sendSupportedDialects();
+                    break;
             }
         });
     }
@@ -305,6 +309,22 @@ export class ConnectionDialog extends BaseWebviewPanel {
                 command: 'fileSelected',
                 field: data.field,
                 path: uris[0].fsPath,
+            });
+        }
+    }
+
+    private async _sendSupportedDialects(): Promise<void> {
+        try {
+            const supported = AdapterFactory.getAllMetadata();
+            this.postMessage({
+                command: 'supportedDialects',
+                supported,
+            });
+        } catch (e) {
+            console.debug('[SQL All in One] ConnectionDialog _sendSupportedDialects failed:', e);
+            this.postMessage({
+                command: 'supportedDialects',
+                supported: [],
             });
         }
     }

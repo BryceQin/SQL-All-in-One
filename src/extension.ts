@@ -72,8 +72,8 @@ function registerServicesToContainer(extensionPath: string): void {
 
   // Register AdapterFactory in the DI container
   AdapterFactory.register('mysql', MysqlAdapter, MysqlAdapter.getDialectMetadata);
-  AdapterFactory.register('postgresql', PostgresAdapter);
-  AdapterFactory.register('sqlite', SqliteAdapter);
+  AdapterFactory.register('postgresql', PostgresAdapter, PostgresAdapter.getDialectMetadata);
+  AdapterFactory.register('sqlite', SqliteAdapter, SqliteAdapter.getDialectMetadata);
   container.register(Tokens.DialectAdapterFactory, AdapterFactory);
 
   // Provider services

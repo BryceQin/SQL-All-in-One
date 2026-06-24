@@ -13,13 +13,13 @@ function createMockAdapter(options: { supportsCancel?: boolean; neverResolve?: b
         isConnected: () => true,
         getConnectionId: () => 'mock-conn',
         getPoolStatus: () => ({ totalConnections: 1, activeConnections: 0, idleConnections: 1, waitingRequests: 0, connectionLimit: 5, acquireTimeout: 60000 }),
-        connect: async () => {},
-        disconnect: async () => {},
+        connect: async () => { /* mock no-op */ },
+        disconnect: async () => { /* mock no-op */ },
         testConnection: async () => ({ success: true }),
         checkConnectionHealth: async () => true,
         execute: async (_sql: string, _params?: QueryParam[]): Promise<QueryResult> => {
             if (neverResolve) {
-                return new Promise<QueryResult>(() => {});
+                return new Promise<QueryResult>(() => { /* never resolves: simulates timeout */ });
             }
             return {
                 queryId: 'mock',
@@ -31,9 +31,9 @@ function createMockAdapter(options: { supportsCancel?: boolean; neverResolve?: b
             };
         },
         executeBatch: async (_statements: SqlStatement[]): Promise<QueryResult[]> => [],
-        beginTransaction: async () => {},
-        commit: async () => {},
-        rollback: async () => {},
+        beginTransaction: async () => { /* mock no-op */ },
+        commit: async () => { /* mock no-op */ },
+        rollback: async () => { /* mock no-op */ },
         cancelQuery: async (_queryId: string): Promise<void> => {
             cancelQueryCalled = true;
             cancelQueryCallCount++;
@@ -108,7 +108,7 @@ suite('Query Cancel Test Suite', () => {
         await new Promise(resolve => setTimeout(resolve, 100));
         assert.ok(mockAdapter.cancelQueryCalled, 'cancelQuery should be called on explicit cancel');
 
-        executePromise.catch(() => {});
+        executePromise.catch(() => { /* swallow rejection */ });
         await new Promise(resolve => setTimeout(resolve, 50));
     });
 
@@ -131,7 +131,7 @@ suite('Query Cancel Test Suite', () => {
         assert.strictEqual(executor.isRunning(executor.getRunningQueries()[0].queryId), true);
 
         await executor.cancel(executor.getRunningQueries()[0].queryId);
-        await executePromise.catch(() => {});
+        await executePromise.catch(() => { /* swallow rejection */ });
 
         await new Promise(resolve => setTimeout(resolve, 50));
         assert.strictEqual(executor.getRunningQueries().length, 0);
