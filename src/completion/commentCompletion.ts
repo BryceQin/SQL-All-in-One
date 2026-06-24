@@ -143,7 +143,10 @@ function removeCommentsAndStrings(text: string): string {
     return result
 }
 
+const SQL_KEYWORD_SET = new Set([
+    'SELECT', 'FROM', 'WHERE', 'JOIN', 'LEFT', 'RIGHT', 'INNER', 'OUTER', 'FULL', 'CROSS', 'ON', 'AND', 'OR', 'NOT', 'IN', 'EXISTS', 'BETWEEN', 'LIKE', 'AS', 'GROUP', 'ORDER', 'HAVING', 'LIMIT', 'UNION', 'ALL', 'DISTINCT', 'CASE', 'WHEN', 'THEN', 'ELSE', 'END', 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'DROP', 'ALTER', 'TABLE', 'INTO', 'VALUES', 'SET', 'WITH', 'OVER', 'PARTITION', 'BY'
+])
+
 function isSqlKeyword(name: string): boolean {
-    const keywords = ['SELECT', 'FROM', 'WHERE', 'JOIN', 'LEFT', 'RIGHT', 'INNER', 'OUTER', 'FULL', 'CROSS', 'ON', 'AND', 'OR', 'NOT', 'IN', 'EXISTS', 'BETWEEN', 'LIKE', 'AS', 'GROUP', 'ORDER', 'HAVING', 'LIMIT', 'UNION', 'ALL', 'DISTINCT', 'CASE', 'WHEN', 'THEN', 'ELSE', 'END', 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'DROP', 'ALTER', 'TABLE', 'INTO', 'VALUES', 'SET', 'WITH', 'OVER', 'PARTITION', 'BY']
-    return keywords.includes(name.toUpperCase())
+    return SQL_KEYWORD_SET.has(name.toUpperCase())
 }

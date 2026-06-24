@@ -11,5 +11,5 @@ export function generateShortId(prefix?: string): string {
     const timestamp = Date.now().toString(36);
     const rand = Math.random().toString(36).substring(2, 8);
     const count = (counter++).toString(36);
-    return prefix ? `${prefix}_${timestamp}${rand}${count}` : `${timestamp}${rand}${count}`;
+    return prefix ? `${prefix}-${timestamp}-${rand}-${count}` : `${timestamp}${rand}${count}`;
 }

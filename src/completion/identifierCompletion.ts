@@ -86,7 +86,13 @@ function getClauseContext(text: string, offset: number, _tokenizer: Tokenizer): 
         let lastMatch = ''
         let m: RegExpExecArray | null
         while ((m = keywordPattern.exec(textBeforeCursor)) !== null) {
-            lastMatch = m[1].toUpperCase().replace(/\s+/g, ' ')
+            const kw = m[1].toUpperCase()
+            // Only normalize whitespace for GROUP BY / ORDER BY
+            if (kw === 'GROUP BY' || kw === 'ORDER BY' || kw.indexOf(' ') !== -1) {
+                lastMatch = kw.replace(/\s+/g, ' ')
+            } else {
+                lastMatch = kw
+            }
         }
 
         if (lastMatch === 'FROM' || lastMatch === 'JOIN') return 'from'

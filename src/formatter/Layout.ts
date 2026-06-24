@@ -1,7 +1,5 @@
 // 管理空白符（空格、换行、缩进）的核心类，通过「延迟拼接 + 指令化空白符操作」实现高效的空白符管理
 
-import { last } from "../lexer/utils"
-
 import Indentation from "./Indentation"
 
 /** 是控制空白符行为的核心指令，所有空白符操作均通过该枚举触发 */
@@ -84,15 +82,35 @@ export default class Layout {
 
     // 移除前置水平空白
     private trimHorizontalWhitespace(): void {
-        while (isHorizontalWhitespace(last(this.items))) {
-            this.items.pop()
+        const items = this.items
+        let i = items.length - 1
+        while (i >= 0) {
+            const item = items[i]
+            if (item === WS.SPACE || item === WS.SINGLE_INDENT) {
+                i--
+            } else {
+                break
+            }
+        }
+        if (i < items.length - 1) {
+            items.length = i + 1
         }
     }
 
     // 移除前置可移除空白
     private trimWhitespace(): void {
-        while (isRemovableWhitespace(last(this.items))) {
-            this.items.pop()
+        const items = this.items
+        let i = items.length - 1
+        while (i >= 0) {
+            const item = items[i]
+            if (item === WS.SPACE || item === WS.SINGLE_INDENT || item === WS.NEWLINE) {
+                i--
+            } else {
+                break
+            }
+        }
+        if (i < items.length - 1) {
+            items.length = i + 1
         }
     }
 
@@ -100,20 +118,17 @@ export default class Layout {
     private addNewline(
         newline: (typeof WS)["NEWLINE"] | (typeof WS)["MANDATORY_NEWLINE"],
     ): void {
-        if (this.items.length > 0) {
-            switch (last(this.items)) {
-                case WS.NEWLINE:
-                    // 合并连续普通换行
-                    this.items.pop()
-                    this.items.push(newline)
-                    break
-                // 强制换行不可被覆盖
-                case WS.MANDATORY_NEWLINE:
-                    break
-                default:
-                    this.items.push(newline)
-                    break
+        const items = this.items
+        const n = items.length
+        if (n > 0) {
+            const lastItem = items[n - 1]
+            if (lastItem === WS.NEWLINE) {
+                // 合并连续普通换行
+                items[n - 1] = newline
+            } else if (lastItem !== WS.MANDATORY_NEWLINE) {
+                items.push(newline)
             }
+            // 强制换行不可被覆盖：lastItem === WS.MANDATORY_NEWLINE → do nothing
         }
     }
 
@@ -163,10 +178,3 @@ export default class Layout {
         }
     }
 }
-// 判断是否为水平空白
-const isHorizontalWhitespace = (item: WS | string | undefined): boolean =>
-    item === WS.SPACE || item === WS.SINGLE_INDENT
-
-// 判断是否为可移除空白
-const isRemovableWhitespace = (item: WS | string | undefined): boolean =>
-    item === WS.SPACE || item === WS.SINGLE_INDENT || item === WS.NEWLINE

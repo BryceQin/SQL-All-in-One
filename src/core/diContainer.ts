@@ -215,7 +215,9 @@ export class DIContainer {
             }
         }
 
-        // Kahn's algorithm – produces topological order for dispose (dependents first)
+        // Kahn's algorithm – produces topological order where dependencies come
+        // first (inDegree=0 nodes have no dependencies).  We then reverse the
+        // result so that dependents are disposed first.
         const queue: string[] = [];
         for (const [key, deg] of inDegree) {
             if (deg === 0) {
@@ -240,13 +242,12 @@ export class DIContainer {
             }
         }
 
+        // Reverse so dependents come first (disposed before their dependencies)
+        sorted.reverse();
+
         // Any keys not visited are part of a cycle – append in reverse insertion order
         const cyclicKeys = serviceKeys.filter((k) => !visited.has(k)).reverse();
 
-        // Keys without dependency declarations that weren't part of the topo sort
-        // should be placed before the sorted ones (they have no declared deps,
-        // so they can be disposed first).  But Kahn's already handles them
-        // (they have inDegree 0).  We just need to handle cyclic ones.
         return [...sorted, ...cyclicKeys];
     }
 
@@ -360,7 +361,11 @@ export class DIContainer {
     }
 
     clear(): void {
-        this.disposeAll();
+        this.services.clear();
+        this.factories.clear();
+        this.singletons.clear();
+        this.creating.clear();
+        this.dependencyMap.clear();
     }
 
     unregister(token: string): void {

@@ -214,7 +214,7 @@ export class SqlStatementDetector {
     }
 
     private detectStatementType(sql: string): StatementType {
-        const keyword = sql.trim().split(/\s+/)[0];
+        const keyword = sql.trim().split(/\s+/)[0].toUpperCase();
         return statementTypeMap[keyword] || 'OTHER';
     }
 

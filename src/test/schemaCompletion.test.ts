@@ -3,9 +3,6 @@ import type { DatabaseInfo, TableInfo, ViewInfo, FunctionInfo, ProcedureInfo, Co
 import { findCursorContext, extractTableNames } from '../completion/AstCompletionProvider'
 import { SchemaProvider, getSchemaProvider, type ClauseType, type CompletionContext } from '../database/schema/SchemaProvider'
 import { SchemaCache, getSchemaCache } from '../database/schema/SchemaCache'
-import { getContainer, Tokens } from '../core/diContainer'
-import { createSchemaProvider } from '../database/schema/SchemaProvider'
-import { createSchemaCache } from '../database/schema/SchemaCache'
 
 const sampleDatabases: DatabaseInfo[] = [
     { name: 'mydb', charset: 'utf8mb4', collation: 'utf8mb4_general_ci' },
@@ -249,12 +246,9 @@ suite('SchemaProvider - MRU Cache', () => {
     })
 
     test('getSchemaProvider returns singleton', () => {
-        const container = getContainer()
-        container.registerSingleton(Tokens.SchemaProvider, createSchemaProvider)
         const instance1 = getSchemaProvider()
         const instance2 = getSchemaProvider()
         assert.strictEqual(instance1, instance2)
-        container.unregister(Tokens.SchemaProvider)
     })
 })
 
@@ -1041,12 +1035,9 @@ suite('SchemaCache - Invalidation Scope', () => {
 suite('SchemaProvider - Singleton', () => {
 
     test('getSchemaProvider returns same instance', () => {
-        const container = getContainer()
-        container.registerSingleton(Tokens.SchemaProvider, createSchemaProvider)
         const instance1 = getSchemaProvider()
         const instance2 = getSchemaProvider()
         assert.strictEqual(instance1, instance2)
-        container.unregister(Tokens.SchemaProvider)
     })
 })
 
@@ -1057,12 +1048,9 @@ suite('SchemaProvider - Singleton', () => {
 suite('SchemaCache - Singleton', () => {
 
     test('getSchemaCache returns same instance', () => {
-        const container = getContainer()
-        container.registerSingleton(Tokens.SchemaCache, createSchemaCache)
         const instance1 = getSchemaCache()
         const instance2 = getSchemaCache()
         assert.strictEqual(instance1, instance2)
-        container.unregister(Tokens.SchemaCache)
     })
 })
 
@@ -1073,36 +1061,27 @@ suite('SchemaCache - Singleton', () => {
 suite('Edge Cases', () => {
 
     test('parseAliasMap handles deeply nested subqueries', () => {
-        const container = getContainer()
-        container.registerSingleton(Tokens.SchemaCache, createSchemaCache)
         const provider = new SchemaProvider()
         const sql = 'SELECT * FROM (SELECT * FROM (SELECT id FROM users) sub2) sub1'
         const result = provider.parseAliasMap(sql, 'mysql')
         assert.ok(result instanceof Map)
         provider.dispose()
-        container.unregister(Tokens.SchemaCache)
     })
 
     test('parseAliasMap handles UNION queries', () => {
-        const container = getContainer()
-        container.registerSingleton(Tokens.SchemaCache, createSchemaCache)
         const provider = new SchemaProvider()
         const sql = 'SELECT id FROM users UNION SELECT id FROM orders'
         const result = provider.parseAliasMap(sql, 'mysql')
         assert.ok(result instanceof Map)
         provider.dispose()
-        container.unregister(Tokens.SchemaCache)
     })
 
     test('parseAliasMap handles CTE with alias', () => {
-        const container = getContainer()
-        container.registerSingleton(Tokens.SchemaCache, createSchemaCache)
         const provider = new SchemaProvider()
         const sql = 'WITH active_users AS (SELECT * FROM users WHERE status = 1) SELECT * FROM active_users'
         const result = provider.parseAliasMap(sql, 'mysql')
         assert.ok(result instanceof Map)
         provider.dispose()
-        container.unregister(Tokens.SchemaCache)
     })
 
     test('extractTableNames handles DELETE statement', () => {
