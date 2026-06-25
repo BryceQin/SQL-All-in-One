@@ -24,6 +24,8 @@ import { AdapterFactory } from './database/adapters/AdapterFactory';
 import { MysqlAdapter } from './database/adapters/MysqlAdapter';
 import { PostgresAdapter } from './database/adapters/PostgresAdapter';
 import { SqliteAdapter } from './database/adapters/SqliteAdapter';
+import { StarrocksAdapter } from './database/adapters/StarrocksAdapter';
+import { SqlServerAdapter } from './database/adapters/SqlServerAdapter';
 import { createConnectionManager } from './database/connection/ConnectionManager';
 import { createConnectionStore } from './database/connection/ConnectionStore';
 import { createSchemaProvider } from './database/schema/SchemaProvider';
@@ -74,6 +76,8 @@ function registerServicesToContainer(extensionPath: string): void {
   AdapterFactory.register('mysql', MysqlAdapter, MysqlAdapter.getDialectMetadata);
   AdapterFactory.register('postgresql', PostgresAdapter, PostgresAdapter.getDialectMetadata);
   AdapterFactory.register('sqlite', SqliteAdapter, SqliteAdapter.getDialectMetadata);
+  AdapterFactory.register('starrocks', StarrocksAdapter, StarrocksAdapter.getDialectMetadata);
+  AdapterFactory.register('sqlserver', SqlServerAdapter, SqlServerAdapter.getDialectMetadata);
   container.register(Tokens.DialectAdapterFactory, AdapterFactory);
 
   // Provider services

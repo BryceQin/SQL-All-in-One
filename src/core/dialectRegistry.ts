@@ -10,6 +10,8 @@ const dialectEntries = [
     { vscodeLangId: 'postgres', sqlLanguage: 'postgresql', sqlDialect: 'postgresql', nodeSqlParserDialect: 'PostgreSQL' },
     { vscodeLangId: 'bigquery', sqlLanguage: 'bigquery', sqlDialect: 'bigquery', nodeSqlParserDialect: 'BigQuery' },
     { vscodeLangId: 'sqlite', sqlLanguage: 'sqlite', sqlDialect: 'sqlite', nodeSqlParserDialect: 'SQLite' },
+    { vscodeLangId: 'starrocks', sqlLanguage: 'starrocks', sqlDialect: 'starrocks', nodeSqlParserDialect: 'StarRocks' },
+    { vscodeLangId: 'sqlserver', sqlLanguage: 'sqlserver', sqlDialect: 'sqlserver', nodeSqlParserDialect: 'SQLServer' },
 ] as const
 
 const langIdSet = new Set<string>(dialectEntries.map(e => e.vscodeLangId))

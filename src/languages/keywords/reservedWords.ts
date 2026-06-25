@@ -7,6 +7,8 @@ import {
     pgKeywords, pgDataTypes,
     bqKeywords, bqDataTypes,
     sqliteKeywords, sqliteDataTypes,
+    starrocksKeywords, starrocksDataTypes,
+    sqlserverKeywords, sqlserverDataTypes,
 } from '../allDialects'
 import type { SqlLanguage } from '../../core/dialectRegistry'
 
@@ -19,6 +21,8 @@ const dialectReservedWordsLoaders: Record<SqlLanguage, () => string[]> = {
     postgresql: () => [...pgKeywords.get(), ...pgDataTypes.get()],
     bigquery: () => [...bqKeywords.get(), ...bqDataTypes.get()],
     sqlite: () => [...sqliteKeywords.get(), ...sqliteDataTypes.get()],
+    starrocks: () => [...starrocksKeywords.get(), ...starrocksDataTypes.get()],
+    sqlserver: () => [...sqlserverKeywords.get(), ...sqlserverDataTypes.get()],
 }
 
 const cache = new Map<SqlLanguage, Set<string>>()

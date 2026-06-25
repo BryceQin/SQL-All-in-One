@@ -177,7 +177,6 @@
     "hive-formatter.config.newlineBeforeDistributeBy.markdownDescription": "DISTRIBUTE BY 前是否换行（Hive 方言）",
     "hive-formatter.config.newlineBeforeClusterBy.markdownDescription": "CLUSTER BY 前是否换行（Hive 方言）",
     "hive-formatter.config.newlineBeforeSortBy.markdownDescription": "SORT BY 前是否换行（Hive 方言）",
-
     "hive-formatter.view.databaseExplorer.name": "数据库资源管理器",
     "hive-formatter.viewWelcome.databaseExplorer.contents": "暂无数据库连接。\n[添加连接](command:hive-formatter.addConnection)",
     "hive-formatter.command.addConnection.title": "添加数据库连接",
@@ -215,7 +214,6 @@
     "hive-formatter.command.showErrorLog.title": "显示错误日志 (SQL All in One)",
     "hive-formatter.command.exportConnections.title": "导出连接",
     "hive-formatter.command.importConnections.title": "导入连接",
-
     "hive-formatter.viewsContainers.activitybar.title": "SQL All in One",
     "hive-formatter.configuration.title": "SQL All in One",
     "hive-formatter.command.formatSelection.title": "格式化选区 (SQL All in One)",
@@ -229,5 +227,7 @@
     "hive-formatter.command.replaceParameter.title": "替换参数",
     "hive-formatter.command.replaceParameter.shortTitle": "替换参数",
     "hive-formatter.command.toggleComment.title": "切换注释 (SQL All in One)",
-    "hive-formatter.command.toggleAdvancedComment.title": "切换高级注释 (SQL All in One)"
+    "hive-formatter.command.toggleAdvancedComment.title": "切换高级注释 (SQL All in One)",
+    "hive-formatter.config.dialect.enumDescriptions.starrocks": "StarRocks",
+    "hive-formatter.config.dialect.enumDescriptions.sqlserver": "SQL Server"
 }

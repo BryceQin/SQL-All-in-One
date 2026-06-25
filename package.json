@@ -150,6 +150,25 @@
                     ".sqlite",
                     ".sqlt"
                 ]
+            },
+            {
+                "id": "starrocks",
+                "aliases": [
+                    "StarRocks"
+                ],
+                "extensions": [
+                    ".starrocks"
+                ]
+            },
+            {
+                "id": "sqlserver",
+                "aliases": [
+                    "SQL Server",
+                    "mssql"
+                ],
+                "extensions": [
+                    ".sqlserver"
+                ]
             }
         ],
         "snippets": [
@@ -216,6 +235,22 @@
             {
                 "language": "sqlite",
                 "path": "./snippets/sqlite.json"
+            },
+            {
+                "language": "starrocks",
+                "path": "./snippets/common.json"
+            },
+            {
+                "language": "starrocks",
+                "path": "./snippets/starrocks.json"
+            },
+            {
+                "language": "sqlserver",
+                "path": "./snippets/common.json"
+            },
+            {
+                "language": "sqlserver",
+                "path": "./snippets/sqlserver.json"
             }
         ],
         "commands": [
@@ -400,31 +435,31 @@
                 "command": "hive-formatter.replaceParameter",
                 "key": "ctrl+alt+p",
                 "mac": "cmd+alt+p",
-                "when": "editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite/"
+                "when": "editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite|starrocks|sqlserver/"
             },
             {
                 "command": "hive-formatter.toggleComment",
                 "key": "ctrl+/",
                 "mac": "cmd+/",
-                "when": "editorTextFocus && editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite/"
+                "when": "editorTextFocus && editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite|starrocks|sqlserver/"
             },
             {
                 "command": "hive-formatter.toggleAdvancedComment",
                 "key": "ctrl+shift+/",
                 "mac": "cmd+shift+/",
-                "when": "editorTextFocus && editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite/"
+                "when": "editorTextFocus && editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite|starrocks|sqlserver/"
             },
             {
                 "command": "hive-formatter.executeQuery",
                 "key": "ctrl+shift+e",
                 "mac": "cmd+shift+e",
-                "when": "editorTextFocus && editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite/"
+                "when": "editorTextFocus && editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite|starrocks|sqlserver/"
             },
             {
                 "command": "hive-formatter.executeSelection",
                 "key": "ctrl+shift+r",
                 "mac": "cmd+shift+r",
-                "when": "editorTextFocus && editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite/"
+                "when": "editorTextFocus && editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite|starrocks|sqlserver/"
             }
         ],
         "configuration": {
@@ -441,7 +476,9 @@
                         "sql",
                         "postgresql",
                         "bigquery",
-                        "sqlite"
+                        "sqlite",
+                        "starrocks",
+                        "sqlserver"
                     ],
                     "enumDescriptions": [
                         "%hive-formatter.config.dialect.enumDescriptions.auto-detect%",
@@ -452,7 +489,9 @@
                         "%hive-formatter.config.dialect.enumDescriptions.sql%",
                         "%hive-formatter.config.dialect.enumDescriptions.postgresql%",
                         "%hive-formatter.config.dialect.enumDescriptions.bigquery%",
-                        "%hive-formatter.config.dialect.enumDescriptions.sqlite%"
+                        "%hive-formatter.config.dialect.enumDescriptions.sqlite%",
+                        "%hive-formatter.config.dialect.enumDescriptions.starrocks%",
+                        "%hive-formatter.config.dialect.enumDescriptions.sqlserver%"
                     ],
                     "default": "hive",
                     "markdownDescription": "%hive-formatter.config.dialect.markdownDescription%",
@@ -1731,33 +1770,33 @@
             "editor/context": [
                 {
                     "command": "hive-formatter.toggleComment",
-                    "when": "editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite/",
+                    "when": "editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite|starrocks|sqlserver/",
                     "group": "1_comment@1"
                 },
                 {
                     "command": "hive-formatter.toggleAdvancedComment",
-                    "when": "editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite/",
+                    "when": "editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite|starrocks|sqlserver/",
                     "group": "1_comment@2"
                 },
                 {
                     "command": "hive-formatter.mysql-to-hive",
-                    "when": "editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite/",
+                    "when": "editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite|starrocks|sqlserver/",
                     "group": "9_conversion@1"
                 },
                 {
                     "command": "hive-formatter.hive-to-mysql",
-                    "when": "editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite/",
+                    "when": "editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite|starrocks|sqlserver/",
                     "group": "9_conversion@2"
                 }
             ],
             "commandPalette": [
                 {
                     "command": "hive-formatter.mysql-to-hive",
-                    "when": "editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite/"
+                    "when": "editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite|starrocks|sqlserver/"
                 },
                 {
                     "command": "hive-formatter.hive-to-mysql",
-                    "when": "editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite/"
+                    "when": "editorLangId =~ /sql|hive|hive-sql|mysql|spark|flinksql|flink-sql|postgresql|postgres|bigquery|sqlite|starrocks|sqlserver/"
                 }
             ],
             "view/title": [
@@ -1915,6 +1954,7 @@
     "devDependencies": {
         "@types/better-sqlite3": "^7.6.12",
         "@types/mocha": "^10.0.10",
+        "@types/mssql": "^9.1.5",
         "@types/node": "22.x",
         "@types/pg": "^8.11.10",
         "@types/ssh2": "^1.15.5",
@@ -1932,6 +1972,7 @@
     },
     "dependencies": {
         "better-sqlite3": "^11.7.0",
+        "mssql": "^10.0.1",
         "mysql2": "^3.22.4",
         "node-sql-parser": "^5.4.0",
         "pg": "^8.13.0",

@@ -177,7 +177,6 @@
     "hive-formatter.config.newlineBeforeDistributeBy.markdownDescription": "Whether to insert a newline before DISTRIBUTE BY (Hive dialect).",
     "hive-formatter.config.newlineBeforeClusterBy.markdownDescription": "Whether to insert a newline before CLUSTER BY (Hive dialect).",
     "hive-formatter.config.newlineBeforeSortBy.markdownDescription": "Whether to insert a newline before SORT BY (Hive dialect).",
-
     "hive-formatter.view.databaseExplorer.name": "Database Explorer",
     "hive-formatter.viewWelcome.databaseExplorer.contents": "No database connections yet.\n[Add Connection](command:hive-formatter.addConnection)",
     "hive-formatter.command.addConnection.title": "Add Database Connection",
@@ -215,7 +214,6 @@
     "hive-formatter.command.showErrorLog.title": "Show Error Log (SQL All in One)",
     "hive-formatter.command.exportConnections.title": "Export Connections",
     "hive-formatter.command.importConnections.title": "Import Connections",
-
     "hive-formatter.viewsContainers.activitybar.title": "SQL All in One",
     "hive-formatter.configuration.title": "SQL All in One",
     "hive-formatter.command.formatSelection.title": "Format Selection (SQL All in One)",
@@ -229,5 +227,7 @@
     "hive-formatter.command.replaceParameter.title": "Replace Parameter",
     "hive-formatter.command.replaceParameter.shortTitle": "Replace Param",
     "hive-formatter.command.toggleComment.title": "Toggle Comment (SQL All in One)",
-    "hive-formatter.command.toggleAdvancedComment.title": "Toggle Advanced Comment (SQL All in One)"
+    "hive-formatter.command.toggleAdvancedComment.title": "Toggle Advanced Comment (SQL All in One)",
+    "hive-formatter.config.dialect.enumDescriptions.starrocks": "StarRocks",
+    "hive-formatter.config.dialect.enumDescriptions.sqlserver": "SQL Server"
 }
