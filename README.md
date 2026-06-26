@@ -11,13 +11,13 @@
 | | |
 |---|---|
 | **发布者** | bryce-qin |
-| **版本** | 2.23.0 |
+| **版本** | 2.24.0 |
 | **许可证** | MIT |
 | **仓库** | [GitHub](https://github.com/BryceQin/SQL-All-in-One) |
 | **VSCode 引擎** | ^1.85.0 |
 | **分类** | Formatters, Snippets, Other, Databases |
 
-### 支持的 SQL 方言（8 种）
+### 支持的 SQL 方言（12 种）
 
 | Language ID | 别名 | 扩展名 |
 |------------|------|--------|
@@ -29,6 +29,10 @@
 | `postgresql` | PostgreSQL, postgres | `.psql`, `.pgsql` |
 | `bigquery` | BigQuery | `.bqsql` |
 | `sqlite` | SQLite | `.sqlite`, `.sqlt` |
+| `starrocks` | StarRocks | `.starrocks` |
+| `sqlserver` | SQL Server, sqlserver | `.sqlserver` |
+| `plsql` | Oracle, PL/SQL, plsql | `.plsql`, `.oracle` |
+| `dameng` | 达梦, Dameng, dm | `.dameng`, `.dm` |
 
 ---
 
@@ -42,6 +46,171 @@
 
 ---
 
+### 数据库支持
+
+#### StarRocks 数据库
+
+**简介**
+
+StarRocks 是新一代高性能 MPP 数据库，本插件通过 MySQL 协议（mysql2 驱动）连接 StarRocks，语言层在 MySQL 方言基础上扩展，支持 BITMAP/HLL/PERCENTILE 类型、ROLLUP/COLOCATE/DYNAMIC_PARTITION 等 OLAP DDL、物化视图、EXPLODE 等 StarRocks 专属语法。
+
+**前置要求**
+
+- StarRocks FE 节点开启 MySQL 协议端口（默认 9030）
+- 默认连接端口 9030，默认用户 root
+
+**连接配置**
+
+| 配置项 | 说明 | 默认值 |
+|--------|------|--------|
+| 主机 | StarRocks FE 地址 | `localhost` |
+| 端口 | MySQL 协议端口 | `9030` |
+| 用户名 | 默认管理员账户 | `root` |
+| SSL | 支持 SSL 加密连接 | 关闭 |
+| SSH 隧道 | 支持 SSH 隧道连接 | 关闭 |
+
+**语法支持**
+
+- 支持 StarRocks 专属类型：BITMAP、HLL、PERCENTILE、JSON、ARRAY、MAP、STRUCT
+- 支持 OLAP 表模型：DUPLICATE KEY、AGGREGATE KEY、UNIQUE KEY
+- 支持 ROLLUP、COLOCATE、DYNAMIC_PARTITION、PARTITION、BUCKETS、PROPERTIES 等 DDL
+- 支持物化视图：CREATE/REFRESH MATERIALIZED VIEW
+- 支持专属函数：BITMAP_UNION、HLL_UNION、COLLECT_LIST、COLLECT_SET、EXPLODE_SPLIT 等
+- 支持元数据浏览：表、视图（StarRocks 不支持函数/存储过程/触发器）
+
+**已知限制**
+
+- 旧版 StarRocks（2.x 之前）不支持事务，`beginTransaction` 在不支持事务的版本上会返回服务端错误
+- `cancelQuery` 对事务内查询现可通过事务连接 threadId 取消（v2.24 修复）
+
+---
+
+#### SQL Server 数据库
+
+**简介**
+
+SQL Server 是微软的企业级关系数据库，本插件通过 `mssql` 驱动（基于 tedious）连接，支持 T-SQL 语法、Windows 身份验证、跨数据库查询、PIVOT/UNPIVOT、OFFSET FETCH 分页、FOR XML/JSON、MERGE 等 T-SQL 专属特性。
+
+**前置要求**
+
+- SQL Server 2016 及以上版本推荐
+- 默认连接端口 1433，默认用户 sa
+
+**连接配置**
+
+| 配置项 | 说明 | 默认值 |
+|--------|------|--------|
+| 主机 | SQL Server 地址 | `localhost` |
+| 端口 | 监听端口 | `1433` |
+| 用户名 | 默认账户 | `sa` |
+| 加密 | 是否加密连接 | 开启 |
+| 信任服务器证书 | 自签名证书时需开启 | 关闭 |
+| 域 | Windows 身份验证域（可选） | - |
+| SSL | 支持 SSL 加密连接 | 关闭 |
+| SSH 隧道 | 支持 SSH 隧道连接 | 关闭 |
+
+**语法支持**
+
+- 支持 T-SQL 专属关键字：TOP、OFFSET FETCH、OUTPUT、PIVOT/UNPIVOT、MERGE、CROSS APPLY/OUTER APPLY
+- 支持 T-SQL 专属类型：NVARCHAR、DATETIME2、DATETIMEOFFSET、MONEY、UNIQUEIDENTIFIER、SQL_VARIANT、HIERARCHYID、GEOGRAPHY/GEOMETRY
+- 支持表提示：WITH (NOLOCK) 等
+- 支持 FOR XML / FOR JSON 序列化
+- 支持 TRY_CONVERT/TRY_CAST/STRING_AGG/IIF/CHOOSE 等函数
+- 支持元数据浏览：表、视图、函数、存储过程、触发器、索引
+- 执行计划：通过 `SET SHOWPLAN_XML ON` 获取 XML 计划（v2.24 修复会话泄漏问题，使用事务隔离确保连接不被污染）
+
+**已知限制**
+
+- 主键检测依赖 sys.indexes，从驱动元数据层无法直接获取
+
+---
+
+#### Oracle 数据库
+
+**简介**
+
+Oracle 数据库是企业级关系数据库，本插件通过 `oracledb` 6.x 驱动连接，默认使用 thin 模式（纯 JS，无需 Oracle Client），可选 thick 模式（支持老版本及高级特性）。支持 PL/SQL 语法、CONNECT BY 层级查询、MINUS 集合运算、q'[...]' 替代引号、序列、同义词、包等 Oracle 专属特性。
+
+**前置要求**
+
+- Oracle 11g 及以上版本推荐
+- thin 模式：无需额外安装，开箱即用
+- thick 模式：需安装 Oracle Instant Client
+- 默认连接端口 1521，默认用户 system
+
+**连接配置**
+
+| 配置项 | 说明 | 默认值 |
+|--------|------|--------|
+| 主机 | Oracle 服务器地址 | `localhost` |
+| 端口 | 监听端口 | `1521` |
+| 用户名 | 默认账户 | `system` |
+| 服务名/SID | 服务名或 SID（可选 connectString 覆盖） | - |
+| 使用 SID | 以 SID 方式连接（默认服务名） | 关闭 |
+| 厚模式 | 启用 thick 模式（需 Instant Client） | 关闭 |
+| SSL | 支持 SSL 加密连接 | 关闭 |
+| SSH 隧道 | 支持 SSH 隧道连接 | 关闭 |
+
+**语法支持**
+
+- 支持 Oracle 专属关键字：DUAL、ROWNUM、ROWID、SYSDATE、CONNECT BY、MINUS、SEQUENCE、SYNONYM、PRIOR
+- 支持 Oracle 专属类型：NUMBER、VARCHAR2、NVARCHAR2、CLOB/NCLOB、BFILE、TIMESTAMP WITH TIME ZONE、INTERVAL YEAR TO MONTH、INTERVAL DAY TO SECOND、XMLTYPE
+- 支持 PL/SQL：PACKAGE、PRAGMA AUTONOMOUS_TRANSACTION、PLS_INTEGER、BINARY_INTEGER
+- 支持 q'[...]' 替代引号机制
+- 支持专属函数：DECODE、NVL/NVL2、LISTAGG、CONNECT_BY_ROOT、SYS_CONNECT_BY_PATH、DBMS_RANDOM 等
+- 支持元数据浏览：表、视图、函数、存储过程、触发器、索引
+- 执行计划：通过 `EXPLAIN PLAN FOR` + `DBMS_XPLAN.DISPLAY` 获取（v2.24 修复共享 plan_table 误删问题，使用唯一 statement_id 隔离）
+- DDL 检索：通过 `DBMS_METADATA.GET_DDL` 获取原生 DDL
+
+**已知限制**
+
+- node-sql-parser 5.x 无原生 Oracle 方言模块，复杂 PL/SQL 块解析可能失败（格式化仍可用）
+- 主键索引检测改用 `all_constraints.constraint_type = 'P'` 精确识别（v2.24 修复列集合相等误判）
+
+---
+
+#### 达梦数据库（DM8）
+
+**简介**
+
+达梦数据库（DM8）是国产信创数据库，本插件通过 ODBC 桥接支持连接达梦数据库，语言层基于 Oracle 方言派生，支持 TOP、LIMIT、CONNECT BY、ROWNUM、DUAL 等语法。
+
+**前置要求**
+
+- 需要在本机安装达梦 ODBC 驱动（DM8 ODBC Driver），请从达梦官方获取驱动安装包并按官方文档安装
+- 本插件依赖 `odbc` npm 包（已随插件打包），该包是 native 模块，需要 C++ 编译环境：
+  - Windows：需安装 Visual Studio Build Tools（C++ 工作负载）
+  - macOS：需安装 Xcode Command Line Tools（`xcode-select --install`）
+  - Linux：需安装 `python3 make g++`（Debian/Ubuntu：`build-essential`，CentOS/RHEL：`gcc-c++`）
+- 默认连接端口 5236，默认用户 SYSDBA
+
+**连接配置**
+
+| 配置项 | 说明 | 默认值 |
+|--------|------|--------|
+| ODBC 驱动名 | ODBC 驱动注册名，若安装的驱动名不同（如 DM7），请在连接对话框中修改 | `DM8 ODBC DRIVER` |
+| 兼容模式 | 影响 SQL 语法解析：Oracle / MySQL / PostgreSQL | `Oracle` |
+| Schema | 可选，指定连接后的默认 Schema | - |
+| 主机 | 达梦数据库服务器地址 | `localhost` |
+| 端口 | 达梦数据库监听端口 | `5236` |
+| 用户名 | 默认管理员账户 | `SYSDBA` |
+
+**语法支持**
+
+- 支持 `SELECT TOP n ...` 语法
+- 支持 `LIMIT n` 语法（MySQL 兼容模式）
+- 保留 Oracle 兼容语法：CONNECT BY、ROWNUM、DUAL、`||` 字符串拼接、`:=` 赋值
+- 支持达梦特有函数：DM_HASH、DM_ENCRYPT、TO_DM_DATE
+- 支持元数据浏览：表、视图、函数、存储过程、触发器、序列、同义词
+
+**已知限制**
+
+- ODBC 不支持原生查询取消，依赖每查询超时（30s，v2.24 修复）兜底，`cancelQuery` 为 no-op
+- 达梦无官方 Node.js 驱动，ODBC 桥接可能引入少量性能开销
+- 主键索引检测改用 `all_constraints.constraint_type = 'P'` 精确识别（v2.24 修复列集合相等误判）
+
+---
+
 ### 核心功能
 
 #### 1. 数据库连接与管理
@@ -49,6 +218,10 @@
 - MySQL 数据库连接，支持连接池、SSL、SSH 隧道
 - PostgreSQL 数据库连接，支持连接池、SSL、SSH 隧道、查询取消（v2.20 新增）
 - SQLite 数据库连接，支持文件路径、WAL 模式、查询中断（v2.20 新增）
+- StarRocks 数据库连接，通过 MySQL 协议，支持 OLAP DDL/物化视图（v2.24 新增）
+- SQL Server 数据库连接，通过 mssql 驱动，支持 T-SQL/Windows 身份验证（v2.24 新增）
+- Oracle 数据库连接，通过 oracledb 6.x，支持 thin/thick 模式、PL/SQL（v2.24 新增）
+- 达梦数据库（DM8）连接，通过 ODBC 桥接，支持 Oracle 兼容语法（v2.24 新增）
 - 图形化连接对话框（v2.1 新增，替代逐步输入框）
 - 连接生命周期管理（添加/编辑/删除/连接/断开）
 - 连接池健康检查、空闲检查、自动重连
@@ -67,7 +240,7 @@
 - 可拖拽分割面板：SQL 编辑器与查询结果上下分栏，比例可调
 - Monaco 编辑器：SQL 语法高亮、智能提示、代码折叠，自动跟随 VS Code 主题
 - **Monaco 语言特性增强（v2.13 新增）**：方言化语法高亮、智能补全、悬停提示、SQL 格式化、Lint 诊断
-- 方言化 Monarch 语法高亮：8 种 SQL 方言独立 tokenizer，关键字/数据类型/函数名分别着色
+- 方言化 Monarch 语法高亮：12 种 SQL 方言独立 tokenizer，关键字/数据类型/函数名分别着色
 - 静态补全（零延迟）：关键字、580+ 函数签名（含参数 Snippet）、数据类型、代码片段
 - 函数签名提示：输入 `(` 或 `,` 显示参数签名，自动高亮当前参数
 - Schema 感知补全：输入 `.` 或空格触发，查询数据库 Schema 返回表名/列名
@@ -673,6 +846,49 @@ MIT License
 
 ---
 
+### Database Support
+
+#### Dameng Database (DM8)
+
+**Overview**
+
+Dameng Database (DM8) is a domestic Chinese database. This extension supports connecting to Dameng via an ODBC bridge. The language layer is derived from the Oracle dialect and supports TOP, LIMIT, CONNECT BY, ROWNUM, DUAL and similar syntax.
+
+**Prerequisites**
+
+- Install the Dameng ODBC driver (DM8 ODBC Driver) on your machine. Obtain the driver package from Dameng officially and follow the official installation guide.
+- This extension depends on the `odbc` npm package (bundled with the extension). It is a native module and requires a C++ build environment:
+  - Windows: install Visual Studio Build Tools (C++ workload)
+  - macOS: install Xcode Command Line Tools (`xcode-select --install`)
+  - Linux: install `python3 make g++` (Debian/Ubuntu: `build-essential`, CentOS/RHEL: `gcc-c++`)
+- Default connection port: 5236. Default user: SYSDBA.
+
+**Connection Configuration**
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| ODBC driver name | Registered ODBC driver name. If your installed driver name differs (e.g. DM7), modify it in the connection dialog. | `DM8 ODBC DRIVER` |
+| Compatibility mode | Affects SQL parsing: Oracle / MySQL / PostgreSQL | `Oracle` |
+| Schema | Optional, default schema after connecting | - |
+| Host | Dameng database server address | `localhost` |
+| Port | Dameng database listening port | `5236` |
+| Username | Default administrator account | `SYSDBA` |
+
+**Syntax Support**
+
+- `SELECT TOP n ...` syntax
+- `LIMIT n` syntax (MySQL compatibility mode)
+- Oracle-compatible syntax retained: CONNECT BY, ROWNUM, DUAL, `||` string concatenation, `:=` assignment
+- Dameng-specific functions: DM_HASH, DM_ENCRYPT, TO_DM_DATE
+- Metadata browsing: tables, views, functions, stored procedures, triggers, sequences, synonyms
+
+**Known Limitations**
+
+- ODBC does not support native query cancellation; query timeout and KILL SESSION are used as fallbacks
+- Dameng has no official Node.js driver; the ODataService bridge may introduce minor performance overhead
+
+---
+
 ### Core Features
 
 #### 1. Database Connection & Management
@@ -680,6 +896,7 @@ MIT License
 - MySQL database connection with connection pool, SSL support, SSH tunnel
 - PostgreSQL database connection with connection pool, SSL, SSH tunnel, query cancel (new in v2.20)
 - SQLite database connection with file path, WAL mode, query interrupt (new in v2.20)
+- Dameng database (DM8) connection via ODBC bridge, supports Oracle-compatible syntax (new in v2.24)
 - Graphical connection dialog (new in v2.1, replaced step-by-step input boxes)
 - Connection lifecycle management (add/edit/remove/connect/disconnect)
 - Connection pool with health check, idle check, auto-reconnect
@@ -698,7 +915,7 @@ MIT License
 - Draggable split panel: SQL editor and query results in vertical split layout, adjustable ratio
 - Monaco editor: SQL syntax highlighting, IntelliSense, code folding, auto-follows VS Code theme
 - **Monaco Language Features (new in v2.14)**: dialect-aware syntax highlighting, smart completion, hover info, SQL formatting, lint diagnostics
-- Dialect-aware Monarch syntax highlighting: 8 SQL dialect tokenizers, keywords/data types/functions colored separately
+- Dialect-aware Monarch syntax highlighting: 12 SQL dialect tokenizers, keywords/data types/functions colored separately
 - Static completion (zero latency): keywords, 580+ function signatures (with parameter snippets), data types, code snippets
 - Function signature help: shows parameter signatures on `(` or `,`, auto-highlights current parameter
 - Schema-aware completion: triggered by `.` or space, queries database schema for table/column names

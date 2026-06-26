@@ -229,5 +229,7 @@
     "hive-formatter.command.toggleComment.title": "Toggle Comment (SQL All in One)",
     "hive-formatter.command.toggleAdvancedComment.title": "Toggle Advanced Comment (SQL All in One)",
     "hive-formatter.config.dialect.enumDescriptions.starrocks": "StarRocks",
-    "hive-formatter.config.dialect.enumDescriptions.sqlserver": "SQL Server"
+    "hive-formatter.config.dialect.enumDescriptions.sqlserver": "SQL Server",
+    "hive-formatter.config.dialect.enumDescriptions.oracle": "Oracle",
+    "hive-formatter.config.dialect.enumDescriptions.dameng": "Dameng DM"
 }

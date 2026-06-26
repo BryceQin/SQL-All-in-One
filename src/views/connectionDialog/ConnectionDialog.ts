@@ -142,6 +142,15 @@ export class ConnectionDialog extends BaseWebviewPanel {
             'enterNewGroupName': t('connDialog.enterNewGroupName'),
             'selectFile': t('connDialog.selectFile'),
             'none': t('connDialog.none'),
+            'oracleConnectionType': t('connDialog.oracleConnectionType'),
+            'oracleServiceNameOpt': t('connDialog.oracleServiceNameOpt'),
+            'oracleSidOpt': t('connDialog.oracleSidOpt'),
+            'oracleServiceNamePh': t('connDialog.oracleServiceNamePh'),
+            'oracleThickMode': t('connDialog.oracleThickMode'),
+            'oracleInstantClientPath': t('connDialog.oracleInstantClientPath'),
+            'oracleInstantClientPathPh': t('connDialog.oracleInstantClientPathPh'),
+            'serviceName': t('connDialog.serviceName'),
+            'sid': t('connDialog.sid'),
         };
         const i18nScript = '<script>window.__CONNECTION_DIALOG_I18N__ = ' + JSON.stringify(i18nData) + ';</script>';
 

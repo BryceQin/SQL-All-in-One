@@ -12,7 +12,6 @@
     "diagnostic.trailingCommaBeforeEnd": "【第 {0} 行】语法警告：在语句结束前发现多余的逗号",
     "diagnostic.sqlSyntaxError": "SQL 语法错误",
     "diagnostic.formatError": "【第 {0} 行】{1}",
-
     "enhanced.havingWithoutGroupBy": "【第 {0} 行】代码质量建议：HAVING 子句通常需要与 GROUP BY 一起使用",
     "enhanced.limitWithoutNumber": "【第 {0} 行】语法错误：LIMIT 后面需要指定数字",
     "enhanced.duplicateAlias": "【第 {0} 行】代码质量建议：表别名 \"{0}\" 重复使用，可能造成混淆",
@@ -28,7 +27,6 @@
     "enhanced.subqueryMissingAlias": "【第 {0} 行】代码质量建议：子查询应该指定别名",
     "enhanced.nullComparison": "【第 {0} 行】代码质量建议：NULL 比较应该使用 {0} 而不是 {1}",
     "enhanced.dateFunctionHint": "在 Hive 中使用 {0} 也可以，但建议确认版本",
-
     "linter.uppercaseKeywords.name": "关键字大写",
     "linter.uppercaseKeywords.description": "建议 SQL 关键字使用大写",
     "linter.consistentAliasing.name": "一致的别名",
@@ -66,7 +64,6 @@
     "linter.commentedOutCode.description": "发现注释掉的代码（{0}行），建议确认后删除或取消注释",
     "linter.expiredTodo.name": "过期的 TODO",
     "linter.expiredTodo.description": "TODO 标记已过期（{0}），已超期 {1} 天，请确认是否仍需处理",
-
     "linter.havingWithoutGroupBy.name": "HAVING 缺少 GROUP BY",
     "linter.havingWithoutGroupBy.description": "HAVING 子句通常需要与 GROUP BY 一起使用",
     "linter.limitInvalidValue.name": "LIMIT 值无效",
@@ -102,7 +99,6 @@
     "linter.deprecatedFunction.least": "LEAST() 在参数为 NULL 时返回 NULL，建议使用 COALESCE 或 CASE",
     "linter.postgresBooleanComparison.name": "PostgreSQL 布尔比较",
     "linter.postgresBooleanComparison.description": "在 PostgreSQL 中，建议直接比较布尔列（如 WHERE is_active）而非 WHERE is_active = TRUE",
-
     "notification.noActiveEditor": "没有找到活动编辑器",
     "notification.notSqlDocument": "不是 SQL 文档",
     "notification.noParameterFound": "光标下未找到参数",
@@ -127,7 +123,6 @@
     "notification.formatDisabledMarkAdded": "已添加格式化禁用标记",
     "notification.error": "{0}",
     "notification.warning": "{0}",
-
     "codeAction.addQueryComment": "添加查询说明注释",
     "codeAction.addCommentPlaceholder": "添加 COMMENT 占位符",
     "codeAction.uncomment": "取消注释",
@@ -140,7 +135,6 @@
     "codeAction.wrapWithBacktick": "用反引号包裹标识符",
     "codeAction.addSubqueryAlias": "为子查询添加别名",
     "codeAction.addColumnPlaceholder": "添加列名占位符",
-
     "completion.keywordLabel": "{0} 关键字",
     "completion.dataTypeLabel": "{0} 数据类型",
     "completion.returnType": "返回类型：{0}",
@@ -190,7 +184,6 @@
     "completion.modifyContent": "修改内容",
     "completion.initialVersion": "初始版本",
     "completion.tableCountTruncated": "（共 {0} 个表，此处仅展示前20个）",
-
     "snippet.basicSelect": "基础 SELECT 语句",
     "snippet.selectDistinct": "SELECT DISTINCT",
     "snippet.join": "JOIN 关联查询",
@@ -214,7 +207,6 @@
     "snippet.hackComment": "HACK 临时方案注释",
     "snippet.queryDescription": "查询说明注释块",
     "snippet.partitionTitle": "分区标题注释",
-
     "outline.withClause": "WITH 子句",
     "outline.cte": "公共表表达式",
     "outline.table": "表",
@@ -222,18 +214,15 @@
     "outline.function": "函数",
     "outline.procedure": "存储过程",
     "outline.query": "查询",
-
     "lexer.parseError": "解析错误：在第 {0} 行第 {1} 列遇到意外的 \"{2}\"。\n{3}",
     "lexer.defaultDialectHint": "这可能是因为您正在使用默认的 \"sql\" 方言。\n如果可能，请选择一个更具体的方言（如 hive、mysql、spark 等）。",
     "lexer.currentDialect": "使用的 SQL 方言：\"{0}\"。",
-
     "validate.deprecated": "{0} 配置项已废弃。",
     "validate.expressionWidthPositive": "expressionWidth 必须为正整数。当前传入的值为 {0}。",
     "validate.paramsStringType": "警告：params 配置项的所有值都应为字符串类型。",
     "validate.emptyParamRegex": "自定义 paramTypes 中传入了空的正则表达式，这将导致匹配出无限多个参数。",
     "validate.unsupportedDialect": "不支持的SQL方言: {0}",
     "validate.invalidQueryType": "无效的查询语句入参，参数类型应为字符串，实际传入的类型是 {0}",
-
     "paramHover": "参数：{0}",
     "statusBar.tooltip": "SQL All in One",
     "linter.source": "SQL All in One Linter",
@@ -259,7 +248,6 @@
     "hover.parameterLine": "第 {0} 行:",
     "hover.parameterMore": "还有 {0} 处",
     "hover.parameterTip": "提示：使用 \"SQL-All-in-One: 替换 SQL 参数\" 命令可批量替换",
-
     "navigation.cteDefinition": "CTE 定义",
     "navigation.tableAliasDefinition": "表别名定义",
     "navigation.columnAliasDefinition": "列别名定义",
@@ -277,7 +265,6 @@
     "navigation.reservedWord": "'{0}' 是 SQL 保留字，不能用作标识符",
     "navigation.nameConflict": "名称 '{0}' 已被使用",
     "navigation.invalidName": "名称只能包含字母、数字和下划线，且不能以数字开头",
-
     "configEditor.title": "SQL All in One - 配置编辑器",
     "configEditor.subtitle": "可视化调整 SQL 格式化选项，实时预览效果",
     "configEditor.presets": "快速预设",
@@ -293,7 +280,6 @@
     "configEditor.formattingOptions": "格式化选项",
     "configEditor.loadFailed": "配置编辑器加载失败",
     "configEditor.reinstall": "请重新安装插件。",
-
     "configEditor.cg.basicSettings": "基础设置",
     "configEditor.cg.featureToggles": "功能开关",
     "configEditor.cg.commentSettings": "注释设置",
@@ -304,7 +290,6 @@
     "configEditor.cg.newlineSettings": "换行设置",
     "configEditor.cg.advancedOptions": "高级选项",
     "configEditor.cg.otherOptions": "其他选项",
-
     "configEditor.lbl.dialect": "SQL 方言",
     "configEditor.lbl.headerAuthor": "注释模板作者",
     "configEditor.lbl.headerModifier": "注释模板修改人",
@@ -327,13 +312,11 @@
     "configEditor.lbl.inListThreshold": "IN 列表阈值",
     "configEditor.lbl.tabSizeOverride": "Tab 宽度覆盖",
     "configEditor.lbl.singleLineMaxLength": "单行查询最大长度",
-
     "configEditor.hint.forHeaderSnippet": "header Snippet 使用",
     "configEditor.hint.fallbackToAuthor": "为空时回退取作者",
     "configEditor.hint.multilineThreshold": "多行阈值",
     "configEditor.hint.blankLines": "空行数",
     "configEditor.hint.breakWhenExceeded": "超过换行",
-
     "configEditor.toggle.enableLinter": "启用 SQL Lint 功能",
     "configEditor.toggle.showErrorLevel": "显示错误级别诊断",
     "configEditor.toggle.showWarningLevel": "显示警告级别诊断",
@@ -389,7 +372,6 @@
     "configEditor.toggle.newlineBeforeClusterBy": "CLUSTER BY 前换行",
     "configEditor.toggle.newlineBeforeSortBy": "SORT BY 前换行",
     "configEditor.toggle.ignoreTabSettings": "忽略编辑器 Tab 设置",
-
     "configEditor.lint.avoidSelectStar": "避免 SELECT *",
     "configEditor.lint.explicitJoinType": "显式 JOIN 类型",
     "configEditor.lint.limitWithOrderBy": "LIMIT 配合 ORDER BY",
@@ -408,7 +390,6 @@
     "configEditor.lint.missingColumnComment": "DDL 列缺 COMMENT",
     "configEditor.lint.commentedOutCode": "注释掉的代码",
     "configEditor.lint.expiredTodo": "过期 TODO/FIXME",
-
     "configEditor.lint.havingWithoutGroupBy": "HAVING 缺少 GROUP BY",
     "configEditor.lint.limitInvalidValue": "LIMIT 值无效",
     "configEditor.lint.reservedWordIdentifier": "保留字作标识符",
@@ -425,7 +406,6 @@
     "configEditor.lint.implicitCrossJoin": "隐式交叉连接",
     "configEditor.lint.deprecatedFunction": "已弃用函数",
     "configEditor.lint.postgresBooleanComparison": "PostgreSQL 布尔比较",
-
     "configEditor.opt.autoDetect": "自动检测",
     "configEditor.opt.genericSQL": "通用 SQL",
     "configEditor.opt.preserve": "保持原样",
@@ -442,25 +422,19 @@
     "configEditor.opt.newline": "换行",
     "configEditor.opt.standalone": "独立行",
     "configEditor.opt.inLine": "行内",
-
     "configEditor.ph.headerAuthor": "留空则插入时手动输入",
     "configEditor.ph.headerModifier": "留空则使用作者名",
-
     "configEditor.preview.inputLabel": "输入 SQL",
     "configEditor.preview.outputLabel": "格式化结果",
-
     "configEditor.toast.configSaved": "配置已保存",
     "configEditor.toast.saveFailed": "保存失败，请重试",
-
     "configEditor.lang.label": "显示语言",
     "configEditor.lang.zh": "中文",
     "configEditor.lang.en": "English",
     "configEditor.lang.auto": "自动",
-
     "configEditor.severity.error": "错误",
     "configEditor.severity.warning": "警告",
     "configEditor.severity.information": "信息",
-
     "database.noActiveConnection": "没有活动的连接，请先连接到数据库。",
     "database.noActiveAdapter": "没有活动的数据库适配器。",
     "database.noActiveEditor": "没有活动的编辑器。",
@@ -504,7 +478,6 @@
     "safety.grantStatement": "检测到 GRANT 操作",
     "safety.revokeStatement": "检测到 REVOKE 操作",
     "safety.alterStatement": "检测到 ALTER 操作",
-
     "configEditor.cg.querySettings": "数据库查询",
     "configEditor.cg.safetyGuard": "安全防护",
     "configEditor.cg.executionSettings": "执行设置",
@@ -682,7 +655,6 @@
     "ssh.authFailed": "SSH 认证失败，请检查用户名和密码/密钥。",
     "ssh.keyFormatError": "SSH 私钥格式错误，请检查密钥文件格式。",
     "ssh.connectionError": "SSH 连接错误：{0}",
-
     "explorer.favorites": "收藏夹",
     "explorer.group": "分组: {0}",
     "explorer.connected": "已连接",
@@ -746,7 +718,6 @@
     "database.errorDetail": "错误: {0}",
     "database.rowCount": "{0} 行",
     "database.outputChannelConnection": "SQL All in One - 连接",
-
     "connDialog.newConnection": "新建连接",
     "connDialog.editConnection": "编辑连接",
     "connDialog.configureParams": "配置数据库连接参数",
@@ -769,6 +740,8 @@
     "connDialog.sshHost": "SSH 主机",
     "connDialog.sshPort": "SSH 端口",
     "connDialog.authenticationMethod": "认证方式",
+    "connDialog.sqlServerAuth": "SQL Server 认证",
+    "connDialog.windowsAuth": "Windows 认证",
     "connDialog.authPassword": "密码",
     "connDialog.authPrivateKey": "私钥",
     "connDialog.sshPasswordPh": "SSH 密码",
@@ -807,15 +780,27 @@
     "connDialog.none": "无",
     "connDialog.loadFailed": "连接对话框加载失败",
     "connDialog.reinstall": "请重新安装插件。",
-
     "connStore.exportPasswordWarning": "即将以明文形式导出连接密码，存在安全风险。是否继续？",
     "connStore.export": "导出",
-
     "database.action": "操作",
-
     "resultPanel.loadFailed": "查询结果面板加载失败",
     "resultPanel.reinstall": "请重新安装插件。",
     "resultPanel.noResultToExport": "没有可导出的查询结果",
     "resultPanel.noActiveConnectionForDDL": "没有活动连接可用于 DDL 导出",
-    "resultPanel.noTableForDDL": "未指定要导出 DDL 的表"
+    "resultPanel.noTableForDDL": "未指定要导出 DDL 的表",
+    "connDialog.oracleConnectionType": "连接类型",
+    "connDialog.oracleServiceNameOpt": "Service Name",
+    "connDialog.oracleSidOpt": "SID",
+    "connDialog.oracleServiceNamePh": "ORCL",
+    "connDialog.oracleThickMode": "Thick 模式",
+    "connDialog.oracleInstantClientPath": "Instant Client 路径",
+    "connDialog.oracleInstantClientPathPh": "/path/to/instantclient",
+    "connDialog.serviceName": "Service Name",
+    "connDialog.sid": "SID",
+    "connDialog.damengOdbcDriver": "ODBC 驱动名",
+    "connDialog.damengOdbcDriverPh": "DM8 ODBC DRIVER",
+    "connDialog.damengCompatMode": "兼容模式",
+    "connDialog.damengSchema": "Schema",
+    "connDialog.damengSchemaPh": "SYSDBA",
+    "connDialog.damengOdbcHint": "达梦连接需要本机已安装达梦 ODBC 驱动（DM8 ODBC Driver），请参考达梦官方文档安装"
 }

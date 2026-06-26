@@ -8,6 +8,10 @@ import { mysqlKeywords } from './mysqlKeywords'
 import { postgresqlKeywords } from './postgresqlKeywords'
 import { bigqueryKeywords } from './bigqueryKeywords'
 import { sqliteKeywords } from './sqliteKeywords'
+import { starrocksKeywords } from './starrocksKeywords'
+import { sqlserverKeywords } from './sqlserverKeywords'
+import { oracleKeywords } from './oracleKeywords'
+import { damengKeywords } from './damengKeywords'
 
 const dialectKeywordMap: Record<string, KeywordInfo[]> = {
     hive: hiveKeywords,
@@ -18,6 +22,10 @@ const dialectKeywordMap: Record<string, KeywordInfo[]> = {
     postgresql: postgresqlKeywords,
     bigquery: bigqueryKeywords,
     sqlite: sqliteKeywords,
+    starrocks: starrocksKeywords,
+    sqlserver: sqlserverKeywords,
+    oracle: oracleKeywords,
+    dameng: damengKeywords,
 }
 
 const cache = new Map<SqlLanguage, KeywordInfo[]>()

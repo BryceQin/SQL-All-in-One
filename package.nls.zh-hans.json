@@ -229,5 +229,7 @@
     "hive-formatter.command.toggleComment.title": "切换注释 (SQL All in One)",
     "hive-formatter.command.toggleAdvancedComment.title": "切换高级注释 (SQL All in One)",
     "hive-formatter.config.dialect.enumDescriptions.starrocks": "StarRocks",
-    "hive-formatter.config.dialect.enumDescriptions.sqlserver": "SQL Server"
+    "hive-formatter.config.dialect.enumDescriptions.sqlserver": "SQL Server",
+    "hive-formatter.config.dialect.enumDescriptions.oracle": "Oracle",
+    "hive-formatter.config.dialect.enumDescriptions.dameng": "达梦 DM"
 }

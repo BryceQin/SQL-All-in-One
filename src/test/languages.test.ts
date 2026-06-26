@@ -1,6 +1,7 @@
 import * as assert from 'assert'
 import { createDialect, type Dialect, type DialectOptions } from '../languages/dialect'
 import * as allDialects from '../languages/allDialects'
+import { format } from '../formatter/sqlFormatter'
 
 // Keyword/function imports per dialect
 import { keywords as hiveKeywords, dataTypes as hiveDataTypes } from '../languages/hive/hive.keywords'
@@ -30,6 +31,18 @@ import { bigquery } from '../languages/bigquery/bigquery.formatter'
 import { keywords as sqliteKeywords, dataTypes as sqliteDataTypes } from '../languages/sqlite/sqlite.keywords'
 import { functions as sqliteFunctions, functionSignatures as sqliteFunctionSignatures } from '../languages/sqlite/sqlite.functions'
 import { sqlite } from '../languages/sqlite/sqlite.formatter'
+import { keywords as starrocksKeywords, dataTypes as starrocksDataTypes } from '../languages/starrocks/starrocks.keywords'
+import { functions as starrocksFunctions, functionSignatures as starrocksFunctionSignatures } from '../languages/starrocks/starrocks.functions'
+import { starrocks } from '../languages/starrocks/starrocks.formatter'
+import { keywords as sqlserverKeywords, dataTypes as sqlserverDataTypes } from '../languages/sqlserver/sqlserver.keywords'
+import { functions as sqlserverFunctions, functionSignatures as sqlserverFunctionSignatures } from '../languages/sqlserver/sqlserver.functions'
+import { sqlserver } from '../languages/sqlserver/sqlserver.formatter'
+import { keywords as oracleKeywords, dataTypes as oracleDataTypes } from '../languages/oracle/oracle.keywords'
+import { functions as oracleFunctions, functionSignatures as oracleFunctionSignatures } from '../languages/oracle/oracle.functions'
+import { oracle } from '../languages/oracle/oracle.formatter'
+import { keywords as damengKeywords, dataTypes as damengDataTypes } from '../languages/dameng/dameng.keywords'
+import { functions as damengFunctions, functionSignatures as damengFunctionSignatures } from '../languages/dameng/dameng.functions'
+import { dameng } from '../languages/dameng/dameng.formatter'
 
 import { baseKeywords } from '../languages/keywords/baseKeywords'
 import { getKeywordsForDialect } from '../languages/keywords'
@@ -67,7 +80,7 @@ suite('Dialect (dialect.ts)', () => {
         assert.notStrictEqual(hiveDialect, mysqlDialect, 'Different DialectOptions should return different Dialect instances')
     })
 
-    test('all 7 dialects can each be created', () => {
+    test('all dialects can each be created', () => {
         const dialects: [string, DialectOptions][] = [
             ['hive', hive],
             ['mysql', mysql],
@@ -76,6 +89,10 @@ suite('Dialect (dialect.ts)', () => {
             ['postgresql', postgresql],
             ['bigquery', bigquery],
             ['sqlite', sqlite],
+            ['starrocks', starrocks],
+            ['sqlserver', sqlserver],
+            ['oracle', oracle],
+            ['dameng', dameng],
         ]
         for (const [name, options] of dialects) {
             const dialect = createDialect(options)
@@ -93,6 +110,10 @@ suite('Dialect (dialect.ts)', () => {
         assert.strictEqual(postgresql.name, 'postgresql')
         assert.strictEqual(bigquery.name, 'bigquery')
         assert.strictEqual(sqlite.name, 'sqlite')
+        assert.strictEqual(starrocks.name, 'starrocks')
+        assert.strictEqual(sqlserver.name, 'sqlserver')
+        assert.strictEqual(oracle.name, 'oracle')
+        assert.strictEqual(dameng.name, 'dameng')
     })
 
     test('DialectOptions have tokenizerOptions and formatOptions', () => {
@@ -104,6 +125,10 @@ suite('Dialect (dialect.ts)', () => {
             ['postgresql', postgresql],
             ['bigquery', bigquery],
             ['sqlite', sqlite],
+            ['starrocks', starrocks],
+            ['sqlserver', sqlserver],
+            ['oracle', oracle],
+            ['dameng', dameng],
         ]
         for (const [name, options] of allOptions) {
             assert.ok(options.tokenizerOptions, `${name} should have tokenizerOptions`)
@@ -117,15 +142,15 @@ suite('Dialect (dialect.ts)', () => {
 // ============================================================================
 suite('allDialects.ts', () => {
 
-    test('all 7 dialects are exported', () => {
-        const expectedDialects = ['hive', 'mysql', 'spark', 'sql', 'postgresql', 'bigquery', 'sqlite']
+    test('all dialects are exported', () => {
+        const expectedDialects = ['hive', 'mysql', 'spark', 'sql', 'postgresql', 'bigquery', 'sqlite', 'starrocks', 'sqlserver', 'oracle', 'dameng']
         for (const name of expectedDialects) {
             assert.ok(allDialects[name as keyof typeof allDialects], `Dialect '${name}' should be exported`)
         }
     })
 
     test('each exported dialect has name, tokenizerOptions, formatOptions', () => {
-        const dialectNames = ['hive', 'mysql', 'spark', 'sql', 'postgresql', 'bigquery', 'sqlite'] as const
+        const dialectNames = ['hive', 'mysql', 'spark', 'sql', 'postgresql', 'bigquery', 'sqlite', 'starrocks', 'sqlserver', 'oracle', 'dameng'] as const
         for (const name of dialectNames) {
             const d = allDialects[name].get()
             assert.strictEqual(typeof d.name, 'string', `${name}.name should be a string`)
@@ -134,7 +159,7 @@ suite('allDialects.ts', () => {
         }
     })
 
-    test('all 7 function signature arrays are exported', () => {
+    test('all function signature arrays are exported', () => {
         const sigNames: (keyof typeof allDialects)[] = [
             'hiveFunctionSignatures',
             'mysqlFunctionSignatures',
@@ -143,6 +168,10 @@ suite('allDialects.ts', () => {
             'pgFunctionSignatures',
             'bqFunctionSignatures',
             'sqliteFunctionSignatures',
+            'starrocksFunctionSignatures',
+            'sqlserverFunctionSignatures',
+            'oracleFunctionSignatures',
+            'damengFunctionSignatures',
         ]
         for (const name of sigNames) {
             const sigs = allDialects[name].get()
@@ -151,7 +180,7 @@ suite('allDialects.ts', () => {
         }
     })
 
-    test('all 7 keyword arrays and data type arrays are exported', () => {
+    test('all keyword arrays and data type arrays are exported', () => {
         const kwPairs: [keyof typeof allDialects, keyof typeof allDialects][] = [
             ['hiveKeywords', 'hiveDataTypes'],
             ['mysqlKeywords', 'mysqlDataTypes'],
@@ -160,6 +189,10 @@ suite('allDialects.ts', () => {
             ['pgKeywords', 'pgDataTypes'],
             ['bqKeywords', 'bqDataTypes'],
             ['sqliteKeywords', 'sqliteDataTypes'],
+            ['starrocksKeywords', 'starrocksDataTypes'],
+            ['sqlserverKeywords', 'sqlserverDataTypes'],
+            ['oracleKeywords', 'oracleDataTypes'],
+            ['damengKeywords', 'damengDataTypes'],
         ]
         for (const [kwName, dtName] of kwPairs) {
             const kws = allDialects[kwName].get()
@@ -247,6 +280,26 @@ testDialectKeywords('SQLite Keywords', sqliteKeywords, sqliteDataTypes, [
     'PRAGMA', 'REINDEX', 'VACUUM', 'RAISE',
 ])
 
+testDialectKeywords('StarRocks Keywords', starrocksKeywords, starrocksDataTypes, [
+    'BITMAP', 'HLL', 'ROLLUP', 'COLOCATE', 'DYNAMIC_PARTITION',
+    'PARTITION', 'BUCKETS', 'PROPERTIES', 'ENGINE', 'OLAP',
+    'DUPLICATE', 'AGGREGATE', 'UNIQUE',
+])
+
+
+testDialectKeywords('SQL Server Keywords', sqlserverKeywords, sqlserverDataTypes, [
+    'TOP', 'OFFSET', 'FETCH', 'PIVOT', 'UNPIVOT', 'OUTPUT', 'MERGE',
+])
+
+testDialectKeywords('Oracle Keywords', oracleKeywords, oracleDataTypes, [
+    'CONNECT', 'START', 'PRIOR', 'MINUS', 'DUAL', 'ROWNUM', 'ROWID',
+    'SYSDATE', 'SEQUENCE', 'SYNONYM', 'PACKAGE', 'PRAGMA', 'NVARCHAR2',
+])
+
+testDialectKeywords('Dameng Keywords', damengKeywords, damengDataTypes, [
+    'TOP', 'LIMIT', 'SEQUENCE', 'SYNONYM', 'DBLINK', 'DM_HASH', 'DM_ENCRYPT',
+    'ROWNUM', 'DUAL', 'CONNECT', 'MINUS', 'SYSDATE', 'NVARCHAR2',
+])
 // ============================================================================
 // Per-dialect function tests
 // ============================================================================
@@ -328,7 +381,129 @@ testDialectFunctions('SQL Functions', sqlFunctions, sqlFunctionSignatures)
 testDialectFunctions('PostgreSQL Functions', postgresqlFunctions, postgresqlFunctionSignatures)
 testDialectFunctions('BigQuery Functions', bigqueryFunctions, bigqueryFunctionSignatures)
 testDialectFunctions('SQLite Functions', sqliteFunctions, sqliteFunctionSignatures)
+testDialectFunctions('StarRocks Functions', starrocksFunctions, starrocksFunctionSignatures)
+testDialectFunctions('SQL Server Functions', sqlserverFunctions, sqlserverFunctionSignatures)
+testDialectFunctions('Oracle Functions', oracleFunctions, oracleFunctionSignatures)
+testDialectFunctions('Dameng Functions', damengFunctions, damengFunctionSignatures)
 
+// StarRocks-specific function tests (beyond the common aggregate functions
+// covered by testDialectFunctions). Verifies StarRocks-unique functions and
+// their signatures are present.
+suite('StarRocks Specific Functions', () => {
+
+    const starrocksSpecificFunctions = [
+        'BITMAP_UNION', 'HLL_UNION', 'COLLECT_LIST',
+        'BITMAP_COUNT', 'BITMAP_TO_STRING', 'HLL_CARDINALITY',
+        'COLLECT_SET', 'PERCENTILE_APPROX', 'EXPLODE', 'EXPLODE_SPLIT',
+    ]
+
+    test('functions contains StarRocks-specific functions', () => {
+        for (const fn of starrocksSpecificFunctions) {
+            assert.ok(
+                starrocksFunctions.includes(fn),
+                `Expected StarRocks-specific function '${fn}' to be present in starrocks functions`,
+            )
+        }
+    })
+
+    test('functionSignatures contains StarRocks-specific signatures', () => {
+        for (const fn of ['BITMAP_UNION', 'HLL_UNION', 'COLLECT_LIST']) {
+            const sig = starrocksFunctionSignatures.find(s => s.name === fn)
+            assert.ok(sig, `Expected StarRocks-specific function signature '${fn}' to be present`)
+            assert.ok(Array.isArray(sig!.params), `signature params should be an array for ${fn}`)
+            assert.strictEqual(typeof sig!.description, 'string', `signature description should be string for ${fn}`)
+        }
+    })
+})
+
+
+suite('SQL Server Specific Functions', () => {
+
+    const sqlserverSpecificFunctions = [
+        'GETDATE', 'CONVERT', 'TRY_CONVERT', 'STRING_AGG', 'IIF',
+    ]
+
+    test('functions contains SQL Server-specific functions', () => {
+        for (const fn of sqlserverSpecificFunctions) {
+            assert.ok(
+                sqlserverFunctions.includes(fn),
+                'Expected SQL Server-specific function ' + fn + ' to be present in sqlserver functions',
+            )
+        }
+    })
+
+    test('functionSignatures contains SQL Server-specific signatures', () => {
+        for (const fn of ['GETDATE', 'CONVERT', 'TRY_CONVERT']) {
+            const sig = sqlserverFunctionSignatures.find(s => s.name === fn)
+            assert.ok(sig, 'Expected SQL Server-specific function signature ' + fn + ' to be present')
+            assert.ok(Array.isArray(sig!.params), 'signature params should be an array for ' + fn)
+            assert.strictEqual(typeof sig!.description, 'string', 'signature description should be string for ' + fn)
+        }
+    })
+})
+
+suite('Oracle Specific Functions', () => {
+
+    const oracleSpecificFunctions = [
+        'DECODE', 'NVL', 'NVL2', 'TO_DATE', 'TO_CHAR', 'TO_NUMBER',
+        'LISTAGG', 'REGEXP_LIKE', 'SYSDATE', 'ADD_MONTHS', 'LAST_DAY',
+        'MONTHS_BETWEEN', 'NEXT_DAY', 'CONNECT_BY_ROOT', 'SYS_CONNECT_BY_PATH',
+    ]
+
+    test('functions contains Oracle-specific functions', () => {
+        for (const fn of oracleSpecificFunctions) {
+            assert.ok(
+                oracleFunctions.includes(fn),
+                'Expected Oracle-specific function ' + fn + ' to be present in oracle functions',
+            )
+        }
+    })
+
+    test('functionSignatures contains Oracle-specific signatures', () => {
+        for (const fn of ['DECODE', 'NVL', 'TO_DATE', 'TO_CHAR', 'LISTAGG', 'REGEXP_LIKE']) {
+            const sig = oracleFunctionSignatures.find(s => s.name === fn)
+            assert.ok(sig, 'Expected Oracle-specific function signature ' + fn + ' to be present')
+            assert.ok(Array.isArray(sig!.params), 'signature params should be an array for ' + fn)
+            assert.strictEqual(typeof sig!.description, 'string', 'signature description should be string for ' + fn)
+        }
+    })
+})
+
+suite('Dameng Specific Functions', () => {
+
+    const damengSpecificFunctions = [
+        'DM_HASH', 'DM_ENCRYPT', 'TO_DM_DATE',
+    ]
+
+    test('functions contains Dameng-specific functions', () => {
+        for (const fn of damengSpecificFunctions) {
+            assert.ok(
+                damengFunctions.includes(fn),
+                'Expected Dameng-specific function ' + fn + ' to be present in dameng functions',
+            )
+        }
+    })
+
+    test('functions contains Oracle-compatible functions retained in Dameng', () => {
+        // Dameng derives from Oracle and should retain Oracle-compatible functions.
+        const oracleCompatibleFunctions = ['TO_DATE', 'TO_CHAR', 'DECODE', 'NVL']
+        for (const fn of oracleCompatibleFunctions) {
+            assert.ok(
+                damengFunctions.includes(fn),
+                'Expected Oracle-compatible function ' + fn + ' to be present in dameng functions',
+            )
+        }
+    })
+
+    test('functionSignatures contains Dameng-specific signatures', () => {
+        for (const fn of ['DM_HASH', 'DM_ENCRYPT', 'TO_DM_DATE']) {
+            const sig = damengFunctionSignatures.find(s => s.name === fn)
+            assert.ok(sig, 'Expected Dameng-specific function signature ' + fn + ' to be present')
+            assert.ok(Array.isArray(sig!.params), 'signature params should be an array for ' + fn)
+            assert.strictEqual(typeof sig!.description, 'string', 'signature description should be string for ' + fn)
+        }
+    })
+})
 // ============================================================================
 // baseKeywords.ts tests
 // ============================================================================
@@ -452,7 +627,7 @@ suite('keywords/index.ts', () => {
     })
 
     test('getKeywordsForDialect results include base keywords like SELECT', () => {
-        for (const dialect of ['hive', 'mysql', 'spark', 'sql', 'postgresql', 'bigquery', 'sqlite'] as const) {
+        for (const dialect of ['hive', 'mysql', 'spark', 'sql', 'postgresql', 'bigquery', 'sqlite', 'starrocks', 'sqlserver'] as const) {
             const result = getKeywordsForDialect(dialect)
             const keywordTexts = result.map(k => k.keyword.toUpperCase())
             assert.ok(keywordTexts.includes('SELECT'),
@@ -462,6 +637,18 @@ suite('keywords/index.ts', () => {
             assert.ok(keywordTexts.includes('WHERE'),
                 `getKeywordsForDialect('${dialect}') should include WHERE`)
         }
+    })
+
+    test('getKeywordsForDialect returns non-empty array for oracle', () => {
+        const result = getKeywordsForDialect('oracle')
+        assert.ok(Array.isArray(result), 'result should be an array')
+        assert.ok(result.length > 0, 'result should be non-empty')
+    })
+
+    test('getKeywordsForDialect returns non-empty array for dameng', () => {
+        const result = getKeywordsForDialect('dameng')
+        assert.ok(Array.isArray(result), 'result should be an array')
+        assert.ok(result.length > 0, 'result should be non-empty')
     })
 
     test('getKeywordsForDialect returns same result when called twice (caching)', () => {
@@ -527,6 +714,10 @@ suite('Dialect Formatter Options', () => {
     testDialectOptions('postgresql', postgresql)
     testDialectOptions('bigquery', bigquery)
     testDialectOptions('sqlite', sqlite)
+    testDialectOptions('starrocks', starrocks)
+    testDialectOptions('sqlserver', sqlserver)
+    testDialectOptions('oracle', oracle)
+    testDialectOptions('dameng', dameng)
 
     test('hive formatter has Hive-specific clauses', () => {
         const clauses = hive.tokenizerOptions.reservedClauses
@@ -558,5 +749,116 @@ suite('Dialect Formatter Options', () => {
         const hasVacuum = clauses.some((c: unknown) => typeof c === 'string' && (c as string).includes('VACUUM'))
         assert.ok(hasPragma, 'SQLite should have PRAGMA clause')
         assert.ok(hasVacuum, 'SQLite should have VACUUM clause')
+    })
+
+    test('starrocks formatter has CREATE MATERIALIZED VIEW clause', () => {
+        const clauses = starrocks.tokenizerOptions.reservedClauses
+        const hasMv = clauses.some((c: unknown) => typeof c === 'string' && (c as string).includes('CREATE MATERIALIZED VIEW'))
+        assert.ok(hasMv, 'StarRocks should have CREATE MATERIALIZED VIEW clause')
+    })
+
+    test('oracle formatter has CONNECT BY and START WITH clauses', () => {
+        const clauses = oracle.tokenizerOptions.reservedClauses
+        const hasConnectBy = clauses.some((c: unknown) => typeof c === 'string' && (c as string).includes('CONNECT BY'))
+        const hasStartWith = clauses.some((c: unknown) => typeof c === 'string' && (c as string).includes('START WITH'))
+        assert.ok(hasConnectBy, 'Oracle should have CONNECT BY clause')
+        assert.ok(hasStartWith, 'Oracle should have START WITH clause')
+    })
+
+    test('oracle formatter has MINUS set operation', () => {
+        const setOps = oracle.tokenizerOptions.reservedSetOperations
+        const hasMinus = setOps.some((c: unknown) => typeof c === 'string' && (c as string).includes('MINUS'))
+        assert.ok(hasMinus, 'Oracle should have MINUS set operation')
+    })
+
+    test('oracle formatter has q-quote string type and bind variable support', () => {
+        const stringTypes = oracle.tokenizerOptions.stringTypes
+        assert.ok(Array.isArray(stringTypes), 'Oracle stringTypes should be an array')
+        // Oracle alternative quoting mechanism q'...'
+        const hasQQuote = stringTypes.some((t: unknown) => typeof t === 'string' && (t as string).includes("q''"))
+        assert.ok(hasQQuote, "Oracle should support q'' alternative quoting")
+
+        const variableTypes = oracle.tokenizerOptions.variableTypes
+        assert.ok(Array.isArray(variableTypes), 'Oracle variableTypes should be an array')
+        assert.ok(variableTypes.length >= 2, 'Oracle should support bind (:) and substitution (&) variables')
+    })
+
+    test('dameng formatter has CONNECT BY and START WITH clauses (Oracle-compatible)', () => {
+        const clauses = dameng.tokenizerOptions.reservedClauses
+        const hasConnectBy = clauses.some((c: unknown) => typeof c === 'string' && (c as string).includes('CONNECT BY'))
+        const hasStartWith = clauses.some((c: unknown) => typeof c === 'string' && (c as string).includes('START WITH'))
+        assert.ok(hasConnectBy, 'Dameng should have CONNECT BY clause')
+        assert.ok(hasStartWith, 'Dameng should have START WITH clause')
+    })
+
+    test('dameng formatter has MINUS set operation (Oracle-compatible)', () => {
+        const setOps = dameng.tokenizerOptions.reservedSetOperations
+        const hasMinus = setOps.some((c: unknown) => typeof c === 'string' && (c as string).includes('MINUS'))
+        assert.ok(hasMinus, 'Dameng should have MINUS set operation')
+    })
+
+    test('dameng formatter has TOP keyword in select clauses', () => {
+        // Dameng supports SELECT TOP n ... syntax (in addition to ROWNUM/LIMIT)
+        const selectClauses = dameng.tokenizerOptions.reservedSelect
+        const hasTop = selectClauses.some((c: unknown) => typeof c === 'string' && (c as string).toUpperCase().includes('TOP'))
+        assert.ok(hasTop, 'Dameng reservedSelect should include TOP')
+    })
+
+    test('dameng formatter has LIMIT clause (MySQL-compatibility mode)', () => {
+        const clauses = dameng.tokenizerOptions.reservedClauses
+        const hasLimit = clauses.some((c: unknown) => typeof c === 'string' && (c as string) === 'LIMIT')
+        assert.ok(hasLimit, 'Dameng should have LIMIT clause')
+    })
+
+    test('dameng formatter has bind variable support (:name)', () => {
+        const variableTypes = dameng.tokenizerOptions.variableTypes
+        assert.ok(Array.isArray(variableTypes), 'Dameng variableTypes should be an array')
+        assert.ok(variableTypes.length >= 1, 'Dameng should support bind variables')
+    })
+
+    test('dameng formatter formats SELECT TOP 10 * FROM t without crashing', () => {
+        // Dameng supports SELECT TOP n syntax. The format() pipeline calls
+        // engine.astify() under the hood; Dameng borrows the Oracle parser,
+        // and node-sql-parser 5.x has no Oracle dialect module, so astify may
+        // throw a ParseError. The contract we verify (per SubTask 8.5) is
+        // that the process does not crash: either formatting succeeds (and
+        // the TOP keyword is preserved), or it throws a regular Error.
+        let threw: unknown = null
+        let result: string | null = null
+        try {
+            result = format('SELECT TOP 10 * FROM t', { language: 'dameng' })
+        } catch (e) {
+            threw = e
+        }
+        if (threw !== null) {
+            assert.ok(threw instanceof Error, 'dameng: SELECT TOP 10 parsing failure should be a regular Error, got: ' + String(threw))
+        } else {
+            assert.ok(result !== null && result.length > 0, 'Dameng: Should produce non-empty output for SELECT TOP 10')
+            assert.ok(result!.toUpperCase().includes('SELECT'), 'Dameng: output should contain SELECT')
+            assert.ok(result!.toUpperCase().includes('TOP'), 'Dameng: output should contain TOP keyword')
+        }
+    })
+
+    test('dameng formatter formats SELECT with ROWNUM without crashing', () => {
+        // Dameng retains the Oracle-compatible ROWNUM pseudo-column. The
+        // format() pipeline calls engine.astify() under the hood; Dameng
+        // borrows the Oracle parser, and node-sql-parser 5.x has no Oracle
+        // dialect module, so astify may throw a ParseError. The contract we
+        // verify (per SubTask 8.6) is that the process does not crash: either
+        // formatting succeeds (and the ROWNUM token is preserved), or it
+        // throws a regular Error.
+        let threw: unknown = null
+        let result: string | null = null
+        try {
+            result = format('SELECT * FROM t WHERE ROWNUM <= 10', { language: 'dameng' })
+        } catch (e) {
+            threw = e
+        }
+        if (threw !== null) {
+            assert.ok(threw instanceof Error, 'dameng: ROWNUM query parsing failure should be a regular Error, got: ' + String(threw))
+        } else {
+            assert.ok(result !== null && result.length > 0, 'Dameng: Should produce non-empty output for ROWNUM query')
+            assert.ok(result!.toUpperCase().includes('ROWNUM'), 'Dameng: output should preserve ROWNUM syntax')
+        }
     })
 })

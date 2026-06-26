@@ -12,6 +12,9 @@ const dialectEntries = [
     { vscodeLangId: 'sqlite', sqlLanguage: 'sqlite', sqlDialect: 'sqlite', nodeSqlParserDialect: 'SQLite' },
     { vscodeLangId: 'starrocks', sqlLanguage: 'starrocks', sqlDialect: 'starrocks', nodeSqlParserDialect: 'StarRocks' },
     { vscodeLangId: 'sqlserver', sqlLanguage: 'sqlserver', sqlDialect: 'sqlserver', nodeSqlParserDialect: 'SQLServer' },
+    { vscodeLangId: 'plsql', sqlLanguage: 'oracle', sqlDialect: 'oracle', nodeSqlParserDialect: 'Oracle' },
+    { vscodeLangId: 'oracle', sqlLanguage: 'oracle', sqlDialect: 'oracle', nodeSqlParserDialect: 'Oracle' },
+    { vscodeLangId: 'dameng', sqlLanguage: 'dameng', sqlDialect: 'dameng', nodeSqlParserDialect: 'Oracle' },
 ] as const
 
 const langIdSet = new Set<string>(dialectEntries.map(e => e.vscodeLangId))

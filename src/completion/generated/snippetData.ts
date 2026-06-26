@@ -352,6 +352,117 @@ export const snippetData: Record<string, Record<string, SnippetDef>> = {
       "description": "分区标题注释"
     }
   },
+  "dameng": {
+    "Oracle PL/SQL Block": {
+      "prefix": "orplsql",
+      "body": [
+        "DECLARE",
+        "    $1",
+        "BEGIN",
+        "    $2",
+        "EXCEPTION",
+        "    WHEN OTHERS THEN",
+        "        $3",
+        "END;",
+        "/"
+      ],
+      "description": "Oracle PL/SQL block with DECLARE/BEGIN/EXCEPTION"
+    },
+    "Oracle Package": {
+      "prefix": "orpkg",
+      "body": [
+        "CREATE OR REPLACE PACKAGE $1 IS",
+        "    $2",
+        "END $1;"
+      ],
+      "description": "Oracle CREATE OR REPLACE PACKAGE"
+    },
+    "Oracle Connect By": {
+      "prefix": "orconnect",
+      "body": [
+        "SELECT $1",
+        "FROM $2",
+        "START WITH $3",
+        "CONNECT BY PRIOR $4 = $5;"
+      ],
+      "description": "Oracle hierarchical query with CONNECT BY"
+    },
+    "Oracle Merge": {
+      "prefix": "ormerge",
+      "body": [
+        "MERGE INTO $1 t",
+        "USING $2 s",
+        "ON (t.$3 = s.$4)",
+        "WHEN MATCHED THEN",
+        "    UPDATE SET $5",
+        "WHEN NOT MATCHED THEN",
+        "    INSERT ($6)",
+        "    VALUES ($7);"
+      ],
+      "description": "Oracle MERGE INTO statement"
+    },
+    "Oracle Hint": {
+      "prefix": "orhint",
+      "body": [
+        "SELECT /*+ FULL($1) */ $2",
+        "FROM $1;"
+      ],
+      "description": "Oracle SELECT with optimizer hint"
+    },
+    "Oracle Decode": {
+      "prefix": "ordecode",
+      "body": [
+        "DECODE($1, $2, $3, $4, $5, $6)"
+      ],
+      "description": "Oracle DECODE function"
+    },
+    "Oracle Dual": {
+      "prefix": "ordual",
+      "body": [
+        "SELECT $1",
+        "FROM DUAL;"
+      ],
+      "description": "Oracle SELECT FROM DUAL"
+    },
+    "Oracle NVL": {
+      "prefix": "ornvl",
+      "body": [
+        "NVL($1, $2)"
+      ],
+      "description": "Oracle NVL function"
+    },
+    "Dameng Sequence": {
+      "prefix": "dmseq",
+      "body": [
+        "CREATE SEQUENCE ${1:name} START WITH ${2:1} INCREMENT BY ${3:1};"
+      ],
+      "description": "Dameng CREATE SEQUENCE"
+    },
+    "Dameng Synonym": {
+      "prefix": "dmsyn",
+      "body": [
+        "CREATE [OR REPLACE] SYNONYM ${1:name} FOR ${2:object};"
+      ],
+      "description": "Dameng CREATE SYNONYM"
+    },
+    "Dameng Top": {
+      "prefix": "dmtop",
+      "body": [
+        "SELECT TOP ${1:n} ${2:columns}",
+        "FROM ${3:table};"
+      ],
+      "description": "Dameng SELECT TOP"
+    },
+    "Dameng Database Link": {
+      "prefix": "dmdblink",
+      "body": [
+        "CREATE DATABASE LINK ${1:name}",
+        "    CONNECT TO ${2:user} IDENTIFIED BY ${3:password}",
+        "    USING '${4:service}';"
+      ],
+      "description": "Dameng CREATE DATABASE LINK"
+    }
+  },
   "flinksql": {
     "FlinkSQL Create Table with Kafka": {
       "prefix": "flinkkafka",
@@ -522,6 +633,86 @@ export const snippetData: Record<string, Record<string, SnippetDef>> = {
         "SHOW CREATE TABLE $1;"
       ],
       "description": "MySQL SHOW CREATE TABLE"
+    }
+  },
+  "oracle": {
+    "Oracle PL/SQL Block": {
+      "prefix": "orplsql",
+      "body": [
+        "DECLARE",
+        "    $1",
+        "BEGIN",
+        "    $2",
+        "EXCEPTION",
+        "    WHEN OTHERS THEN",
+        "        $3",
+        "END;",
+        "/"
+      ],
+      "description": "Oracle PL/SQL block with DECLARE/BEGIN/EXCEPTION"
+    },
+    "Oracle Package": {
+      "prefix": "orpkg",
+      "body": [
+        "CREATE OR REPLACE PACKAGE $1 IS",
+        "    $2",
+        "END $1;"
+      ],
+      "description": "Oracle CREATE OR REPLACE PACKAGE"
+    },
+    "Oracle Connect By": {
+      "prefix": "orconnect",
+      "body": [
+        "SELECT $1",
+        "FROM $2",
+        "START WITH $3",
+        "CONNECT BY PRIOR $4 = $5;"
+      ],
+      "description": "Oracle hierarchical query with CONNECT BY"
+    },
+    "Oracle Merge": {
+      "prefix": "ormerge",
+      "body": [
+        "MERGE INTO $1 t",
+        "USING $2 s",
+        "ON (t.$3 = s.$4)",
+        "WHEN MATCHED THEN",
+        "    UPDATE SET $5",
+        "WHEN NOT MATCHED THEN",
+        "    INSERT ($6)",
+        "    VALUES ($7);"
+      ],
+      "description": "Oracle MERGE INTO statement"
+    },
+    "Oracle Hint": {
+      "prefix": "orhint",
+      "body": [
+        "SELECT /*+ FULL($1) */ $2",
+        "FROM $1;"
+      ],
+      "description": "Oracle SELECT with optimizer hint"
+    },
+    "Oracle Decode": {
+      "prefix": "ordecode",
+      "body": [
+        "DECODE($1, $2, $3, $4, $5, $6)"
+      ],
+      "description": "Oracle DECODE function"
+    },
+    "Oracle Dual": {
+      "prefix": "ordual",
+      "body": [
+        "SELECT $1",
+        "FROM DUAL;"
+      ],
+      "description": "Oracle SELECT FROM DUAL"
+    },
+    "Oracle NVL": {
+      "prefix": "ornvl",
+      "body": [
+        "NVL($1, $2)"
+      ],
+      "description": "Oracle NVL function"
     }
   },
   "postgresql": {
@@ -800,6 +991,135 @@ export const snippetData: Record<string, Record<string, SnippetDef>> = {
         "VALUES (${3:values});"
       ],
       "description": "INSERT OR IGNORE statement"
+    }
+  },
+  "sqlserver": {
+    "SQL Server Top": {
+      "prefix": "ssttop",
+      "body": [
+        "SELECT TOP ${1:n} ${2:columns}",
+        "FROM ${3:table}",
+        "WHERE ${4:condition};"
+      ],
+      "description": "SQL Server SELECT TOP"
+    },
+    "SQL Server Pivot": {
+      "prefix": "sspivot",
+      "body": [
+        "SELECT *",
+        "FROM (",
+        "    SELECT ${1:group_col}, ${2:pivot_col}, ${3:value_col}",
+        "    FROM ${4:source_table}",
+        ") t",
+        "PIVOT (",
+        "    SUM(${3:value_col})",
+        "    FOR ${2:pivot_col} IN ([${5:value1}], [${6:value2}])",
+        ") p;"
+      ],
+      "description": "SQL Server PIVOT"
+    },
+    "SQL Server Merge": {
+      "prefix": "ssmerge",
+      "body": [
+        "MERGE INTO ${1:target_table} AS t",
+        "USING ${2:source_table} AS s",
+        "ON ${3:join_condition}",
+        "WHEN MATCHED THEN",
+        "    UPDATE SET ${4:column} = ${5:value}",
+        "WHEN NOT MATCHED THEN",
+        "    INSERT (${6:columns}) VALUES (${7:values});"
+      ],
+      "description": "SQL Server MERGE"
+    },
+    "SQL Server Output": {
+      "prefix": "ssoutput",
+      "body": [
+        "INSERT INTO ${1:table} (${2:columns})",
+        "OUTPUT inserted.*",
+        "VALUES (${3:values});"
+      ],
+      "description": "SQL Server INSERT with OUTPUT"
+    },
+    "SQL Server Offset Fetch": {
+      "prefix": "ssfetch",
+      "body": [
+        "SELECT ${1:columns}",
+        "FROM ${2:table}",
+        "ORDER BY ${3:order_column}",
+        "OFFSET ${4:0} ROWS",
+        "FETCH NEXT ${5:n} ROWS ONLY;"
+      ],
+      "description": "SQL Server OFFSET-FETCH pagination"
+    },
+    "SQL Server Openjson": {
+      "prefix": "ssopenjson",
+      "body": [
+        "SELECT *",
+        "FROM OPENJSON(${1:json})",
+        "WITH (",
+        "    ${2:column1} ${3:type1} '${4:path1}',",
+        "    ${5:column2} ${6:type2} '${7:path2}'",
+        ");"
+      ],
+      "description": "SQL Server OPENJSON"
+    }
+  },
+  "starrocks": {
+    "StarRocks Create Materialized View": {
+      "prefix": "srmv",
+      "body": [
+        "CREATE MATERIALIZED VIEW ${1:mv_name}",
+        "DISTRIBUTED BY HASH(${2:col}) BUCKETS ${3:10}",
+        "REFRESH ASYNC",
+        "AS",
+        "SELECT",
+        "    ${4:col1},",
+        "    ${5:col2}",
+        "FROM ${6:table_name};"
+      ],
+      "description": "StarRocks CREATE MATERIALIZED VIEW"
+    },
+    "StarRocks Add Rollup": {
+      "prefix": "srrollup",
+      "body": [
+        "ALTER TABLE ${1:table_name}",
+        "ADD ROLLUP ${2:rollup_name} (${3:col1}, ${4:col2})",
+        "${5:, PROPERTIES(\"replication_num\" = \"1\")};"
+      ],
+      "description": "StarRocks ALTER TABLE ADD ROLLUP"
+    },
+    "StarRocks Bitmap Union": {
+      "prefix": "srbitmap",
+      "body": [
+        "SELECT",
+        "    ${1:dim_col},",
+        "    BITMAP_COUNT(BITMAP_UNION(TO_BITMAP(${2:user_id}))) AS uv",
+        "FROM ${3:table_name}",
+        "GROUP BY ${1:dim_col};"
+      ],
+      "description": "StarRocks BITMAP_UNION aggregation"
+    },
+    "StarRocks HLL Union": {
+      "prefix": "srhll",
+      "body": [
+        "SELECT",
+        "    ${1:dim_col},",
+        "    HLL_CARDINALITY(HLL_UNION(HLL_HASH(${2:user_id}))) AS approx_uv",
+        "FROM ${3:table_name}",
+        "GROUP BY ${1:dim_col};"
+      ],
+      "description": "StarRocks HLL_UNION approximate count"
+    },
+    "StarRocks Explode Split": {
+      "prefix": "srexplode",
+      "body": [
+        "SELECT",
+        "    ${1:id},",
+        "    exploded_val",
+        "FROM ${2:table_name}",
+        "LATERAL VIEW EXPLODE_SPLIT(${3:csv_col}, ',') tmp AS exploded_val;"
+      ],
+      "description": "StarRocks LATERAL VIEW EXPLODE_SPLIT"
     }
   }
 } as const

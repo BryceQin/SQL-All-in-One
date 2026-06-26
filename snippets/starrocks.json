@@ -1,0 +1,58 @@
+{
+    "StarRocks Create Materialized View": {
+        "prefix": "srmv",
+        "body": [
+            "CREATE MATERIALIZED VIEW ${1:mv_name}",
+            "DISTRIBUTED BY HASH(${2:col}) BUCKETS ${3:10}",
+            "REFRESH ASYNC",
+            "AS",
+            "SELECT",
+            "    ${4:col1},",
+            "    ${5:col2}",
+            "FROM ${6:table_name};"
+        ],
+        "description": "StarRocks CREATE MATERIALIZED VIEW"
+    },
+    "StarRocks Add Rollup": {
+        "prefix": "srrollup",
+        "body": [
+            "ALTER TABLE ${1:table_name}",
+            "ADD ROLLUP ${2:rollup_name} (${3:col1}, ${4:col2})",
+            "${5:, PROPERTIES(\"replication_num\" = \"1\")};"
+        ],
+        "description": "StarRocks ALTER TABLE ADD ROLLUP"
+    },
+    "StarRocks Bitmap Union": {
+        "prefix": "srbitmap",
+        "body": [
+            "SELECT",
+            "    ${1:dim_col},",
+            "    BITMAP_COUNT(BITMAP_UNION(TO_BITMAP(${2:user_id}))) AS uv",
+            "FROM ${3:table_name}",
+            "GROUP BY ${1:dim_col};"
+        ],
+        "description": "StarRocks BITMAP_UNION aggregation"
+    },
+    "StarRocks HLL Union": {
+        "prefix": "srhll",
+        "body": [
+            "SELECT",
+            "    ${1:dim_col},",
+            "    HLL_CARDINALITY(HLL_UNION(HLL_HASH(${2:user_id}))) AS approx_uv",
+            "FROM ${3:table_name}",
+            "GROUP BY ${1:dim_col};"
+        ],
+        "description": "StarRocks HLL_UNION approximate count"
+    },
+    "StarRocks Explode Split": {
+        "prefix": "srexplode",
+        "body": [
+            "SELECT",
+            "    ${1:id},",
+            "    exploded_val",
+            "FROM ${2:table_name}",
+            "LATERAL VIEW EXPLODE_SPLIT(${3:csv_col}, ',') tmp AS exploded_val;"
+        ],
+        "description": "StarRocks LATERAL VIEW EXPLODE_SPLIT"
+    }
+}

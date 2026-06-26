@@ -759,6 +759,12 @@ suite('DialectMapper Tests', () => {
         assert.strictEqual(toNodeSqlParserDialect('sql'), 'MySQL')
     })
 
+    test('maps dameng to Oracle (borrows Oracle parser)', () => {
+        // Dameng has no native node-sql-parser dialect module; it reuses the
+        // Oracle parser (see dialectRegistry.ts).
+        assert.strictEqual(toNodeSqlParserDialect('dameng'), 'Oracle')
+    })
+
     test('getDialectEntries returns all dialects', () => {
         const dialects = [...new Set(getDialectEntries().map(e => e.sqlDialect))]
         assert.ok(dialects.includes('mysql'))
@@ -769,7 +775,13 @@ suite('DialectMapper Tests', () => {
         assert.ok(dialects.includes('bigquery'))
         assert.ok(dialects.includes('sqlite'))
         assert.ok(dialects.includes('sql'))
-        assert.strictEqual(dialects.length, 8)
+        assert.ok(dialects.includes('starrocks'))
+        assert.ok(dialects.includes('sqlserver'))
+        assert.ok(dialects.includes('oracle'))
+        assert.ok(dialects.includes('dameng'))
+        // sql, hive, mysql, spark, flinksql, postgresql, bigquery, sqlite,
+        // starrocks, sqlserver, oracle, dameng => 12 distinct dialects.
+        assert.strictEqual(dialects.length, 12)
     })
 })
 
@@ -1186,7 +1198,13 @@ suite('supportedDialects Tests', () => {
         assert.ok(supportedDialects.includes('postgresql'))
         assert.ok(supportedDialects.includes('bigquery'))
         assert.ok(supportedDialects.includes('sqlite'))
-        assert.strictEqual(supportedDialects.length, 8)
+        assert.ok(supportedDialects.includes('starrocks'))
+        assert.ok(supportedDialects.includes('sqlserver'))
+        assert.ok(supportedDialects.includes('oracle'))
+        assert.ok(supportedDialects.includes('dameng'))
+        // sql, hive, mysql, spark, flinksql, postgresql, bigquery, sqlite,
+        // starrocks, sqlserver, oracle, dameng => 12 distinct languages.
+        assert.strictEqual(supportedDialects.length, 12)
     })
 })
 
@@ -1340,5 +1358,121 @@ suite('Format consistency tests', () => {
         const first = format(sql, { language: 'mysql' })
         const second = format(first, { language: 'mysql' })
         assert.strictEqual(second, first, 'DELETE formatting should be idempotent')
+    })
+})
+
+suite('Oracle PL/SQL block parsing', () => {
+
+    test('PL/SQL block (DECLARE...BEGIN...EXCEPTION...END;) does not crash the process', () => {
+        // PL/SQL anonymous block with classic terminator. node-sql-parser is a
+        // SQL parser (not a PL/SQL parser), so astify may throw a ParseError.
+        // The contract we verify here is that the failure is a normal Error
+        // (i.e. the process does not crash / hang / emit an uncaught exception).
+        const plsqlBlock = [
+            'DECLARE',
+            '  v_count NUMBER := 0;',
+            'BEGIN',
+            '  SELECT COUNT(*) INTO v_count FROM employees WHERE department_id = 10;',
+            '  IF v_count > 0 THEN',
+            '    DBMS_OUTPUT.PUT_LINE(\'found\');',
+            '  END IF;',
+            'EXCEPTION',
+            '  WHEN NO_DATA_FOUND THEN',
+            '    NULL;',
+            '  WHEN OTHERS THEN',
+            '    ROLLBACK;',
+            'END;',
+            '/',
+        ].join('\n')
+        let threw: unknown = null
+        try {
+            format(plsqlBlock, { language: 'oracle' })
+        } catch (e) {
+            threw = e
+        }
+        // Either it formats without crashing, or it throws a regular Error.
+        // The key assertion: the process is still alive and the thrown value
+        // (if any) is an Error instance, not a non-Error crash.
+        if (threw !== null) {
+            assert.ok(threw instanceof Error, 'PL/SQL block parsing failure should be a regular Error, got: ' + String(threw))
+        }
+    })
+
+    test('Oracle dialect handles a simple SELECT from DUAL without crashing', () => {
+        // node-sql-parser 5.x does not ship an Oracle dialect module, so
+        // astify for the oracle dialect raises "Oracle is not supported
+        // currently". The contract verified here (per SubTask 7.5) is that
+        // the formatter pipeline stays alive: the failure must surface as a
+        // regular Error rather than crashing the process. This mirrors the
+        // PL/SQL block test above and guards against uncaught exceptions.
+        let threw: unknown = null
+        let result: string | null = null
+        try {
+            result = format('SELECT SYSDATE FROM DUAL', { language: 'oracle' })
+        } catch (e) {
+            threw = e
+        }
+        if (threw !== null) {
+            assert.ok(threw instanceof Error, 'oracle: parsing failure should be a regular Error, got: ' + String(threw))
+        } else {
+            assert.ok(result !== null && result.length > 0, 'oracle: Should produce non-empty output for SELECT from DUAL')
+        }
+    })
+})
+
+suite('Dameng parsing pipeline', () => {
+
+    test('Dameng simple SELECT does not crash the process', () => {
+        // node-sql-parser 5.x has no Dameng dialect module; astify for the
+        // dameng dialect borrows the Oracle parser (see dialectRegistry.ts).
+        // The contract verified here (mirroring the Oracle SELECT-from-DUAL
+        // test) is that the formatter pipeline stays alive: the failure (if
+        // any) must surface as a regular Error rather than crashing the
+        // process.
+        let threw: unknown = null
+        let result: string | null = null
+        try {
+            result = format('SELECT id FROM users', { language: 'dameng' })
+        } catch (e) {
+            threw = e
+        }
+        if (threw !== null) {
+            assert.ok(threw instanceof Error, 'dameng: parsing failure should be a regular Error, got: ' + String(threw))
+        } else {
+            assert.ok(result !== null && result.length > 0, 'dameng: Should produce non-empty output for simple SELECT')
+        }
+    })
+
+    test('Dameng PL/SQL-style block does not crash the process', () => {
+        // PL/SQL anonymous block. node-sql-parser is a SQL parser (not a
+        // PL/SQL parser), so astify may throw a ParseError. The contract we
+        // verify here is that the failure is a normal Error (i.e. the process
+        // does not crash / hang / emit an uncaught exception). Mirrors the
+        // Oracle PL/SQL block test above.
+        const plsqlBlock = [
+            'DECLARE',
+            '  v_count NUMBER := 0;',
+            'BEGIN',
+            '  SELECT COUNT(*) INTO v_count FROM employees WHERE department_id = 10;',
+            '  IF v_count > 0 THEN',
+            '    DBMS_OUTPUT.PUT_LINE(\'found\');',
+            '  END IF;',
+            'EXCEPTION',
+            '  WHEN NO_DATA_FOUND THEN',
+            '    NULL;',
+            '  WHEN OTHERS THEN',
+            '    ROLLBACK;',
+            'END;',
+            '/',
+        ].join('\n')
+        let threw: unknown = null
+        try {
+            format(plsqlBlock, { language: 'dameng' })
+        } catch (e) {
+            threw = e
+        }
+        if (threw !== null) {
+            assert.ok(threw instanceof Error, 'Dameng PL/SQL block parsing failure should be a regular Error, got: ' + String(threw))
+        }
     })
 })

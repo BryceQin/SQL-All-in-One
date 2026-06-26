@@ -12,7 +12,6 @@
     "diagnostic.trailingCommaBeforeEnd": "[Line {0}] Warning: extra comma found before end of statement",
     "diagnostic.sqlSyntaxError": "SQL syntax error",
     "diagnostic.formatError": "[Line {0}] {1}",
-
     "enhanced.havingWithoutGroupBy": "[Line {0}] Code quality: HAVING clause should be used with GROUP BY",
     "enhanced.limitWithoutNumber": "[Line {0}] Syntax error: LIMIT requires a number",
     "enhanced.duplicateAlias": "[Line {0}] Code quality: table alias \"{0}\" is reused, may cause confusion",
@@ -28,7 +27,6 @@
     "enhanced.subqueryMissingAlias": "[Line {0}] Code quality: subquery should specify an alias",
     "enhanced.nullComparison": "[Line {0}] Code quality: NULL comparison should use {0} instead of {1}",
     "enhanced.dateFunctionHint": "Using {0} in Hive is supported, but verify version compatibility",
-
     "linter.uppercaseKeywords.name": "Uppercase Keywords",
     "linter.uppercaseKeywords.description": "Use uppercase for SQL keywords",
     "linter.consistentAliasing.name": "Consistent Aliasing",
@@ -66,7 +64,6 @@
     "linter.commentedOutCode.description": "Found commented-out code ({0} lines), consider removing or uncommenting it",
     "linter.expiredTodo.name": "Expired TODO",
     "linter.expiredTodo.description": "TODO marker has expired ({0}), overdue by {1} days, please verify if still needed",
-
     "linter.havingWithoutGroupBy.name": "HAVING Without GROUP BY",
     "linter.havingWithoutGroupBy.description": "HAVING clause should be used with GROUP BY",
     "linter.limitInvalidValue.name": "Invalid LIMIT Value",
@@ -102,7 +99,6 @@
     "linter.deprecatedFunction.least": "LEAST() returns NULL if any argument is NULL; consider COALESCE or CASE",
     "linter.postgresBooleanComparison.name": "Postgres Boolean Comparison",
     "linter.postgresBooleanComparison.description": "In PostgreSQL, compare boolean columns directly (e.g. WHERE is_active) instead of WHERE is_active = TRUE",
-
     "notification.noActiveEditor": "No active editor found",
     "notification.notSqlDocument": "Not an SQL document",
     "notification.noParameterFound": "No parameter under cursor",
@@ -127,7 +123,6 @@
     "notification.formatDisabledMarkAdded": "Format disable marker added",
     "notification.error": "{0}",
     "notification.warning": "{0}",
-
     "codeAction.addQueryComment": "Add query description comment",
     "codeAction.addCommentPlaceholder": "Add COMMENT placeholder",
     "codeAction.uncomment": "Uncomment",
@@ -140,7 +135,6 @@
     "codeAction.wrapWithBacktick": "Wrap identifier with backticks",
     "codeAction.addSubqueryAlias": "Add alias for subquery",
     "codeAction.addColumnPlaceholder": "Add column name placeholder",
-
     "completion.keywordLabel": "{0} keyword",
     "completion.dataTypeLabel": "{0} data type",
     "completion.returnType": "Return type: {0}",
@@ -190,7 +184,6 @@
     "completion.modifyContent": "Changes",
     "completion.initialVersion": "Initial version",
     "completion.tableCountTruncated": "(Total {0} tables, showing first 20 only)",
-
     "snippet.basicSelect": "Basic SELECT statement",
     "snippet.selectDistinct": "SELECT with DISTINCT",
     "snippet.join": "JOIN tables",
@@ -214,7 +207,6 @@
     "snippet.hackComment": "HACK workaround comment",
     "snippet.queryDescription": "Query description comment block",
     "snippet.partitionTitle": "Partition title comment",
-
     "outline.withClause": "WITH Clause",
     "outline.cte": "Common Table Expressions",
     "outline.table": "Table",
@@ -222,18 +214,15 @@
     "outline.function": "Function",
     "outline.procedure": "Procedure",
     "outline.query": "Query",
-
     "lexer.parseError": "Parse error: unexpected \"{2}\" at line {0}, column {1}.\n{3}",
     "lexer.defaultDialectHint": "This may be because you are using the default \"sql\" dialect.\nIf possible, please select a more specific dialect (e.g., hive, mysql, spark, etc.).",
     "lexer.currentDialect": "Current SQL dialect: \"{0}\".",
-
     "validate.deprecated": "{0} configuration option has been deprecated.",
     "validate.expressionWidthPositive": "expressionWidth must be a positive integer. Received value: {0}.",
     "validate.paramsStringType": "Warning: all values in params configuration should be strings.",
     "validate.emptyParamRegex": "An empty regex was provided in custom paramTypes. This will match an infinite number of parameters.",
     "validate.unsupportedDialect": "Unsupported SQL dialect: {0}",
     "validate.invalidQueryType": "Invalid query input: expected string, got {0}",
-
     "paramHover": "Parameter: {0}",
     "statusBar.tooltip": "SQL All in One",
     "linter.source": "SQL All in One Linter",
@@ -259,7 +248,6 @@
     "hover.parameterLine": "Line {0}:",
     "hover.parameterMore": "... and {0} more",
     "hover.parameterTip": "Tip: Use \"SQL-All-in-One: Replace SQL Parameters\" command to batch replace",
-
     "navigation.cteDefinition": "CTE definition",
     "navigation.tableAliasDefinition": "Table alias definition",
     "navigation.columnAliasDefinition": "Column alias definition",
@@ -277,7 +265,6 @@
     "navigation.reservedWord": "'{0}' is a SQL reserved word and cannot be used as an identifier",
     "navigation.nameConflict": "Name '{0}' is already in use",
     "navigation.invalidName": "Name can only contain letters, digits, and underscores, and cannot start with a digit",
-
     "configEditor.title": "SQL All in One - Config Editor",
     "configEditor.subtitle": "Visually adjust SQL formatting options with live preview",
     "configEditor.presets": "Quick Presets",
@@ -293,7 +280,6 @@
     "configEditor.formattingOptions": "Formatting Options",
     "configEditor.loadFailed": "Failed to load config editor",
     "configEditor.reinstall": "Please reinstall the extension.",
-
     "configEditor.cg.basicSettings": "Basic Settings",
     "configEditor.cg.featureToggles": "Feature Toggles",
     "configEditor.cg.commentSettings": "Comment Settings",
@@ -304,7 +290,6 @@
     "configEditor.cg.newlineSettings": "Newline Settings",
     "configEditor.cg.advancedOptions": "Advanced Options",
     "configEditor.cg.otherOptions": "Other Options",
-
     "configEditor.lbl.dialect": "SQL Dialect",
     "configEditor.lbl.headerAuthor": "Header Author",
     "configEditor.lbl.headerModifier": "Header Modifier",
@@ -327,13 +312,11 @@
     "configEditor.lbl.inListThreshold": "IN List Threshold",
     "configEditor.lbl.tabSizeOverride": "Tab Size Override",
     "configEditor.lbl.singleLineMaxLength": "Single Line Max Length",
-
     "configEditor.hint.forHeaderSnippet": "for header Snippet",
     "configEditor.hint.fallbackToAuthor": "falls back to author",
     "configEditor.hint.multilineThreshold": "multiline threshold",
     "configEditor.hint.blankLines": "blank lines",
     "configEditor.hint.breakWhenExceeded": "break when exceeded",
-
     "configEditor.toggle.enableLinter": "SQL Lint",
     "configEditor.toggle.showErrorLevel": "Error Diagnostics",
     "configEditor.toggle.showWarningLevel": "Warning Diagnostics",
@@ -389,7 +372,6 @@
     "configEditor.toggle.newlineBeforeClusterBy": "Newline Before CLUSTER BY",
     "configEditor.toggle.newlineBeforeSortBy": "Newline Before SORT BY",
     "configEditor.toggle.ignoreTabSettings": "Ignore Tab Settings",
-
     "configEditor.lint.avoidSelectStar": "Avoid SELECT *",
     "configEditor.lint.explicitJoinType": "Explicit JOIN Type",
     "configEditor.lint.limitWithOrderBy": "LIMIT With ORDER BY",
@@ -408,7 +390,6 @@
     "configEditor.lint.missingColumnComment": "Missing Column Comment",
     "configEditor.lint.commentedOutCode": "Commented Out Code",
     "configEditor.lint.expiredTodo": "Expired TODO",
-
     "configEditor.lint.havingWithoutGroupBy": "HAVING Without GROUP BY",
     "configEditor.lint.limitInvalidValue": "Invalid LIMIT Value",
     "configEditor.lint.reservedWordIdentifier": "Reserved Word Identifier",
@@ -425,7 +406,6 @@
     "configEditor.lint.implicitCrossJoin": "Implicit Cross Join",
     "configEditor.lint.deprecatedFunction": "Deprecated Function",
     "configEditor.lint.postgresBooleanComparison": "Postgres Boolean Comparison",
-
     "configEditor.opt.autoDetect": "Auto-detect",
     "configEditor.opt.genericSQL": "Generic SQL",
     "configEditor.opt.preserve": "Preserve",
@@ -442,25 +422,19 @@
     "configEditor.opt.newline": "Newline",
     "configEditor.opt.standalone": "Standalone line",
     "configEditor.opt.inLine": "In-line",
-
     "configEditor.ph.headerAuthor": "Leave empty for manual input",
     "configEditor.ph.headerModifier": "Leave empty to use author name",
-
     "configEditor.preview.inputLabel": "Input SQL",
     "configEditor.preview.outputLabel": "Formatted Result",
-
     "configEditor.toast.configSaved": "Config saved",
     "configEditor.toast.saveFailed": "Save failed, please retry",
-
     "configEditor.lang.label": "Display Language",
     "configEditor.lang.zh": "中文",
     "configEditor.lang.en": "English",
     "configEditor.lang.auto": "Auto",
-
     "configEditor.severity.error": "Error",
     "configEditor.severity.warning": "Warning",
     "configEditor.severity.information": "Info",
-
     "database.noActiveConnection": "No active connection. Please connect to a database first.",
     "database.noActiveAdapter": "No active database adapter.",
     "database.noActiveEditor": "No active editor.",
@@ -504,7 +478,6 @@
     "safety.grantStatement": "GRANT operation detected",
     "safety.revokeStatement": "REVOKE operation detected",
     "safety.alterStatement": "ALTER operation detected",
-
     "configEditor.cg.querySettings": "Database Query",
     "configEditor.cg.safetyGuard": "Safety Guard",
     "configEditor.cg.executionSettings": "Execution Settings",
@@ -682,7 +655,6 @@
     "ssh.authFailed": "SSH authentication failed. Check username and password/key.",
     "ssh.keyFormatError": "SSH private key format error. Check the key file format.",
     "ssh.connectionError": "SSH connection error: {0}",
-
     "explorer.favorites": "Favorites",
     "explorer.group": "Group: {0}",
     "explorer.connected": "Connected",
@@ -746,7 +718,6 @@
     "database.errorDetail": "Error: {0}",
     "database.rowCount": "{0} rows",
     "database.outputChannelConnection": "SQL All in One - Connection",
-
     "connDialog.newConnection": "New Connection",
     "connDialog.editConnection": "Edit Connection",
     "connDialog.configureParams": "Configure database connection parameters",
@@ -769,6 +740,8 @@
     "connDialog.sshHost": "SSH Host",
     "connDialog.sshPort": "SSH Port",
     "connDialog.authenticationMethod": "Authentication Method",
+    "connDialog.sqlServerAuth": "SQL Server Authentication",
+    "connDialog.windowsAuth": "Windows Authentication",
     "connDialog.authPassword": "Password",
     "connDialog.authPrivateKey": "Private Key",
     "connDialog.sshPasswordPh": "SSH password",
@@ -807,15 +780,27 @@
     "connDialog.none": "None",
     "connDialog.loadFailed": "Failed to load Connection Dialog",
     "connDialog.reinstall": "Please reinstall the extension.",
-
     "connStore.exportPasswordWarning": "You are about to export connection passwords in plaintext. This is a security risk. Continue?",
     "connStore.export": "Export",
-
     "database.action": "Action",
-
     "resultPanel.loadFailed": "Failed to load Query Result panel",
     "resultPanel.reinstall": "Please reinstall the extension.",
     "resultPanel.noResultToExport": "No query result to export",
     "resultPanel.noActiveConnectionForDDL": "No active connection for DDL export",
-    "resultPanel.noTableForDDL": "No table specified for DDL export"
+    "resultPanel.noTableForDDL": "No table specified for DDL export",
+    "connDialog.oracleConnectionType": "Connection Type",
+    "connDialog.oracleServiceNameOpt": "Service Name",
+    "connDialog.oracleSidOpt": "SID",
+    "connDialog.oracleServiceNamePh": "ORCL",
+    "connDialog.oracleThickMode": "Thick Mode",
+    "connDialog.oracleInstantClientPath": "Instant Client Path",
+    "connDialog.oracleInstantClientPathPh": "/path/to/instantclient",
+    "connDialog.serviceName": "Service Name",
+    "connDialog.sid": "SID",
+    "connDialog.damengOdbcDriver": "ODBC Driver Name",
+    "connDialog.damengOdbcDriverPh": "DM8 ODBC DRIVER",
+    "connDialog.damengCompatMode": "Compatibility Mode",
+    "connDialog.damengSchema": "Schema",
+    "connDialog.damengSchemaPh": "SYSDBA",
+    "connDialog.damengOdbcHint": "Dameng connection requires the Dameng ODBC driver (DM8 ODBC Driver) to be installed on this machine. Please refer to the Dameng official documentation for installation."
 }

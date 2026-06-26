@@ -57,6 +57,45 @@
             </div>
           </div>
 
+          <div class="conn-form-row" id="authMethodSection" style="display:none;">
+            <label class="conn-form-label" data-i18n="authenticationMethod">Authentication Method</label>
+            <select class="config-select" id="authMethod" data-action="updateField" data-action-arg="authMethod">
+              <option value="sqlserver" data-i18n="sqlServerAuth">SQL Server Authentication</option>
+              <option value="windows" data-i18n="windowsAuth">Windows Authentication</option>
+            </select>
+          </div>
+
+          <div class="conn-form-row" id="oracleConnTypeSection" style="display:none;">
+            <label class="conn-form-label" data-i18n="oracleConnectionType">Connection Type</label>
+            <select class="config-select" id="oracleConnType" data-action="updateField" data-action-arg="oracleConnType">
+              <option value="service_name" data-i18n="oracleServiceNameOpt">Service Name</option>
+              <option value="sid" data-i18n="oracleSidOpt">SID</option>
+            </select>
+          </div>
+
+          <div class="conn-form-row" id="oracleServiceNameSection" style="display:none;">
+            <label class="conn-form-label" id="oracleServiceNameLabel" data-i18n="oracleServiceNameOpt">Service Name</label>
+            <input type="text" class="config-input" id="oracleServiceName" data-action="updateField" data-action-arg="oracleServiceName" data-i18n-ph="oracleServiceNamePh" placeholder="ORCL">
+          </div>
+
+          <div id="damengFieldsSection" style="display:none;">
+            <div class="conn-form-row">
+              <label class="conn-form-label" data-i18n="damengOdbcDriver">ODBC Driver Name</label>
+              <input type="text" class="config-input" id="damengOdbcDriver" data-action="updateField" data-action-arg="damengOdbcDriver" data-i18n-ph="damengOdbcDriverPh" placeholder="DM8 ODBC DRIVER">
+            </div>
+            <div class="conn-form-row">
+              <label class="conn-form-label" data-i18n="damengCompatMode">Compatibility Mode</label>
+              <select class="config-select" id="damengCompatMode" data-action="updateField" data-action-arg="damengCompatMode">
+                <option value="oracle">Oracle</option>
+                <option value="mysql">MySQL</option>
+                <option value="pg">PG</option>
+              </select>
+            </div>
+            <div class="conn-form-row">
+              <p style="font-size: 11px; color: var(--text-secondary); margin-top: 4px; line-height: 1.5;" data-i18n="damengOdbcHint">Dameng connection requires the Dameng ODBC driver (DM8 ODBC Driver) to be installed on this machine. Please refer to the Dameng official documentation for installation.</p>
+            </div>
+          </div>
+
           <div id="hostSection">
             <div class="conn-form-row">
               <div class="conn-form-inline">
@@ -70,11 +109,11 @@
                 </div>
               </div>
             </div>
-            <div class="conn-form-row">
+            <div class="conn-form-row" id="connUsernameRow">
               <label class="conn-form-label" data-i18n="username">Username</label>
               <input type="text" class="config-input" id="connUsername" data-action="updateField" data-action-arg="username" value="root" placeholder="root">
             </div>
-            <div class="conn-form-row">
+            <div class="conn-form-row" id="connPasswordRow">
               <label class="conn-form-label" data-i18n="password">Password</label>
               <div class="conn-form-input-group">
                 <input type="password" class="config-input" id="connPassword" data-action="updateField" data-action-arg="password" data-i18n-ph="enterPassword" placeholder="Enter password">
@@ -225,6 +264,25 @@
           <div class="conn-form-row">
             <label class="conn-form-label" data-i18n="initialSql">Initial SQL</label>
             <input type="text" class="config-input" id="connInitSql" data-action="updateField" data-action-arg="options.initSql" placeholder="SET NAMES utf8mb4;">
+          </div>
+          <div id="oracleThickSection" style="display:none;">
+            <div class="toggle-row">
+              <span class="toggle-label" data-i18n="oracleThickMode">Thick Mode</span>
+              <label class="toggle"><input type="checkbox" id="thickMode" data-action="updateField" data-action-arg="thickMode"><span class="toggle-slider"></span></label>
+            </div>
+            <div class="conn-form-row" id="instantClientPathRow" style="display:none;">
+              <label class="conn-form-label" data-i18n="oracleInstantClientPath">Instant Client Path</label>
+              <div class="conn-form-input-group">
+                <input type="text" class="config-input" id="instantClientPath" data-action="updateField" data-action-arg="instantClientPath" data-i18n-ph="oracleInstantClientPathPh" placeholder="/path/to/instantclient">
+                <button class="btn btn-ghost btn-sm" data-action="browseFile" data-action-arg="instantClientPath" data-i18n="browse">Browse</button>
+              </div>
+            </div>
+          </div>
+          <div id="damengSchemaSection" style="display:none;">
+            <div class="conn-form-row">
+              <label class="conn-form-label" data-i18n="damengSchema">Schema</label>
+              <input type="text" class="config-input" id="damengSchema" data-action="updateField" data-action-arg="damengSchema" data-i18n-ph="damengSchemaPh" placeholder="SYSDBA">
+            </div>
           </div>
         </div>
 

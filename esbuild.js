@@ -18,7 +18,7 @@ esbuild.build({
     entryPoints: ['./src/extension.ts'],
     bundle: true,
     outfile: 'out/extension.js',
-    external: ['vscode', 'pg', 'better-sqlite3'],
+    external: ['vscode', 'pg', 'better-sqlite3', 'mssql', 'oracledb', 'odbc'],
     format: 'cjs',
     platform: 'node',
     target: 'node20',

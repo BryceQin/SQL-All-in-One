@@ -26,6 +26,8 @@ import { PostgresAdapter } from './database/adapters/PostgresAdapter';
 import { SqliteAdapter } from './database/adapters/SqliteAdapter';
 import { StarrocksAdapter } from './database/adapters/StarrocksAdapter';
 import { SqlServerAdapter } from './database/adapters/SqlServerAdapter';
+import { OracleAdapter } from './database/adapters/OracleAdapter';
+import { DamengAdapter } from './database/adapters/DamengAdapter';
 import { createConnectionManager } from './database/connection/ConnectionManager';
 import { createConnectionStore } from './database/connection/ConnectionStore';
 import { createSchemaProvider } from './database/schema/SchemaProvider';
@@ -78,6 +80,8 @@ function registerServicesToContainer(extensionPath: string): void {
   AdapterFactory.register('sqlite', SqliteAdapter, SqliteAdapter.getDialectMetadata);
   AdapterFactory.register('starrocks', StarrocksAdapter, StarrocksAdapter.getDialectMetadata);
   AdapterFactory.register('sqlserver', SqlServerAdapter, SqlServerAdapter.getDialectMetadata);
+  AdapterFactory.register('oracle', OracleAdapter, OracleAdapter.getDialectMetadata);
+  AdapterFactory.register('dameng', DamengAdapter, DamengAdapter.getDialectMetadata);
   container.register(Tokens.DialectAdapterFactory, AdapterFactory);
 
   // Provider services

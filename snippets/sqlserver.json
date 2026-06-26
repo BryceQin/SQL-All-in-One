@@ -1,0 +1,71 @@
+{
+    "SQL Server Top": {
+        "prefix": "ssttop",
+        "body": [
+            "SELECT TOP ${1:n} ${2:columns}",
+            "FROM ${3:table}",
+            "WHERE ${4:condition};"
+        ],
+        "description": "SQL Server SELECT TOP"
+    },
+    "SQL Server Pivot": {
+        "prefix": "sspivot",
+        "body": [
+            "SELECT *",
+            "FROM (",
+            "    SELECT ${1:group_col}, ${2:pivot_col}, ${3:value_col}",
+            "    FROM ${4:source_table}",
+            ") t",
+            "PIVOT (",
+            "    SUM(${3:value_col})",
+            "    FOR ${2:pivot_col} IN ([${5:value1}], [${6:value2}])",
+            ") p;"
+        ],
+        "description": "SQL Server PIVOT"
+    },
+    "SQL Server Merge": {
+        "prefix": "ssmerge",
+        "body": [
+            "MERGE INTO ${1:target_table} AS t",
+            "USING ${2:source_table} AS s",
+            "ON ${3:join_condition}",
+            "WHEN MATCHED THEN",
+            "    UPDATE SET ${4:column} = ${5:value}",
+            "WHEN NOT MATCHED THEN",
+            "    INSERT (${6:columns}) VALUES (${7:values});"
+        ],
+        "description": "SQL Server MERGE"
+    },
+    "SQL Server Output": {
+        "prefix": "ssoutput",
+        "body": [
+            "INSERT INTO ${1:table} (${2:columns})",
+            "OUTPUT inserted.*",
+            "VALUES (${3:values});"
+        ],
+        "description": "SQL Server INSERT with OUTPUT"
+    },
+    "SQL Server Offset Fetch": {
+        "prefix": "ssfetch",
+        "body": [
+            "SELECT ${1:columns}",
+            "FROM ${2:table}",
+            "ORDER BY ${3:order_column}",
+            "OFFSET ${4:0} ROWS",
+            "FETCH NEXT ${5:n} ROWS ONLY;"
+        ],
+        "description": "SQL Server OFFSET-FETCH pagination"
+    },
+    "SQL Server Openjson": {
+        "prefix": "ssopenjson",
+        "body": [
+            "SELECT *",
+            "FROM OPENJSON(${1:json})",
+            "WITH (",
+            "    ${2:column1} ${3:type1} '${4:path1}',",
+            "    ${5:column2} ${6:type2} '${7:path2}'",
+            ");"
+        ],
+        "description": "SQL Server OPENJSON"
+    }
+}

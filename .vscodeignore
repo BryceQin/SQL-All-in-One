@@ -39,6 +39,5 @@ out/utils/**
 out/test/**
 scripts/**
 .github/**
-CHANGELOG.md
 CONTRIBUTING.md
 

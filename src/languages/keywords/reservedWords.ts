@@ -9,6 +9,7 @@ import {
     sqliteKeywords, sqliteDataTypes,
     starrocksKeywords, starrocksDataTypes,
     sqlserverKeywords, sqlserverDataTypes,
+    oracleKeywords, oracleDataTypes,
 } from '../allDialects'
 import type { SqlLanguage } from '../../core/dialectRegistry'
 
@@ -23,6 +24,8 @@ const dialectReservedWordsLoaders: Record<SqlLanguage, () => string[]> = {
     sqlite: () => [...sqliteKeywords.get(), ...sqliteDataTypes.get()],
     starrocks: () => [...starrocksKeywords.get(), ...starrocksDataTypes.get()],
     sqlserver: () => [...sqlserverKeywords.get(), ...sqlserverDataTypes.get()],
+    oracle: () => [...oracleKeywords.get(), ...oracleDataTypes.get()],
+    dameng: () => [...oracleKeywords.get(), ...oracleDataTypes.get()],
 }
 
 const cache = new Map<SqlLanguage, Set<string>>()

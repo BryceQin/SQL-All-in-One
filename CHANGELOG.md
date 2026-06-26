@@ -1,5 +1,32 @@
 # Changelog
 
+## [2.24.0] - 2026-06-26
+
+### Features
+
+- **StarRocks 数据库支持**：通过 MySQL 协议（mysql2 驱动）连接 StarRocks，语言层在 MySQL 方言基础上扩展。支持 BITMAP/HLL/PERCENTILE/JSON/ARRAY/MAP/STRUCT 类型、DUPLICATE/AGGREGATE/UNIQUE KEY 表模型、ROLLUP/COLOCATE/DYNAMIC_PARTITION/PARTITION/BUCKETS/PROPERTIES DDL、物化视图（CREATE/REFRESH MATERIALIZED VIEW）、BITMAP_UNION/HLL_UNION/COLLECT_LIST/EXPLODE_SPLIT 等专属函数。默认端口 9030，默认用户 root
+- **SQL Server 数据库支持**：通过 mssql 驱动（基于 tedious）连接 SQL Server，支持 T-SQL 语法。支持 TOP/OFFSET FETCH/OUTPUT/PIVOT/UNPIVOT/MERGE/CROSS APPLY-OUTER APPLY 关键字、NVARCHAR/DATETIME2/DATETIMEOFFSET/MONEY/UNIQUEIDENTIFIER/SQL_VARIANT/HIERARCHYID/GEOGRAPHY 类型、FOR XML/FOR JSON 序列化、TRY_CONVERT/TRY_CAST/STRING_AGG/IIF/CHOOSE 函数、WITH (NOLOCK) 表提示。支持 Windows 身份验证（domain）、跨数据库查询（三段式命名）、SSL、SSH 隧道。默认端口 1433，默认用户 sa
+- **Oracle 数据库支持**：通过 oracledb 6.x 驱动连接 Oracle，默认 thin 模式（纯 JS 无需 Oracle Client），可选 thick 模式（需 Instant Client，幂等初始化）。支持 PL/SQL 语法、CONNECT BY 层级查询、MINUS 集合运算、q'[...]' 替代引号、序列、同义词、包。支持 NUMBER/VARCHAR2/CLOB/TIMESTAMP WITH TIME ZONE/INTERVAL 等 Oracle 专属类型，DECODE/NVL/LISTAGG/CONNECT_BY_ROOT/SYS_CONNECT_BY_PATH/DBMS_RANDOM 等专属函数。DDL 检索通过 DBMS_METADATA.GET_DDL，执行计划通过 EXPLAIN PLAN + DBMS_XPLAN.DISPLAY。默认端口 1521，默认用户 system
+- **达梦（DM8）数据库支持**：通过 ODBC 桥接连接达梦数据库，语言层基于 Oracle 方言派生。支持 TOP/LIMIT 双分页语法、CONNECT BY/ROWNUM/DUAL Oracle 兼容语法、DM_HASH/DM_ENCRYPT/TO_DM_DATE 达梦专属函数。支持元数据浏览（含序列、同义词）。默认端口 5236，默认用户 SYSDBA
+- **方言注册矩阵完善**：StarRocks/SQL Server/Oracle/达梦 4 种新方言在 package.json languages、configuration enum、dialectRegistry、allDialects、dialectKeywordMap 全链路注册，悬停提示覆盖方言专属关键字
+
+### Bug Fixes
+
+- **SQL Server EXPLAIN 会话泄漏修复（P0）**：`getExplainPlan` 使用 `SET SHOWPLAN_XML ON` 在池化连接上开启，若 `SET OFF` 因连接中断失败，污染的连接归还池后所有后续查询返回 XML 计划而非执行结果。修复：将 SET ON/查询/SET OFF 三步包进 mssql Transaction，失败时 rollback 强制重置连接，避免污染连接泄漏回池
+- **Oracle EXPLAIN 共享 plan_table 误删修复（P0）**：`getExplainPlan` 执行 `DELETE FROM plan_table` 未按 statement_id 过滤，在共享 plan_table（PUBLIC 同义词）配置下会删除所有会话的计划行。修复：为每次 EXPLAIN 生成唯一 statement_id，所有 DELETE/SELECT/DBMS_XPLAN.DISPLAY 操作按 statement_id 过滤，仅操作当前会话生成的行
+- **Dameng cancelQuery 误杀同用户会话修复（P1）**：`cancelQuery` 通过查询 v$session 取同用户最近登录的 active 会话执行 `ALTER SYSTEM KILL SESSION`，在多连接池下可能杀死同用户无关查询。修复：移除危险的 KILL SESSION 路径，cancelQuery 改为 no-op，依赖每查询超时兜底
+- **Dameng 查询超时未生效修复（P1）**：注释声称 per-query timeout 传给 `connection.query()`，但实际调用未传 timeout 选项，长查询无法被超时取消。修复：将 `{ timeout: 30s }` 真正传给 odbc query 选项，常量重命名为 `DEFAULT_QUERY_TIMEOUT_MS`
+- **Oracle/达梦主键索引误判修复（P2）**：`describeTableIndexes` 用 PK 列集合与索引列集合相等判定主键，会误将列相同的非主键唯一索引标记为主键。修复：改用 `all_constraints.constraint_type = 'P'` 关联 `all_indexes.index_name` 精确识别主键索引
+- **StarRocks 事务内查询不可取消修复（P2）**：事务内查询未注册到 `activeQueryThreadIds`，`cancelQuery` 静默 no-op。修复：`beginTransaction` 记录事务连接 threadId，`cancelQuery` 在未命中 queryId 时回退到该 threadId，commit/rollback 清理条目
+- **达梦 snippets 与 Oracle 冲突修复（P2）**：snippets/dameng.json 前 8 个片段前缀为 `or*`，与 snippets/oracle.json 命名冲突且描述写为 Oracle。修复：前缀改为 `dm*`，描述改为达梦语境
+
+### Code Quality
+
+- **关键字悬停提示补全 3 方言**：dialectKeywordMap 原仅注册 starrocks，遗漏 sqlserver/oracle/dameng。新增 sqlserverKeywords.ts（30 条）、oracleKeywords.ts（39 条）、damengKeywords.ts（38 条）并注册，3 方言现可显示专属关键字悬停说明
+- **测试覆盖**：1737 项单元测试全部通过，类型检查与 ESLint 零错误
+
+---
+
 ## [2.23.0] - 2026-06-24
 
 ### Features
