@@ -20,6 +20,10 @@ const _keywordMap: Record<string, KeywordEntry> = {
     postgresql: { keywords: allDialects.pgKeywords, dataTypes: allDialects.pgDataTypes },
     bigquery: { keywords: allDialects.bqKeywords, dataTypes: allDialects.bqDataTypes },
     sqlite: { keywords: allDialects.sqliteKeywords, dataTypes: allDialects.sqliteDataTypes },
+    starrocks: { keywords: allDialects.starrocksKeywords, dataTypes: allDialects.starrocksDataTypes },
+    sqlserver: { keywords: allDialects.sqlserverKeywords, dataTypes: allDialects.sqlserverDataTypes },
+    oracle: { keywords: allDialects.oracleKeywords, dataTypes: allDialects.oracleDataTypes },
+    dameng: { keywords: allDialects.damengKeywords, dataTypes: allDialects.damengDataTypes },
 }
 
 const _functionSigMap: Record<string, FunctionSignature[]> = {
@@ -31,6 +35,10 @@ const _functionSigMap: Record<string, FunctionSignature[]> = {
     postgresql: allDialects.pgFunctionSignatures,
     bigquery: allDialects.bqFunctionSignatures,
     sqlite: allDialects.sqliteFunctionSignatures,
+    starrocks: allDialects.starrocksFunctionSignatures,
+    sqlserver: allDialects.sqlserverFunctionSignatures,
+    oracle: allDialects.oracleFunctionSignatures,
+    dameng: allDialects.damengFunctionSignatures,
 }
 
 const resolvedKeywordCache = new Map<string, KeywordData | undefined>()
