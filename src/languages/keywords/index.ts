@@ -1,3 +1,14 @@
+// NOTE: This file is part of the HOVER keyword system (KeywordInfo[] with
+// syntax/description/example metadata for tooltips). It is deliberately
+// separate from the TOKENIZER keyword system at
+//   languages/<dialect>/<dialect>.keywords.ts (plain string[] for lexer
+// regex/trie construction).
+//
+// Do NOT merge these two systems. The tokenizer needs a flat string array
+// for hot-path performance; the hover system needs rich metadata that
+// would bloat the lexer if combined. Both are intentionally maintained
+// per-dialect.
+
 import type { KeywordInfo } from '../../hover/HoverResolver'
 import type { SqlLanguage } from '../../formatter/sqlFormatter'
 import { baseKeywords } from './baseKeywords'
