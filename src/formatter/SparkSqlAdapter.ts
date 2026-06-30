@@ -4,7 +4,7 @@ import {
     restoreSortDistributeCluster,
     extractUntilNextClause,
     escapeRegExp,
-} from "./BaseSqlAdapter"
+} from "./HiveSparkSharedAdapter"
 
 interface UsingSlot {
     tableName: string

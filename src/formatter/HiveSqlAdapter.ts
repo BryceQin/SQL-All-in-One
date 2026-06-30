@@ -4,7 +4,7 @@ import {
     restoreSortDistributeCluster,
     extractUntilNextClause,
     escapeRegExp,
-} from "./BaseSqlAdapter"
+} from "./HiveSparkSharedAdapter"
 import { SqlTextScanner } from "../utils/sqlTextScanner"
 
 interface ReplacementSlot {
