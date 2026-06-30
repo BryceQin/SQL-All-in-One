@@ -1,5 +1,5 @@
 import type { DialectOptions } from "../dialect"
-import { expandPhrases } from "../../formatter/expandPhrases"
+import { expandPhrases } from "../expandPhrases"
 import { dataTypes, keywords } from "./sqlserver.keywords"
 import { functions } from "./sqlserver.functions"
 

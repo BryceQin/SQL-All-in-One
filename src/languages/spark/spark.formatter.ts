@@ -1,5 +1,5 @@
 import type { DialectOptions } from "../dialect"
-import { expandPhrases } from "../../formatter/expandPhrases"
+import { expandPhrases } from "../expandPhrases"
 import type { Token } from "../../lexer/token"
 import { EOF_TOKEN, isToken, TokenType } from "../../lexer/token"
 import { dataTypes, keywords } from "./spark.keywords"

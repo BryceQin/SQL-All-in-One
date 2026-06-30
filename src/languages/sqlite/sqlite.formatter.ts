@@ -1,5 +1,5 @@
 import type { DialectOptions } from "../dialect"
-import { expandPhrases } from "../../formatter/expandPhrases"
+import { expandPhrases } from "../expandPhrases"
 import { functions } from "./sqlite.functions"
 import { dataTypes, keywords } from "./sqlite.keywords"
 

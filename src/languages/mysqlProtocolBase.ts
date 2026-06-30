@@ -6,7 +6,7 @@
 // pieces here we avoid duplicating hundreds of lines of configuration
 // across the dialect formatter files.
 
-import { expandPhrases } from "../formatter/expandPhrases"
+import { expandPhrases } from "./expandPhrases"
 import type {
     IdentChars,
     ParamTypes,

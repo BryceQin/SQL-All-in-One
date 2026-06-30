@@ -1,4 +1,4 @@
-import { expandPhrases } from '../formatter/expandPhrases'
+import { expandPhrases } from './expandPhrases'
 
 export const BASE_RESERVED_SELECT = expandPhrases(['SELECT [ALL | DISTINCT]'])
 

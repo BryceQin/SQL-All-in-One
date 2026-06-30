@@ -1,5 +1,5 @@
 import type { DialectOptions } from "../dialect.ts"
-import { expandPhrases } from "../../formatter/expandPhrases"
+import { expandPhrases } from "../expandPhrases"
 import { functions } from "./sql.functions"
 import { dataTypes, keywords } from "./sql.keywords"
 
