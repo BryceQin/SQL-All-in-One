@@ -2,9 +2,8 @@ import * as vscode from 'vscode'
 import type { RuleContext } from './LintRule'
 import { BaseRule } from './BaseRule'
 import { isAstNode } from '../../parser/AstVisitor'
-import { getNodeLocation, createDiagnostic } from '../../parser/astUtils'
+import { getNodeLocation } from '../../parser/astUtils'
 import type { AstNode } from '../../parser/astTypes'
-import { t } from '../../i18n'
 
 export class LimitInvalidValueRule extends BaseRule {
     readonly id = 'limit_invalid_value'
@@ -29,12 +28,7 @@ export class LimitInvalidValueRule extends BaseRule {
         if (typeof value === 'number' && value < 0) {
             const loc = getNodeLocation(limitNode) ?? getNodeLocation(node)
             if (loc) {
-                diagnostics.push(createDiagnostic(
-                    loc, 5, 'LIMIT_WITHOUT_NUMBER',
-                    t('enhanced.limitWithoutNumber', String(loc.line)),
-                    this.getSeverity(),
-                    t('linter.source'),
-                ))
+                diagnostics.push(this.addDiagnostic(loc, 5, 'enhanced.limitWithoutNumber', String(loc.line)))
             }
         }
 

@@ -38,7 +38,7 @@ export abstract class BaseRule implements LintRule {
         messageKey: string,
         ...messageArgs: string[]
     ): vscode.Diagnostic {
-        const message = `【第 ${loc.line} 行】${tAny(messageKey, ...messageArgs)}`
+        const message = `${t('linter.linePrefix', String(loc.line))}${tAny(messageKey, ...messageArgs)}`
         return createDiagnostic(loc, length, this.id, message, this.getSeverity(), t('linter.source'))
     }
 

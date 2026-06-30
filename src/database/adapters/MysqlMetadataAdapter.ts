@@ -1,10 +1,19 @@
 import type { IMetadataAdapter, DatabaseInfo, TableInfo, ViewInfo, FunctionInfo, ProcedureInfo, TriggerInfo, QueryResult, QueryParam, QueryRow } from './IDatabaseAdapter';
-import type { MysqlSharedContext } from './MysqlSharedContext';
+import type { IMysqlProtocolSharedContext } from './MysqlSharedContext';
 
-export class MysqlMetadataAdapter implements IMetadataAdapter {
+/**
+ * MySQL metadata adapter.
+ *
+ * Implemented as a generic over the shared-context contract so that
+ * StarRocks (which reuses the mysql2 driver and exposes metadata through
+ * information_schema with the same shape as MySQL) can subclass it via
+ * {@link StarrocksMetadataAdapter} and only override the dialect-specific
+ * database-filter and unsupported-object behaviour.
+ */
+export class MysqlMetadataAdapter<TShared extends IMysqlProtocolSharedContext = IMysqlProtocolSharedContext> implements IMetadataAdapter {
     constructor(
-        private shared: MysqlSharedContext,
-        private executeQuery: (sql: string, params?: QueryParam[]) => Promise<QueryResult>
+        protected shared: TShared,
+        protected executeQuery: (sql: string, params?: QueryParam[]) => Promise<QueryResult>
     ) {}
 
     async listDatabases(): Promise<DatabaseInfo[]> {
@@ -16,10 +25,7 @@ export class MysqlMetadataAdapter implements IMetadataAdapter {
         return result.rows
             .filter((row: QueryRow) => {
                 const name = row.Database as string;
-                return name !== 'information_schema' &&
-                    name !== 'mysql' &&
-                    name !== 'performance_schema' &&
-                    name !== 'sys';
+                return !this.isSystemDatabase(name);
             })
             .map((row: QueryRow) => ({
                 name: row.Database as string,
@@ -55,7 +61,7 @@ export class MysqlMetadataAdapter implements IMetadataAdapter {
             name: row.TABLE_NAME as string,
             type: row.TABLE_TYPE as string,
             engine: row.ENGINE as string,
-            rowCount: row.TABLE_ROWS as number,
+            rowCount: row.TABLE_ROWS != null ? Number(row.TABLE_ROWS) : undefined,
             comment: row.TABLE_COMMENT as string,
         }));
     }
@@ -133,5 +139,19 @@ export class MysqlMetadataAdapter implements IMetadataAdapter {
             timing: row.ACTION_TIMING as string,
             statement: row.ACTION_STATEMENT as string,
         }));
+    }
+
+    /**
+     * Returns true if `name` is a built-in system database that should be
+     * hidden from {@link listDatabases} results. MySQL filters out
+     * information_schema / mysql / performance_schema / sys. Subclasses
+     * speaking a MySQL-protocol-compatible dialect (e.g. StarRocks) override
+     * this to filter their own system databases.
+     */
+    protected isSystemDatabase(name: string): boolean {
+        return name === 'information_schema' ||
+            name === 'mysql' ||
+            name === 'performance_schema' ||
+            name === 'sys';
     }
 }

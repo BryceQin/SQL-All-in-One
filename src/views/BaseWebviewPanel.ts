@@ -125,11 +125,19 @@ export abstract class BaseWebviewPanel implements vscode.Disposable {
             const cssUri = this._panel.webview.asWebviewUri(
                 vscode.Uri.joinPath(this._extensionUri, 'media', cfg.cssFileName)
             );
+            const sharedCssUri = this._panel.webview.asWebviewUri(
+                vscode.Uri.joinPath(this._extensionUri, 'media', 'shared.css')
+            );
+            const sharedJsUri = this._panel.webview.asWebviewUri(
+                vscode.Uri.joinPath(this._extensionUri, 'media', 'shared.js')
+            );
             const jsUri = this._panel.webview.asWebviewUri(
                 vscode.Uri.joinPath(this._extensionUri, 'media', cfg.jsFileName)
             );
 
+            html = html.replace('{{SHARED_CSS_URI}}', sharedCssUri.toString());
             html = html.replace('{{CSS_URI}}', cssUri.toString());
+            html = html.replace('{{SHARED_JS_URI}}', sharedJsUri.toString());
             html = html.replace('{{JS_URI}}', jsUri.toString());
             html = html.replace(/\{\{CSP_SOURCE\}\}/g, this._panel.webview.cspSource);
 
@@ -200,7 +208,13 @@ export abstract class BaseWebviewPanel implements vscode.Disposable {
         this._panel.dispose();
         while (this._disposables.length) {
             const x = this._disposables.pop();
-            x?.dispose();
+            try {
+                x?.dispose();
+            } catch (e) {
+                // Isolate failures: a single disposable throwing should not
+                // prevent the remaining disposables from being released.
+                handleError(e, 'BaseWebviewPanel.dispose', ErrorCategory.SUB_ITEM);
+            }
         }
         this._cachedHtml = undefined;
     }

@@ -1,0 +1,141 @@
+import { t } from '../../i18n/index';
+
+/**
+ * Shared base class for per-dialect connection sub-adapters.
+ *
+ * Connection sub-adapters ({@link MysqlConnectionAdapter},
+ * {@link PostgresConnectionAdapter}, ...) do NOT extend
+ * {@link BaseDatabaseAdapter}: they are leaf collaborators that hold a
+ * reference to a shared context and implement only the connect/disconnect/
+ * testConnection/health/reap lifecycle. They were therefore duplicating the
+ * common network-error branch of `formatConnectionError` (ECONNREFUSED,
+ * ETIMEDOUT, EHOSTUNREACH, ENOTFOUND) and the SSL fallback in every
+ * dialect.
+ *
+ * This base class centralises that shared logic and exposes the same
+ * `formatDriverSpecificError` hook pattern as
+ * {@link BaseDatabaseAdapter.formatDriverSpecificError}: subclasses override
+ * the hook to map driver-specific error codes (ER_ACCESS_DENIED_ERROR,
+ * ORA-01017, mssql ELOGIN, ODBC SQLSTATE 28000, ...) to localised messages
+ * and return `undefined` to fall back to the common network-level handling
+ * here.
+ *
+ * Order of precedence in {@link formatConnectionError}:
+ *   1. {@link formatDriverSpecificError} hook (dialect-specific codes).
+ *   2. Common network-level errors (ECONNREFUSED, ETIMEDOUT, ...).
+ *   3. The original error (or a wrapped Error for non-Error throws),
+ *      with a dialect-specific error-code tag (e.g. `ORA-01017`)
+ *      prepended via {@link extractErrorCodeTag} when the original error
+ *      is returned unchanged.
+ */
+export abstract class BaseConnectionAdapter {
+    /**
+     * Formats a connection error for display.
+     *
+     * Subclasses must NOT override this; override
+     * {@link formatDriverSpecificError} and/or {@link extractErrorCodeTag}
+     * instead.
+     */
+    formatConnectionError(error: unknown, config: { host: string; port?: number; username: string; database?: string }): Error {
+        const driverSpecific = this.formatDriverSpecificError(error, config);
+        if (driverSpecific) {
+            return driverSpecific;
+        }
+
+        const msg = error instanceof Error ? error.message : String(error);
+        const hostPort = `${config.host}:${config.port}`;
+
+        if (msg.includes('ECONNREFUSED')) {
+            return new Error(t('database.connectionRefused', hostPort));
+        }
+        if (msg.includes('ETIMEDOUT') || msg.includes('connectTimeout')) {
+            return new Error(t('database.connectionTimedOut', hostPort));
+        }
+        if (msg.includes('EHOSTUNREACH')) {
+            return new Error(t('database.hostUnreachable', hostPort));
+        }
+        if (msg.includes('ENOTFOUND')) {
+            return new Error(t('database.hostNotFound', config.host));
+        }
+
+        // Common network-level fallbacks did not match. When the original
+        // error object is about to be returned unchanged, prepend the
+        // dialect-specific error-code tag (e.g. `ORA-01017` or the ODBC
+        // SQLSTATE) so callers can still surface dialect-specific
+        // diagnostics. Subclasses opt in by overriding
+        // {@link extractErrorCodeTag}; the default returns `null` so this
+        // branch is a no-op for dialects without a structured error code.
+        if (error instanceof Error) {
+            const codeTag = this.extractErrorCodeTag(error);
+            if (codeTag && !msg.includes(codeTag)) {
+                return new Error(`${codeTag}: ${msg}`);
+            }
+            return error;
+        }
+
+        return new Error(msg);
+    }
+
+    /**
+     * Extracts a dialect-specific error-code tag from a thrown error.
+     *
+     * Override this in a concrete connection sub-adapter to surface the
+     * dialect's structured error code — e.g. Oracle's `ORA-XXXXX`
+     * (derived from `error.errorNum`) or the ODBC SQLSTATE / `DM-XXXX`
+     * tag used by Dameng. Return `null` when no tag is available so that
+     * {@link formatConnectionError} returns the original error untouched.
+     *
+     * The default implementation returns `null`; this hook is only
+     * consulted when neither {@link formatDriverSpecificError} nor the
+     * common network-error fallbacks produced a localised message, i.e.
+     * when the original error object would otherwise be returned as-is.
+     */
+    protected extractErrorCodeTag(_error: unknown): string | null {
+        return null;
+    }
+
+    /**
+     * Reaps idle connections.
+     *
+     * Most modern drivers (mysql2 with enableKeepAlive, pg, mssql, oracledb,
+     * odbc, better-sqlite3) handle idle connection eviction internally.
+     * Manual pool destruction is harmful: it kills active queries and creates
+     * a brief unavailability window. This default implementation is therefore
+     * a no-op that only refreshes `lastActivityTime`.
+     *
+     * Concrete sub-adapters only need to override this when they have
+     * driver-specific idle reaping that the driver itself cannot handle.
+     *
+     * Subclasses access the pool/db handle via their {@link shared} context;
+     * because this base class is pool-agnostic, the default implementation
+     * only refreshes the activity timestamp. Subclasses that need to guard on
+     * the presence of the pool should override and call `super.reapIdleConnections()`.
+     */
+    async reapIdleConnections(): Promise<void> {
+        // Base implementation: no-op. Subclasses with a shared context that
+        // tracks lastActivityTime should override to refresh it, e.g.:
+        //   if (!this.shared.pool) return;
+        //   this.shared.lastActivityTime = Date.now();
+    }
+
+    /**
+     * Dialect-specific error-code mapping hook.
+     *
+     * Override this in a concrete connection sub-adapter to map
+     * driver-specific error codes (ER_ACCESS_DENIED_ERROR, ORA-01017, mssql
+     * ELOGIN, ODBC SQLSTATE 28000, ...) to localised user-facing messages.
+     * Return `undefined` to fall back to the common network-error handling
+     * in {@link formatConnectionError}.
+     *
+     * The default implementation handles SSL/certificate errors shared by
+     * every TLS-capable driver so subclasses do not have to repeat it.
+     */
+    protected formatDriverSpecificError(_error: unknown, _config: { host: string; port?: number; username: string; database?: string }): Error | undefined {
+        const msg = _error instanceof Error ? _error.message : String(_error);
+        const hostPort = `${_config.host}:${_config.port}`;
+        if (msg.includes('self signed certificate') || msg.includes('certificate') || msg.includes('SSL')) {
+            return new Error(t('database.sslError', hostPort));
+        }
+        return undefined;
+    }
+}

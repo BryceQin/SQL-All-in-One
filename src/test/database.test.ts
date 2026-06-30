@@ -47,6 +47,46 @@ suite('Database Adapter Layer', () => {
             assert.ok(Array.isArray(dialects));
             assert.ok(dialects.includes('mysql'));
         });
+
+        test('getInstantiationStats should count create() calls per dialect', () => {
+            AdapterFactory.resetInstantiationStats();
+            const config: ConnectionConfig = {
+                id: 'test',
+                name: 'Test Connection',
+                dialect: 'mysql',
+                host: 'localhost',
+                port: 3306,
+                username: 'root'
+            };
+            assert.deepStrictEqual(AdapterFactory.getInstantiationStats(), {});
+
+            AdapterFactory.create('mysql', config);
+            assert.deepStrictEqual(AdapterFactory.getInstantiationStats(), { mysql: 1 });
+
+            AdapterFactory.create('mysql', config);
+            assert.deepStrictEqual(AdapterFactory.getInstantiationStats(), { mysql: 2 });
+        });
+
+        test('resetInstantiationStats should clear counters without unregistering adapters', () => {
+            const config: ConnectionConfig = {
+                id: 'test',
+                name: 'Test Connection',
+                dialect: 'mysql',
+                host: 'localhost',
+                port: 3306,
+                username: 'root'
+            };
+            AdapterFactory.create('mysql', config);
+            assert.ok(AdapterFactory.getInstantiationStats().mysql > 0);
+
+            AdapterFactory.resetInstantiationStats();
+            assert.deepStrictEqual(AdapterFactory.getInstantiationStats(), {});
+
+            // adapter registration is unaffected
+            assert.strictEqual(AdapterFactory.has('mysql'), true);
+            assert.doesNotThrow(() => AdapterFactory.create('mysql', config));
+            assert.strictEqual(AdapterFactory.getInstantiationStats().mysql, 1);
+        });
     });
 
     suite('MysqlAdapter - static methods', () => {

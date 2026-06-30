@@ -1,6 +1,7 @@
 import type { Pool, Connection } from 'odbc';
 import type { ConnectionConfig } from './IDatabaseAdapter';
 import type { BaseDatabaseAdapter } from './BaseDatabaseAdapter';
+import type { IOracleDialectSharedContext } from './OracleSchemaAdapter';
 
 /**
  * Dameng (DM8) shared context.
@@ -11,11 +12,16 @@ import type { BaseDatabaseAdapter } from './BaseDatabaseAdapter';
  * Connection) since Dameng has no official Node.js driver and is reached
  * through its ODBC driver.
  *
+ * Implements {@link IOracleDialectSharedContext} so that
+ * {@link DamengSchemaAdapter} can subclass {@link OracleSchemaAdapter} and
+ * reuse the DBMS_METADATA / all_tab_columns / all_constraints query logic,
+ * overriding only the dialect-specific EXPLAIN and `?` placeholder behaviour.
+ *
  * The odbc driver is loaded via dynamic import inside the sub-adapters so
  * it stays in the esbuild `external` list and is only required when a
  * Dameng connection is actually used.
  */
-export class DamengSharedContext {
+export class DamengSharedContext implements IOracleDialectSharedContext {
     // Dameng shared state (odbc Pool / Connection)
     pool: Pool | null = null;
     transactionConnection: Connection | null = null;

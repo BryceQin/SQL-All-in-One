@@ -44,6 +44,73 @@ export interface IQueryAdapter {
     commit(): Promise<void>;
     rollback(): Promise<void>;
     cancelQuery(queryId: string): Promise<void>;
+    /**
+     * Optional streaming query execution.
+     *
+     * When implemented, callers (e.g. {@link QueryExecutor}) may prefer this
+     * path over {@link IQueryAdapter.execute} to avoid materializing the full
+     * result set in memory at once. Yields rows in batches of `batchSize`,
+     * stopping once `maxRows` rows have been received.
+     *
+     * Implementations should honor the optional {@link AbortSignal} so the
+     * caller can cancel an in-flight stream.
+     */
+    executeStream?(sql: string, options?: QueryStreamOptions): AsyncIterable<StreamBatch>;
+}
+
+/**
+ * Options for {@link IQueryAdapter.executeStream}.
+ */
+export interface QueryStreamOptions {
+    /**
+     * Number of rows to accumulate before yielding a batch. Defaults to 1000.
+     */
+    batchSize?: number;
+    /**
+     * Maximum number of rows to receive before stopping the stream. When
+     * reached, the implementation stops iterating and reports `truncated`
+     * on the final batch. If omitted, the stream runs to completion.
+     */
+    maxRows?: number;
+    /**
+     * Bound parameters for the query, mirroring {@link IQueryAdapter.execute}.
+     */
+    params?: QueryParam[];
+    /**
+     * Optional abort signal. When aborted, the implementation should stop
+     * producing rows and clean up underlying resources.
+     */
+    signal?: AbortSignal;
+}
+
+/**
+ * A single batch yielded by {@link IQueryAdapter.executeStream}.
+ *
+ * `columns` is populated on the first batch (batchIndex === 0) and omitted
+ * (empty array) on subsequent batches so consumers can build column metadata
+ * lazily without re-fetching it.
+ */
+export interface StreamBatch {
+    /**
+     * Column metadata. Populated only on the first batch; empty otherwise.
+     */
+    columns: ColumnMeta[];
+    /**
+     * Rows in this batch.
+     */
+    rows: QueryRow[];
+    /**
+     * Zero-based batch index.
+     */
+    batchIndex: number;
+    /**
+     * Total number of rows received so far (including this batch).
+     */
+    totalRowsReceived: number;
+    /**
+     * `true` when the stream stopped early because `maxRows` was reached.
+     */
+    truncated: boolean;
 }
 
 export interface IMetadataAdapter {

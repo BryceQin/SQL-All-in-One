@@ -68,7 +68,8 @@ export class SqliteSchemaAdapter implements ISchemaAdapter {
         if (result.status !== 'success' || result.rows.length === 0) {
             return 0;
         }
-        return (result.rows[0].cnt as number) ?? 0;
+        const cnt = result.rows[0].cnt;
+        return cnt != null ? Number(cnt) : 0;
     }
 
     getDialectCapabilities(): DialectCapabilities {
@@ -162,9 +163,9 @@ export class SqliteSchemaAdapter implements ISchemaAdapter {
                 name: row.name as string,
                 type: typeStr.replace(/\(.*\)/, '').trim(),
                 length: lengthMatch ? parseInt(lengthMatch[1], 10) : undefined,
-                nullable: (row.notnull as number) === 0,
+                nullable: Number(row.notnull) === 0,
                 defaultValue: row.dflt_value as string | number | boolean | null,
-                isPrimaryKey: (row.pk as number) > 0,
+                isPrimaryKey: Number(row.pk) > 0,
                 isAutoIncrement: false,
                 isUnique: false,
             };
@@ -191,7 +192,7 @@ export class SqliteSchemaAdapter implements ISchemaAdapter {
                 name: indexName,
                 type: 'btree',
                 columns,
-                isUnique: (row.unique as number) === 1,
+                isUnique: Number(row.unique) === 1,
                 isPrimary: (row.origin as string) === 'pk',
             });
         }
@@ -207,7 +208,7 @@ export class SqliteSchemaAdapter implements ISchemaAdapter {
 
         const fkMap = new Map<number, ForeignKeyInfo>();
         for (const row of result.rows) {
-            const id = row.id as number;
+            const id = Number(row.id);
             if (!fkMap.has(id)) {
                 fkMap.set(id, {
                     name: `fk_${id}`,

@@ -193,13 +193,27 @@ export class ConfigEditorPanel {
             const cssUri = this._panel.webview.asWebviewUri(
                 vscode.Uri.joinPath(this._extensionUri, 'media', 'config-editor.css')
             )
+            const sharedCssUri = this._panel.webview.asWebviewUri(
+                vscode.Uri.joinPath(this._extensionUri, 'media', 'shared.css')
+            )
+            const sharedJsUri = this._panel.webview.asWebviewUri(
+                vscode.Uri.joinPath(this._extensionUri, 'media', 'shared.js')
+            )
             const jsUri = this._panel.webview.asWebviewUri(
                 vscode.Uri.joinPath(this._extensionUri, 'media', 'config-editor.js')
             )
 
+            html = html.replace('{{SHARED_CSS_URI}}', sharedCssUri.toString())
             html = html.replace('{{CSS_URI}}', cssUri.toString())
+            html = html.replace('{{SHARED_JS_URI}}', sharedJsUri.toString())
             html = html.replace('{{JS_URI}}', jsUri.toString())
             html = html.replace(/\{\{CSP_SOURCE\}\}/g, this._panel.webview.cspSource)
+
+            // Upgrade CSP from 'unsafe-inline' to a per-load nonce for scripts.
+            // The nonce is generated per panel load and substituted into both
+            // the CSP header and the <script nonce="..."> tag.
+            const nonce = crypto.randomUUID()
+            html = html.replace(/\{\{CSP_NONCE\}\}/g, nonce)
 
             return html
         } catch (e) {

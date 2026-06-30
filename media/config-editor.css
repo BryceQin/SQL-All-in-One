@@ -1,6 +1,7 @@
-* { box-sizing: border-box; margin: 0; padding: 0; }
-
 :root {
+    /* Panel-specific variables. Common --vscode-* tokens and shared design
+     * tokens live in shared.css; only config-editor-specific values and the
+     * few legacy aliases that diverge from shared.css are kept here. */
     --accent: #4a9eff;
     --accent-dim: rgba(74, 158, 255, 0.10);
     --accent-glow: rgba(74, 158, 255, 0.20);
@@ -31,6 +32,13 @@
     --radius-lg: 12px;
     --shadow: 0 1px 8px rgba(0,0,0,0.12);
     --shadow-lg: 0 8px 32px rgba(0,0,0,0.25);
+    /* config-editor never defined --shadow-sm / --shadow-md in its :root, so
+     * the original .conn-item:hover and .conn-form-wrapper box-shadows were
+     * effectively `none` (the var() resolved to the guaranteed-invalid
+     * value and the declaration was dropped). Override the shared tokens
+     * with `none` here to preserve that exact visual behaviour. */
+    --shadow-sm: none;
+    --shadow-md: none;
     --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     --glass-blur: blur(16px);
     --glass-border: rgba(255,255,255,0.06);
@@ -334,25 +342,8 @@ body {
 }
 .toggle-row:hover { background: rgba(255,255,255,0.02); margin: 0 -6px; padding: 7px 6px; }
 .toggle-row.search-hidden { display: none; }
-.toggle-label { font-size: 12px; font-weight: 500; }
-.toggle {
-    position: relative; width: 36px; height: 20px; flex-shrink: 0;
-}
-.toggle input { opacity: 0; width: 0; height: 0; }
-.toggle-slider {
-    position: absolute; inset: 0; border-radius: 20px;
-    background: rgba(255,255,255,0.10); cursor: pointer;
-    transition: all var(--transition);
-}
-.toggle-slider::before {
-    content: ""; position: absolute; top: 2px; left: 2px;
-    width: 16px; height: 16px; border-radius: 50%;
-    background: #fff; transition: all var(--transition);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-}
-.toggle input:checked + .toggle-slider { background: var(--accent); box-shadow: 0 0 8px var(--accent-glow); }
-.toggle input:checked + .toggle-slider::before { transform: translateX(16px); }
-.toggle input:focus-visible + .toggle-slider { box-shadow: 0 0 0 2px var(--accent-glow); }
+/* .toggle, .toggle input, .toggle-slider and its ::before/:checked/:focus-visible
+ * states live in shared.css. .toggle-label is also shared. */
 
 .lint-rule {
     display: flex; align-items: center; gap: 8px;
@@ -392,10 +383,7 @@ body {
 .search-empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.5; }
 .search-empty-text { font-size: 14px; }
 
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
+/* ::-webkit-scrollbar rules are defined in shared.css. */
 
 .lang-selector {
     display: flex;

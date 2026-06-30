@@ -1,6 +1,7 @@
 import type { Pool, Connection } from 'oracledb';
 import type { ConnectionConfig } from './IDatabaseAdapter';
 import type { BaseDatabaseAdapter } from './BaseDatabaseAdapter';
+import type { IOracleDialectSharedContext } from './OracleSchemaAdapter';
 
 /**
  * Oracle shared context.
@@ -13,7 +14,7 @@ import type { BaseDatabaseAdapter } from './BaseDatabaseAdapter';
  * it stays in the esbuild `external` list and is only required when an Oracle
  * connection is actually used.
  */
-export class OracleSharedContext {
+export class OracleSharedContext implements IOracleDialectSharedContext {
     // Oracle shared state
     pool: Pool | null = null;
     transactionConnection: Connection | null = null;

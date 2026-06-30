@@ -7,7 +7,7 @@ import { SqlCompletionProvider } from '../../completion/SqlCompletionProvider';
 import { SqlHoverProvider } from '../../providers/SqlHoverProvider';
 import { formatEditorText } from '../../utils/formatEditorText';
 import { getContainer, Tokens } from '../../core/diContainer';
-import { createConfig } from '../../core/config';
+import { createConfig } from '../../core/configManager';
 import { handleError, ErrorCategory } from '../../core/errorHandler';
 import { InMemoryDocument } from './InMemoryDocument';
 import { MonacoDataAdapter, type MonacoCompletionItem, type MonacoDiagnostic } from './MonacoDataAdapter';

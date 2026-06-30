@@ -42,6 +42,30 @@ export class SafeQueryGuard {
         const warnings: SafetyWarning[] = [];
         const confirmations: SafetyConfirmation[] = [];
 
+        // Regex pre-filter: only statements that match a dangerous-statement
+        // pattern need AST inspection (to extract WHERE / object names). Plain
+        // SELECT/INSERT/USE/SET/SHOW/etc. can be short-circuited as safe,
+        // skipping the relatively expensive AST parse entirely.
+        const isDelete = DELETE_PATTERN.test(sql);
+        const isUpdate = UPDATE_PATTERN.test(sql);
+        const isDrop = DROP_PATTERN.test(sql);
+        const isTruncate = TRUNCATE_PATTERN.test(sql);
+        const isAlter = ALTER_PATTERN.test(sql);
+        const isGrant = GRANT_PATTERN.test(sql);
+        const isRevoke = REVOKE_PATTERN.test(sql);
+
+        if (!isDelete && !isUpdate && !isDrop && !isTruncate &&
+            !isAlter && !isGrant && !isRevoke) {
+            return { safe: true, warnings: [], confirmations: [] };
+        }
+
+        // GRANT / REVOKE are handled purely by regex (the AST representation
+        // is not reliably available across dialects). Delegate straight to the
+        // regex analyzer so behavior is unchanged.
+        if (isGrant || isRevoke) {
+            return this.analyzeWithRegex(sql, level, warnings, confirmations);
+        }
+
         const effectiveDialect = dialect ?? this.inferDialect();
 
         try {

@@ -2,9 +2,8 @@ import * as vscode from 'vscode'
 import type { RuleContext } from './LintRule'
 import { BaseRule } from './BaseRule'
 import { isAstNode } from '../../parser/AstVisitor'
-import { getNodeLocation, createDiagnostic } from '../../parser/astUtils'
+import { getNodeLocation } from '../../parser/astUtils'
 import type { AstNode } from '../../parser/astTypes'
-import { t } from '../../i18n'
 
 const RESERVED_WORDS = new Set([
     'select', 'from', 'where', 'group', 'by', 'having', 'order', 'limit',
@@ -42,12 +41,7 @@ export class ReservedWordIdentifierRule extends BaseRule {
             if (typeof as === 'string' && RESERVED_WORDS.has(as.toLowerCase())) {
                 const loc = getNodeLocation(colNode)
                 if (loc) {
-                    diagnostics.push(createDiagnostic(
-                        loc, as.length, 'RESERVED_WORD_IDENTIFIER',
-                        t('enhanced.reservedWordIdentifier', String(loc.line), as),
-                        this.getSeverity(),
-                        t('linter.source'),
-                    ))
+                    diagnostics.push(this.addDiagnostic(loc, as.length, 'enhanced.reservedWordIdentifier', String(loc.line), as))
                 }
             }
         }

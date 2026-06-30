@@ -2,9 +2,8 @@ import * as vscode from 'vscode'
 import type { RuleContext } from './LintRule'
 import { BaseRule } from './BaseRule'
 import { isAstNode, findNodes } from '../../parser/AstVisitor'
-import { getNodeLocation, createDiagnostic } from '../../parser/astUtils'
+import { getNodeLocation } from '../../parser/astUtils'
 import type { AstNode } from '../../parser/astTypes'
-import { t } from '../../i18n'
 
 export class IncompleteCaseRule extends BaseRule {
     readonly id = 'incomplete_case'
@@ -28,12 +27,7 @@ export class IncompleteCaseRule extends BaseRule {
             if (when == null || (Array.isArray(when) && when.length === 0)) {
                 const loc = getNodeLocation(caseNode)
                 if (loc) {
-                    diagnostics.push(createDiagnostic(
-                        loc, 4, 'INCOMPLETE_CASE',
-                        t('enhanced.caseMissingEnd', String(loc.line)),
-                        this.getSeverity(),
-                        t('linter.source'),
-                    ))
+                    diagnostics.push(this.addDiagnostic(loc, 4, 'enhanced.caseMissingEnd', String(loc.line)))
                 }
             }
         }

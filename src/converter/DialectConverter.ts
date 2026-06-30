@@ -14,6 +14,17 @@ export interface ConvertResult {
     error: Error | null
     usedFallback: boolean
     warnings: string[]
+    /**
+     * The AST produced while converting, when available. Carrying it on the
+     * result lets callers that already need the AST (e.g.
+     * {@link AstConverter} checking for CREATE TABLE) reuse it instead of
+     * re-parsing the SQL a second time.
+     *
+     * Undefined when: the source and target dialect are identical (no parse
+     * happened), the regex fallback was used, or astify/sqlify failed before
+     * the AST was materialized.
+     */
+    ast?: AST[] | AST
 }
 
 function deepCloneAst(ast: AST[] | AST): AST[] | AST {
@@ -34,7 +45,7 @@ export class DialectConverter {
             const astCopy = deepCloneAst(ast)
             const { warnings } = this.transformEngine.transform(astCopy, from, to)
             const result = getParserEngine().sqlify(astCopy, to)
-            return { success: true, result, error: null, usedFallback: false, warnings }
+            return { success: true, result, error: null, usedFallback: false, warnings, ast }
         } catch (e) {
             const error = e instanceof Error ? e : new Error(String(e))
 

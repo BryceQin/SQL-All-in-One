@@ -19,6 +19,7 @@ vsc-extension-quickstart.md
 **/*.map
 out/
 test-*.js
+tmp_*.ts
 
 .superpowers/
 docs/superpowers/

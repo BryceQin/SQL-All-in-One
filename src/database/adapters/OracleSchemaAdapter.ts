@@ -1,5 +1,25 @@
-import type { ISchemaAdapter, QueryResult, QueryParam, QueryRow, TriggerInfo, ColumnInfo, IndexInfo, ForeignKeyInfo, TableStructure, RoutineParameterInfo, DialectCapabilities, DataTypeCategory, ExplainResult, ExplainNode } from './IDatabaseAdapter';
+import type { ISchemaAdapter, QueryResult, QueryParam, QueryRow, TriggerInfo, ColumnInfo, IndexInfo, ForeignKeyInfo, TableStructure, RoutineParameterInfo, DialectCapabilities, DataTypeCategory, ExplainResult, ExplainNode, ConnectionConfig } from './IDatabaseAdapter';
+import type { Pool } from 'oracledb';
 import type { OracleSharedContext } from './OracleSharedContext';
+import { validateIdentifier as validateIdentifierHelper } from './identifierValidator';
+
+/**
+ * Structural shape shared by {@link OracleSharedContext} and
+ * {@link DamengSharedContext}. Declared so that {@link OracleSchemaAdapter}
+ * can be generic over the shared-context contract and
+ * {@link DamengSchemaAdapter} can subclass it, overriding only the
+ * dialect-specific DDL / EXPLAIN / capabilities behaviour.
+ *
+ * Both contexts delegate `config` to a {@link BaseDatabaseAdapter} instance
+ * and expose a `pool` (typed as `unknown` here because oracledb and odbc
+ * have incompatible Pool shapes; only {@link OracleSchemaAdapter}'s own
+ * {@link OracleSchemaAdapter.getExplainPlan} touches the pool directly, and
+ * Dameng overrides that method to use the odbc API instead).
+ */
+export interface IOracleDialectSharedContext {
+    pool: unknown;
+    readonly config: ConnectionConfig;
+}
 
 /**
  * Oracle schema adapter.
@@ -12,12 +32,17 @@ import type { OracleSharedContext } from './OracleSharedContext';
  *
  * Identifiers are quoted with double quotes, matching Oracle's quoted
  * identifier syntax.
+ *
+ * Implemented as a generic over the shared-context contract so that
+ * {@link DamengSchemaAdapter} (which speaks the same DBMS_METADATA /
+ * all_tab_columns / all_constraints dialect but uses the ODBC driver and
+ * `?` placeholders) can subclass it and only override the divergent methods.
  */
-export class OracleSchemaAdapter implements ISchemaAdapter {
+export class OracleSchemaAdapter<TShared extends IOracleDialectSharedContext = OracleSharedContext> implements ISchemaAdapter {
     constructor(
-        private shared: OracleSharedContext,
-        private executeQuery: (sql: string, params?: QueryParam[]) => Promise<QueryResult>,
-        private listTriggersFn: (database?: string, schema?: string) => Promise<TriggerInfo[]>
+        protected shared: TShared,
+        protected executeQuery: (sql: string, params?: QueryParam[]) => Promise<QueryResult>,
+        protected listTriggersFn: (database?: string, schema?: string) => Promise<TriggerInfo[]>
     ) {}
 
     async describeTable(_database: string, table: string, schema?: string): Promise<TableStructure> {
@@ -121,10 +146,17 @@ export class OracleSchemaAdapter implements ISchemaAdapter {
         // Oracle configurations. We tag every EXPLAIN PLAN with a unique
         // statement_id and scope ALL DELETE/SELECT operations by that id, so
         // we never touch other sessions' plan rows.
+        //
+        // The shared context's pool is typed as `unknown` in the
+        // {@link IOracleDialectSharedContext} contract (Dameng's odbc Pool is
+        // structurally incompatible with oracledb's), so we narrow it to the
+        // oracledb Pool here. Dameng overrides this method entirely and never
+        // reaches this code path.
+        const pool = this.shared.pool as Pool;
         const statementId = `sql_all_in_one_${Date.now()}_${Math.floor(Math.random() * 1e9)}`;
         let conn;
         try {
-            conn = await this.shared.pool.getConnection();
+            conn = await pool.getConnection();
 
             // Clear any previous plan rows for THIS statement_id only.
             await conn.execute(`DELETE FROM plan_table WHERE statement_id = :id`, { id: statementId });
@@ -181,7 +213,8 @@ export class OracleSchemaAdapter implements ISchemaAdapter {
         if (result.status !== 'success' || result.rows.length === 0) {
             return 0;
         }
-        return (result.rows[0].row_count as number) ?? 0;
+        const rowCount = result.rows[0].row_count;
+        return rowCount != null ? Number(rowCount) : 0;
     }
 
     getDialectCapabilities(): DialectCapabilities {
@@ -266,20 +299,11 @@ export class OracleSchemaAdapter implements ISchemaAdapter {
         return '"' + identifier.replace(/"/g, '""') + '"';
     }
 
-    private validateIdentifier(identifier: string): void {
-        if (!identifier || typeof identifier !== 'string') {
-            throw new Error('Invalid identifier: identifier must be a non-empty string');
-        }
-        if (identifier.length > 128) {
-            throw new Error('Invalid identifier: identifier exceeds maximum length');
-        }
-        // eslint-disable-next-line no-control-regex
-        if (/\u0000/.test(identifier)) {
-            throw new Error('Invalid identifier: identifier contains null bytes');
-        }
+    protected validateIdentifier(identifier: string): void {
+        validateIdentifierHelper(identifier, 128);
     }
 
-    private resolveOwner(schema?: string): string {
+    protected resolveOwner(schema?: string): string {
         if (schema && schema.length > 0) {
             return schema.toUpperCase();
         }
@@ -290,7 +314,7 @@ export class OracleSchemaAdapter implements ISchemaAdapter {
         return 'SYS';
     }
 
-    private parseDirection(inOut: string): 'IN' | 'OUT' | 'INOUT' {
+    protected parseDirection(inOut: string): 'IN' | 'OUT' | 'INOUT' {
         if (!inOut) {
             return 'IN';
         }
@@ -304,7 +328,7 @@ export class OracleSchemaAdapter implements ISchemaAdapter {
         return 'IN';
     }
 
-    private async describeTableColumns(table: string, owner: string): Promise<ColumnInfo[]> {
+    protected async describeTableColumns(table: string, owner: string): Promise<ColumnInfo[]> {
         this.validateIdentifier(table);
         const sql = `SELECT column_name, data_type, data_length, data_precision, data_scale, nullable, data_default, column_id FROM all_tab_columns WHERE owner = :1 AND table_name = :2 ORDER BY column_id`;
         const result = await this.executeQuery(sql, [{ value: owner }, { value: table }]);
@@ -319,9 +343,9 @@ export class OracleSchemaAdapter implements ISchemaAdapter {
 
         return result.rows.map((row: QueryRow) => {
             const dataType = row.data_type as string;
-            const dataLength = row.data_length as number;
-            const dataPrecision = row.data_precision as number;
-            const dataScale = row.data_scale as number;
+            const dataLength = row.data_length != null ? Number(row.data_length) : 0;
+            const dataPrecision = row.data_precision != null ? Number(row.data_precision) : null;
+            const dataScale = row.data_scale != null ? Number(row.data_scale) : null;
             let type = dataType;
             if (dataType === 'VARCHAR2' || dataType === 'CHAR' || dataType === 'NVARCHAR2' || dataType === 'NCHAR' || dataType === 'RAW') {
                 type = `${dataType}(${dataLength})`;
@@ -347,7 +371,7 @@ export class OracleSchemaAdapter implements ISchemaAdapter {
         });
     }
 
-    private async getPrimaryKeyColumns(table: string, owner: string): Promise<string[]> {
+    protected async getPrimaryKeyColumns(table: string, owner: string): Promise<string[]> {
         this.validateIdentifier(table);
         const sql = `SELECT acc.column_name AS column_name FROM all_constraints c JOIN all_cons_columns acc ON c.constraint_name = acc.constraint_name AND c.owner = acc.owner WHERE c.constraint_type = 'P' AND c.owner = :1 AND c.table_name = :2 ORDER BY acc.position`;
         const result = await this.executeQuery(sql, [{ value: owner }, { value: table }]);
@@ -357,7 +381,7 @@ export class OracleSchemaAdapter implements ISchemaAdapter {
         return result.rows.map((row: QueryRow) => row.column_name as string);
     }
 
-    private async describeTableIndexes(table: string, owner: string): Promise<IndexInfo[]> {
+    protected async describeTableIndexes(table: string, owner: string): Promise<IndexInfo[]> {
         this.validateIdentifier(table);
         // Join all_indexes to all_constraints with constraint_type = 'P' so we
         // can flag the actual PK index by its constraint name rather than by
@@ -389,7 +413,7 @@ export class OracleSchemaAdapter implements ISchemaAdapter {
         return Array.from(indexMap.values());
     }
 
-    private async describeTableForeignKeys(table: string, owner: string): Promise<ForeignKeyInfo[]> {
+    protected async describeTableForeignKeys(table: string, owner: string): Promise<ForeignKeyInfo[]> {
         this.validateIdentifier(table);
         const sql = `SELECT a.constraint_name, acc.column_name, r.owner AS r_owner, r.table_name AS r_table_name, rcc.column_name AS r_column_name, a.delete_rule FROM all_constraints a JOIN all_cons_columns acc ON a.constraint_name = acc.constraint_name AND a.owner = acc.owner JOIN all_constraints r ON a.r_constraint_name = r.constraint_name AND a.r_owner = r.owner JOIN all_cons_columns rcc ON r.constraint_name = rcc.constraint_name AND r.owner = rcc.owner WHERE a.constraint_type = 'R' AND a.owner = :1 AND a.table_name = :2 ORDER BY a.constraint_name, acc.position`;
         const result = await this.executeQuery(sql, [{ value: owner }, { value: table }]);
@@ -437,24 +461,26 @@ export class OracleSchemaAdapter implements ISchemaAdapter {
         // First pass: create all nodes keyed by id.
         for (const row of rows) {
             const id = String(row.id);
+            const numericId = Number(row.id);
             const operation = (row.operation as string) ?? 'unknown';
             const options = row.options as string | undefined;
             const node: ExplainNode = {
                 id,
                 operation: options ? `${operation} ${options}` : operation,
                 table: row.object_name as string | undefined,
-                rows: row.rows as number | undefined,
-                cost: row.cost as number | undefined,
+                rows: row.rows != null ? Number(row.rows) : undefined,
+                cost: row.cost != null ? Number(row.cost) : undefined,
                 children: [],
             };
-            nodeMap.set(row.id as number, node);
+            nodeMap.set(numericId, node);
         }
 
         // Second pass: link children to parents using the depth column.
         const stack: ExplainNode[] = [];
         for (const row of rows) {
-            const node = nodeMap.get(row.id as number)!;
-            const depth = (row.depth as number) ?? 0;
+            const numericId = Number(row.id);
+            const node = nodeMap.get(numericId)!;
+            const depth = row.depth != null ? Number(row.depth) : 0;
             // Pop stack until we find the parent at depth - 1.
             while (stack.length > depth) {
                 stack.pop();

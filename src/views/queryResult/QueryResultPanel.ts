@@ -360,6 +360,20 @@ export class QueryResultPanel extends BaseWebviewPanel {
             }
         } catch (e) { /* ignore: dialect detection is best-effort */ handleError(e, 'QueryResultPanel.dialectDetection', ErrorCategory.SUB_ITEM) }
 
+        // Threshold above which we drop the main-thread copy of rows after
+        // streaming them to the webview. 100k rows is large enough to keep the
+        // common interactive case fully cached while still bounding memory for
+        // genuinely large exports. When triggered, the extension host retains
+        // only the first page (see LARGE_RESULT_RETAIN_ROWS) plus metadata.
+        const LARGE_RESULT_THRESHOLD = 100000;
+        // Number of leading rows the extension host keeps after streaming a
+        // large result, so that the first page and in-row blob previews keep
+        // working without re-querying.
+        const LARGE_RESULT_RETAIN_ROWS = 1000;
+
+        const totalRows = result.rows.length;
+        const isLargeResultSet = totalRows > LARGE_RESULT_THRESHOLD;
+
         const metadata = {
             queryId: result.queryId,
             status: result.status,
@@ -382,6 +396,9 @@ export class QueryResultPanel extends BaseWebviewPanel {
             connectionName: connectionName || '',
             connectionColor: connectionColor || '',
             tableName: tableName || '',
+            // Signal to the webview that client-side sort/filter is disabled
+            // and the user should push these operations into SQL.
+            largeResultSet: isLargeResultSet,
         };
 
         this.postMessage({
@@ -391,7 +408,6 @@ export class QueryResultPanel extends BaseWebviewPanel {
 
         const BATCH_SIZE = 1000;
         const rows = result.rows;
-        const totalRows = rows.length;
         const totalBatches = Math.ceil(totalRows / BATCH_SIZE);
         const colNames = result.columns.map((c) => c.name);
         const colCount = colNames.length;
@@ -408,6 +424,15 @@ export class QueryResultPanel extends BaseWebviewPanel {
                     values[j] = row[colNames[j]];
                 }
                 batchRows[i - start] = values;
+                // Once a row has been serialized into a postMessage batch we
+                // no longer need the original object on the main thread. For
+                // large result sets we null out the slot so the GC can reclaim
+                // the row immediately, instead of waiting for the entire
+                // result set to be sent. We keep the first LARGE_RESULT_RETAIN
+                // rows intact so the first page / blob previews still work.
+                if (isLargeResultSet && i >= LARGE_RESULT_RETAIN_ROWS) {
+                    rows[i] = undefined as unknown as QueryRow;
+                }
             }
 
             this.postMessage({
@@ -418,6 +443,17 @@ export class QueryResultPanel extends BaseWebviewPanel {
                     rows: batchRows,
                 },
             });
+        }
+
+        if (isLargeResultSet) {
+            // Drop the rows beyond the retained head so the extension host no
+            // longer holds the full result set. Replace `rows` with a trimmed
+            // array (keeping the first page region) so downstream code that
+            // reads `_currentResult.rows` keeps working for the first page.
+            const retained = result.rows.slice(0, LARGE_RESULT_RETAIN_ROWS);
+            result.rows = retained;
+            // Keep rowCount as the server-reported total so the UI can display
+            // "showing N of M" correctly; rows.length is now the retained head.
         }
 
         this.postMessage({

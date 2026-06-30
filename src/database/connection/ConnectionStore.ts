@@ -12,7 +12,7 @@ interface ConnectionsFile {
     connections: ConnectionConfig[];
 }
 
-export class ConnectionStore {
+export class ConnectionStore implements vscode.Disposable {
     private readonly configDir: string;
     private readonly configFilePath: string;
     private readonly legacyConfigDir: string;
@@ -476,6 +476,23 @@ export class ConnectionStore {
 
         await this.save();
         return { added, skipped };
+    }
+
+    /**
+     * Release resources held by this store. Cancels any pending debounced
+     * save timer so it cannot fire after the extension has deactivated,
+     * which would otherwise schedule a write on a stale instance. Registered
+     * with the DI container so {@link DIContainer.disposeAll} invokes it
+     * during shutdown.
+     */
+    dispose(): void {
+        if (this.saveTimer) {
+            clearTimeout(this.saveTimer);
+            this.saveTimer = null;
+            // Resolve any waiter so callers awaiting `save()` are not left
+            // hanging on a timer that will never fire.
+            this.settlePendingSave(true);
+        }
     }
 }
 

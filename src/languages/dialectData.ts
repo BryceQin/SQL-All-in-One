@@ -1,14 +1,9 @@
-import type { Lazy } from '../utils/lazy'
 import * as allDialects from './allDialects'
 import type { FunctionSignature } from '../completion/functionSignatures'
 
-type LazyKeywords = Lazy<string[]>
-type LazyDataTypes = Lazy<string[]>
-type LazyFunctionSigs = Lazy<FunctionSignature[]>
-
-interface LazyKeywordEntry {
-    keywords: LazyKeywords
-    dataTypes: LazyDataTypes
+interface KeywordEntry {
+    keywords: string[]
+    dataTypes: string[]
 }
 
 interface KeywordData {
@@ -16,7 +11,7 @@ interface KeywordData {
     dataTypes: string[]
 }
 
-const _keywordMap: Record<string, LazyKeywordEntry> = {
+const _keywordMap: Record<string, KeywordEntry> = {
     hive: { keywords: allDialects.hiveKeywords, dataTypes: allDialects.hiveDataTypes },
     mysql: { keywords: allDialects.mysqlKeywords, dataTypes: allDialects.mysqlDataTypes },
     spark: { keywords: allDialects.sparkKeywords, dataTypes: allDialects.sparkDataTypes },
@@ -27,7 +22,7 @@ const _keywordMap: Record<string, LazyKeywordEntry> = {
     sqlite: { keywords: allDialects.sqliteKeywords, dataTypes: allDialects.sqliteDataTypes },
 }
 
-const _functionSigMap: Record<string, LazyFunctionSigs> = {
+const _functionSigMap: Record<string, FunctionSignature[]> = {
     hive: allDialects.hiveFunctionSignatures,
     mysql: allDialects.mysqlFunctionSignatures,
     spark: allDialects.sparkFunctionSignatures,
@@ -47,7 +42,7 @@ export const keywordMap = new Proxy({} as Record<string, KeywordData>, {
         if (cached !== undefined) return cached
         const entry = _keywordMap[dialect]
         if (!entry) return undefined
-        const resolved: KeywordData = { keywords: entry.keywords.get(), dataTypes: entry.dataTypes.get() }
+        const resolved: KeywordData = { keywords: entry.keywords, dataTypes: entry.dataTypes }
         resolvedKeywordCache.set(dialect, resolved)
         return resolved
     },
@@ -69,9 +64,8 @@ export const functionSigMap = new Proxy({} as Record<string, FunctionSignature[]
         if (cached !== undefined) return cached
         const entry = _functionSigMap[dialect]
         if (!entry) return undefined
-        const resolved = entry.get()
-        resolvedFunctionCache.set(dialect, resolved)
-        return resolved
+        resolvedFunctionCache.set(dialect, entry)
+        return entry
     },
     has(_target: Record<string, FunctionSignature[]>, dialect: string): boolean {
         return dialect in _functionSigMap

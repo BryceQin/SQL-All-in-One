@@ -63,7 +63,7 @@ export class OracleMetadataAdapter implements IMetadataAdapter {
         return result.rows.map((row: QueryRow) => ({
             name: row.table_name as string,
             type: row.table_type as string,
-            rowCount: row.num_rows as number | undefined,
+            rowCount: row.num_rows != null ? Number(row.num_rows) : undefined,
         }));
     }
 

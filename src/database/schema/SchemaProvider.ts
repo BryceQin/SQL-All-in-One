@@ -261,13 +261,56 @@ export class SchemaProvider {
                     )
                 );
             } else {
-                const limitedTables = tables.slice(0, 10);
+                // No alias map: fall back to scanning a bounded number of
+                // tables. Rank by MRU recency so we pull columns for tables
+                // the user actually uses rather than arbitrary schema order,
+                // then cap at 10 to bound the number of CompletionItems.
+                const limitedTables = this.rankTablesByMru(tables).slice(0, 10);
                 await this.parallelWithLimit(
                     limitedTables.map((tbl): (() => Promise<void>) => () => this.addColumnsForTable(items, context, tbl.name, prefix)),
                     3
                 );
             }
         } catch (e) { handleError(e, 'SchemaProvider.addColumnItems', ErrorCategory.FEATURE); }
+    }
+
+    /**
+     * Order tables so that recently-used ones come first, while preserving
+     * the original schema order for tables not present in the MRU cache.
+     * Tables that appear in the MRU are sorted by recency (most recent
+     * first); the remaining tables keep their original relative order and
+     * are appended after the MRU tables. The result is intended to be
+     * sliced to a small bound by the caller.
+     */
+    private rankTablesByMru(tables: { name: string }[]): { name: string }[] {
+        const recentTables = this.mruTracker.getRecentTables();
+        if (recentTables.length === 0) {
+            return tables;
+        }
+
+        // Build a recency index: lower rank = more recent.
+        const recencyRank = new Map<string, number>();
+        recentTables.forEach((tbl, idx) => recencyRank.set(tbl.toLowerCase(), idx));
+
+        const indexed = tables.map((tbl) => ({
+            tbl,
+            rank: recencyRank.has(tbl.name.toLowerCase())
+                ? recencyRank.get(tbl.name.toLowerCase())!
+                : Number.MAX_SAFE_INTEGER,
+        }));
+
+        // MRU tables sorted by recency (ascending rank); stable for ties.
+        const mruTables = indexed
+            .filter((entry) => entry.rank !== Number.MAX_SAFE_INTEGER)
+            .sort((a, b) => a.rank - b.rank)
+            .map((entry) => entry.tbl);
+
+        // Non-MRU tables preserve original schema order.
+        const nonMruTables = indexed
+            .filter((entry) => entry.rank === Number.MAX_SAFE_INTEGER)
+            .map((entry) => entry.tbl);
+
+        return [...mruTables, ...nonMruTables];
     }
 
     private async addColumnsForTable(
@@ -393,11 +436,18 @@ export class SchemaProvider {
      * Called when the user actually selects a completion item.
      * Updates the MRU cache based on the item's data, avoiding side effects
      * during item generation.
+     *
+     * Table selections are also recorded in the table-level MRU queue so
+     * that {@link addColumnItems} can rank tables by recency when no
+     * alias map is available.
      */
     resolveCompletionItem(item: vscode.CompletionItem): vscode.CompletionItem {
         const data = getMruData(item);
         if (data && data.key) {
             this.mruTracker.addToMru(data.key);
+            if (data.type === 'table') {
+                this.mruTracker.addTableToMru(data.key);
+            }
         }
         return item;
     }

@@ -2,6 +2,9 @@ import * as vscode from 'vscode';
 import { initI18n } from '../i18n';
 import { getContainer, Tokens } from './diContainer';
 import { LRUCache } from '../utils/lruCache';
+import { getFormatterConfigKeys, LINT_CONFIG_KEYS } from '../config/configDefinitions';
+import type { SqlLanguage, FormatOptionsWithLanguage } from '../formatter/sqlFormatter';
+import type { FormatOptions } from '../formatter/FormatOptions';
 
 export class ConfigManager {
     private static readonly MAX_CACHE_SIZE = 500;
@@ -138,18 +141,24 @@ export class ConfigManager {
         return this._onDidChangeConfig.event(listener);
     }
 
+    /**
+     * Build a snapshot of all config keys that influence linter behavior.
+     *
+     * The snapshot combines:
+     *  - the feature-level keys declared in {@link LINT_CONFIG_KEYS}
+     *    (master enable + per-severity visibility toggles), and
+     *  - the per-rule keys registered via {@link registerLintKeys} (of the
+     *    form `lint.<ruleId>`).
+     *
+     * Both sources are derived from {@link configDefinitions} / the linter
+     * module rather than being hard-coded here, so the snapshot automatically
+     * stays in sync as rules are added.
+     */
     private getConfigSnapshot(): Map<string, unknown> {
         const snapshot = new Map<string, unknown>();
         const config = this.getConfig();
 
-        const fixedKeys = [
-            'enableLinter',
-            'showErrorLevel',
-            'showWarningLevel',
-            'showInfoLevel',
-        ];
-
-        const allKeys = [...fixedKeys, ...this.lintRuleKeys];
+        const allKeys = [...LINT_CONFIG_KEYS, ...this.lintRuleKeys];
         for (const key of allKeys) {
             snapshot.set(key, config.get(key));
         }
@@ -166,14 +175,12 @@ export class ConfigManager {
             this.lastConfigSnapshot = newSnapshot;
             return true;
         }
+        const lintFeatureKeySet = new Set<string>(LINT_CONFIG_KEYS);
         for (const [key, value] of newSnapshot) {
-            if (
-                key.startsWith('lint.') ||
-                key === 'enableLinter' ||
-                key === 'showErrorLevel' ||
-                key === 'showWarningLevel' ||
-                key === 'showInfoLevel'
-            ) {
+            // A key is linter-relevant if it is one of the feature-level
+            // lint toggles (LINT_CONFIG_KEYS) or any per-rule key registered
+            // with the `lint.` prefix.
+            if (lintFeatureKeySet.has(key) || key.startsWith('lint.')) {
                 const oldValue = this.lastConfigSnapshot.get(key);
                 if (!this.deepEqual(oldValue, value)) {
                     this.lastConfigSnapshot = newSnapshot;
@@ -193,6 +200,66 @@ export class ConfigManager {
         this.disposables.forEach((d) => { d.dispose(); });
         this._onDidChangeConfig.dispose();
     }
+
+    /**
+     * Assemble the formatter {@link FormatOptionsWithLanguage} from the
+     * extension's workspace configuration.
+     *
+     * This is the single source of truth for "how to turn VS Code settings
+     * into formatter options" — previously this logic lived in a separate
+     * `src/core/config.ts` module whose only responsibility was formatting
+     * config assembly, overlapping with ConfigManager's role. It has been
+     * consolidated here so all config-to-runtime-object translation lives in
+     * one place. The free function {@link createConfig} below delegates to
+     * this method for backwards-compatible import paths.
+     *
+     * Declared `static` because the translation is pure: it depends only on
+     * its arguments and the {@link getFormatterConfigKeys} definition, not on
+     * any ConfigManager instance state (cache, registered lint keys, etc.).
+     * This keeps the historical `createConfig` call shape dependency-free —
+     * no DI container lookup is needed to format SQL.
+     */
+    static getFormatOptions(
+        extensionSettings: vscode.WorkspaceConfiguration,
+        formattingOptions: vscode.FormattingOptions,
+        detectedDialect: SqlLanguage,
+    ): FormatOptionsWithLanguage {
+        const configuredDialect = extensionSettings.get<
+            SqlLanguage | 'auto-detect'
+        >('dialect');
+
+        const cfg: Record<string, unknown> = {
+            language:
+                configuredDialect === 'auto-detect'
+                    ? detectedDialect
+                    : configuredDialect,
+            ...ConfigManager.createIndentationConfig(extensionSettings, formattingOptions),
+        };
+
+        for (const key of getFormatterConfigKeys()) {
+            cfg[key] = extensionSettings.get(key);
+        }
+
+        return cfg as FormatOptionsWithLanguage;
+    }
+
+    private static createIndentationConfig(
+        extensionSettings: vscode.WorkspaceConfiguration,
+        formattingOptions: vscode.FormattingOptions,
+    ): Pick<FormatOptions, 'tabWidth' | 'useTabs'> {
+        if (extensionSettings.get<boolean>('ignoreTabSettings')) {
+            const tabSizeOverride = extensionSettings.get<number>('tabSizeOverride');
+            return {
+                tabWidth: (tabSizeOverride !== undefined && tabSizeOverride > 0) ? tabSizeOverride : 2,
+                useTabs: !extensionSettings.get<boolean>('insertSpacesOverride', true),
+            };
+        } else {
+            return {
+                tabWidth: formattingOptions.tabSize,
+                useTabs: !formattingOptions.insertSpaces,
+            };
+        }
+    }
 }
 
 export function createConfigManager(): ConfigManager {
@@ -202,3 +269,20 @@ export function createConfigManager(): ConfigManager {
 export function getConfigManager(): ConfigManager {
     return getContainer().get<ConfigManager>(Tokens.ConfigManager);
 }
+
+/**
+ * Assemble formatter options from VS Code settings.
+ *
+ * Thin wrapper over {@link ConfigManager.getFormatOptions} (static), preserving
+ * the historical `createConfig` signature so existing callers
+ * (`SqlFormattingProvider`, `formatSelectionCommand`, `LanguageBridge`) keep
+ * working without changes to their call shape or their (dependency-free)
+ * import graph.
+ */
+export const createConfig = (
+    extensionSettings: vscode.WorkspaceConfiguration,
+    formattingOptions: vscode.FormattingOptions,
+    detectedDialect: SqlLanguage,
+): FormatOptionsWithLanguage => {
+    return ConfigManager.getFormatOptions(extensionSettings, formattingOptions, detectedDialect);
+};

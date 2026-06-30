@@ -2,9 +2,8 @@ import * as vscode from 'vscode'
 import type { RuleContext } from './LintRule'
 import { BaseRule } from './BaseRule'
 import { isAstNode, findNodes } from '../../parser/AstVisitor'
-import { getNodeLocation, createDiagnostic } from '../../parser/astUtils'
+import { getNodeLocation } from '../../parser/astUtils'
 import type { AstNode } from '../../parser/astTypes'
-import { t } from '../../i18n'
 
 export class SuspiciousNullComparisonRule extends BaseRule {
     readonly id = 'suspicious_null_comparison'
@@ -33,12 +32,7 @@ export class SuspiciousNullComparisonRule extends BaseRule {
                 const loc = getNodeLocation(binary)
                 if (loc) {
                     const suggestion = op === '=' ? 'IS NULL' : 'IS NOT NULL'
-                    diagnostics.push(createDiagnostic(
-                        loc, 4, 'SUSPICIOUS_NULL_COMPARISON',
-                        t('enhanced.nullComparison', String(loc.line), suggestion, op),
-                        this.getSeverity(),
-                        t('linter.source'),
-                    ))
+                    diagnostics.push(this.addDiagnostic(loc, 4, 'enhanced.nullComparison', String(loc.line), suggestion, op))
                 }
             }
         }

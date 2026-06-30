@@ -1,9 +1,8 @@
 import * as vscode from 'vscode'
 import type { RuleContext } from './LintRule'
 import { BaseRule } from './BaseRule'
-import { getNodeLocation, createDiagnostic } from '../../parser/astUtils'
+import { getNodeLocation } from '../../parser/astUtils'
 import type { AstNode } from '../../parser/astTypes'
-import { t } from '../../i18n'
 
 export class HavingWithoutGroupByRule extends BaseRule {
     readonly id = 'having_without_group_by'
@@ -26,12 +25,7 @@ export class HavingWithoutGroupByRule extends BaseRule {
         if (groupby == null || (Array.isArray(groupby) && groupby.length === 0)) {
             const loc = getNodeLocation(node.having as AstNode) ?? getNodeLocation(node)
             if (loc) {
-                diagnostics.push(createDiagnostic(
-                    loc, 6, 'HAVING_WITHOUT_GROUPBY',
-                    t('enhanced.havingWithoutGroupBy', String(loc.line)),
-                    this.getSeverity(),
-                    t('linter.source'),
-                ))
+                diagnostics.push(this.addDiagnostic(loc, 6, 'enhanced.havingWithoutGroupBy', String(loc.line)))
             }
         }
 

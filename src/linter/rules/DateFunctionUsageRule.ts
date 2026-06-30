@@ -2,9 +2,8 @@ import * as vscode from 'vscode'
 import type { RuleContext } from './LintRule'
 import { BaseRule } from './BaseRule'
 import { isAstNode, findNodes } from '../../parser/AstVisitor'
-import { getNodeLocation, getFunctionName, createDiagnostic } from '../../parser/astUtils'
+import { getNodeLocation, getFunctionName } from '../../parser/astUtils'
 import type { AstNode } from '../../parser/astTypes'
-import { t } from '../../i18n'
 
 const DATE_FUNCTION_NAMES = new Set(['date_add', 'date_sub', 'now', 'sysdate'])
 
@@ -30,12 +29,7 @@ export class DateFunctionUsageRule extends BaseRule {
             if (name && DATE_FUNCTION_NAMES.has(name.toLowerCase())) {
                 const loc = getNodeLocation(func)
                 if (loc) {
-                    diagnostics.push(createDiagnostic(
-                        loc, name.length, 'DATE_FUNCTION_HINT',
-                        t('enhanced.dateFunctionHint', name),
-                        this.getSeverity(),
-                        t('linter.source'),
-                    ))
+                    diagnostics.push(this.addDiagnostic(loc, name.length, 'enhanced.dateFunctionHint', name))
                 }
             }
         }

@@ -2,9 +2,8 @@ import * as vscode from 'vscode'
 import type { RuleContext } from './LintRule'
 import { BaseRule } from './BaseRule'
 import { isAstNode, findNodes, walkAst } from '../../parser/AstVisitor'
-import { getNodeLocation, createDiagnostic } from '../../parser/astUtils'
+import { getNodeLocation } from '../../parser/astUtils'
 import type { AstNode } from '../../parser/astTypes'
-import { t } from '../../i18n'
 
 export class AggregateInWhereRule extends BaseRule {
     readonly id = 'aggregate_in_where'
@@ -35,12 +34,7 @@ export class AggregateInWhereRule extends BaseRule {
             const loc = getNodeLocation(aggr)
             if (loc) {
                 const name = typeof aggr.name === 'string' ? aggr.name : 'aggregate'
-                diagnostics.push(createDiagnostic(
-                    loc, name.length, 'AGGREGATE_IN_WHERE',
-                    t('enhanced.aggregateInWhere', String(loc.line)),
-                    this.getSeverity(),
-                    t('linter.source'),
-                ))
+                diagnostics.push(this.addDiagnostic(loc, name.length, 'enhanced.aggregateInWhere', String(loc.line)))
             }
         }
 

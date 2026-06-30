@@ -2,6 +2,7 @@ import type { ConnectionConfig, TestConnectionResult } from './IDatabaseAdapter'
 import type { config as MssqlConfig, ConnectionPool } from 'mssql';
 import type { SqlServerSharedContext } from './SqlServerSharedContext';
 import { t } from '../../i18n/index';
+import { BaseConnectionAdapter } from './BaseConnectionAdapter';
 
 /**
  * SQL Server connection pool operations.
@@ -13,8 +14,10 @@ import { t } from '../../i18n/index';
  * Used internally by SqlServerAdapter; common lifecycle logic lives in
  * BaseDatabaseAdapter.
  */
-export class SqlServerConnectionAdapter {
-    constructor(private shared: SqlServerSharedContext) {}
+export class SqlServerConnectionAdapter extends BaseConnectionAdapter {
+    constructor(private shared: SqlServerSharedContext) {
+        super();
+    }
 
     async connect(config: ConnectionConfig): Promise<void> {
         const poolConfig = this.createPoolConfig(config);
@@ -115,12 +118,12 @@ export class SqlServerConnectionAdapter {
      * `idleTimeoutMillis` pool option, so manual destruction is harmful. This
      * method is a no-op, retained for API compatibility with other adapters.
      */
-    async reapIdleConnections(): Promise<void> {
+    override async reapIdleConnections(): Promise<void> {
         if (!this.shared.pool) return;
         this.shared.lastActivityTime = Date.now();
     }
 
-    formatConnectionError(error: unknown, config: ConnectionConfig): Error {
+    protected override formatDriverSpecificError(error: unknown, config: ConnectionConfig): Error | undefined {
         const msg = error instanceof Error ? error.message : String(error);
         const hostPort = `${config.host}:${config.port}`;
 
@@ -138,25 +141,10 @@ export class SqlServerConnectionAdapter {
         if (code === 'ESOCKET' || msg.includes('socket') || msg.includes('ECONNRESET')) {
             return new Error(t('database.connectionLost', hostPort));
         }
-        if (msg.includes('self signed certificate') || msg.includes('certificate') || msg.includes('SSL')) {
-            return new Error(t('database.sslError', hostPort));
-        }
 
-        // Common network errors (same patterns as BaseDatabaseAdapter)
-        if (msg.includes('ECONNREFUSED')) {
-            return new Error(t('database.connectionRefused', hostPort));
-        }
-        if (msg.includes('ETIMEDOUT') || msg.includes('connectTimeout')) {
-            return new Error(t('database.connectionTimedOut', hostPort));
-        }
-        if (msg.includes('EHOSTUNREACH')) {
-            return new Error(t('database.hostUnreachable', hostPort));
-        }
-        if (msg.includes('ENOTFOUND')) {
-            return new Error(t('database.hostNotFound', config.host));
-        }
-
-        return error instanceof Error ? error : new Error(msg);
+        // SSL/certificate and common network errors are handled by the base
+        // class (BaseConnectionAdapter).
+        return undefined;
     }
 
     private createPoolConfig(config: ConnectionConfig): MssqlConfig {

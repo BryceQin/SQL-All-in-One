@@ -192,7 +192,12 @@ export class LRUCache<K, V> {
   private evictNode(node: LRUNode<K, V>): void {
     this.detachNode(node);
     this.map.delete(node.key);
-    this.removeFromPrefixIndex(node.key);
+    // Only maintain the prefix index if it has been built; otherwise the
+    // index is null/empty and rebuildPrefixIndex() will reconstruct it on
+    // the next deleteByPrefix call.
+    if (this.prefixIndexBuilt) {
+      this.removeFromPrefixIndex(node.key);
+    }
   }
 
   // -----------------------------------------------------------------------
@@ -214,7 +219,9 @@ export class LRUCache<K, V> {
       const lru = this.removeLRU();
       if (lru) {
         this.map.delete(lru.key);
-        this.removeFromPrefixIndex(lru.key);
+        if (this.prefixIndexBuilt) {
+          this.removeFromPrefixIndex(lru.key);
+        }
       }
     }
 
@@ -227,7 +234,11 @@ export class LRUCache<K, V> {
     };
     this.insertAtHead(node);
     this.map.set(key, node);
-    this.addToPrefixIndex(key);
+    // Only maintain the prefix index if it has been built; caches that never
+    // call deleteByPrefix pay zero indexing overhead.
+    if (this.prefixIndexBuilt) {
+      this.addToPrefixIndex(key);
+    }
   }
 
   get(key: K): V | undefined {

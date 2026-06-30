@@ -1,12 +1,35 @@
 import type { ISchemaAdapter, QueryResult, QueryParam, QueryRow, TriggerInfo, ColumnInfo, IndexInfo, ForeignKeyInfo, TableStructure, RoutineParameterInfo, DialectCapabilities, DataTypeCategory, ExplainResult, ExplainNode } from './IDatabaseAdapter';
 import type { PoolConnection, RowDataPacket } from 'mysql2/promise';
-import type { MysqlSharedContext } from './MysqlSharedContext';
+import type { IMysqlProtocolSharedContext } from './MysqlSharedContext';
+import { validateIdentifier as validateIdentifierHelper } from './identifierValidator';
 
-export class MysqlSchemaAdapter implements ISchemaAdapter {
+/**
+ * Keys produced by MySQL EXPLAIN JSON that describe a leaf table-access node
+ * inline (rather than as nested children). When walking the sub-entries of a
+ * generic EXPLAIN node we skip these so they are not mistaken for child
+ * operations. Used by {@link MysqlSchemaAdapter.parseGenericNode}.
+ */
+const EXPLAIN_SKIP_KEYS = new Set<string>([
+    'table_name',
+    'rows_examined',
+    'key',
+    'attached_condition',
+    'cost_info',
+]);
+
+/**
+ * MySQL schema adapter.
+ *
+ * Implemented as a generic over the shared-context contract so that
+ * StarRocks (which reuses the mysql2 driver) can subclass it via
+ * {@link StarrocksSchemaAdapter} and only override the dialect-specific
+ * DDL / EXPLAIN / capabilities behaviour.
+ */
+export class MysqlSchemaAdapter<TShared extends IMysqlProtocolSharedContext = IMysqlProtocolSharedContext> implements ISchemaAdapter {
     constructor(
-        private shared: MysqlSharedContext,
-        private executeQuery: (sql: string, params?: QueryParam[]) => Promise<QueryResult>,
-        private listTriggersFn: (database?: string, schema?: string) => Promise<TriggerInfo[]>
+        protected shared: TShared,
+        protected executeQuery: (sql: string, params?: QueryParam[]) => Promise<QueryResult>,
+        protected listTriggersFn: (database?: string, schema?: string) => Promise<TriggerInfo[]>
     ) {}
 
     async describeTable(database: string, table: string, _schema?: string): Promise<TableStructure> {
@@ -123,7 +146,7 @@ export class MysqlSchemaAdapter implements ISchemaAdapter {
                 return { format: 'json', raw: '{}', nodes: [] };
             }
 
-            const raw = (result[0].EXPLAIN ?? result[0]['EXPLAIN'] ?? '{}') as string;
+            const raw = (result[0].EXPLAIN ?? '{}') as string;
 
             let nodes: ExplainNode[] = [];
             try {
@@ -151,7 +174,8 @@ export class MysqlSchemaAdapter implements ISchemaAdapter {
             return 0;
         }
 
-        return (result.rows[0].TABLE_ROWS as number) ?? 0;
+        const tableRows = result.rows[0].TABLE_ROWS;
+        return tableRows != null ? Number(tableRows) : 0;
     }
 
     getDialectCapabilities(): DialectCapabilities {
@@ -243,17 +267,13 @@ export class MysqlSchemaAdapter implements ISchemaAdapter {
         return '`' + identifier.replace(/`/g, '``') + '`';
     }
 
-    private validateIdentifier(identifier: string): void {
-        if (!identifier || typeof identifier !== 'string') {
-            throw new Error('Invalid identifier: identifier must be a non-empty string');
-        }
-        if (identifier.length > 64) {
-            throw new Error('Invalid identifier: identifier exceeds maximum length');
-        }
-        // eslint-disable-next-line no-control-regex
-        if (/\u0000/.test(identifier)) {
-            throw new Error('Invalid identifier: identifier contains null bytes');
-        }
+    /**
+     * Validates that an identifier is a non-empty string with no null bytes
+     * and within the dialect's maximum identifier length (64 for MySQL and
+     * StarRocks).
+     */
+    protected validateIdentifier(identifier: string): void {
+        validateIdentifierHelper(identifier, 64);
     }
 
     private async describeTableColumns(database: string, table: string): Promise<ColumnInfo[]> {
@@ -267,11 +287,12 @@ export class MysqlSchemaAdapter implements ISchemaAdapter {
             const columnKey = row.COLUMN_KEY as string;
             const extra = row.EXTRA as string;
             const dataType = row.DATA_TYPE as string;
+            const lengthRaw = row.CHARACTER_MAXIMUM_LENGTH ?? row.NUMERIC_PRECISION ?? undefined;
 
             return {
                 name: row.COLUMN_NAME as string,
                 type: row.COLUMN_TYPE as string,
-                length: (row.CHARACTER_MAXIMUM_LENGTH ?? row.NUMERIC_PRECISION ?? undefined) as number | undefined,
+                length: lengthRaw != null ? Number(lengthRaw) : undefined,
                 nullable: row.IS_NULLABLE === 'YES',
                 defaultValue: row.COLUMN_DEFAULT as string | number | boolean | null,
                 isPrimaryKey: columnKey === 'PRI',
@@ -302,7 +323,7 @@ export class MysqlSchemaAdapter implements ISchemaAdapter {
                     name: indexName,
                     type: row.Index_type as string,
                     columns: [],
-                    isUnique: (row.Non_unique as number) === 0,
+                    isUnique: Number(row.Non_unique) === 0,
                     isPrimary: indexName === 'PRIMARY',
                 });
             }
@@ -312,7 +333,7 @@ export class MysqlSchemaAdapter implements ISchemaAdapter {
         return Array.from(indexMap.values());
     }
 
-    private async describeTableForeignKeys(database: string, table: string): Promise<ForeignKeyInfo[]> {
+    protected async describeTableForeignKeys(database: string, table: string): Promise<ForeignKeyInfo[]> {
         const sql = `SELECT kcu.CONSTRAINT_NAME, kcu.COLUMN_NAME, kcu.REFERENCED_TABLE_NAME, kcu.REFERENCED_COLUMN_NAME, rc.DELETE_RULE, rc.UPDATE_RULE FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu JOIN INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS rc ON kcu.CONSTRAINT_NAME = rc.CONSTRAINT_NAME AND kcu.CONSTRAINT_SCHEMA = rc.CONSTRAINT_SCHEMA WHERE kcu.TABLE_SCHEMA = ? AND kcu.TABLE_NAME = ? AND kcu.REFERENCED_TABLE_NAME IS NOT NULL ORDER BY kcu.CONSTRAINT_NAME, kcu.ORDINAL_POSITION`;
         const result = await this.executeQuery(sql, [{ value: database }, { value: table }]);
         if (result.status !== 'success') {
@@ -340,81 +361,118 @@ export class MysqlSchemaAdapter implements ISchemaAdapter {
         return Array.from(fkMap.values());
     }
 
+    /**
+     * Parse a MySQL EXPLAIN JSON object into a flat list of explain nodes.
+     *
+     * This is a thin dispatcher: a top-level `query_block` is handled by
+     * {@link parseQueryBlockNode} and any other top-level dictionary shape is
+     * handled by {@link parseGenericNode}.
+     *
+     * NOTE: `idCounter` is a mutable by-ref parameter so that node ids remain
+     * globally unique across the recursive walk. This mirrors the original
+     * implementation and is the reason we don't return the counter alongside
+     * the nodes.
+     */
     private parseExplainNodes(obj: Record<string, unknown>, idCounter: { value: number } = { value: 0 }): ExplainNode[] {
         if (!obj) {
             return [];
         }
 
-        const nodes: ExplainNode[] = [];
-
         if (obj.query_block) {
-            const block = obj.query_block as Record<string, unknown>;
-            const costInfo = block.cost_info as Record<string, unknown> | undefined;
-            const node: ExplainNode = {
-                id: String(++idCounter.value),
-                operation: block.select_id ? `query_block (id=${block.select_id as number})` : 'query_block',
-                rows: costInfo?.rows_examined_per_scan as number | undefined,
-                cost: costInfo?.query_cost ? parseFloat(costInfo.query_cost as string) : undefined,
-                children: [],
-            };
+            return this.parseQueryBlockNode(obj.query_block as Record<string, unknown>, idCounter);
+        }
 
-            for (const [key, value] of Object.entries(block)) {
-                if (key === 'select_id' || key === 'cost_info') {
-                    continue;
-                }
+        return this.parseGenericTopLevel(obj, idCounter);
+    }
 
-                if (Array.isArray(value)) {
-                    for (const item of value) {
-                        node.children.push(...this.parseExplainNodes(item as Record<string, unknown>, idCounter));
-                    }
-                } else if (typeof value === 'object' && value !== null) {
-                    node.children.push(...this.parseExplainNodes(value as Record<string, unknown>, idCounter));
-                }
+    /**
+     * Parse a `query_block` EXPLAIN node: emit one node describing the block
+     * (with select_id and cost_info) and recurse into every other entry, which
+     * may be either a single nested object or an array of nested objects.
+     */
+    private parseQueryBlockNode(block: Record<string, unknown>, idCounter: { value: number }): ExplainNode[] {
+        const costInfo = block.cost_info as Record<string, unknown> | undefined;
+        const node: ExplainNode = {
+            id: String(++idCounter.value),
+            operation: block.select_id != null ? `query_block (id=${Number(block.select_id)})` : 'query_block',
+            rows: costInfo?.rows_examined_per_scan != null ? Number(costInfo.rows_examined_per_scan) : undefined,
+            cost: costInfo?.query_cost ? parseFloat(costInfo.query_cost as string) : undefined,
+            children: [],
+        };
+
+        for (const [key, value] of Object.entries(block)) {
+            if (key === 'select_id' || key === 'cost_info') {
+                continue;
             }
 
-            nodes.push(node);
-        } else {
-            for (const [key, value] of Object.entries(obj)) {
-                if (key === 'cost_info') {
-                    continue;
+            if (Array.isArray(value)) {
+                for (const item of value) {
+                    node.children.push(...this.parseExplainNodes(item as Record<string, unknown>, idCounter));
                 }
-
-                const val = value as Record<string, unknown> | null | undefined;
-                const valRecord = val && typeof val === 'object' && !Array.isArray(val) ? val as Record<string, unknown> : undefined;
-                const node: ExplainNode = {
-                    id: String(++idCounter.value),
-                    operation: key,
-                    table: valRecord?.table_name as string | undefined,
-                    rows: valRecord?.rows_examined ? parseInt(valRecord.rows_examined as string, 10) : undefined,
-                    key: valRecord?.key as string | undefined,
-                    extra: valRecord?.attached_condition as string | undefined,
-                    children: [],
-                };
-
-                const valCostInfo = valRecord?.cost_info as Record<string, unknown> | undefined;
-                if (valCostInfo?.query_cost) {
-                    node.cost = parseFloat(valCostInfo.query_cost as string);
-                }
-
-                if (Array.isArray(value)) {
-                    for (const item of value) {
-                        node.children.push(...this.parseExplainNodes(item as Record<string, unknown>, idCounter));
-                    }
-                } else if (typeof value === 'object' && value !== null) {
-                    for (const [subKey, subValue] of Object.entries(value as Record<string, unknown>)) {
-                        if (subKey === 'table_name' || subKey === 'rows_examined' || subKey === 'key' || subKey === 'attached_condition' || subKey === 'cost_info') {
-                            continue;
-                        }
-                        if (typeof subValue === 'object' && subValue !== null) {
-                            node.children.push(...this.parseExplainNodes(subValue as Record<string, unknown>, idCounter));
-                        }
-                    }
-                }
-
-                nodes.push(node);
+            } else if (typeof value === 'object' && value !== null) {
+                node.children.push(...this.parseExplainNodes(value as Record<string, unknown>, idCounter));
             }
         }
 
+        return [node];
+    }
+
+    /**
+     * Parse a generic (non-query_block) EXPLAIN object: each top-level entry
+     * becomes its own node, with nested children recursed via
+     * {@link parseGenericNode}.
+     */
+    private parseGenericTopLevel(obj: Record<string, unknown>, idCounter: { value: number }): ExplainNode[] {
+        const nodes: ExplainNode[] = [];
+        for (const [key, value] of Object.entries(obj)) {
+            if (key === 'cost_info') {
+                continue;
+            }
+            nodes.push(this.parseGenericNode(key, value, idCounter));
+        }
         return nodes;
+    }
+
+    /**
+     * Parse a single generic EXPLAIN entry: emit a node describing the entry
+     * (reading the inline table_name / rows_examined / key / attached_condition
+     * / cost_info fields if present) and recurse into any remaining object
+     * sub-entries, skipping the inline keys enumerated in
+     * {@link EXPLAIN_SKIP_KEYS}.
+     */
+    private parseGenericNode(key: string, value: unknown, idCounter: { value: number }): ExplainNode {
+        const val = value as Record<string, unknown> | null | undefined;
+        const valRecord = val && typeof val === 'object' && !Array.isArray(val) ? val as Record<string, unknown> : undefined;
+        const node: ExplainNode = {
+            id: String(++idCounter.value),
+            operation: key,
+            table: valRecord?.table_name as string | undefined,
+            rows: valRecord?.rows_examined ? parseInt(valRecord.rows_examined as string, 10) : undefined,
+            key: valRecord?.key as string | undefined,
+            extra: valRecord?.attached_condition as string | undefined,
+            children: [],
+        };
+
+        const valCostInfo = valRecord?.cost_info as Record<string, unknown> | undefined;
+        if (valCostInfo?.query_cost) {
+            node.cost = parseFloat(valCostInfo.query_cost as string);
+        }
+
+        if (Array.isArray(value)) {
+            for (const item of value) {
+                node.children.push(...this.parseExplainNodes(item as Record<string, unknown>, idCounter));
+            }
+        } else if (typeof value === 'object' && value !== null) {
+            for (const [subKey, subValue] of Object.entries(value)) {
+                if (EXPLAIN_SKIP_KEYS.has(subKey)) {
+                    continue;
+                }
+                if (typeof subValue === 'object' && subValue !== null) {
+                    node.children.push(...this.parseExplainNodes(subValue as Record<string, unknown>, idCounter));
+                }
+            }
+        }
+
+        return node;
     }
 }

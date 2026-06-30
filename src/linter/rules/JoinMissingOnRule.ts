@@ -2,9 +2,8 @@ import * as vscode from 'vscode'
 import type { RuleContext } from './LintRule'
 import { BaseRule } from './BaseRule'
 import { isAstNode } from '../../parser/AstVisitor'
-import { getNodeLocation, createDiagnostic } from '../../parser/astUtils'
+import { getNodeLocation } from '../../parser/astUtils'
 import type { AstNode } from '../../parser/astTypes'
-import { t } from '../../i18n'
 
 export class JoinMissingOnRule extends BaseRule {
     readonly id = 'join_missing_on'
@@ -40,12 +39,7 @@ export class JoinMissingOnRule extends BaseRule {
             if (fromEntry.on == null && fromEntry.using == null) {
                 const loc = getNodeLocation(fromEntry)
                 if (loc) {
-                    diagnostics.push(createDiagnostic(
-                        loc, join.length, 'EMPTY_JOIN',
-                        t('enhanced.joinMissingOn', String(loc.line)),
-                        this.getSeverity(),
-                        t('linter.source'),
-                    ))
+                    diagnostics.push(this.addDiagnostic(loc, join.length, 'enhanced.joinMissingOn', String(loc.line)))
                 }
             }
         }

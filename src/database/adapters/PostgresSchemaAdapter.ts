@@ -130,7 +130,8 @@ export class PostgresSchemaAdapter implements ISchemaAdapter {
         if (result.status !== 'success' || result.rows.length === 0) {
             return 0;
         }
-        return (result.rows[0].row_count as number) ?? 0;
+        const rowCount = result.rows[0].row_count;
+        return rowCount != null ? Number(rowCount) : 0;
     }
 
     getDialectCapabilities(): DialectCapabilities {
@@ -226,10 +227,11 @@ export class PostgresSchemaAdapter implements ISchemaAdapter {
         return result.rows.map((row: QueryRow) => {
             const columnDefault = row.column_default as string | null;
             const isAutoIncrement = columnDefault !== null && columnDefault.includes('nextval') || columnDefault !== null && columnDefault.includes('identity');
+            const lengthRaw = row.character_maximum_length ?? row.numeric_precision ?? undefined;
             return {
                 name: row.column_name as string,
                 type: row.data_type as string,
-                length: (row.character_maximum_length ?? row.numeric_precision ?? undefined) as number | undefined,
+                length: lengthRaw != null ? Number(lengthRaw) : undefined,
                 nullable: row.is_nullable === 'YES',
                 defaultValue: columnDefault as string | number | boolean | null,
                 isPrimaryKey: false,
@@ -311,8 +313,8 @@ export class PostgresSchemaAdapter implements ISchemaAdapter {
             id: String(++idCounter.value),
             operation: (plan['Node Type'] as string) ?? 'unknown',
             table: plan['Relation Name'] as string | undefined,
-            rows: plan['Actual Rows'] as number | undefined,
-            cost: plan['Total Cost'] as number | undefined,
+            rows: plan['Actual Rows'] != null ? Number(plan['Actual Rows']) : undefined,
+            cost: plan['Total Cost'] != null ? Number(plan['Total Cost']) : undefined,
             key: plan['Index Name'] as string | undefined,
             extra: plan['Filter'] as string | undefined,
             children: [],

@@ -480,33 +480,37 @@ export class TableDesignerPanel extends BaseWebviewPanel {
         await vscode.window.showTextDocument(document);
     }
 
+    private _buildColumnDefinition(col: ColumnDesign): string {
+        let line = `\`${col.name}\` ${col.type.toUpperCase()}`;
+        if (col.length) {
+            line += `(${col.length})`;
+        }
+        if (!col.nullable) {
+            line += ' NOT NULL';
+        }
+        if (col.isAutoIncrement) {
+            line += ' AUTO_INCREMENT';
+        }
+        if (col.defaultValue) {
+            if (col.defaultValue.toUpperCase() === 'NULL' ||
+                col.defaultValue.toUpperCase() === 'CURRENT_TIMESTAMP' ||
+                col.defaultValue.toUpperCase() === 'CURRENT_DATE') {
+                line += ` DEFAULT ${col.defaultValue}`;
+            } else {
+                line += ` DEFAULT '${col.defaultValue.replace(/'/g, "''")}'`;
+            }
+        }
+        if (col.comment) {
+            line += ` COMMENT '${col.comment.replace(/'/g, "\\'")}'`;
+        }
+        return line;
+    }
+
     private _generateCreateDDL(data: TableDesignData): string {
         const lines: string[] = [];
 
         for (const col of data.columns) {
-            let line = `  \`${col.name}\` ${col.type.toUpperCase()}`;
-            if (col.length) {
-                line += `(${col.length})`;
-            }
-            if (!col.nullable) {
-                line += ' NOT NULL';
-            }
-            if (col.isAutoIncrement) {
-                line += ' AUTO_INCREMENT';
-            }
-            if (col.defaultValue) {
-                if (col.defaultValue.toUpperCase() === 'NULL' ||
-                    col.defaultValue.toUpperCase() === 'CURRENT_TIMESTAMP' ||
-                    col.defaultValue.toUpperCase() === 'CURRENT_DATE') {
-                    line += ` DEFAULT ${col.defaultValue}`;
-                } else {
-                    line += ` DEFAULT '${col.defaultValue.replace(/'/g, "''")}'`;
-                }
-            }
-            if (col.comment) {
-                line += ` COMMENT '${col.comment.replace(/'/g, "\\'")}'`;
-            }
-            lines.push(line);
+            lines.push('  ' + this._buildColumnDefinition(col));
         }
 
         const pkColumns = data.columns.filter(c => c.isPrimaryKey);
@@ -562,39 +566,30 @@ export class TableDesignerPanel extends BaseWebviewPanel {
     }
 
     private _generateAlterDDL(data: TableDesignData): string {
-        const statements: string[] = [];
         const original = this._originalStructure;
 
         if (!original) {
             return this._generateCreateDDL(data);
         }
 
+        const statements: string[] = [];
+        statements.push(...this._generateColumnAlters(data, original));
+        statements.push(...this._generateIndexAlters(data, original));
+        statements.push(...this._generateForeignKeyAlters(data, original));
+        statements.push(...this._generateTriggerAlters(data, original));
+        statements.push(...this._generateTableOptionAlters(data, original));
+
+        return statements.join('\n');
+    }
+
+    private _generateColumnAlters(data: TableDesignData, original: TableStructure): string[] {
+        const statements: string[] = [];
+
         for (const col of data.columns) {
             const originalCol = original.columns.find(c => c.name === (col.originalName || col.name));
 
             if (!originalCol && !col.originalName) {
-                let addSql = `ALTER TABLE \`${data.tableName}\` ADD COLUMN \`${col.name}\` ${col.type.toUpperCase()}`;
-                if (col.length) {
-                    addSql += `(${col.length})`;
-                }
-                if (!col.nullable) {
-                    addSql += ' NOT NULL';
-                }
-                if (col.isAutoIncrement) {
-                    addSql += ' AUTO_INCREMENT';
-                }
-                if (col.defaultValue) {
-                    if (col.defaultValue.toUpperCase() === 'NULL' ||
-                        col.defaultValue.toUpperCase() === 'CURRENT_TIMESTAMP' ||
-                        col.defaultValue.toUpperCase() === 'CURRENT_DATE') {
-                        addSql += ` DEFAULT ${col.defaultValue}`;
-                    } else {
-                        addSql += ` DEFAULT '${col.defaultValue.replace(/'/g, "''")}'`;
-                    }
-                }
-                if (col.comment) {
-                    addSql += ` COMMENT '${col.comment.replace(/'/g, "\\'")}'`;
-                }
+                const addSql = `ALTER TABLE \`${data.tableName}\` ADD COLUMN ` + this._buildColumnDefinition(col);
                 statements.push(addSql + ';');
             } else if (originalCol) {
                 const isRenamed = col.originalName && col.originalName !== col.name;
@@ -609,30 +604,9 @@ export class TableDesignerPanel extends BaseWebviewPanel {
                 if (isRenamed || isModified) {
                     let modSql: string;
                     if (isRenamed) {
-                        modSql = `ALTER TABLE \`${data.tableName}\` CHANGE COLUMN \`${col.originalName}\` \`${col.name}\` ${col.type.toUpperCase()}`;
+                        modSql = `ALTER TABLE \`${data.tableName}\` CHANGE COLUMN \`${col.originalName}\` ` + this._buildColumnDefinition(col);
                     } else {
-                        modSql = `ALTER TABLE \`${data.tableName}\` MODIFY COLUMN \`${col.name}\` ${col.type.toUpperCase()}`;
-                    }
-                    if (col.length) {
-                        modSql += `(${col.length})`;
-                    }
-                    if (!col.nullable) {
-                        modSql += ' NOT NULL';
-                    }
-                    if (col.isAutoIncrement) {
-                        modSql += ' AUTO_INCREMENT';
-                    }
-                    if (col.defaultValue) {
-                        if (col.defaultValue.toUpperCase() === 'NULL' ||
-                            col.defaultValue.toUpperCase() === 'CURRENT_TIMESTAMP' ||
-                            col.defaultValue.toUpperCase() === 'CURRENT_DATE') {
-                            modSql += ` DEFAULT ${col.defaultValue}`;
-                        } else {
-                            modSql += ` DEFAULT '${col.defaultValue.replace(/'/g, "''")}'`;
-                        }
-                    }
-                    if (col.comment) {
-                        modSql += ` COMMENT '${col.comment.replace(/'/g, "\\'")}'`;
+                        modSql = `ALTER TABLE \`${data.tableName}\` MODIFY COLUMN ` + this._buildColumnDefinition(col);
                     }
                     statements.push(modSql + ';');
                 }
@@ -646,6 +620,11 @@ export class TableDesignerPanel extends BaseWebviewPanel {
             }
         }
 
+        return statements;
+    }
+
+    private _generateIndexAlters(data: TableDesignData, original: TableStructure): string[] {
+        const statements: string[] = [];
         const originalIdxNames = new Set(original.indexes.map(i => i.name));
         const newIdxNames = new Set(data.indexes.map(i => i.name));
 
@@ -665,6 +644,11 @@ export class TableDesignerPanel extends BaseWebviewPanel {
             }
         }
 
+        return statements;
+    }
+
+    private _generateForeignKeyAlters(data: TableDesignData, original: TableStructure): string[] {
+        const statements: string[] = [];
         const originalFkNames = new Set(original.foreignKeys.map(f => f.name));
         const newFkNames = new Set(data.foreignKeys.map(f => f.name));
 
@@ -687,6 +671,11 @@ export class TableDesignerPanel extends BaseWebviewPanel {
             }
         }
 
+        return statements;
+    }
+
+    private _generateTriggerAlters(data: TableDesignData, original: TableStructure): string[] {
+        const statements: string[] = [];
         const originalTrgNames = new Set(original.triggers.map(t => t.name));
         const newTrgNames = new Set(data.triggers.map(t => t.name));
 
@@ -701,6 +690,12 @@ export class TableDesignerPanel extends BaseWebviewPanel {
                 statements.push(`CREATE TRIGGER \`${trg.name}\` ${trg.timing} ${trg.event} ON \`${data.tableName}\` FOR EACH ROW ${trg.statement};`);
             }
         }
+
+        return statements;
+    }
+
+    private _generateTableOptionAlters(data: TableDesignData, original: TableStructure): string[] {
+        const statements: string[] = [];
 
         if (data.options.comment !== (original.comment || '')) {
             const optionParts: string[] = [];
@@ -721,6 +716,6 @@ export class TableDesignerPanel extends BaseWebviewPanel {
             }
         }
 
-        return statements.join('\n');
+        return statements;
     }
 }

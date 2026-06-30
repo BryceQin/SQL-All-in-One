@@ -1,14 +1,22 @@
 import type { ConnectionConfig, TestConnectionResult } from './IDatabaseAdapter';
 import type { PoolOptions, RowDataPacket } from 'mysql2/promise';
-import type { MysqlSharedContext } from './MysqlSharedContext';
+import type { IMysqlProtocolSharedContext } from './MysqlSharedContext';
 import { t } from '../../i18n/index';
+import { BaseConnectionAdapter } from './BaseConnectionAdapter';
 
 /**
  * MySQL-specific connection pool operations.
- * Used internally by MysqlAdapter; common lifecycle logic lives in BaseDatabaseAdapter.
+ *
+ * Implemented as a generic over the shared-context contract so that
+ * StarRocks (which reuses the mysql2 driver) can subclass it via
+ * {@link StarrocksConnectionAdapter} and only override the dialect-specific
+ * version-SQL and log-prefix behaviour. Used internally by MysqlAdapter;
+ * common lifecycle logic lives in BaseDatabaseAdapter.
  */
-export class MysqlConnectionAdapter {
-    constructor(private shared: MysqlSharedContext) {}
+export class MysqlConnectionAdapter<TShared extends IMysqlProtocolSharedContext = IMysqlProtocolSharedContext> extends BaseConnectionAdapter {
+    constructor(protected shared: TShared) {
+        super();
+    }
 
     async connect(config: ConnectionConfig): Promise<void> {
         const poolOptions = this.createPoolOptions(config);
@@ -28,7 +36,7 @@ export class MysqlConnectionAdapter {
             const warmupPromises: Promise<void>[] = [];
             for (let i = 0; i < minConnections; i++) {
                 warmupPromises.push(
-                    this.shared.pool!.getConnection().then(conn => conn.release()).catch((e) => { console.debug('[SQL All in One] Connection warmup failed:', e); })
+                    this.shared.pool!.getConnection().then(conn => conn.release()).catch((e) => { console.debug(`[SQL All in One] ${this.warmupFailureLogPrefix()} connection warmup failed:`, e); })
                 );
             }
             await Promise.all(warmupPromises);
@@ -46,7 +54,7 @@ export class MysqlConnectionAdapter {
             try {
                 await this.shared.transactionConnection.rollback();
             } catch (e) {
-                console.debug('[SQL All in One] Rollback error on disconnect:', e);
+                console.debug(`[SQL All in One] ${this.rollbackFailureLogPrefix()} rollback error on disconnect:`, e);
             }
             this.shared.transactionConnection.release();
             this.shared.transactionConnection = null;
@@ -67,11 +75,11 @@ export class MysqlConnectionAdapter {
             const connectOptions = this.createConnectionOptions(config);
 
             tempConn = await mysql.createConnection(connectOptions);
-            const [rows] = await tempConn.query<RowDataPacket[]>('SELECT VERSION() AS version');
+            const [rows] = await tempConn.query<RowDataPacket[]>(this.getServerVersionSql());
             const endTime = Date.now();
             return {
                 success: true,
-                serverVersion: (rows[0] as Record<string, unknown>)?.version as string ?? 'MySQL',
+                serverVersion: (rows[0] as Record<string, unknown>)?.version as string ?? this.defaultServerVersion(),
                 latency: endTime - startTime,
             };
         } catch (error: unknown) {
@@ -102,7 +110,7 @@ export class MysqlConnectionAdapter {
             }
         } catch (e) {
             // Health check failure means connection is not available
-            console.debug('[SQL All in One] MysqlConnectionAdapter.checkConnectionHealth failed:', e)
+            console.debug(`[SQL All in One] ${this.healthCheckFailureLogPrefix()}.checkConnectionHealth failed:`, e)
             return false;
         }
     }
@@ -111,7 +119,7 @@ export class MysqlConnectionAdapter {
      * Reaps idle connections by recreating the pool.
      * Called by MysqlAdapter's reap timer callback.
      */
-    async reapIdleConnections(): Promise<void> {
+    override async reapIdleConnections(): Promise<void> {
         // mysql2 with enableKeepAlive:true handles idle connection eviction
         // internally. Manual pool destruction is harmful: it kills active
         // queries and creates a brief unavailability window. This method
@@ -120,7 +128,7 @@ export class MysqlConnectionAdapter {
         this.shared.lastActivityTime = Date.now();
     }
 
-    formatConnectionError(error: unknown, config: ConnectionConfig): Error {
+    protected override formatDriverSpecificError(error: unknown, config: ConnectionConfig): Error | undefined {
         const msg = error instanceof Error ? error.message : String(error);
         const hostPort = `${config.host}:${config.port}`;
 
@@ -137,28 +145,57 @@ export class MysqlConnectionAdapter {
         if (msg.includes('ER_CON_COUNT_ERROR') || msg.includes('Too many connections')) {
             return new Error(t('database.tooManyConnections', hostPort));
         }
-        if (msg.includes('self signed certificate') || msg.includes('certificate') || msg.includes('SSL')) {
-            return new Error(t('database.sslError', hostPort));
-        }
         if (msg.includes('ER_BAD_DB_ERROR')) {
             return new Error(t('database.databaseNotExist', config.database || '(none)', hostPort));
         }
 
-        // Common network errors (same patterns as BaseDatabaseAdapter)
-        if (msg.includes('ECONNREFUSED')) {
-            return new Error(t('database.connectionRefused', hostPort));
-        }
-        if (msg.includes('ETIMEDOUT') || msg.includes('connectTimeout')) {
-            return new Error(t('database.connectionTimedOut', hostPort));
-        }
-        if (msg.includes('EHOSTUNREACH')) {
-            return new Error(t('database.hostUnreachable', hostPort));
-        }
-        if (msg.includes('ENOTFOUND')) {
-            return new Error(t('database.hostNotFound', config.host));
-        }
+        // SSL/certificate and common network errors are handled by the base
+        // class (BaseConnectionAdapter).
+        return undefined;
+    }
 
-        return error instanceof Error ? error : new Error(msg);
+    /**
+     * SQL used by {@link testConnection} to fetch the server version.
+     *
+     * MySQL uses `SELECT VERSION() AS version`. Subclasses speaking a
+     * MySQL-protocol-compatible dialect (e.g. StarRocks) may override this
+     * if their canonical version query differs.
+     */
+    protected getServerVersionSql(): string {
+        return 'SELECT VERSION() AS version';
+    }
+
+    /**
+     * Default server version string returned by {@link testConnection} when
+     * the version query yields no row. Override in subclasses to return the
+     * dialect's product name.
+     */
+    protected defaultServerVersion(): string {
+        return 'MySQL';
+    }
+
+    /**
+     * Log label inserted into the connection-warmup failure debug message.
+     * Override in subclasses to distinguish dialect-specific logs.
+     */
+    protected warmupFailureLogPrefix(): string {
+        return 'Connection';
+    }
+
+    /**
+     * Log label inserted into the rollback-on-disconnect failure debug
+     * message. Override in subclasses to distinguish dialect-specific logs.
+     */
+    protected rollbackFailureLogPrefix(): string {
+        return 'Connection';
+    }
+
+    /**
+     * Log label inserted into the checkConnectionHealth failure debug
+     * message. Override in subclasses to distinguish dialect-specific logs.
+     */
+    protected healthCheckFailureLogPrefix(): string {
+        return 'MysqlConnectionAdapter';
     }
 
     private createPoolOptions(config: ConnectionConfig, connectionLimitOverride?: number): PoolOptions {

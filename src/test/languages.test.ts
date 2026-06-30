@@ -152,7 +152,7 @@ suite('allDialects.ts', () => {
     test('each exported dialect has name, tokenizerOptions, formatOptions', () => {
         const dialectNames = ['hive', 'mysql', 'spark', 'sql', 'postgresql', 'bigquery', 'sqlite', 'starrocks', 'sqlserver', 'oracle', 'dameng'] as const
         for (const name of dialectNames) {
-            const d = allDialects[name].get()
+            const d = allDialects[name]
             assert.strictEqual(typeof d.name, 'string', `${name}.name should be a string`)
             assert.ok(d.tokenizerOptions, `${name}.tokenizerOptions should exist`)
             assert.ok(d.formatOptions, `${name}.formatOptions should exist`)
@@ -174,7 +174,7 @@ suite('allDialects.ts', () => {
             'damengFunctionSignatures',
         ]
         for (const name of sigNames) {
-            const sigs = allDialects[name].get()
+            const sigs = allDialects[name]
             assert.ok(Array.isArray(sigs), `${name} should be an array`)
             assert.ok(sigs.length > 0, `${name} should be non-empty`)
         }
@@ -195,11 +195,11 @@ suite('allDialects.ts', () => {
             ['damengKeywords', 'damengDataTypes'],
         ]
         for (const [kwName, dtName] of kwPairs) {
-            const kws = allDialects[kwName].get()
+            const kws = allDialects[kwName]
             assert.ok(Array.isArray(kws), `${kwName} should be an array`)
             assert.ok(kws.length > 0, `${kwName} should be non-empty`)
 
-            const dts = allDialects[dtName].get()
+            const dts = allDialects[dtName]
             assert.ok(Array.isArray(dts), `${dtName} should be an array`)
             assert.ok(dts.length > 0, `${dtName} should be non-empty`)
         }

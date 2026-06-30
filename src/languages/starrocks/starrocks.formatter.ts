@@ -2,78 +2,37 @@ import type { DialectOptions } from "../dialect"
 import { expandPhrases } from "../../formatter/expandPhrases"
 import { dataTypes, keywords } from "./starrocks.keywords"
 import { functions } from "./starrocks.functions"
-import type { Token } from "../../lexer/token"
-import { EOF_TOKEN, isToken, TokenType } from "../../lexer/token"
+import {
+    baseIdentChars,
+    baseIdentTypes,
+    baseLineCommentTypes,
+    baseOperators,
+    baseParamTypes,
+    baseReservedClauses,
+    baseReservedDataTypePhrases,
+    baseReservedJoins,
+    baseReservedKeywordPhrases,
+    baseReservedSelect,
+    baseReservedSetOperations,
+    baseStandardOnelineClauses,
+    baseStringTypes,
+    baseTabularOnelineClauses,
+    baseVariableTypes,
+    postProcess,
+} from "../mysqlProtocolBase"
 
 // StarRocks is MySQL-protocol compatible. We derive from the MySQL formatter
 // configuration and add StarRocks-specific DDL clauses (materialized views,
 // rollups, admin commands).
+//
+// To preserve the historical ordering of the original StarRocks formatter
+// (where these extras sat right after TRUNCATE [TABLE] and before the
+// MySQL DDL statement list), we splice them into the shared base list at
+// the same position instead of appending them at the end.
 
-export function postProcess(tokens: Token[]): Token[] {
-    return tokens.map((token, i) => {
-        const nextToken = tokens[i + 1] || EOF_TOKEN
-        if (isToken.SET(token) && nextToken.text === "(") {
-            // This is SET datatype, not SET statement
-            return { ...token, type: TokenType.RESERVED_FUNCTION_NAME }
-        }
-        const prevToken = tokens[i - 1] || EOF_TOKEN
-        if (isToken.VALUES(token) && prevToken.text === "=") {
-            // This is VALUES() function, not VALUES clause
-            return { ...token, type: TokenType.RESERVED_FUNCTION_NAME }
-        }
-        return token
-    })
-}
-
-const reservedSelect = expandPhrases(["SELECT [ALL | DISTINCT | DISTINCTROW]"])
-
-const reservedClauses = expandPhrases([
-    // queries
-    "WITH [RECURSIVE]",
-    "FROM",
-    "WHERE",
-    "GROUP BY",
-    "HAVING",
-    "WINDOW",
-    "PARTITION BY",
-    "ORDER BY",
-    "LIMIT",
-    "OFFSET",
-    // Data manipulation
-    // - insert:
-    "INSERT [LOW_PRIORITY | DELAYED | HIGH_PRIORITY] [IGNORE] [INTO]",
-    "REPLACE [LOW_PRIORITY | DELAYED] [INTO]",
-    "VALUES",
-    "ON DUPLICATE KEY UPDATE",
-    // - update:
-    "SET",
-])
-
-const standardOnelineClauses = expandPhrases([
-    "CREATE [TEMPORARY] TABLE [IF NOT EXISTS]",
-])
-
-const tabularOnelineClauses = expandPhrases([
-    // - create:
-    "CREATE [OR REPLACE] [SQL SECURITY DEFINER | SQL SECURITY INVOKER] VIEW [IF NOT EXISTS]",
-    // - update:
-    "UPDATE [LOW_PRIORITY] [IGNORE]",
-    // - delete:
-    "DELETE [LOW_PRIORITY] [QUICK] [IGNORE] FROM",
-    // - drop table:
-    "DROP [TEMPORARY] TABLE [IF EXISTS]",
-    // - alter table:
-    "ALTER TABLE",
-    "ADD [COLUMN]",
-    "{CHANGE | MODIFY} [COLUMN]",
-    "DROP [COLUMN]",
-    "RENAME [TO | AS]",
-    "RENAME COLUMN",
-    "ALTER [COLUMN]",
-    "{SET | DROP} DEFAULT", // for alter column
-    // - truncate:
-    "TRUNCATE [TABLE]",
-    // StarRocks-specific DDL clauses
+// StarRocks-specific tabular oneline clauses. These cover StarRocks-only DDL
+// such as materialized views, rollups, and admin/config statements.
+const starrocksExtraTabularClauses = expandPhrases([
     "CREATE MATERIALIZED VIEW [IF NOT EXISTS]",
     "REFRESH MATERIALIZED VIEW",
     "ALTER TABLE ADD ROLLUP",
@@ -81,245 +40,50 @@ const tabularOnelineClauses = expandPhrases([
     "DROP ROLLUP",
     "ADMIN SET CONFIG",
     "SET VARIABLE",
-    // https://dev.mysql.com/doc/refman/8.0/en/sql-statements.html
-    "ALTER DATABASE",
-    "ALTER EVENT",
-    "ALTER FUNCTION",
-    "ALTER INSTANCE",
-    "ALTER LOGFILE GROUP",
-    "ALTER PROCEDURE",
-    "ALTER RESOURCE GROUP",
-    "ALTER SERVER",
-    "ALTER TABLESPACE",
-    "ALTER USER",
-    "ALTER VIEW",
-    "ANALYZE TABLE",
-    "BINLOG",
-    "CACHE INDEX",
-    "CALL",
-    "CHANGE MASTER TO",
-    "CHANGE REPLICATION FILTER",
-    "CHANGE REPLICATION SOURCE TO",
-    "CHECK TABLE",
-    "CHECKSUM TABLE",
-    "CLONE",
-    "COMMIT",
-    "CREATE DATABASE",
-    "CREATE EVENT",
-    "CREATE FUNCTION",
-    "CREATE FUNCTION",
-    "CREATE INDEX",
-    "CREATE LOGFILE GROUP",
-    "CREATE PROCEDURE",
-    "CREATE RESOURCE GROUP",
-    "CREATE ROLE",
-    "CREATE SERVER",
-    "CREATE SPATIAL REFERENCE SYSTEM",
-    "CREATE TABLESPACE",
-    "CREATE TRIGGER",
-    "CREATE USER",
-    "DEALLOCATE PREPARE",
-    "DESCRIBE",
-    "DROP DATABASE",
-    "DROP EVENT",
-    "DROP FUNCTION",
-    "DROP FUNCTION",
-    "DROP INDEX",
-    "DROP LOGFILE GROUP",
-    "DROP PROCEDURE",
-    "DROP RESOURCE GROUP",
-    "DROP ROLE",
-    "DROP SERVER",
-    "DROP SPATIAL REFERENCE SYSTEM",
-    "DROP TABLESPACE",
-    "DROP TRIGGER",
-    "DROP USER",
-    "DROP VIEW",
-    "EXECUTE",
-    "EXPLAIN",
-    "FLUSH",
-    "GRANT",
-    "HANDLER",
-    "HELP",
-    "IMPORT TABLE",
-    "INSTALL COMPONENT",
-    "INSTALL PLUGIN",
-    "KILL",
-    "LOAD DATA",
-    "LOAD INDEX INTO CACHE",
-    "LOAD XML",
-    "LOCK INSTANCE FOR BACKUP",
-    "LOCK TABLES",
-    "MASTER_POS_WAIT",
-    "OPTIMIZE TABLE",
-    "PREPARE",
-    "PURGE BINARY LOGS",
-    "RELEASE SAVEPOINT",
-    "RENAME TABLE",
-    "RENAME USER",
-    "REPAIR TABLE",
-    "RESET",
-    "RESET MASTER",
-    "RESET PERSIST",
-    "RESET REPLICA",
-    "RESET SLAVE",
-    "RESTART",
-    "REVOKE",
-    "ROLLBACK",
-    "ROLLBACK TO SAVEPOINT",
-    "SAVEPOINT",
-    "SET CHARACTER SET",
-    "SET DEFAULT ROLE",
-    "SET NAMES",
-    "SET PASSWORD",
-    "SET RESOURCE GROUP",
-    "SET ROLE",
-    "SET TRANSACTION",
-    "SHOW",
-    "SHOW BINARY LOGS",
-    "SHOW BINLOG EVENTS",
-    "SHOW CHARACTER SET",
-    "SHOW COLLATION",
-    "SHOW COLUMNS",
-    "SHOW CREATE DATABASE",
-    "SHOW CREATE EVENT",
-    "SHOW CREATE FUNCTION",
-    "SHOW CREATE PROCEDURE",
-    "SHOW CREATE TABLE",
-    "SHOW CREATE TRIGGER",
-    "SHOW CREATE USER",
-    "SHOW CREATE VIEW",
-    "SHOW DATABASES",
-    "SHOW ENGINE",
-    "SHOW ENGINES",
-    "SHOW ERRORS",
-    "SHOW EVENTS",
-    "SHOW FUNCTION CODE",
-    "SHOW FUNCTION STATUS",
-    "SHOW GRANTS",
-    "SHOW INDEX",
-    "SHOW MASTER STATUS",
-    "SHOW OPEN TABLES",
-    "SHOW PLUGINS",
-    "SHOW PRIVILEGES",
-    "SHOW PROCEDURE CODE",
-    "SHOW PROCEDURE STATUS",
-    "SHOW PROCESSLIST",
-    "SHOW PROFILE",
-    "SHOW PROFILES",
-    "SHOW RELAYLOG EVENTS",
-    "SHOW REPLICA STATUS",
-    "SHOW REPLICAS",
-    "SHOW SLAVE",
-    "SHOW SLAVE HOSTS",
-    "SHOW STATUS",
-    "SHOW TABLE STATUS",
-    "SHOW TABLES",
-    "SHOW TRIGGERS",
-    "SHOW VARIABLES",
-    "SHOW WARNINGS",
-    "SHUTDOWN",
-    "SOURCE_POS_WAIT",
-    "START GROUP_REPLICATION",
-    "START REPLICA",
-    "START SLAVE",
-    "START TRANSACTION",
-    "STOP GROUP_REPLICATION",
-    "STOP REPLICA",
-    "STOP SLAVE",
-    "TABLE",
-    "UNINSTALL COMPONENT",
-    "UNINSTALL PLUGIN",
-    "UNLOCK INSTANCE",
-    "UNLOCK TABLES",
-    "USE",
-    "XA",
-    // flow control
-    // 'IF',
-    "ITERATE",
-    "LEAVE",
-    "LOOP",
-    "REPEAT",
-    "RETURN",
-    "WHILE",
 ])
 
-const reservedSetOperations = expandPhrases(["UNION [ALL | DISTINCT]"])
+// Index of "TRUNCATE TABLE" in the shared base list. The StarRocks extras
+// are inserted immediately after it to match the original ordering.
+const TRUNCATE_TABLE_INDEX = baseTabularOnelineClauses.indexOf("TRUNCATE TABLE")
 
-const reservedJoins = expandPhrases([
-    "JOIN",
-    "{LEFT | RIGHT} [OUTER] JOIN",
-    "{INNER | CROSS} JOIN",
-    "NATURAL [INNER] JOIN",
-    "NATURAL {LEFT | RIGHT} [OUTER] JOIN",
-    // non-standard joins
-    "STRAIGHT_JOIN",
-])
-
-const reservedKeywordPhrases = expandPhrases([
-    "ON {UPDATE | DELETE} [SET NULL]",
-    "CHARACTER SET",
-    "{ROWS | RANGE} BETWEEN",
-    "IDENTIFIED BY",
-])
-
-const reservedDataTypePhrases = expandPhrases([])
+// StarRocks tabular oneline clauses = base list with StarRocks extras spliced
+// in right after TRUNCATE [TABLE].
+const tabularOnelineClauses = [
+    ...baseTabularOnelineClauses.slice(0, TRUNCATE_TABLE_INDEX + 1),
+    ...starrocksExtraTabularClauses,
+    ...baseTabularOnelineClauses.slice(TRUNCATE_TABLE_INDEX + 1),
+]
 
 // StarRocks is MySQL-protocol compatible, so tokenizer options mirror MySQL.
 export const starrocks: DialectOptions = {
     name: "starrocks",
     tokenizerOptions: {
-        reservedSelect,
+        reservedSelect: baseReservedSelect,
         reservedClauses: [
-            ...reservedClauses,
-            ...standardOnelineClauses,
+            ...baseReservedClauses,
+            ...baseStandardOnelineClauses,
             ...tabularOnelineClauses,
         ],
-        reservedSetOperations,
-        reservedJoins,
-        reservedKeywordPhrases,
-        reservedDataTypePhrases,
+        reservedSetOperations: baseReservedSetOperations,
+        reservedJoins: baseReservedJoins,
+        reservedKeywordPhrases: baseReservedKeywordPhrases,
+        reservedDataTypePhrases: baseReservedDataTypePhrases,
         supportsXor: true,
         reservedKeywords: keywords,
         reservedDataTypes: dataTypes,
         reservedFunctionNames: functions,
         // TODO: support _ char set prefixes such as _utf8, _latin1, _binary, _utf8mb4, etc.
-        stringTypes: [
-            '""-qq-bs',
-            { quote: "''-qq-bs", prefixes: ["N"] },
-            { quote: "''-raw", prefixes: ["B", "X"], requirePrefix: true },
-        ],
-        identTypes: ["``"],
-        identChars: { first: "$", rest: "$", allowFirstCharNumber: true },
-        variableTypes: [
-            { regex: "@@?[A-Za-z0-9_.$]+" },
-            { quote: '""-qq-bs', prefixes: ["@"], requirePrefix: true },
-            { quote: "''-qq-bs", prefixes: ["@"], requirePrefix: true },
-            { quote: "``", prefixes: ["@"], requirePrefix: true },
-        ],
-        paramTypes: { positional: true },
-        lineCommentTypes: ["--", "#"],
-        operators: [
-            "%",
-            ":=",
-            "&",
-            "|",
-            "^",
-            "~",
-            "<<",
-            ">>",
-            "<=>",
-            "->",
-            "->>",
-            "&&",
-            "||",
-            "!",
-            "*.*", // Not actually an operator
-        ],
+        stringTypes: baseStringTypes,
+        identTypes: baseIdentTypes,
+        identChars: baseIdentChars,
+        variableTypes: baseVariableTypes,
+        paramTypes: baseParamTypes,
+        lineCommentTypes: baseLineCommentTypes,
+        operators: baseOperators,
         postProcess,
     },
     formatOptions: {
-        onelineClauses: [...standardOnelineClauses, ...tabularOnelineClauses],
+        onelineClauses: [...baseStandardOnelineClauses, ...tabularOnelineClauses],
         tabularOnelineClauses,
     },
 }

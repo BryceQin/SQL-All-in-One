@@ -1,134 +1,28 @@
-import type { IQueryAdapter, QueryResult, QueryRow, QueryParam, SqlStatement } from './IDatabaseAdapter';
-import type { Pool, PoolConnection, RowDataPacket, FieldPacket, ResultSetHeader } from 'mysql2/promise';
 import type { StarrocksSharedContext } from './StarrocksSharedContext';
+import { MysqlQueryAdapter } from './MysqlQueryAdapter';
 import { t } from '../../i18n/index';
-import { generateShortId } from '../../utils/idGenerator';
 
 /**
  * StarRocks query adapter.
  *
- * StarRocks is MySQL-protocol compatible, so we reuse the mysql2 driver.
- * cancelQuery uses `KILL <queryId>` (StarRocks supports MySQL-compatible KILL).
+ * StarRocks is MySQL-protocol compatible, so execute / executeBatch /
+ * acquireConnectionWithTimeout are inherited unchanged from
+ * {@link MysqlQueryAdapter}. Only the transaction lifecycle and the cancel
+ * path differ:
+ *
+ *   - StarRocks uses `KILL <connectionId>` (without the `QUERY` keyword that
+ *     MySQL uses).
+ *   - The transaction connection's threadId is tracked under the
+ *     `__transaction__` key so cancelQuery can target queries running inside
+ *     an open transaction (otherwise the queryId was never registered and the
+ *     cancel would silently no-op).
  */
-export class StarrocksQueryAdapter implements IQueryAdapter {
-    constructor(private shared: StarrocksSharedContext) {}
-
-    async execute(sql: string, params?: QueryParam[]): Promise<QueryResult> {
-        const startTime = Date.now();
-        const queryId = generateShortId('query');
-
-        if (!this.shared.pool) {
-            const executionTime = Date.now() - startTime;
-            return {
-                queryId,
-                status: 'error',
-                columns: [],
-                rows: [],
-                rowCount: 0,
-                executionTime,
-                error: {
-                    code: 'NOT_CONNECTED',
-                    message: t('database.notConnected'),
-                    sql,
-                },
-                database: this.shared.config?.database,
-            };
-        }
-
-        try {
-            this.shared.lastActivityTime = Date.now();
-            const values = params?.map(p => p.value);
-            const acquireTimeout = this.shared.config?.poolConfig?.acquireTimeout ?? 60000;
-            let queryConn: Pool | PoolConnection = this.shared.transactionConnection ?? this.shared.pool;
-            let acquiredConn: PoolConnection | null = null;
-
-            if (!this.shared.transactionConnection && this.shared.pool) {
-                acquiredConn = await this.acquireConnectionWithTimeout(acquireTimeout);
-                queryConn = acquiredConn;
-            }
-
-            try {
-                if (acquiredConn) {
-                    this.shared.activeConnectionCount++;
-                    this.shared.activeQueryThreadIds.set(queryId, (acquiredConn as unknown as { threadId: number }).threadId);
-                }
-                const [result, fields] = await queryConn.query(sql, values);
-                const executionTime = Date.now() - startTime;
-
-                if (Array.isArray(result)) {
-                    const rows = result as RowDataPacket[];
-                    const fieldPackets = fields as FieldPacket[];
-
-                    const columns = fieldPackets.map(field => {
-                        const flags = field.flags as number;
-                        return {
-                            name: field.name,
-                            type: String(field.type ?? 'UNKNOWN'),
-                            nullable: (flags & 0x0001) === 0,
-                            isPrimaryKey: (flags & 0x0002) !== 0,
-                            isAutoIncrement: (flags & 0x0200) !== 0,
-                            isEnum: field.columnType === 247,
-                        };
-                    });
-
-                    return {
-                        queryId,
-                        status: 'success',
-                        columns,
-                        rows: rows as QueryRow[],
-                        rowCount: rows.length,
-                        executionTime,
-                        database: this.shared.config?.database,
-                    };
-                } else {
-                    const header = result as ResultSetHeader;
-                    return {
-                        queryId,
-                        status: 'success',
-                        columns: [],
-                        rows: [],
-                        rowCount: 0,
-                        affectedRows: header.affectedRows,
-                        executionTime,
-                        database: this.shared.config?.database,
-                    };
-                }
-            } finally {
-                if (acquiredConn) {
-                    this.shared.activeConnectionCount--;
-                    acquiredConn.release();
-                }
-                this.shared.activeQueryThreadIds.delete(queryId);
-            }
-        } catch (error: unknown) {
-            const executionTime = Date.now() - startTime;
-            const mysqlError = error as { code?: string; errno?: number; sqlMessage?: string };
-            return {
-                queryId,
-                status: 'error',
-                columns: [],
-                rows: [],
-                rowCount: 0,
-                executionTime,
-                error: {
-                    code: mysqlError.code ?? String(mysqlError.errno ?? 'EXEC_ERROR'),
-                    message: mysqlError.sqlMessage ?? (error instanceof Error ? error.message : String(error)),
-                    sql,
-                },
-                database: this.shared.config?.database,
-            };
-        }
+export class StarrocksQueryAdapter extends MysqlQueryAdapter<StarrocksSharedContext> {
+    constructor(shared: StarrocksSharedContext) {
+        super(shared);
     }
 
-    async executeBatch(statements: SqlStatement[]): Promise<QueryResult[]> {
-        const results: QueryResult[] = [];
-        for (const stmt of statements) {
-            results.push(await this.execute(stmt.sql, stmt.params));
-        }
-        return results;
-    }
-
-    async beginTransaction(): Promise<void> {
+    override async beginTransaction(): Promise<void> {
         if (this.shared.transactionConnection) {
             throw new Error(t('database.transactionInProgress'));
         }
@@ -148,7 +42,7 @@ export class StarrocksQueryAdapter implements IQueryAdapter {
         }
     }
 
-    async commit(): Promise<void> {
+    override async commit(): Promise<void> {
         if (!this.shared.transactionConnection) {
             throw new Error(t('database.noTransactionInProgress'));
         }
@@ -162,7 +56,7 @@ export class StarrocksQueryAdapter implements IQueryAdapter {
         }
     }
 
-    async rollback(): Promise<void> {
+    override async rollback(): Promise<void> {
         if (!this.shared.transactionConnection) {
             throw new Error(t('database.noTransactionInProgress'));
         }
@@ -179,7 +73,7 @@ export class StarrocksQueryAdapter implements IQueryAdapter {
         }
     }
 
-    async cancelQuery(_queryId: string): Promise<void> {
+    override async cancelQuery(_queryId: string): Promise<void> {
         if (!this.shared.pool) {
             return;
         }
@@ -198,7 +92,8 @@ export class StarrocksQueryAdapter implements IQueryAdapter {
         try {
             const conn = await this.shared.pool.getConnection();
             try {
-                // StarRocks supports MySQL-compatible KILL statement
+                // StarRocks supports MySQL-compatible KILL statement (without
+                // the QUERY keyword that MySQL uses).
                 await conn.query(`KILL ${threadId}`);
             } finally {
                 conn.release();
@@ -206,31 +101,5 @@ export class StarrocksQueryAdapter implements IQueryAdapter {
         } catch (e) {
             console.debug('[SQL All in One] StarRocks cancel query error:', e);
         }
-    }
-
-    private async acquireConnectionWithTimeout(timeout: number): Promise<PoolConnection> {
-        return new Promise<PoolConnection>((resolve, reject) => {
-            let timedOut = false;
-            const timer = setTimeout(() => {
-                timedOut = true;
-                reject(new Error(t('database.connectionAcquireTimeout', String(timeout))));
-            }, timeout);
-
-            this.shared.pool!.getConnection()
-                .then((conn) => {
-                    clearTimeout(timer);
-                    if (timedOut) {
-                        conn.release();
-                    } else {
-                        resolve(conn);
-                    }
-                })
-                .catch((error: unknown) => {
-                    clearTimeout(timer);
-                    if (!timedOut) {
-                        reject(error);
-                    }
-                });
-        });
     }
 }

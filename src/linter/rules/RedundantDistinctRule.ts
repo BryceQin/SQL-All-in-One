@@ -2,9 +2,8 @@ import * as vscode from 'vscode'
 import type { RuleContext } from './LintRule'
 import { BaseRule } from './BaseRule'
 import { isAstNode, findNodes } from '../../parser/AstVisitor'
-import { getNodeLocation, createDiagnostic } from '../../parser/astUtils'
+import { getNodeLocation } from '../../parser/astUtils'
 import type { AstNode } from '../../parser/astTypes'
-import { t } from '../../i18n'
 
 export class RedundantDistinctRule extends BaseRule {
     readonly id = 'redundant_distinct'
@@ -31,12 +30,7 @@ export class RedundantDistinctRule extends BaseRule {
             if (this.argsContainStar(args)) {
                 const loc = getNodeLocation(aggr)
                 if (loc) {
-                    diagnostics.push(createDiagnostic(
-                        loc, 5, 'REDUNDANT_DISTINCT',
-                        t('enhanced.countDistinctStar', String(loc.line)),
-                        this.getSeverity(),
-                        t('linter.source'),
-                    ))
+                    diagnostics.push(this.addDiagnostic(loc, 5, 'enhanced.countDistinctStar', String(loc.line)))
                 }
             }
         }

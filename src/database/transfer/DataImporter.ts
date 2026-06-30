@@ -389,6 +389,183 @@ export async function importFromCsv(
 const MAX_JSON_FILE_SIZE = 50 * 1024 * 1024;
 const MAX_SQL_FILE_SIZE = 50 * 1024 * 1024;
 
+/**
+ * Streaming parser for a top-level JSON array file.
+ *
+ * Reads the file via `fs.createReadStream` and incrementally splits the
+ * array into individual elements, each parsed with `JSON.parse`. This keeps
+ * memory footprint proportional to the largest element (plus the active
+ * batch) rather than to the whole file.
+ *
+ * The parser is a small character state machine that tracks:
+ *   - `depth`: bracket nesting (`[`/`{` increase, `]`/`}` decrease); depth 1
+ *     is the array element layer.
+ *   - `inString`/`escape`: whether the cursor is inside a JSON string, so
+ *     brackets/commas inside strings never affect depth or element bounds.
+ *
+ * Element boundaries are detected at depth 1 on `,` (separator) or `]`
+ * (array close). Each extracted element substring is `JSON.parse`d and handed
+ * to `onElement`. Elements may be objects, arrays, or scalars.
+ *
+ * If the first non-whitespace character is not `[`, `notArray` is reported
+ * without throwing, so callers can produce a friendly error.
+ */
+async function streamJsonArray(
+    filePath: string,
+    onElement: (element: unknown, index: number) => Promise<void> | void,
+): Promise<{ count: number; notArray: boolean }> {
+    const stream = fs.createReadStream(filePath, 'utf-8');
+    let count = 0;
+    let notArray = false;
+
+    let depth = 0;            // bracket depth; 1 == array element layer
+    let arrayStarted = false; // top-level '[' seen
+    let arrayClosed = false;  // top-level ']' seen
+    let inString = false;     // cursor inside a JSON string
+    let escape = false;       // previous char was backslash (inside string)
+    let elementBuf = '';      // accumulating current element text
+    let elementActive = false; // true while accumulating an element
+
+    const flushElement = async (text: string): Promise<void> => {
+        const trimmed = text.trim();
+        if (trimmed === '') {
+            return;
+        }
+        const value: unknown = JSON.parse(trimmed);
+        await onElement(value, count);
+        count++;
+    };
+
+    try {
+        for await (const chunk of stream) {
+            const s = chunk as unknown as string;
+            for (const c of s) {
+                if (arrayClosed) {
+                    // Only trailing whitespace allowed after the top-level array.
+                    if (c === ' ' || c === '\t' || c === '\n' || c === '\r') {
+                        continue;
+                    }
+                    throw new SyntaxError(`Unexpected character '${c}' after top-level array`);
+                }
+
+                if (inString) {
+                    elementBuf += c;
+                    if (escape) {
+                        escape = false;
+                    } else if (c === '\\') {
+                        escape = true;
+                    } else if (c === '"') {
+                        inString = false;
+                    }
+                    continue;
+                }
+
+                if (c === '"') {
+                    if (!arrayStarted) {
+                        // Top-level string -> not an array.
+                        notArray = true;
+                        return { count, notArray };
+                    }
+                    inString = true;
+                    elementBuf += c;
+                    elementActive = true;
+                    continue;
+                }
+
+                if (!arrayStarted) {
+                    // Skip leading whitespace, expect '['.
+                    if (c === ' ' || c === '\t' || c === '\n' || c === '\r') {
+                        continue;
+                    }
+                    if (c === '[') {
+                        arrayStarted = true;
+                        depth = 1;
+                        continue;
+                    }
+                    // Top-level non-array value.
+                    notArray = true;
+                    return { count, notArray };
+                }
+
+                // arrayStarted, depth >= 1
+                if (c === '[' || c === '{') {
+                    if (depth === 1) {
+                        // Start of a new object/array element.
+                        elementBuf = c;
+                        elementActive = true;
+                    } else {
+                        elementBuf += c;
+                    }
+                    depth++;
+                    continue;
+                }
+
+                if (c === ']' || c === '}') {
+                    depth--;
+                    if (depth === 1) {
+                        // End of an object/array element.
+                        elementBuf += c;
+                        await flushElement(elementBuf);
+                        elementBuf = '';
+                        elementActive = false;
+                    } else if (depth === 0) {
+                        if (c === ']') {
+                            // End of top-level array; flush a trailing scalar
+                            // element that was not followed by a comma.
+                            if (elementActive && elementBuf.trim() !== '') {
+                                await flushElement(elementBuf);
+                                elementBuf = '';
+                                elementActive = false;
+                            }
+                            arrayClosed = true;
+                        } else {
+                            // '}' bringing depth to 0 means top-level was an
+                            // object, not an array.
+                            notArray = true;
+                            return { count, notArray };
+                        }
+                    } else {
+                        elementBuf += c;
+                    }
+                    continue;
+                }
+
+                if (depth === 1) {
+                    // Element layer, outside any object/array.
+                    if (c === ' ' || c === '\t' || c === '\n' || c === '\r') {
+                        continue;
+                    }
+                    if (c === ',') {
+                        if (elementActive && elementBuf.trim() !== '') {
+                            await flushElement(elementBuf);
+                        }
+                        elementBuf = '';
+                        elementActive = false;
+                        continue;
+                    }
+                    // Scalar value character (number, true, false, null).
+                    elementBuf += c;
+                    elementActive = true;
+                    continue;
+                }
+
+                // depth > 1, inside an element.
+                elementBuf += c;
+            }
+        }
+    } finally {
+        stream.destroy();
+    }
+
+    if (!arrayStarted) {
+        // Empty or whitespace-only file: treat as not an array so the caller
+        // surfaces a clear error rather than a bare parse failure.
+        notArray = true;
+    }
+
+    return { count, notArray };
+}
+
 export async function importFromJson(
     adapter: IDatabaseAdapter,
     tableName: string,
@@ -412,10 +589,25 @@ export async function importFromJson(
     let importedRows = 0;
     let skippedRows = 0;
 
-    const raw = await fs.promises.readFile(filePath, 'utf-8');
-    const records = JSON.parse(raw) as unknown[];
+    // Pass 1: stream the array to collect the union of column names. Elements
+    // are parsed and immediately released, so memory stays at element-size
+    // rather than file-size.
+    const columnSet = new Set<string>();
+    let totalRows = 0;
+    let notArray = false;
+    // Malformed JSON propagates as a thrown error from streamJsonArray,
+    // matching the original JSON.parse behaviour for invalid files.
+    const pass1 = await streamJsonArray(filePath, (element) => {
+        if (element && typeof element === 'object' && !Array.isArray(element)) {
+            for (const key of Object.keys(element as Record<string, unknown>)) {
+                columnSet.add(key);
+            }
+        }
+    });
+    notArray = pass1.notArray;
+    totalRows = pass1.count;
 
-    if (!Array.isArray(records)) {
+    if (notArray) {
         return {
             success: false,
             totalRows: 0,
@@ -425,16 +617,6 @@ export async function importFromJson(
         };
     }
 
-    const totalRows = records.length;
-
-    const columnSet = new Set<string>();
-    for (const record of records) {
-        if (record && typeof record === 'object') {
-            for (const key of Object.keys(record as Record<string, unknown>)) {
-                columnSet.add(key);
-            }
-        }
-    }
     const columns = Array.from(columnSet);
 
     if (columns.length === 0) {
@@ -447,49 +629,80 @@ export async function importFromJson(
         };
     }
 
-    const rows: Record<string, unknown>[] = records.map((record, idx) => {
-        if (!record || typeof record !== 'object') {
-            errors.push({
-                row: idx + 1,
-                message: t('database.recordNotObject'),
-                data: String(record),
-            });
-            return {};
-        }
-        const obj = record as Record<string, unknown>;
-        const row: Record<string, unknown> = {};
-        for (const col of columns) {
-            row[col] = obj[col] ?? null;
-        }
-        return row;
-    });
+    // Pass 2: stream the array again, building rows and flushing batches.
+    // `records` and `rows` arrays are never materialised in full, so peak
+    // memory is bounded by the active batch rather than the file size.
+    let batch: Record<string, unknown>[] = [];
+    let batchStartRow = 1;
 
-    for (let i = 0; i < rows.length; i += batchSize) {
-        const batch = rows.slice(i, i + batchSize);
+    const flushBatch = async (): Promise<void> => {
+        if (batch.length === 0) {
+            return;
+        }
         try {
-            const result = await executeBatchInsert(adapter, tableName, columns, batch, options.onError, i + 1);
+            const result = await executeBatchInsert(adapter, tableName, columns, batch, options.onError, batchStartRow);
             importedRows += result.imported;
             skippedRows += result.skipped;
             errors.push(...result.errors);
         } catch (err: unknown) {
             if (options.onError === 'abort') {
-                return {
-                    success: false,
-                    totalRows,
-                    importedRows,
-                    skippedRows,
-                    errors: [
-                        ...errors,
-                        {
-                            row: i + 1,
-                            message: err instanceof Error ? err.message : String(err),
-                            data: '',
-                        },
-                    ],
-                };
+                throw err;
             }
             skippedRows += batch.length;
         }
+        batch = [];
+    };
+
+    try {
+        await streamJsonArray(filePath, async (element, index) => {
+            if (batch.length === 0) {
+                batchStartRow = index + 1;
+            }
+            if (!element || typeof element !== 'object' || Array.isArray(element)) {
+                errors.push({
+                    row: index + 1,
+                    message: t('database.recordNotObject'),
+                    data: String(element),
+                });
+                // Match the original behaviour: insert an empty row to keep
+                // batch alignment, so subsequent rows still land correctly.
+                batch.push({});
+            } else {
+                const obj = element as Record<string, unknown>;
+                const row: Record<string, unknown> = {};
+                for (const col of columns) {
+                    row[col] = obj[col] ?? null;
+                }
+                batch.push(row);
+            }
+
+            if (batch.length >= batchSize) {
+                await flushBatch();
+            }
+        });
+
+        // Flush any trailing partial batch.
+        await flushBatch();
+    } catch (err: unknown) {
+        if (options.onError === 'abort') {
+            return {
+                success: false,
+                totalRows,
+                importedRows,
+                skippedRows,
+                errors: [
+                    ...errors,
+                    {
+                        row: batchStartRow,
+                        message: err instanceof Error ? err.message : String(err),
+                        data: '',
+                    },
+                ],
+            };
+        }
+        // Skip mode + JSON syntax error: re-throw to match the original
+        // behaviour where a malformed file aborts the import.
+        throw err;
     }
 
     return {

@@ -100,7 +100,7 @@ export class DamengMetadataAdapter implements IMetadataAdapter {
         return result.rows.map((row: QueryRow) => ({
             name: row.table_name as string,
             type: row.table_type as string,
-            rowCount: row.num_rows as number | undefined,
+            rowCount: row.num_rows != null ? Number(row.num_rows) : undefined,
         }));
     }
 
@@ -179,10 +179,10 @@ export class DamengMetadataAdapter implements IMetadataAdapter {
 
         return result.rows.map((row: QueryRow) => ({
             name: row.sequence_name as string,
-            minValue: row.min_value as number | undefined,
-            maxValue: row.max_value as number | undefined,
-            increment: row.increment as number | undefined,
-            lastValue: row.last_value as number | undefined,
+            minValue: row.min_value != null ? Number(row.min_value) : undefined,
+            maxValue: row.max_value != null ? Number(row.max_value) : undefined,
+            increment: row.increment != null ? Number(row.increment) : undefined,
+            lastValue: row.last_value != null ? Number(row.last_value) : undefined,
         }));
     }
 

@@ -1,12 +1,36 @@
 import * as vscode from 'vscode';
 import { EventEmitter } from 'vscode';
-import { IDatabaseAdapter, QueryResult } from '../adapters/IDatabaseAdapter';
+import {
+    IQueryAdapter,
+    ISchemaAdapter,
+    QueryResult,
+    QueryStreamOptions,
+} from '../adapters/IDatabaseAdapter';
 import { getConnectionManager } from '../connection/ConnectionManager';
 import { QueryOptions, QueryStartEvent, QueryEndEvent, RunningQuery } from './QueryResult';
 import { getConfigManager } from '../../core/configManager';
 import { handleError, ErrorCategory } from '../../core/errorHandler';
 import { t } from '../../i18n/index';
 import { generateShortId } from '../../utils/idGenerator';
+import { collectStreamToResult } from './streamCollector';
+
+/**
+ * Minimal adapter surface required by {@link QueryExecutor.execute} /
+ * {@link QueryExecutor.raceExecution}.
+ *
+ * The executor drives query execution (`IQueryAdapter`) and needs
+ * `getDialectCapabilities()` (from `ISchemaAdapter`) only to decide whether
+ * the dialect supports cancellation. Narrowing the parameter type from the
+ * full {@link IDatabaseAdapter} aggregate to this intersection follows the
+ * Interface Segregation Principle: callers only need to provide query + a
+ * dialect-capabilities probe, not connection / metadata / full schema APIs.
+ *
+ * {@link IDatabaseAdapter} is still assignable to this type (it implements
+ * every sub-interface), so `ConnectionManager.getAdapter()` return values
+ * pass through unchanged.
+ */
+type QueryExecutorAdapter = IQueryAdapter & Pick<ISchemaAdapter, 'getDialectCapabilities'>;
+
 
 export class QueryExecutor {
     private runningQueries = new Map<string, RunningQuery>();
@@ -37,7 +61,7 @@ export class QueryExecutor {
     }
 
     async execute(
-        adapter: IDatabaseAdapter,
+        adapter: QueryExecutorAdapter,
         sql: string,
         options?: Partial<QueryOptions>,
         connectionId?: string
@@ -163,7 +187,7 @@ export class QueryExecutor {
     }
 
     private async raceExecution(
-        adapter: IDatabaseAdapter,
+        adapter: QueryExecutorAdapter,
         sql: string,
         options: QueryOptions,
         token: vscode.CancellationToken,
@@ -236,9 +260,93 @@ export class QueryExecutor {
                 settleReject(new Error(t('database.queryWasCancelled')));
             });
 
-            adapter.execute(sql, options.params)
-                .then((result) => settleResolve(result))
-                .catch((error: unknown) => settleReject(error));
+            // Prefer the streaming path when the adapter implements
+            // executeStream and the statement looks read-only. Falling back to
+            // the synchronous execute() path keeps behavior unchanged for
+            // adapters without streaming (SQLite, StarRocks, …) and for
+            // statements that are not safe to stream (DDL/DML).
+            const useStream = shouldUseStream(adapter, sql);
+            const startTime = Date.now();
+
+            const runStream = async (): Promise<QueryResult> => {
+                const ac = new AbortController();
+                // Bridge the VS Code cancellation token to the stream's
+                // AbortSignal so that timeout / user-cancel both abort the
+                // in-flight stream.
+                const streamCancelDisposable = token.onCancellationRequested(() => ac.abort());
+                const streamOptions: QueryStreamOptions = {
+                    batchSize: 1000,
+                    maxRows: options.maxRows,
+                    params: options.params,
+                    signal: ac.signal,
+                };
+                try {
+                    const stream = adapter.executeStream!(sql, streamOptions);
+                    return await collectStreamToResult({
+                        stream,
+                        queryId,
+                        maxRows: options.maxRows,
+                        executionTime: Date.now() - startTime,
+                        database: options.database,
+                        sql,
+                    });
+                } finally {
+                    streamCancelDisposable.dispose();
+                }
+            };
+
+            if (useStream) {
+                runStream()
+                    .then(async (result) => {
+                        // Fallback: if the streaming path produced an error
+                        // (either the adapter threw and collectStreamToResult
+                        // converted it to an error QueryResult, or the stream
+                        // surfaced a STREAM_ERROR), retry via the one-shot
+                        // execute() path. This guards against transient
+                        // cursor/DECLARE failures and dialect quirks where
+                        // streaming is not supported for a particular shape.
+                        // SELECT statements are idempotent so re-execution is
+                        // safe; the streaming path is only chosen for
+                        // read-only row-returning statements (see
+                        // shouldUseStream).
+                        if (result.status === 'error' && !settled) {
+                            try {
+                                const fallback = await adapter.execute(sql, options.params);
+                                if (!settled) {
+                                    settleResolve(fallback);
+                                    return;
+                                }
+                            } catch {
+                                // Fall through and report the original
+                                // streaming error result below.
+                            }
+                        }
+                        settleResolve(result);
+                    })
+                    .catch(async (streamError: unknown) => {
+                        // Fallback when the streaming path throws before
+                        // collectStreamToResult could convert it to an error
+                        // QueryResult (e.g. adapter.executeStream itself threw
+                        // synchronously).
+                        if (settled) {
+                            return;
+                        }
+                        try {
+                            const fallback = await adapter.execute(sql, options.params);
+                            if (!settled) {
+                                settleResolve(fallback);
+                            }
+                        } catch (execError: unknown) {
+                            if (!settled) {
+                                settleReject(streamError ?? execError);
+                            }
+                        }
+                    });
+            } else {
+                adapter.execute(sql, options.params)
+                    .then((result) => settleResolve(result))
+                    .catch((error: unknown) => settleReject(error));
+            }
         });
     }
 
@@ -276,4 +384,47 @@ export class QueryExecutor {
         this._onDidEndQuery.dispose();
         this.configDisposable?.dispose();
     }
+}
+
+/**
+ * Decide whether to route a query through the adapter's streaming path.
+ *
+ * Streaming is only used when:
+ *  1. The adapter implements {@link IDatabaseAdapter.executeStream}, and
+ *  2. The SQL is a read-only statement that returns a row set (SELECT,
+ *     WITH/CTE, TABLE, VALUES, SHOW, EXPLAIN). DDL/DML statements are not
+ *     safe to stream because cursors are stateful and the streaming contract
+ *     assumes a result set.
+ *
+ * This keeps the streaming path opt-in and conservative: any statement the
+ * streaming path cannot handle transparently falls back to the one-shot
+ * {@link IDatabaseAdapter.execute} path.
+ */
+function shouldUseStream(adapter: Pick<IQueryAdapter, 'executeStream'>, sql: string): boolean {
+    if (typeof adapter.executeStream !== 'function') {
+        return false;
+    }
+    return isReadOnlyRowReturningStatement(sql);
+}
+
+/**
+ * Lightweight lexical check for read-only, row-returning statements that are
+ * safe to drive through a server-side cursor. We intentionally err on the
+ * side of "no" — anything ambiguous falls back to the non-streaming path.
+ */
+function isReadOnlyRowReturningStatement(sql: string): boolean {
+    const trimmed = sql.trim();
+    // Strip leading SQL comments / block comments conservatively.
+    const withoutComments = trimmed.replace(/\/\*[\s\S]*?\*\//g, '').trim();
+    const keywordMatch = withoutComments.match(/^([A-Za-z_]+)/);
+    if (!keywordMatch) {
+        return false;
+    }
+    const first = keywordMatch[1].toUpperCase();
+    return first === 'SELECT'
+        || first === 'WITH'
+        || first === 'TABLE'
+        || first === 'VALUES'
+        || first === 'SHOW'
+        || first === 'EXPLAIN';
 }

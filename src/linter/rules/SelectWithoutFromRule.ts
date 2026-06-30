@@ -2,9 +2,8 @@ import * as vscode from 'vscode'
 import type { RuleContext } from './LintRule'
 import { BaseRule } from './BaseRule'
 import { isAstNode } from '../../parser/AstVisitor'
-import { getNodeLocation, getFunctionName, createDiagnostic } from '../../parser/astUtils'
+import { getNodeLocation, getFunctionName } from '../../parser/astUtils'
 import type { AstNode } from '../../parser/astTypes'
-import { t } from '../../i18n'
 
 const NO_FROM_FUNCTIONS = new Set([
     'now', 'current_date', 'current_timestamp', 'sysdate', 'uuid', 'getdate', 'current_time',
@@ -34,12 +33,7 @@ export class SelectWithoutFromRule extends BaseRule {
 
         const loc = getNodeLocation(node)
         if (loc) {
-            diagnostics.push(createDiagnostic(
-                loc, 6, 'SELECT_WITHOUT_FROM',
-                t('enhanced.selectWithoutFrom', String(loc.line)),
-                this.getSeverity(),
-                t('linter.source'),
-            ))
+            diagnostics.push(this.addDiagnostic(loc, 6, 'enhanced.selectWithoutFrom', String(loc.line)))
         }
 
         return diagnostics
@@ -69,9 +63,9 @@ export class SelectWithoutFromRule extends BaseRule {
                 return true
             }
         }
-        for (const [, value] of Object.entries(node)) {
-            if (value === 'type' || value === 'loc') {
-                continue
+        for (const [key, value] of Object.entries(node)) {
+            if (key === 'type' || key === 'loc') {
+                continue;
             }
             if (isAstNode(value) && this.nodeContainsNoFromFunction(value as AstNode)) {
                 return true

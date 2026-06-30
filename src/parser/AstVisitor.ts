@@ -9,12 +9,28 @@ export function isAstNode(value: unknown): value is Record<string, unknown> {
 }
 
 export interface AstVisitor {
-    enter?(node: Record<string, unknown>, parent: Record<string, unknown> | null, key: string | null): void
+    /**
+     * Called when a node is entered, before its children are traversed.
+     *
+     * Returning `false` skips traversal of this node's children (subtree
+     * pruning) while still invoking {@link leave} and continuing with sibling
+     * nodes. Any other return value (including `undefined`) traverses
+     * children normally. This is used for position-based pruning in
+     * {@link findSmallestEnclosingNode}.
+     */
+    enter?(node: Record<string, unknown>, parent: Record<string, unknown> | null, key: string | null): boolean | void
     leave?(node: Record<string, unknown>, parent: Record<string, unknown> | null, key: string | null): void
 }
 
 export const MAX_AST_DEPTH = 1000
 const MAX_STACK_DEPTH = 40000
+
+// Module-level reusable buffer for collecting child keys during traversal.
+// Iterating with `for...in` + `hasOwnProperty` (instead of `Object.keys`)
+// avoids allocating a fresh array on every node visit, which reduces GC
+// pressure when walking large ASTs (thousands of nodes). The buffer is
+// cleared and reused across visits, so its allocation cost is amortised.
+const childKeysBuffer: string[] = []
 
 export function walkAst(
     node: unknown,
@@ -45,9 +61,18 @@ export function walkAst(
 
         if (!isAstNode(currentNode)) {
             if (isPlainObject(currentNode)) {
-                const childKeys = Object.keys(currentNode)
-                for (let i = childKeys.length - 1; i >= 0; i--) {
-                    const childKey = childKeys[i]
+                // Collect own-enumerable keys into the reusable buffer. The
+                // traversal pushes children in reverse so that the stack
+                // pops them in declaration order, matching the previous
+                // `Object.keys` behaviour.
+                childKeysBuffer.length = 0
+                for (const childKey in currentNode) {
+                    if (Object.prototype.hasOwnProperty.call(currentNode, childKey)) {
+                        childKeysBuffer.push(childKey)
+                    }
+                }
+                for (let i = childKeysBuffer.length - 1; i >= 0; i--) {
+                    const childKey = childKeysBuffer[i]
                     const childValue = (currentNode as Record<string, unknown>)[childKey]
                     if (Array.isArray(childValue)) {
                         for (let j = childValue.length - 1; j >= 0; j--) {
@@ -61,13 +86,25 @@ export function walkAst(
             continue
         }
 
-        visitor.enter?.(currentNode, parent as Record<string, unknown> | null, key as string | null)
+        const enterResult = visitor.enter?.(currentNode, parent as Record<string, unknown> | null, key as string | null)
 
+        // Always schedule the leave callback (so leave/enter stay balanced
+        // for callers that rely on leave), but only descend into children
+        // when enter did not explicitly return false.
         stack.push(currentNode, parent, key, 1)
 
-        const childKeys = Object.keys(currentNode)
-        for (let i = childKeys.length - 1; i >= 0; i--) {
-            const childKey = childKeys[i]
+        if (enterResult === false) {
+            continue
+        }
+
+        childKeysBuffer.length = 0
+        for (const childKey in currentNode) {
+            if (Object.prototype.hasOwnProperty.call(currentNode, childKey)) {
+                childKeysBuffer.push(childKey)
+            }
+        }
+        for (let i = childKeysBuffer.length - 1; i >= 0; i--) {
+            const childKey = childKeysBuffer[i]
             if (childKey === 'type' || childKey === 'loc') {
                 continue
             }

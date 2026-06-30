@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline' {{CSP_SOURCE}}; script-src 'unsafe-inline' {{CSP_SOURCE}}; img-src data: {{CSP_SOURCE}}; font-src {{CSP_SOURCE}};">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline' {{CSP_SOURCE}}; script-src 'nonce-{{CSP_NONCE}}' {{CSP_SOURCE}}; img-src data: {{CSP_SOURCE}}; font-src {{CSP_SOURCE}};">
     <title data-i18n="configEditor.title">SQL All in One - Config Editor</title>
+    <link rel="stylesheet" href="{{SHARED_CSS_URI}}">
     <link rel="stylesheet" href="{{CSS_URI}}">
 </head>
 <body>
@@ -819,6 +820,7 @@
         <div class="search-empty-icon">🔍</div>
         <div class="search-empty-text" data-i18n="configEditor.searchEmpty">未找到匹配的配置项</div>
     </div>
-    <script src="{{JS_URI}}"></script>
+    <script nonce="{{CSP_NONCE}}" src="{{SHARED_JS_URI}}"></script>
+    <script nonce="{{CSP_NONCE}}" src="{{JS_URI}}"></script>
 </body>
 </html>

@@ -15,6 +15,21 @@ import { registerSchemaCommands } from './commands/SchemaCommands';
 import { TableTreeNode, FunctionTreeNode, ProcedureTreeNode, TriggerTreeNode } from '../views/databaseExplorer/treeNodes';
 import { getErrorHandler, ErrorLevel, ErrorCategory } from '../core/errorHandler';
 
+/**
+ * Delay (ms) before revealing the toggled tree node after a double-click.
+ * Gives VSCode time to process the expand/collapse state transition so that
+ * `TreeView.reveal` targets the correct node state.
+ */
+const REVEAL_DELAY_MS = 50;
+
+/**
+ * Window (ms) during which subsequent toggle events on the same node are
+ * ignored after a double-click has been recognized. Prevents the second
+ * click of a double-click from immediately collapsing the node we just
+ * expanded.
+ */
+const IGNORE_WINDOW_MS = 300;
+
 export class DatabaseModule implements Activatable {
   private context: vscode.ExtensionContext;
   private queryExecutor: QueryExecutor;
@@ -24,6 +39,7 @@ export class DatabaseModule implements Activatable {
   private treeProvider!: DatabaseTreeProvider;
   private outputChannel!: vscode.OutputChannel;
   private initialized = false;
+  private disposed = false;
 
   constructor(
     context: vscode.ExtensionContext,
@@ -92,35 +108,44 @@ export class DatabaseModule implements Activatable {
     const connectionStore = getConnectionStore();
     connectionStore.setSecretStorage(this.context.secrets);
 
-    try {
+    await this.tryStep('Connection manager initialization', async () => {
       const connectionManager = getConnectionManager();
       await connectionManager.initialize();
       vscode.commands.executeCommand('setContext', 'hive-formatter.connectionCount', connectionManager.getAllConnections().length);
-    } catch (e) {
-      console.error('[SQL All in One] Connection manager initialization failed:', e);
-    }
+    });
 
-    try {
+    await this.tryStep('Tree view initialization', async () => {
       this.treeProvider = new DatabaseTreeProvider(this.context);
       const treeView = vscode.window.createTreeView('hive-formatter.databaseExplorer', {
         treeDataProvider: this.treeProvider,
         showCollapseAll: true,
       });
       this.setupDoubleClickHandler(treeView);
-    } catch (e) {
-      console.error('[SQL All in One] Tree view initialization failed:', e);
-    }
+    });
 
-    try {
+    await this.tryStep('Query/Schema initialization', async () => {
       this.queryHistory.initialize(this.context);
       this.outputChannel = vscode.window.createOutputChannel('SQL All in One');
 
       this.setupSchemaCacheListeners();
-    } catch (e) {
-      console.error('[SQL All in One] Query/Schema initialization failed:', e);
-    }
+    });
 
     this.initialized = true;
+  }
+
+  /**
+   * Runs a single initialization step, swallowing any error so that subsequent
+   * steps can still run. Errors are logged to the console and forwarded to the
+   * centralized error handler as a FEATURE-level error (non-critical: the
+   * extension remains usable even if one init step fails).
+   */
+  private async tryStep(name: string, fn: () => Promise<void>): Promise<void> {
+    try {
+      await fn();
+    } catch (e) {
+      console.error(`[SQL All in One] ${name} failed:`, e);
+      getErrorHandler().handle(e, name, ErrorLevel.ERROR, ErrorCategory.FEATURE);
+    }
   }
 
   private setupSchemaCacheListeners(): void {
@@ -185,10 +210,10 @@ export class DatabaseModule implements Activatable {
         const node = element;
         setTimeout(() => {
           treeView.reveal(node, { expand: true }).then(undefined, (_e) => undefined);
-        }, 50);
+        }, REVEAL_DELAY_MS);
         setTimeout(() => {
           ignoreNodeId = null;
-        }, 300);
+        }, IGNORE_WINDOW_MS);
       } else {
         lastToggleNodeId = nodeId;
         lastToggleTime = now;
@@ -219,6 +244,10 @@ export class DatabaseModule implements Activatable {
   }
 
   async dispose(): Promise<void> {
+    if (this.disposed) {
+      return;
+    }
+    this.disposed = true;
     this.outputChannel?.dispose();
     const connectionManager = getConnectionManager();
     await connectionManager.disconnectAll();

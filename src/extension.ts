@@ -129,7 +129,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             getContainer().get<QueryHistory>(Tokens.QueryHistory),
             getContainer().get<SqlStatementDetector>(Tokens.SqlStatementDetector),
         );
-        getContainer().register(Tokens.DatabaseModule, dbModule);
+        getContainer().register(Tokens.DatabaseModule, dbModule, [
+            Tokens.ConnectionManager,
+            Tokens.QueryExecutor,
+            Tokens.SafeQueryGuard,
+            Tokens.SchemaProvider,
+            Tokens.SchemaCache,
+        ]);
         registry.register(dbModule);
 
         await registry.activateAll(context);

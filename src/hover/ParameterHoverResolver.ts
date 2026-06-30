@@ -28,22 +28,27 @@ function scanDocumentParameters(document: vscode.TextDocument): Map<string, Para
     }
 
     const paramMap = new Map<string, ParamScanResult>()
+    // Fetch the whole document once and scan it with a single regex pass,
+    // instead of calling document.lineAt(i).text per line. The `\$\{(\w+)\}`
+    // pattern does not depend on line boundaries, so no `m` flag is needed.
+    const text = document.getText()
     const paramRegex = /\$\{(\w+)\}/g
-    const lineCount = document.lineCount
-
-    for (let i = 0; i < lineCount; i++) {
-        const line = document.lineAt(i).text
-        let match: RegExpExecArray | null
-        paramRegex.lastIndex = 0
-        while ((match = paramRegex.exec(line)) !== null) {
-            const name = match[1]
-            const existing = paramMap.get(name)
-            const location = { line: i + 1, context: line.trim() }
-            if (existing) {
-                existing.locations.push(location)
-            } else {
-                paramMap.set(name, { paramName: name, locations: [location] })
-            }
+    let match: RegExpExecArray | null
+    while ((match = paramRegex.exec(text)) !== null) {
+        const name = match[1]
+        // Convert the match's character offset back to a 0-based line number,
+        // then derive the 1-based line number and the line's text the same way
+        // the previous per-line implementation did.
+        const matchOffset = match.index
+        const position = document.positionAt(matchOffset)
+        const lineNumber = position.line + 1
+        const lineText = document.lineAt(position.line).text
+        const existing = paramMap.get(name)
+        const location = { line: lineNumber, context: lineText.trim() }
+        if (existing) {
+            existing.locations.push(location)
+        } else {
+            paramMap.set(name, { paramName: name, locations: [location] })
         }
     }
 

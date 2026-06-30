@@ -1,5 +1,6 @@
 import type { ISchemaAdapter, QueryResult, QueryParam, QueryRow, TriggerInfo, ColumnInfo, IndexInfo, ForeignKeyInfo, TableStructure, RoutineParameterInfo, DialectCapabilities, DataTypeCategory, ExplainResult, ExplainNode } from './IDatabaseAdapter';
 import type { SqlServerSharedContext } from './SqlServerSharedContext';
+import { validateIdentifier as validateIdentifierHelper } from './identifierValidator';
 
 /**
  * SQL Server schema adapter.
@@ -214,7 +215,8 @@ export class SqlServerSchemaAdapter implements ISchemaAdapter {
         if (result.status !== 'success' || result.rows.length === 0) {
             return 0;
         }
-        return (result.rows[0].row_count as number) ?? 0;
+        const rowCount = result.rows[0].row_count;
+        return rowCount != null ? Number(rowCount) : 0;
     }
 
     getDialectCapabilities(): DialectCapabilities {
@@ -308,16 +310,7 @@ export class SqlServerSchemaAdapter implements ISchemaAdapter {
     }
 
     private validateIdentifier(identifier: string): void {
-        if (!identifier || typeof identifier !== 'string') {
-            throw new Error('Invalid identifier: identifier must be a non-empty string');
-        }
-        if (identifier.length > 128) {
-            throw new Error('Invalid identifier: identifier exceeds maximum length');
-        }
-        // eslint-disable-next-line no-control-regex
-        if (/\u0000/.test(identifier)) {
-            throw new Error('Invalid identifier: identifier contains null bytes');
-        }
+        validateIdentifierHelper(identifier, 128);
     }
 
     private async describeTableColumns(database: string, table: string): Promise<ColumnInfo[]> {
@@ -332,9 +325,9 @@ export class SqlServerSchemaAdapter implements ISchemaAdapter {
 
         return result.rows.map((row: QueryRow) => {
             const dataType = row.data_type as string;
-            const maxLength = row.max_length as number;
-            const precision = row.precision as number;
-            const scale = row.scale as number;
+            const maxLength = row.max_length != null ? Number(row.max_length) : 0;
+            const precision = row.precision != null ? Number(row.precision) : 0;
+            const scale = row.scale != null ? Number(row.scale) : 0;
             let type = dataType;
             if (dataType === 'varchar' || dataType === 'nvarchar' || dataType === 'char' || dataType === 'nchar' || dataType === 'varbinary' || dataType === 'binary') {
                 if (maxLength === -1) {

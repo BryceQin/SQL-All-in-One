@@ -150,6 +150,12 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
     private dialectCache = new Map<string, Dialect>()
     private schemaCompletionProvider: SchemaCompletionProvider
     private configChangeDisposable: vscode.Disposable
+    /**
+     * Handle of the pending debounce timer for {@link provideCompletionItems}.
+     * Kept on the instance so that rapid keystrokes reset the same timer
+     * instead of stacking multiple deferred executions.
+     */
+    private debounceTimer: ReturnType<typeof setTimeout> | null = null
 
     constructor(_extensionPath: string) {
         this.schemaCompletionProvider = new SchemaCompletionProvider()
@@ -163,6 +169,10 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
     public dispose(): void {
         this.configChangeDisposable.dispose()
         this.dialectCache.clear()
+        if (this.debounceTimer !== null) {
+            clearTimeout(this.debounceTimer)
+            this.debounceTimer = null
+        }
         clearStaticCompletionCaches()
     }
 
@@ -170,8 +180,7 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
         const cached = this.dialectCache.get(langId)
         const dName = sqlDialects[langId as keyof typeof sqlDialects] || 'hive'
         if (cached) return { dialect: cached, dName }
-        const dc = allDialects[dName as keyof typeof allDialects]
-        const dialectOpts = (dc ? dc.get() : allDialects.hive.get()) as DialectOptions
+        const dialectOpts = (allDialects[dName as keyof typeof allDialects] ?? allDialects.hive) as DialectOptions
         const dialect = createDialect(dialectOpts)
         this.dialectCache.set(langId, dialect)
         return { dialect, dName }
@@ -184,6 +193,63 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
     }
 
     async provideCompletionItems(
+        doc: vscode.TextDocument,
+        pos: vscode.Position,
+        token: vscode.CancellationToken,
+    ): Promise<vscode.CompletionItem[] | null | undefined> {
+        // Debounce the (potentially expensive) completion computation by 50ms.
+        // Rapid keystrokes reset the same timer so we only build the completion
+        // list once the user pauses. Cancellation cancels the pending timer
+        // and resolves immediately with `[]`.
+        const DEBOUNCE_MS = 50
+
+        return new Promise<vscode.CompletionItem[] | null | undefined>((resolve) => {
+            // Fast-path early cancellation: avoid scheduling a timer at all.
+            if (token.isCancellationRequested) {
+                resolve([])
+                return
+            }
+
+            // Reset any pending timer so only the latest invocation wins.
+            if (this.debounceTimer !== null) {
+                clearTimeout(this.debounceTimer)
+                this.debounceTimer = null
+            }
+
+            let settled = false
+            // Subscribe to cancellation so we can abort the pending timer
+            // immediately when VSCode signals it. The subscription is disposed
+            // once we settle (either via cancellation or completion).
+            const cancellationSub = token.onCancellationRequested(() => {
+                settle([])
+            })
+
+            const settle = (value: vscode.CompletionItem[] | null | undefined): void => {
+                if (settled) return
+                settled = true
+                if (this.debounceTimer !== null) {
+                    clearTimeout(this.debounceTimer)
+                    this.debounceTimer = null
+                }
+                cancellationSub.dispose()
+                resolve(value)
+            }
+
+            this.debounceTimer = setTimeout(() => {
+                this.debounceTimer = null
+                if (token.isCancellationRequested) {
+                    settle([])
+                    return
+                }
+                this.provideCompletionItemsInternal(doc, pos, token).then(settle, (e) => {
+                    handleError(e, 'completion provider', ErrorCategory.FEATURE)
+                    settle([])
+                })
+            }, DEBOUNCE_MS)
+        })
+    }
+
+    private async provideCompletionItemsInternal(
         doc: vscode.TextDocument,
         pos: vscode.Position,
         token: vscode.CancellationToken,

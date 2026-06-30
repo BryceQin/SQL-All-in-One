@@ -353,8 +353,8 @@ export const snippetData: Record<string, Record<string, SnippetDef>> = {
     }
   },
   "dameng": {
-    "Oracle PL/SQL Block": {
-      "prefix": "orplsql",
+    "Dameng PL/SQL Block": {
+      "prefix": "dmplsql",
       "body": [
         "DECLARE",
         "    $1",
@@ -366,29 +366,29 @@ export const snippetData: Record<string, Record<string, SnippetDef>> = {
         "END;",
         "/"
       ],
-      "description": "Oracle PL/SQL block with DECLARE/BEGIN/EXCEPTION"
+      "description": "Dameng PL/SQL block with DECLARE/BEGIN/EXCEPTION"
     },
-    "Oracle Package": {
-      "prefix": "orpkg",
+    "Dameng Package": {
+      "prefix": "dmpkg",
       "body": [
         "CREATE OR REPLACE PACKAGE $1 IS",
         "    $2",
         "END $1;"
       ],
-      "description": "Oracle CREATE OR REPLACE PACKAGE"
+      "description": "Dameng CREATE OR REPLACE PACKAGE"
     },
-    "Oracle Connect By": {
-      "prefix": "orconnect",
+    "Dameng Connect By": {
+      "prefix": "dmconnect",
       "body": [
         "SELECT $1",
         "FROM $2",
         "START WITH $3",
         "CONNECT BY PRIOR $4 = $5;"
       ],
-      "description": "Oracle hierarchical query with CONNECT BY"
+      "description": "Dameng hierarchical query with CONNECT BY"
     },
-    "Oracle Merge": {
-      "prefix": "ormerge",
+    "Dameng Merge": {
+      "prefix": "dmmerge",
       "body": [
         "MERGE INTO $1 t",
         "USING $2 s",
@@ -399,37 +399,37 @@ export const snippetData: Record<string, Record<string, SnippetDef>> = {
         "    INSERT ($6)",
         "    VALUES ($7);"
       ],
-      "description": "Oracle MERGE INTO statement"
+      "description": "Dameng MERGE INTO statement"
     },
-    "Oracle Hint": {
-      "prefix": "orhint",
+    "Dameng Hint": {
+      "prefix": "dmhint",
       "body": [
         "SELECT /*+ FULL($1) */ $2",
         "FROM $1;"
       ],
-      "description": "Oracle SELECT with optimizer hint"
+      "description": "Dameng SELECT with optimizer hint"
     },
-    "Oracle Decode": {
-      "prefix": "ordecode",
+    "Dameng Decode": {
+      "prefix": "dmdecode",
       "body": [
         "DECODE($1, $2, $3, $4, $5, $6)"
       ],
-      "description": "Oracle DECODE function"
+      "description": "Dameng DECODE function"
     },
-    "Oracle Dual": {
-      "prefix": "ordual",
+    "Dameng Dual": {
+      "prefix": "dmdual",
       "body": [
         "SELECT $1",
         "FROM DUAL;"
       ],
-      "description": "Oracle SELECT FROM DUAL"
+      "description": "Dameng SELECT FROM DUAL"
     },
-    "Oracle NVL": {
-      "prefix": "ornvl",
+    "Dameng NVL": {
+      "prefix": "dmnvl",
       "body": [
         "NVL($1, $2)"
       ],
-      "description": "Oracle NVL function"
+      "description": "Dameng NVL function"
     },
     "Dameng Sequence": {
       "prefix": "dmseq",

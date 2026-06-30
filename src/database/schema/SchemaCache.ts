@@ -15,12 +15,21 @@ type InvalidateScope = 'database' | 'table' | 'column' | 'function' | 'procedure
 
 export class SchemaCache {
     private static readonly MAX_ENTRIES_PER_CACHE = 200;
-    private databaseCache = new LRUCache<string, CacheEntry<DatabaseInfo[]>>({ maxSize: SchemaCache.MAX_ENTRIES_PER_CACHE, maxAge: Infinity });
-    private tableCache = new LRUCache<string, CacheEntry<TableInfo[]>>({ maxSize: SchemaCache.MAX_ENTRIES_PER_CACHE, maxAge: Infinity });
-    private columnCache = new LRUCache<string, CacheEntry<ColumnInfo[]>>({ maxSize: SchemaCache.MAX_ENTRIES_PER_CACHE, maxAge: Infinity });
-    private functionCache = new LRUCache<string, CacheEntry<FunctionInfo[]>>({ maxSize: SchemaCache.MAX_ENTRIES_PER_CACHE, maxAge: Infinity });
-    private procedureCache = new LRUCache<string, CacheEntry<ProcedureInfo[]>>({ maxSize: SchemaCache.MAX_ENTRIES_PER_CACHE, maxAge: Infinity });
-    private viewCache = new LRUCache<string, CacheEntry<ViewInfo[]>>({ maxSize: SchemaCache.MAX_ENTRIES_PER_CACHE, maxAge: Infinity });
+    /**
+     * Hard TTL ceiling (10 minutes) enforced by the LRU layer. Long-unused
+     * entries are evicted automatically instead of lingering in memory until
+     * they are squeezed out by capacity. The shorter per-entry TTLs configured
+     * via `cachedFetch` (e.g. 120s for columns) still take precedence for
+     * freshness – this is only a backstop so stale entries do not accumulate
+     * indefinitely when access is rare.
+     */
+    private static readonly MAX_AGE_MS = 600000;
+    private databaseCache = new LRUCache<string, CacheEntry<DatabaseInfo[]>>({ maxSize: SchemaCache.MAX_ENTRIES_PER_CACHE, maxAge: SchemaCache.MAX_AGE_MS });
+    private tableCache = new LRUCache<string, CacheEntry<TableInfo[]>>({ maxSize: SchemaCache.MAX_ENTRIES_PER_CACHE, maxAge: SchemaCache.MAX_AGE_MS });
+    private columnCache = new LRUCache<string, CacheEntry<ColumnInfo[]>>({ maxSize: SchemaCache.MAX_ENTRIES_PER_CACHE, maxAge: SchemaCache.MAX_AGE_MS });
+    private functionCache = new LRUCache<string, CacheEntry<FunctionInfo[]>>({ maxSize: SchemaCache.MAX_ENTRIES_PER_CACHE, maxAge: SchemaCache.MAX_AGE_MS });
+    private procedureCache = new LRUCache<string, CacheEntry<ProcedureInfo[]>>({ maxSize: SchemaCache.MAX_ENTRIES_PER_CACHE, maxAge: SchemaCache.MAX_AGE_MS });
+    private viewCache = new LRUCache<string, CacheEntry<ViewInfo[]>>({ maxSize: SchemaCache.MAX_ENTRIES_PER_CACHE, maxAge: SchemaCache.MAX_AGE_MS });
     private pendingRequests = new Map<string, Promise<unknown>>();
     private cachedTtls: Record<string, number> = {};
     private ttlConfigDisposable: vscode.Disposable | undefined;
@@ -64,10 +73,12 @@ export class SchemaCache {
         ttlType: string,
         fetcher: () => Promise<T>
     ): Promise<T> {
-        // Lazy per-entry expiry check: O(1). LRUCache is configured with
-        // maxAge: Infinity (expiry is tracked via CacheEntry.expireAt), so we
-        // must inspect the entry ourselves and evict the single stale entry
-        // instead of scanning the whole cache.
+        // Lazy per-entry expiry check: O(1). The LRU layer enforces a hard
+        // maxAge ceiling (MAX_AGE_MS = 600000 / 10 min) so long-unused entries
+        // are evicted automatically. On top of that, freshness is tracked via
+        // CacheEntry.expireAt using the shorter per-type TTLs (e.g. 120s for
+        // columns). We inspect the entry ourselves and evict the single stale
+        // entry instead of scanning the whole cache.
         const entry = cache.get(cacheKey);
         if (entry && !this.isExpired(entry)) return entry.data;
         if (entry) {

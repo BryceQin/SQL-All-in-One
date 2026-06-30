@@ -7,7 +7,15 @@ import { getNodeLocation, createDiagnostic, resolveAstList } from '../parser/ast
 import type { SqlDialect } from '../parser/dialectMapper'
 
 export class AstDiagnosticsProvider {
-    check(sql: string, dialect: SqlDialect, preParsedAst?: unknown[]): vscode.Diagnostic[] {
+    /**
+     * Cache of stripped (non-string / non-comment) ranges keyed by document
+     * URI. The scan in {@link computeNonStringCommentRanges} is O(n) over the
+     * full SQL text and runs on every diagnostics pass; caching by document
+     * version avoids re-scanning unchanged SQL while typing.
+     */
+    private rangesCache = new Map<string, { version: number; ranges: [number, number][] }>();
+
+    check(sql: string, dialect: SqlDialect, preParsedAst?: unknown[], document?: vscode.TextDocument): vscode.Diagnostic[] {
         const diagnostics: vscode.Diagnostic[] = []
         const astList = resolveAstList(sql, dialect, preParsedAst)
 
@@ -21,9 +29,13 @@ export class AstDiagnosticsProvider {
             }
         }
 
-        this.checkExtraCommasInText(sql, diagnostics)
+        this.checkExtraCommasInText(sql, diagnostics, document)
 
         return diagnostics
+    }
+
+    dispose(): void {
+        this.rangesCache.clear()
     }
 
     private checkSelectChain(node: AstNode, sql: string, diagnostics: vscode.Diagnostic[]): void {
@@ -212,8 +224,8 @@ export class AstDiagnosticsProvider {
         }
     }
 
-    private checkExtraCommasInText(sql: string, diagnostics: vscode.Diagnostic[]): void {
-        const strippedRanges = this.getNonStringCommentRanges(sql)
+    private checkExtraCommasInText(sql: string, diagnostics: vscode.Diagnostic[], document?: vscode.TextDocument): void {
+        const strippedRanges = this.getNonStringCommentRanges(sql, document)
 
         // Precompute line-start offsets once so each match position can be
         // converted to line/col via O(log n) binary search instead of O(n)
@@ -241,7 +253,30 @@ export class AstDiagnosticsProvider {
         }
     }
 
-    private getNonStringCommentRanges(sql: string): [number, number][] {
+    /**
+     * Return the stripped (non-string / non-comment) ranges for the given SQL,
+     * caching the result per document version so that repeated diagnostics
+     * passes on unchanged SQL skip the O(n) scan in
+     * {@link computeNonStringCommentRanges}.
+     *
+     * When no `document` is supplied (e.g. callers that operate on raw SQL
+     * strings outside the editor), the scan runs uncached each call.
+     */
+    private getNonStringCommentRanges(sql: string, document?: vscode.TextDocument): [number, number][] {
+        if (!document) {
+            return this.computeNonStringCommentRanges(sql)
+        }
+        const cacheKey = document.uri.toString()
+        const cached = this.rangesCache.get(cacheKey)
+        if (cached && cached.version === document.version) {
+            return cached.ranges
+        }
+        const ranges = this.computeNonStringCommentRanges(sql)
+        this.rangesCache.set(cacheKey, { version: document.version, ranges })
+        return ranges
+    }
+
+    private computeNonStringCommentRanges(sql: string): [number, number][] {
         const ranges: [number, number][] = []
         let inString = false
         let stringChar = 0

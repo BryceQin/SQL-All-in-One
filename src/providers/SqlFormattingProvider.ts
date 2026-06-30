@@ -1,7 +1,7 @@
 import * as vscode from "vscode"
 import { SqlLanguage } from "../formatter/sqlFormatter"
 import { sqlDialects } from "../core/sqlDialects"
-import { createConfig } from "../core/config"
+import { createConfig } from "../core/configManager"
 import { formatEditorText } from "../utils/formatEditorText"
 import { handleError, ErrorCategory } from "../core/errorHandler"
 import { getPerformanceMonitor } from '../core/performanceMonitor'

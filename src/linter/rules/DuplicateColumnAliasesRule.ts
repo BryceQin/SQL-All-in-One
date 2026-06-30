@@ -2,9 +2,8 @@ import * as vscode from 'vscode'
 import type { RuleContext } from './LintRule'
 import { BaseRule } from './BaseRule'
 import { isAstNode } from '../../parser/AstVisitor'
-import { getNodeLocation, getColumnLoc, createDiagnostic } from '../../parser/astUtils'
+import { getNodeLocation, getColumnLoc } from '../../parser/astUtils'
 import type { AstNode } from '../../parser/astTypes'
-import { t } from '../../i18n'
 
 export class DuplicateColumnAliasesRule extends BaseRule {
     readonly id = 'duplicate_column_aliases'
@@ -107,12 +106,7 @@ export class DuplicateColumnAliasesRule extends BaseRule {
                     const loc = getNodeLocation(entries[i])
                     if (loc) {
                         const alias = (entries[i].as as string).toLowerCase()
-                        diagnostics.push(createDiagnostic(
-                            loc, alias.length, 'DUPLICATE_ALIAS',
-                            t('enhanced.duplicateAlias', String(loc.line), alias),
-                            this.getSeverity(),
-                            t('linter.source'),
-                        ))
+                        diagnostics.push(this.addDiagnostic(loc, alias.length, 'enhanced.duplicateAlias', String(loc.line), alias))
                     }
                 }
             }

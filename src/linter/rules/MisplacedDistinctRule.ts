@@ -2,9 +2,8 @@ import * as vscode from 'vscode'
 import type { RuleContext } from './LintRule'
 import { BaseRule } from './BaseRule'
 import { isAstNode } from '../../parser/AstVisitor'
-import { getNodeLocation, createDiagnostic } from '../../parser/astUtils'
+import { getNodeLocation } from '../../parser/astUtils'
 import type { AstNode } from '../../parser/astTypes'
-import { t } from '../../i18n'
 
 export class MisplacedDistinctRule extends BaseRule {
     readonly id = 'misplaced_distinct'
@@ -37,12 +36,7 @@ export class MisplacedDistinctRule extends BaseRule {
             if (colNode.distinct === true) {
                 const loc = getNodeLocation(colNode)
                 if (loc) {
-                    diagnostics.push(createDiagnostic(
-                        loc, 8, 'MISPLACED_DISTINCT',
-                        t('enhanced.distinctMisplaced', String(loc.line)),
-                        this.getSeverity(),
-                        t('linter.source'),
-                    ))
+                    diagnostics.push(this.addDiagnostic(loc, 8, 'enhanced.distinctMisplaced', String(loc.line)))
                 }
             }
         }

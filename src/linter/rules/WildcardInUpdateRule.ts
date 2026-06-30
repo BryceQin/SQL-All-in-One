@@ -2,9 +2,8 @@ import * as vscode from 'vscode'
 import type { RuleContext } from './LintRule'
 import { BaseRule } from './BaseRule'
 import { isAstNode, findNodes } from '../../parser/AstVisitor'
-import { getNodeLocation, createDiagnostic } from '../../parser/astUtils'
+import { getNodeLocation } from '../../parser/astUtils'
 import type { AstNode } from '../../parser/astTypes'
-import { t } from '../../i18n'
 
 export class WildcardInUpdateRule extends BaseRule {
     readonly id = 'wildcard_in_update'
@@ -36,12 +35,7 @@ export class WildcardInUpdateRule extends BaseRule {
             if (typeof setItem.column === 'string' && setItem.column === '*') {
                 const loc = getNodeLocation(setItem)
                 if (loc) {
-                    diagnostics.push(createDiagnostic(
-                        loc, 1, 'WILDCARD_IN_UPDATE',
-                        t('enhanced.starInUpdate', String(loc.line)),
-                        this.getSeverity(),
-                        t('linter.source'),
-                    ))
+                    diagnostics.push(this.addDiagnostic(loc, 1, 'enhanced.starInUpdate', String(loc.line)))
                 }
             }
             const value = setItem.value
@@ -52,12 +46,7 @@ export class WildcardInUpdateRule extends BaseRule {
                 for (const ref of starRefs) {
                     const loc = getNodeLocation(ref)
                     if (loc) {
-                        diagnostics.push(createDiagnostic(
-                            loc, 1, 'WILDCARD_IN_UPDATE',
-                            t('enhanced.starInUpdate', String(loc.line)),
-                            this.getSeverity(),
-                            t('linter.source'),
-                        ))
+                        diagnostics.push(this.addDiagnostic(loc, 1, 'enhanced.starInUpdate', String(loc.line)))
                     }
                 }
             }

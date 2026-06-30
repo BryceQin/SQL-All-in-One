@@ -1,5 +1,5 @@
 import * as vscode from "vscode"
-import { createConfig } from "../core/config"
+import { createConfig } from "../core/configManager"
 import { sqlDialects } from "../core/sqlDialects"
 import { formatEditorText } from "../utils/formatEditorText"
 import type { FormatOptionsWithLanguage, SqlLanguage } from "../formatter/sqlFormatter"

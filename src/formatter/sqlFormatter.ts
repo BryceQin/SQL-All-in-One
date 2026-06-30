@@ -69,7 +69,40 @@ const RELEVANT_KEYS: (keyof FormatOptions)[] = [
     'newlineBeforeDistributeBy', 'newlineBeforeClusterBy', 'newlineBeforeSortBy',
 ]
 
+/**
+ * Fixed cache key returned by {@link hashOptions} when the supplied options
+ * match the formatter's default configuration exactly. Lets the common case
+ * (no user overrides) skip serialising ~70 keys into a string on every
+ * `formatDialect` call.
+ */
+const DEFAULT_OPTIONS_CACHE_KEY = '__default__';
+
+/**
+ * Fast-path check: returns `true` when every relevant option in `options`
+ * equals the corresponding entry in `defaultOptions`. Uses strict equality
+ * so it correctly distinguishes e.g. `true` vs `"true"`. Bails out on the
+ * first mismatch without scanning the remaining keys.
+ */
+function optionsEqualsDefault(options: FormatOptions): boolean {
+    const opts = options as unknown as Record<string, unknown>;
+    const defs = defaultOptions as unknown as Record<string, unknown>;
+    for (const key of RELEVANT_KEYS) {
+        if (opts[key] !== defs[key]) {
+            return false;
+        }
+    }
+    return true;
+}
+
 function hashOptions(dialect: string, options: FormatOptions): string {
+    // Default-config fast-path: the vast majority of format calls use the
+    // default options, so avoid building the full ~70-key serialisation and
+    // return a constant key (namespaced by dialect to avoid collisions
+    // between dialects that happen to share default option values).
+    if (optionsEqualsDefault(options)) {
+        return `${dialect}|${DEFAULT_OPTIONS_CACHE_KEY}`;
+    }
+
     // Build a deterministic, collision-free cache key by serialising the
     // dialect and every relevant option with its type prefix.  Unlike a
     // numeric hash this cannot produce false cache hits between differing

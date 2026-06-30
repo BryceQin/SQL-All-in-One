@@ -408,6 +408,116 @@ export function adjustAstLocationsInPlace(
     adjust(ast);
 }
 
+/**
+ * Lazy-clone variant of {@link adjustAstLocationsInPlace}.
+ *
+ * Instead of deep-cloning the entire AST before adjusting locations (which
+ * the previous implementation did via `JSON.parse(JSON.stringify(node))`),
+ * this function performs structural sharing: it returns the *same* node
+ * reference for any subtree whose `loc` does not need modification, and
+ * only allocates new objects along the path from the root to a `loc` that
+ * actually changes.
+ *
+ * Contract:
+ *  - The input AST is never mutated.
+ *  - The returned value is a node that may share structure with the input,
+ *    except for the `loc` (and its enclosing objects/array shells) along
+ *    paths whose locations were adjusted.
+ *
+ * This is used by the incremental re-parser so that the cached AST stays
+ * pristine for other consumers (linter, hover, navigation) while avoiding
+ * the O(n) deep-clone cost on every incremental re-parse.
+ *
+ * @internal Exported for testing only.
+ */
+export function adjustAstLocationsLazy(
+    ast: unknown,
+    oldStartLine: number,
+    oldStartCol: number,
+    newStartLine: number,
+    newStartCol: number,
+): unknown {
+    const lineDelta = newStartLine - oldStartLine;
+    const colDelta = newStartCol - oldStartCol;
+    // No delta → return input unchanged, no allocation.
+    if (lineDelta === 0 && colDelta === 0) return ast;
+
+    /**
+     * Returns either the original `obj` (if nothing inside it needed
+     * adjustment) or a shallow-cloned copy whose `loc` and/or children
+     * have been replaced with adjusted copies.
+     */
+    function adjust(obj: unknown): unknown {
+        if (obj == null || typeof obj !== 'object') return obj;
+
+        if (Array.isArray(obj)) {
+            let cloned = false;
+            const newArr = obj.map((item) => {
+                const newItem = adjust(item);
+                if (newItem !== item) cloned = true;
+                return newItem;
+            });
+            return cloned ? newArr : obj;
+        }
+
+        const record = obj as Record<string, unknown>;
+
+        // First recurse into children (excluding loc, which we handle below).
+        let clonedRecord: Record<string, unknown> | null = null;
+        for (const key in record) {
+            if (key === 'loc') continue;
+            if (!Object.prototype.hasOwnProperty.call(record, key)) continue;
+            const child = record[key];
+            const newChild = adjust(child);
+            if (newChild !== child) {
+                if (clonedRecord === null) {
+                    clonedRecord = { ...record };
+                }
+                clonedRecord[key] = newChild;
+            }
+        }
+
+        // Then decide whether `loc` needs to be cloned + adjusted.
+        const loc = record.loc;
+        if (loc != null && typeof loc === 'object') {
+            const l = loc as {
+                start?: { line: number; column: number };
+                end?: { line: number; column: number };
+            };
+            const startNeedsAdjust = !!(l.start && l.start.line > 0);
+            const endNeedsAdjust = !!(l.end && l.end.line > 0);
+
+            if (startNeedsAdjust || endNeedsAdjust) {
+                if (clonedRecord === null) {
+                    clonedRecord = { ...record };
+                }
+                const newLoc: typeof l = { ...l };
+                if (startNeedsAdjust && l.start) {
+                    const newStart = { ...l.start };
+                    if (l.start.line === oldStartLine) {
+                        newStart.column += colDelta;
+                    }
+                    newStart.line += lineDelta;
+                    newLoc.start = newStart;
+                }
+                if (endNeedsAdjust && l.end) {
+                    const newEnd = { ...l.end };
+                    if (l.end.line === oldStartLine) {
+                        newEnd.column += colDelta;
+                    }
+                    newEnd.line += lineDelta;
+                    newLoc.end = newEnd;
+                }
+                clonedRecord.loc = newLoc as unknown as Record<string, unknown>['loc'];
+            }
+        }
+
+        return clonedRecord !== null ? clonedRecord : obj;
+    }
+
+    return adjust(ast);
+}
+
 export class DocumentAstCache {
     private cache: LRUCache<string, CacheEntry>;
     private disposables: vscode.Disposable[] = [];
@@ -487,19 +597,22 @@ export class DocumentAstCache {
                                 }
                                 mergedAst.push(...stmtAstList);
                             } else {
-                                // Reuse cached AST – adjust locations if offset shifted
+                                // Reuse cached AST – adjust locations if offset shifted.
+                                // We use the lazy-clone variant so the cached AST is never
+                                // mutated and we avoid the O(n) `JSON.parse(JSON.stringify)`
+                                // deep clone that the previous implementation performed on
+                                // every reused statement.
                                 const oldStmt = oldStmts[i];
                                 const cachedAstList = Array.isArray(oldStmt.ast) ? oldStmt.ast : [oldStmt.ast];
                                 for (const node of cachedAstList) {
-                                    const clonedNode: AST = JSON.parse(JSON.stringify(node)) as AST;
-                                    adjustAstLocationsInPlace(
-                                        clonedNode,
+                                    const adjustedNode = adjustAstLocationsLazy(
+                                        node,
                                         oldStmt.startLine,
                                         oldStmt.startCol,
                                         newAbsPos.line,
                                         newAbsPos.column,
-                                    );
-                                    mergedAst.push(clonedNode);
+                                    ) as AST;
+                                    mergedAst.push(adjustedNode);
                                 }
                             }
                         }

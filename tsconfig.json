@@ -22,6 +22,7 @@
     "exclude": [
         "node_modules",
         "eslint.config.ts",
-        "out"
+        "out",
+        "tmp_*.ts"
     ]
 }

@@ -2,9 +2,12 @@ import type { ConnectionConfig, TestConnectionResult } from './IDatabaseAdapter'
 import type { PoolConfig } from 'pg';
 import type { PostgresSharedContext } from './PostgresSharedContext';
 import { t } from '../../i18n/index';
+import { BaseConnectionAdapter } from './BaseConnectionAdapter';
 
-export class PostgresConnectionAdapter {
-    constructor(private shared: PostgresSharedContext) {}
+export class PostgresConnectionAdapter extends BaseConnectionAdapter {
+    constructor(private shared: PostgresSharedContext) {
+        super();
+    }
 
     async connect(config: ConnectionConfig): Promise<void> {
         const poolConfig = this.createPoolConfig(config);
@@ -97,12 +100,12 @@ export class PostgresConnectionAdapter {
         }
     }
 
-    async reapIdleConnections(): Promise<void> {
+    override async reapIdleConnections(): Promise<void> {
         if (!this.shared.pool) return;
         this.shared.lastActivityTime = Date.now();
     }
 
-    formatConnectionError(error: unknown, config: ConnectionConfig): Error {
+    protected override formatDriverSpecificError(error: unknown, config: ConnectionConfig): Error | undefined {
         const msg = error instanceof Error ? error.message : String(error);
         const hostPort = `${config.host}:${config.port}`;
 
@@ -112,17 +115,10 @@ export class PostgresConnectionAdapter {
         if (msg.includes('database') && msg.includes('does not exist')) {
             return new Error(t('database.databaseNotExist', config.database || '(none)', hostPort));
         }
-        if (msg.includes('ECONNREFUSED')) {
-            return new Error(t('database.connectionRefused', hostPort));
-        }
-        if (msg.includes('ETIMEDOUT') || msg.includes('connectTimeout')) {
-            return new Error(t('database.connectionTimedOut', hostPort));
-        }
-        if (msg.includes('ENOTFOUND')) {
-            return new Error(t('database.hostNotFound', config.host));
-        }
 
-        return error instanceof Error ? error : new Error(msg);
+        // SSL/certificate and common network errors are handled by the base
+        // class (BaseConnectionAdapter).
+        return undefined;
     }
 
     private createPoolConfig(config: ConnectionConfig): PoolConfig {

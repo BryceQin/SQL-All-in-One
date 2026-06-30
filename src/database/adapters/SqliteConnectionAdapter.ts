@@ -1,9 +1,12 @@
 import type { ConnectionConfig, TestConnectionResult } from './IDatabaseAdapter';
 import type { SqliteSharedContext } from './SqliteSharedContext';
 import { t } from '../../i18n/index';
+import { BaseConnectionAdapter } from './BaseConnectionAdapter';
 
-export class SqliteConnectionAdapter {
-    constructor(private shared: SqliteSharedContext) {}
+export class SqliteConnectionAdapter extends BaseConnectionAdapter {
+    constructor(private shared: SqliteSharedContext) {
+        super();
+    }
 
     async connect(config: ConnectionConfig): Promise<void> {
         try {
@@ -74,21 +77,23 @@ export class SqliteConnectionAdapter {
         }
     }
 
-    async reapIdleConnections(): Promise<void> {
+    override async reapIdleConnections(): Promise<void> {
         if (!this.shared.db) return;
         this.shared.lastActivityTime = Date.now();
     }
 
-    formatConnectionError(error: unknown, config: ConnectionConfig): Error {
+    protected override formatDriverSpecificError(error: unknown, config: ConnectionConfig): Error | undefined {
         const msg = error instanceof Error ? error.message : String(error);
 
         if (msg.includes('SQLITE_CANTOPEN') || msg.includes('unable to open database')) {
             return new Error(t('database.databaseNotExist', config.host, config.host));
         }
         if (msg.includes('SQLITE_READONLY')) {
-            return new Error(`SQLite database is read-only: ${config.host}`);
+            return new Error(t('database.sqliteReadonly', config.host));
         }
 
-        return error instanceof Error ? error : new Error(msg);
+        // SQLite is file-based; there are no network/SSL errors to fall back
+        // to, but the base class still wraps non-Error throws.
+        return undefined;
     }
 }

@@ -1,53 +1,13 @@
-* { box-sizing: border-box; margin: 0; padding: 0; }
-
-:root {
-  --accent: var(--vscode-button-background, #4a9eff);
-  --accent-dim: rgba(74, 158, 255, 0.10);
-  --accent-glow: rgba(74, 158, 255, 0.20);
-  --bg: var(--vscode-editor-background, #1e1e2e);
-  --surface: rgba(255,255,255,0.03);
-  --surface2: rgba(255,255,255,0.05);
-  --surface3: rgba(255,255,255,0.07);
-  --text: var(--vscode-editor-foreground, #cdd6f4);
-  --text-secondary: var(--vscode-descriptionForeground, rgba(255,255,255,0.45));
-  --border: rgba(255,255,255,0.06);
-  --border-hover: rgba(255,255,255,0.12);
-  --input-bg: var(--vscode-input-background, #313145);
-  --input-border: var(--vscode-input-border, rgba(255,255,255,0.08));
-  --input-fg: var(--vscode-input-foreground, #cdd6f4);
-  --btn-bg: var(--vscode-button-background, #4a9eff);
-  --btn-hover: var(--vscode-button-hoverBackground, #5caeff);
-  --btn-secondary-bg: rgba(255,255,255,0.04);
-  --btn-secondary-hover: rgba(255,255,255,0.08);
-  --error-color: var(--vscode-errorForeground, #f44747);
-  --error-dim: rgba(244, 71, 71, 0.12);
-  --success-color: #4ec9b0;
-  --success-dim: rgba(78, 201, 176, 0.12);
-  --warning-color: #e2b714;
-  --warning-dim: rgba(226, 183, 20, 0.12);
-  --info-color: #4a9eff;
-  --info-dim: rgba(74, 158, 255, 0.12);
-  --radius-sm: 6px;
-  --radius: 8px;
-  --radius-lg: 12px;
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.15);
-  --shadow-md: 0 2px 8px rgba(0,0,0,0.20);
-  --shadow-lg: 0 8px 32px rgba(0,0,0,0.25);
-  --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  --glass-blur: blur(16px);
-  --glass-border: rgba(255,255,255,0.06);
-  --glass-shadow: 0 4px 16px rgba(0,0,0,0.25);
-  --glass-inset: inset 0 1px 0 rgba(255,255,255,0.04);
-}
+/* Reset, :root design tokens, body font defaults, scrollbar and toggle switch
+ * rules live in shared.css. This file only declares connection-dialog-specific
+ * overrides and components. */
 
 body {
-  font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
-  font-size: 13px;
-  color: var(--text);
-  background: var(--bg);
+  /* connection-dialog sets its own line-height/overflow; the shared body
+   * rule still provides font-family, font-size, color, background and
+   * -webkit-font-smoothing. */
   line-height: 1.6;
   overflow: auto;
-  -webkit-font-smoothing: antialiased;
 }
 
 .container {
@@ -334,54 +294,8 @@ body {
   padding: 6px 4px;
 }
 
-.toggle-label {
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.toggle {
-  position: relative;
-  width: 36px;
-  height: 20px;
-  flex-shrink: 0;
-}
-
-.toggle input { opacity: 0; width: 0; height: 0; }
-
-.toggle-slider {
-  position: absolute;
-  inset: 0;
-  border-radius: 20px;
-  background: rgba(255,255,255,0.10);
-  cursor: pointer;
-  transition: all var(--transition);
-}
-
-.toggle-slider::before {
-  content: "";
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: #fff;
-  transition: all var(--transition);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-}
-
-.toggle input:checked + .toggle-slider {
-  background: var(--accent);
-  box-shadow: 0 0 6px var(--accent-glow);
-}
-
-.toggle input:checked + .toggle-slider::before {
-  transform: translateX(16px);
-}
-
-.toggle input:focus-visible + .toggle-slider {
-  box-shadow: 0 0 0 2px var(--accent-glow);
-}
+/* .toggle, .toggle input, .toggle-slider (and its ::before/:checked/:focus-visible
+ * states) and .toggle-label are defined in shared.css. */
 
 .conn-form-footer {
   display: flex;
@@ -553,7 +467,4 @@ body {
   flex-shrink: 0;
 }
 
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
+/* ::-webkit-scrollbar rules are defined in shared.css. */

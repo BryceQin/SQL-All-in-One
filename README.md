@@ -11,7 +11,7 @@
 | | |
 |---|---|
 | **发布者** | bryce-qin |
-| **版本** | 2.24.0 |
+| **版本** | 2.25.0 |
 | **许可证** | MIT |
 | **仓库** | [GitHub](https://github.com/BryceQin/SQL-All-in-One) |
 | **VSCode 引擎** | ^1.85.0 |
@@ -815,13 +815,13 @@ MIT License
 | | |
 |---|---|
 | **Publisher** | bryce-qin |
-| **Version** | 2.23.0 |
+| **Version** | 2.25.0 |
 | **License** | MIT |
 | **Repository** | [GitHub](https://github.com/BryceQin/SQL-All-in-One) |
 | **VSCode Engine** | ^1.85.0 |
 | **Categories** | Formatters, Snippets, Other, Databases |
 
-### Supported SQL Dialects (8)
+### Supported SQL Dialects (12)
 
 | Language ID | Aliases | Extensions |
 |------------|---------|------------|
@@ -833,6 +833,10 @@ MIT License
 | `postgresql` | PostgreSQL, postgres | `.psql`, `.pgsql` |
 | `bigquery` | BigQuery | `.bqsql` |
 | `sqlite` | SQLite | `.sqlite`, `.sqlt` |
+| `starrocks` | StarRocks | `.starrocks` |
+| `sqlserver` | SQL Server, sqlserver | `.sqlserver` |
+| `plsql` | Oracle, PL/SQL, plsql | `.plsql`, `.oracle` |
+| `dameng` | Dameng, dm | `.dameng`, `.dm` |
 
 ---
 

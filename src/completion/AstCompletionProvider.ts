@@ -53,12 +53,18 @@ function findSmallestEnclosingNode(root: AstNode, pos: AstLocation): { node: Ast
     let bestSize = Infinity
 
     walkAst(root, {
-        enter(node, parent, key) {
+        enter(node, parent, key): boolean | void {
             if (!isAstNode(node)) return
             const astNode = node as AstNode
             const loc = getNodeLoc(astNode)
             if (!loc) return
-            if (!isPosInRange(pos, loc)) return
+            if (!isPosInRange(pos, loc)) {
+                // loc ranges are nested: if this node's loc does not contain
+                // pos, none of its descendants can either, so prune the
+                // subtree. Returning false tells walkAst to skip the node's
+                // children while still continuing with siblings.
+                return false
+            }
 
             const startOffset = loc.start.line * 100000 + loc.start.column
             const endOffset = loc.end.line * 100000 + loc.end.column

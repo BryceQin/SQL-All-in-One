@@ -91,7 +91,7 @@ export class SqlDiagnosticsProvider {
                     ? (Array.isArray(parseResult.ast) ? parseResult.ast : [parseResult.ast])
                     : []
 
-                const astDiagnostics = this.astDiagnosticsProvider.check(text, sqlDialect, astList)
+                const astDiagnostics = this.astDiagnosticsProvider.check(text, sqlDialect, astList, document)
                 diagnostics.push(...astDiagnostics)
 
                 if (token?.isCancellationRequested) {
@@ -99,7 +99,18 @@ export class SqlDiagnosticsProvider {
                 }
 
                 if (cfg.enableLinter) {
-                    const lintDiagnostics = this.linter.lint(text, document, astList)
+                    // Run lint rules via the async path, which periodically
+                    // yields to the event loop (setImmediate) so that linting
+                    // large SQL files does not block the extension host /
+                    // main thread. The cancellation token is passed through so
+                    // that an in-progress lint is aborted early when the user
+                    // keeps typing (debounce timer cancels the previous
+                    // CancellationTokenSource). Output is identical to the
+                    // synchronous `this.linter.lint(...)` call it replaces.
+                    const lintDiagnostics = await this.linter.lintAsync(text, document, astList, token)
+                    if (token?.isCancellationRequested) {
+                        return
+                    }
                     const filteredLintDiagnostics = this.filterBySeverity(lintDiagnostics, cfg)
                     diagnostics.push(...filteredLintDiagnostics)
                 }
@@ -195,6 +206,7 @@ export class SqlDiagnosticsProvider {
         }
         this.cancellationSources.clear()
         this.configChangeDisposable.dispose()
+        this.astDiagnosticsProvider.dispose()
         this.diagnosticCollection.dispose()
     }
 }

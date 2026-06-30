@@ -3,13 +3,15 @@ import { expandPhrases } from "../../formatter/expandPhrases"
 import { dataTypes, keywords } from "./dameng.keywords"
 import { functions } from "./dameng.functions"
 
-// 达梦数据库（DM）SQL dialect options.
-// 基于 Oracle 方言派生，保留 Oracle 兼容语法（CONNECT BY / ROWNUM / DUAL / || / := 等），
-// 增补达梦特有语法（SELECT TOP n、LIMIT 子句）。
-// 参考：
-// - Oracle SQL：https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/SQL-Statements.html
-// - 达梦 SQL 语言手册：https://eco.dameng.com/document/dm/zh-cn/sql-reference
-// 注意：达梦对 q'[...]' 替代引号机制支持有限，因此移除相关配置。
+// Dameng (DM) SQL dialect options.
+// Derived from the Oracle dialect, retaining Oracle-compatible syntax
+// (CONNECT BY / ROWNUM / DUAL / || / :=, etc.) and adding Dameng-specific
+// syntax (SELECT TOP n, LIMIT clause).
+// References:
+// - Oracle SQL: https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/SQL-Statements.html
+// - Dameng SQL Language Manual: https://eco.dameng.com/document/dm/zh-cn/sql-reference
+// Note: Dameng has limited support for the Oracle q'[...]' alternative quoting
+// mechanism, so the related configuration has been removed.
 
 const reservedSelect = expandPhrases(["SELECT [ALL | DISTINCT | UNIQUE] [TOP]"])
 
@@ -26,15 +28,15 @@ const reservedClauses = expandPhrases([
     "OFFSET",
     "FETCH FIRST",
     "FETCH NEXT",
-    // 达梦兼容 MySQL 模式时的 LIMIT 子句
+    // LIMIT clause (Dameng MySQL-compatibility mode)
     "LIMIT",
     "FOR UPDATE",
     "FOR UPDATE OF",
-    // Oracle hierarchical query clauses（达梦兼容）
+    // Oracle hierarchical query clauses (Dameng-compatible)
     "CONNECT BY",
     "CONNECT BY NOCYCLE",
     "START WITH",
-    // Oracle flashback query clauses（达梦兼容）
+    // Oracle flashback query clauses (Dameng-compatible)
     "AS OF",
     "VERSIONS BETWEEN",
     "VERSIONS BETWEEN TIMESTAMP",
@@ -85,7 +87,7 @@ const tabularOnelineClauses = expandPhrases([
     "ALTER [COLUMN]",
     // - truncate:
     "TRUNCATE [TABLE]",
-    // Oracle 兼容 DDL 与语句（达梦保留支持）
+    // Oracle-compatible DDL and statements (retained by Dameng)
     // https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/SQL-Statements.html
     "ALTER DATABASE",
     "ALTER INDEX",
@@ -204,13 +206,13 @@ const tabularOnelineClauses = expandPhrases([
     "SET TRANSACTION",
     "TRUNCATE TABLE",
     "TRUNCATE CLUSTER",
-    // PL/SQL blocks（达梦兼容）
+    // PL/SQL blocks (Dameng-compatible)
     "BEGIN",
     "DECLARE",
     "CALL",
     "EXECUTE",
     "EXECUTE IMMEDIATE",
-    // Oracle specific clauses（达梦兼容）
+    // Oracle specific clauses (Dameng-compatible)
     "CONNECT BY",
     "START WITH",
     "MODEL",
@@ -231,7 +233,7 @@ const tabularOnelineClauses = expandPhrases([
     "GROUPING SETS",
     "ROLLUP",
     "CUBE",
-    // 达梦特有：TOP 子句（达梦 8 支持 SELECT TOP n）
+    // Dameng-specific: TOP clause (Dameng 8 supports SELECT TOP n)
     "TOP",
 ])
 
@@ -280,20 +282,21 @@ export const dameng: DialectOptions = {
         reservedKeywords: keywords,
         reservedDataTypes: dataTypes,
         reservedFunctionNames: functions,
-        // 达梦字符串类型：
-        // - ''-qq-bs: 标准单引号字符串，支持 '' 和 \ 转义
-        // - N''-qq-bs: 国家字符集字符串（N 前缀）
-        // 注意：达梦对 Oracle 的 q'[...]' 替代引号机制支持有限，已移除相关配置。
+        // Dameng string types:
+        // - ''-qq-bs: standard single-quoted string, supports '' and \ escaping
+        // - N''-qq-bs: national character set string (N prefix)
+        // Note: Dameng has limited support for the Oracle q'[...]' alternative
+        // quoting mechanism, so the related configuration has been removed.
         stringTypes: [
             "''-qq-bs",
             { quote: "''-qq-bs", prefixes: ["N"], requirePrefix: false },
         ],
-        // 达梦标识符类型：
-        // - ""-qq: 双引号标识符（SQL 标准，达梦默认）
+        // Dameng identifier types:
+        // - ""-qq: double-quoted identifier (SQL standard, Dameng default)
         identTypes: ['""-qq'],
-        // 达梦变量：
-        // - :name: 绑定变量（例如 :1, :emp_id）
-        // - &name: 替换变量
+        // Dameng variables:
+        // - :name: bind variable (e.g. :1, :emp_id)
+        // - &name: substitution variable
         variableTypes: [
             { regex: ":[A-Za-z0-9_.$]+" },
             { regex: "&[A-Za-z0-9_.$]+" },
@@ -301,13 +304,13 @@ export const dameng: DialectOptions = {
         paramTypes: { named: [":"], positional: false },
         lineCommentTypes: ["--"],
         operators: [
-            "||", // 字符串拼接（Oracle 兼容）
-            ":=", // 赋值（PL/SQL 兼容）
-            "**", // 指数运算
-            "(+)", // 旧式外连接操作符
-            "..", // 范围操作符（PL/SQL）
-            "%", // 属性 / 取模
-            "@", // 数据库链接分隔符
+            "||", // string concatenation (Oracle-compatible)
+            ":=", // assignment (PL/SQL-compatible)
+            "**", // exponentiation
+            "(+)", // legacy outer-join operator
+            "..", // range operator (PL/SQL)
+            "%", // attribute / modulo
+            "@", // database link separator
         ],
     },
     formatOptions: {

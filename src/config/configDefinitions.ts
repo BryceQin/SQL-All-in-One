@@ -182,6 +182,24 @@ export const DATABASE_CONFIG_ITEMS: ConfigItemDefinition[] = [
 
 export const ALL_CONFIG_ITEMS: ConfigItemDefinition[] = [...FORMAT_CONFIG_ITEMS, ...FEATURE_CONFIG_ITEMS, ...DATABASE_CONFIG_ITEMS]
 
+/**
+ * Feature-level config keys that influence linter behavior (the master
+ * enable flag plus per-severity visibility toggles). Used by ConfigManager
+ * to build the linter config change-detection snapshot alongside the
+ * per-rule keys registered via {@link ConfigManager.registerLintKeys}.
+ *
+ * Kept here — next to the {@link FEATURE_CONFIG_ITEMS} definitions that
+ * declare these keys' types/defaults — so the "what keys matter for lint"
+ * truth lives in the config-definitions module rather than being hard-coded
+ * inside ConfigManager.
+ */
+export const LINT_CONFIG_KEYS: readonly string[] = Object.freeze([
+    'enableLinter',
+    'showErrorLevel',
+    'showWarningLevel',
+    'showInfoLevel',
+])
+
 export function getDefaultConfig(): Record<string, unknown> {
     const defaults: Record<string, unknown> = {}
 

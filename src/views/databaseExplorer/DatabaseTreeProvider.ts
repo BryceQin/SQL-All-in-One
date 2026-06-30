@@ -20,12 +20,36 @@ import {
     TriggerDetailTreeNode
 } from './treeNodes';
 import { ConnectionManager, getConnectionManager } from '../../database/connection/ConnectionManager';
-import { ConnectionConfig } from '../../database/adapters/IDatabaseAdapter';
+import {
+    ConnectionConfig,
+    IMetadataAdapter,
+    ISchemaAdapter,
+} from '../../database/adapters/IDatabaseAdapter';
 import { SchemaCache, getSchemaCache } from '../../database/schema/SchemaCache';
 import { getConfigManager } from '../../core/configManager';
 import { handleError, ErrorCategory } from '../../core/errorHandler';
 import { LRUCache } from '../../utils/lruCache';
+import { getSystemDatabases } from '../../utils/systemDatabases';
 import { t } from '../../i18n';
+
+/**
+ * Minimal adapter surface required by {@link DatabaseTreeProvider} to render
+ * the database explorer tree.
+ *
+ * The tree provider lists metadata (tables/views/functions/procedures/triggers
+ * via `IMetadataAdapter`) and drills into per-object detail using a small slice
+ * of `ISchemaAdapter` (`describeTable` for column/index info,
+ * `getRoutineParameters` for function/procedure parameters).
+ *
+ * `ConnectionManager.getAdapter()` still returns the full `IDatabaseAdapter`;
+ * since that implements every sub-interface, the returned value is assignable
+ * to this narrower type without any assertion. The alias is applied to the
+ * local `adapter` variables below so each handler declares — at the type
+ * level — that it only depends on metadata + a couple of schema-describe
+ * calls, not on connection management or query execution (ISP).
+ */
+type TreeProviderAdapter = IMetadataAdapter & Pick<ISchemaAdapter, 'describeTable' | 'getRoutineParameters'>;
+
 
 interface FavoriteItem {
     connectionId: string;
@@ -347,7 +371,7 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
         }
 
         try {
-            const adapter = this.connectionManager.getAdapter(parent.connectionId);
+            const adapter: TreeProviderAdapter | undefined = this.connectionManager.getAdapter(parent.connectionId);
             if (!adapter) {
                 return [];
             }
@@ -356,11 +380,12 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
             const config = this.connectionManager.getActiveConnection();
             const defaultDatabase = config?.database;
 
+            const dialect = this.resolveDialect(parent.connectionId, config);
             const showSystemDatabases = getConfigManager().get<boolean>('explorer.showSystemDatabases', false);
 
             const filteredDatabases = showSystemDatabases
                 ? databases
-                : databases.filter(db => !this.isSystemDatabase(db.name));
+                : databases.filter(db => !this.isSystemDatabase(db.name, dialect));
 
             const children = filteredDatabases.map(db => 
                 new DatabaseTreeNode(
@@ -379,9 +404,22 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
         }
     }
 
-    private isSystemDatabase(name: string): boolean {
-        const systemDatabases = ['information_schema', 'mysql', 'performance_schema', 'sys', 'pg_catalog'];
+    private isSystemDatabase(name: string, dialect: string): boolean {
+        const systemDatabases = getSystemDatabases(dialect);
         return systemDatabases.some(sys => name.toLowerCase() === sys.toLowerCase());
+    }
+
+    /**
+     * Resolve the SQL dialect for the connection being expanded.
+     *
+     * Prefers the config matching `connectionId` (which may differ from the active
+     * connection when multiple connections are expanded in the tree). Falls back
+     * to the active connection's dialect, then to an empty string which causes
+     * `getSystemDatabases` to return its backwards-compatible default list.
+     */
+    private resolveDialect(connectionId: string, activeConfig?: ConnectionConfig): string {
+        const connConfig = this.connectionManager.getAllConnections().find(c => c.id === connectionId);
+        return connConfig?.dialect ?? activeConfig?.dialect ?? '';
     }
 
     private async getDatabaseChildren(parent: DatabaseTreeNode): Promise<ITreeNode[]> {
@@ -392,7 +430,7 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
         }
 
         try {
-            const adapter = this.connectionManager.getAdapter(parent.connectionId);
+            const adapter: TreeProviderAdapter | undefined = this.connectionManager.getAdapter(parent.connectionId);
             if (!adapter) {
                 return [];
             }
@@ -431,7 +469,7 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
         }
 
         try {
-            const adapter = this.connectionManager.getAdapter(parent.connectionId);
+            const adapter: TreeProviderAdapter | undefined = this.connectionManager.getAdapter(parent.connectionId);
             if (!adapter) {
                 return [];
             }
@@ -526,7 +564,7 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
         }
 
         try {
-            const adapter = this.connectionManager.getAdapter(parent.connectionId);
+            const adapter: TreeProviderAdapter | undefined = this.connectionManager.getAdapter(parent.connectionId);
             if (!adapter) {
                 return [];
             }
@@ -579,7 +617,7 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
         }
 
         try {
-            const adapter = this.connectionManager.getAdapter(parent.connectionId);
+            const adapter: TreeProviderAdapter | undefined = this.connectionManager.getAdapter(parent.connectionId);
             if (!adapter) {
                 return [];
             }
@@ -621,7 +659,7 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
         }
 
         try {
-            const adapter = this.connectionManager.getAdapter(parent.connectionId);
+            const adapter: TreeProviderAdapter | undefined = this.connectionManager.getAdapter(parent.connectionId);
             if (!adapter) {
                 return [];
             }
@@ -654,7 +692,7 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
         }
 
         try {
-            const adapter = this.connectionManager.getAdapter(parent.connectionId);
+            const adapter: TreeProviderAdapter | undefined = this.connectionManager.getAdapter(parent.connectionId);
             if (!adapter) {
                 return [];
             }

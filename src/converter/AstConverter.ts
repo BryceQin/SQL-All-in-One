@@ -21,7 +21,10 @@ class AstConverter {
             throw new Error('Conversion failed')
         }
 
-        const ast = getParserEngine().astify(sql, fromDialect)
+        // Reuse the AST produced by DialectConverter.convert when available;
+        // only re-parse when convert did not surface one (e.g. same-dialect
+        // short-circuit or fallback path).
+        const ast = result.ast ?? getParserEngine().astify(sql, fromDialect)
         const astArray = Array.isArray(ast) ? ast : [ast]
         const hasCreateTable = astArray.some((node) => this.isCreateTableNode(node))
         if (!hasCreateTable) {
@@ -36,8 +39,10 @@ class AstConverter {
         if (!result.success) {
             return result
         }
-        const astArray = getParserEngine().astify(sql, fromDialect)
-        const nodes = Array.isArray(astArray) ? astArray : [astArray]
+        // Reuse the AST produced by DialectConverter.convert when available;
+        // only re-parse when convert did not surface one.
+        const ast = result.ast ?? getParserEngine().astify(sql, fromDialect)
+        const nodes = Array.isArray(ast) ? ast : [ast]
         const hasCreateTable = nodes.some((node) => this.isCreateTableNode(node))
         if (!hasCreateTable) {
             return {

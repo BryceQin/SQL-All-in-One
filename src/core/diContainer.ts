@@ -71,12 +71,22 @@ export class DIContainer {
     private creating = new Set<string>();
     private dependencyMap = new Map<string, string[]>();
 
-    register<T>(token: string, service: T): void {
+    register<T>(token: string, service: T, dependencies?: string[]): void {
         this.services.set(token, service);
+        if (dependencies && dependencies.length > 0) {
+            this.dependencyMap.set(token, dependencies);
+        } else {
+            this.dependencyMap.delete(token);
+        }
     }
 
-    registerFactory<T>(token: string, factory: () => T): void {
+    registerFactory<T>(token: string, factory: () => T, dependencies?: string[]): void {
         this.factories.set(token, factory);
+        if (dependencies && dependencies.length > 0) {
+            this.dependencyMap.set(token, dependencies);
+        } else {
+            this.dependencyMap.delete(token);
+        }
     }
 
     registerSingleton<T>(token: string, factory: () => T, dependencies?: string[]): void {

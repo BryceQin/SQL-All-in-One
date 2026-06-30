@@ -2,6 +2,7 @@ import type { ConnectionConfig, TestConnectionResult } from './IDatabaseAdapter'
 import type { Pool, PoolParameters } from 'odbc';
 import type { DamengSharedContext } from './DamengSharedContext';
 import { t } from '../../i18n/index';
+import { BaseConnectionAdapter } from './BaseConnectionAdapter';
 
 /**
  * Dameng (DM8) connection pool operations.
@@ -17,8 +18,10 @@ import { t } from '../../i18n/index';
  * Used internally by DamengAdapter; common lifecycle logic lives in
  * BaseDatabaseAdapter.
  */
-export class DamengConnectionAdapter {
-    constructor(private shared: DamengSharedContext) {}
+export class DamengConnectionAdapter extends BaseConnectionAdapter {
+    constructor(private shared: DamengSharedContext) {
+        super();
+    }
 
     async connect(config: ConnectionConfig): Promise<void> {
         const poolParams = this.createPoolParameters(config);
@@ -158,12 +161,31 @@ export class DamengConnectionAdapter {
      * This method is a no-op, retained for API compatibility with other
      * adapters.
      */
-    async reapIdleConnections(): Promise<void> {
+    override async reapIdleConnections(): Promise<void> {
         if (!this.shared.pool) return;
         this.shared.lastActivityTime = Date.now();
     }
 
-    formatConnectionError(error: unknown, config: ConnectionConfig): Error {
+    /**
+     * Surfaces the ODBC SQLSTATE (or a `DM-XXXX` tag derived from the ODBC
+     * error code when no SQLSTATE is present) so that
+     * {@link BaseConnectionAdapter.formatConnectionError} can prepend it to
+     * the raw error message when no localised mapping applied. This replaces
+     * the previous per-dialect `formatConnectionError` override, which only
+     * prepended the same tag and otherwise delegated to the base class.
+     */
+    protected override extractErrorCodeTag(error: unknown): string | null {
+        const odbcErrors = (error as { odbcErrors?: Array<{ code?: number; state?: string; message?: string }> })?.odbcErrors ?? [];
+        const firstError = odbcErrors[0];
+        const state = firstError?.state ?? '';
+        if (state) {
+            return state;
+        }
+        const codeStr = firstError?.code !== undefined ? String(firstError.code) : '';
+        return codeStr ? `DM-${codeStr}` : null;
+    }
+
+    protected override formatDriverSpecificError(error: unknown, config: ConnectionConfig): Error | undefined {
         const msg = error instanceof Error ? error.message : String(error);
         const hostPort = `${config.host}:${config.port}`;
 
@@ -200,32 +222,10 @@ export class DamengConnectionAdapter {
         if (msg.includes('connection was closed') || msg.includes('connection lost')) {
             return new Error(t('database.connectionLost', hostPort));
         }
-        if (msg.includes('self signed certificate') || msg.includes('certificate') || msg.includes('SSL')) {
-            return new Error(t('database.sslError', hostPort));
-        }
 
-        // Common network errors (same patterns as BaseDatabaseAdapter).
-        if (msg.includes('ECONNREFUSED')) {
-            return new Error(t('database.connectionRefused', hostPort));
-        }
-        if (msg.includes('ETIMEDOUT') || msg.includes('connectTimeout')) {
-            return new Error(t('database.connectionTimedOut', hostPort));
-        }
-        if (msg.includes('EHOSTUNREACH')) {
-            return new Error(t('database.hostUnreachable', hostPort));
-        }
-        if (msg.includes('ENOTFOUND')) {
-            return new Error(t('database.hostNotFound', config.host));
-        }
-
-        // Preserve the ODBC SQLSTATE / code in the message when available so
-        // callers can surface dialect-specific diagnostics.
-        const codeTag = state || (codeStr ? `DM-${codeStr}` : '');
-        if (codeTag && !msg.includes(codeTag)) {
-            return new Error(`${codeTag}: ${msg}`);
-        }
-
-        return error instanceof Error ? error : new Error(msg);
+        // SSL/certificate and common network errors are handled by the base
+        // class (BaseConnectionAdapter).
+        return undefined;
     }
 
     /**
