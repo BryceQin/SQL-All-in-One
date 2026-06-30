@@ -1,5 +1,6 @@
 import type { TransformContext, AstNodeTransformer } from '../AstTransformEngine'
-import { MYSQL_TO_HIVE_TYPES, HIVE_TO_MYSQL_TYPES, HIVE_COMPLEX_TYPES } from '../typeMappings'
+import type { TypeMapping } from '../typeMappings'
+import { conversionRules } from '../conversionRules'
 
 interface DefinitionNode {
     dataType?: string
@@ -39,12 +40,8 @@ export class TypeTransformer implements AstNodeTransformer {
             return
         }
 
-        let mapping: Record<string, string>
-        if (ctx.from === 'mysql' && ctx.to === 'hive') {
-            mapping = MYSQL_TO_HIVE_TYPES
-        } else if (ctx.from === 'hive' && ctx.to === 'mysql') {
-            mapping = HIVE_TO_MYSQL_TYPES
-        } else {
+        const mapping = conversionRules.get<TypeMapping>(ctx.from, ctx.to, 'types')
+        if (!mapping) {
             return
         }
 
@@ -53,8 +50,12 @@ export class TypeTransformer implements AstNodeTransformer {
             return
         }
 
-        if (ctx.to === 'mysql' && HIVE_COMPLEX_TYPES.has(upperType)) {
-            ctx.warnings.push(`Complex type ${upperType} mapped to JSON, manual adjustment may be needed`)
+        // The complex-type warning is direction-specific (hive -> mysql).
+        if (ctx.to === 'mysql') {
+            const complexTypes = conversionRules.get<Set<string>>('hive', 'mysql', 'complexTypes')
+            if (complexTypes?.has(upperType)) {
+                ctx.warnings.push(`Complex type ${upperType} mapped to JSON, manual adjustment may be needed`)
+            }
         }
 
         applyMappedType(def, mappedType)

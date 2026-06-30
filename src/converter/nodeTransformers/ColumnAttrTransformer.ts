@@ -1,4 +1,5 @@
 import type { TransformContext, AstNodeTransformer } from '../AstTransformEngine'
+import { conversionRules } from '../conversionRules'
 
 interface ColumnDefNode {
     resource?: string
@@ -29,7 +30,7 @@ export class ColumnAttrTransformer implements AstNodeTransformer {
     }
 
     transform(node: Record<string, unknown>, _parent: Record<string, unknown> | null, _key: string | null, ctx: TransformContext): void {
-        if (ctx.to !== 'hive') {
+        if (!conversionRules.get(ctx.from, ctx.to, 'columnAttrs')) {
             return
         }
 

@@ -1,5 +1,6 @@
 import type { TransformContext, AstNodeTransformer } from '../AstTransformEngine'
-import { MYSQL_TO_HIVE_FUNCTION_NAMES, HIVE_TO_MYSQL_FUNCTION_NAMES } from '../functionMappings'
+import type { AstFunctionNameMapping } from '../functionMappings'
+import { conversionRules } from '../conversionRules'
 
 interface FunctionNameContainer {
     name?: { name?: { type: string; value: string }[] }
@@ -77,24 +78,23 @@ export class FunctionTransformer implements AstNodeTransformer {
         }
         const upperName = funcName.toUpperCase()
 
+        // Structural rewrite that only applies to mysql -> hive. This is
+        // intentionally kept hard-coded because it is not a simple name
+        // mapping: it rebuilds the node into a CASE/WHEN structure.
         if (ctx.from === 'mysql' && ctx.to === 'hive') {
             if (upperName === 'IF') {
                 rebuildAsCaseWhen(node, ctx)
                 return
             }
-            const mapping = MYSQL_TO_HIVE_FUNCTION_NAMES.find((m) => m.from === upperName)
-            if (mapping && mapping.from !== mapping.to) {
-                setFunctionName(node, mapping.to)
-            }
-            return
         }
 
-        if (ctx.from === 'hive' && ctx.to === 'mysql') {
-            const mapping = HIVE_TO_MYSQL_FUNCTION_NAMES.find((m) => m.from === upperName)
-            if (mapping && mapping.from !== mapping.to) {
-                setFunctionName(node, mapping.to)
-            }
+        const mappings = conversionRules.get<AstFunctionNameMapping[]>(ctx.from, ctx.to, 'functionNames')
+        if (!mappings) {
             return
+        }
+        const mapping = mappings.find((m) => m.from === upperName)
+        if (mapping && mapping.from !== mapping.to) {
+            setFunctionName(node, mapping.to)
         }
     }
 }

@@ -1,4 +1,5 @@
 import type { TransformContext, AstNodeTransformer } from '../AstTransformEngine'
+import { conversionRules } from '../conversionRules'
 
 const HIVE_CLAUSE_FIELDS = ['distributeby', 'sortby', 'clusterby'] as const
 
@@ -8,7 +9,7 @@ export class ClauseTransformer implements AstNodeTransformer {
     }
 
     transform(node: Record<string, unknown>, _parent: Record<string, unknown> | null, _key: string | null, ctx: TransformContext): void {
-        if (ctx.from !== 'hive' || ctx.to !== 'mysql') {
+        if (!conversionRules.get(ctx.from, ctx.to, 'clauses')) {
             return
         }
 

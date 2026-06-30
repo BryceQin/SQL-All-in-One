@@ -1,38 +1,5 @@
 import type { TransformContext, AstNodeTransformer } from '../AstTransformEngine'
-
-const HIVE_UNSUPPORTED_TABLE_OPTIONS = new Set([
-    'ENGINE',
-    'AUTO_INCREMENT',
-    'DEFAULT CHARSET',
-    'CHARSET',
-    'COLLATE',
-    'ROW_FORMAT',
-    'AVG_ROW_LENGTH',
-    'MAX_ROWS',
-    'MIN_ROWS',
-    'PACK_KEYS',
-    'CHECKSUM',
-    'DELAY_KEY_WRITE',
-    'INSERT_METHOD',
-    'DATA DIRECTORY',
-    'INDEX DIRECTORY',
-    'STATS_PERSISTENT',
-    'STATS_AUTO_RECALC',
-    'STATS_SAMPLE_PAGES',
-    'TABLESPACE',
-    'CONNECTION',
-])
-
-const MYSQL_UNSUPPORTED_TABLE_OPTIONS = new Set([
-    'STORED AS',
-    'LOCATION',
-    'TBLPROPERTIES',
-    'ROW FORMAT',
-    'SERDE',
-    'SERDEPROPERTIES',
-    'INPUTFORMAT',
-    'OUTPUTFORMAT',
-])
+import { conversionRules } from '../conversionRules'
 
 function getOptionKeyword(option: unknown): string | null {
     if (typeof option === 'object' && option !== null && 'keyword' in option) {
@@ -65,12 +32,7 @@ export class TableOptionTransformer implements AstNodeTransformer {
             return
         }
 
-        const unsupported = ctx.to === 'hive'
-            ? HIVE_UNSUPPORTED_TABLE_OPTIONS
-            : ctx.to === 'mysql'
-                ? MYSQL_UNSUPPORTED_TABLE_OPTIONS
-                : null
-
+        const unsupported = conversionRules.get<Set<string>>(ctx.from, ctx.to, 'unsupportedTableOptions')
         if (!unsupported || unsupported.size === 0) {
             return
         }

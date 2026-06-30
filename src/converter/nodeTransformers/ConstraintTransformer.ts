@@ -1,4 +1,5 @@
 import type { TransformContext, AstNodeTransformer } from '../AstTransformEngine'
+import { conversionRules } from '../conversionRules'
 
 export class ConstraintTransformer implements AstNodeTransformer {
     matches(_node: Record<string, unknown>, parent: Record<string, unknown> | null, key: string | null): boolean {
@@ -14,7 +15,7 @@ export class ConstraintTransformer implements AstNodeTransformer {
             return
         }
 
-        if (ctx.to !== 'hive') {
+        if (!conversionRules.get(ctx.from, ctx.to, 'constraints')) {
             return
         }
 
