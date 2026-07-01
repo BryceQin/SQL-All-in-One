@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.26.4] - 2026-07-01
+
+### Bug Fixes
+
+- **Hive 方言格式化将 `source` 标识符误判为 `SOURCE` 命令导致输出爆炸（P0）**：`HiveSqlAdapter.extractWholeStatements` 中的 `SOURCE` 命令匹配模式 `/\bSOURCE\b/gi` 不区分大小写且未锚定语句起始位置，会匹配 SQL 中作为普通标识符的 `source`（如 `SELECT source`、`GROUP BY source`、`source IN (...)`）。每次匹配后 `findStatementEnd` 贪婪吞掉剩余语句并作为 `__stmt_N__` 插槽保存，`restoreWholeStatements` 再把所有重叠插槽还原，导致文本重复拼接。用户提供的含 `source` 列名的 SQL 在 Hive 方言下格式化后从 26 行膨胀到 587 行（多次格式化可达 1000 行）。修复：将模式改为 `/(?:^|;|\n)\s*SOURCE\s+/gi`，要求 `SOURCE` 出现在语句起始位置且后接文件路径参数，不再误匹配列名/别名
+- **v2.26.3 修复的 BETWEEN/IN 缺陷在不同方言下的残留影响**：v2.26.3 已修复 `BETWEEN` 丢失 `AND`、`IN` 丢失括号导致反复格式化行数循环增长的问题，本次验证确认 mysql/sql/postgresql/hive/spark 五种方言反复格式化 10 轮均稳定（hive 23 行，其余 23-26 行）
+
+---
+
 ## [2.26.3] - 2026-07-01
 
 ### Bug Fixes

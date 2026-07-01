@@ -92,7 +92,14 @@ function extractWholeStatements(sql: string, slots: ReplacementSlot[], counter: 
         /\bCOMPILE\b/gi,
         /\bRESET\b/gi,
         /\bDFS\b/gi,
-        /\bSOURCE\b/gi,
+        // SOURCE <file> executes a script file in Hive CLI; it must be at the
+        // start of a statement and followed by a file path (quoted or bare).
+        // Anchoring with (^|;|\n) prevents matching `source` as an ordinary
+        // identifier (e.g. a column alias in `SELECT source` or
+        // `GROUP BY source`), which previously caused the whole remaining
+        // statement to be swallowed as a __stmt_ slot and duplicated on
+        // restore, exploding the output to hundreds of lines.
+        /(?:^|;|\n)\s*SOURCE\s+/gi,
         /\bKILL\s+QUERY\b/gi,
     ]
 
