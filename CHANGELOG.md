@@ -1,5 +1,49 @@
 # Changelog
 
+## [2.26.0] - 2026-07-01
+
+### Refactor
+
+- **大规模代码重构**：完成自 v2.25.0 以来的架构级重构，覆盖方言聚合层、关键字/悬停模块、AST 转换器、视图依赖注入等多个方向，合计 18+ 文件变更（225 insertions, 182 deletions）
+  - **方言聚合层迁移**：将 `src/languages/` 聚合文件统一迁移至 `src/dialects/`，删除 `src/languages/` 目录；per-dialect 文件迁移至 `src/dialects/`（保留 re-export shim 兼容）；`keywords/` 与 `hover` 子目录合并到 `src/dialects/keywords/`
+  - **AST 类型单一真相源**：合并 `astTypes.extended.ts` 到 `astTypes.ts`，消除 9 个同名 interface 字段定义不一致的隐蔽 bug 来源
+  - **转换规则数据驱动化**：引入 `ConversionRuleRegistry`，移除硬编码的方言转换对分支；数据驱动剩余 2 个硬编码 transformer 分支
+  - **TreeNode 类型标签分发**：`database` 层 `TreeNode` 用 type-tag dispatch 替代 `instanceof` 检查
+  - **方言数据补全**：补全 starrocks/sqlserver/oracle/dameng 4 个方言到 `dialectData`
+  - **MySQL/StarRocks Adapter 泛型化**：`MysqlConnectionAdapter`/`MysqlMetadataAdapter` 改为泛型，`StarrocksConnectionAdapter`/`StarrocksMetadataAdapter` 改为继承覆写钩子；新增 `BaseSharedContext` 抽象基类消除约 150 行重复 getter/setter
+  - **languages formatter 共享抽象**：新增 `mysqlProtocolBase.ts` 抽取 MySQL 协议族共享常量，`mysql.formatter.ts` 314→60 行，`starrocks.formatter.ts` 325→89 行
+  - **Webview 共享样式**：新增 `media/shared.css` 与 `shared.js`，6 个 CSS 文件合计减少 330 行重复
+  - **视图依赖注入显式化**：`LanguageBridge`、`QueryResultPanel`、`ConnectionDialog`、`DataTransferDialog`、`ExplainPlanPanel`、`TableDesignerPanel` 等面板从 DI 容器隐式 `tryGet` 改为构造函数显式注入 `SchemaProvider`/`SqlHoverProvider`/`SqlCompletionProvider`，消除服务定位反模式，提升可测试性
+  - **超长函数拆分**：`MysqlSchemaAdapter.parseExplainNodes` 77→11 行；`MysqlQueryAdapter.execute` 105→13 行；`executeStream` 168→93 行
+  - **Oracle/Dameng 错误处理去重**：`BaseConnectionAdapter` 新增 `extractErrorCodeTag` 模板方法，删除重复的 `formatConnectionError` 覆写
+
+### Performance
+
+- **`node-sql-parser` 懒加载**：将 `import { Parser }` 改为类型导入，`getParser()` 中 `require()` 延迟加载，扩展激活时不再加载 ~5MB 解析器模块，激活时间减少 50-200ms
+- **`ssh2` 原生模块懒加载**：`SshTunnel.open()` 改为 `await import('ssh2')` 动态加载，不使用 SSH 隧道的用户零开销
+- **行/列查找 O(n) → O(log n)**：`lineColFromIndex` 用预计算行起始偏移 + 二分查找替代线性扫描，5000 行 SQL 查找加速 1178-5797x
+- **嵌套注释扫描批处理**：`NestedComment` 用 `indexOf` 批处理替代逐字符正则匹配，扁平场景加速 140x，嵌套场景加速 8.4x
+- **Token 双重分配消除**：`TokenizerEngine.tokenize()` 不再创建新对象复制 `match()` 结果，10000 Token 减少 10000 次对象分配
+- **FormatterFactory 实例复用**：通过 `FormatterFactory` 缓存 `SelectFormatter`/`InsertFormatter`/`DDLFormatter` 实例（带 `inUse` 标记防递归冲突），消除嵌套子查询/CTE/集合操作的 O(n) 实例分配
+- **`splitSqlStatements` 字符串分配优化**：用 `hasSqlContent()` 字符扫描替代 `stmt.replace(/;/g, '').trim()`，每分号减少 2 次中间字符串分配
+- **`expandPhrases.parseTerm` charCode 优化**：用 `charCodeAt` 范围判断替代逐字符正则，加速 4.36x
+- **`ExplicitColumnAliasingRule` 复杂度优化**：`sql.split('\n')` 从列循环内移到循环外，复杂度 O(C×n) → O(n)
+- **`SchemaCache` LRU 最近性修复**：`cachedFetch` 从 `peek()` 改为 `get()`，活跃 schema 条目更新 LRU 位置，提高缓存命中率
+- **连接池破坏性回收修复**：`MysqlConnectionAdapter.reapIdleConnections()` 不再调用 `pool.end()`（销毁所有连接含活跃的），改为 no-op，消除回收周期中的查询中断
+- **`retainContextWhenHidden` 按面板配置**：仅 `QueryResultPanel` 保留 `true`，其他面板默认 `false`，隐藏面板不再保留 JS 状态，减少内存占用
+- **`.vscodeignore` 排除项优化**：新增排除 `scripts/**`、`.github/**`、`CHANGELOG.md`、`CONTRIBUTING.md`，减少 VSIX 安装包开发 artifacts
+
+### Tests
+
+- **测试覆盖扩充**：新增测试用例，总数达 **1828 项全部通过**（17s），含 4 套独立性能基准测试套件
+- **新增综合评估报告**：`docs/refactor-evaluation-report.md` 量化重构前后功能一致性与性能影响
+
+### Bundle
+
+- **打包体积缩减 79%**：`out/extension.js` 从 4.5 MB 缩减至 **972 KB**（主要来自 `node-sql-parser`/`ssh2` 懒加载与 `.vscodeignore` 优化）
+
+---
+
 ## [2.25.0] - 2026-06-29
 
 ### Performance

@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
 import { DatabaseTreeProvider } from './DatabaseTreeProvider';
+import { getContainer, Tokens } from '../../core/diContainer';
+import type { IConnectionService, ISchemaService } from '../../application/ports';
 
 /**
  * Module-level handle to the singleton DatabaseTreeProvider + TreeView created
@@ -40,7 +42,12 @@ export function registerTreeProviderCommands(context: vscode.ExtensionContext): 
             if (treeProvider) {
                 return treeProvider;
             }
-            treeProvider = new DatabaseTreeProvider(context);
+            const container = getContainer();
+            treeProvider = new DatabaseTreeProvider(
+                context,
+                container.get<IConnectionService>(Tokens.ConnectionService),
+                container.get<ISchemaService>(Tokens.SchemaService),
+            );
             treeView = vscode.window.createTreeView('hive-formatter.databaseExplorer', {
                 treeDataProvider: treeProvider,
                 showCollapseAll: true,

@@ -39,5 +39,6 @@ out/utils/**
 out/test/**
 scripts/**
 .github/**
+.trae/**
 CONTRIBUTING.md
 

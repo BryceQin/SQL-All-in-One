@@ -6,7 +6,9 @@ import { getLanguage, t } from '../../i18n';
 import { LanguageBridge } from './LanguageBridge';
 import type { IConnectionService, IDataTransferService } from '../../application/ports';
 import type { IQueryResultPanel } from '../../application/QueryResultController';
-import { getContainer, Tokens } from '../../core/diContainer';
+import type { SchemaProvider } from '../../database/schema/SchemaProvider';
+import type { SqlHoverProvider } from '../../providers/SqlHoverProvider';
+import type { SqlCompletionProvider } from '../../completion/SqlCompletionProvider';
 import { getTokenColors } from '../../utils/themeColors';
 import { handleError, ErrorCategory } from '../../core/errorHandler';
 // Types are imported from the shared type layer so that neither the
@@ -88,8 +90,11 @@ export class QueryResultPanel extends BaseWebviewPanel implements IQueryResultPa
     public static createOrShow(
         extensionUri: vscode.Uri,
         _context: vscode.ExtensionContext,
-        connectionService?: IConnectionService,
-        dataTransferService?: IDataTransferService,
+        connectionService: IConnectionService,
+        dataTransferService: IDataTransferService,
+        schemaProvider: SchemaProvider,
+        hoverProvider: SqlHoverProvider,
+        completionProvider: SqlCompletionProvider,
     ): QueryResultPanel {
         const column = vscode.window.activeTextEditor
             ? vscode.window.activeTextEditor.viewColumn
@@ -108,7 +113,15 @@ export class QueryResultPanel extends BaseWebviewPanel implements IQueryResultPa
             { viewColumn: column ? column + 1 : vscode.ViewColumn.Two }
         );
 
-        const instance = new QueryResultPanel(panel, extensionUri, connectionService, dataTransferService);
+        const instance = new QueryResultPanel(
+            panel,
+            extensionUri,
+            connectionService,
+            dataTransferService,
+            schemaProvider,
+            hoverProvider,
+            completionProvider,
+        );
         BaseWebviewPanel.registerInstance(instance);
         return instance;
     }
@@ -116,19 +129,21 @@ export class QueryResultPanel extends BaseWebviewPanel implements IQueryResultPa
     private constructor(
         panel: vscode.WebviewPanel,
         extensionUri: vscode.Uri,
-        connectionService?: IConnectionService,
-        dataTransferService?: IDataTransferService,
+        connectionService: IConnectionService,
+        dataTransferService: IDataTransferService,
+        schemaProvider: SchemaProvider,
+        hoverProvider: SqlHoverProvider,
+        completionProvider: SqlCompletionProvider,
     ) {
         super(panel, extensionUri);
-        // Resolve port services from the DI container (core layer) when the
-        // caller did not inject them explicitly. This keeps the
-        // `createOrShow` signature backward-compatible with callers that
-        // have not yet been migrated to pass ports (Task 7 will wire the
-        // ports at the call sites).
-        const container = getContainer();
-        this._connectionService = connectionService ?? container.get(Tokens.ConnectionService);
-        this._dataTransferService = dataTransferService ?? container.get(Tokens.DataTransferService);
-        this._languageBridge = new LanguageBridge(extensionUri);
+        this._connectionService = connectionService;
+        this._dataTransferService = dataTransferService;
+        this._languageBridge = new LanguageBridge(
+            extensionUri,
+            schemaProvider,
+            hoverProvider,
+            completionProvider,
+        );
         this._initialize();
     }
 

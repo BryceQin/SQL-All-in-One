@@ -60,6 +60,14 @@ export class ConnectionDialog extends BaseWebviewPanel {
             return undefined;
         }
 
+        // Resolve port services from the DI container at the call site when
+        // the caller did not inject them explicitly; the constructor itself
+        // is free of any service-locator calls.
+        const container = getContainer();
+        const connectionService = options.connectionService ?? container.get(Tokens.ConnectionService);
+        const connectionStore = options.connectionStore ?? container.get(Tokens.ConnectionStore);
+        const dialectMetadataProvider = options.dialectMetadataProvider ?? container.get(Tokens.DialectMetadataProvider);
+
         const panel = BaseWebviewPanel.createWebviewPanel(
             ConnectionDialog.viewType,
             options.mode === 'create' ? t('connDialog.newConnection') : t('connDialog.editConnection'),
@@ -71,9 +79,9 @@ export class ConnectionDialog extends BaseWebviewPanel {
             panel,
             extensionUri,
             options.treeProvider,
-            options.connectionService,
-            options.connectionStore,
-            options.dialectMetadataProvider,
+            connectionService,
+            connectionStore,
+            dialectMetadataProvider,
         );
         BaseWebviewPanel.registerInstance(dialog);
 
@@ -91,20 +99,16 @@ export class ConnectionDialog extends BaseWebviewPanel {
     private constructor(
         panel: vscode.WebviewPanel,
         extensionUri: vscode.Uri,
-        treeProvider?: DatabaseTreeProvider,
-        connectionService?: IConnectionService,
-        connectionStore?: IConnectionStore,
-        dialectMetadataProvider?: IDialectMetadataProvider,
+        treeProvider: DatabaseTreeProvider | undefined,
+        connectionService: IConnectionService,
+        connectionStore: IConnectionStore,
+        dialectMetadataProvider: IDialectMetadataProvider,
     ) {
         super(panel, extensionUri);
         this._treeProvider = treeProvider;
-        // Resolve port services from the DI container (core layer) when the
-        // caller did not inject them explicitly. Task 7 will wire the ports
-        // at the call site.
-        const container = getContainer();
-        this._connectionService = connectionService ?? container.get(Tokens.ConnectionService);
-        this._connectionStore = connectionStore ?? container.get(Tokens.ConnectionStore);
-        this._dialectMetadataProvider = dialectMetadataProvider ?? container.get(Tokens.DialectMetadataProvider);
+        this._connectionService = connectionService;
+        this._connectionStore = connectionStore;
+        this._dialectMetadataProvider = dialectMetadataProvider;
     }
 
     private async _initializeWithConfig(config: ConnectionDialogConfig): Promise<void> {

@@ -7,6 +7,21 @@ import { ColumnMeta, QueryResult, QueryError } from '../database/adapters/IDatab
 import { InMemoryDocument } from '../views/queryResult/InMemoryDocument';
 import { MonacoDataAdapter } from '../views/queryResult/MonacoDataAdapter';
 import { LanguageBridge } from '../views/queryResult/LanguageBridge';
+import { getContainer, Tokens } from '../core/diContainer';
+import type { SchemaProvider } from '../database/schema/SchemaProvider';
+import type { SqlHoverProvider } from '../providers/SqlHoverProvider';
+import type { SqlCompletionProvider } from '../completion/SqlCompletionProvider';
+
+/** Build a LanguageBridge with its dependencies resolved from the test DI container. */
+function createTestLanguageBridge(extensionUri: vscode.Uri): LanguageBridge {
+    const container = getContainer();
+    return new LanguageBridge(
+        extensionUri,
+        container.get<SchemaProvider>(Tokens.SchemaProvider),
+        container.get<SqlHoverProvider>(Tokens.HoverProvider),
+        container.get<SqlCompletionProvider>(Tokens.CompletionProvider),
+    );
+}
 
 type CellValue = string | number | boolean | null | undefined | Date | Buffer;
 type DataRow = Record<string, CellValue>;
@@ -1863,7 +1878,7 @@ suite('LanguageBridge', () => {
     });
 
     test('exportLanguageData returns keywords, dataTypes, functions, snippets for dialect', () => {
-        const bridge = new LanguageBridge(extensionUri);
+        const bridge = createTestLanguageBridge(extensionUri);
         const data = bridge.exportLanguageData('mysql');
         assert.ok(data.keywords.length > 0, 'should have keywords');
         assert.ok(data.dataTypes.length > 0, 'should have data types');
@@ -1873,7 +1888,7 @@ suite('LanguageBridge', () => {
     });
 
     test('exportLanguageData returns keywords and dataTypes', () => {
-        const bridge = new LanguageBridge(extensionUri);
+        const bridge = createTestLanguageBridge(extensionUri);
         const data = bridge.exportLanguageData('mysql');
         assert.ok(data.keywords.length > 0, 'should have keywords');
         assert.ok(data.dataTypes.length > 0, 'should have data types');
@@ -1883,28 +1898,28 @@ suite('LanguageBridge', () => {
     });
 
     test('handleFormatRequest formats SQL', async () => {
-        const bridge = new LanguageBridge(extensionUri);
+        const bridge = createTestLanguageBridge(extensionUri);
         const result = await bridge.handleFormatRequest('select * from users', 'mysql');
         assert.ok(result.length > 0, 'formatted result should not be empty');
         bridge.dispose();
     });
 
     test('handleDiagnosticsRequest returns diagnostics', async () => {
-        const bridge = new LanguageBridge(extensionUri);
+        const bridge = createTestLanguageBridge(extensionUri);
         const result = await bridge.handleDiagnosticsRequest('SELECT * FROM users', 'mysql');
         assert.ok(Array.isArray(result), 'should return array');
         bridge.dispose();
     });
 
     test('diagnostics for empty SQL returns empty', async () => {
-        const bridge = new LanguageBridge(extensionUri);
+        const bridge = createTestLanguageBridge(extensionUri);
         const result = await bridge.handleDiagnosticsRequest('', 'mysql');
         assert.ok(Array.isArray(result), 'should return array');
         bridge.dispose();
     });
 
     test('hover returns null for unknown word', async () => {
-        const bridge = new LanguageBridge(extensionUri);
+        const bridge = createTestLanguageBridge(extensionUri);
         const result = await bridge.handleHoverRequest(
             'SELECT xyzabc123 FROM users',
             { line: 0, column: 8 },
@@ -1915,7 +1930,7 @@ suite('LanguageBridge', () => {
     });
 
     test('format preserves valid SQL', async () => {
-        const bridge = new LanguageBridge(extensionUri);
+        const bridge = createTestLanguageBridge(extensionUri);
         const result = await bridge.handleFormatRequest('select 1', 'mysql');
         assert.ok(result.length > 0, 'formatted result should not be empty');
         bridge.dispose();
@@ -1930,7 +1945,7 @@ suite('LanguageBridge Integration', () => {
     });
 
     test('full completion flow: exportLanguageData + handleCompletionRequest', async () => {
-        const bridge = new LanguageBridge(extensionUri);
+        const bridge = createTestLanguageBridge(extensionUri);
         const data = bridge.exportLanguageData('mysql');
         assert.ok(data.keywords.includes('SELECT'), 'mysql should have SELECT keyword');
         assert.ok(data.functions.length > 0, 'mysql should have functions');

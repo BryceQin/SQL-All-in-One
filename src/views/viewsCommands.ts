@@ -4,6 +4,8 @@ import { DataTransferDialog } from './dataTransfer/DataTransferDialog';
 import { registerQueryResultCommands } from './queryResult/queryResultCommands';
 import { registerTableDesignerCommands } from './tableDesigner/tableDesignerCommands';
 import { registerTreeProviderCommands } from './databaseExplorer/treeProviderCommands';
+import { getContainer, Tokens } from '../core/diContainer';
+import type { IConnectionService, IDataTransferService, IExplainPlanService } from '../application/ports';
 
 /**
  * Register every views-layer command handler that the database layer
@@ -52,7 +54,13 @@ export function registerViewsCommands(context: vscode.ExtensionContext): vscode.
         vscode.commands.registerCommand(
             'hive-formatter.showExplainPlan',
             async (sql: string, _isPanel?: boolean) => {
-                const panel = ExplainPlanPanel.createOrShow(context.extensionUri, context);
+                const container = getContainer();
+                const panel = ExplainPlanPanel.createOrShow(
+                    context.extensionUri,
+                    context,
+                    container.get<IConnectionService>(Tokens.ConnectionService),
+                    container.get<IExplainPlanService>(Tokens.ExplainPlanService),
+                );
                 await panel.showExplainPlan(sql, false);
             },
         ),
@@ -61,7 +69,13 @@ export function registerViewsCommands(context: vscode.ExtensionContext): vscode.
     // 5. Data-transfer dialog handler. Fired by SchemaCommands.importData.
     disposables.push(
         vscode.commands.registerCommand('hive-formatter.showDataTransferDialog', () => {
-            DataTransferDialog.createOrShow(context.extensionUri, context);
+            const container = getContainer();
+            DataTransferDialog.createOrShow(
+                context.extensionUri,
+                context,
+                container.get<IConnectionService>(Tokens.ConnectionService),
+                container.get<IDataTransferService>(Tokens.DataTransferService),
+            );
         }),
     );
 

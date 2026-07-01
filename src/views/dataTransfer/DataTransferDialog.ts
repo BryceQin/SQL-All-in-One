@@ -8,7 +8,6 @@ import type {
     CsvImportOptions,
     JsonImportOptions,
 } from '../../application/ports';
-import { getContainer, Tokens } from '../../core/diContainer';
 import { getLanguage } from '../../i18n';
 import { handleError, ErrorCategory } from '../../core/errorHandler';
 
@@ -50,8 +49,8 @@ export class DataTransferDialog extends BaseWebviewPanel {
     public static createOrShow(
         extensionUri: vscode.Uri,
         _context: vscode.ExtensionContext,
-        connectionService?: IConnectionService,
-        dataTransferService?: IDataTransferService,
+        connectionService: IConnectionService,
+        dataTransferService: IDataTransferService,
     ): DataTransferDialog {
         const column = vscode.window.activeTextEditor
             ? vscode.window.activeTextEditor.viewColumn
@@ -78,16 +77,12 @@ export class DataTransferDialog extends BaseWebviewPanel {
     private constructor(
         panel: vscode.WebviewPanel,
         extensionUri: vscode.Uri,
-        connectionService?: IConnectionService,
-        dataTransferService?: IDataTransferService,
+        connectionService: IConnectionService,
+        dataTransferService: IDataTransferService,
     ) {
         super(panel, extensionUri);
-        // Resolve port services from the DI container (core layer) when the
-        // caller did not inject them explicitly. Task 7 will wire the ports
-        // at the call site.
-        const container = getContainer();
-        this._connectionService = connectionService ?? container.get(Tokens.ConnectionService);
-        this._dataTransferService = dataTransferService ?? container.get(Tokens.DataTransferService);
+        this._connectionService = connectionService;
+        this._dataTransferService = dataTransferService;
         this._initialize();
     }
 

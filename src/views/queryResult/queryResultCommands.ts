@@ -6,8 +6,12 @@ import type {
     IConnectionService,
     IQueryService,
     IDataEditService,
+    IDataTransferService,
 } from '../../application/ports';
 import type { QueryResult, QueryError } from '../../database/adapters/IDatabaseAdapter';
+import type { SchemaProvider } from '../../database/schema/SchemaProvider';
+import type { SqlHoverProvider } from '../../providers/SqlHoverProvider';
+import type { SqlCompletionProvider } from '../../completion/SqlCompletionProvider';
 import { t } from '../../i18n';
 
 /**
@@ -15,16 +19,30 @@ import { t } from '../../i18n';
  * QueryResultController is attached. Returns the panel instance (or undefined
  * if the extension context / extensionUri is not available).
  *
- * The panel resolves its own port dependencies (IConnectionService,
- * IDataTransferService) from the DI container when the caller does not inject
- * them explicitly, so we only need to pass the extensionUri + context.
+ * All port + provider dependencies are resolved from the DI container here at
+ * the call site and injected into the panel so the panel itself (and the
+ * LanguageBridge it owns) stay free of any service-locator calls.
  */
 function ensurePanel(context: vscode.ExtensionContext): QueryResultPanel | undefined {
     const existing = QueryResultPanel.getCurrentInstance();
     if (existing) {
         return existing;
     }
-    return QueryResultPanel.createOrShow(context.extensionUri, context);
+    const container = getContainer();
+    const connectionService = container.get<IConnectionService>(Tokens.ConnectionService);
+    const dataTransferService = container.get<IDataTransferService>(Tokens.DataTransferService);
+    const schemaProvider = container.get<SchemaProvider>(Tokens.SchemaProvider);
+    const hoverProvider = container.get<SqlHoverProvider>(Tokens.HoverProvider);
+    const completionProvider = container.get<SqlCompletionProvider>(Tokens.CompletionProvider);
+    return QueryResultPanel.createOrShow(
+        context.extensionUri,
+        context,
+        connectionService,
+        dataTransferService,
+        schemaProvider,
+        hoverProvider,
+        completionProvider,
+    );
 }
 
 /**

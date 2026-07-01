@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import { BaseWebviewPanel, type WebviewPanelConfig } from '../BaseWebviewPanel';
 import type { IConnectionService, IExplainPlanService } from '../../application/ports';
-import { getContainer, Tokens } from '../../core/diContainer';
 import { getLanguage } from '../../i18n';
 
 export class ExplainPlanPanel extends BaseWebviewPanel {
@@ -20,8 +19,8 @@ export class ExplainPlanPanel extends BaseWebviewPanel {
     public static createOrShow(
         extensionUri: vscode.Uri,
         _context: vscode.ExtensionContext,
-        connectionService?: IConnectionService,
-        explainPlanService?: IExplainPlanService,
+        connectionService: IConnectionService,
+        explainPlanService: IExplainPlanService,
     ): ExplainPlanPanel {
         const column = vscode.window.activeTextEditor
             ? vscode.window.activeTextEditor.viewColumn
@@ -48,16 +47,12 @@ export class ExplainPlanPanel extends BaseWebviewPanel {
     private constructor(
         panel: vscode.WebviewPanel,
         extensionUri: vscode.Uri,
-        connectionService?: IConnectionService,
-        explainPlanService?: IExplainPlanService,
+        connectionService: IConnectionService,
+        explainPlanService: IExplainPlanService,
     ) {
         super(panel, extensionUri);
-        // Resolve port services from the DI container (core layer) when the
-        // caller did not inject them explicitly. Task 7 will wire the ports
-        // at the call site.
-        const container = getContainer();
-        this._connectionService = connectionService ?? container.get(Tokens.ConnectionService);
-        this._explainPlanService = explainPlanService ?? container.get(Tokens.ExplainPlanService);
+        this._connectionService = connectionService;
+        this._explainPlanService = explainPlanService;
         this._initialize();
     }
 

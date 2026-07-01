@@ -2,7 +2,6 @@ import * as vscode from 'vscode';
 import { BaseWebviewPanel, type WebviewPanelConfig } from '../BaseWebviewPanel';
 import type { IConnectionService, ISchemaService, IDatabaseAdapter } from '../../application/ports';
 import type { TableStructure, DataTypeCategory } from '../../database/adapters/IDatabaseAdapter';
-import { getContainer, Tokens } from '../../core/diContainer';
 import { getLanguage } from '../../i18n/index.js';
 import { handleError, ErrorCategory } from '../../core/errorHandler';
 
@@ -92,8 +91,8 @@ export class TableDesignerPanel extends BaseWebviewPanel {
     public static createOrShow(
         extensionUri: vscode.Uri,
         _context: vscode.ExtensionContext,
-        connectionService?: IConnectionService,
-        schemaService?: ISchemaService,
+        connectionService: IConnectionService,
+        schemaService: ISchemaService,
     ): TableDesignerPanel {
         const column = vscode.window.activeTextEditor
             ? vscode.window.activeTextEditor.viewColumn
@@ -120,16 +119,12 @@ export class TableDesignerPanel extends BaseWebviewPanel {
     private constructor(
         panel: vscode.WebviewPanel,
         extensionUri: vscode.Uri,
-        connectionService?: IConnectionService,
-        schemaService?: ISchemaService,
+        connectionService: IConnectionService,
+        schemaService: ISchemaService,
     ) {
         super(panel, extensionUri);
-        // Resolve port services from the DI container (core layer) when the
-        // caller did not inject them explicitly. Task 7 will wire the ports
-        // at the call site.
-        const container = getContainer();
-        this._connectionService = connectionService ?? container.get(Tokens.ConnectionService);
-        this._schemaService = schemaService ?? container.get(Tokens.SchemaService);
+        this._connectionService = connectionService;
+        this._schemaService = schemaService;
         this._initialize();
     }
 

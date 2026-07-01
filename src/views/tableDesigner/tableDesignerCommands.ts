@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
 import { TableDesignerPanel } from './TableDesignerPanel';
+import { getContainer, Tokens } from '../../core/diContainer';
+import type { IConnectionService, ISchemaService } from '../../application/ports';
 
 /**
  * Register the views-layer handler for `hive-formatter.openTableDesigner`.
@@ -21,7 +23,13 @@ export function registerTableDesignerCommands(context: vscode.ExtensionContext):
                     vscode.window.showErrorMessage('openTableDesigner: missing database');
                     return;
                 }
-                const panel = TableDesignerPanel.createOrShow(context.extensionUri, context);
+                const container = getContainer();
+                const panel = TableDesignerPanel.createOrShow(
+                    context.extensionUri,
+                    context,
+                    container.get<IConnectionService>(Tokens.ConnectionService),
+                    container.get<ISchemaService>(Tokens.SchemaService),
+                );
                 if (payload.tableName) {
                     await panel.openForEdit(payload.database, payload.tableName);
                 } else {

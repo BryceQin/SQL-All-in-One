@@ -6,9 +6,7 @@ import { SchemaCompletionProvider } from '../../completion/SchemaCompletionProvi
 import { SqlCompletionProvider } from '../../completion/SqlCompletionProvider';
 import { SqlHoverProvider } from '../../providers/SqlHoverProvider';
 import { formatEditorText } from '../../utils/formatEditorText';
-import { getContainer, Tokens } from '../../core/diContainer';
 import type { SchemaProvider } from '../../database/schema/SchemaProvider';
-import type { ISchemaService } from '../../application/ports';
 import { createConfig } from '../../core/configManager';
 import { handleError, ErrorCategory } from '../../core/errorHandler';
 import { InMemoryDocument } from './InMemoryDocument';
@@ -51,28 +49,17 @@ export class LanguageBridge implements vscode.Disposable {
     private _extensionPath: string;
     private _snippetCache = new Map<string, SnippetDef[]>();
 
-    constructor(extensionUri: vscode.Uri, _schemaService?: ISchemaService) {
+    constructor(
+        extensionUri: vscode.Uri,
+        schemaProvider: SchemaProvider,
+        hoverProvider: SqlHoverProvider,
+        completionProvider: SqlCompletionProvider,
+    ) {
         this._extensionPath = extensionUri.fsPath;
-        const container = getContainer();
         this._linter = new AstLinter();
-        // Resolve the concrete SchemaProvider from the DI container (core
-        // layer) instead of calling the database-layer `getSchemaProvider()`
-        // singleton. The SchemaCompletionProvider constructor requires the
-        // concrete SchemaProvider class, so we obtain it via the container.
-        // The `_schemaService` port parameter is accepted for forward
-        // compatibility with full port injection (Task 7) but is not used
-        // directly here: LanguageBridge delegates schema completion to
-        // SchemaCompletionProvider, which owns the SchemaProvider dependency.
-        const schemaProvider = container.tryGet<SchemaProvider>(Tokens.SchemaProvider);
-        if (!schemaProvider) {
-            throw new Error(
-                'LanguageBridge: SchemaProvider is not registered in the DI container. ' +
-                'Ensure serviceRegistration.bootstrapContainer() has been called before constructing LanguageBridge.',
-            );
-        }
         this._schemaCompletionProvider = new SchemaCompletionProvider(schemaProvider);
-        this._hoverProvider = container.tryGet<SqlHoverProvider>(Tokens.HoverProvider) ?? new SqlHoverProvider();
-        this._completionProvider = container.tryGet<SqlCompletionProvider>(Tokens.CompletionProvider) ?? new SqlCompletionProvider(extensionUri.fsPath);
+        this._hoverProvider = hoverProvider;
+        this._completionProvider = completionProvider;
     }
 
     exportLanguageData(dialect: string): LanguageData {

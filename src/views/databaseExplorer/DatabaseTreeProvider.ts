@@ -21,7 +21,6 @@ import {
 } from './treeNodes';
 import type { IConnectionService, ISchemaService, IDatabaseAdapter } from '../../application/ports';
 import type { ConnectionConfig } from '../../database/connection/ConnectionConfig';
-import { getContainer, Tokens } from '../../core/diContainer';
 import { getConfigManager } from '../../core/configManager';
 import { handleError, ErrorCategory } from '../../core/errorHandler';
 import { LRUCache } from '../../utils/lruCache';
@@ -65,15 +64,10 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
 
     private _disposables: vscode.Disposable[] = [];
 
-    constructor(context: vscode.ExtensionContext, connectionService?: IConnectionService, schemaService?: ISchemaService) {
+    constructor(context: vscode.ExtensionContext, connectionService: IConnectionService, schemaService: ISchemaService) {
         this.context = context;
-        // Resolve port services from the DI container (core layer) when the
-        // caller did not inject them explicitly. Task 7 will wire the ports
-        // at the call site; until then this keeps the constructor signature
-        // backward-compatible.
-        const container = getContainer();
-        this.connectionManager = connectionService ?? container.get(Tokens.ConnectionService);
-        this.schemaCache = schemaService ?? container.get(Tokens.SchemaService);
+        this.connectionManager = connectionService;
+        this.schemaCache = schemaService;
 
         this.loadFavorites();
         this.setupEventListeners();
