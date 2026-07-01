@@ -22,33 +22,14 @@ import {
 import { ConnectionManager, getConnectionManager } from '../../database/connection/ConnectionManager';
 import {
     ConnectionConfig,
-    IMetadataAdapter,
-    ISchemaAdapter,
 } from '../../database/adapters/IDatabaseAdapter';
+import type { DatabaseAdapter } from '../../database/adapters/AdapterFactory';
 import { SchemaCache, getSchemaCache } from '../../database/schema/SchemaCache';
 import { getConfigManager } from '../../core/configManager';
 import { handleError, ErrorCategory } from '../../core/errorHandler';
 import { LRUCache } from '../../utils/lruCache';
 import { getSystemDatabases } from '../../utils/systemDatabases';
 import { t } from '../../i18n';
-
-/**
- * Minimal adapter surface required by {@link DatabaseTreeProvider} to render
- * the database explorer tree.
- *
- * The tree provider lists metadata (tables/views/functions/procedures/triggers
- * via `IMetadataAdapter`) and drills into per-object detail using a small slice
- * of `ISchemaAdapter` (`describeTable` for column/index info,
- * `getRoutineParameters` for function/procedure parameters).
- *
- * `ConnectionManager.getAdapter()` still returns the full `IDatabaseAdapter`;
- * since that implements every sub-interface, the returned value is assignable
- * to this narrower type without any assertion. The alias is applied to the
- * local `adapter` variables below so each handler declares — at the type
- * level — that it only depends on metadata + a couple of schema-describe
- * calls, not on connection management or query execution (ISP).
- */
-type TreeProviderAdapter = IMetadataAdapter & Pick<ISchemaAdapter, 'describeTable' | 'getRoutineParameters'>;
 
 
 interface FavoriteItem {
@@ -57,6 +38,21 @@ interface FavoriteItem {
     database: string;
     objectType: 'table' | 'view';
     objectName: string;
+}
+
+/**
+ * View-side extension of the shared {@link ITreeNode} contract that carries
+ * the vscode-specific render metadata (`iconPath`, strongly-typed
+ * `collapsibleState`) needed to materialize a `vscode.TreeItem`.
+ *
+ * The shared `ITreeNode` keeps these fields neutral (`collapsibleState` is
+ * `unknown`, `iconPath` is omitted) so that the `database` layer can depend on
+ * it without pulling in `vscode`. Every concrete node class produced in this
+ * module extends `BaseTreeNode`, which satisfies this richer interface.
+ */
+interface RenderableTreeNode extends ITreeNode {
+    readonly iconPath?: vscode.ThemeIcon | string;
+    readonly collapsibleState?: vscode.TreeItemCollapsibleState;
 }
 
 export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> {
@@ -174,12 +170,17 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
     }
 
     getTreeItem(element: ITreeNode): vscode.TreeItem {
-        const item = new vscode.TreeItem(element.label, element.collapsibleState);
-        item.id = element.id;
-        item.iconPath = element.iconPath;
-        item.contextValue = element.contextValue;
-        item.description = element.description;
-        item.tooltip = element.tooltip;
+        // Concrete nodes produced by this provider extend `BaseTreeNode`, which
+        // carries the vscode render metadata. Assert to `RenderableTreeNode` to
+        // access those fields while keeping the public `TreeDataProvider`
+        // contract in terms of the shared `ITreeNode`.
+        const node = element as RenderableTreeNode;
+        const item = new vscode.TreeItem(node.label, node.collapsibleState);
+        item.id = node.id;
+        item.iconPath = node.iconPath;
+        item.contextValue = node.contextValue;
+        item.description = node.description;
+        item.tooltip = node.tooltip;
         item.command = this.getCommandForNode(element);
         return item;
     }
@@ -371,7 +372,7 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
         }
 
         try {
-            const adapter: TreeProviderAdapter | undefined = this.connectionManager.getAdapter(parent.connectionId);
+            const adapter: DatabaseAdapter | undefined = this.connectionManager.getAdapter(parent.connectionId);
             if (!adapter) {
                 return [];
             }
@@ -430,7 +431,7 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
         }
 
         try {
-            const adapter: TreeProviderAdapter | undefined = this.connectionManager.getAdapter(parent.connectionId);
+            const adapter: DatabaseAdapter | undefined = this.connectionManager.getAdapter(parent.connectionId);
             if (!adapter) {
                 return [];
             }
@@ -440,7 +441,7 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
                 this.schemaCache.getViews(parent.connectionId, parent.databaseName),
                 this.schemaCache.getFunctions(parent.connectionId, parent.databaseName),
                 this.schemaCache.getProcedures(parent.connectionId, parent.databaseName),
-                adapter.listTriggers(parent.databaseName)
+                adapter.metadataAdapter.listTriggers(parent.databaseName)
             ]);
 
             const maxTableSize = getConfigManager().get<number>('explorer.maxTableListSize', 500);
@@ -469,7 +470,7 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
         }
 
         try {
-            const adapter: TreeProviderAdapter | undefined = this.connectionManager.getAdapter(parent.connectionId);
+            const adapter: DatabaseAdapter | undefined = this.connectionManager.getAdapter(parent.connectionId);
             if (!adapter) {
                 return [];
             }
@@ -534,7 +535,7 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
                     break;
 
                 case 'triggers':
-                    triggers = await adapter.listTriggers(parent.databaseName);
+                    triggers = await adapter.metadataAdapter.listTriggers(parent.databaseName);
                     for (const trigger of triggers) {
                         children.push(new TriggerTreeNode(
                             trigger.name,
@@ -564,7 +565,7 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
         }
 
         try {
-            const adapter: TreeProviderAdapter | undefined = this.connectionManager.getAdapter(parent.connectionId);
+            const adapter: DatabaseAdapter | undefined = this.connectionManager.getAdapter(parent.connectionId);
             if (!adapter) {
                 return [];
             }
@@ -584,7 +585,7 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
 
             // Still need adapter for indexes - describeTable returns full structure
             try {
-                const structure = await adapter.describeTable(parent.databaseName, parent.tableName);
+                const structure = await adapter.schemaAdapter.describeTable(parent.databaseName, parent.tableName);
                 if (structure.indexes.length > 0) {
                     for (const index of structure.indexes) {
                         children.push(new IndexTreeNode(
@@ -617,14 +618,14 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
         }
 
         try {
-            const adapter: TreeProviderAdapter | undefined = this.connectionManager.getAdapter(parent.connectionId);
+            const adapter: DatabaseAdapter | undefined = this.connectionManager.getAdapter(parent.connectionId);
             if (!adapter) {
                 return [];
             }
 
             const children: ITreeNode[] = [];
 
-            const parameters = await adapter.getRoutineParameters(parent.databaseName, parent.functionName, 'FUNCTION');
+            const parameters = await adapter.schemaAdapter.getRoutineParameters(parent.databaseName, parent.functionName, 'FUNCTION');
             for (const param of parameters) {
                 children.push(new RoutineParameterTreeNode(
                     param,
@@ -659,14 +660,14 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
         }
 
         try {
-            const adapter: TreeProviderAdapter | undefined = this.connectionManager.getAdapter(parent.connectionId);
+            const adapter: DatabaseAdapter | undefined = this.connectionManager.getAdapter(parent.connectionId);
             if (!adapter) {
                 return [];
             }
 
             const children: ITreeNode[] = [];
 
-            const parameters = await adapter.getRoutineParameters(parent.databaseName, parent.procedureName, 'PROCEDURE');
+            const parameters = await adapter.schemaAdapter.getRoutineParameters(parent.databaseName, parent.procedureName, 'PROCEDURE');
             for (const param of parameters) {
                 children.push(new RoutineParameterTreeNode(
                     param,
@@ -692,7 +693,7 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
         }
 
         try {
-            const adapter: TreeProviderAdapter | undefined = this.connectionManager.getAdapter(parent.connectionId);
+            const adapter: DatabaseAdapter | undefined = this.connectionManager.getAdapter(parent.connectionId);
             if (!adapter) {
                 return [];
             }
@@ -720,7 +721,7 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
             }
 
             try {
-                const triggers = await adapter.listTriggers(parent.databaseName);
+                const triggers = await adapter.metadataAdapter.listTriggers(parent.databaseName);
                 const triggerInfo = triggers.find(t => t.name === parent.triggerName);
                 if (triggerInfo?.statement) {
                     children.push(new TriggerDetailTreeNode(

@@ -7,26 +7,11 @@ import { LanguageBridge } from './LanguageBridge';
 import { getConnectionManager } from '../../database/connection/ConnectionManager';
 import { getTokenColors } from '../../utils/themeColors';
 import { handleError, ErrorCategory } from '../../core/errorHandler';
-
-export interface FilterCondition {
-    column: string;
-    operator: string;
-    value: string;
-}
-
-export interface PendingChange {
-    type: 'update' | 'insert' | 'delete';
-    table: string;
-    primaryKey: Record<string, unknown>;
-    changes?: Record<string, { old: unknown; new: unknown }>;
-    originalRow?: QueryRow;
-    rowIndex: number;
-}
-
-export interface ForeignKeyOption {
-    value: unknown;
-    displayText: string;
-}
+// Types are imported from the shared type layer so that neither the
+// `database` nor `views` layer needs to import from the other for these
+// shared contract types. Re-exported here for backward compatibility.
+export type { FilterCondition, PendingChange, ForeignKeyOption } from '../../shared/editTypes';
+import type { FilterCondition, PendingChange, ForeignKeyOption } from '../../shared/editTypes';
 
 type WebviewMessage =
     | { command: 'executeQuery'; sql: string }
@@ -564,7 +549,7 @@ export class QueryResultPanel extends BaseWebviewPanel {
             if (activeConn) {
                 const adapter = connectionManager.getAdapter(activeConn.id);
                 if (adapter) {
-                    adapter.listDatabases().then(dbs => {
+                    adapter.metadataAdapter.listDatabases().then(dbs => {
                         const databases = dbs.map(d => d.name);
                         this.sendDatabaseList(databases, activeConn.database || '');
                     }).catch((_e) => { /* ignore: database list prefetch is best-effort */ handleError(_e, 'QueryResultPanel.databaseListPrefetch', ErrorCategory.SUB_ITEM) });

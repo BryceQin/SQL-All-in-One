@@ -1,10 +1,29 @@
 import * as vscode from 'vscode';
 import { getConnectionManager } from '../connection/ConnectionManager';
-import { DatabaseModule } from '../DatabaseModule';
-import { QueryResultPanel, FilterCondition, type PendingChange, type ForeignKeyOption } from '../../views/queryResult/QueryResultPanel';
+import type { DatabaseModule } from '../DatabaseModule';
+import type { QueryResultPanel } from '../../views/queryResult/QueryResultPanel';
+import type { FilterCondition, PendingChange, ForeignKeyOption } from '../../shared/editTypes';
 import type { QueryError, QueryRow } from '../adapters/IDatabaseAdapter';
 import { generateEditSql, executeInTransaction, getActiveAdapter } from '../query/DataEditService';
 import { t } from '../../i18n/index';
+
+// Lazily resolve the QueryResultPanel constructor at call time. The panel
+// module lives in the views layer and value-imports database-layer services
+// (e.g. `getConnectionManager`); importing it eagerly here would recreate the
+// `database -> views -> database` runtime cycle that this refactor removes.
+// The bundled output is CommonJS, so `require()` is synchronous and avoids
+// any change to the public `setupQueryResultPanelCallbacks` signature.
+let _QueryResultPanelCtor: typeof import('../../views/queryResult/QueryResultPanel').QueryResultPanel | undefined;
+function getQueryResultPanelCtor(): typeof import('../../views/queryResult/QueryResultPanel').QueryResultPanel {
+    if (!_QueryResultPanelCtor) {
+        // Lazy require to break the `database -> views -> database` runtime cycle.
+        // The bundled output is CommonJS, so `require()` is synchronous.
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const mod = require('../../views/queryResult/QueryResultPanel') as typeof import('../../views/queryResult/QueryResultPanel');
+        _QueryResultPanelCtor = mod.QueryResultPanel;
+    }
+    return _QueryResultPanelCtor;
+}
 
 export function setupQueryResultPanelCallbacks(
     panel: QueryResultPanel,
@@ -39,7 +58,7 @@ export function setupQueryResultPanelCallbacks(
                 return { success: false, errors: [t('database.noActiveAdapter')] };
             }
 
-            const currentResult = QueryResultPanel.getCurrentInstance()?.getCurrentResult();
+            const currentResult = getQueryResultPanelCtor().getCurrentInstance()?.getCurrentResult();
             if (!currentResult) {
                 return { success: false, errors: [t('database.noQueryResult')] };
             }
@@ -49,7 +68,7 @@ export function setupQueryResultPanelCallbacks(
                 tableName,
                 currentResult.columns,
                 currentResult.rows,
-                adapter.quoteIdentifier.bind(adapter)
+                adapter.schemaAdapter.quoteIdentifier.bind(adapter.schemaAdapter)
             );
 
             return await executeInTransaction(adapter, statements);
@@ -64,7 +83,7 @@ export function setupQueryResultPanelCallbacks(
             if (!adapter) return [];
 
             const activeConfig = getConnectionManager().getActiveConnection();
-            const structure = await adapter.describeTable(db || activeConfig?.database || '', referencedTable);
+            const structure = await adapter.schemaAdapter.describeTable(db || activeConfig?.database || '', referencedTable);
             const pkCol = structure.columns.find(c => c.isPrimaryKey);
             let displayCol = structure.columns.find(c => c.comment && c.type.toUpperCase().includes('VARCHAR'));
             if (!displayCol) displayCol = structure.columns.find(c => !c.isPrimaryKey);
@@ -72,9 +91,9 @@ export function setupQueryResultPanelCallbacks(
 
             if (!pkCol) return [];
 
-            const q = adapter.quoteIdentifier.bind(adapter);
+            const q = adapter.schemaAdapter.quoteIdentifier.bind(adapter.schemaAdapter);
             const sql = `SELECT ${q(pkCol.name)}, ${q(displayCol?.name || pkCol.name)} FROM ${q(referencedTable)} LIMIT 100`;
-            const result = await adapter.execute(sql);
+            const result = await adapter.queryAdapter.execute(sql);
 
             return result.rows.map((row: QueryRow) => ({
                 value: row[pkCol.name],
@@ -90,17 +109,17 @@ export function setupQueryResultPanelCallbacks(
 
     panel.onBeginTransaction = async (): Promise<void> => {
         const adapter = getActiveAdapter();
-        if (adapter) await adapter.beginTransaction();
+        if (adapter) await adapter.queryAdapter.beginTransaction();
     };
 
     panel.onCommitTransaction = async (): Promise<void> => {
         const adapter = getActiveAdapter();
-        if (adapter) await adapter.commit();
+        if (adapter) await adapter.queryAdapter.commit();
     };
 
     panel.onRollbackTransaction = async (): Promise<void> => {
         const adapter = getActiveAdapter();
-        if (adapter) await adapter.rollback();
+        if (adapter) await adapter.queryAdapter.rollback();
     };
 
     panel.onCreateSavepoint = async (name: string): Promise<void> => {
@@ -109,7 +128,7 @@ export function setupQueryResultPanelCallbacks(
             if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
                 throw new Error(t('database.invalidSavepointName', name));
             }
-            await adapter.execute(`SAVEPOINT ${name}`);
+            await adapter.queryAdapter.execute(`SAVEPOINT ${name}`);
         }
     };
 
@@ -119,13 +138,13 @@ export function setupQueryResultPanelCallbacks(
             if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
                 throw new Error(t('database.invalidSavepointName', name));
             }
-            await adapter.execute(`ROLLBACK TO SAVEPOINT ${name}`);
+            await adapter.queryAdapter.execute(`ROLLBACK TO SAVEPOINT ${name}`);
         }
     };
 
     panel.onExecutePanelSql = async (sql: string): Promise<void> => {
         try {
-            const currentPanel = QueryResultPanel.getCurrentInstance();
+            const currentPanel = getQueryResultPanelCtor().getCurrentInstance();
             if (!currentPanel || currentPanel.isDisposed) return;
 
             const connectionManager = getConnectionManager();
@@ -185,7 +204,7 @@ export function setupQueryResultPanelCallbacks(
             }
         } catch (error) {
             const msg = error instanceof Error ? error.message : String(error);
-            const currentPanel = QueryResultPanel.getCurrentInstance();
+            const currentPanel = getQueryResultPanelCtor().getCurrentInstance();
             if (!currentPanel || currentPanel.isDisposed) return;
             currentPanel.showError({
                 code: 'EXEC_ERROR',
@@ -208,7 +227,7 @@ export function setupQueryResultPanelCallbacks(
                 if (changedDb) {
                     const dbAdapter = connectionManager.getAdapter(connectionId);
                     if (dbAdapter) {
-                        const dbs = await dbAdapter.listDatabases();
+                        const dbs = await dbAdapter.metadataAdapter.listDatabases();
                         panel?.sendDatabaseList(dbs.map(d => d.name), changedDb);
                     }
                 }

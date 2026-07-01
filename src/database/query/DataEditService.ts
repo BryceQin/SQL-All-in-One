@@ -1,6 +1,6 @@
 import type { SqlStatement, QueryParam, QueryRow, ColumnMeta } from '../adapters/IDatabaseAdapter';
-import type { PendingChange } from '../../views/queryResult/QueryResultPanel';
-import type { IDatabaseAdapter } from '../adapters/IDatabaseAdapter';
+import type { PendingChange } from '../../shared/editTypes';
+import type { DatabaseAdapter } from '../adapters/AdapterFactory';
 import { getConnectionManager } from '../connection/ConnectionManager';
 
 /**
@@ -106,19 +106,19 @@ function generateInsertSql(
  * On failure, rolls back and returns error information.
  */
 export async function executeInTransaction(
-    adapter: IDatabaseAdapter,
+    adapter: DatabaseAdapter,
     statements: SqlStatement[]
 ): Promise<{ success: boolean; errors?: string[] }> {
     try {
-        await adapter.beginTransaction();
+        await adapter.queryAdapter.beginTransaction();
         for (const stmt of statements) {
-            await adapter.execute(stmt.sql, stmt.params);
+            await adapter.queryAdapter.execute(stmt.sql, stmt.params);
         }
-        await adapter.commit();
+        await adapter.queryAdapter.commit();
         return { success: true };
     } catch (error) {
         try {
-            await adapter.rollback();
+            await adapter.queryAdapter.rollback();
         } catch (rollbackError) {
             console.error('Rollback failed, disconnecting adapter:', rollbackError);
             try { await adapter.disconnect(); } catch (e) { /* ignore: best-effort cleanup */ console.debug('[SQL All in One] DataEditService disconnect after rollback failure:', e) }
@@ -131,7 +131,7 @@ export async function executeInTransaction(
  * Helper to get the active adapter from the connection manager.
  * Returns undefined if no active connection or adapter is available.
  */
-export function getActiveAdapter(): IDatabaseAdapter | undefined {
+export function getActiveAdapter(): DatabaseAdapter | undefined {
     const connectionManager = getConnectionManager();
     const activeConfig = connectionManager.getActiveConnection();
     return activeConfig ? connectionManager.getAdapter(activeConfig.id) : undefined;

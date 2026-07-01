@@ -2,24 +2,51 @@ import * as vscode from 'vscode';
 import { getConnectionManager } from '../connection/ConnectionManager';
 import { ConnectionConfig } from '../connection/ConnectionConfig';
 import { DatabaseModule } from '../DatabaseModule';
-import {
-    ConnectionTreeNode,
-    TableTreeNode,
-    ViewTreeNode,
-    ColumnTreeNode,
-    DatabaseTreeNode,
-    FavoriteTreeNode,
-    FunctionTreeNode,
-    ProcedureTreeNode,
-    TriggerTreeNode
-} from '../../views/databaseExplorer/treeNodes';
+import type { ITreeNode } from '../../shared/treeNodeTypes';
 import { getSchemaCache } from '../schema/SchemaCache';
-import { TableDesignerPanel } from '../../views/tableDesigner/TableDesignerPanel';
-import { QueryResultPanel } from '../../views/queryResult/QueryResultPanel';
-import type { IDatabaseAdapter, QueryError } from '../adapters/IDatabaseAdapter';
+import type { QueryError } from '../adapters/IDatabaseAdapter';
+import type { DatabaseAdapter } from '../adapters/AdapterFactory';
 import { t } from '../../i18n/index';
 import { getConfigManager } from '../../core/configManager';
 import { setupQueryResultPanelCallbacks } from './queryResultCallbacks';
+
+/**
+ * Reads a string field from a tree node without importing concrete
+ * `*TreeNode` classes from the views layer. The database layer must
+ * stay decoupled from `views/databaseExplorer/treeNodes`.
+ */
+function getNodeField(node: ITreeNode, field: string): string {
+    return (node as unknown as Record<string, unknown>)[field] as string;
+}
+
+// Lazy resolvers for view-layer panel constructors. The views layer value-
+// imports database-layer services (ConnectionManager, SchemaCache, ...), so
+// eagerly importing the panel modules here would form a
+// `database -> views -> database` runtime cycle. The bundled output is
+// CommonJS, so `require()` is synchronous.
+let _QueryResultPanelCtor: typeof import('../../views/queryResult/QueryResultPanel').QueryResultPanel | undefined;
+function getQueryResultPanelCtor(): typeof import('../../views/queryResult/QueryResultPanel').QueryResultPanel {
+    if (!_QueryResultPanelCtor) {
+        // Lazy require to break the `database -> views -> database` runtime cycle.
+        // The bundled output is CommonJS, so `require()` is synchronous.
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const mod = require('../../views/queryResult/QueryResultPanel') as typeof import('../../views/queryResult/QueryResultPanel');
+        _QueryResultPanelCtor = mod.QueryResultPanel;
+    }
+    return _QueryResultPanelCtor;
+}
+
+let _TableDesignerPanelCtor: typeof import('../../views/tableDesigner/TableDesignerPanel').TableDesignerPanel | undefined;
+function getTableDesignerPanelCtor(): typeof import('../../views/tableDesigner/TableDesignerPanel').TableDesignerPanel {
+    if (!_TableDesignerPanelCtor) {
+        // Lazy require to break the `database -> views -> database` runtime cycle.
+        // The bundled output is CommonJS, so `require()` is synchronous.
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const mod = require('../../views/tableDesigner/TableDesignerPanel') as typeof import('../../views/tableDesigner/TableDesignerPanel');
+        _TableDesignerPanelCtor = mod.TableDesignerPanel;
+    }
+    return _TableDesignerPanelCtor;
+}
 
 
 export function registerSchemaCommands(
@@ -40,47 +67,50 @@ export function registerSchemaCommands(
     );
 
     disposables.push(
-        vscode.commands.registerCommand('hive-formatter.viewTableData', async (node?: TableTreeNode | ViewTreeNode) => {
+        vscode.commands.registerCommand('hive-formatter.viewTableData', async (node?: ITreeNode) => {
             try {
                 if (!node) {
                     vscode.window.showErrorMessage(t('database.noTableNodeSelected'));
                     return;
                 }
 
+                const connectionId = getNodeField(node, 'connectionId');
+                const databaseName = getNodeField(node, 'databaseName');
+                const name = node.type === 'table' ? getNodeField(node, 'tableName') : getNodeField(node, 'viewName');
+
                 const connectionManager = getConnectionManager();
-                const adapter = connectionManager.getAdapter(node.connectionId);
+                const adapter = connectionManager.getAdapter(connectionId);
                 if (!adapter) {
                     vscode.window.showWarningMessage(t('database.noAdapterForTable'));
                     return;
                 }
 
-                const name = node instanceof TableTreeNode ? node.tableName : node.viewName;
-                const quotedName = adapter.quoteIdentifier(node.databaseName) + '.' + adapter.quoteIdentifier(name);
+                const quotedName = adapter.schemaAdapter.quoteIdentifier(databaseName) + '.' + adapter.schemaAdapter.quoteIdentifier(name);
                 const maxRows = getConfigManager().get<number>('query.maxRows', 1000);
                 const sql = `SELECT * FROM ${quotedName} LIMIT ${maxRows};`;
 
-                let queryResultPanel = QueryResultPanel.getCurrentInstance();
+                let queryResultPanel = getQueryResultPanelCtor().getCurrentInstance();
                 if (!queryResultPanel || queryResultPanel.isDisposed) {
-                    queryResultPanel = QueryResultPanel.createOrShow(context.extensionUri, context);
-                    setupQueryResultPanelCallbacks(queryResultPanel, dbModule, node.connectionId, node.databaseName);
+                    queryResultPanel = getQueryResultPanelCtor().createOrShow(context.extensionUri, context);
+                    setupQueryResultPanelCallbacks(queryResultPanel, dbModule, connectionId, databaseName);
                 } else {
                     queryResultPanel.showLoading(sql);
                 }
 
                 try {
-                    const dbListAdapter = getConnectionManager().getAdapter(node.connectionId);
+                    const dbListAdapter = getConnectionManager().getAdapter(connectionId);
                     if (dbListAdapter) {
-                        const dbs = await dbListAdapter.listDatabases();
-                        queryResultPanel?.sendDatabaseList(dbs.map(d => d.name), node.databaseName);
+                        const dbs = await dbListAdapter.metadataAdapter.listDatabases();
+                        queryResultPanel?.sendDatabaseList(dbs.map(d => d.name), databaseName);
                     }
                 } catch (_e) { /* ignore */ }
 
                 queryResultPanel.onExecutePanelSql = async (panelSql: string): Promise<void> => {
                     try {
-                        const currentPanel = QueryResultPanel.getCurrentInstance();
+                        const currentPanel = getQueryResultPanelCtor().getCurrentInstance();
                         if (!currentPanel || currentPanel.isDisposed) return;
-                        const panelConn = getConnectionManager().getAllConnections().find(c => c.id === node.connectionId);
-                        const panelAdapter = getConnectionManager().getAdapter(node.connectionId);
+                        const panelConn = getConnectionManager().getAllConnections().find(c => c.id === connectionId);
+                        const panelAdapter = getConnectionManager().getAdapter(connectionId);
                         if (!panelAdapter) {
                             currentPanel.showError({ code: 'NO_CONNECTION', message: t('database.noActiveAdapter'), sql: panelSql });
                             return;
@@ -92,7 +122,7 @@ export function registerSchemaCommands(
                             currentPanel.showError({ code: 'NO_EXECUTOR', message: t('database.noActiveAdapter'), sql: panelSql });
                             return;
                         }
-                        const panelResult = await queryExecutor.execute(panelAdapter, panelSql, { database: node.databaseName }, node.connectionId);
+                        const panelResult = await queryExecutor.execute(panelAdapter, panelSql, { database: databaseName }, connectionId);
                         if (currentPanel.isDisposed) return;
                         if (panelResult.status === 'error') {
                             outputChannel?.appendLine(`❌ Error: ${panelResult.error?.message || t('database.unknownError')}`);
@@ -104,7 +134,7 @@ export function registerSchemaCommands(
                             currentPanel.showResult(panelResult, panelConn?.name, panelConn?.color, name);
                         }
                     } catch (error) {
-                        const currentPanel = QueryResultPanel.getCurrentInstance();
+                        const currentPanel = getQueryResultPanelCtor().getCurrentInstance();
                         if (!currentPanel || currentPanel.isDisposed) return;
                         currentPanel.showError({ code: 'EXEC_ERROR', message: String(error), sql: panelSql });
                     }
@@ -122,17 +152,19 @@ export function registerSchemaCommands(
         })
     );
 
-    function createViewDDLCommand<TNode extends { connectionId: string; databaseName: string }>(
+    function createViewDDLCommand(
         commandId: string,
-        getNodeName: (node: TNode) => string,
-        getDDL: (adapter: IDatabaseAdapter, database: string, name: string) => Promise<string>
+        getNodeName: (node: ITreeNode) => string,
+        getDDL: (adapter: DatabaseAdapter, database: string, name: string) => Promise<string>
     ): vscode.Disposable {
-        return vscode.commands.registerCommand(commandId, async (node?: TNode) => {
+        return vscode.commands.registerCommand(commandId, async (node?: ITreeNode) => {
             if (!node) return;
-            const adapter = getConnectionManager().getAdapter(node.connectionId);
+            const connectionId = getNodeField(node, 'connectionId');
+            const databaseName = getNodeField(node, 'databaseName');
+            const adapter = getConnectionManager().getAdapter(connectionId);
             if (!adapter) return;
             try {
-                const ddl = await getDDL(adapter, node.databaseName, getNodeName(node));
+                const ddl = await getDDL(adapter, databaseName, getNodeName(node));
                 const document = await vscode.workspace.openTextDocument({
                     content: ddl,
                     language: 'sql'
@@ -145,22 +177,22 @@ export function registerSchemaCommands(
     }
 
     disposables.push(
-        createViewDDLCommand<TableTreeNode>('hive-formatter.viewTableDDL', n => n.tableName, (a, db, name) => a.getTableDDL(db, name)),
-        createViewDDLCommand<ViewTreeNode>('hive-formatter.viewViewDDL', n => n.viewName, (a, db, name) => a.getViewDDL(db, name)),
-        createViewDDLCommand<FunctionTreeNode>('hive-formatter.viewFunctionDDL', n => n.functionName, (a, db, name) => a.getFunctionDDL(db, name)),
-        createViewDDLCommand<ProcedureTreeNode>('hive-formatter.viewProcedureDDL', n => n.procedureName, (a, db, name) => a.getProcedureDDL(db, name)),
-        createViewDDLCommand<TriggerTreeNode>('hive-formatter.viewTriggerDDL', n => n.triggerName, (a, db, name) => a.getTriggerDDL(db, name)),
+        createViewDDLCommand('hive-formatter.viewTableDDL', n => getNodeField(n, 'tableName'), (a, db, name) => a.schemaAdapter.getTableDDL(db, name)),
+        createViewDDLCommand('hive-formatter.viewViewDDL', n => getNodeField(n, 'viewName'), (a, db, name) => a.schemaAdapter.getViewDDL(db, name)),
+        createViewDDLCommand('hive-formatter.viewFunctionDDL', n => getNodeField(n, 'functionName'), (a, db, name) => a.schemaAdapter.getFunctionDDL(db, name)),
+        createViewDDLCommand('hive-formatter.viewProcedureDDL', n => getNodeField(n, 'procedureName'), (a, db, name) => a.schemaAdapter.getProcedureDDL(db, name)),
+        createViewDDLCommand('hive-formatter.viewTriggerDDL', n => getNodeField(n, 'triggerName'), (a, db, name) => a.schemaAdapter.getTriggerDDL(db, name)),
     );
 
     disposables.push(
-        vscode.commands.registerCommand('hive-formatter.newQuery', async (node?: DatabaseTreeNode | ConnectionTreeNode) => {
+        vscode.commands.registerCommand('hive-formatter.newQuery', async (node?: ITreeNode) => {
             let database = '';
             let connectionId = '';
-            if (node instanceof DatabaseTreeNode) {
-                database = node.databaseName;
-                connectionId = node.connectionId;
-            } else if (node instanceof ConnectionTreeNode) {
-                connectionId = node.connectionId;
+            if (node?.type === 'database') {
+                database = getNodeField(node, 'databaseName');
+                connectionId = getNodeField(node, 'connectionId');
+            } else if (node?.type === 'connection') {
+                connectionId = getNodeField(node, 'connectionId');
                 const activeConn = getConnectionManager().getActiveConnection();
                 database = activeConn?.database || '';
             }
@@ -175,19 +207,19 @@ export function registerSchemaCommands(
             }
 
             const newQueryAdapter = connectionId ? connectionManager.getAdapter(connectionId) : undefined;
-            const q = newQueryAdapter ? newQueryAdapter.quoteIdentifier.bind(newQueryAdapter) : ((id: string): string => '`' + id.replace(/`/g, '``') + '`');
+            const q = newQueryAdapter ? newQueryAdapter.schemaAdapter.quoteIdentifier.bind(newQueryAdapter.schemaAdapter) : ((id: string): string => '`' + id.replace(/`/g, '``') + '`');
             const content = database ? `USE ${q(database)};\n\n` : '';
 
-            let queryResultPanel = QueryResultPanel.getCurrentInstance();
+            let queryResultPanel = getQueryResultPanelCtor().getCurrentInstance();
             if (!queryResultPanel || queryResultPanel.isDisposed) {
-                queryResultPanel = QueryResultPanel.createOrShow(context.extensionUri, context);
+                queryResultPanel = getQueryResultPanelCtor().createOrShow(context.extensionUri, context);
                 setupQueryResultPanelCallbacks(queryResultPanel, dbModule, connectionId, database);
             }
 
             try {
                 const dbListAdapter = connectionId ? connectionManager.getAdapter(connectionId) : undefined;
                 if (dbListAdapter) {
-                    const dbs = await dbListAdapter.listDatabases();
+                    const dbs = await dbListAdapter.metadataAdapter.listDatabases();
                     queryResultPanel?.sendDatabaseList(dbs.map(d => d.name), database);
                 }
             } catch (_e) { /* ignore: database list is best-effort */ console.debug('[SQL All in One] Failed to list databases for table designer:', _e) }
@@ -199,27 +231,30 @@ export function registerSchemaCommands(
     );
 
     disposables.push(
-        vscode.commands.registerCommand('hive-formatter.copyColumnName', async (node?: ColumnTreeNode) => {
+        vscode.commands.registerCommand('hive-formatter.copyColumnName', async (node?: ITreeNode) => {
             if (node) {
-                await vscode.env.clipboard.writeText(node.columnInfo.name);
+                // ColumnTreeNode.label === columnInfo.name (see views/databaseExplorer/treeNodes.ts).
+                await vscode.env.clipboard.writeText(node.label);
                 vscode.window.showInformationMessage(t('database.columnCopied'));
             }
         })
     );
 
     disposables.push(
-        vscode.commands.registerCommand('hive-formatter.addToFavorites', async (node?: TableTreeNode | ViewTreeNode) => {
+        vscode.commands.registerCommand('hive-formatter.addToFavorites', async (node?: ITreeNode) => {
             if (node) {
+                const connectionId = getNodeField(node, 'connectionId');
+                const databaseName = getNodeField(node, 'databaseName');
                 const conn = getConnectionManager().getAllConnections().find(
-                    (c) => c.id === node.connectionId
+                    (c) => c.id === connectionId
                 );
                 if (conn) {
-                    const name = node instanceof TableTreeNode ? node.tableName : node.viewName;
-                    const type = node instanceof TableTreeNode ? 'table' : 'view';
+                    const name = node.type === 'table' ? getNodeField(node, 'tableName') : getNodeField(node, 'viewName');
+                    const type: 'table' | 'view' = node.type === 'table' ? 'table' : 'view';
                     await treeProvider?.addFavorite(
-                        node.connectionId,
+                        connectionId,
                         conn.name,
-                        node.databaseName,
+                        databaseName,
                         type,
                         name
                     );
@@ -230,13 +265,13 @@ export function registerSchemaCommands(
     );
 
     disposables.push(
-        vscode.commands.registerCommand('hive-formatter.removeFromFavorites', async (node?: FavoriteTreeNode) => {
+        vscode.commands.registerCommand('hive-formatter.removeFromFavorites', async (node?: ITreeNode) => {
             if (node) {
                 await treeProvider?.removeFavorite(
-                    node.connectionId,
-                    node.databaseName,
-                    node.objectType,
-                    node.objectName
+                    getNodeField(node, 'connectionId'),
+                    getNodeField(node, 'databaseName'),
+                    node.type as 'table' | 'view',
+                    getNodeField(node, 'objectName')
                 );
                 vscode.window.showInformationMessage(t('database.removedFromFavorites'));
             }
@@ -244,20 +279,22 @@ export function registerSchemaCommands(
     );
 
     disposables.push(
-        vscode.commands.registerCommand('hive-formatter.revealInExplorer', async (node?: FavoriteTreeNode) => {
+        vscode.commands.registerCommand('hive-formatter.revealInExplorer', async (node?: ITreeNode) => {
             if (node) {
                 vscode.window.showInformationMessage(
-                    t('explorer.revealInfo', node.objectType, node.objectName, node.connectionName, node.databaseName)
+                    t('explorer.revealInfo', node.type, getNodeField(node, 'objectName'), getNodeField(node, 'connectionName'), getNodeField(node, 'databaseName'))
                 );
             }
         })
     );
 
     disposables.push(
-        vscode.commands.registerCommand('hive-formatter.setDefaultDatabase', async (node?: DatabaseTreeNode) => {
+        vscode.commands.registerCommand('hive-formatter.setDefaultDatabase', async (node?: ITreeNode) => {
             if (node) {
+                const connectionId = getNodeField(node, 'connectionId');
+                const databaseName = getNodeField(node, 'databaseName');
                 const manager = getConnectionManager();
-                const currentConfig = manager.getAllConnections().find(c => c.id === node.connectionId);
+                const currentConfig = manager.getAllConnections().find(c => c.id === connectionId);
                 if (!currentConfig) {
                     vscode.window.showErrorMessage(t('database.connectionNotFound'));
                     return;
@@ -265,13 +302,13 @@ export function registerSchemaCommands(
 
                 const updatedConfig: ConnectionConfig = {
                     ...currentConfig,
-                    database: node.databaseName
+                    database: databaseName
                 };
 
                 try {
-                    await manager.updateConnection(node.connectionId, updatedConfig);
+                    await manager.updateConnection(connectionId, updatedConfig);
                     treeProvider?.refresh();
-                    vscode.window.showInformationMessage(t('database.defaultDatabaseSet', node.databaseName));
+                    vscode.window.showInformationMessage(t('database.defaultDatabaseSet', databaseName));
                 } catch (error) {
                     vscode.window.showErrorMessage(t('database.failedToSetDefaultDatabase', String(error)));
                 }
@@ -280,7 +317,7 @@ export function registerSchemaCommands(
     );
 
     disposables.push(
-        vscode.commands.registerCommand('hive-formatter.designTable', async (node?: DatabaseTreeNode | ConnectionTreeNode) => {
+        vscode.commands.registerCommand('hive-formatter.designTable', async (node?: ITreeNode) => {
             const connectionManager = getConnectionManager();
             const activeConn = connectionManager.getActiveConnection();
             if (!activeConn) {
@@ -289,10 +326,8 @@ export function registerSchemaCommands(
             }
 
             let database = '';
-            if (node instanceof DatabaseTreeNode) {
-                database = node.databaseName;
-            } else if (node instanceof ConnectionTreeNode) {
-                database = activeConn.database || '';
+            if (node?.type === 'database') {
+                database = getNodeField(node, 'databaseName');
             } else {
                 database = activeConn.database || '';
             }
@@ -304,7 +339,7 @@ export function registerSchemaCommands(
                         vscode.window.showWarningMessage(t('database.noDatabaseAdapter'));
                         return;
                     }
-                    const databases = await adapter.listDatabases();
+                    const databases = await adapter.metadataAdapter.listDatabases();
                     const picked = await vscode.window.showQuickPick(
                         databases.map(d => d.name),
                         { placeHolder: t('database.selectDatabase') }
@@ -317,7 +352,7 @@ export function registerSchemaCommands(
                 }
             }
 
-            const tableDesignerPanel = TableDesignerPanel.createOrShow(
+            const tableDesignerPanel = getTableDesignerPanelCtor().createOrShow(
                 context.extensionUri,
                 context
             );
@@ -326,24 +361,28 @@ export function registerSchemaCommands(
     );
 
     disposables.push(
-        vscode.commands.registerCommand('hive-formatter.editTable', async (node?: TableTreeNode) => {
+        vscode.commands.registerCommand('hive-formatter.editTable', async (node?: ITreeNode) => {
             if (!node) {
                 vscode.window.showWarningMessage(t('database.selectTableToEdit'));
                 return;
             }
 
+            const connectionId = getNodeField(node, 'connectionId');
+            const databaseName = getNodeField(node, 'databaseName');
+            const tableName = getNodeField(node, 'tableName');
+
             const connectionManager = getConnectionManager();
-            const adapter = connectionManager.getAdapter(node.connectionId);
+            const adapter = connectionManager.getAdapter(connectionId);
             if (!adapter) {
                 vscode.window.showWarningMessage(t('database.noAdapterForTable'));
                 return;
             }
 
-            const tableDesignerPanel = TableDesignerPanel.createOrShow(
+            const tableDesignerPanel = getTableDesignerPanelCtor().createOrShow(
                 context.extensionUri,
                 context
             );
-            await tableDesignerPanel.openForEdit(node.databaseName, node.tableName);
+            await tableDesignerPanel.openForEdit(databaseName, tableName);
         })
     );
 
@@ -368,7 +407,7 @@ export function registerSchemaCommands(
                 return;
             }
 
-            const capabilities = adapter.getDialectCapabilities();
+            const capabilities = adapter.schemaAdapter.getDialectCapabilities();
             if (!capabilities.supportsExplain) {
                 vscode.window.showWarningMessage(t('database.currentDbNoExplain'));
                 return;

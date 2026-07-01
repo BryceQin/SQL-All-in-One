@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import type { Activatable } from '../core/Activatable';
 import { getConnectionManager } from './connection/ConnectionManager';
 import { getConnectionStore } from './connection/ConnectionStore';
-import { DatabaseTreeProvider } from '../views/databaseExplorer/DatabaseTreeProvider';
+import type { DatabaseTreeProvider } from '../views/databaseExplorer/DatabaseTreeProvider';
 import { SqlStatementDetector } from './query/SqlStatementDetector';
 import { QueryExecutor } from './query/QueryExecutor';
 import { SafeQueryGuard } from './query/SafeQueryGuard';
@@ -12,8 +12,25 @@ import { registerConnectionCommands } from './commands/ConnectionCommands';
 import { registerQueryCommands } from './commands/QueryCommands';
 import { registerExportCommands } from './commands/ExportCommands';
 import { registerSchemaCommands } from './commands/SchemaCommands';
-import { TableTreeNode, FunctionTreeNode, ProcedureTreeNode, TriggerTreeNode } from '../views/databaseExplorer/treeNodes';
+import type { ITreeNode } from '../shared/treeNodeTypes';
 import { getErrorHandler, ErrorLevel, ErrorCategory } from '../core/errorHandler';
+
+// Lazy resolver for DatabaseTreeProvider. The provider class lives in the
+// views layer and value-imports database-layer services (ConnectionManager,
+// SchemaCache). Eagerly importing it here would create a
+// `database -> views -> database` runtime cycle. The bundled output is
+// CommonJS, so `require()` is synchronous.
+let _DatabaseTreeProviderCtor: typeof import('../views/databaseExplorer/DatabaseTreeProvider').DatabaseTreeProvider | undefined;
+function getDatabaseTreeProviderCtor(): typeof import('../views/databaseExplorer/DatabaseTreeProvider').DatabaseTreeProvider {
+    if (!_DatabaseTreeProviderCtor) {
+        // Lazy require to break the `database -> views -> database` runtime cycle.
+        // The bundled output is CommonJS, so `require()` is synchronous.
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const mod = require('../views/databaseExplorer/DatabaseTreeProvider') as typeof import('../views/databaseExplorer/DatabaseTreeProvider');
+        _DatabaseTreeProviderCtor = mod.DatabaseTreeProvider;
+    }
+    return _DatabaseTreeProviderCtor;
+}
 
 /**
  * Delay (ms) before revealing the toggled tree node after a double-click.
@@ -115,7 +132,7 @@ export class DatabaseModule implements Activatable {
     });
 
     await this.tryStep('Tree view initialization', async () => {
-      this.treeProvider = new DatabaseTreeProvider(this.context);
+      this.treeProvider = new (getDatabaseTreeProviderCtor())(this.context);
       const treeView = vscode.window.createTreeView('hive-formatter.databaseExplorer', {
         treeDataProvider: this.treeProvider,
         showCollapseAll: true,
@@ -177,16 +194,17 @@ export class DatabaseModule implements Activatable {
     const DOUBLE_CLICK_THRESHOLD = 500;
 
     const getDoubleClickCommand = (element: unknown): string | null => {
-      if (element instanceof TableTreeNode) {
+      const node = element as ITreeNode;
+      if (node.type === 'table') {
         return 'hive-formatter.viewTableData';
       }
-      if (element instanceof FunctionTreeNode) {
+      if (node.type === 'function') {
         return 'hive-formatter.viewFunctionDDL';
       }
-      if (element instanceof ProcedureTreeNode) {
+      if (node.type === 'procedure') {
         return 'hive-formatter.viewProcedureDDL';
       }
-      if (element instanceof TriggerTreeNode) {
+      if (node.type === 'trigger') {
         return 'hive-formatter.viewTriggerDDL';
       }
       return null;

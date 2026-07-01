@@ -1,37 +1,9 @@
 import * as vscode from 'vscode';
-import { ColumnInfo, IndexInfo, RoutineParameterInfo } from '../../database/adapters/IDatabaseAdapter';
+import type { ColumnInfo, IndexInfo, RoutineParameterInfo } from '../../database/adapters/IDatabaseAdapter';
+import type { TreeNodeType, ITreeNode, ConnectionState } from '../../shared/treeNodeTypes';
 import { t } from '../../i18n';
 
-export type TreeNodeType =
-    | 'root'
-    | 'group'
-    | 'connection'
-    | 'database'
-    | 'objectGroup'
-    | 'table'
-    | 'view'
-    | 'function'
-    | 'procedure'
-    | 'trigger'
-    | 'column'
-    | 'index'
-    | 'routineParameter'
-    | 'routineReturn'
-    | 'triggerDetail'
-    | 'favorites';
-
-export interface ITreeNode {
-    readonly type: TreeNodeType;
-    readonly id: string;
-    readonly label: string;
-    readonly iconPath?: vscode.ThemeIcon | string;
-    readonly contextValue?: string;
-    readonly collapsibleState?: vscode.TreeItemCollapsibleState;
-    readonly description?: string;
-    readonly tooltip?: string;
-    readonly children?: ITreeNode[];
-    readonly parent?: ITreeNode;
-}
+export type { TreeNodeType, ITreeNode, ConnectionState };
 
 export abstract class BaseTreeNode implements ITreeNode {
     abstract readonly type: TreeNodeType;
@@ -105,8 +77,6 @@ export class GroupTreeNode extends BaseTreeNode {
         this.color = color;
     }
 }
-
-export type ConnectionState = 'connected' | 'disconnected' | 'connecting' | 'error';
 
 export class ConnectionTreeNode extends BaseTreeNode {
     readonly type: TreeNodeType = 'connection';

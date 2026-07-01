@@ -2,9 +2,18 @@ import * as vscode from 'vscode';
 import { getConnectionManager } from '../connection/ConnectionManager';
 import { getConnectionStore } from '../connection/ConnectionStore';
 import { DatabaseModule } from '../DatabaseModule';
-import { ConnectionTreeNode } from '../../views/databaseExplorer/treeNodes';
+import type { ITreeNode } from '../../shared/treeNodeTypes';
 import { openConfigEditorCommand } from '../../commands/configEditorCommand';
 import { t } from '../../i18n/index';
+
+/**
+ * Reads a string field from a tree node without importing concrete
+ * `*TreeNode` classes from the views layer. The database layer must
+ * stay decoupled from `views/databaseExplorer/treeNodes`.
+ */
+function getNodeField(node: ITreeNode, field: string): string {
+    return (node as unknown as Record<string, unknown>)[field] as string;
+}
 
 let connectionOutputChannel: vscode.OutputChannel | undefined;
 
@@ -45,11 +54,11 @@ export function registerConnectionCommands(
     );
 
     disposables.push(
-        vscode.commands.registerCommand('hive-formatter.editConnection', async (node?: ConnectionTreeNode) => {
+        vscode.commands.registerCommand('hive-formatter.editConnection', async (node?: ITreeNode) => {
             let connectionId: string | undefined;
 
             if (node) {
-                connectionId = node.connectionId;
+                connectionId = getNodeField(node, 'connectionId');
             } else {
                 const manager = getConnectionManager();
                 const connections = manager.getAllConnections();
@@ -75,14 +84,14 @@ export function registerConnectionCommands(
     );
 
     disposables.push(
-        vscode.commands.registerCommand('hive-formatter.removeConnection', async (node?: ConnectionTreeNode) => {
+        vscode.commands.registerCommand('hive-formatter.removeConnection', async (node?: ITreeNode) => {
             const manager = getConnectionManager();
             let connectionId: string | undefined;
             let connectionName: string | undefined;
 
             if (node) {
-                connectionId = node.connectionId;
-                connectionName = node.connectionName;
+                connectionId = getNodeField(node, 'connectionId');
+                connectionName = getNodeField(node, 'connectionName');
             } else {
                 const connections = manager.getAllConnections();
                 if (connections.length === 0) {
@@ -120,11 +129,11 @@ export function registerConnectionCommands(
     );
 
     disposables.push(
-        vscode.commands.registerCommand('hive-formatter.connect', async (node?: ConnectionTreeNode) => {
+        vscode.commands.registerCommand('hive-formatter.connect', async (node?: ITreeNode) => {
             if (node) {
                 try {
-                    await getConnectionManager().connect(node.connectionId);
-                    vscode.window.showInformationMessage(t('database.connected', node.connectionName));
+                    await getConnectionManager().connect(getNodeField(node, 'connectionId'));
+                    vscode.window.showInformationMessage(t('database.connected', getNodeField(node, 'connectionName')));
                     dbModule.getTreeProvider()?.refresh();
                 } catch (error) {
                     const fullError = error instanceof Error ? error.message : String(error);
@@ -140,11 +149,11 @@ export function registerConnectionCommands(
     );
 
     disposables.push(
-        vscode.commands.registerCommand('hive-formatter.disconnect', async (node?: ConnectionTreeNode) => {
+        vscode.commands.registerCommand('hive-formatter.disconnect', async (node?: ITreeNode) => {
             if (node) {
                 try {
-                    await getConnectionManager().disconnect(node.connectionId);
-                    vscode.window.showInformationMessage(t('database.disconnected', node.connectionName));
+                    await getConnectionManager().disconnect(getNodeField(node, 'connectionId'));
+                    vscode.window.showInformationMessage(t('database.disconnected', getNodeField(node, 'connectionName')));
                     dbModule.getTreeProvider()?.refresh();
                 } catch (error) {
                     vscode.window.showErrorMessage(t('database.disconnectFailed', String(error)));
@@ -156,12 +165,12 @@ export function registerConnectionCommands(
     );
 
     disposables.push(
-        vscode.commands.registerCommand('hive-formatter.testConnection', async (node?: ConnectionTreeNode) => {
+        vscode.commands.registerCommand('hive-formatter.testConnection', async (node?: ITreeNode) => {
             const manager = getConnectionManager();
             let connectionId: string | undefined;
 
             if (node) {
-                connectionId = node.connectionId;
+                connectionId = getNodeField(node, 'connectionId');
             } else {
                 const connections = manager.getAllConnections();
                 if (connections.length === 0) {
