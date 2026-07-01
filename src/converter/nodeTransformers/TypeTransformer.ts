@@ -50,12 +50,12 @@ export class TypeTransformer implements AstNodeTransformer {
             return
         }
 
-        // The complex-type warning is direction-specific (hive -> mysql).
-        if (ctx.to === 'mysql') {
-            const complexTypes = conversionRules.get<Set<string>>('hive', 'mysql', 'complexTypes')
-            if (complexTypes?.has(upperType)) {
-                ctx.warnings.push(`Complex type ${upperType} mapped to JSON, manual adjustment may be needed`)
-            }
+        // Complex-type warning. The complexTypes rule is registered only
+        // for hive -> mysql, so the lookup itself encodes the direction —
+        // no hard-coded dialect check needed.
+        const complexTypes = conversionRules.get<Set<string>>(ctx.from, ctx.to, 'complexTypes')
+        if (complexTypes?.has(upperType)) {
+            ctx.warnings.push(`Complex type ${upperType} mapped to JSON, manual adjustment may be needed`)
         }
 
         applyMappedType(def, mappedType)

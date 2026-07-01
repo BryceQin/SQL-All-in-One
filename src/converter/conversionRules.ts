@@ -127,3 +127,53 @@ conversionRules.register('hive', 'mysql', 'unsupportedTableOptions', MYSQL_UNSUP
 conversionRules.register('mysql', 'hive', 'columnAttrs', true)
 conversionRules.register('mysql', 'hive', 'constraints', true)
 conversionRules.register('hive', 'mysql', 'clauses', true)
+
+// ---------------------------------------------------------------------------
+// Structural rewrite rules: callbacks that rebuild AST nodes in ways that
+// cannot be expressed as simple name/type mappings. Each callback takes the
+// matched node and ctx, returns true if it handled the node.
+// ---------------------------------------------------------------------------
+
+export type StructuralRewrite = (node: Record<string, unknown>, ctx: { warnings: string[] }) => boolean
+
+// FunctionTransformer: mysql -> hive IF(cond, a, b) becomes CASE/WHEN.
+// The callback is registered here so FunctionTransformer stays generic.
+// NOTE: To avoid a circular import (FunctionTransformer imports
+// conversionRules for the registry, and this callback would import
+// FunctionTransformer for rebuildAsCaseWhen), the rebuild logic is inlined
+// in the callback. This keeps the registry self-contained.
+conversionRules.register<StructuralRewrite>('mysql', 'hive', 'structuralRewrite', (node, ctx) => {
+    const nameContainer = (node as { name?: { name?: { type: string; value: string }[] } }).name
+    if (!nameContainer || !nameContainer.name || !Array.isArray(nameContainer.name)) {
+        return false
+    }
+    const first = nameContainer.name[0]
+    if (!first || typeof first.value !== 'string' || first.value.toUpperCase() !== 'IF') {
+        return false
+    }
+
+    const args = node.args as { type?: string; value?: unknown } | undefined
+    if (!args || args.type !== 'expr_list' || !Array.isArray(args.value)) {
+        return false
+    }
+    const argArray = args.value as Record<string, unknown>[]
+    if (argArray.length < 3) {
+        return false
+    }
+    const condition = argArray[0]
+    const thenExpr = argArray[1]
+    const elseExpr = argArray[2]
+
+    Object.keys(node).forEach((key) => {
+        delete node[key]
+    })
+
+    node.type = 'case'
+    node.expr = null
+    node.args = [
+        { type: 'when', cond: condition, result: thenExpr },
+        { type: 'else', result: elseExpr },
+    ]
+    void ctx
+    return true
+})

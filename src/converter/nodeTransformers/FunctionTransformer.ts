@@ -1,6 +1,6 @@
 import type { TransformContext, AstNodeTransformer } from '../AstTransformEngine'
 import type { AstFunctionNameMapping } from '../functionMappings'
-import { conversionRules } from '../conversionRules'
+import { conversionRules, type StructuralRewrite } from '../conversionRules'
 
 interface FunctionNameContainer {
     name?: { name?: { type: string; value: string }[] }
@@ -29,43 +29,6 @@ function setFunctionName(node: Record<string, unknown>, newName: string): void {
     }
 }
 
-function getArgsArray(node: Record<string, unknown>): Record<string, unknown>[] {
-    const args = node.args as { type?: string; value?: unknown } | undefined
-    if (!args || args.type !== 'expr_list' || !Array.isArray(args.value)) {
-        return []
-    }
-    return args.value as Record<string, unknown>[]
-}
-
-function rebuildAsCaseWhen(node: Record<string, unknown>, ctx: TransformContext): void {
-    const args = getArgsArray(node)
-    if (args.length < 3) {
-        return
-    }
-    const condition = args[0]
-    const thenExpr = args[1]
-    const elseExpr = args[2]
-
-    Object.keys(node).forEach((key) => {
-        delete node[key]
-    })
-
-    node.type = 'case'
-    node.expr = null
-    node.args = [
-        {
-            type: 'when',
-            cond: condition,
-            result: thenExpr,
-        },
-        {
-            type: 'else',
-            result: elseExpr,
-        },
-    ]
-    void ctx
-}
-
 export class FunctionTransformer implements AstNodeTransformer {
     matches(node: Record<string, unknown>): boolean {
         return node.type === 'function'
@@ -78,14 +41,12 @@ export class FunctionTransformer implements AstNodeTransformer {
         }
         const upperName = funcName.toUpperCase()
 
-        // Structural rewrite that only applies to mysql -> hive. This is
-        // intentionally kept hard-coded because it is not a simple name
-        // mapping: it rebuilds the node into a CASE/WHEN structure.
-        if (ctx.from === 'mysql' && ctx.to === 'hive') {
-            if (upperName === 'IF') {
-                rebuildAsCaseWhen(node, ctx)
-                return
-            }
+        // Structural rewrites (e.g. mysql->hive IF -> CASE/WHEN) are
+        // registered as callbacks in conversionRules.ts. Try the callback
+        // first; if it handles the node, we're done.
+        const rewriter = conversionRules.get<StructuralRewrite>(ctx.from, ctx.to, 'structuralRewrite')
+        if (rewriter && rewriter(node, ctx)) {
+            return
         }
 
         const mappings = conversionRules.get<AstFunctionNameMapping[]>(ctx.from, ctx.to, 'functionNames')
