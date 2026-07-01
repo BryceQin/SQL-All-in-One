@@ -10,7 +10,7 @@
 // per-dialect.
 
 import type { KeywordInfo } from '../../hover/HoverResolver'
-import type { SqlLanguage } from '../../formatter/sqlFormatter'
+import type { SqlLanguage } from '../../core/dialectRegistry'
 import { baseKeywords } from './baseKeywords'
 import { hiveKeywords } from './hiveKeywords'
 import { sparkKeywords } from './sparkKeywords'
