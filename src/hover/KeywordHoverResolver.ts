@@ -2,7 +2,7 @@ import * as vscode from 'vscode'
 import type { SqlLanguage } from '../formatter/sqlFormatter'
 import type { HoverResolver, KeywordInfo } from './HoverResolver'
 import { buildKeywordMarkdown } from './hoverUtils'
-import { getKeywordsForDialect } from '../languages/keywords'
+import { getKeywordsForDialect } from '../dialects/keywords'
 
 function matchMultiWordKeyword(
     document: vscode.TextDocument,

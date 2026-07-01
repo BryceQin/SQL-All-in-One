@@ -1,7 +1,7 @@
 import * as assert from 'assert'
 import { getDialectEntries } from '../core/dialectRegistry'
 import { keywordMap, functionSigMap } from '../languages/dialectData'
-import { getKeywordsForDialect } from '../languages/keywords'
+import { getKeywordsForDialect } from '../dialects/keywords'
 
 suite('Dialect List Consistency', () => {
     test('dialectRegistry, allDialects, dialectData, and keywords/index agree on dialect set', () => {

@@ -44,8 +44,8 @@ import { keywords as damengKeywords, dataTypes as damengDataTypes } from '../dia
 import { functions as damengFunctions, functionSignatures as damengFunctionSignatures } from '../dialects/dameng/dameng.functions'
 import { dameng } from '../dialects/dameng/dameng.formatter'
 
-import { baseKeywords } from '../languages/keywords/baseKeywords'
-import { getKeywordsForDialect } from '../languages/keywords'
+import { baseKeywords } from '../dialects/keywords/baseKeywords'
+import { getKeywordsForDialect } from '../dialects/keywords'
 
 // ============================================================================
 // dialect.ts tests

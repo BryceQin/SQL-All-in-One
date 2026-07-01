@@ -2,7 +2,7 @@ import * as vscode from 'vscode'
 import type { AstNavigator, SymbolIndex } from './AstNavigator'
 import { getNavigationContext } from './guard'
 import { toSqlDialect } from '../core/sqlDialects'
-import { getReservedWordSet } from '../languages/keywords/reservedWords'
+import { getReservedWordSet } from '../dialects/keywords/reservedWords'
 import { handleError, ErrorCategory } from '../core/errorHandler'
 
 export class SqlRenameProvider implements vscode.RenameProvider {

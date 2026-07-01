@@ -1,7 +1,7 @@
 // NOTE: This is the TOKENIZER keyword list (plain string[] for the lexer).
 // For hover-tooltip keyword info (with syntax/description/example), see
-// languages/keywords/mysqlKeywords.ts. The two systems are intentionally
-// separate — see the note at the top of languages/keywords/index.ts.
+// keywords/mysqlKeywords.ts. The two systems are intentionally
+// separate — see the note at the top of keywords/index.ts.
 
 export const keywords: string[] = [
     // https://dev.mysql.com/doc/refman/8.0/en/keywords.html

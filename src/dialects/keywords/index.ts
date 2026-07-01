@@ -1,7 +1,7 @@
 // NOTE: This file is part of the HOVER keyword system (KeywordInfo[] with
 // syntax/description/example metadata for tooltips). It is deliberately
 // separate from the TOKENIZER keyword system at
-//   languages/<dialect>/<dialect>.keywords.ts (plain string[] for lexer
+//   <dialect>/<dialect>.keywords.ts (plain string[] for lexer
 // regex/trie construction).
 //
 // Do NOT merge these two systems. The tokenizer needs a flat string array
