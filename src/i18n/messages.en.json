@@ -429,6 +429,7 @@
     "configEditor.preview.outputLabel": "Formatted Result",
     "configEditor.toast.configSaved": "Config saved",
     "configEditor.toast.saveFailed": "Save failed, please retry",
+    "configEditor.noModified": "No modified settings",
     "configEditor.lang.label": "Display Language",
     "configEditor.lang.zh": "中文",
     "configEditor.lang.en": "English",

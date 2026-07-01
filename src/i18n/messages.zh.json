@@ -429,6 +429,7 @@
     "configEditor.preview.outputLabel": "格式化结果",
     "configEditor.toast.configSaved": "配置已保存",
     "configEditor.toast.saveFailed": "保存失败，请重试",
+    "configEditor.noModified": "无修改项",
     "configEditor.lang.label": "显示语言",
     "configEditor.lang.zh": "中文",
     "configEditor.lang.en": "English",

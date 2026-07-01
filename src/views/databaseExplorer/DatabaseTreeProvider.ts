@@ -85,6 +85,16 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
                 this.refresh();
             })
         );
+        // Re-render the tree when the plugin's `displayLanguage` setting
+        // changes. Tree node labels are resolved through `t()` at construction
+        // time and cached on the node, so without a refresh the explorer keeps
+        // showing the previously-selected language after the user switches
+        // between zh/en/auto in the config editor.
+        this._disposables.push(
+            getConfigManager().onConfigChange(() => {
+                this.refresh();
+            })
+        );
     }
 
     dispose(): void {

@@ -1647,8 +1647,12 @@ function changeLanguage(lang) {
                         });
                     }
                 }
+                // Remove `data-action` so a subsequent bindActions() pass
+                // (e.g. after re-rendering the connection list) does not
+                // double-bind click handlers. Keep `data-action-arg` because
+                // switchTab / switchConnFormTab / keyboard navigation look up
+                // buttons by this attribute AFTER binding has run.
                 el.removeAttribute('data-action');
-                el.removeAttribute('data-action-arg');
             });
         }
 
@@ -1773,7 +1777,8 @@ function changeLanguage(lang) {
                         window[action](arg);
                     });
                     el.removeAttribute('data-action');
-                    el.removeAttribute('data-action-arg');
+                    // Keep `data-action-arg` for post-bind lookups (see
+                    // bindActions() for rationale).
                 }
             });
         }
@@ -2228,3 +2233,12 @@ function changeLanguage(lang) {
         vscode.postMessage({ command: 'getCurrentConfig' });
         vscode.postMessage({ command: 'getConnections' });
         vscode.postMessage({ command: 'getSupportedDialects' });
+        // Request the full i18n bundle from the extension host. The host also
+        // sends `initI18n` proactively in `_update()`, but that message is
+        // fired before the webview has finished loading and registered its
+        // `message` listener, so it is dropped. Without this request the
+        // webview only has the small inline `i18nData` dict (which covers a
+        // handful of keys) and every other `data-i18n` element keeps its
+        // hard-coded HTML default (mixed English/Chinese), which is why the
+        // config editor showed English text regardless of the plugin language.
+        vscode.postMessage({ command: 'requestI18n' });

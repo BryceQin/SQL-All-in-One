@@ -68,6 +68,15 @@ export class ConnectionManager {
 
     async initialize(): Promise<void> {
         await this.connectionStore.load();
+        // Fire `onDidChangeConnections` for each connection loaded from disk so
+        // that view-layer listeners (e.g. DatabaseTreeProvider) refresh their
+        // state. Without this, the tree only shows connections after a manual
+        // refresh because `ConnectionStore.load()` mutates internal maps
+        // without emitting events.
+        const loaded = this.connectionStore.getConnections();
+        for (const conn of loaded) {
+            this._onDidChangeConnections.fire({ type: 'add', connectionId: conn.id });
+        }
     }
 
     async addConnection(config: ConnectionConfig, password?: string): Promise<void> {

@@ -75,7 +75,11 @@ export function registerSchemaCommands(
 
                 const quotedName = adapter.schemaAdapter.quoteIdentifier(databaseName) + '.' + adapter.schemaAdapter.quoteIdentifier(name);
                 const maxRows = getConfigManager().get<number>('query.maxRows', 1000);
-                const sql = `SELECT * FROM ${quotedName} LIMIT ${maxRows};`;
+                // No trailing semicolon: the streaming query path and some
+                // drivers (e.g. mysql2 streaming, better-sqlite3) treat a
+                // trailing `;` as a second empty statement, which can either
+                // error out or produce an empty result set.
+                const sql = `SELECT * FROM ${quotedName} LIMIT ${maxRows}`;
 
                 // Ask the views layer to ensure the panel exists and bind a
                 // QueryResultController pinned to (connectionId, databaseName).

@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.26.2] - 2026-07-01
+
+### Bug Fixes
+
+- **数据库资源管理器初始不显示连接（P1）**：`ConnectionManager.initialize()` 加载磁盘连接配置后未触发 `onDidChangeConnections` 事件，导致 `DatabaseTreeProvider`（在连接加载前已创建）的事件监听器收不到通知，必须手动刷新才显示连接。修复：加载完成后为每个连接触发 `add` 事件，树视图自动刷新
+- **数据表 "query data" 查询无结果（P1）**：`viewTableData` 生成的 SQL 带末尾分号 `SELECT * FROM \`db\`.\`table\` LIMIT 1000;`，MySQL 流式查询路径及部分驱动将末尾分号视为第二条空语句，导致查询出错或返回空结果。修复：去除末尾分号
+- **可视化配置页面无法切换编辑器/数据库标签页（P1）**：`config-editor.js` 的 `bindActions()` 在绑定事件后移除 `data-action-arg` 属性，但 `switchTab()`、`switchConnFormTab()` 及键盘导航在绑定后仍通过 `getAttribute('data-action-arg')` 查找按钮以更新激活态，属性被移除后查找永远返回 `null`，导致切换 tab 时按钮激活态无法更新、键盘导航失效。修复：仅移除 `data-action`（防重复绑定），保留 `data-action-arg`
+- **配置页面与资源管理器未按插件语言设置显示中英文（P2）**：
+  - 配置编辑器 webview 初始化时未请求 i18n 数据包，扩展宿主在 `_update()` 中主动发送的 `initI18n` 消息在 webview 加载完成、注册监听器之前就已发出被丢弃，导致 webview 仅依赖覆盖约 18 个 key 的内联字典，其余 `data-i18n` 元素保留 HTML 默认的英文文本。修复：webview 初始化时主动发送 `requestI18n` 消息，确保 i18n 数据可靠送达
+  - `DatabaseTreeProvider` 未监听配置变更，用户切换 `displayLanguage` 后树节点标签（缓存在节点上）不刷新。修复：订阅 `ConfigManager.onConfigChange` 事件，语言变更时刷新树视图
+  - 补充缺失的 `configEditor.noModified` 翻译 key（en/zh 两个语言包）
+
+---
+
 ## [2.26.1] - 2026-07-01
 
 ### Bug Fixes
