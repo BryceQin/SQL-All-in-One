@@ -102,23 +102,69 @@ export class ExpressionFormatter {
 
     private formatBinaryExpr(expr: AstNode): string {
         const left = this.formatWithParentheses(expr.left as unknown);
-        const right = this.formatWithParentheses(expr.right as unknown);
         const op = String(expr.operator);
         const upperOp = op.toUpperCase();
 
         if (isLogicalOperator(op)) {
+            const right = this.formatWithParentheses(expr.right as unknown);
             return this.formatLogicalBinary(left, upperOp, right);
         }
 
-        if (upperOp === 'IN' || upperOp === 'NOT IN') {
-            return left + ' ' + formatKeyword(upperOp, this.cfg.keywordCase) + ' ' + right;
+        // BETWEEN / NOT BETWEEN: parser stores the bounds as an expr_list of
+        // two values in `right`. They must be joined with AND, not comma,
+        // otherwise the output is invalid SQL (e.g. `x BETWEEN a, b`).
+        // Note: parentheses on the BETWEEN expression itself are already
+        // applied by formatWithParentheses(left) above, so we don't re-wrap.
+        if (upperOp === 'BETWEEN' || upperOp === 'NOT BETWEEN') {
+            const rightStr = this.formatBetweenRight(expr.right);
+            const formattedOp = formatKeyword(upperOp, this.cfg.keywordCase);
+            return left + ' ' + formattedOp + ' ' + rightStr;
         }
+
+        // IN / NOT IN: parser stores the value list as an expr_list in
+        // `right` without a `parentheses` flag (the parentheses are part of
+        // the IN syntax, not expression grouping). Wrap the list in parens
+        // so the output stays valid SQL.
+        if (upperOp === 'IN' || upperOp === 'NOT IN') {
+            const rightStr = this.formatInRight(expr.right);
+            return left + ' ' + formatKeyword(upperOp, this.cfg.keywordCase) + ' ' + rightStr;
+        }
+
+        const right = this.formatWithParentheses(expr.right as unknown);
 
         if (this.cfg.denseOperators) {
             return left + op + right;
         }
 
         return left + ' ' + op + ' ' + right;
+    }
+
+    /**
+     * Formats the right-hand side of a BETWEEN expression. node-sql-parser
+     * represents `BETWEEN a AND b` as an `expr_list` containing the two
+     * bounds; we join them with AND to produce valid SQL.
+     */
+    private formatBetweenRight(right: unknown): string {
+        if (right && typeof right === 'object' && (right as AstNode).type === AstNodeType.EXPR_LIST) {
+            const values = (right as AstNode).value as AstNode[];
+            const andKw = formatKeyword('AND', this.cfg.keywordCase);
+            return values.map((v: AstNode): string => this.format(v)).join(' ' + andKw + ' ');
+        }
+        return this.format(right);
+    }
+
+    /**
+     * Formats the right-hand side of an IN expression. node-sql-parser
+     * represents `IN (a, b)` as an `expr_list` without a `parentheses` flag
+     * (the parens are part of IN syntax), so we must add them back here.
+     */
+    private formatInRight(right: unknown): string {
+        if (right && typeof right === 'object' && (right as AstNode).type === AstNodeType.EXPR_LIST) {
+            const values = (right as AstNode).value as AstNode[];
+            return '(' + values.map((v: AstNode): string => this.format(v)).join(', ') + ')';
+        }
+        // Subqueries and other node types are already self-delimiting.
+        return this.format(right);
     }
 
     private formatWithParentheses(expr: unknown): string {

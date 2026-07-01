@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.26.3] - 2026-07-01
+
+### Bug Fixes
+
+- **SQL 格式化 BETWEEN 表达式丢失 AND 关键字（P1）**：`ExpressionFormatter.formatBinaryExpr` 未对 `BETWEEN`/`NOT BETWEEN` 做专门处理，`node-sql-parser` 将 `BETWEEN a AND b` 解析为 `binary_expr`，其 `right` 为含两个边界值的 `expr_list`，原代码走通用 `expr_list` 格式化路径用逗号拼接，输出非法 SQL（如 `oper_time BETWEEN '2026-04-01', '2026-06-30'`）。修复：新增 `formatBetweenRight` 方法，将 `expr_list` 中的两个边界值用 `AND` 连接，保证输出合法语法
+- **SQL 格式化 IN 表达式丢失括号（P1）**：`IN ('a', 'b')` 被解析为 `binary_expr`，`right` 为 `expr_list` 但无 `parentheses` 标记（括号属于 `IN` 语法本身，非表达式分组），原代码直接格式化 `right` 输出 `source IN 'a', 'b'`（非法 SQL）。修复：新增 `formatInRight` 方法，将 `expr_list` 值列表用括号包裹，保持 `IN (a, b)` 合法语法
+- **上述 BETWEEN/IN 缺陷导致 SQL 反复格式化时行数循环增长（P0）**：第一轮格式化产出非法 SQL 后，解析器在后续轮次解析失败并触发 `formatWithFallback` 原样返回，配合注释保留逻辑反复重新插入注释，最终行数膨胀（用户反馈可增长至 700 行）。随 BETWEEN/IN 修复一并解决，反复格式化 10 轮稳定在 26 行
+- **VSIX 打包失败：缺少 `activationEvents`（P1）**：`vsce` 3.x 校验要求当扩展声明 `main` 时必须显式提供 `activationEvents`，否则打包报 `Manifest needs the 'activationEvents' property`。修复：在 `package.json` 中补充 12 个 `onLanguage:`（覆盖全部 SQL 方言）和 42 个 `onCommand:` 激活事件，保证扩展在打开 SQL 文件或调用任意命令时按需激活
+
+---
+
 ## [2.26.2] - 2026-07-01
 
 ### Bug Fixes
