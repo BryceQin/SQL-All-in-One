@@ -1,6 +1,29 @@
-import type { DialectMetadata, IDatabaseAdapter, ConnectionConfig } from './IDatabaseAdapter';
+import type { DialectMetadata, IConnectionAdapter, IQueryAdapter, IMetadataAdapter, ISchemaAdapter, ConnectionConfig } from './IDatabaseAdapter';
 
-type AdapterConstructor = new (config: ConnectionConfig) => IDatabaseAdapter;
+/**
+ * Aggregated database adapter type returned by {@link AdapterFactory.create}.
+ *
+ * After the P0-2 adapter consolidation, {@link BaseDatabaseAdapter} owns the
+ * connection-lifecycle + status surface ({@link IConnectionAdapter}) directly
+ * and exposes the query / metadata / schema surfaces as public sub-adapter
+ * fields rather than 25 forwarding methods. Callers therefore reach those
+ * surfaces via `adapter.queryAdapter.execute(...)`,
+ * `adapter.metadataAdapter.listTables(...)` and
+ * `adapter.schemaAdapter.describeTable(...)`, etc.
+ *
+ * This type alias is the public contract that {@link AdapterFactory.create}
+ * returns and that {@link ConnectionManager.getAdapter} exposes; it captures
+ * both halves of the surface (base-owned connection methods + sub-adapter
+ * fields) in a single named type so callers do not have to spell out the
+ * intersection everywhere.
+ */
+export type DatabaseAdapter = IConnectionAdapter & {
+    queryAdapter: IQueryAdapter;
+    metadataAdapter: IMetadataAdapter;
+    schemaAdapter: ISchemaAdapter;
+};
+
+type AdapterConstructor = new (config: ConnectionConfig) => DatabaseAdapter;
 type MetadataProvider = () => DialectMetadata;
 
 /**
@@ -31,7 +54,7 @@ export const AdapterFactory = {
         }
     },
 
-    create(dialect: string, config: ConnectionConfig): IDatabaseAdapter {
+    create(dialect: string, config: ConnectionConfig): DatabaseAdapter {
         const AdapterClass = adapters.get(dialect);
         if (!AdapterClass) {
             throw new Error(`No adapter registered for dialect: ${dialect}`);

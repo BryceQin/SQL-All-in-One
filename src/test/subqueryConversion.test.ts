@@ -1,11 +1,11 @@
 import * as assert from 'assert'
-import { DialectConverter } from '../converter/DialectConverter'
+import { DialectConverter, getDialectConverter } from '../converter/DialectConverter'
 
 suite('MySQL <-> Hive Subquery Conversion Test Suite', () => {
     let converter: DialectConverter
 
     setup(() => {
-        converter = new DialectConverter()
+        converter = getDialectConverter()
     })
 
     function assertConverted(result: ReturnType<DialectConverter['convert']>): string {

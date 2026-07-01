@@ -40,7 +40,7 @@ function showConnectionError(shortMessage: string, fullError: string): void {
 
 export function registerConnectionCommands(
     context: vscode.ExtensionContext,
-    dbModule: DatabaseModule
+    _dbModule: DatabaseModule
 ): vscode.Disposable[] {
     const disposables: vscode.Disposable[] = [];
 
@@ -120,7 +120,7 @@ export function registerConnectionCommands(
 
             try {
                 await manager.removeConnection(connectionId);
-                dbModule.getTreeProvider()?.refresh();
+                vscode.commands.executeCommand('hive-formatter.refreshTreeProvider');
                 vscode.window.showInformationMessage(t('database.connectionRemoved', connectionName!));
             } catch (error) {
                 vscode.window.showErrorMessage(t('database.failedToRemoveConnection', String(error)));
@@ -134,7 +134,7 @@ export function registerConnectionCommands(
                 try {
                     await getConnectionManager().connect(getNodeField(node, 'connectionId'));
                     vscode.window.showInformationMessage(t('database.connected', getNodeField(node, 'connectionName')));
-                    dbModule.getTreeProvider()?.refresh();
+                    vscode.commands.executeCommand('hive-formatter.refreshTreeProvider');
                 } catch (error) {
                     const fullError = error instanceof Error ? error.message : String(error);
                     const shortMessage = fullError.length > 80
@@ -154,7 +154,7 @@ export function registerConnectionCommands(
                 try {
                     await getConnectionManager().disconnect(getNodeField(node, 'connectionId'));
                     vscode.window.showInformationMessage(t('database.disconnected', getNodeField(node, 'connectionName')));
-                    dbModule.getTreeProvider()?.refresh();
+                    vscode.commands.executeCommand('hive-formatter.refreshTreeProvider');
                 } catch (error) {
                     vscode.window.showErrorMessage(t('database.disconnectFailed', String(error)));
                 }
@@ -253,7 +253,7 @@ export function registerConnectionCommands(
                 vscode.window.showInformationMessage(
                     t('database.importedConnections', String(result.added), String(result.skipped))
                 );
-                dbModule.getTreeProvider()?.refresh();
+                vscode.commands.executeCommand('hive-formatter.refreshTreeProvider');
             } catch (error) {
                 vscode.window.showErrorMessage(t('database.importFailed', String(error)));
             }

@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as readline from 'readline';
-import { IDatabaseAdapter, QueryParam } from '../adapters/IDatabaseAdapter';
+import { QueryParam } from '../adapters/IDatabaseAdapter';
+import type { DatabaseAdapter } from '../adapters/AdapterFactory';
 import { t } from '../../i18n/index';
 import { SqlTextScanner } from '../../utils/sqlTextScanner';
 
@@ -133,14 +134,14 @@ function toQueryParamValue(value: unknown): string | number | boolean | null | u
  * without aborting the entire import.
  */
 export async function executeBatchInsert(
-    adapter: IDatabaseAdapter,
+    adapter: DatabaseAdapter,
     tableName: string,
     columns: string[],
     batch: Record<string, unknown>[],
     onError: 'skip' | 'abort',
     startRow: number,
 ): Promise<{ imported: number; skipped: number; errors: ImportError[] }> {
-    const q = adapter.quoteIdentifier.bind(adapter);
+    const q = adapter.schemaAdapter.quoteIdentifier.bind(adapter.schemaAdapter);
     const quotedColumns = columns.map((c) => q(c)).join(', ');
     const placeholdersPerRow = `(${columns.map(() => '?').join(', ')})`;
 
@@ -161,7 +162,7 @@ export async function executeBatchInsert(
     const errors: ImportError[] = [];
 
     try {
-        await adapter.execute(sql, params);
+        await adapter.queryAdapter.execute(sql, params);
         imported = batch.length;
     } catch (batchError: unknown) {
         if (onError === 'abort') {
@@ -173,7 +174,7 @@ export async function executeBatchInsert(
             const row = batch[i];
             const rowParams = columns.map((col) => ({ value: toQueryParamValue(row[col]) }));
             try {
-                await adapter.execute(rowSql, rowParams);
+                await adapter.queryAdapter.execute(rowSql, rowParams);
                 imported++;
             } catch (rowError: unknown) {
                 skipped++;
@@ -247,7 +248,7 @@ export function detectFileFormat(filePath: string): 'csv' | 'json' | 'sql' {
  * applies optional field mapping, and inserts data in batches.
  */
 export async function importFromCsv(
-    adapter: IDatabaseAdapter,
+    adapter: DatabaseAdapter,
     tableName: string,
     filePath: string,
     options: CsvImportOptions,
@@ -567,7 +568,7 @@ async function streamJsonArray(
 }
 
 export async function importFromJson(
-    adapter: IDatabaseAdapter,
+    adapter: DatabaseAdapter,
     tableName: string,
     filePath: string,
     options: JsonImportOptions,
@@ -723,7 +724,7 @@ export async function importFromJson(
  * statement sequentially.
  */
 export async function importFromSql(
-    adapter: IDatabaseAdapter,
+    adapter: DatabaseAdapter,
     filePath: string,
 ): Promise<ImportResult> {
     const stat = await fs.promises.stat(filePath);
@@ -769,7 +770,7 @@ export async function importFromSql(
             }
             totalRows++;
             try {
-                await adapter.execute(segment + ';');
+                await adapter.queryAdapter.execute(segment + ';');
                 importedRows++;
             } catch (err: unknown) {
                 skippedRows++;
@@ -786,7 +787,7 @@ export async function importFromSql(
         const sql = currentStatement.trim();
         totalRows++;
         try {
-            await adapter.execute(sql.endsWith(';') ? sql : sql + ';');
+            await adapter.queryAdapter.execute(sql.endsWith(';') ? sql : sql + ';');
             importedRows++;
         } catch (err: unknown) {
             skippedRows++;

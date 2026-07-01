@@ -2,7 +2,6 @@ import * as vscode from 'vscode';
 import type { Activatable } from '../core/Activatable';
 import { getConnectionManager } from './connection/ConnectionManager';
 import { getConnectionStore } from './connection/ConnectionStore';
-import type { DatabaseTreeProvider } from '../views/databaseExplorer/DatabaseTreeProvider';
 import { SqlStatementDetector } from './query/SqlStatementDetector';
 import { QueryExecutor } from './query/QueryExecutor';
 import { SafeQueryGuard } from './query/SafeQueryGuard';
@@ -12,40 +11,16 @@ import { registerConnectionCommands } from './commands/ConnectionCommands';
 import { registerQueryCommands } from './commands/QueryCommands';
 import { registerExportCommands } from './commands/ExportCommands';
 import { registerSchemaCommands } from './commands/SchemaCommands';
-import type { ITreeNode } from '../shared/treeNodeTypes';
 import { getErrorHandler, ErrorLevel, ErrorCategory } from '../core/errorHandler';
 
-// Lazy resolver for DatabaseTreeProvider. The provider class lives in the
-// views layer and value-imports database-layer services (ConnectionManager,
-// SchemaCache). Eagerly importing it here would create a
-// `database -> views -> database` runtime cycle. The bundled output is
-// CommonJS, so `require()` is synchronous.
-let _DatabaseTreeProviderCtor: typeof import('../views/databaseExplorer/DatabaseTreeProvider').DatabaseTreeProvider | undefined;
-function getDatabaseTreeProviderCtor(): typeof import('../views/databaseExplorer/DatabaseTreeProvider').DatabaseTreeProvider {
-    if (!_DatabaseTreeProviderCtor) {
-        // Lazy require to break the `database -> views -> database` runtime cycle.
-        // The bundled output is CommonJS, so `require()` is synchronous.
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const mod = require('../views/databaseExplorer/DatabaseTreeProvider') as typeof import('../views/databaseExplorer/DatabaseTreeProvider');
-        _DatabaseTreeProviderCtor = mod.DatabaseTreeProvider;
-    }
-    return _DatabaseTreeProviderCtor;
-}
+// NOTE: This module no longer imports anything from the views layer.
+// The database explorer tree (DatabaseTreeProvider + TreeView + double-click
+// handling) is now created and owned by the views layer (Task 6/8). The
+// database layer refreshes / drives the tree via vscode commands:
+//   - hive-formatter.refreshTreeProvider()
+//   - hive-formatter.addTreeFavorite(...)
+//   - hive-formatter.removeTreeFavorite(...)
 
-/**
- * Delay (ms) before revealing the toggled tree node after a double-click.
- * Gives VSCode time to process the expand/collapse state transition so that
- * `TreeView.reveal` targets the correct node state.
- */
-const REVEAL_DELAY_MS = 50;
-
-/**
- * Window (ms) during which subsequent toggle events on the same node are
- * ignored after a double-click has been recognized. Prevents the second
- * click of a double-click from immediately collapsing the node we just
- * expanded.
- */
-const IGNORE_WINDOW_MS = 300;
 
 export class DatabaseModule implements Activatable {
   private context: vscode.ExtensionContext;
@@ -53,7 +28,6 @@ export class DatabaseModule implements Activatable {
   private safeQueryGuard: SafeQueryGuard;
   private queryHistory: QueryHistory;
   private statementDetector: SqlStatementDetector;
-  private treeProvider!: DatabaseTreeProvider;
   private outputChannel!: vscode.OutputChannel;
   private initialized = false;
   private disposed = false;
@@ -70,10 +44,6 @@ export class DatabaseModule implements Activatable {
     this.safeQueryGuard = safeQueryGuard;
     this.queryHistory = queryHistory;
     this.statementDetector = statementDetector;
-  }
-
-  getTreeProvider(): DatabaseTreeProvider | undefined {
-    return this.treeProvider;
   }
 
   getQueryExecutor(): QueryExecutor | undefined {
@@ -102,11 +72,11 @@ export class DatabaseModule implements Activatable {
 
   registerCommands(): void {
     const connectionDisposables = registerConnectionCommands(this.context, this);
-    const { disposables: queryDisposables, getQueryResultPanel } = registerQueryCommands(
+    const { disposables: queryDisposables } = registerQueryCommands(
       this.context,
       this,
     );
-    const exportDisposables = registerExportCommands(getQueryResultPanel);
+    const exportDisposables = registerExportCommands();
     const schemaDisposables = registerSchemaCommands(this.context, this);
 
     const allDisposables = [
@@ -131,14 +101,13 @@ export class DatabaseModule implements Activatable {
       vscode.commands.executeCommand('setContext', 'hive-formatter.connectionCount', connectionManager.getAllConnections().length);
     });
 
-    await this.tryStep('Tree view initialization', async () => {
-      this.treeProvider = new (getDatabaseTreeProviderCtor())(this.context);
-      const treeView = vscode.window.createTreeView('hive-formatter.databaseExplorer', {
-        treeDataProvider: this.treeProvider,
-        showCollapseAll: true,
-      });
-      this.setupDoubleClickHandler(treeView);
-    });
+    // NOTE: Tree view (DatabaseTreeProvider + TreeView + double-click handler)
+    // initialization has been moved to the views layer (Task 6/8). The views
+    // layer creates the TreeDataProvider, registers it with
+    // `vscode.window.createTreeView('hive-formatter.databaseExplorer', ...)`,
+    // and wires the double-click -> viewTableData / view*DDL commands. The
+    // database layer only refreshes the tree via
+    // `hive-formatter.refreshTreeProvider`.
 
     await this.tryStep('Query/Schema initialization', async () => {
       this.queryHistory.initialize(this.context);
@@ -185,66 +154,6 @@ export class DatabaseModule implements Activatable {
       }
     });
     this.context.subscriptions.push(stateChangeDisposable);
-  }
-
-  private setupDoubleClickHandler(treeView: vscode.TreeView<unknown>): void {
-    let lastToggleNodeId: string | null = null;
-    let lastToggleTime = 0;
-    let ignoreNodeId: string | null = null;
-    const DOUBLE_CLICK_THRESHOLD = 500;
-
-    const getDoubleClickCommand = (element: unknown): string | null => {
-      const node = element as ITreeNode;
-      if (node.type === 'table') {
-        return 'hive-formatter.viewTableData';
-      }
-      if (node.type === 'function') {
-        return 'hive-formatter.viewFunctionDDL';
-      }
-      if (node.type === 'procedure') {
-        return 'hive-formatter.viewProcedureDDL';
-      }
-      if (node.type === 'trigger') {
-        return 'hive-formatter.viewTriggerDDL';
-      }
-      return null;
-    };
-
-    const handleToggle = (element: unknown): void => {
-      const command = getDoubleClickCommand(element);
-      if (!command) {
-        return;
-      }
-      const nodeId = (element as { id?: string })?.id;
-      if (!nodeId || ignoreNodeId === nodeId) {
-        return;
-      }
-      const now = Date.now();
-      if (lastToggleNodeId === nodeId && now - lastToggleTime < DOUBLE_CLICK_THRESHOLD) {
-        lastToggleNodeId = null;
-        lastToggleTime = 0;
-        ignoreNodeId = nodeId;
-        vscode.commands.executeCommand(command, element);
-        const node = element;
-        setTimeout(() => {
-          treeView.reveal(node, { expand: true }).then(undefined, (_e) => undefined);
-        }, REVEAL_DELAY_MS);
-        setTimeout(() => {
-          ignoreNodeId = null;
-        }, IGNORE_WINDOW_MS);
-      } else {
-        lastToggleNodeId = nodeId;
-        lastToggleTime = now;
-      }
-    };
-
-    this.context.subscriptions.push(
-      treeView.onDidExpandElement((e) => handleToggle(e.element))
-    );
-
-    this.context.subscriptions.push(
-      treeView.onDidCollapseElement((e) => handleToggle(e.element))
-    );
   }
 
   async activate(_context: vscode.ExtensionContext): Promise<void> {

@@ -1,7 +1,7 @@
 import * as assert from 'assert';
-import { MysqlSchemaAdapter } from '../database/adapters/MysqlSchemaAdapter';
+import { MysqlSchemaAdapter } from '../database/adapters/MysqlAdapter';
 import type { ExplainNode } from '../database/adapters/IDatabaseAdapter';
-import type { IMysqlProtocolSharedContext } from '../database/adapters/MysqlSharedContext';
+import type { IMysqlProtocolSharedContext } from '../database/adapters/MysqlAdapter';
 import type { ConnectionConfig } from '../database/connection/ConnectionConfig';
 
 /**

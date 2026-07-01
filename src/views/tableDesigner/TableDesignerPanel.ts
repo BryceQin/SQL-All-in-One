@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import { BaseWebviewPanel, type WebviewPanelConfig } from '../BaseWebviewPanel';
-import { getConnectionManager } from '../../database/connection/ConnectionManager';
-import { getSchemaCache } from '../../database/schema/SchemaCache';
-import type { IDatabaseAdapter, TableStructure, DataTypeCategory } from '../../database/adapters/IDatabaseAdapter';
+import type { IConnectionService, ISchemaService, IDatabaseAdapter } from '../../application/ports';
+import type { TableStructure, DataTypeCategory } from '../../database/adapters/IDatabaseAdapter';
+import { getContainer, Tokens } from '../../core/diContainer';
 import { getLanguage } from '../../i18n/index.js';
 import { handleError, ErrorCategory } from '../../core/errorHandler';
 
@@ -86,8 +86,15 @@ export class TableDesignerPanel extends BaseWebviewPanel {
     private _database = '';
     private _tableName = '';
     private _originalStructure?: TableStructure;
+    private readonly _connectionService: IConnectionService;
+    private readonly _schemaService: ISchemaService;
 
-    public static createOrShow(extensionUri: vscode.Uri, _context: vscode.ExtensionContext): TableDesignerPanel {
+    public static createOrShow(
+        extensionUri: vscode.Uri,
+        _context: vscode.ExtensionContext,
+        connectionService?: IConnectionService,
+        schemaService?: ISchemaService,
+    ): TableDesignerPanel {
         const column = vscode.window.activeTextEditor
             ? vscode.window.activeTextEditor.viewColumn
             : undefined;
@@ -105,13 +112,24 @@ export class TableDesignerPanel extends BaseWebviewPanel {
             { viewColumn: column ? column + 1 : vscode.ViewColumn.Two }
         );
 
-        const instance = new TableDesignerPanel(panel, extensionUri);
+        const instance = new TableDesignerPanel(panel, extensionUri, connectionService, schemaService);
         BaseWebviewPanel.registerInstance(instance);
         return instance;
     }
 
-    private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri) {
+    private constructor(
+        panel: vscode.WebviewPanel,
+        extensionUri: vscode.Uri,
+        connectionService?: IConnectionService,
+        schemaService?: ISchemaService,
+    ) {
         super(panel, extensionUri);
+        // Resolve port services from the DI container (core layer) when the
+        // caller did not inject them explicitly. Task 7 will wire the ports
+        // at the call site.
+        const container = getContainer();
+        this._connectionService = connectionService ?? container.get(Tokens.ConnectionService);
+        this._schemaService = schemaService ?? container.get(Tokens.SchemaService);
         this._initialize();
     }
 
@@ -163,7 +181,7 @@ export class TableDesignerPanel extends BaseWebviewPanel {
         let dataTypes: DataTypeCategory[] = [];
         if (adapter) {
             try {
-                dataTypes = adapter.getSupportedDataTypes();
+                dataTypes = adapter.schemaAdapter.getSupportedDataTypes();
             } catch (e) {
                 handleError(e, 'TableDesignerPanel.getSupportedDataTypes', ErrorCategory.SUB_ITEM)
                 dataTypes = [];
@@ -207,7 +225,7 @@ export class TableDesignerPanel extends BaseWebviewPanel {
 
         let dataTypes: DataTypeCategory[] = [];
         try {
-            dataTypes = adapter.getSupportedDataTypes();
+            dataTypes = adapter.schemaAdapter.getSupportedDataTypes();
         } catch (e) {
             handleError(e, 'TableDesignerPanel.getSupportedDataTypes', ErrorCategory.SUB_ITEM)
             dataTypes = [];
@@ -215,7 +233,7 @@ export class TableDesignerPanel extends BaseWebviewPanel {
 
         let structure: TableStructure;
         try {
-            structure = await adapter.describeTable(database, table);
+            structure = await adapter.schemaAdapter.describeTable(database, table);
         } catch (error) {
             vscode.window.showErrorMessage(`Failed to load table structure: ${(error as Error).message}`);
             return;
@@ -293,12 +311,11 @@ export class TableDesignerPanel extends BaseWebviewPanel {
     }
 
     private _getAdapter(): IDatabaseAdapter | undefined {
-        const connectionManager = getConnectionManager();
-        const activeConn = connectionManager.getActiveConnection();
+        const activeConn = this._connectionService.getActiveConnection();
         if (!activeConn) {
             return undefined;
         }
-        return connectionManager.getAdapter(activeConn.id);
+        return this._connectionService.getAdapter(activeConn.id);
     }
 
     private _createDefaultColumn(): ColumnDesign {
@@ -394,13 +411,12 @@ export class TableDesignerPanel extends BaseWebviewPanel {
         try {
             const statements = sql.split(';').map(s => s.trim()).filter(s => s.length > 0);
             for (const stmt of statements) {
-                await adapter.execute(stmt);
+                await adapter.queryAdapter.execute(stmt);
             }
 
-            const connectionManager = getConnectionManager();
-            const activeConn = connectionManager.getActiveConnection();
+            const activeConn = this._connectionService.getActiveConnection();
             if (activeConn) {
-                getSchemaCache().invalidate(activeConn.id, 'table', this._database);
+                this._schemaService.invalidate(activeConn.id, 'table', this._database);
             }
 
             this.dispose();
@@ -429,7 +445,7 @@ export class TableDesignerPanel extends BaseWebviewPanel {
         }
 
         try {
-            const tables = await adapter.listTables(this._database);
+            const tables = await adapter.metadataAdapter.listTables(this._database);
             this.postMessage({
                 command: 'tableList',
                 tables: tables.map(t => t.name),
@@ -455,7 +471,7 @@ export class TableDesignerPanel extends BaseWebviewPanel {
         }
 
         try {
-            const structure = await adapter.describeTable(this._database, table);
+            const structure = await adapter.schemaAdapter.describeTable(this._database, table);
             this.postMessage({
                 command: 'columnList',
                 table: table,

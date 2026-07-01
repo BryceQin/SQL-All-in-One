@@ -730,21 +730,21 @@ suite('SQL Execution Engine', () => {
 
         test('should throw when beginning transaction without connection', async () => {
             await assert.rejects(
-                () => adapter.beginTransaction(),
+                () => adapter.queryAdapter.beginTransaction(),
                 /Not connected to database/
             );
         });
 
         test('should throw when committing without transaction', async () => {
             await assert.rejects(
-                () => adapter.commit(),
+                () => adapter.queryAdapter.commit(),
                 /No transaction in progress/
             );
         });
 
         test('should throw when rolling back without transaction', async () => {
             await assert.rejects(
-                () => adapter.rollback(),
+                () => adapter.queryAdapter.rollback(),
                 /No transaction in progress/
             );
         });
@@ -766,12 +766,12 @@ suite('SQL Execution Engine', () => {
         });
 
         test('should return dialect capabilities with supportsCancel', () => {
-            const caps = adapter.getDialectCapabilities();
+            const caps = adapter.schemaAdapter.getDialectCapabilities();
             assert.strictEqual(caps.supportsCancel, true);
         });
 
         test('should return dialect capabilities with expected fields', () => {
-            const caps = adapter.getDialectCapabilities();
+            const caps = adapter.schemaAdapter.getDialectCapabilities();
             assert.strictEqual(typeof caps.supportsSchema, 'boolean');
             assert.strictEqual(typeof caps.supportsMultipleDatabases, 'boolean');
             assert.strictEqual(typeof caps.maxConcurrentQueries, 'number');
@@ -782,13 +782,13 @@ suite('SQL Execution Engine', () => {
         });
 
         test('should return error when executing without connection', async () => {
-            const result = await adapter.execute('SELECT 1');
+            const result = await adapter.queryAdapter.execute('SELECT 1');
             assert.strictEqual(result.status, 'error');
             assert.strictEqual(result.error?.code, 'NOT_CONNECTED');
         });
 
         test('should return errors for batch queries without connection', async () => {
-            const results = await adapter.executeBatch([
+            const results = await adapter.queryAdapter.executeBatch([
                 { sql: 'SELECT 1' },
                 { sql: 'SELECT 2' },
             ]);
@@ -798,7 +798,7 @@ suite('SQL Execution Engine', () => {
         });
 
         test('should cancel query without error when not connected', async () => {
-            await assert.doesNotReject(() => adapter.cancelQuery('test-query-id'));
+            await assert.doesNotReject(() => adapter.queryAdapter.cancelQuery('test-query-id'));
         });
     });
 

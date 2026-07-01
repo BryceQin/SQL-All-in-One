@@ -2,20 +2,22 @@ import * as vscode from 'vscode'
 import { t } from '../i18n'
 import { isSqlDocument } from '../core/sqlDialects'
 import { getConfigManager } from '../core/configManager'
-import { getConnectionManager } from '../database/connection/ConnectionManager'
+import type { ConnectionManager } from '../database/connection/ConnectionManager'
 
 export class StatusBarProvider {
     private statusBarItem: vscode.StatusBarItem
     private disposables: vscode.Disposable[] = []
     private tempItem: vscode.StatusBarItem | undefined
     private tempTimeout: ReturnType<typeof setTimeout> | undefined
+    private connectionManager: ConnectionManager
 
-    constructor() {
+    constructor(connectionManager: ConnectionManager) {
+        this.connectionManager = connectionManager
         this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100)
         this.statusBarItem.text = '$(sql)'
         this.statusBarItem.tooltip = t('statusBar.tooltip')
         this.statusBarItem.command = 'hive-formatter.open-config-editor'
-        
+
         this.updateStatusBar()
         this.statusBarItem.show()
 
@@ -28,14 +30,14 @@ export class StatusBarProvider {
             vscode.window.onDidChangeActiveTextEditor(() => {
                 this.updateStatusBar()
             }),
-            getConnectionManager().onDidChangeActiveConnection(() => {
+            this.connectionManager.onDidChangeActiveConnection(() => {
                 this.updateStatusBar()
             })
         )
     }
 
     private getEffectiveDialect(): string {
-        const activeConn = getConnectionManager().getActiveConnection()
+        const activeConn = this.connectionManager.getActiveConnection()
         if (activeConn?.dialect) {
             return activeConn.dialect
         }

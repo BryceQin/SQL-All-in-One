@@ -1,7 +1,8 @@
 import type { AST, Create } from 'node-sql-parser'
-import { getParserEngine } from '../parser/SqlParserEngine'
+import type { SqlParserEngine } from '../parser/SqlParserEngine'
 import type { SqlDialect } from '../parser/dialectMapper'
-import { getDialectConverter } from './DialectConverter'
+import type { DialectConverter } from './DialectConverter'
+import { getContainer, Tokens } from '../core/diContainer'
 
 export interface ConvertResult {
     success: boolean
@@ -12,8 +13,16 @@ export interface ConvertResult {
 }
 
 class AstConverter {
+    private parserEngine: SqlParserEngine
+    private dialectConverter: DialectConverter
+
+    constructor(parserEngine: SqlParserEngine, dialectConverter: DialectConverter) {
+        this.parserEngine = parserEngine
+        this.dialectConverter = dialectConverter
+    }
+
     convertCreateTable(sql: string, fromDialect: SqlDialect, toDialect: SqlDialect): string {
-        const result = getDialectConverter().convert(sql, fromDialect, toDialect)
+        const result = this.dialectConverter.convert(sql, fromDialect, toDialect)
         if (!result.success || result.result === null) {
             if (result.error) {
                 throw result.error
@@ -24,7 +33,7 @@ class AstConverter {
         // Reuse the AST produced by DialectConverter.convert when available;
         // only re-parse when convert did not surface one (e.g. same-dialect
         // short-circuit or fallback path).
-        const ast = result.ast ?? getParserEngine().astify(sql, fromDialect)
+        const ast = result.ast ?? this.parserEngine.astify(sql, fromDialect)
         const astArray = Array.isArray(ast) ? ast : [ast]
         const hasCreateTable = astArray.some((node) => this.isCreateTableNode(node))
         if (!hasCreateTable) {
@@ -35,13 +44,13 @@ class AstConverter {
     }
 
     tryConvertCreateTable(sql: string, fromDialect: SqlDialect, toDialect: SqlDialect): ConvertResult {
-        const result = getDialectConverter().tryConvert(sql, fromDialect, toDialect)
+        const result = this.dialectConverter.tryConvert(sql, fromDialect, toDialect)
         if (!result.success) {
             return result
         }
         // Reuse the AST produced by DialectConverter.convert when available;
         // only re-parse when convert did not surface one.
-        const ast = result.ast ?? getParserEngine().astify(sql, fromDialect)
+        const ast = result.ast ?? this.parserEngine.astify(sql, fromDialect)
         const nodes = Array.isArray(ast) ? ast : [ast]
         const hasCreateTable = nodes.some((node) => this.isCreateTableNode(node))
         if (!hasCreateTable) {
@@ -68,13 +77,12 @@ class AstConverter {
     }
 }
 
-let converterInstance: AstConverter | null = null
+export function createAstConverter(parserEngine: SqlParserEngine, dialectConverter: DialectConverter): AstConverter {
+    return new AstConverter(parserEngine, dialectConverter)
+}
 
 export function getAstConverter(): AstConverter {
-    if (!converterInstance) {
-        converterInstance = new AstConverter()
-    }
-    return converterInstance
+    return getContainer().get<AstConverter>(Tokens.AstConverter)
 }
 
 export { AstConverter }

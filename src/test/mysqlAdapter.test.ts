@@ -1,6 +1,6 @@
 import * as assert from 'assert';
-import { MysqlConnectionAdapter } from '../database/adapters/MysqlConnectionAdapter';
-import type { IMysqlProtocolSharedContext } from '../database/adapters/MysqlSharedContext';
+import { MysqlConnectionAdapter } from '../database/adapters/MysqlAdapter';
+import type { IMysqlProtocolSharedContext } from '../database/adapters/MysqlAdapter';
 import type { ConnectionConfig as AppConnectionConfig } from '../database/connection/ConnectionConfig';
 
 /**

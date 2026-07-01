@@ -1,18 +1,15 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import { BaseWebviewPanel, type WebviewPanelConfig } from '../BaseWebviewPanel';
-import { getConnectionManager } from '../../database/connection/ConnectionManager';
+import type {
+    IConnectionService,
+    IDataTransferService,
+    ImportResult,
+    CsvImportOptions,
+    JsonImportOptions,
+} from '../../application/ports';
+import { getContainer, Tokens } from '../../core/diContainer';
 import { getLanguage } from '../../i18n';
-import {
-    importFromCsv,
-    importFromJson,
-    importFromSql,
-    detectFileFormat,
-    detectCsvDelimiter,
-    type ImportResult,
-    type CsvImportOptions,
-    type JsonImportOptions,
-} from '../../database/transfer/DataImporter';
 import { handleError, ErrorCategory } from '../../core/errorHandler';
 
 interface DataTransferMessage {
@@ -47,7 +44,15 @@ export class DataTransferDialog extends BaseWebviewPanel {
         jsFileName: 'data-transfer.js',
     };
 
-    public static createOrShow(extensionUri: vscode.Uri, _context: vscode.ExtensionContext): DataTransferDialog {
+    private readonly _connectionService: IConnectionService;
+    private readonly _dataTransferService: IDataTransferService;
+
+    public static createOrShow(
+        extensionUri: vscode.Uri,
+        _context: vscode.ExtensionContext,
+        connectionService?: IConnectionService,
+        dataTransferService?: IDataTransferService,
+    ): DataTransferDialog {
         const column = vscode.window.activeTextEditor
             ? vscode.window.activeTextEditor.viewColumn
             : undefined;
@@ -65,13 +70,24 @@ export class DataTransferDialog extends BaseWebviewPanel {
             { viewColumn: column ? column + 1 : vscode.ViewColumn.Two }
         );
 
-        const instance = new DataTransferDialog(panel, extensionUri);
+        const instance = new DataTransferDialog(panel, extensionUri, connectionService, dataTransferService);
         BaseWebviewPanel.registerInstance(instance);
         return instance;
     }
 
-    private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri) {
+    private constructor(
+        panel: vscode.WebviewPanel,
+        extensionUri: vscode.Uri,
+        connectionService?: IConnectionService,
+        dataTransferService?: IDataTransferService,
+    ) {
         super(panel, extensionUri);
+        // Resolve port services from the DI container (core layer) when the
+        // caller did not inject them explicitly. Task 7 will wire the ports
+        // at the call site.
+        const container = getContainer();
+        this._connectionService = connectionService ?? container.get(Tokens.ConnectionService);
+        this._dataTransferService = dataTransferService ?? container.get(Tokens.DataTransferService);
         this._initialize();
     }
 
@@ -155,7 +171,7 @@ export class DataTransferDialog extends BaseWebviewPanel {
             const filePath = uris[0].fsPath;
             let detectedFormat: string;
             try {
-                detectedFormat = detectFileFormat(filePath);
+                detectedFormat = this._dataTransferService.detectFileFormat(filePath);
             } catch (e) {
                 // Format detection failed; default to CSV
                 handleError(e, 'DataTransferDialog.detectFileFormat', ErrorCategory.SUB_ITEM)
@@ -170,8 +186,7 @@ export class DataTransferDialog extends BaseWebviewPanel {
     }
 
     private async _handleRequestTables(): Promise<void> {
-        const connectionManager = getConnectionManager();
-        const activeConfig = connectionManager.getActiveConnection();
+        const activeConfig = this._connectionService.getActiveConnection();
 
         if (!activeConfig) {
             this.postMessage({
@@ -182,7 +197,7 @@ export class DataTransferDialog extends BaseWebviewPanel {
             return;
         }
 
-        const adapter = connectionManager.getAdapter(activeConfig.id);
+        const adapter = this._connectionService.getAdapter(activeConfig.id);
         if (!adapter) {
             this.postMessage({
                 type: 'tables',
@@ -194,7 +209,7 @@ export class DataTransferDialog extends BaseWebviewPanel {
 
         try {
             const database = activeConfig.database || '';
-            const tables = await adapter.listTables(database);
+            const tables = await adapter.metadataAdapter.listTables(database);
             this.postMessage({
                 type: 'tables',
                 tables: tables.map((t) => t.name),
@@ -218,8 +233,7 @@ export class DataTransferDialog extends BaseWebviewPanel {
             return;
         }
 
-        const connectionManager = getConnectionManager();
-        const activeConfig = connectionManager.getActiveConnection();
+        const activeConfig = this._connectionService.getActiveConnection();
 
         if (!activeConfig) {
             this.postMessage({
@@ -230,7 +244,7 @@ export class DataTransferDialog extends BaseWebviewPanel {
             return;
         }
 
-        const adapter = connectionManager.getAdapter(activeConfig.id);
+        const adapter = this._connectionService.getAdapter(activeConfig.id);
         if (!adapter) {
             this.postMessage({
                 type: 'columns',
@@ -242,7 +256,7 @@ export class DataTransferDialog extends BaseWebviewPanel {
 
         try {
             const database = activeConfig.database || '';
-            const structure = await adapter.describeTable(database, tableName);
+            const structure = await adapter.schemaAdapter.describeTable(database, tableName);
             this.postMessage({
                 type: 'columns',
                 columns: structure.columns.map((c) => ({
@@ -298,14 +312,13 @@ export class DataTransferDialog extends BaseWebviewPanel {
                 }
 
                 const actualDelimiter = delimiter === 'auto' || !delimiter
-                    ? detectCsvDelimiter(lines[0])
+                    ? this._dataTransferService.detectCsvDelimiter(lines[0])
                     : delimiter === 'tab' ? '\t' : delimiter === 'semicolon' ? ';' : ',';
 
-                const { parseCsvLine } = await import('../../database/transfer/DataImporter.js');
-                const headers = parseCsvLine(lines[0], actualDelimiter);
+                const headers = this._dataTransferService.parseCsvLine(lines[0], actualDelimiter);
                 const rows: string[][] = [];
                 for (let i = 1; i < Math.min(lines.length, rowCount + 1); i++) {
-                    rows.push(parseCsvLine(lines[i], actualDelimiter));
+                    rows.push(this._dataTransferService.parseCsvLine(lines[i], actualDelimiter));
                 }
 
                 this.postMessage({
@@ -374,8 +387,7 @@ export class DataTransferDialog extends BaseWebviewPanel {
         delimiter?: string;
         encoding?: string;
     }): Promise<void> {
-        const connectionManager = getConnectionManager();
-        const activeConfig = connectionManager.getActiveConnection();
+        const activeConfig = this._connectionService.getActiveConnection();
 
         if (!activeConfig) {
             this.postMessage({
@@ -391,7 +403,7 @@ export class DataTransferDialog extends BaseWebviewPanel {
             return;
         }
 
-        const adapter = connectionManager.getAdapter(activeConfig.id);
+        const adapter = this._connectionService.getAdapter(activeConfig.id);
         if (!adapter) {
             this.postMessage({
                 type: 'importResult',
@@ -452,7 +464,7 @@ export class DataTransferDialog extends BaseWebviewPanel {
                         };
 
                         progress.report({ message: `Importing CSV to ${tableName}...` });
-                        result = await importFromCsv(adapter, tableName, config.filePath, options);
+                        result = await this._dataTransferService.importFromCsv(adapter, tableName, config.filePath, options);
                     } else if (config.format === 'json') {
                         const options: JsonImportOptions = {
                             batchSize: config.batchSize || 100,
@@ -461,10 +473,10 @@ export class DataTransferDialog extends BaseWebviewPanel {
                         };
 
                         progress.report({ message: `Importing JSON to ${tableName}...` });
-                        result = await importFromJson(adapter, tableName, config.filePath, options);
+                        result = await this._dataTransferService.importFromJson(adapter, tableName, config.filePath, options);
                     } else if (config.format === 'sql') {
                         progress.report({ message: 'Executing SQL file...' });
-                        result = await importFromSql(adapter, config.filePath);
+                        result = await this._dataTransferService.importFromSql(adapter, config.filePath);
                     } else {
                         result = {
                             success: false,

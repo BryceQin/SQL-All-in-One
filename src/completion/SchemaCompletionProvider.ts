@@ -1,5 +1,5 @@
 import * as vscode from 'vscode'
-import { SchemaProvider, getSchemaProvider, type ClauseType, type CompletionContext } from '../database/schema/SchemaProvider'
+import { SchemaProvider, type ClauseType, type CompletionContext } from '../database/schema/SchemaProvider'
 import { getConnectionManager } from '../database/connection/ConnectionManager'
 import { getConfigManager } from '../core/configManager'
 import { sqlDialects } from '../core/sqlDialects'
@@ -25,8 +25,8 @@ const clauseTypeMap: Record<string, ClauseType> = {
 export class SchemaCompletionProvider {
     private schemaProvider: SchemaProvider
 
-    constructor() {
-        this.schemaProvider = getSchemaProvider()
+    constructor(schemaProvider: SchemaProvider) {
+        this.schemaProvider = schemaProvider
     }
 
     async provideCompletionItems(

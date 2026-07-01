@@ -4,7 +4,9 @@ import type { QueryResult, QueryError, QueryRow } from '../../database/adapters/
 import type { QueryHistoryEntry } from '../../database/query/QueryResult';
 import { getLanguage, t } from '../../i18n';
 import { LanguageBridge } from './LanguageBridge';
-import { getConnectionManager } from '../../database/connection/ConnectionManager';
+import type { IConnectionService, IDataTransferService } from '../../application/ports';
+import type { IQueryResultPanel } from '../../application/QueryResultController';
+import { getContainer, Tokens } from '../../core/diContainer';
 import { getTokenColors } from '../../utils/themeColors';
 import { handleError, ErrorCategory } from '../../core/errorHandler';
 // Types are imported from the shared type layer so that neither the
@@ -36,7 +38,7 @@ type WebviewMessage =
     | { command: 'changeDatabase'; database: string }
     | { command: 'webviewReady' };
 
-export class QueryResultPanel extends BaseWebviewPanel {
+export class QueryResultPanel extends BaseWebviewPanel implements IQueryResultPanel {
     public static readonly viewType = 'sqlAllInOneQueryResult';
 
     /**
@@ -65,6 +67,8 @@ export class QueryResultPanel extends BaseWebviewPanel {
     private _sendLanguageDataTimer: ReturnType<typeof setTimeout> | undefined;
     private _webviewReady = false;
     private _pendingSql: { sql: string; autoExecute: boolean } | undefined;
+    private readonly _connectionService: IConnectionService;
+    private readonly _dataTransferService: IDataTransferService;
 
     public onExecuteQuery?: (sql: string) => void;
     public onCancelQuery?: () => void;
@@ -81,7 +85,12 @@ export class QueryResultPanel extends BaseWebviewPanel {
     public onExecutePanelSql?: (sql: string) => Promise<void>;
     public onChangeDatabase?: (database: string) => Promise<void>;
 
-    public static createOrShow(extensionUri: vscode.Uri, _context: vscode.ExtensionContext): QueryResultPanel {
+    public static createOrShow(
+        extensionUri: vscode.Uri,
+        _context: vscode.ExtensionContext,
+        connectionService?: IConnectionService,
+        dataTransferService?: IDataTransferService,
+    ): QueryResultPanel {
         const column = vscode.window.activeTextEditor
             ? vscode.window.activeTextEditor.viewColumn
             : undefined;
@@ -99,13 +108,26 @@ export class QueryResultPanel extends BaseWebviewPanel {
             { viewColumn: column ? column + 1 : vscode.ViewColumn.Two }
         );
 
-        const instance = new QueryResultPanel(panel, extensionUri);
+        const instance = new QueryResultPanel(panel, extensionUri, connectionService, dataTransferService);
         BaseWebviewPanel.registerInstance(instance);
         return instance;
     }
 
-    private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri) {
+    private constructor(
+        panel: vscode.WebviewPanel,
+        extensionUri: vscode.Uri,
+        connectionService?: IConnectionService,
+        dataTransferService?: IDataTransferService,
+    ) {
         super(panel, extensionUri);
+        // Resolve port services from the DI container (core layer) when the
+        // caller did not inject them explicitly. This keeps the
+        // `createOrShow` signature backward-compatible with callers that
+        // have not yet been migrated to pass ports (Task 7 will wire the
+        // ports at the call sites).
+        const container = getContainer();
+        this._connectionService = connectionService ?? container.get(Tokens.ConnectionService);
+        this._dataTransferService = dataTransferService ?? container.get(Tokens.DataTransferService);
         this._languageBridge = new LanguageBridge(extensionUri);
         this._initialize();
     }
@@ -335,7 +357,7 @@ export class QueryResultPanel extends BaseWebviewPanel {
         this._currentResult = result;
 
         try {
-            const activeConn = getConnectionManager().getActiveConnection();
+            const activeConn = this._connectionService.getActiveConnection();
             if (activeConn) {
                 const newDialect = activeConn.dialect || 'mysql';
                 if (newDialect !== this._currentDialect) {
@@ -544,10 +566,9 @@ export class QueryResultPanel extends BaseWebviewPanel {
 
     private _sendDatabaseList(): void {
         try {
-            const connectionManager = getConnectionManager();
-            const activeConn = connectionManager.getActiveConnection();
+            const activeConn = this._connectionService.getActiveConnection();
             if (activeConn) {
-                const adapter = connectionManager.getAdapter(activeConn.id);
+                const adapter = this._connectionService.getAdapter(activeConn.id);
                 if (adapter) {
                     adapter.metadataAdapter.listDatabases().then(dbs => {
                         const databases = dbs.map(d => d.name);
@@ -565,28 +586,25 @@ export class QueryResultPanel extends BaseWebviewPanel {
         }
 
         try {
-            const { DataExporter } = await import('../../database/transfer/DataExporter.js');
-            const exporter = new DataExporter();
             const columns = this._currentResult.columns;
             const rows = this._currentResult.rows;
             const tableName = (options?.tableName as string) || 'exported_table';
 
             switch (format) {
                 case 'csv':
-                    await exporter.exportToCsv(rows, columns);
+                    await this._dataTransferService.exportToCsv(rows, columns);
                     break;
                 case 'json':
-                    await exporter.exportToJson(rows, columns);
+                    await this._dataTransferService.exportToJson(rows, columns);
                     break;
                 case 'insert': {
-                    const { getConnectionManager: getConnMgr } = await import('../../database/connection/ConnectionManager.js');
-                    const activeConnCfg = getConnMgr().getActiveConnection();
-                    const insertAdapter = activeConnCfg ? getConnMgr().getAdapter(activeConnCfg.id) : undefined;
-                    await exporter.exportToInsert(rows, columns, tableName, undefined, insertAdapter);
+                    const activeConnCfg = this._connectionService.getActiveConnection();
+                    const insertAdapter = activeConnCfg ? this._connectionService.getAdapter(activeConnCfg.id) : undefined;
+                    await this._dataTransferService.exportToInsert(rows, columns, tableName, undefined, insertAdapter);
                     break;
                 }
                 case 'ddl':
-                    await this._handleDdlExport(exporter, options);
+                    await this._handleDdlExport(options);
                     break;
                 default:
                     vscode.window.showErrorMessage(`Unsupported export format: ${format}`);
@@ -598,14 +616,11 @@ export class QueryResultPanel extends BaseWebviewPanel {
     }
 
     private async _handleDdlExport(
-        exporter: InstanceType<typeof import('../../database/transfer/DataExporter.js').DataExporter>,
         options?: Record<string, unknown>
     ): Promise<void> {
-        const { getConnectionManager } = (await import('../../database/connection/ConnectionManager.js'));
-        const connectionManager = getConnectionManager();
-        const activeConfig = connectionManager.getActiveConnection();
+        const activeConfig = this._connectionService.getActiveConnection();
         const adapter = activeConfig
-            ? connectionManager.getAdapter(activeConfig.id)
+            ? this._connectionService.getAdapter(activeConfig.id)
             : undefined;
 
         if (!adapter) {
@@ -621,7 +636,7 @@ export class QueryResultPanel extends BaseWebviewPanel {
             return;
         }
 
-        await exporter.exportToDdl(adapter, database, table);
+        await this._dataTransferService.exportToDdl(adapter, database, table);
     }
 
     private _handleBlobPreview(rowIndex: number, colIndex: number): void {

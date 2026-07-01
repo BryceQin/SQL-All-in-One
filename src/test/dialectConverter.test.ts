@@ -1,11 +1,11 @@
 import * as assert from 'assert'
-import { DialectConverter } from '../converter/DialectConverter'
+import { DialectConverter, getDialectConverter } from '../converter/DialectConverter'
 
 suite('DialectConverter Integration Test Suite', () => {
     let converter: DialectConverter
 
     setup(() => {
-        converter = new DialectConverter()
+        converter = getDialectConverter()
     })
 
     // ========================================================================

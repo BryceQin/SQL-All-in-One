@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
-import { ColumnMeta, IDatabaseAdapter, QueryRow } from '../adapters/IDatabaseAdapter';
+import { ColumnMeta, QueryRow } from '../adapters/IDatabaseAdapter';
+import type { DatabaseAdapter } from '../adapters/AdapterFactory';
 import { t } from '../../i18n/index';
 import { formatSqlValue } from './sqlFormatUtils';
 
@@ -106,7 +107,7 @@ export class DataExporter {
         }
     }
 
-    async exportToInsert(rows: QueryRow[], columns: ColumnMeta[], tableName: string, options?: InsertExportOptions, adapter?: IDatabaseAdapter): Promise<void> {
+    async exportToInsert(rows: QueryRow[], columns: ColumnMeta[], tableName: string, options?: InsertExportOptions, adapter?: DatabaseAdapter): Promise<void> {
         const batchSize = options?.batchSize ?? 1;
 
         const uri = await vscode.window.showSaveDialog({
@@ -118,7 +119,7 @@ export class DataExporter {
             return;
         }
 
-        const q = adapter ? adapter.quoteIdentifier.bind(adapter) : ((id: string): string => '`' + id.replace(/`/g, '``') + '`');
+        const q = adapter ? adapter.schemaAdapter.quoteIdentifier.bind(adapter.schemaAdapter) : ((id: string): string => '`' + id.replace(/`/g, '``') + '`');
         const columnNames = columns.map((col) => q(col.name)).join(', ');
         const stream = fs.createWriteStream(uri.fsPath, 'utf-8');
 
@@ -143,7 +144,7 @@ export class DataExporter {
         }
     }
 
-    async exportToDdl(adapter: IDatabaseAdapter, database: string, table: string): Promise<void> {
+    async exportToDdl(adapter: DatabaseAdapter, database: string, table: string): Promise<void> {
         const uri = await vscode.window.showSaveDialog({
             filters: { 'SQL Files': ['sql'] },
             defaultUri: vscode.Uri.file(`${table}.sql`),
@@ -153,7 +154,7 @@ export class DataExporter {
             return;
         }
 
-        const ddl = await adapter.getTableDDL(database, table);
+        const ddl = await adapter.schemaAdapter.getTableDDL(database, table);
         await fs.promises.writeFile(uri.fsPath, ddl, 'utf-8');
         vscode.window.setStatusBarMessage(t('database.exportCompleted'), 3000);
     }

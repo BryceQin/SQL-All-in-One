@@ -112,7 +112,7 @@ export class SchemaCache {
             'database',
             async () => {
                 const adapter = getConnectionManager().getAdapter(connectionId);
-                return adapter ? await adapter.listDatabases() : [];
+                return adapter ? await adapter.metadataAdapter.listDatabases() : [];
             }
         );
     }
@@ -124,7 +124,7 @@ export class SchemaCache {
             'table',
             async () => {
                 const adapter = getConnectionManager().getAdapter(connectionId);
-                return adapter ? await adapter.listTables(database) : [];
+                return adapter ? await adapter.metadataAdapter.listTables(database) : [];
             }
         );
     }
@@ -137,7 +137,7 @@ export class SchemaCache {
             async () => {
                 const adapter = getConnectionManager().getAdapter(connectionId);
                 if (!adapter) return [];
-                const structure = await adapter.describeTable(database, table);
+                const structure = await adapter.schemaAdapter.describeTable(database, table);
                 return structure.columns;
             }
         );
@@ -150,7 +150,7 @@ export class SchemaCache {
             'function',
             async () => {
                 const adapter = getConnectionManager().getAdapter(connectionId);
-                return adapter ? await adapter.listFunctions(database) : [];
+                return adapter ? await adapter.metadataAdapter.listFunctions(database) : [];
             }
         );
     }
@@ -162,7 +162,7 @@ export class SchemaCache {
             'procedure',
             async () => {
                 const adapter = getConnectionManager().getAdapter(connectionId);
-                return adapter ? await adapter.listProcedures(database) : [];
+                return adapter ? await adapter.metadataAdapter.listProcedures(database) : [];
             }
         );
     }
@@ -174,7 +174,7 @@ export class SchemaCache {
             'view',
             async () => {
                 const adapter = getConnectionManager().getAdapter(connectionId);
-                return adapter ? await adapter.listViews(database) : [];
+                return adapter ? await adapter.metadataAdapter.listViews(database) : [];
             }
         );
     }

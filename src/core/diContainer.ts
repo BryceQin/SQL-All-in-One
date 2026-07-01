@@ -18,6 +18,7 @@ import type { SqlRenameProvider } from '../navigation/SqlRenameProvider';
 import type { SqlLinter } from '../providers/SqlLinter';
 import type { AstDiagnosticsProvider } from '../providers/AstDiagnosticsProvider';
 import type { AstConverter } from '../converter/AstConverter';
+import type { DialectConverter } from '../converter/DialectConverter';
 import type { RuleRegistry } from '../linter/RuleRegistry';
 import type { ConnectionManager } from '../database/connection/ConnectionManager';
 import type { ConnectionStore } from '../database/connection/ConnectionStore';
@@ -29,6 +30,15 @@ import type { SchemaProvider } from '../database/schema/SchemaProvider';
 import type { SchemaCache } from '../database/schema/SchemaCache';
 import type { DatabaseModule } from '../database/DatabaseModule';
 import type { AdapterFactory } from '../database/adapters/AdapterFactory';
+import type {
+    IConnectionService,
+    IQueryService,
+    ISchemaService,
+    IDataEditService,
+    IDataTransferService,
+    IExplainPlanService,
+    IDialectMetadataProvider,
+} from '../application/ports';
 
 export interface TokenMap {
     ConfigManager: ConfigManager;
@@ -51,6 +61,7 @@ export interface TokenMap {
     SqlLinter: SqlLinter;
     AstDiagnosticsProvider: AstDiagnosticsProvider;
     AstConverter: AstConverter;
+    DialectConverter: DialectConverter;
     RuleRegistry: RuleRegistry;
     ConnectionManager: ConnectionManager;
     ConnectionStore: ConnectionStore;
@@ -62,6 +73,17 @@ export interface TokenMap {
     SchemaCache: SchemaCache;
     DatabaseModule: DatabaseModule;
     DialectAdapterFactory: typeof AdapterFactory;
+    // Application-layer port tokens. These are registered alongside the
+    // concrete database singletons in serviceRegistration; views-layer
+    // components resolve them by port interface rather than by concrete
+    // class so no runtime dependency on the database layer is needed.
+    ConnectionService: IConnectionService;
+    QueryService: IQueryService;
+    SchemaService: ISchemaService;
+    DataEditService: IDataEditService;
+    DataTransferService: IDataTransferService;
+    ExplainPlanService: IExplainPlanService;
+    DialectMetadataProvider: IDialectMetadataProvider;
 }
 
 export class DIContainer {
@@ -411,6 +433,7 @@ export const Tokens = {
     SqlLinter: 'SqlLinter',
     AstDiagnosticsProvider: 'AstDiagnosticsProvider',
     AstConverter: 'AstConverter',
+    DialectConverter: 'DialectConverter',
     RuleRegistry: 'RuleRegistry',
     ConnectionManager: 'ConnectionManager',
     ConnectionStore: 'ConnectionStore',
@@ -422,6 +445,16 @@ export const Tokens = {
     SchemaCache: 'SchemaCache',
     DatabaseModule: 'DatabaseModule',
     DialectAdapterFactory: 'DialectAdapterFactory',
+    // Application-layer port tokens. Views components resolve services by
+    // these tokens (typed against the port interfaces) so they never have
+    // to import the concrete database singletons.
+    ConnectionService: 'ConnectionService',
+    QueryService: 'QueryService',
+    SchemaService: 'SchemaService',
+    DataEditService: 'DataEditService',
+    DataTransferService: 'DataTransferService',
+    ExplainPlanService: 'ExplainPlanService',
+    DialectMetadataProvider: 'DialectMetadataProvider',
 } as const;
 
 export type Token = typeof Tokens[keyof typeof Tokens];

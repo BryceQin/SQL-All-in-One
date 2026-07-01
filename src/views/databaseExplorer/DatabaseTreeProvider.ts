@@ -19,12 +19,9 @@ import {
     RoutineReturnTreeNode,
     TriggerDetailTreeNode
 } from './treeNodes';
-import { ConnectionManager, getConnectionManager } from '../../database/connection/ConnectionManager';
-import {
-    ConnectionConfig,
-} from '../../database/adapters/IDatabaseAdapter';
-import type { DatabaseAdapter } from '../../database/adapters/AdapterFactory';
-import { SchemaCache, getSchemaCache } from '../../database/schema/SchemaCache';
+import type { IConnectionService, ISchemaService, IDatabaseAdapter } from '../../application/ports';
+import type { ConnectionConfig } from '../../database/connection/ConnectionConfig';
+import { getContainer, Tokens } from '../../core/diContainer';
 import { getConfigManager } from '../../core/configManager';
 import { handleError, ErrorCategory } from '../../core/errorHandler';
 import { LRUCache } from '../../utils/lruCache';
@@ -60,18 +57,23 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
     readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
     private context: vscode.ExtensionContext;
-    private connectionManager: ConnectionManager;
-    private schemaCache: SchemaCache;
+    private connectionManager: IConnectionService;
+    private schemaCache: ISchemaService;
     private nodeCache = new LRUCache<string, ITreeNode[]>({ maxSize: 200, maxAge: 60000 });
     private favorites: FavoriteItem[] = [];
     private readonly FAVORITES_KEY = 'hive-formatter.favorites';
 
     private _disposables: vscode.Disposable[] = [];
 
-    constructor(context: vscode.ExtensionContext) {
+    constructor(context: vscode.ExtensionContext, connectionService?: IConnectionService, schemaService?: ISchemaService) {
         this.context = context;
-        this.connectionManager = getConnectionManager();
-        this.schemaCache = getSchemaCache();
+        // Resolve port services from the DI container (core layer) when the
+        // caller did not inject them explicitly. Task 7 will wire the ports
+        // at the call site; until then this keeps the constructor signature
+        // backward-compatible.
+        const container = getContainer();
+        this.connectionManager = connectionService ?? container.get(Tokens.ConnectionService);
+        this.schemaCache = schemaService ?? container.get(Tokens.SchemaService);
 
         this.loadFavorites();
         this.setupEventListeners();
@@ -372,7 +374,7 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
         }
 
         try {
-            const adapter: DatabaseAdapter | undefined = this.connectionManager.getAdapter(parent.connectionId);
+            const adapter: IDatabaseAdapter | undefined = this.connectionManager.getAdapter(parent.connectionId);
             if (!adapter) {
                 return [];
             }
@@ -431,7 +433,7 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
         }
 
         try {
-            const adapter: DatabaseAdapter | undefined = this.connectionManager.getAdapter(parent.connectionId);
+            const adapter: IDatabaseAdapter | undefined = this.connectionManager.getAdapter(parent.connectionId);
             if (!adapter) {
                 return [];
             }
@@ -470,7 +472,7 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
         }
 
         try {
-            const adapter: DatabaseAdapter | undefined = this.connectionManager.getAdapter(parent.connectionId);
+            const adapter: IDatabaseAdapter | undefined = this.connectionManager.getAdapter(parent.connectionId);
             if (!adapter) {
                 return [];
             }
@@ -565,7 +567,7 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
         }
 
         try {
-            const adapter: DatabaseAdapter | undefined = this.connectionManager.getAdapter(parent.connectionId);
+            const adapter: IDatabaseAdapter | undefined = this.connectionManager.getAdapter(parent.connectionId);
             if (!adapter) {
                 return [];
             }
@@ -618,7 +620,7 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
         }
 
         try {
-            const adapter: DatabaseAdapter | undefined = this.connectionManager.getAdapter(parent.connectionId);
+            const adapter: IDatabaseAdapter | undefined = this.connectionManager.getAdapter(parent.connectionId);
             if (!adapter) {
                 return [];
             }
@@ -660,7 +662,7 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
         }
 
         try {
-            const adapter: DatabaseAdapter | undefined = this.connectionManager.getAdapter(parent.connectionId);
+            const adapter: IDatabaseAdapter | undefined = this.connectionManager.getAdapter(parent.connectionId);
             if (!adapter) {
                 return [];
             }
@@ -693,7 +695,7 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
         }
 
         try {
-            const adapter: DatabaseAdapter | undefined = this.connectionManager.getAdapter(parent.connectionId);
+            const adapter: IDatabaseAdapter | undefined = this.connectionManager.getAdapter(parent.connectionId);
             if (!adapter) {
                 return [];
             }

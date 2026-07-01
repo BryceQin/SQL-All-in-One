@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { BaseWebviewPanel, type WebviewPanelConfig } from '../BaseWebviewPanel';
-import { getConnectionManager } from '../../database/connection/ConnectionManager';
-import { ExplainPlan } from '../../database/query/ExplainPlan';
+import type { IConnectionService, IExplainPlanService } from '../../application/ports';
+import { getContainer, Tokens } from '../../core/diContainer';
 import { getLanguage } from '../../i18n';
 
 export class ExplainPlanPanel extends BaseWebviewPanel {
@@ -14,7 +14,15 @@ export class ExplainPlanPanel extends BaseWebviewPanel {
         jsFileName: 'explain-panel.js',
     };
 
-    public static createOrShow(extensionUri: vscode.Uri, _context: vscode.ExtensionContext): ExplainPlanPanel {
+    private readonly _connectionService: IConnectionService;
+    private readonly _explainPlanService: IExplainPlanService;
+
+    public static createOrShow(
+        extensionUri: vscode.Uri,
+        _context: vscode.ExtensionContext,
+        connectionService?: IConnectionService,
+        explainPlanService?: IExplainPlanService,
+    ): ExplainPlanPanel {
         const column = vscode.window.activeTextEditor
             ? vscode.window.activeTextEditor.viewColumn
             : undefined;
@@ -32,13 +40,24 @@ export class ExplainPlanPanel extends BaseWebviewPanel {
             { viewColumn: column ? column + 1 : vscode.ViewColumn.Two }
         );
 
-        const instance = new ExplainPlanPanel(panel, extensionUri);
+        const instance = new ExplainPlanPanel(panel, extensionUri, connectionService, explainPlanService);
         BaseWebviewPanel.registerInstance(instance);
         return instance;
     }
 
-    private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri) {
+    private constructor(
+        panel: vscode.WebviewPanel,
+        extensionUri: vscode.Uri,
+        connectionService?: IConnectionService,
+        explainPlanService?: IExplainPlanService,
+    ) {
         super(panel, extensionUri);
+        // Resolve port services from the DI container (core layer) when the
+        // caller did not inject them explicitly. Task 7 will wire the ports
+        // at the call site.
+        const container = getContainer();
+        this._connectionService = connectionService ?? container.get(Tokens.ConnectionService);
+        this._explainPlanService = explainPlanService ?? container.get(Tokens.ExplainPlanService);
         this._initialize();
     }
 
@@ -64,8 +83,7 @@ export class ExplainPlanPanel extends BaseWebviewPanel {
     }
 
     public async showExplainPlan(sql: string, useAnalyze = false): Promise<void> {
-        const connectionManager = getConnectionManager();
-        const activeConfig = connectionManager.getActiveConnection();
+        const activeConfig = this._connectionService.getActiveConnection();
 
         if (!activeConfig) {
             this.postMessage({
@@ -75,7 +93,7 @@ export class ExplainPlanPanel extends BaseWebviewPanel {
             return;
         }
 
-        const adapter = connectionManager.getAdapter(activeConfig.id);
+        const adapter = this._connectionService.getAdapter(activeConfig.id);
         if (!adapter) {
             this.postMessage({
                 command: 'explainError',
@@ -84,7 +102,7 @@ export class ExplainPlanPanel extends BaseWebviewPanel {
             return;
         }
 
-        const capabilities = adapter.getDialectCapabilities();
+        const capabilities = adapter.schemaAdapter.getDialectCapabilities();
         if (!capabilities.supportsExplain) {
             this.postMessage({
                 command: 'explainError',
@@ -114,9 +132,9 @@ export class ExplainPlanPanel extends BaseWebviewPanel {
                 ? `EXPLAIN ANALYZE ${sql}`
                 : `EXPLAIN FORMAT=JSON ${sql}`;
 
-            const result = await adapter.getExplainPlan(database, explainSql);
-            const parsed = ExplainPlan.parseMysqlExplain(result.raw);
-            const suggestions = ExplainPlan.generateSuggestions(parsed);
+            const result = await adapter.schemaAdapter.getExplainPlan(database, explainSql);
+            const parsed = this._explainPlanService.parseExplain(result.raw);
+            const suggestions = this._explainPlanService.generateSuggestions(parsed);
 
             this.postMessage({
                 command: 'explainResult',

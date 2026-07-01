@@ -1,6 +1,22 @@
 import { t } from '../../i18n/index';
 
 /**
+ * Minimal shared-context contract required by {@link BaseConnectionAdapter}'s
+ * default {@link BaseConnectionAdapter.reapIdleConnections} implementation.
+ *
+ * Every concrete dialect's shared context (MysqlSharedContext,
+ * PostgresSharedContext, OracleSharedContext, DamengSharedContext,
+ * SqlServerSharedContext, SqliteSharedContext) satisfies this contract:
+ * pool-based dialects expose `pool`, SQLite exposes `db`, and all of them
+ * inherit `lastActivityTime` from {@link BaseSharedContext}.
+ */
+export interface IReapableSharedContext {
+    pool?: unknown;
+    db?: unknown;
+    lastActivityTime: number;
+}
+
+/**
  * Shared base class for per-dialect connection sub-adapters.
  *
  * Connection sub-adapters ({@link MysqlConnectionAdapter},
@@ -20,6 +36,11 @@ import { t } from '../../i18n/index';
  * and return `undefined` to fall back to the common network-level handling
  * here.
  *
+ * Generic over the dialect's shared-context type so that the default
+ * {@link reapIdleConnections} implementation can read `pool` / `db` and
+ * `lastActivityTime` from `this.shared` without each subclass repeating the
+ * same 3-line guard.
+ *
  * Order of precedence in {@link formatConnectionError}:
  *   1. {@link formatDriverSpecificError} hook (dialect-specific codes).
  *   2. Common network-level errors (ECONNREFUSED, ETIMEDOUT, ...).
@@ -28,7 +49,13 @@ import { t } from '../../i18n/index';
  *      prepended via {@link extractErrorCodeTag} when the original error
  *      is returned unchanged.
  */
-export abstract class BaseConnectionAdapter {
+export abstract class BaseConnectionAdapter<TShared extends IReapableSharedContext = IReapableSharedContext> {
+    /**
+     * The dialect's shared context. Concrete subclasses declare this as a
+     * `protected` (or `private`) constructor parameter; the base class
+     * references it only inside {@link reapIdleConnections}.
+     */
+    protected abstract readonly shared: TShared;
     /**
      * Formats a connection error for display.
      *
@@ -101,21 +128,18 @@ export abstract class BaseConnectionAdapter {
      * odbc, better-sqlite3) handle idle connection eviction internally.
      * Manual pool destruction is harmful: it kills active queries and creates
      * a brief unavailability window. This default implementation is therefore
-     * a no-op that only refreshes `lastActivityTime`.
+     * a no-op that only refreshes `lastActivityTime` when a pool/db handle is
+     * present, matching the previous 3-line override that was duplicated
+     * verbatim across MySQL / Postgres / Oracle / Dameng / SqlServer / Sqlite.
      *
      * Concrete sub-adapters only need to override this when they have
      * driver-specific idle reaping that the driver itself cannot handle.
-     *
-     * Subclasses access the pool/db handle via their {@link shared} context;
-     * because this base class is pool-agnostic, the default implementation
-     * only refreshes the activity timestamp. Subclasses that need to guard on
-     * the presence of the pool should override and call `super.reapIdleConnections()`.
      */
     async reapIdleConnections(): Promise<void> {
-        // Base implementation: no-op. Subclasses with a shared context that
-        // tracks lastActivityTime should override to refresh it, e.g.:
-        //   if (!this.shared.pool) return;
-        //   this.shared.lastActivityTime = Date.now();
+        // Pool-based dialects set `pool`; SQLite sets `db`. Either way, if no
+        // handle is present there is nothing to reap and no activity to stamp.
+        if (!this.shared.pool && !this.shared.db) return;
+        this.shared.lastActivityTime = Date.now();
     }
 
     /**

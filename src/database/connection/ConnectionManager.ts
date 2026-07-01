@@ -1,8 +1,8 @@
 import { EventEmitter, Event } from 'vscode';
 import { ConnectionConfig, ConnectionState, TestConnectionResult } from './ConnectionConfig';
 import { ConnectionStore, getConnectionStore } from './ConnectionStore';
-import { AdapterFactory } from '../adapters/AdapterFactory';
-import { IDatabaseAdapter, IPoolStatus } from '../adapters/IDatabaseAdapter';
+import { AdapterFactory, DatabaseAdapter } from '../adapters/AdapterFactory';
+import { IPoolStatus } from '../adapters/IDatabaseAdapter';
 import { SshTunnel } from './SshTunnel';
 import { handleError, ErrorCategory } from '../../core/errorHandler';
 import { getContainer, Tokens } from '../../core/diContainer';
@@ -25,7 +25,7 @@ export interface ActiveConnectionEvent {
 }
 
 interface ConnectionRuntimeState {
-    adapter?: IDatabaseAdapter;
+    adapter?: DatabaseAdapter;
     state: ConnectionState;
     retryAttempts: number;
     retryTimer?: ReturnType<typeof setTimeout>;
@@ -261,7 +261,7 @@ export class ConnectionManager {
         return result;
     }
 
-    getAdapter(id: string): IDatabaseAdapter | undefined {
+    getAdapter(id: string): DatabaseAdapter | undefined {
         return this.runtimeStates.get(id)?.adapter;
     }
 
@@ -357,7 +357,7 @@ export class ConnectionManager {
         }
     }
 
-    private async handleUnhealthyConnection(id: string, adapter: IDatabaseAdapter): Promise<void> {
+    private async handleUnhealthyConnection(id: string, adapter: DatabaseAdapter): Promise<void> {
         this.stopHealthCheck(id);
         try {
             await adapter.disconnect();

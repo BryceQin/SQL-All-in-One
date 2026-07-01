@@ -11,9 +11,10 @@ import {
     type CsvImportOptions,
     type JsonImportOptions,
 } from '../database/transfer/DataImporter';
-import type { IDatabaseAdapter, QueryParam } from '../database/adapters/IDatabaseAdapter';
+import type { DatabaseAdapter } from '../database/adapters/AdapterFactory';
+import type { QueryParam, QueryResult } from '../database/adapters/IDatabaseAdapter';
 
-const mockQueryResult: import('../database/adapters/IDatabaseAdapter').QueryResult = {
+const mockQueryResult: QueryResult = {
     queryId: 'mock-qid',
     status: 'success',
     columns: [],
@@ -22,59 +23,14 @@ const mockQueryResult: import('../database/adapters/IDatabaseAdapter').QueryResu
     executionTime: 0,
 };
 
-function createMockAdapter(executeFn: (sql: string, params?: QueryParam[]) => Promise<import('../database/adapters/IDatabaseAdapter').QueryResult>): IDatabaseAdapter {
+function createMockAdapter(executeFn: (sql: string, params?: QueryParam[]) => Promise<QueryResult>): DatabaseAdapter {
     return {
         connect: async () => { /* noop */ },
         disconnect: async () => { /* noop */ },
         isConnected: () => false,
         testConnection: async () => ({ success: true }),
-        execute: executeFn,
-        executeBatch: async () => [],
-        getExplainPlan: async () => ({ format: 'text' as const, raw: '', nodes: [] }),
-        listDatabases: async () => [],
-        listTables: async () => [],
-        describeTable: async () => ({ columns: [], primaryKey: [], indexes: [], foreignKeys: [], triggers: [] }),
-        getDialectCapabilities: () => ({
-            supportsMultipleDatabases: true,
-            supportsSchema: false,
-            supportsExplain: true,
-            supportsExplainAnalyze: false,
-            supportsPreparedStatement: false,
-            supportsCancel: true,
-            supportsSshTunnel: false,
-            maxConcurrentQueries: 10,
-            supportedObjectTypes: [],
-        }),
-        getSupportedDataTypes: () => [],
-        getTableCreateScript: async () => '',
-        getDatabaseCreateScript: async () => '',
-        beginTransaction: async () => { /* noop */ },
-        commit: async () => { /* noop */ },
-        rollback: async () => { /* noop */ },
-        cancelQuery: async () => { /* noop */ },
-        getConnectionId: () => 'mock',
-        getTableData: async () => ({ columns: [], rows: [], totalRows: 0, hasMore: false }),
-        updateRow: async () => ({ success: true }),
-        deleteRow: async () => ({ success: true }),
-        insertRow: async () => ({ success: true, data: {} }),
-        listViews: async () => [],
-        listProcedures: async () => [],
-        listFunctions: async () => [],
-        listTriggers: async () => [],
-        listIndexes: async () => [],
-        getProcedureScript: async () => '',
-        getFunctionScript: async () => '',
-        getTriggerScript: async () => '',
         checkConnectionHealth: async () => true,
-        listSchemas: async () => [],
-        getTableDDL: async () => '',
-        getViewDDL: async () => '',
-        getFunctionDDL: async () => '',
-        getProcedureDDL: async () => '',
-        getTriggerDDL: async () => '',
-        getRoutineParameters: async () => [],
-        getTableRowCount: async () => 0,
-        quoteIdentifier: (id: string) => '`' + id + '`',
+        getConnectionId: () => 'mock',
         getPoolStatus: () => ({
             totalConnections: 0,
             activeConnections: 0,
@@ -83,7 +39,48 @@ function createMockAdapter(executeFn: (sql: string, params?: QueryParam[]) => Pr
             connectionLimit: 5,
             acquireTimeout: 60000,
         }),
-    } as IDatabaseAdapter;
+        queryAdapter: {
+            execute: executeFn,
+            executeBatch: async () => [],
+            beginTransaction: async () => { /* noop */ },
+            commit: async () => { /* noop */ },
+            rollback: async () => { /* noop */ },
+            cancelQuery: async () => { /* noop */ },
+        },
+        metadataAdapter: {
+            listDatabases: async () => [],
+            listSchemas: async () => [],
+            listTables: async () => [],
+            listViews: async () => [],
+            listFunctions: async () => [],
+            listProcedures: async () => [],
+            listTriggers: async () => [],
+        },
+        schemaAdapter: {
+            describeTable: async () => ({ columns: [], indexes: [], foreignKeys: [], triggers: [] }),
+            getTableDDL: async () => '',
+            getViewDDL: async () => '',
+            getFunctionDDL: async () => '',
+            getProcedureDDL: async () => '',
+            getTriggerDDL: async () => '',
+            getRoutineParameters: async () => [],
+            getExplainPlan: async () => ({ format: 'text' as const, raw: '', nodes: [] }),
+            getTableRowCount: async () => 0,
+            getDialectCapabilities: () => ({
+                supportsMultipleDatabases: true,
+                supportsSchema: false,
+                supportsExplain: true,
+                supportsExplainAnalyze: false,
+                supportsPreparedStatement: false,
+                supportsCancel: true,
+                supportsSshTunnel: false,
+                maxConcurrentQueries: 10,
+                supportedObjectTypes: [],
+            }),
+            getSupportedDataTypes: () => [],
+            quoteIdentifier: (id: string) => '`' + id + '`',
+        },
+    } as DatabaseAdapter;
 }
 
 suite('DataImporter - detectFileFormat', () => {

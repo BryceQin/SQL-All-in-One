@@ -1,8 +1,9 @@
 import type { AST } from 'node-sql-parser'
-import { getParserEngine } from '../parser/SqlParserEngine'
+import type { SqlParserEngine } from '../parser/SqlParserEngine'
 import type { SqlDialect } from '../parser/dialectMapper'
 import { AstTransformEngine } from './AstTransformEngine'
 import { RegexFallbackConverter } from './RegexFallbackConverter'
+import { getContainer, Tokens } from '../core/diContainer'
 
 export interface ConvertOptions {
     allowRegexFallback: boolean
@@ -34,6 +35,11 @@ function deepCloneAst(ast: AST[] | AST): AST[] | AST {
 export class DialectConverter {
     private transformEngine = new AstTransformEngine()
     private fallbackConverter = new RegexFallbackConverter()
+    private parserEngine: SqlParserEngine
+
+    constructor(parserEngine: SqlParserEngine) {
+        this.parserEngine = parserEngine
+    }
 
     convert(sql: string, from: SqlDialect, to: SqlDialect, options?: ConvertOptions): ConvertResult {
         if (from === to) {
@@ -41,10 +47,10 @@ export class DialectConverter {
         }
 
         try {
-            const ast = getParserEngine().astify(sql, from)
+            const ast = this.parserEngine.astify(sql, from)
             const astCopy = deepCloneAst(ast)
             const { warnings } = this.transformEngine.transform(astCopy, from, to)
-            const result = getParserEngine().sqlify(astCopy, to)
+            const result = this.parserEngine.sqlify(astCopy, to)
             return { success: true, result, error: null, usedFallback: false, warnings, ast }
         } catch (e) {
             const error = e instanceof Error ? e : new Error(String(e))
@@ -68,13 +74,12 @@ export class DialectConverter {
     }
 }
 
-let converterInstance: DialectConverter | null = null
+export function createDialectConverter(parserEngine: SqlParserEngine): DialectConverter {
+    return new DialectConverter(parserEngine)
+}
 
 export function getDialectConverter(): DialectConverter {
-    if (!converterInstance) {
-        converterInstance = new DialectConverter()
-    }
-    return converterInstance
+    return getContainer().get<DialectConverter>(Tokens.DialectConverter)
 }
 
 export type { AST }

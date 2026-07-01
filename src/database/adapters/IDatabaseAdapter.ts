@@ -27,6 +27,40 @@ export interface IPoolStatus {
     acquireTimeout: number;
 }
 
+/**
+ * Connection-lifecycle methods implemented by per-dialect connection
+ * sub-adapters (MysqlConnectionAdapter, PostgresConnectionAdapter, ...).
+ *
+ * These are the driver-level connect/disconnect/test/health/reap/format
+ * operations. The aggregated {@link IConnectionAdapter} adds three
+ * status-reporting methods (isConnected / getConnectionId / getPoolStatus)
+ * that live on {@link BaseDatabaseAdapter} because they read shared state
+ * (connection flags, activity counters) tracked centrally.
+ *
+ * Splitting the connection surface this way lets
+ * {@link BaseDatabaseAdapter.connectionAdapter} be typed as
+ * `IConnectionLifecycle` without forcing every connection sub-adapter to
+ * re-implement the three status methods that the base class already owns.
+ *
+ * Note: `reapIdleConnections` lives here (sub-adapter contract) but is NOT
+ * part of {@link IConnectionAdapter} / {@link IDatabaseAdapter} — it is an
+ * internal hook driven by {@link BaseDatabaseAdapter}'s reap timer, and
+ * never called by external adapter consumers.
+ */
+export interface IConnectionLifecycle {
+    connect(config: ConnectionConfig): Promise<void>;
+    disconnect(): Promise<void>;
+    testConnection(config: ConnectionConfig): Promise<TestConnectionResult>;
+    checkConnectionHealth(): Promise<boolean>;
+    reapIdleConnections(): Promise<void>;
+    formatConnectionError(error: unknown, config: ConnectionConfig): Error;
+}
+
+/**
+ * Full connection adapter surface: lifecycle methods (sub-adapter) + status
+ * methods (base adapter), minus `reapIdleConnections` which is internal.
+ * {@link IDatabaseAdapter} extends this.
+ */
 export interface IConnectionAdapter {
     connect(config: ConnectionConfig): Promise<void>;
     disconnect(): Promise<void>;

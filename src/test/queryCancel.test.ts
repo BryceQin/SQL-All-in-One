@@ -1,8 +1,9 @@
 import * as assert from 'assert';
 import { QueryExecutor } from '../database/query/QueryExecutor';
-import type { IDatabaseAdapter, QueryResult, QueryParam, SqlStatement, ConnectionConfig, DialectCapabilities } from '../database/adapters/IDatabaseAdapter';
+import type { DatabaseAdapter } from '../database/adapters/AdapterFactory';
+import type { QueryResult, QueryParam, SqlStatement, ConnectionConfig, DialectCapabilities } from '../database/adapters/IDatabaseAdapter';
 
-function createMockAdapter(options: { supportsCancel?: boolean; neverResolve?: boolean } = {}): IDatabaseAdapter & { cancelQueryCalled: boolean; cancelQueryCallCount: number } {
+function createMockAdapter(options: { supportsCancel?: boolean; neverResolve?: boolean } = {}): DatabaseAdapter & { cancelQueryCalled: boolean; cancelQueryCallCount: number } {
     const supportsCancel = options.supportsCancel ?? true;
     const neverResolve = options.neverResolve ?? true;
     let cancelQueryCalled = false;
@@ -17,59 +18,65 @@ function createMockAdapter(options: { supportsCancel?: boolean; neverResolve?: b
         disconnect: async () => { /* mock no-op */ },
         testConnection: async () => ({ success: true }),
         checkConnectionHealth: async () => true,
-        execute: async (_sql: string, _params?: QueryParam[]): Promise<QueryResult> => {
-            if (neverResolve) {
-                return new Promise<QueryResult>(() => { /* never resolves: simulates timeout */ });
-            }
-            return {
-                queryId: 'mock',
-                status: 'success',
-                columns: [],
-                rows: [],
-                rowCount: 0,
-                executionTime: 0,
-            };
+        queryAdapter: {
+            execute: async (_sql: string, _params?: QueryParam[]): Promise<QueryResult> => {
+                if (neverResolve) {
+                    return new Promise<QueryResult>(() => { /* never resolves: simulates timeout */ });
+                }
+                return {
+                    queryId: 'mock',
+                    status: 'success',
+                    columns: [],
+                    rows: [],
+                    rowCount: 0,
+                    executionTime: 0,
+                };
+            },
+            executeBatch: async (_statements: SqlStatement[]): Promise<QueryResult[]> => [],
+            beginTransaction: async () => { /* mock no-op */ },
+            commit: async () => { /* mock no-op */ },
+            rollback: async () => { /* mock no-op */ },
+            cancelQuery: async (_queryId: string): Promise<void> => {
+                cancelQueryCalled = true;
+                cancelQueryCallCount++;
+            },
         },
-        executeBatch: async (_statements: SqlStatement[]): Promise<QueryResult[]> => [],
-        beginTransaction: async () => { /* mock no-op */ },
-        commit: async () => { /* mock no-op */ },
-        rollback: async () => { /* mock no-op */ },
-        cancelQuery: async (_queryId: string): Promise<void> => {
-            cancelQueryCalled = true;
-            cancelQueryCallCount++;
+        metadataAdapter: {
+            listDatabases: async () => [],
+            listSchemas: async () => [],
+            listTables: async () => [],
+            listViews: async () => [],
+            listFunctions: async () => [],
+            listProcedures: async () => [],
+            listTriggers: async () => [],
         },
-        listDatabases: async () => [],
-        listSchemas: async () => [],
-        listTables: async () => [],
-        listViews: async () => [],
-        listFunctions: async () => [],
-        listProcedures: async () => [],
-        listTriggers: async () => [],
-        describeTable: async () => ({ columns: [], indexes: [], foreignKeys: [], triggers: [] }),
-        getTableDDL: async () => '',
-        getViewDDL: async () => '',
-        getFunctionDDL: async () => '',
-        getProcedureDDL: async () => '',
-        getTriggerDDL: async () => '',
-        getRoutineParameters: async () => [],
-        getExplainPlan: async () => ({ format: 'json' as const, raw: '{}', nodes: [] }),
-        getTableRowCount: async () => 0,
-        getDialectCapabilities: (): DialectCapabilities => ({
-            supportsSchema: true,
-            supportsMultipleDatabases: false,
-            maxConcurrentQueries: 5,
-            supportsPreparedStatement: true,
-            supportsExplain: true,
-            supportsExplainAnalyze: false,
-            supportsCancel,
-            supportsSshTunnel: false,
-            supportedObjectTypes: ['table'],
-        }),
-        getSupportedDataTypes: () => [],
-        quoteIdentifier: (id: string) => id,
+        schemaAdapter: {
+            describeTable: async () => ({ columns: [], indexes: [], foreignKeys: [], triggers: [] }),
+            getTableDDL: async () => '',
+            getViewDDL: async () => '',
+            getFunctionDDL: async () => '',
+            getProcedureDDL: async () => '',
+            getTriggerDDL: async () => '',
+            getRoutineParameters: async () => [],
+            getExplainPlan: async () => ({ format: 'json' as const, raw: '{}', nodes: [] }),
+            getTableRowCount: async () => 0,
+            getDialectCapabilities: (): DialectCapabilities => ({
+                supportsSchema: true,
+                supportsMultipleDatabases: false,
+                maxConcurrentQueries: 5,
+                supportsPreparedStatement: true,
+                supportsExplain: true,
+                supportsExplainAnalyze: false,
+                supportsCancel,
+                supportsSshTunnel: false,
+                supportedObjectTypes: ['table'],
+            }),
+            getSupportedDataTypes: () => [],
+            quoteIdentifier: (id: string) => id,
+        },
         get cancelQueryCalled() { return cancelQueryCalled; },
         get cancelQueryCallCount() { return cancelQueryCallCount; },
-    } as unknown as IDatabaseAdapter & { cancelQueryCalled: boolean; cancelQueryCallCount: number };
+    } as unknown as DatabaseAdapter & { cancelQueryCalled: boolean; cancelQueryCallCount: number };
 
     return mock;
 }

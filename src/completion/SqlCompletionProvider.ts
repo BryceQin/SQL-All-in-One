@@ -13,6 +13,7 @@ import { handleError, ErrorCategory } from '../core/errorHandler'
 import { getConfigManager } from '../core/configManager'
 import { getPerformanceMonitor } from '../core/performanceMonitor'
 import { SchemaCompletionProvider } from './SchemaCompletionProvider'
+import { getSchemaProvider } from '../database/schema/SchemaProvider'
 import { getConnectionManager } from '../database/connection/ConnectionManager'
 import { getDocumentAstCache } from '../parser/DocumentAstCache'
 import type { SqlDialect } from '../parser/dialectMapper'
@@ -158,7 +159,7 @@ export class SqlCompletionProvider implements vscode.CompletionItemProvider {
     private debounceTimer: ReturnType<typeof setTimeout> | null = null
 
     constructor(_extensionPath: string) {
-        this.schemaCompletionProvider = new SchemaCompletionProvider()
+        this.schemaCompletionProvider = new SchemaCompletionProvider(getSchemaProvider())
         this.configChangeDisposable = getConfigManager().onConfigChange(() => {
             // Static items embed i18n labels; rebuild them when config (e.g.
             // displayLanguage) changes.

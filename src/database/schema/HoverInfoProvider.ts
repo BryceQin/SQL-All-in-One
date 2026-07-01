@@ -22,7 +22,7 @@ export class HoverInfoProvider {
         if (!adapter) return null;
 
         try {
-            const structure = await adapter.describeTable(database, tableName);
+            const structure = await adapter.schemaAdapter.describeTable(database, tableName);
             const md = new vscode.MarkdownString();
             md.isTrusted = true;
             md.appendMarkdown(`### 📋 ${tableName}\n\n`);

@@ -1,11 +1,14 @@
 import * as vscode from 'vscode';
 import * as crypto from 'crypto';
 import { BaseWebviewPanel, type WebviewPanelConfig } from '../BaseWebviewPanel';
-import { getConnectionManager } from '../../database/connection/ConnectionManager';
-import { getConnectionStore } from '../../database/connection/ConnectionStore';
-import { ConnectionConfig, ConnectionGroup } from '../../database/connection/ConnectionConfig';
+import type {
+    IConnectionService,
+    IConnectionStore,
+    IDialectMetadataProvider,
+} from '../../application/ports';
+import type { ConnectionConfig, ConnectionGroup } from '../../database/connection/ConnectionConfig';
 import { DatabaseTreeProvider } from '../databaseExplorer/DatabaseTreeProvider';
-import { AdapterFactory } from '../../database/adapters/AdapterFactory';
+import { getContainer, Tokens } from '../../core/diContainer';
 import { t } from '../../i18n';
 
 interface ConnectionDialogConfig {
@@ -36,6 +39,9 @@ export class ConnectionDialog extends BaseWebviewPanel {
     private _connectionId?: string;
     private _treeProvider?: DatabaseTreeProvider;
     private _resolveDialog?: (result: { saved: boolean; connectionId?: string } | undefined) => void;
+    private readonly _connectionService: IConnectionService;
+    private readonly _connectionStore: IConnectionStore;
+    private readonly _dialectMetadataProvider: IDialectMetadataProvider;
 
     public static async show(
         extensionUri: vscode.Uri,
@@ -43,6 +49,9 @@ export class ConnectionDialog extends BaseWebviewPanel {
             mode: 'create' | 'edit';
             connectionId?: string;
             treeProvider?: DatabaseTreeProvider;
+            connectionService?: IConnectionService;
+            connectionStore?: IConnectionStore;
+            dialectMetadataProvider?: IDialectMetadataProvider;
         }
     ): Promise<{ saved: boolean; connectionId?: string } | undefined> {
         const existing = BaseWebviewPanel.getExistingInstance<ConnectionDialog>(ConnectionDialog.viewType);
@@ -58,7 +67,14 @@ export class ConnectionDialog extends BaseWebviewPanel {
             { viewColumn: vscode.ViewColumn.One }
         );
 
-        const dialog = new ConnectionDialog(panel, extensionUri, options.treeProvider);
+        const dialog = new ConnectionDialog(
+            panel,
+            extensionUri,
+            options.treeProvider,
+            options.connectionService,
+            options.connectionStore,
+            options.dialectMetadataProvider,
+        );
         BaseWebviewPanel.registerInstance(dialog);
 
         dialog._mode = options.mode;
@@ -75,10 +91,20 @@ export class ConnectionDialog extends BaseWebviewPanel {
     private constructor(
         panel: vscode.WebviewPanel,
         extensionUri: vscode.Uri,
-        treeProvider?: DatabaseTreeProvider
+        treeProvider?: DatabaseTreeProvider,
+        connectionService?: IConnectionService,
+        connectionStore?: IConnectionStore,
+        dialectMetadataProvider?: IDialectMetadataProvider,
     ) {
         super(panel, extensionUri);
         this._treeProvider = treeProvider;
+        // Resolve port services from the DI container (core layer) when the
+        // caller did not inject them explicitly. Task 7 will wire the ports
+        // at the call site.
+        const container = getContainer();
+        this._connectionService = connectionService ?? container.get(Tokens.ConnectionService);
+        this._connectionStore = connectionStore ?? container.get(Tokens.ConnectionStore);
+        this._dialectMetadataProvider = dialectMetadataProvider ?? container.get(Tokens.DialectMetadataProvider);
     }
 
     private async _initializeWithConfig(config: ConnectionDialogConfig): Promise<void> {
@@ -182,7 +208,7 @@ export class ConnectionDialog extends BaseWebviewPanel {
     }
 
     private async _buildConfig(options: { mode: 'create' | 'edit'; connectionId?: string }): Promise<ConnectionDialogConfig> {
-        const store = getConnectionStore();
+        const store = this._connectionStore;
         const groups = store.getGroups();
         const connections = store.getConnections();
         const existingNames = connections
@@ -221,11 +247,11 @@ export class ConnectionDialog extends BaseWebviewPanel {
             return;
         }
 
-        const manager = getConnectionManager();
+        const manager = this._connectionService;
 
         try {
             if (this._mode === 'edit' && this._connectionId) {
-                const store = getConnectionStore();
+                const store = this._connectionStore;
                 const saveConfig = { ...formData };
 
                 if (!saveConfig.password) {
@@ -260,8 +286,8 @@ export class ConnectionDialog extends BaseWebviewPanel {
     }
 
     private async _handleTestConnection(formData: ConnectionConfig): Promise<void> {
-        const manager = getConnectionManager();
-        const store = getConnectionStore();
+        const manager = this._connectionService;
+        const store = this._connectionStore;
 
         try {
             this.postMessage({ command: 'testStart' });
@@ -324,7 +350,7 @@ export class ConnectionDialog extends BaseWebviewPanel {
 
     private async _sendSupportedDialects(): Promise<void> {
         try {
-            const supported = AdapterFactory.getAllMetadata();
+            const supported = this._dialectMetadataProvider.getAllMetadata();
             this.postMessage({
                 command: 'supportedDialects',
                 supported,
@@ -343,7 +369,7 @@ export class ConnectionDialog extends BaseWebviewPanel {
             return t('connDialog.nameRequired');
         }
 
-        const store = getConnectionStore();
+        const store = this._connectionStore;
         const existing = store.getConnections()
             .filter(c => c.id !== this._connectionId)
             .map(c => c.name);

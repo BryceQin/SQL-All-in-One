@@ -1,87 +1,63 @@
 import type {
-    IDatabaseAdapter,
+    IConnectionAdapter,
+    IConnectionLifecycle,
+    IQueryAdapter,
+    IMetadataAdapter,
+    ISchemaAdapter,
     IPoolStatus,
     ConnectionConfig,
-    QueryResult,
-    QueryParam,
-    SqlStatement,
-    DatabaseInfo,
-    TableInfo,
-    ViewInfo,
-    FunctionInfo,
-    ProcedureInfo,
-    TriggerInfo,
-    RoutineParameterInfo,
-    TableStructure,
-    DialectCapabilities,
-    DataTypeCategory,
-    ExplainResult,
     TestConnectionResult,
 } from './IDatabaseAdapter';
+import { BaseSharedContext } from './BaseSharedContext';
 import { t } from '../../i18n/index';
 import { validateIdentifier } from './identifierValidator';
 
 /**
- * Common interface implemented by per-dialect connection sub-adapters.
+ * Shared base class for per-dialect top-level database adapters.
  *
- * The top-level BaseDatabaseAdapter delegates connect/disconnect/etc. to a
- * sub-adapter that satisfies this shape. Each dialect's XxxConnectionAdapter
- * already matches it structurally; we keep the type loose (structural) so the
- * sub-adapters do not have to import this file (which would create a cycle).
+ * Each concrete dialect's `XxxAdapter` extends this class and supplies 5
+ * factory methods ({@link createSharedContext}, {@link createConnectionAdapter},
+ * {@link createQueryAdapter}, {@link createMetadataAdapter},
+ * {@link createSchemaAdapter}) that instantiate the dialect-specific
+ * sub-adapters. The base class wires the resulting instances into 5
+ * `public` fields:
+ *
+ *   - {@link shared} — dialect-specific shared context (pool, transaction
+ *     connection, ...).
+ *   - {@link connectionAdapter} — driver-level connect/disconnect/test/
+ *     health/reap operations ({@link IConnectionLifecycle}).
+ *   - {@link queryAdapter} — execute / executeBatch / transaction control /
+ *     cancel / executeStream ({@link IQueryAdapter}).
+ *   - {@link metadataAdapter} — list databases/schemas/tables/views/
+ *     functions/procedures/triggers ({@link IMetadataAdapter}).
+ *   - {@link schemaAdapter} — describeTable / DDL getters / explain plan /
+ *     dialect capabilities / identifier quoting ({@link ISchemaAdapter}).
+ *
+ * The aggregated {@link IDatabaseAdapter} surface is split: connection
+ * status methods (isConnected / getConnectionId / getPoolStatus) and the
+ * lifecycle methods (connect / disconnect / testConnection /
+ * checkConnectionHealth) are implemented here on the base class (the
+ * lifecycle ones delegate to {@link connectionAdapter}). The query /
+ * metadata / schema surfaces are accessed by external callers directly via
+ * the public sub-adapter fields, e.g. `adapter.queryAdapter.execute(...)`,
+ * `adapter.metadataAdapter.listTables(...)` and
+ * `adapter.schemaAdapter.describeTable(...)`. This eliminates the prior 25-line forwarding block
+ * and the 4 duplicate `IConnectionSubAdapter` / `IQuerySubAdapter` /
+ * `IMetadataSubAdapter` / `ISchemaSubAdapter` interfaces (the public
+ * {@link IDatabaseAdapter.ts} interfaces are used directly instead).
+ *
+ * The base class retains the truly shared logic: connection-state tracking,
+ * pool-status reporting, the reap-idle timer, the default connect/disconnect/
+ * testConnection/checkConnectionHealth lifecycle (which delegate to
+ * {@link connectionAdapter}), the common network-error branch of
+ * {@link formatConnectionError}, and {@link validateIdentifier}.
+ *
+ * Generic over the dialect-specific shared-context type `TShared` so that
+ * subclasses' factory methods can return the concrete shared-context
+ * subclass (e.g. `MysqlSharedContext`) rather than the abstract base.
  */
-export interface IConnectionSubAdapter {
-    connect(config: ConnectionConfig): Promise<void>;
-    disconnect(): Promise<void>;
-    testConnection(config: ConnectionConfig): Promise<TestConnectionResult>;
-    checkConnectionHealth(): Promise<boolean>;
-    reapIdleConnections(): Promise<void>;
-    formatConnectionError(error: unknown, config: ConnectionConfig): Error;
-}
-
-/**
- * Common interface implemented by per-dialect query sub-adapters.
- */
-export interface IQuerySubAdapter {
-    execute(sql: string, params?: QueryParam[]): Promise<QueryResult>;
-    executeBatch(statements: SqlStatement[]): Promise<QueryResult[]>;
-    beginTransaction(): Promise<void>;
-    commit(): Promise<void>;
-    rollback(): Promise<void>;
-    cancelQuery(queryId: string): Promise<void>;
-}
-
-/**
- * Common interface implemented by per-dialect metadata sub-adapters.
- */
-export interface IMetadataSubAdapter {
-    listDatabases(): Promise<DatabaseInfo[]>;
-    listSchemas(database?: string): Promise<string[]>;
-    listTables(database?: string, schema?: string, filter?: string): Promise<TableInfo[]>;
-    listViews(database?: string, schema?: string): Promise<ViewInfo[]>;
-    listFunctions(database?: string, schema?: string): Promise<FunctionInfo[]>;
-    listProcedures(database?: string, schema?: string): Promise<ProcedureInfo[]>;
-    listTriggers(database?: string, schema?: string): Promise<TriggerInfo[]>;
-}
-
-/**
- * Common interface implemented by per-dialect schema sub-adapters.
- */
-export interface ISchemaSubAdapter {
-    describeTable(database: string, table: string, schema?: string): Promise<TableStructure>;
-    getTableDDL(database: string, table: string, schema?: string): Promise<string>;
-    getViewDDL(database: string, view: string, schema?: string): Promise<string>;
-    getFunctionDDL(database: string, functionName: string, schema?: string): Promise<string>;
-    getProcedureDDL(database: string, procedureName: string, schema?: string): Promise<string>;
-    getTriggerDDL(database: string, triggerName: string, schema?: string): Promise<string>;
-    getRoutineParameters(database: string, routineName: string, routineType: 'FUNCTION' | 'PROCEDURE', schema?: string): Promise<RoutineParameterInfo[]>;
-    getExplainPlan(database: string, sql: string): Promise<ExplainResult>;
-    getTableRowCount(database: string, table: string, schema?: string): Promise<number>;
-    getDialectCapabilities(): DialectCapabilities;
-    getSupportedDataTypes(): DataTypeCategory[];
-    quoteIdentifier(identifier: string): string;
-}
-
-export abstract class BaseDatabaseAdapter implements IDatabaseAdapter {
+export abstract class BaseDatabaseAdapter<TShared extends BaseSharedContext = BaseSharedContext>
+        implements IConnectionAdapter {
     /** @internal Tracked by subclasses via connect/disconnect lifecycle */
     protected isConnected_ = false;
     /** @internal Updated by updateActivity() and sub-adapter operations */
@@ -94,11 +70,49 @@ export abstract class BaseDatabaseAdapter implements IDatabaseAdapter {
     public reapTimer: ReturnType<typeof setInterval> | null = null;
     protected connectionId: string;
 
+    /**
+     * Dialect-specific sub-adapters. Declared `public` so external callers
+     * can reach the query / metadata / schema / connection-lifecycle surfaces
+     * directly (`adapter.queryAdapter.execute(...)`,
+     * `adapter.metadataAdapter.listTables(...)`, ...) instead of going
+     * through 25 forwarding methods on the base class.
+     *
+     * The aggregated {@link IDatabaseAdapter} interface still works because
+     * connection status (isConnected / getConnectionId / getPoolStatus) and
+     * the connect/disconnect/testConnection/checkConnectionHealth lifecycle
+     * are implemented on this base class — callers using those via
+     * `adapter.connect(...)` / `adapter.isConnected()` continue to work
+     * unchanged.
+     */
+    public shared: TShared;
+    public connectionAdapter: IConnectionLifecycle;
+    public queryAdapter: IQueryAdapter;
+    public metadataAdapter: IMetadataAdapter;
+    public schemaAdapter: ISchemaAdapter;
+
     constructor(public config: ConnectionConfig) {
         this.connectionId = config.id;
+        // Order matters: createSharedContext must run first (the next four
+        // factories reference this.shared), and createMetadataAdapter's
+        // closure captures this.queryAdapter, so query must be initialised
+        // before metadata; similarly schema's closure captures both
+        // queryAdapter and metadataAdapter.
+        this.shared = this.createSharedContext();
+        this.connectionAdapter = this.createConnectionAdapter();
+        this.queryAdapter = this.createQueryAdapter();
+        this.metadataAdapter = this.createMetadataAdapter();
+        this.schemaAdapter = this.createSchemaAdapter();
     }
 
-    // ── Common implementations ──────────────────────────────────────────
+    // ── Sub-adapter factories (implemented by concrete dialects) ────────
+
+    protected abstract createSharedContext(): TShared;
+    protected abstract createConnectionAdapter(): IConnectionLifecycle;
+    protected abstract createQueryAdapter(): IQueryAdapter;
+    protected abstract createMetadataAdapter(): IMetadataAdapter;
+    protected abstract createSchemaAdapter(): ISchemaAdapter;
+
+    // ── IConnectionAdapter: status methods (owned by base) ──────────────
 
     isConnected(): boolean {
         return this.isConnected_;
@@ -137,19 +151,11 @@ export abstract class BaseDatabaseAdapter implements IDatabaseAdapter {
         }
     }
 
-    // ── Default connection lifecycle ────────────────────────────────────
+    // ── IConnectionAdapter: lifecycle (delegate to connectionAdapter) ───
     //
-    // These delegate to the dialect-specific sub-adapters wired up by the
-    // concrete subclass via getConnectionAdapter() / getQueryAdapter() etc.
-    // Subclasses may override individual methods when extra behavior (e.g.
-    // SSH-tunnel setup, SQLite-specific path handling) is required.
-
-    /**
-     * Returns the dialect-specific connection sub-adapter. Concrete adapters
-     * must implement this so the default connect/disconnect/etc. can delegate
-     * to it.
-     */
-    protected abstract getConnectionAdapter(): IConnectionSubAdapter;
+    // These delegate to {@link connectionAdapter}. Subclasses may override
+    // individual methods when extra behavior (e.g. SSH-tunnel setup,
+    // SQLite-specific path handling) is required.
 
     async connect(config: ConnectionConfig): Promise<void> {
         if (this.isConnected_) {
@@ -159,7 +165,7 @@ export abstract class BaseDatabaseAdapter implements IDatabaseAdapter {
         this.config = config;
         this.connectionId = config.id;
 
-        await this.getConnectionAdapter().connect(config);
+        await this.connectionAdapter.connect(config);
 
         this.isConnected_ = true;
         this.updateActivity();
@@ -171,18 +177,18 @@ export abstract class BaseDatabaseAdapter implements IDatabaseAdapter {
 
     async disconnect(): Promise<void> {
         this.stopReapTimer();
-        await this.getConnectionAdapter().disconnect();
+        await this.connectionAdapter.disconnect();
         this.isConnected_ = false;
         this.activeConnectionCount = 0;
         this.totalConnectionCount = 0;
     }
 
     async testConnection(config: ConnectionConfig): Promise<TestConnectionResult> {
-        return this.getConnectionAdapter().testConnection(config);
+        return this.connectionAdapter.testConnection(config);
     }
 
     async checkConnectionHealth(): Promise<boolean> {
-        return this.getConnectionAdapter().checkConnectionHealth();
+        return this.connectionAdapter.checkConnectionHealth();
     }
 
     /**
@@ -197,6 +203,9 @@ export abstract class BaseDatabaseAdapter implements IDatabaseAdapter {
      * dialect-specific prefix to the debug log line (e.g. `PG`, `SQLite`),
      * or override this method entirely to drop the idle-check (SQLite reaps
      * unconditionally).
+     *
+     * Not part of {@link IDatabaseAdapter}; only invoked internally by the
+     * reap timer started in {@link connect}.
      */
     protected async reapIdleConnections(idleTimeout: number): Promise<void> {
         if (!this.isConnected_) return;
@@ -205,7 +214,7 @@ export abstract class BaseDatabaseAdapter implements IDatabaseAdapter {
             const status = this.getPoolStatus();
             if (status.activeConnections === 0 && status.idleConnections > 0) {
                 try {
-                    await this.getConnectionAdapter().reapIdleConnections();
+                    await this.connectionAdapter.reapIdleConnections();
                 } catch (e) {
                     const prefix = this.getReapLogPrefix();
                     const label = prefix ? `${prefix} ` : '';
@@ -225,120 +234,6 @@ export abstract class BaseDatabaseAdapter implements IDatabaseAdapter {
         return '';
     }
 
-    // ── Default query/metadata/schema delegation ────────────────────────
-    //
-    // Each concrete adapter wires up query/metadata/schema sub-adapters in
-    // its constructor. The defaults below simply forward the call so the
-    // concrete adapter only has to implement the abstract getter(s) for the
-    // sub-adapters it wires up.
-
-    /** Returns the dialect-specific query sub-adapter. */
-    protected abstract getQueryAdapter(): IQuerySubAdapter;
-    /** Returns the dialect-specific metadata sub-adapter. */
-    protected abstract getMetadataAdapter(): IMetadataSubAdapter;
-    /** Returns the dialect-specific schema sub-adapter. */
-    protected abstract getSchemaAdapter(): ISchemaSubAdapter;
-
-    execute(sql: string, params?: QueryParam[]): Promise<QueryResult> {
-        return this.getQueryAdapter().execute(sql, params);
-    }
-
-    executeBatch(statements: SqlStatement[]): Promise<QueryResult[]> {
-        return this.getQueryAdapter().executeBatch(statements);
-    }
-
-    beginTransaction(): Promise<void> {
-        return this.getQueryAdapter().beginTransaction();
-    }
-
-    commit(): Promise<void> {
-        return this.getQueryAdapter().commit();
-    }
-
-    rollback(): Promise<void> {
-        return this.getQueryAdapter().rollback();
-    }
-
-    cancelQuery(queryId: string): Promise<void> {
-        return this.getQueryAdapter().cancelQuery(queryId);
-    }
-
-    listDatabases(): Promise<DatabaseInfo[]> {
-        return this.getMetadataAdapter().listDatabases();
-    }
-
-    listSchemas(database?: string): Promise<string[]> {
-        return this.getMetadataAdapter().listSchemas(database);
-    }
-
-    listTables(database?: string, schema?: string, filter?: string): Promise<TableInfo[]> {
-        return this.getMetadataAdapter().listTables(database, schema, filter);
-    }
-
-    listViews(database?: string, schema?: string): Promise<ViewInfo[]> {
-        return this.getMetadataAdapter().listViews(database, schema);
-    }
-
-    listFunctions(database?: string, schema?: string): Promise<FunctionInfo[]> {
-        return this.getMetadataAdapter().listFunctions(database, schema);
-    }
-
-    listProcedures(database?: string, schema?: string): Promise<ProcedureInfo[]> {
-        return this.getMetadataAdapter().listProcedures(database, schema);
-    }
-
-    listTriggers(database?: string, schema?: string): Promise<TriggerInfo[]> {
-        return this.getMetadataAdapter().listTriggers(database, schema);
-    }
-
-    describeTable(database: string, table: string, schema?: string): Promise<TableStructure> {
-        return this.getSchemaAdapter().describeTable(database, table, schema);
-    }
-
-    getTableDDL(database: string, table: string, schema?: string): Promise<string> {
-        return this.getSchemaAdapter().getTableDDL(database, table, schema);
-    }
-
-    getViewDDL(database: string, view: string, schema?: string): Promise<string> {
-        return this.getSchemaAdapter().getViewDDL(database, view, schema);
-    }
-
-    getFunctionDDL(database: string, functionName: string, schema?: string): Promise<string> {
-        return this.getSchemaAdapter().getFunctionDDL(database, functionName, schema);
-    }
-
-    getProcedureDDL(database: string, procedureName: string, schema?: string): Promise<string> {
-        return this.getSchemaAdapter().getProcedureDDL(database, procedureName, schema);
-    }
-
-    getTriggerDDL(database: string, triggerName: string, schema?: string): Promise<string> {
-        return this.getSchemaAdapter().getTriggerDDL(database, triggerName, schema);
-    }
-
-    getRoutineParameters(database: string, routineName: string, routineType: 'FUNCTION' | 'PROCEDURE', schema?: string): Promise<RoutineParameterInfo[]> {
-        return this.getSchemaAdapter().getRoutineParameters(database, routineName, routineType, schema);
-    }
-
-    getExplainPlan(database: string, sql: string): Promise<ExplainResult> {
-        return this.getSchemaAdapter().getExplainPlan(database, sql);
-    }
-
-    getTableRowCount(database: string, table: string, schema?: string): Promise<number> {
-        return this.getSchemaAdapter().getTableRowCount(database, table, schema);
-    }
-
-    getDialectCapabilities(): DialectCapabilities {
-        return this.getSchemaAdapter().getDialectCapabilities();
-    }
-
-    getSupportedDataTypes(): DataTypeCategory[] {
-        return this.getSchemaAdapter().getSupportedDataTypes();
-    }
-
-    quoteIdentifier(identifier: string): string {
-        return this.getSchemaAdapter().quoteIdentifier(identifier);
-    }
-
     // ── Shared connection error formatting ──────────────────────────────
     //
     // The default implementation handles common network-level errors that
@@ -348,15 +243,12 @@ export abstract class BaseDatabaseAdapter implements IDatabaseAdapter {
     // error-code handling (e.g. MySQL ER_ACCESS_DENIED_ERROR, Oracle
     // ORA-01017). The hook returns `undefined` when it has no dialect
     // mapping, in which case the network-level fallbacks below apply.
+    //
+    // Note: this is a legacy convenience helper kept for adapters that do
+    // not yet extend {@link BaseConnectionAdapter} (which provides its own
+    // `formatConnectionError`). It is `protected` and therefore not part of
+    // the {@link IDatabaseAdapter} surface.
 
-    /**
-     * Formats a connection error for display.
-     *
-     * Order of precedence:
-     *   1. {@link formatDriverSpecificError} hook (dialect-specific codes).
-     *   2. Common network-level errors (ECONNREFUSED, ETIMEDOUT, ...).
-     *   3. The original error (or a wrapped Error for non-Error throws).
-     */
     protected formatConnectionError(error: unknown, context: string): Error {
         const driverSpecific = this.formatDriverSpecificError(error, context);
         if (driverSpecific) {

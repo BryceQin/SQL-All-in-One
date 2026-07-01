@@ -4,11 +4,29 @@ import { ConnectionConfig } from '../connection/ConnectionConfig';
 import { DatabaseModule } from '../DatabaseModule';
 import type { ITreeNode } from '../../shared/treeNodeTypes';
 import { getSchemaCache } from '../schema/SchemaCache';
-import type { QueryError } from '../adapters/IDatabaseAdapter';
 import type { DatabaseAdapter } from '../adapters/AdapterFactory';
 import { t } from '../../i18n/index';
 import { getConfigManager } from '../../core/configManager';
-import { setupQueryResultPanelCallbacks } from './queryResultCallbacks';
+
+// NOTE: This module no longer imports anything from the views layer.
+// All panel operations (QueryResultPanel, TableDesignerPanel, ExplainPlanPanel,
+// DataTransferDialog) and tree-provider operations (refresh, addFavorite,
+// removeFavorite) are delegated to views-layer command handlers registered in
+// Task 8:
+//   - hive-formatter.showQueryLoading(sql)
+//   - hive-formatter.showQueryResult(result, connName, connColor, tableName?)
+//   - hive-formatter.showQueryError(error, sql)
+//   - hive-formatter.setQueryResultPanelSql(sql, autoExecute?)
+//   - hive-formatter.sendDatabaseList(databases, current)
+//   - hive-formatter.setQueryResultPanelCallbacks(connectionId, database)
+//   - hive-formatter.openTableDesigner({ database, tableName? })
+//   - hive-formatter.showExplainPlan(sql, isPanel?)
+//   - hive-formatter.showDataTransferDialog()
+//   - hive-formatter.refreshTreeProvider()
+//   - hive-formatter.addTreeFavorite(...)
+//   - hive-formatter.removeTreeFavorite(...)
+// The database layer only emits these commands; if a handler is not yet
+// registered, `executeCommand` resolves to `undefined` silently.
 
 /**
  * Reads a string field from a tree node without importing concrete
@@ -19,42 +37,12 @@ function getNodeField(node: ITreeNode, field: string): string {
     return (node as unknown as Record<string, unknown>)[field] as string;
 }
 
-// Lazy resolvers for view-layer panel constructors. The views layer value-
-// imports database-layer services (ConnectionManager, SchemaCache, ...), so
-// eagerly importing the panel modules here would form a
-// `database -> views -> database` runtime cycle. The bundled output is
-// CommonJS, so `require()` is synchronous.
-let _QueryResultPanelCtor: typeof import('../../views/queryResult/QueryResultPanel').QueryResultPanel | undefined;
-function getQueryResultPanelCtor(): typeof import('../../views/queryResult/QueryResultPanel').QueryResultPanel {
-    if (!_QueryResultPanelCtor) {
-        // Lazy require to break the `database -> views -> database` runtime cycle.
-        // The bundled output is CommonJS, so `require()` is synchronous.
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const mod = require('../../views/queryResult/QueryResultPanel') as typeof import('../../views/queryResult/QueryResultPanel');
-        _QueryResultPanelCtor = mod.QueryResultPanel;
-    }
-    return _QueryResultPanelCtor;
-}
-
-let _TableDesignerPanelCtor: typeof import('../../views/tableDesigner/TableDesignerPanel').TableDesignerPanel | undefined;
-function getTableDesignerPanelCtor(): typeof import('../../views/tableDesigner/TableDesignerPanel').TableDesignerPanel {
-    if (!_TableDesignerPanelCtor) {
-        // Lazy require to break the `database -> views -> database` runtime cycle.
-        // The bundled output is CommonJS, so `require()` is synchronous.
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const mod = require('../../views/tableDesigner/TableDesignerPanel') as typeof import('../../views/tableDesigner/TableDesignerPanel');
-        _TableDesignerPanelCtor = mod.TableDesignerPanel;
-    }
-    return _TableDesignerPanelCtor;
-}
-
 
 export function registerSchemaCommands(
-    context: vscode.ExtensionContext,
+    _context: vscode.ExtensionContext,
     dbModule: DatabaseModule
 ): vscode.Disposable[] {
     const disposables: vscode.Disposable[] = [];
-    const treeProvider = dbModule.getTreeProvider();
 
     disposables.push(
         vscode.commands.registerCommand('hive-formatter.refreshSchema', async () => {
@@ -62,7 +50,7 @@ export function registerSchemaCommands(
             if (activeConn) {
                 getSchemaCache().invalidate(activeConn.id);
             }
-            treeProvider?.refresh();
+            vscode.commands.executeCommand('hive-formatter.refreshTreeProvider');
         })
     );
 
@@ -89,60 +77,38 @@ export function registerSchemaCommands(
                 const maxRows = getConfigManager().get<number>('query.maxRows', 1000);
                 const sql = `SELECT * FROM ${quotedName} LIMIT ${maxRows};`;
 
-                let queryResultPanel = getQueryResultPanelCtor().getCurrentInstance();
-                if (!queryResultPanel || queryResultPanel.isDisposed) {
-                    queryResultPanel = getQueryResultPanelCtor().createOrShow(context.extensionUri, context);
-                    setupQueryResultPanelCallbacks(queryResultPanel, dbModule, connectionId, databaseName);
-                } else {
-                    queryResultPanel.showLoading(sql);
-                }
+                // Ask the views layer to ensure the panel exists and bind a
+                // QueryResultController pinned to (connectionId, databaseName).
+                // The controller then handles onExecutePanelSql etc. via the
+                // injected port services, so the database layer no longer
+                // reaches into the panel.
+                await vscode.commands.executeCommand(
+                    'hive-formatter.setQueryResultPanelCallbacks',
+                    connectionId,
+                    databaseName,
+                );
+                await vscode.commands.executeCommand('hive-formatter.showQueryLoading', sql);
 
                 try {
                     const dbListAdapter = getConnectionManager().getAdapter(connectionId);
                     if (dbListAdapter) {
                         const dbs = await dbListAdapter.metadataAdapter.listDatabases();
-                        queryResultPanel?.sendDatabaseList(dbs.map(d => d.name), databaseName);
+                        vscode.commands.executeCommand(
+                            'hive-formatter.sendDatabaseList',
+                            dbs.map(d => d.name),
+                            databaseName,
+                        );
                     }
                 } catch (_e) { /* ignore */ }
 
-                queryResultPanel.onExecutePanelSql = async (panelSql: string): Promise<void> => {
-                    try {
-                        const currentPanel = getQueryResultPanelCtor().getCurrentInstance();
-                        if (!currentPanel || currentPanel.isDisposed) return;
-                        const panelConn = getConnectionManager().getAllConnections().find(c => c.id === connectionId);
-                        const panelAdapter = getConnectionManager().getAdapter(connectionId);
-                        if (!panelAdapter) {
-                            currentPanel.showError({ code: 'NO_CONNECTION', message: t('database.noActiveAdapter'), sql: panelSql });
-                            return;
-                        }
-                        currentPanel.showLoading(panelSql);
-                        const queryExecutor = dbModule.getQueryExecutor();
-                        const outputChannel = dbModule.getOutputChannel();
-                        if (!queryExecutor) {
-                            currentPanel.showError({ code: 'NO_EXECUTOR', message: t('database.noActiveAdapter'), sql: panelSql });
-                            return;
-                        }
-                        const panelResult = await queryExecutor.execute(panelAdapter, panelSql, { database: databaseName }, connectionId);
-                        if (currentPanel.isDisposed) return;
-                        if (panelResult.status === 'error') {
-                            outputChannel?.appendLine(`❌ Error: ${panelResult.error?.message || t('database.unknownError')}`);
-                            outputChannel?.appendLine(`   SQL: ${panelSql}`);
-                            currentPanel.showError(panelResult.error as QueryError);
-                        } else {
-                            outputChannel?.appendLine(`✅ ${t('database.queryExecutedSuccessfully', String(panelResult.executionTime), String(panelResult.rowCount))}`);
-                            outputChannel?.appendLine(`   SQL: ${panelSql}`);
-                            currentPanel.showResult(panelResult, panelConn?.name, panelConn?.color, name);
-                        }
-                    } catch (error) {
-                        const currentPanel = getQueryResultPanelCtor().getCurrentInstance();
-                        if (!currentPanel || currentPanel.isDisposed) return;
-                        currentPanel.showError({ code: 'EXEC_ERROR', message: String(error), sql: panelSql });
-                    }
-                };
-
-                if (queryResultPanel && !queryResultPanel.isDisposed) {
-                    queryResultPanel.setSqlAndExecute(sql);
-                }
+                // Hand the SQL to the panel and trigger execution. The panel's
+                // onExecutePanelSql callback (wired by the controller) runs the
+                // query and pushes the result back via showResult.
+                await vscode.commands.executeCommand(
+                    'hive-formatter.setQueryResultPanelSql',
+                    sql,
+                    true,
+                );
             } catch (error) {
                 const msg = error instanceof Error ? error.message : String(error);
                 const outputChannel = dbModule.getOutputChannel();
@@ -210,23 +176,34 @@ export function registerSchemaCommands(
             const q = newQueryAdapter ? newQueryAdapter.schemaAdapter.quoteIdentifier.bind(newQueryAdapter.schemaAdapter) : ((id: string): string => '`' + id.replace(/`/g, '``') + '`');
             const content = database ? `USE ${q(database)};\n\n` : '';
 
-            let queryResultPanel = getQueryResultPanelCtor().getCurrentInstance();
-            if (!queryResultPanel || queryResultPanel.isDisposed) {
-                queryResultPanel = getQueryResultPanelCtor().createOrShow(context.extensionUri, context);
-                setupQueryResultPanelCallbacks(queryResultPanel, dbModule, connectionId, database);
-            }
+            // Ensure the panel exists and bind a controller pinned to
+            // (connectionId, database). The views layer owns panel creation
+            // and controller attachment.
+            await vscode.commands.executeCommand(
+                'hive-formatter.setQueryResultPanelCallbacks',
+                connectionId,
+                database,
+            );
 
             try {
                 const dbListAdapter = connectionId ? connectionManager.getAdapter(connectionId) : undefined;
                 if (dbListAdapter) {
                     const dbs = await dbListAdapter.metadataAdapter.listDatabases();
-                    queryResultPanel?.sendDatabaseList(dbs.map(d => d.name), database);
+                    vscode.commands.executeCommand(
+                        'hive-formatter.sendDatabaseList',
+                        dbs.map(d => d.name),
+                        database,
+                    );
                 }
             } catch (_e) { /* ignore: database list is best-effort */ console.debug('[SQL All in One] Failed to list databases for table designer:', _e) }
 
-            if (queryResultPanel && !queryResultPanel.isDisposed) {
-                queryResultPanel.setSql(content);
-            }
+            // Set the SQL content without auto-executing (user typed a fresh
+            // `USE db;` stub they will append to).
+            await vscode.commands.executeCommand(
+                'hive-formatter.setQueryResultPanelSql',
+                content,
+                false,
+            );
         })
     );
 
@@ -251,12 +228,13 @@ export function registerSchemaCommands(
                 if (conn) {
                     const name = node.type === 'table' ? getNodeField(node, 'tableName') : getNodeField(node, 'viewName');
                     const type: 'table' | 'view' = node.type === 'table' ? 'table' : 'view';
-                    await treeProvider?.addFavorite(
+                    await vscode.commands.executeCommand(
+                        'hive-formatter.addTreeFavorite',
                         connectionId,
                         conn.name,
                         databaseName,
                         type,
-                        name
+                        name,
                     );
                     vscode.window.showInformationMessage(t('database.addedToFavorites'));
                 }
@@ -267,11 +245,12 @@ export function registerSchemaCommands(
     disposables.push(
         vscode.commands.registerCommand('hive-formatter.removeFromFavorites', async (node?: ITreeNode) => {
             if (node) {
-                await treeProvider?.removeFavorite(
+                await vscode.commands.executeCommand(
+                    'hive-formatter.removeTreeFavorite',
                     getNodeField(node, 'connectionId'),
                     getNodeField(node, 'databaseName'),
                     node.type as 'table' | 'view',
-                    getNodeField(node, 'objectName')
+                    getNodeField(node, 'objectName'),
                 );
                 vscode.window.showInformationMessage(t('database.removedFromFavorites'));
             }
@@ -307,7 +286,7 @@ export function registerSchemaCommands(
 
                 try {
                     await manager.updateConnection(connectionId, updatedConfig);
-                    treeProvider?.refresh();
+                    vscode.commands.executeCommand('hive-formatter.refreshTreeProvider');
                     vscode.window.showInformationMessage(t('database.defaultDatabaseSet', databaseName));
                 } catch (error) {
                     vscode.window.showErrorMessage(t('database.failedToSetDefaultDatabase', String(error)));
@@ -352,11 +331,10 @@ export function registerSchemaCommands(
                 }
             }
 
-            const tableDesignerPanel = getTableDesignerPanelCtor().createOrShow(
-                context.extensionUri,
-                context
+            await vscode.commands.executeCommand(
+                'hive-formatter.openTableDesigner',
+                { database },
             );
-            await tableDesignerPanel.openForCreate(database);
         })
     );
 
@@ -378,11 +356,10 @@ export function registerSchemaCommands(
                 return;
             }
 
-            const tableDesignerPanel = getTableDesignerPanelCtor().createOrShow(
-                context.extensionUri,
-                context
+            await vscode.commands.executeCommand(
+                'hive-formatter.openTableDesigner',
+                { database: databaseName, tableName },
             );
-            await tableDesignerPanel.openForEdit(databaseName, tableName);
         })
     );
 
@@ -428,9 +405,13 @@ export function registerSchemaCommands(
                 return;
             }
 
-            const { ExplainPlanPanel } = await import('../../views/explainPlan/ExplainPlanPanel.js');
-            const panel = ExplainPlanPanel.createOrShow(context.extensionUri, context);
-            await panel.showExplainPlan(statement.sql, false);
+            // Delegate panel creation + explain-plan rendering to the views
+            // layer, which owns ExplainPlanPanel.
+            await vscode.commands.executeCommand(
+                'hive-formatter.showExplainPlan',
+                statement.sql,
+                false,
+            );
         })
     );
 
@@ -443,8 +424,9 @@ export function registerSchemaCommands(
                 return;
             }
 
-            const { DataTransferDialog } = await import('../../views/dataTransfer/DataTransferDialog.js');
-            DataTransferDialog.createOrShow(context.extensionUri, context);
+            // Delegate dialog creation to the views layer, which owns
+            // DataTransferDialog.
+            await vscode.commands.executeCommand('hive-formatter.showDataTransferDialog');
         })
     );
 

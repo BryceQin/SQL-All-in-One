@@ -2,10 +2,10 @@ import * as vscode from 'vscode';
 import { EventEmitter } from 'vscode';
 import {
     IQueryAdapter,
-    ISchemaAdapter,
     QueryResult,
     QueryStreamOptions,
 } from '../adapters/IDatabaseAdapter';
+import { DatabaseAdapter } from '../adapters/AdapterFactory';
 import { getConnectionManager } from '../connection/ConnectionManager';
 import { QueryOptions, QueryStartEvent, QueryEndEvent, RunningQuery } from './QueryResult';
 import { getConfigManager } from '../../core/configManager';
@@ -15,21 +15,16 @@ import { generateShortId } from '../../utils/idGenerator';
 import { collectStreamToResult } from './streamCollector';
 
 /**
- * Minimal adapter surface required by {@link QueryExecutor.execute} /
+ * Adapter surface required by {@link QueryExecutor.execute} /
  * {@link QueryExecutor.raceExecution}.
  *
- * The executor drives query execution (`IQueryAdapter`) and needs
- * `getDialectCapabilities()` (from `ISchemaAdapter`) only to decide whether
- * the dialect supports cancellation. Narrowing the parameter type from the
- * full {@link IDatabaseAdapter} aggregate to this intersection follows the
- * Interface Segregation Principle: callers only need to provide query + a
- * dialect-capabilities probe, not connection / metadata / full schema APIs.
- *
- * {@link IDatabaseAdapter} is still assignable to this type (it implements
- * every sub-interface), so `ConnectionManager.getAdapter()` return values
- * pass through unchanged.
+ * After the P0-2 adapter consolidation, the query / schema surfaces live on
+ * the {@link DatabaseAdapter.queryAdapter} and {@link DatabaseAdapter.schemaAdapter}
+ * fields rather than as forwarding methods on the adapter itself. The executor
+ * reaches query execution via `adapter.queryAdapter.execute(...)` and the
+ * dialect-capabilities probe via `adapter.schemaAdapter.getDialectCapabilities()`.
  */
-type QueryExecutorAdapter = IQueryAdapter & Pick<ISchemaAdapter, 'getDialectCapabilities'>;
+type QueryExecutorAdapter = DatabaseAdapter;
 
 
 export class QueryExecutor {
@@ -153,14 +148,14 @@ export class QueryExecutor {
         const adapter = connectionManager.getAdapter(runningQuery.connectionId);
 
         if (adapter) {
-            const capabilities = adapter.getDialectCapabilities();
+            const capabilities = adapter.schemaAdapter.getDialectCapabilities();
             if (capabilities.supportsCancel) {
                 const maxRetries = this.getConfigCancelRetries();
                 const retryDelay = this.getConfigCancelRetryDelay();
 
                 for (let attempt = 0; attempt < maxRetries; attempt++) {
                     try {
-                        await adapter.cancelQuery(queryId);
+                        await adapter.queryAdapter.cancelQuery(queryId);
                         return;
                     } catch (e) {
                         handleError(e, 'QueryExecutor.cancelQueryAttempt', ErrorCategory.SUB_ITEM)
@@ -232,13 +227,13 @@ export class QueryExecutor {
                     return;
                 }
                 try {
-                    const capabilities = adapter.getDialectCapabilities();
+                    const capabilities = adapter.schemaAdapter.getDialectCapabilities();
                     if (capabilities.supportsCancel) {
                         // 在实际发起取消前再次检查，避免在调度期间 Promise 已 resolve
                         if (settled) {
                             return;
                         }
-                        await adapter.cancelQuery(queryId);
+                        await adapter.queryAdapter.cancelQuery(queryId);
                     }
                 } catch (e) {
                     // best effort: log but do not propagate cancel failure
@@ -265,7 +260,7 @@ export class QueryExecutor {
             // the synchronous execute() path keeps behavior unchanged for
             // adapters without streaming (SQLite, StarRocks, …) and for
             // statements that are not safe to stream (DDL/DML).
-            const useStream = shouldUseStream(adapter, sql);
+            const useStream = shouldUseStream(adapter.queryAdapter, sql);
             const startTime = Date.now();
 
             const runStream = async (): Promise<QueryResult> => {
@@ -281,7 +276,7 @@ export class QueryExecutor {
                     signal: ac.signal,
                 };
                 try {
-                    const stream = adapter.executeStream!(sql, streamOptions);
+                    const stream = adapter.queryAdapter.executeStream!(sql, streamOptions);
                     return await collectStreamToResult({
                         stream,
                         queryId,
@@ -311,7 +306,7 @@ export class QueryExecutor {
                         // shouldUseStream).
                         if (result.status === 'error' && !settled) {
                             try {
-                                const fallback = await adapter.execute(sql, options.params);
+                                const fallback = await adapter.queryAdapter.execute(sql, options.params);
                                 if (!settled) {
                                     settleResolve(fallback);
                                     return;
@@ -332,7 +327,7 @@ export class QueryExecutor {
                             return;
                         }
                         try {
-                            const fallback = await adapter.execute(sql, options.params);
+                            const fallback = await adapter.queryAdapter.execute(sql, options.params);
                             if (!settled) {
                                 settleResolve(fallback);
                             }
@@ -343,7 +338,7 @@ export class QueryExecutor {
                         }
                     });
             } else {
-                adapter.execute(sql, options.params)
+                adapter.queryAdapter.execute(sql, options.params)
                     .then((result) => settleResolve(result))
                     .catch((error: unknown) => settleReject(error));
             }

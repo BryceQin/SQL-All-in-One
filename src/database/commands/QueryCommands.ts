@@ -2,12 +2,18 @@ import * as vscode from 'vscode';
 import { getConnectionManager } from '../connection/ConnectionManager';
 import { DatabaseModule } from '../DatabaseModule';
 import type { SqlDialect } from '../../parser/dialectMapper';
-import { QueryResultPanel } from '../../views/queryResult/QueryResultPanel';
-import type { QueryError } from '../adapters/IDatabaseAdapter';
 import { getSchemaCache } from '../schema/SchemaCache';
 import { getConfigManager } from '../../core/configManager';
 import { t } from '../../i18n/index';
-import { setupQueryResultPanelCallbacks } from './queryResultCallbacks';
+
+// NOTE: This module no longer imports anything from the views layer.
+// Showing the query result panel / pushing results into it is delegated to
+// views-layer command handlers registered in Task 8:
+//   - hive-formatter.showQueryLoading(sql)
+//   - hive-formatter.showQueryResult(result, connectionName, connectionColor)
+//   - hive-formatter.showQueryError(error, sql)
+// The database layer only emits these commands; if a handler is not yet
+// registered, `executeCommand` resolves to `undefined` silently.
 
 
 function isDDLStatement(sql: string): boolean {
@@ -41,12 +47,10 @@ function invalidateSchemaOnDDL(sql: string): void {
 }
 
 export function registerQueryCommands(
-    context: vscode.ExtensionContext,
+    _context: vscode.ExtensionContext,
     dbModule: DatabaseModule
-): { disposables: vscode.Disposable[]; getQueryResultPanel: () => QueryResultPanel | undefined } {
+): { disposables: vscode.Disposable[] } {
     const disposables: vscode.Disposable[] = [];
-
-    const getQueryResultPanel = (): QueryResultPanel | undefined => QueryResultPanel.getCurrentInstance();
 
     disposables.push(
         vscode.commands.registerCommand('hive-formatter.executeQuery', async () => {
@@ -115,16 +119,11 @@ export function registerQueryCommands(
                 if (!confirmed) return;
             }
 
-            let queryResultPanel = QueryResultPanel.getCurrentInstance();
-            if (!queryResultPanel || queryResultPanel.isDisposed) {
-                queryResultPanel = QueryResultPanel.createOrShow(
-                    context.extensionUri,
-                    context
-                );
-                setupQueryResultPanelCallbacks(queryResultPanel, dbModule);
-            } else {
-                queryResultPanel.showLoading(statement.sql);
-            }
+            // Ensure the query result panel exists and shows the loading state.
+            // The views layer owns panel creation and callback registration
+            // (Task 8 registers `hive-formatter.showQueryLoading` which lazily
+            // creates the panel + attaches the QueryResultController).
+            await vscode.commands.executeCommand('hive-formatter.showQueryLoading', statement.sql);
 
             const activeConfig = connectionManager.getActiveConnection();
             const result = await queryExecutor.execute(
@@ -137,9 +136,11 @@ export function registerQueryCommands(
             if (result.status === 'error') {
                 outputChannel?.appendLine(`❌ Error: ${result.error?.message || t('database.unknownError')}`);
                 outputChannel?.appendLine(`   SQL: ${statement.sql}`);
-                if (queryResultPanel && !queryResultPanel.isDisposed) {
-                    queryResultPanel.showError(result.error as QueryError);
-                }
+                vscode.commands.executeCommand(
+                    'hive-formatter.showQueryError',
+                    result.error,
+                    statement.sql,
+                );
             } else {
                 outputChannel?.appendLine(`✅ ${t('database.queryExecutedSuccessfully', String(result.executionTime), String(result.rowCount))}`);
                 outputChannel?.appendLine(`   SQL: ${statement.sql}`);
@@ -148,9 +149,12 @@ export function registerQueryCommands(
                     outputChannel?.appendLine(`   ${t('database.affectedRows', String(result.affectedRows))}`);
                 }
 
-                if (queryResultPanel && !queryResultPanel.isDisposed) {
-                    queryResultPanel.showResult(result, activeConfig?.name, activeConfig?.color);
-                }
+                vscode.commands.executeCommand(
+                    'hive-formatter.showQueryResult',
+                    result,
+                    activeConfig?.name,
+                    activeConfig?.color,
+                );
             }
 
             if (result.status !== 'error' || result.error?.code !== 'CANCELLED') {
@@ -285,5 +289,5 @@ export function registerQueryCommands(
         })
     );
 
-    return { disposables, getQueryResultPanel };
+    return { disposables };
 }
