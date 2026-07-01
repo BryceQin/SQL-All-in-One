@@ -3,7 +3,7 @@ import type { SqlLanguage } from '../formatter/sqlFormatter'
 import type { HoverResolver } from './HoverResolver'
 import { buildFunctionMarkdown } from './hoverUtils'
 import type { FunctionSignature } from '../completion/functionSignatures'
-import * as allDialects from '../languages/allDialects'
+import * as allDialects from '../dialects/allDialects'
 
 const _functionSigMap: Record<string, FunctionSignature[]> = {
     hive: allDialects.hiveFunctionSignatures,

@@ -1,6 +1,6 @@
 import * as assert from 'assert'
 import { getDialectEntries } from '../core/dialectRegistry'
-import { keywordMap, functionSigMap } from '../languages/dialectData'
+import { keywordMap, functionSigMap } from '../dialects/dialectData'
 import { getKeywordsForDialect } from '../dialects/keywords'
 
 suite('Dialect List Consistency', () => {

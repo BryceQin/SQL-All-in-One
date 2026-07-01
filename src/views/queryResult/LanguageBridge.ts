@@ -13,7 +13,7 @@ import { createConfig } from '../../core/configManager';
 import { handleError, ErrorCategory } from '../../core/errorHandler';
 import { InMemoryDocument } from './InMemoryDocument';
 import { MonacoDataAdapter, type MonacoCompletionItem, type MonacoDiagnostic } from './MonacoDataAdapter';
-import { keywordMap, functionSigMap } from '../../languages/dialectData';
+import { keywordMap, functionSigMap } from '../../dialects/dialectData';
 import type { FunctionSignature } from '../../completion/functionSignatures';
 import type { SqlDialect } from '../../parser/dialectMapper';
 import type { SqlLanguage } from '../../formatter/sqlFormatter';

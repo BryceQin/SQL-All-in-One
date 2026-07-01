@@ -1,6 +1,6 @@
 import * as assert from 'assert'
-import { createDialect, type Dialect, type DialectOptions } from '../languages/dialect'
-import * as allDialects from '../languages/allDialects'
+import { createDialect, type Dialect, type DialectOptions } from '../dialects/dialect'
+import * as allDialects from '../dialects/allDialects'
 import { format } from '../formatter/sqlFormatter'
 
 // Keyword/function imports per dialect

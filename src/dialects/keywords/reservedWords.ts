@@ -10,7 +10,7 @@ import {
     starrocksKeywords, starrocksDataTypes,
     sqlserverKeywords, sqlserverDataTypes,
     oracleKeywords, oracleDataTypes,
-} from '../../languages/allDialects'
+} from '../allDialects'
 import type { SqlLanguage } from '../../core/dialectRegistry'
 
 const dialectReservedWordsLoaders: Record<SqlLanguage, string[]> = {

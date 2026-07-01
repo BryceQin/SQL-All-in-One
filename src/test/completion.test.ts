@@ -37,7 +37,7 @@ suite('Completion Module Tests', () => {
     })
 
     test('Hive functionSignatures export is a non-empty array', async () => {
-        const hive = await import('../languages/hive/hive.functions.js')
+        const hive = await import('../dialects/hive/hive.functions.js')
         assert.ok(Array.isArray(hive.functionSignatures))
         assert.ok(hive.functionSignatures.length > 0)
         const f = hive.functionSignatures[0]
