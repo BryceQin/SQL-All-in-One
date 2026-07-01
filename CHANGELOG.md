@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.26.1] - 2026-07-01
+
+### Bug Fixes
+
+- **修复 VSIX 缺失运行时依赖（P0）**：v2.26.0 的 `.vscodeignore` 中 `node_modules/**` 规则错误地排除了 esbuild 标记为 external 的 8 个生产依赖（`mysql2`、`pg`、`better-sqlite3`、`mssql`、`oracledb`、`odbc`、`ssh2`、`node-sql-parser`），导致终端用户安装后激活时报 `Cannot find package 'mysql2'` 等错误。修复：移除 `node_modules/**` 全局排除规则，改为仅剥离 node_modules 内的非运行时文件（docs/test/src/build/README/LICENSE 等），并保留 `.node` 原生二进制。VSIX 体积 1.75MB → 13MB（含 8 个数据库驱动及其原生二进制，属合理成本）
+
+---
+
 ## [2.26.0] - 2026-07-01
 
 ### Refactor

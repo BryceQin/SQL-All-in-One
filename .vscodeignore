@@ -21,7 +21,71 @@ final_*.sql
 ultimate_*.sql
 docs/**
 esbuild.js
-node_modules/**
+# Note: do NOT exclude node_modules/** globally. vsce automatically includes
+# only package.json `dependencies` (not devDependencies) and resolves their
+# transitive runtime deps. Excluding node_modules/** would strip the 8
+# runtime-required packages that esbuild marks as external (mysql2, pg,
+# better-sqlite3, mssql, oracledb, odbc, ssh2, node-sql-parser), causing
+# "Cannot find package" errors at runtime for end users.
+#
+# Instead, strip non-runtime junk from inside node_modules to keep the VSIX
+# lean without breaking runtime imports.
+node_modules/**/docs/**
+node_modules/**/test/**
+node_modules/**/tests/**
+node_modules/**/testing/**
+node_modules/**/__tests__/**
+node_modules/**/example/**
+node_modules/**/examples/**
+node_modules/**/examples/**
+node_modules/**/.github/**
+node_modules/**/.vscode/**
+node_modules/**/.gitignore
+node_modules/**/.npmignore
+node_modules/**/.eslintrc*
+node_modules/**/.travis.yml
+node_modules/**/CHANGELOG*
+node_modules/**/HISTORY*
+node_modules/**/README*
+node_modules/**/readme*
+node_modules/**/LICENSE*
+node_modules/**/LICENCE*
+node_modules/**/NOTICE*
+node_modules/**/*.md
+node_modules/**/*.markdown
+node_modules/**/*.ts
+node_modules/**/*.tsx
+node_modules/**/*.map
+node_modules/**/*.flow
+node_modules/**/*.coffee
+node_modules/**/*.swf
+node_modules/**/*.tar
+node_modules/**/*.tar.gz
+node_modules/**/*.tgz
+node_modules/**/*.zip
+# Native build sources (prebuilt binaries are downloaded at install time and
+# ship as .node files, which we keep via the exception below)
+node_modules/**/src/**
+node_modules/**/build/**
+node_modules/**/deps/**
+node_modules/**/binding.gyp
+node_modules/**/*.gyp
+node_modules/**/*.c
+node_modules/**/*.cc
+node_modules/**/*.cpp
+node_modules/**/*.h
+node_modules/**/*.hpp
+node_modules/**/Makefile
+node_modules/**/*.mk
+node_modules/**/*.borprc*
+node_modules/**/.nycrc*
+node_modules/**/coverage/**
+node_modules/**/.nyc_output/**
+node_modules/**/.taprc*
+node_modules/**/tsconfig*.json
+node_modules/**/*.d.ts
+# Keep native binaries (.node) — required by better-sqlite3, odbc, ssh2, etc.
+!node_modules/**/*.node
 out/commands/**
 out/completion/**
 out/config/**
@@ -41,4 +105,3 @@ scripts/**
 .github/**
 .trae/**
 CONTRIBUTING.md
-
