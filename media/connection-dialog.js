@@ -7,7 +7,7 @@ function t(key) {
     return key;
 }
 
-const vscode = acquireVsCodeApi();
+const vscode = window.vscode || acquireVsCodeApi();
 
 const DIALECT_DEFAULT_PORTS = {
     mysql: 3306,

@@ -2,18 +2,8 @@ import * as vscode from 'vscode';
 import type { Activatable } from '../core/Activatable';
 import { isSqlDocument } from '../core/sqlDialects';
 import { getContainer, Tokens } from '../core/diContainer';
+import { createLazyProvider } from '../core/diUtils';
 import type { SqlDiagnosticsProvider } from '../providers/SqlDiagnosticsProvider';
-
-function createLazyProvider<T>(container: ReturnType<typeof getContainer>, token: string, context: vscode.ExtensionContext): () => T {
-    let instance: T | undefined;
-    return () => {
-        if (!instance) {
-            instance = container.get<T>(token);
-            if (instance) context.subscriptions.push(instance as unknown as vscode.Disposable);
-        }
-        return instance;
-    };
-}
 
 export class DiagnosticsModule implements Activatable {
   activate(context: vscode.ExtensionContext): void {

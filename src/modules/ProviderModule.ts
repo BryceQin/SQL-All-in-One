@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import type { Activatable } from '../core/Activatable';
 import { getSqlLanguageIds, isSqlDocument } from '../core/sqlDialects';
 import { getContainer, Tokens } from '../core/diContainer';
+import { createLazyProvider } from '../core/diUtils';
 import { SqlCodeActionProvider } from '../providers/SqlCodeActionProvider';
 import { SqlFoldingRangeProvider } from '../providers/SqlFoldingRangeProvider';
 import { SqlOutlineProvider } from '../providers/SqlOutlineProvider';
@@ -13,17 +14,6 @@ import { AstNavigator } from '../navigation/AstNavigator';
 import { SqlDefinitionProvider } from '../navigation/SqlDefinitionProvider';
 import { SqlReferenceProvider } from '../navigation/SqlReferenceProvider';
 import { SqlRenameProvider } from '../navigation/SqlRenameProvider';
-
-function createLazyProvider<T>(container: ReturnType<typeof getContainer>, token: string, context: vscode.ExtensionContext): () => T {
-    let instance: T | undefined;
-    return () => {
-        if (!instance) {
-            instance = container.get<T>(token);
-            if (instance) context.subscriptions.push(instance as unknown as vscode.Disposable);
-        }
-        return instance;
-    };
-}
 
 export class ProviderModule implements Activatable {
   activate(context: vscode.ExtensionContext): void {

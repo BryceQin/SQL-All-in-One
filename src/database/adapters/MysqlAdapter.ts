@@ -703,14 +703,18 @@ export class MysqlQueryAdapter<TShared extends IMysqlProtocolSharedContext = IMy
             }
         }
 
-        // Flush any remaining rows as the final batch.
-        if (!truncated && batchRows.length > 0 && !isAborted()) {
+        // Flush any remaining rows as the final batch. This covers both the
+        // normal end-of-stream case and the maxRows-truncation case: when
+        // maxRows < batchSize the loop exits via the maxRows branch without
+        // ever triggering the batchSize flush, so the accumulated rows live
+        // only in `batchRows` and must be yielded here.
+        if (batchRows.length > 0 && !isAborted()) {
             yield {
                 columns: batchIndex === 0 ? getColumns() : [],
                 rows: batchRows,
                 batchIndex,
                 totalRowsReceived,
-                truncated: false,
+                truncated,
             };
             batchIndex++;
         }

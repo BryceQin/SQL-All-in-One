@@ -1,4 +1,4 @@
-const vscode = acquireVsCodeApi();
+const vscode = window.vscode || acquireVsCodeApi();
 
 let currentView = 'visual';
 let currentSql = '';

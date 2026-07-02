@@ -1606,7 +1606,7 @@ function changeLanguage(lang) {
             searchConfig('');
         }
 
-        const vscode = acquireVsCodeApi();
+        const vscode = window.vscode || acquireVsCodeApi();
 
         function bindActions() {
             document.querySelectorAll('[data-action]').forEach(function(el) {

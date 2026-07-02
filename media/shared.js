@@ -3,9 +3,9 @@
  *
  * Optional helpers shared across webview panels. Each panel script is loaded
  * after this file and may override or ignore anything defined here. Panels
- * that already declare their own `const vscode = acquireVsCodeApi()` or their
- * own `bindActions()` keep working because their own declaration shadows the
- * helpers exposed on `window` here.
+ * that already declare their own `const vscode = window.vscode || acquireVsCodeApi()`
+ * or their own `bindActions()` keep working because their own declaration
+ * shadows the helpers exposed on `window` here.
  *
  * Why this file is intentionally small:
  *   - Each panel's `bindActions()` has panel-specific special cases (e.g.
@@ -23,11 +23,10 @@
     'use strict';
 
     /**
-     * Cached acquireVsCodeApi() handle. Panels that need their own handle
-     * (e.g. config-editor.js, which declares `const vscode` inside a nested
-     * scope) simply declare their own `const vscode = acquireVsCodeApi()`;
-     * that local binding shadows this global and acquireVsCodeApi() is safe
-     * to call multiple times (it returns the same handle per webview).
+     * Cached acquireVsCodeApi() handle. VS Code only allows this to be called
+     * ONCE per webview — a second call throws. All panel scripts MUST reuse
+     * this cached handle via `const vscode = window.vscode || acquireVsCodeApi();`
+     * instead of calling acquireVsCodeApi() directly.
      */
     if (typeof window.vscode === 'undefined') {
         try {

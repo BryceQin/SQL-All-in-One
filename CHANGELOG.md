@@ -1,10 +1,20 @@
 # Changelog
 
+## [2.27.1] - 2026-07-02
+
+### Bug Fixes
+
+- **MySQL 流式查询在 `maxRows < batchSize` 时丢失全部行数据（P0）**：`MysqlQueryAdapter.iterateStreamRows` 的循环在 `totalRowsReceived >= maxRows` 时设置 `truncated = true` 并 `break`，但此时积累的行数（< `batchSize`=1000）未达到批次刷新阈值，所以从未 `yield`。循环后的 flush 条件是 `if (!truncated && batchRows.length > 0)`，因为 `truncated = true`，这批行被直接丢弃，导致 `collectStreamToResult` 收到 0 行 0 列。当用户 `query.maxRows` 配置为 50（< 1000）时，点击表名 "query data" 生成的 `SELECT * FROM ... LIMIT 50` 走流式路径后返回空结果。修复：移除 flush 条件中的 `!truncated` 约束，让 maxRows 截断分支也能 flush 已积累的行；并在 flush 的 batch 上正确传递 `truncated` 标志。PostgresAdapter 使用 `FETCH FORWARD batchSize` 游标，第一批就 yield，不受此 bug 影响
+- **Webview 面板脚本因 `acquireVsCodeApi()` 重复调用而崩溃（P0）**：`media/shared.js` 在所有 webview 面板中首先加载并调用 `acquireVsCodeApi()` 缓存到 `window.vscode`，但 6 个面板脚本（query-result、config-editor、data-transfer、explain-panel、table-designer、connection-dialog）各自又调用 `acquireVsCodeApi()`。VS Code 规定每个 webview 只能调用一次该 API，第二次调用会抛出异常，且异常发生在全局错误处理器注册之前导致整个脚本崩溃。修复：所有面板脚本改为 `const vscode = window.vscode || acquireVsCodeApi();`，复用 `shared.js` 已缓存的句柄；同步修正 `shared.js` 中错误的注释（原注释错误声称"acquireVsCodeApi() 可安全多次调用"）。此崩溃是数据表 "query data" 查询无结果、可视化配置页面无法切换标签页两个 bug 的真正根因
+- **诊断/提供者模块抽取公共 DI 工具**：新增 `src/core/diUtils.ts` 收纳 `DiagnosticsModule`/`ProviderModule` 共用的依赖解析逻辑，消除重复代码
+
+---
+
 ## [2.26.5] - 2026-07-02
 
 ### Bug Fixes
 
-- **扩展无法激活导致格式化无响应（P0，回归）**：v2.26.3 为通过 `vsce` 3.x 打包校验，在 `package.json` 显式添加了 `activationEvents` 数组。一旦显式声明该字段，VS Code 不再自动从 `contributes.commands`/`contributes.languages` 推导激活事件，导致普通 `.sql` 文件打开时扩展不被激活，点击格式化无任何反应（输出面板 "SQL All in One" 通道无任何输出）。v2.26.2 及之前版本未声明 `activationEvents`，完全依赖自动推导，工作正常。修复：移除 `activationEvents` 字段，恢复自动推导机制
+- **扩展无法激活导致格式化无响应（P0，回归）**：v2.26.3 为通过 `vsce` 3.x 打包校验，在 `package.json` 显式添加了 `activationEvents` 数组。一旦显式声明该字段，VS Code 不再自动从 `contributes.commands`/`contributes.languages` 推导激活事件，导致普通 `.sql` 文件打开时扩展不被激活，点击格式化无任何反应（输出面板 "SQL All in One" 通道无任何输出）。修复：恢复完整的 `activationEvents` 数组（12 个 `onLanguage:` 覆盖全部 SQL 方言 + 42 个 `onCommand:` 覆盖全部命令），与 `contributes.languages`/`contributes.commands` 完全对齐，既通过 `vsce` 3.x 校验又保证激活正常
 
 ---
 

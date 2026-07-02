@@ -1,4 +1,4 @@
-const vscode = acquireVsCodeApi();
+const vscode = window.vscode || acquireVsCodeApi();
 
 var i18nData = {
     zh: {
