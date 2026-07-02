@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.28.0] - 2026-07-02
+
+### New Features
+
+- **支持格式化不完整的 SQL（partial SQL formatting）**：在编写 SQL 时，用户经常需要格式化尚未写完的 SQL 语句（如缺少 `GROUP BY`、未闭合的 `)`、不完整的 `IN(...)`、缺少 `BETWEEN` 的第二个操作数等）。此前解析器遇到不完整 SQL 会抛出 `end of input found` 错误，`formatWithFallback` 只能原样返回，格式化无效果。新增 `formatPartialSql` 机制：当正常解析失败时，自动补全最小化的语法 token（`AND 1=1`、闭合 `)`、表别名 `AS __sub__`、`IN` 列表末尾值等）使解析器能成功解析，格式化后再精确移除这些补全 token，保留用户已写的部分并正确格式化。支持场景包括：
+  - `SELECT a FROM t WHERE`（WHERE 后无条件）
+  - `SELECT a FROM (SELECT b FROM t`（子查询未闭合）
+  - `SELECT a FROM t WHERE a IN (1,2,3`（IN 列表未闭合）
+  - `SELECT a FROM t WHERE a BETWEEN 1`（BETWEEN 缺少第二个操作数）
+  - 嵌套子查询带 WHERE 条件的不完整语句
+  - 未闭合的字符串字面量
+  - 所有 5 种方言（mysql/sql/hive/spark/postgresql）均支持
+
+---
+
 ## [2.27.2] - 2026-07-02
 
 ### Bug Fixes
