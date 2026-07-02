@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.27.2] - 2026-07-02
+
+### Bug Fixes
+
+- **Hive 方言不支持 `REGEXP`/`NOT REGEXP` 运算符导致格式化失败（P1）**：`node-sql-parser` 的 Hive 语法仅识别 `RLIKE` 作为正则匹配运算符，不识别 `REGEXP`（MySQL 风格语法）。用户 SQL 中的 `AND oper_name NOT REGEXP '^[a-zA-Z0-9_-]{30,}$'` 在 Hive 方言下解析失败，报错 `Expected ... RLIKE ... but "R" found`，触发 `formatWithFallback` 原样返回，格式化无效果。修复：在 `HiveSqlAdapter` 预处理阶段将 `REGEXP`/`NOT REGEXP` 临时替换为 `RLIKE`/`NOT RLIKE`（Hive 等价别名），格式化完成后再还原为 `REGEXP`/`NOT REGEXP`，保留用户原始语法。验证：mysql/sql/hive/spark/postgresql 五种方言反复格式化 10 轮均稳定（hive 26 行），`REGEXP` 关键字在所有方言输出中正确保留
+
+---
+
 ## [2.27.1] - 2026-07-02
 
 ### Bug Fixes

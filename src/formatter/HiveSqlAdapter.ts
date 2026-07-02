@@ -34,6 +34,7 @@ export function preprocessHiveSql(sql: string): { processedSql: string; state: H
     result = sortResult.result
     result = replaceComplexTypes(result, slots, counter)
     result = replaceInsertOverwriteTable(result)
+    result = replaceRegexpOperator(result)
 
     return {
         processedSql: result,
@@ -47,6 +48,7 @@ export function preprocessHiveSql(sql: string): { processedSql: string; state: H
 export function postprocessHiveSql(formatted: string, state: HiveAdapterState): string {
     let result = formatted
 
+    result = restoreRegexpOperator(result)
     result = restoreInsertOverwriteTable(result)
     result = restoreComplexTypes(result, state.slots)
     result = restoreJsonStrings(result, state.slots)
@@ -468,4 +470,17 @@ function replaceInsertOverwriteTable(sql: string): string {
 
 function restoreInsertOverwriteTable(formatted: string): string {
     return formatted.replace(/___HIVE_TABLE___/gi, 'TABLE')
+}
+
+// node-sql-parser's Hive grammar only recognizes RLIKE (not REGEXP) as the
+// regex-match operator. SQL authored for MySQL uses `REGEXP`/`NOT REGEXP`,
+// which the Hive parser rejects with "Expected ... RLIKE ... but R found".
+// Swap REGEXP -> RLIKE around the parse/format pass, then swap back so the
+// formatted output keeps the user's original keyword.
+function replaceRegexpOperator(sql: string): string {
+    return sql.replace(/\bNOT\s+REGEXP\b/gi, 'NOT RLIKE').replace(/\bREGEXP\b/gi, 'RLIKE')
+}
+
+function restoreRegexpOperator(formatted: string): string {
+    return formatted.replace(/\bNOT\s+RLIKE\b/gi, 'NOT REGEXP').replace(/\bRLIKE\b/gi, 'REGEXP')
 }
