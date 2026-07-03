@@ -18,6 +18,7 @@ import type {
 import { BaseDatabaseAdapter } from './BaseDatabaseAdapter';
 import { BaseSharedContext } from './BaseSharedContext';
 import { t } from '../../i18n/index';
+import { getSystemDatabases } from '../../utils/systemDatabases';
 import {
     MysqlConnectionAdapter,
     MysqlQueryAdapter,
@@ -206,12 +207,7 @@ class StarrocksQueryAdapter extends MysqlQueryAdapter<StarrocksSharedContext> {
  */
 class StarrocksMetadataAdapter extends MysqlMetadataAdapter<StarrocksSharedContext> {
     protected override isSystemDatabase(name: string): boolean {
-        // Filter out system databases that exist in StarRocks. StarRocks does
-        // not ship the MySQL system schemas (mysql / performance_schema / sys)
-        // but exposes its own stats/audit schemas.
-        return name === 'information_schema' ||
-            name === '_statistics_' ||
-            name === 'starrocks_audit_db__';
+        return getSystemDatabases('starrocks').includes(name.toLowerCase());
     }
 
     override async listTriggers(_database?: string, _schema?: string): Promise<TriggerInfo[]> {

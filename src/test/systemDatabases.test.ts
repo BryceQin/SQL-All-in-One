@@ -10,10 +10,16 @@ suite('getSystemDatabases 方言系统库列表', () => {
         assert.ok(list.includes('sys'));
     });
 
-    test('starrocks 复用 mysql 系统库列表', () => {
+    test('starrocks 返回 StarRocks 专属系统库列表', () => {
+        // StarRocks does not ship the MySQL system schemas (mysql /
+        // performance_schema / sys) but exposes its own stats/audit schemas.
         const list = getSystemDatabases('starrocks');
         assert.ok(list.includes('information_schema'));
-        assert.ok(list.includes('sys'));
+        assert.ok(list.includes('_statistics_'));
+        assert.ok(list.includes('starrocks_audit_db__'));
+        // StarRocks must NOT inherit MySQL-only schemas.
+        assert.ok(!list.includes('mysql'));
+        assert.ok(!list.includes('sys'));
     });
 
     test('postgresql 应返回 postgres/template 库', () => {

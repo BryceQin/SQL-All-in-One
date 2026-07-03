@@ -1,5 +1,5 @@
-import { MysqlToHiveConverter } from './mysqlConverter'
-import { HiveToMysqlConverter } from './hiveConverter'
+import { MysqlToHiveConverter } from './mysqlToHiveConverter'
+import { HiveToMysqlConverter } from './hiveToMysqlConverter'
 
 export class SqlConverter {
   private mysqlConverter = new MysqlToHiveConverter()

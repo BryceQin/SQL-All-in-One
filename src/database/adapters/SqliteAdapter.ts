@@ -29,6 +29,7 @@ import { BaseConnectionAdapter } from './BaseConnectionAdapter';
 import { BaseDatabaseAdapter } from './BaseDatabaseAdapter';
 import { BaseMetadataAdapter } from './BaseMetadataAdapter';
 import { BaseQueryAdapter } from './BaseQueryAdapter';
+import { BaseSchemaAdapter } from './BaseSchemaAdapter';
 import { BaseSharedContext } from './BaseSharedContext';
 
 /**
@@ -324,11 +325,17 @@ class SqliteMetadataAdapter extends BaseMetadataAdapter<SqliteSharedContext> {
     }
 }
 
-class SqliteSchemaAdapter implements ISchemaAdapter {
+class SqliteSchemaAdapter extends BaseSchemaAdapter<unknown> {
     constructor(
-        private executeQuery: (sql: string, params?: QueryParam[]) => Promise<QueryResult>,
-        private listTriggersFn: (database?: string, schema?: string) => Promise<TriggerInfo[]>
-    ) {}
+        executeQuery: (sql: string, params?: QueryParam[]) => Promise<QueryResult>,
+        listTriggersFn: (database?: string, schema?: string) => Promise<TriggerInfo[]>
+    ) {
+        super(undefined, executeQuery, listTriggersFn);
+    }
+
+    // SQLite uses ANSI double-quote identifiers; matches BaseSchemaAdapter's
+    // default quoteIdentifier with quoteChar = '"'.
+    protected override readonly quoteChar = '"' as const;
 
     async describeTable(_database: string, table: string, _schema?: string): Promise<TableStructure> {
         const [columns, indexes, foreignKeys, triggers] = await Promise.all([
@@ -396,7 +403,7 @@ class SqliteSchemaAdapter implements ISchemaAdapter {
         return cnt != null ? Number(cnt) : 0;
     }
 
-    getDialectCapabilities(): DialectCapabilities {
+    override getDialectCapabilities(): DialectCapabilities {
         return {
             supportsSchema: false,
             supportsMultipleDatabases: false,
@@ -470,9 +477,7 @@ class SqliteSchemaAdapter implements ISchemaAdapter {
         ];
     }
 
-    quoteIdentifier(identifier: string): string {
-        return '"' + identifier.replace(/"/g, '""') + '"';
-    }
+    // quoteIdentifier is inherited from BaseSchemaAdapter (quoteChar = '"').
 
     private async describeTableColumns(table: string): Promise<ColumnInfo[]> {
         const result = await this.executeQuery(`PRAGMA table_info(${this.quoteIdentifier(table)})`);

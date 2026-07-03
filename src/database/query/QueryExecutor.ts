@@ -150,27 +150,47 @@ export class QueryExecutor {
         if (adapter) {
             const capabilities = adapter.schemaAdapter.getDialectCapabilities();
             if (capabilities.supportsCancel) {
-                const maxRetries = this.getConfigCancelRetries();
-                const retryDelay = this.getConfigCancelRetryDelay();
-
-                for (let attempt = 0; attempt < maxRetries; attempt++) {
-                    try {
-                        await adapter.queryAdapter.cancelQuery(queryId);
-                        return;
-                    } catch (e) {
-                        handleError(e, 'QueryExecutor.cancelQueryAttempt', ErrorCategory.SUB_ITEM)
-                        if (attempt < maxRetries - 1) {
-                            const backoffDelay = retryDelay * Math.pow(2, attempt);
-                            await this.delay(backoffDelay);
-                        }
-                    }
+                const cancelled = await this.cancelWithRetry(adapter, queryId, 'cancelQueryAttempt');
+                if (!cancelled) {
+                    vscode.window.showWarningMessage(
+                        t('database.queryMayStillBeRunning')
+                    );
                 }
-
-                vscode.window.showWarningMessage(
-                    t('database.queryMayStillBeRunning')
-                );
             }
         }
+    }
+
+    /**
+     * Shared retry-with-exponential-backoff loop for `adapter.queryAdapter.cancelQuery`.
+     * Returns true if the cancel succeeded within the retry budget, false otherwise.
+     *
+     * Extracted from the previously duplicated inline loops in {@link cancel}
+     * and {@link raceExecution}'s timeout path.
+     *
+     * If `shouldAbort` returns true (e.g. the query already settled), the
+     * loop exits early without further retry attempts.
+     */
+    private async cancelWithRetry(
+        adapter: { queryAdapter: { cancelQuery: (queryId: string) => Promise<void> } },
+        queryId: string,
+        errorContext: string,
+        shouldAbort?: () => boolean,
+    ): Promise<boolean> {
+        const maxRetries = this.getConfigCancelRetries();
+        const retryDelay = this.getConfigCancelRetryDelay();
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+            if (shouldAbort?.()) return false;
+            try {
+                await adapter.queryAdapter.cancelQuery(queryId);
+                return true;
+            } catch (e) {
+                handleError(e, `QueryExecutor.${errorContext}.attempt.${attempt}`, ErrorCategory.SUB_ITEM);
+                if (attempt < maxRetries - 1) {
+                    await this.delay(retryDelay * Math.pow(2, attempt));
+                }
+            }
+        }
+        return false;
     }
 
     getRunningQueries(): RunningQuery[] {
@@ -233,21 +253,13 @@ export class QueryExecutor {
                         if (settled) {
                             return;
                         }
-                        // 增加重试机制，与 cancel 方法保持一致，避免瞬时失败导致查询无法停止
-                        const maxRetries = this.getConfigCancelRetries();
-                        const retryDelay = this.getConfigCancelRetryDelay();
-                        for (let attempt = 0; attempt < maxRetries; attempt++) {
-                            if (settled) return;
-                            try {
-                                await adapter.queryAdapter.cancelQuery(queryId);
-                                return;
-                            } catch (e) {
-                                handleError(e, `QueryExecutor.timeoutCancel.attempt.${attempt}`, ErrorCategory.SUB_ITEM)
-                                if (attempt < maxRetries - 1) {
-                                    await this.delay(retryDelay * Math.pow(2, attempt));
-                                }
-                            }
-                        }
+                        // 复用 cancelWithRetry，与 cancel 方法保持一致的重试策略
+                        await this.cancelWithRetry(
+                            adapter,
+                            queryId,
+                            'timeoutCancel',
+                            () => settled,
+                        );
                     }
                 } catch (e) {
                     // best effort: log but do not propagate cancel failure

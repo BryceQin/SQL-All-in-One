@@ -1,5 +1,34 @@
 # Changelog
 
+## [2.29.2] - 2026-07-03
+
+### Performance
+
+- **ConfigManager 配置缓存策略修复**：原 LRU 默认 `maxAge=30000ms` 导致配置缓存每 30 秒自动过期，与 `onDidChangeConfiguration` 主动失效机制冲突。高频配置读取（格式化、补全）每 30 秒触发一批无谓的 cache miss 和 VSCode IPC 调用。改为 `maxAge: Infinity`，完全靠配置变更事件主动失效
+- **FormatterFactory 缓存键完整化**：原 `buildCacheKey` 仅用 `type + indent + keywordCase + functionCase + indentStyle` 5 个字段，而 `FormatOptions` 有 70+ 字段。虽然 `reset()` 完整重置 cfg 是安全的，但这是脆弱的隐性约定——未来若 `reset` 漏字段就会产生格式化错误。改为 `JSON.stringify(cfgBody)`（排除 `params`/`paramTypes`）完整序列化
+- **FormatterFactory.releaseInstance O(1) 优化**：原 `releaseInstance` 用 `for...of` 线性查找传入的 instance 引用（每次格式化完成都调用，O(K) 复杂度）。新增 `instanceToKey: WeakMap` 反向索引，O(1) 查找
+- **SchemaProvider alias 分支并发限流**：`addColumnItems` 的 alias 分支原用 `Promise.all` 无限并发拉取所有 alias 表列，10+ 表查询会触发 10+ 并发数据库查询。改为 `parallelWithLimit(..., 3)`，与无 alias 分支一致
+- **SqlParserEngine 缓存键哈希冲突修复**：原 32 位 FNV-1a 哈希在 10 万条 SQL 时生日冲突概率约 0.1%，冲突会返回错误 AST。改为 `length + 前32字符 + 后32字符` 拼接作为 key，消除冲突风险
+
+### Code Refactoring
+
+- **3 个函数名匹配规则基类抽象**：`UseCoalesceOverIsNullRule`/`UseCurrentTimestampRule`/`DateFunctionUsageRule` 三者 check 方法结构完全相同。抽出 `FunctionNameMatchRule` 基类，子类只需声明 `functionNameSet`、`messageKey`、`useStrictOfType`，新增函数名规则从 35 行降到 10 行
+- **Oracle/Dameng formatter 去重**：两个方言的 `tabularOnelineClauses` 数组 200+ 行几乎逐行一致。抽出 `oracleDdlBase.ts` 共享 DDL 子句列表、reserved clauses、joins、operators，Dameng 只追加差异（`TOP`、`LIMIT`）
+- **QueryExecutor cancel 重试逻辑抽取**：`cancel` 方法与 `raceExecution` 内的 `attemptCancel` 各自实现了相同的重试循环。抽取 `cancelWithRetry` 私有方法统一调用
+- **SqliteSchemaAdapter 继承基类**：原 `implements ISchemaAdapter`（接口实现），其他方言均 `extends BaseSchemaAdapter`。改为继承基类，与其他方言行为一致，未来基类新增方法 SQLite 自动获得
+- **系统数据库列表统一管理**：原 `systemDatabases.ts` 与 5 个 adapter 的 `isSystemDatabase` 各自硬编码，双重维护。统一为 adapter 调用 `getSystemDatabases(dialect)`，单一事实源
+- **converter 文件名对齐类名**：`hiveConverter.ts`/`mysqlConverter.ts` 文件名未指明转换方向，重命名为 `hiveToMysqlConverter.ts`/`mysqlToHiveConverter.ts` 与类名对齐
+
+### Bug Fixes
+
+- **extension.ts bootstrapContainer 移入 try 块**：原在 try 之外，若容器引导失败则 catch 块的 `getErrorHandler()` 也会失败，错误无法上报。移入 try 块第一行
+- **QueryResultController 错误吞没修复**：`onRequestForeignKeyOptions`、`onChangeDatabase` 原用 `console.debug` 吞错，失败不可观测。改为 `handleError(e, context, ErrorCategory.FEATURE)` 统一上报
+- **StarRocks 系统库过滤错误修复**：原 StarRocks 错误复用 MySQL 系统库列表（含 `sys`、`mysql`、`performance_schema`），但 StarRocks 并无这些 schema。新增 StarRocks 专属分支（`information_schema`、`_statistics_`、`starrocks_audit_db__`）
+- **Postgres/SqlServer 系统库过滤遗漏修复**：原 Postgres 只过滤 `postgres`，遗漏 `template0`、`template1`、`pg_catalog`；原 SqlServer 遗漏 `resource`。现已完整过滤
+- **UppercaseKeywordsRule LATERAL 重复定义修复**：`SQL_KEYWORDS` 数组中 `LATERAL` 重复定义两次，删除重复条目
+
+---
+
 ## [2.29.1] - 2026-07-03
 
 ### Maintenance

@@ -31,6 +31,7 @@ import { BaseConnectionAdapter } from './BaseConnectionAdapter';
 import { BaseQueryAdapter } from './BaseQueryAdapter';
 import { BaseMetadataAdapter } from './BaseMetadataAdapter';
 import { BaseSchemaAdapter } from './BaseSchemaAdapter';
+import { getSystemDatabases } from '../../utils/systemDatabases';
 import { BaseDatabaseAdapter } from './BaseDatabaseAdapter';
 import { t } from '../../i18n/index';
 import { replaceQuestionMarkPlaceholders } from './placeholderRewriter';
@@ -485,11 +486,7 @@ class SqlServerMetadataAdapter extends BaseMetadataAdapter<SqlServerSharedContex
     }
 
     protected override isSystemDatabase(name: string): boolean {
-        // Filter system databases that are not user-accessible.
-        return name === 'master' ||
-            name === 'tempdb' ||
-            name === 'model' ||
-            name === 'msdb';
+        return getSystemDatabases('sqlserver').includes(name.toLowerCase());
     }
 
     private quoteIdentifier(identifier: string): string {

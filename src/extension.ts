@@ -24,9 +24,8 @@ import { ProviderModule } from './modules/ProviderModule';
 let moduleRegistry: ModuleRegistry | undefined;
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
-    bootstrapContainer(context.extensionPath);
-
     try {
+        bootstrapContainer(context.extensionPath);
         initI18n();
 
         const registry = new ModuleRegistry();

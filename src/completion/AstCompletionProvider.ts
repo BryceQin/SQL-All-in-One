@@ -646,6 +646,13 @@ function collectTableNamesFromSelect(node: AstNode, names: string[], seen: Set<s
     }
 }
 
+/**
+ * Extract `table.column` references from a SQL string.
+ *
+ * @internal Exported for unit-test coverage only; not used by production
+ * code paths. If future productisation needs this, promote to a public
+ * completion-module API at that time.
+ */
 export function extractColumnRefs(sql: string, dialect: SqlDialect, token?: vscode.CancellationToken): { table: string; column: string }[] {
     const result = getParserEngine().tryAstify(sql, dialect)
     if (token?.isCancellationRequested) return []

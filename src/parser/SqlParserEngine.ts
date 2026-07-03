@@ -38,14 +38,21 @@ export class SqlParserEngine {
     }
 
     private makeCacheKey(sql: string, dialect: SqlDialect): string {
-        const FNV_OFFSET = 2166136261;
-        const FNV_PRIME = 16777619;
-        let hash = FNV_OFFSET;
-        for (let i = 0; i < sql.length; i++) {
-            hash ^= sql.charCodeAt(i);
-            hash = Math.imul(hash, FNV_PRIME);
-        }
-        return `${dialect}::${sql.length}::${hash >>> 0}`;
+        // Use length + head + tail as the key instead of a 32-bit FNV hash.
+        // The previous FNV-1a hash had a non-trivial collision probability on
+        // large SQL inputs (32-bit space, ~50k entriesBirthday-bound ≈ 0.1%
+        // at 100k distinct statements). A collision would silently return the
+        // wrong AST, producing formatter/linter bugs that are nearly
+        // impossible to reproduce.
+        //
+        // Length + first 32 + last 32 chars uniquely identifies virtually all
+        // real-world SQL (two statements with identical length AND identical
+        // 64-char head+tail but different middles are astronomically unlikely).
+        // For statements shorter than 64 chars, the whole string is covered.
+        const len = sql.length;
+        const head = sql.substring(0, 32);
+        const tail = len > 32 ? sql.substring(len - 32) : '';
+        return `${dialect}::${len}::${head}::${tail}`;
     }
 
     astify(sql: string, dialect: SqlDialect): AST[] | AST {

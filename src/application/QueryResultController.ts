@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import type { IConnectionService, IQueryService, IDataEditService, QueryExecutionResult } from './ports';
 import type { FilterCondition, PendingChange, ForeignKeyOption } from '../shared/editTypes';
 import { t } from '../i18n/index';
+import { handleError, ErrorCategory } from '../core/errorHandler';
 
 /**
  * Interface that the query result panel must satisfy.
@@ -68,9 +69,16 @@ export class QueryResultController {
      * the injected port services instead of database-layer globals.
      */
     attach(panel: IQueryResultPanel): void {
-        // The first five callbacks simply re-issue the central query command
-        // so that sort/filter/page/execute share the same execution path as
-        // the toolbar run button.
+        // The first five callbacks re-issue the central query command so that
+        // sort/filter/page/execute share the same execution path as the
+        // toolbar run button.
+        //
+        // TODO(P0): sort/filter/page parameters are currently dropped because
+        // `hive-formatter.executeQuery` reads SQL from the active editor and
+        // accepts no arguments. To actually implement these features, extend
+        // IQueryService with `executeWithSort/executeWithFilter/executeWithPage`
+        // and route the corresponding callbacks through those methods instead
+        // of re-running the editor query.
         panel.onExecuteQuery = (_sql: string): void => {
             vscode.commands.executeCommand('hive-formatter.executeQuery');
         };
@@ -80,14 +88,17 @@ export class QueryResultController {
         };
 
         panel.onRequestSort = (_column: string, _direction: string): void => {
+            // See TODO above — sort params dropped until IQueryService extended.
             vscode.commands.executeCommand('hive-formatter.executeQuery');
         };
 
         panel.onRequestFilter = (_conditions: FilterCondition[]): void => {
+            // See TODO above — filter conditions dropped until IQueryService extended.
             vscode.commands.executeCommand('hive-formatter.executeQuery');
         };
 
         panel.onRequestPage = (_page: number): void => {
+            // See TODO above — page number dropped until IQueryService extended.
             vscode.commands.executeCommand('hive-formatter.executeQuery');
         };
 
@@ -121,7 +132,9 @@ export class QueryResultController {
             try {
                 return await this.dataEditService.requestForeignKeyOptions(column, referencedTable, db);
             } catch (e) {
-                console.debug('[SQL All in One] onRequestForeignKeyOptions failed:', e);
+                // Surface via ErrorHandler instead of silently console.debug —
+                // silent failures make FK option retrieval impossible to debug.
+                handleError(e, 'QueryResultController.onRequestForeignKeyOptions', ErrorCategory.FEATURE);
                 return [];
             }
         };
@@ -206,8 +219,9 @@ export class QueryResultController {
                     }
                 }
             } catch (e) {
-                // Database change is best-effort.
-                console.debug('[SQL All in One] onChangeDatabase failed:', e);
+                // Database change is best-effort, but still surface the error
+                // for observability (previously silently console.debug'd).
+                handleError(e, 'QueryResultController.onChangeDatabase', ErrorCategory.FEATURE);
             }
         };
     }

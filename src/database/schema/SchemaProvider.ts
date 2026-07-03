@@ -255,10 +255,12 @@ export class SchemaProvider {
 
             const aliasMap = context.aliasMap;
             if (aliasMap.size > 0) {
-                await Promise.all(
-                    Array.from(aliasMap.values()).map(tableName =>
-                        this.addColumnsForTable(items, context, tableName, prefix)
-                    )
+                // Limit concurrency (same as the no-alias branch below) so a
+                // 10-table join does not trigger 10 concurrent column-fetch
+                // queries against the database.
+                await this.parallelWithLimit(
+                    Array.from(aliasMap.values()).map((tableName): (() => Promise<void>) => () => this.addColumnsForTable(items, context, tableName, prefix)),
+                    3
                 );
             } else {
                 // No alias map: fall back to scanning a bounded number of

@@ -882,7 +882,7 @@ MIT License
 | | |
 |---|---|
 | **Publisher** | bryce-qin |
-| **Version** | 2.29.1 |
+| **Version** | 2.29.2 |
 | **License** | MIT |
 | **VSCode Engine** | ^1.85.0 |
 | **Repository** | [GitHub](https://github.com/BryceQin/SQL-All-in-One) |

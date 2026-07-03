@@ -37,6 +37,7 @@ import { BaseConnectionAdapter } from './BaseConnectionAdapter';
 import { BaseQueryAdapter } from './BaseQueryAdapter';
 import { BaseMetadataAdapter } from './BaseMetadataAdapter';
 import { BaseSchemaAdapter } from './BaseSchemaAdapter';
+import { getSystemDatabases } from '../../utils/systemDatabases';
 
 /**
  * Structural shape shared by {@link MysqlSharedContext} and
@@ -959,10 +960,7 @@ export class MysqlMetadataAdapter<TShared extends IMysqlProtocolSharedContext = 
      * this to filter their own system databases.
      */
     protected override isSystemDatabase(name: string): boolean {
-        return name === 'information_schema' ||
-            name === 'mysql' ||
-            name === 'performance_schema' ||
-            name === 'sys';
+        return getSystemDatabases('mysql').includes(name.toLowerCase());
     }
 }
 

@@ -4,8 +4,24 @@ import { SelectFormatter } from './SelectFormatter';
 import { DDLFormatter } from './DDLFormatter';
 import { InsertFormatter } from './InsertFormatter';
 
+/**
+ * Build a cache key that uniquely identifies a formatter configuration.
+ *
+ * The key must include every field that affects formatting output, otherwise
+ * a cached instance from a different configuration could be reused via
+ * `reset()` — and while `reset()` does update `cfg`, relying on that is
+ * fragile (any future field added to FormatOptions but forgotten in
+ * `reset()` would silently produce wrong output).
+ *
+ * Using a stable JSON serialization of the full config (excluding `params`
+ * / `paramTypes` which are handled by the tokenizer, not the formatter
+ * body) guarantees correctness at the cost of a slightly longer key.
+ */
 function buildCacheKey(type: string, cfg: FormatOptions, indent: Indentation): string {
-    return `${type}_${indent.getSingleIndent()}_${cfg.keywordCase}_${cfg.functionCase}_${cfg.indentStyle}`;
+    // Omit `params` and `paramTypes`: they affect tokenization, not the
+    // formatter layout decisions, and they may contain large arrays.
+    const { params: _params, paramTypes: _paramTypes, ...cfgBody } = cfg;
+    return `${type}_${indent.getSingleIndent()}_${JSON.stringify(cfgBody)}`;
 }
 
 /**
@@ -22,6 +38,9 @@ interface CacheEntry {
 
 export class FormatterFactory {
     private instances = new Map<string, CacheEntry>();
+    // Reverse index: instance → key, so releaseInstance is O(1) instead of
+    // scanning every cached entry on every formatter release.
+    private instanceToKey = new WeakMap<SelectFormatter | DDLFormatter | InsertFormatter, string>();
 
     getSelectFormatter(cfg: FormatOptions, indent: Indentation): SelectFormatter {
         const key = buildCacheKey('select', cfg, indent);
@@ -29,6 +48,7 @@ export class FormatterFactory {
         if (!entry) {
             const instance = new SelectFormatter(cfg, indent, this);
             this.instances.set(key, { instance, inUse: true });
+            this.instanceToKey.set(instance, key);
             return instance;
         }
         if (entry.inUse) {
@@ -49,6 +69,7 @@ export class FormatterFactory {
         if (!entry) {
             const instance = new DDLFormatter(cfg, indent, this);
             this.instances.set(key, { instance, inUse: true });
+            this.instanceToKey.set(instance, key);
             return instance;
         }
         if (entry.inUse) {
@@ -65,6 +86,7 @@ export class FormatterFactory {
         if (!entry) {
             const instance = new InsertFormatter(cfg, indent, this);
             this.instances.set(key, { instance, inUse: true });
+            this.instanceToKey.set(instance, key);
             return instance;
         }
         if (entry.inUse) {
@@ -77,19 +99,22 @@ export class FormatterFactory {
 
     /**
      * Marks a cached formatter instance as no longer in use, so it can be
-     * reused (via reset) on the next request.
+     * reused (via reset) on the next request. O(1) via reverse index.
      */
     releaseInstance(instance: SelectFormatter | DDLFormatter | InsertFormatter): void {
-        for (const entry of this.instances.values()) {
-            if (entry.instance === instance) {
+        const key = this.instanceToKey.get(instance);
+        if (key !== undefined) {
+            const entry = this.instances.get(key);
+            if (entry && entry.instance === instance) {
                 entry.inUse = false;
-                return;
             }
         }
     }
 
     clear(): void {
         this.instances.clear();
+        // WeakMap entries are GC'd when instances are no longer referenced,
+        // but explicit clear is a no-op for WeakMap — left for symmetry.
     }
 }
 

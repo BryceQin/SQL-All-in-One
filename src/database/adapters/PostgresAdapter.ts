@@ -37,6 +37,7 @@ import { BaseConnectionAdapter } from './BaseConnectionAdapter';
 import { BaseQueryAdapter } from './BaseQueryAdapter';
 import { BaseMetadataAdapter } from './BaseMetadataAdapter';
 import { BaseSchemaAdapter } from './BaseSchemaAdapter';
+import { getSystemDatabases } from '../../utils/systemDatabases';
 import { clampBatchSize } from './queryStreamUtils';
 
 /**
@@ -597,7 +598,7 @@ class PostgresMetadataAdapter extends BaseMetadataAdapter<PostgresSharedContext>
     }
 
     protected override isSystemDatabase(name: string): boolean {
-        return name === 'postgres';
+        return getSystemDatabases('postgresql').includes(name.toLowerCase());
     }
 }
 

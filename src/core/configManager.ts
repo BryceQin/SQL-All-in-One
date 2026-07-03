@@ -8,7 +8,13 @@ import type { FormatOptions } from '../formatter/FormatOptions';
 
 export class ConfigManager {
     private static readonly MAX_CACHE_SIZE = 500;
-    private cache = new LRUCache<string, unknown>({ maxSize: ConfigManager.MAX_CACHE_SIZE });
+    // maxAge: Infinity — config cache must only be invalidated by
+    // onDidChangeConfiguration. The LRU default (30s) would cause periodic
+    // cache misses on hot config reads (format/completion) for no benefit.
+    private cache = new LRUCache<string, unknown>({
+        maxSize: ConfigManager.MAX_CACHE_SIZE,
+        maxAge: Infinity,
+    });
     private disposables: vscode.Disposable[] = [];
     private _onDidChangeConfig = new vscode.EventEmitter<void>();
     private validators = new Map<string, (value: unknown) => boolean>();
