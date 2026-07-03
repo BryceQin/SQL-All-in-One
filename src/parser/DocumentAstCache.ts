@@ -375,10 +375,14 @@ export function adjustAstLocationsInPlace(
     const colDelta = newStartCol - oldStartCol;
     if (lineDelta === 0 && colDelta === 0) return;
 
-    function adjust(obj: unknown): void {
+    // 递归深度上限，避免深层嵌套 AST 栈溢出
+    const MAX_ADJUST_DEPTH = 1000;
+
+    function adjust(obj: unknown, depth: number): void {
         if (obj == null || typeof obj !== 'object') return;
+        if (depth > MAX_ADJUST_DEPTH) return;
         if (Array.isArray(obj)) {
-            for (const item of obj) adjust(item);
+            for (const item of obj) adjust(item, depth + 1);
             return;
         }
         const record = obj as Record<string, unknown>;
@@ -401,11 +405,11 @@ export function adjustAstLocationsInPlace(
         for (const key in record) {
             if (key === 'loc') continue;
             if (!Object.prototype.hasOwnProperty.call(record, key)) continue;
-            adjust(record[key]);
+            adjust(record[key], depth + 1);
         }
     }
 
-    adjust(ast);
+    adjust(ast, 0);
 }
 
 /**
@@ -442,18 +446,22 @@ export function adjustAstLocationsLazy(
     // No delta → return input unchanged, no allocation.
     if (lineDelta === 0 && colDelta === 0) return ast;
 
+    // 递归深度上限，避免深层嵌套 AST 栈溢出
+    const MAX_ADJUST_DEPTH = 1000;
+
     /**
      * Returns either the original `obj` (if nothing inside it needed
      * adjustment) or a shallow-cloned copy whose `loc` and/or children
      * have been replaced with adjusted copies.
      */
-    function adjust(obj: unknown): unknown {
+    function adjust(obj: unknown, depth: number): unknown {
         if (obj == null || typeof obj !== 'object') return obj;
+        if (depth > MAX_ADJUST_DEPTH) return obj;
 
         if (Array.isArray(obj)) {
             let cloned = false;
             const newArr = obj.map((item) => {
-                const newItem = adjust(item);
+                const newItem = adjust(item, depth + 1);
                 if (newItem !== item) cloned = true;
                 return newItem;
             });
@@ -468,7 +476,7 @@ export function adjustAstLocationsLazy(
             if (key === 'loc') continue;
             if (!Object.prototype.hasOwnProperty.call(record, key)) continue;
             const child = record[key];
-            const newChild = adjust(child);
+            const newChild = adjust(child, depth + 1);
             if (newChild !== child) {
                 if (clonedRecord === null) {
                     clonedRecord = { ...record };
@@ -515,7 +523,7 @@ export function adjustAstLocationsLazy(
         return clonedRecord !== null ? clonedRecord : obj;
     }
 
-    return adjust(ast);
+    return adjust(ast, 0);
 }
 
 export class DocumentAstCache {
@@ -620,21 +628,40 @@ export class DocumentAstCache {
                         if (incrementalOk) {
                             const finalAst: AST[] | AST = mergedAst.length === 1 ? mergedAst[0] : mergedAst;
 
-                            // Build updated per-statement caches
-                            const newStatementCaches: StatementCache[] = newStmts.map((stmt, idx) => {
+                            // Build updated per-statement caches.
+                            // 按 statement 在 mergedAst 中的消费顺序建立索引映射，避免
+                            // 单条语句解析出多个 AST 节点时索引错乱（原 `mergedAst[0]` 兜底
+                            // 会导致后续语句缓存错误的 AST）。
+                            const newStatementCaches: StatementCache[] = [];
+                            let astCursor = 0;
+                            for (let idx = 0; idx < newStmts.length; idx++) {
+                                const stmt = newStmts[idx];
                                 const absPos = computeLineColumnFast(lineOffsets, stmt.start);
-                                // The merged AST may have more elements than statements if a
-                                // single statement parse returned multiple AST nodes, but for
-                                // the common case (1:1) we map by index.
-                                const stmtAst = idx < mergedAst.length ? mergedAst[idx] : mergedAst[0];
-                                return {
+                                // 当前语句应消费的 AST 节点数量：默认 1，若与旧缓存中
+                                // 该索引处的 AST 数量一致则沿用，保证 1:N 映射稳定。
+                                let nodeCount = 1;
+                                const oldEntry = oldStmts[idx];
+                                if (oldEntry && oldEntry.ast) {
+                                    const oldArr = Array.isArray(oldEntry.ast)
+                                        ? oldEntry.ast
+                                        : [oldEntry.ast];
+                                    nodeCount = oldArr.length;
+                                }
+                                // 防御性：不能超过剩余可用节点数
+                                if (nodeCount > mergedAst.length - astCursor) {
+                                    nodeCount = Math.max(1, mergedAst.length - astCursor);
+                                }
+                                const slice = mergedAst.slice(astCursor, astCursor + nodeCount);
+                                astCursor += nodeCount;
+                                const stmtAst: AST[] | AST = slice.length === 1 ? slice[0] : slice;
+                                newStatementCaches.push({
                                     text: stmt.text,
                                     ast: stmtAst,
                                     range: { start: stmt.start, end: stmt.end },
                                     startLine: absPos.line,
                                     startCol: absPos.column,
-                                };
-                            });
+                                });
+                            }
 
                             this.cache.set(key, {
                                 version,

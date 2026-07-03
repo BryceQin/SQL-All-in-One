@@ -166,27 +166,10 @@ function t(key) {
 }
 
 function applyI18n() {
-    document.querySelectorAll('[data-i18n]').forEach(function(el) {
-        var key = el.getAttribute('data-i18n');
-        var text = t(key);
-        if (text && text !== key) {
-            el.textContent = text;
-        }
-    });
-    document.querySelectorAll('[data-i18n-ph]').forEach(function(el) {
-        var key = el.getAttribute('data-i18n-ph');
-        var text = t(key);
-        if (text && text !== key) {
-            el.placeholder = text;
-        }
-    });
-    document.querySelectorAll('[data-i18n-title]').forEach(function(el) {
-        var key = el.getAttribute('data-i18n-title');
-        var text = t(key);
-        if (text && text !== key) {
-            el.title = text;
-        }
-    });
+    // 委托给 shared.js 的 window.applyI18n，translate 回调使用本面板的 t()。
+    // 旧版不区分标签一律写 textContent；本面板 HTML 的 <title> 未标注
+    // data-i18n，故 window.applyI18n 的 titleTagSpecial 不会触发，行为一致。
+    window.applyI18n(document, t);
 }
 
 let idCounter = 0;
@@ -1272,9 +1255,9 @@ function highlightSql(sql) {
         }
     }
 
-    function escapeHtml(str) {
-        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    }
+    // escapeHtml 使用 shared.js 的 window.escapeHtml（统一版本额外转义
+    // 双引号和单引号）。SQL 高亮场景下引号会被转义为 &#39; / &quot;，浏览器
+    // 渲染时仍显示为原字符，视觉效果与旧版一致，且避免引号干扰 span 包裹。
 
     let result = '';
     for (let j = 0; j < tokens.length; j++) {
@@ -1565,44 +1548,19 @@ function handleColumnList(message) {
     if (state.activeTab === 'foreignKeys') renderForeignKeys();
 }
 
+// bindActions 委托给 shared.js 的 window.bindDataActions。本面板唯一特殊
+// case：updateOption（SELECT change / INPUT input）需要 (arg, el.value)
+// 二元调用，通过 handlers.updateOption 覆盖。其余分支：SELECT 无 arg 时
+// 传 el.value（selectValueFallback: true）、INPUT input 同理、click 走
+// 数字强制，均与默认行为一致。
 function bindActions() {
-    document.querySelectorAll('[data-action]').forEach(function(el) {
-        var action = el.getAttribute('data-action');
-        var arg = el.getAttribute('data-action-arg');
-        if (action && typeof window[action] === 'function') {
-            if (el.tagName === 'SELECT') {
-                el.addEventListener('change', function() {
-                    if (action === 'updateOption') {
-                        window[action](arg, el.value);
-                    } else if (arg !== null) {
-                        window[action](arg);
-                    } else {
-                        window[action](el.value);
-                    }
-                });
-            } else if (el.tagName === 'INPUT' && (el.type === 'text' || el.type === 'number')) {
-                el.addEventListener('input', function() {
-                    if (action === 'updateOption') {
-                        window[action](arg, el.value);
-                    } else if (arg !== null) {
-                        window[action](arg);
-                    } else {
-                        window[action](el.value);
-                    }
-                });
-            } else {
-                el.addEventListener('click', function(e) {
-                    if (arg !== null) {
-                        var numArg = Number(arg);
-                        window[action](isNaN(numArg) || arg.trim() === '' ? arg : numArg);
-                    } else {
-                        window[action]();
-                    }
-                });
+    window.bindDataActions({
+        selectValueFallback: true,
+        handlers: {
+            updateOption: function(el, arg) {
+                window.updateOption(arg, el.value);
             }
         }
-        el.removeAttribute('data-action');
-        el.removeAttribute('data-action-arg');
     });
 }
 

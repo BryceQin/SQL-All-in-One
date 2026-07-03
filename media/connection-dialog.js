@@ -160,15 +160,12 @@ function init() {
 }
 
 function applyI18n() {
-    document.querySelectorAll('[data-i18n]').forEach(function(el) {
-        el.textContent = t(el.getAttribute('data-i18n'));
-    });
-    document.querySelectorAll('[data-i18n-ph]').forEach(function(el) {
-        el.placeholder = t(el.getAttribute('data-i18n-ph'));
-    });
-    document.querySelectorAll('[data-i18n-title]').forEach(function(el) {
-        el.title = t(el.getAttribute('data-i18n-title'));
-    });
+    // 委托给 shared.js 的 window.applyI18n，translate 回调使用本面板的 t()
+    // （t() 会自动剥离 'conn.' 前缀并回退到 key）。
+    // 旧版无条件写 textContent，但 window.applyI18n 仅对带 data-i18n 的
+    // <title> 走 document.title；本面板 HTML 的 <title> 未标注 data-i18n，
+    // 故行为一致。
+    window.applyI18n(document, t);
 }
 
 function populateForm() {
@@ -716,52 +713,33 @@ function showTestResult(type, message) {
     }
 }
 
+// bindActions 委托给 shared.js 的 window.bindDataActions。本面板有三个特殊
+// case，均通过 handlers 覆盖：
+//   - updateField：SELECT change / INPUT input / INPUT checkbox change 均需
+//     (arg, value) 二元调用，其中 checkbox 传 el.checked、其余传 el.value。
+//   - togglePasswordVisibility：click 时从 data-target 属性读取目标输入框
+//     id 并调用 togglePasswordVisibility(targetId)。
+// 其余分支：SELECT 无 arg 传 el.value（selectValueFallback: true）、
+// checkbox 走 change（handleCheckbox: true）、password 等非 text/number 的
+// INPUT 走 input（inputEventForAllInputs: true）、click 走数字强制，均与
+// 默认行为一致。
 function bindActions() {
-    document.querySelectorAll('[data-action]').forEach(function(el) {
-        var action = el.getAttribute('data-action');
-        var arg = el.getAttribute('data-action-arg');
-        if (action && typeof window[action] === 'function') {
-            if (el.tagName === 'SELECT') {
-                el.addEventListener('change', function() {
-                    if (action === 'updateField') {
-                        window[action](arg, el.value);
-                    } else if (arg !== null) {
-                        window[action](arg);
-                    } else {
-                        window[action](el.value);
-                    }
-                });
-            } else if (el.tagName === 'INPUT') {
-                if (el.type === 'checkbox') {
-                    el.addEventListener('change', function() {
-                        if (action === 'updateField') {
-                            window[action](arg, el.checked);
-                        }
-                    });
-                } else {
-                    el.addEventListener('input', function() {
-                        if (action === 'updateField') {
-                            window[action](arg, el.value);
-                        }
-                    });
+    window.bindDataActions({
+        selectValueFallback: true,
+        handleCheckbox: true,
+        inputEventForAllInputs: true,
+        handlers: {
+            updateField: function(el, arg) {
+                var value = el.type === 'checkbox' ? el.checked : el.value;
+                window.updateField(arg, value);
+            },
+            togglePasswordVisibility: function(el) {
+                var target = el.getAttribute('data-target');
+                if (target) {
+                    window.togglePasswordVisibility(target);
                 }
-            } else {
-                el.addEventListener('click', function() {
-                    if (action === 'togglePasswordVisibility') {
-                        var target = el.getAttribute('data-target');
-                        if (target) {
-                            window[action](target);
-                        }
-                    } else if (arg !== null && arg !== undefined) {
-                        window[action](arg);
-                    } else {
-                        window[action]();
-                    }
-                });
             }
         }
-        el.removeAttribute('data-action');
-        el.removeAttribute('data-action-arg');
     });
 }
 

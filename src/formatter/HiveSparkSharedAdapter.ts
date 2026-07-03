@@ -119,6 +119,86 @@ function restoreKeywordGroup(
     })
 }
 
+// 任务 4（R4）：HiveSqlAdapter 与 SparkSqlAdapter 共用的 extractLateralView/restoreLateralView
+// 通过参数化 slot id 前缀/后缀处理差异（Hive 用 __lv_N__，Spark 用 spark_lv_N）。
+// 使用两阶段模式（先收集 matches 再倒序替换），与 HiveSqlAdapter 风格一致，
+// 避免 exec+replace 混用导致的 lastIndex 脆弱性（见 P4 任务）。
+export interface LateralViewSlotBase {
+    id: string
+    original: string
+}
+
+const lateralViewPatterns: RegExp[] = [
+    /\bLATERAL\s+VIEW\s+OUTER\b/gi,
+    /\bLATERAL\s+VIEW\b/gi,
+]
+
+// restoreLateralView 正则缓存（key 为 slot.id），参考 CommentPreserver.ts 的 hasWordRegexCache。
+const lateralViewRestoreRegexCache = new Map<string, RegExp>()
+
+export function extractLateralView(
+    sql: string,
+    slots: LateralViewSlotBase[],
+    counter: { value: number },
+    idPrefix: string,
+    idSuffix = ''
+): string {
+    let result = sql
+
+    for (const pattern of lateralViewPatterns) {
+        // gi 标志会在 exec 调用之间保留 lastIndex，必须每次扫描前重置。
+        pattern.lastIndex = 0
+        const matches: { index: number; text: string }[] = []
+        let m
+
+        while ((m = pattern.exec(result)) !== null) {
+            const matchText = m[0]
+            const afterMatch = result.substring(m.index + matchText.length)
+            const clauseRest = extractUntilNextClause(afterMatch)
+            const fullClause = matchText + clauseRest
+
+            matches.push({ index: m.index, text: fullClause })
+        }
+
+        // 倒序替换，避免索引偏移；直接按索引做子串替换，比 escapeRegExp+new RegExp 更稳健。
+        for (let i = matches.length - 1; i >= 0; i--) {
+            const lvMatch = matches[i]
+            const id = `${idPrefix}${counter.value++}${idSuffix}`
+            slots.push({ id, original: lvMatch.text })
+
+            result =
+                result.substring(0, lvMatch.index) +
+                `CROSS JOIN ${id}` +
+                result.substring(lvMatch.index + lvMatch.text.length)
+        }
+    }
+
+    return result
+}
+
+export function restoreLateralView(
+    formatted: string,
+    slots: LateralViewSlotBase[],
+    idMarker: string
+): string {
+    let result = formatted
+
+    for (const slot of slots) {
+        if (idMarker && !slot.id.includes(idMarker)) continue
+
+        const escapedId = escapeRegExp(slot.id)
+        let pattern = lateralViewRestoreRegexCache.get(slot.id)
+        if (!pattern) {
+            pattern = new RegExp(`CROSS\\s+JOIN\\s+\`?${escapedId}\`?`, 'gi')
+            lateralViewRestoreRegexCache.set(slot.id, pattern)
+        }
+        pattern.lastIndex = 0
+        result = result.replace(pattern, slot.original)
+    }
+
+    return result
+}
+
 export {
     replaceSortDistributeCluster,
     restoreSortDistributeCluster,

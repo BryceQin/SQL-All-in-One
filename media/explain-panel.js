@@ -74,31 +74,10 @@ function t(key) {
 }
 
 function applyI18n() {
-    document.querySelectorAll('[data-i18n]').forEach(function(el) {
-        var key = el.getAttribute('data-i18n');
-        var text = t(key);
-        if (text && text !== key) {
-            if (el.tagName === 'TITLE') {
-                document.title = text;
-            } else {
-                el.textContent = text;
-            }
-        }
-    });
-    document.querySelectorAll('[data-i18n-ph]').forEach(function(el) {
-        var key = el.getAttribute('data-i18n-ph');
-        var text = t(key);
-        if (text && text !== key) {
-            el.placeholder = text;
-        }
-    });
-    document.querySelectorAll('[data-i18n-title]').forEach(function(el) {
-        var key = el.getAttribute('data-i18n-title');
-        var text = t(key);
-        if (text && text !== key) {
-            el.title = text;
-        }
-    });
+    // 委托给 shared.js 的 window.applyI18n，translate 回调使用本面板的 t()。
+    // 旧版仅对 TITLE 做特殊处理（写 document.title），由 window.applyI18n
+    // 的 titleTagSpecial 默认开启处理。
+    window.applyI18n(document, t);
 }
 
 // --- Init config ---
@@ -419,52 +398,13 @@ function runAnalyze() {
 }
 
 // --- Utility ---
+// escapeHtml 已集中到 shared.js 的 window.escapeHtml。旧版本缺少
+// null/undefined 检查，调用方传入 null 会抛 TypeError；统一版本会安全地
+// 返回空字符串。本文件直接调用 escapeHtml 即可。
 
-function escapeHtml(str) {
-    return str
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-}
-
-function bindActions() {
-    document.querySelectorAll('[data-action]').forEach(function(el) {
-        var action = el.getAttribute('data-action');
-        var arg = el.getAttribute('data-action-arg');
-        if (action && typeof window[action] === 'function') {
-            if (el.tagName === 'SELECT') {
-                el.addEventListener('change', function() {
-                    if (arg !== null) {
-                        window[action](arg);
-                    } else {
-                        window[action](el.value);
-                    }
-                });
-            } else if (el.tagName === 'INPUT' && (el.type === 'text' || el.type === 'number')) {
-                el.addEventListener('input', function() {
-                    if (arg !== null) {
-                        window[action](arg);
-                    } else {
-                        window[action](el.value);
-                    }
-                });
-            } else {
-                el.addEventListener('click', function(e) {
-                    if (arg !== null) {
-                        var numArg = Number(arg);
-                        window[action](isNaN(numArg) || arg.trim() === '' ? arg : numArg);
-                    } else {
-                        window[action]();
-                    }
-                });
-            }
-        }
-        el.removeAttribute('data-action');
-        el.removeAttribute('data-action-arg');
-    });
-}
-
-bindActions();
+// bindActions 委托给 shared.js 的 window.bindDataActions。本面板唯一特殊
+// 之处：SELECT change 在无 data-action-arg 时传 el.value 而非无参调用，
+// 这对应 window.bindDataActions 的 selectValueFallback: true。其余分支
+// （INPUT input、click）与默认行为一致。
+window.bindDataActions({ selectValueFallback: true });
 applyI18n();

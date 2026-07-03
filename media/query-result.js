@@ -166,34 +166,12 @@ function t(key) {
 }
 
 function applyI18nToDom() {
-    document.querySelectorAll('[data-i18n]').forEach(function(el) {
-        var key = el.getAttribute('data-i18n');
-        var text = t(key);
-        if (text && text !== key) {
-            if (el.tagName === 'OPTION') {
-                el.textContent = text;
-            } else if (el.tagName === 'TITLE') {
-                document.title = text;
-            } else {
-                var prefix = el.textContent.replace(/[^\u0000-\u007F]/g, '').match(/^[\s▶■↻✓←+−]*([\s▶■↻✓←+−]*)/);
-                el.textContent = text;
-            }
-        }
-    });
-    document.querySelectorAll('[data-i18n-ph]').forEach(function(el) {
-        var key = el.getAttribute('data-i18n-ph');
-        var text = t(key);
-        if (text && text !== key) {
-            el.placeholder = text;
-        }
-    });
-    document.querySelectorAll('[data-i18n-title]').forEach(function(el) {
-        var key = el.getAttribute('data-i18n-title');
-        var text = t(key);
-        if (text && text !== key) {
-            el.title = text;
-        }
-    });
+    // 委托给 shared.js 的 window.applyI18n，translate 回调使用本面板的 t()。
+    // 旧版对 OPTION/TITLE 做特殊处理：OPTION 写 textContent（与通用分支
+    // 一致）、TITLE 写 document.title（由 window.applyI18n 的 titleTagSpecial
+    // 默认开启处理）。旧版还计算了一个 prefix 变量但从未使用（死代码），
+    // 实际行为就是 el.textContent = text，与统一版本一致。
+    window.applyI18n(document, t);
 }
 
 const state = {
@@ -2367,53 +2345,40 @@ function handleBlobPreview(data) {
 
 window.addEventListener('message', handleMessage);
 
+// 面板卸载时清理事务定时器，避免 retainContextWhenHidden 场景下的轻微泄漏
+window.addEventListener('beforeunload', function() {
+    if (state.transactionTimer) {
+        clearInterval(state.transactionTimer);
+        state.transactionTimer = null;
+    }
+});
+
+// bindActions 委托给 shared.js 的 window.bindDataActions。本面板有三个特殊
+// case，均通过 handlers 覆盖：
+//   - onFilterColChange / onFilterOpChange：SELECT change 需 (el, numArg)
+//     二元调用，其中 numArg 对 arg 做数字强制（与原逻辑一致，NaN 时回退原字符串）。
+//   - jumpToPage：click 时从 #pageJump 输入框读取值并调用 jumpToPage(value)。
+// 其余分支：SELECT 无 arg 传 el.value（selectValueFallback: true）、
+// INPUT text/number 同时绑定 input + change（inputBindChange: true）、
+// click 走数字强制，均与默认行为一致。
 function bindActions() {
-    document.querySelectorAll('[data-action]').forEach(function(el) {
-        var action = el.getAttribute('data-action');
-        var arg = el.getAttribute('data-action-arg');
-        if (action && typeof window[action] === 'function') {
-            if (el.tagName === 'SELECT') {
-                el.addEventListener('change', function() {
-                    if (action === 'onFilterColChange' || action === 'onFilterOpChange') {
-                        var numArg = Number(arg);
-                        window[action](el, isNaN(numArg) ? arg : numArg);
-                    } else if (arg !== null) {
-                        window[action](arg);
-                    } else {
-                        window[action](el.value);
-                    }
-                });
-            } else if (el.tagName === 'INPUT' && (el.type === 'text' || el.type === 'number')) {
-                el.addEventListener('change', function() {
-                    if (arg !== null) {
-                        window[action](arg);
-                    } else {
-                        window[action](el.value);
-                    }
-                });
-                el.addEventListener('input', function() {
-                    if (arg !== null) {
-                        window[action](arg);
-                    } else {
-                        window[action](el.value);
-                    }
-                });
-            } else {
-                el.addEventListener('click', function(e) {
-                    if (action === 'jumpToPage') {
-                        var pageJumpInput = document.getElementById('pageJump');
-                        window[action](pageJumpInput.value);
-                    } else if (arg !== null) {
-                        var numArg = Number(arg);
-                        window[action](isNaN(numArg) || arg.trim() === '' ? arg : numArg);
-                    } else {
-                        window[action]();
-                    }
-                });
+    window.bindDataActions({
+        selectValueFallback: true,
+        inputBindChange: true,
+        handlers: {
+            onFilterColChange: function(el, arg) {
+                var numArg = Number(arg);
+                window.onFilterColChange(el, isNaN(numArg) ? arg : numArg);
+            },
+            onFilterOpChange: function(el, arg) {
+                var numArg = Number(arg);
+                window.onFilterOpChange(el, isNaN(numArg) ? arg : numArg);
+            },
+            jumpToPage: function() {
+                var pageJumpInput = document.getElementById('pageJump');
+                window.jumpToPage(pageJumpInput.value);
             }
         }
-        el.removeAttribute('data-action');
-        el.removeAttribute('data-action-arg');
     });
 }
 

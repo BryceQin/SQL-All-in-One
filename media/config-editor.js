@@ -1,3 +1,10 @@
+// vscode 句柄必须最先声明：changeLanguage（下方）及文件末尾的若干
+// vscode.postMessage 立即调用都依赖该变量。若在文件中部才声明，函数体
+// 内对 vscode 的引用会落入 const 的暂时性死区（TDZ），一旦这些函数在
+// 声明执行前被调用即抛 ReferenceError。复用 shared.js 缓存的 window.vscode，
+// 避免重复调用 acquireVsCodeApi()（VS Code 每个 webview 仅允许调用一次）。
+const vscode = window.vscode || acquireVsCodeApi();
+
         var i18nData = {
     zh: {
         'configEditor.tab.formatting': '格式化',
@@ -50,22 +57,11 @@ applyI18nDict(getI18nDict());
 
 function applyI18nDict(dict) {
     if (!dict) return;
-    document.querySelectorAll('[data-i18n]').forEach(function(el) {
-        var key = el.getAttribute('data-i18n');
-        if (dict[key]) {
-            if (el.tagName === 'TITLE') {
-                document.title = dict[key];
-            } else {
-                el.textContent = dict[key];
-            }
-        }
-    });
-    document.querySelectorAll('[data-i18n-ph]').forEach(function(el) {
-        var key = el.getAttribute('data-i18n-ph');
-        if (dict[key]) {
-            el.placeholder = dict[key];
-        }
-    });
+    // 委托给 shared.js 的 window.applyI18n，translate 回调查传入的 dict。
+    // 旧版仅区分 TITLE（写 document.title），由 window.applyI18n 的
+    // titleTagSpecial 默认开启处理。旧版不扫描 data-i18n-title，但本面板
+    // HTML 无该属性元素，扫描结果为空，行为一致。
+    window.applyI18n(document, function(key) { return dict[key]; });
 }
 
 function changeLanguage(lang) {
@@ -1606,53 +1602,31 @@ function changeLanguage(lang) {
             searchConfig('');
         }
 
-        const vscode = window.vscode || acquireVsCodeApi();
-
+        // bindActions 委托给 shared.js 的 window.bindDataActions。本面板有三个
+        // 特殊 case，均通过 handlers 覆盖：
+        //   - searchConfig：INPUT input 需要 200ms 防抖后调用 searchConfig(el.value)。
+        //   - toggleGroup：click 时传入元素本身 toggleGroup(el)（而非 arg）。
+        //   - 其余 click（如 switchTab / editConnection）需要保留 data-action-arg
+        //     供绑定之后的 switchTab/switchConnFormTab/键盘导航按属性查找按钮，
+        //     故启用 keepArg。
+        // 其余分支：SELECT 无 arg 传 el.value（selectValueFallback: true）、
+        // INPUT input 有 arg 传 arg、无 arg 传 el.value、click 走数字强制，均与
+        // 默认行为一致。
         function bindActions() {
-            document.querySelectorAll('[data-action]').forEach(function(el) {
-                var action = el.getAttribute('data-action');
-                var arg = el.getAttribute('data-action-arg');
-                if (action && typeof window[action] === 'function') {
-                    if (el.tagName === 'SELECT') {
-                        el.addEventListener('change', function() {
-                            if (arg !== null) {
-                                window[action](arg);
-                            } else {
-                                window[action](el.value);
-                            }
-                        });
-                    } else if (el.tagName === 'INPUT' && (el.type === 'text' || el.type === 'number')) {
-                        el.addEventListener('input', function() {
-                            if (action === 'searchConfig') {
-                                clearTimeout(searchDebounceTimer);
-                                searchDebounceTimer = setTimeout(function() {
-                                    window[action](el.value);
-                                }, 200);
-                            } else if (arg !== null) {
-                                window[action](arg);
-                            } else {
-                                window[action](el.value);
-                            }
-                        });
-                    } else {
-                        el.addEventListener('click', function(e) {
-                            if (action === 'toggleGroup') {
-                                window[action](el);
-                            } else if (arg !== null) {
-                                var numArg = Number(arg);
-                                window[action](isNaN(numArg) || arg.trim() === '' ? arg : numArg);
-                            } else {
-                                window[action]();
-                            }
-                        });
+            window.bindDataActions({
+                selectValueFallback: true,
+                keepArg: true,
+                handlers: {
+                    searchConfig: function(el) {
+                        clearTimeout(searchDebounceTimer);
+                        searchDebounceTimer = setTimeout(function() {
+                            window.searchConfig(el.value);
+                        }, 200);
+                    },
+                    toggleGroup: function(el) {
+                        window.toggleGroup(el);
                     }
                 }
-                // Remove `data-action` so a subsequent bindActions() pass
-                // (e.g. after re-rendering the connection list) does not
-                // double-bind click handlers. Keep `data-action-arg` because
-                // switchTab / switchConnFormTab / keyboard navigation look up
-                // buttons by this attribute AFTER binding has run.
-                el.removeAttribute('data-action');
             });
         }
 
@@ -1783,11 +1757,10 @@ function changeLanguage(lang) {
             });
         }
 
-        function escapeHtml(str) {
-            var div = document.createElement('div');
-            div.textContent = str;
-            return div.innerHTML;
-        }
+        // escapeHtml 已集中到 shared.js 的 window.escapeHtml。旧版本使用
+        // div.textContent + div.innerHTML，仅转义 &/</> 而不转义引号，
+        // 当 conn.name 等含引号时可能破坏 HTML 结构。统一版本同时转义
+        // 双引号和单引号，行为更安全。本文件直接调用 escapeHtml 即可。
 
         function addConnection() {
             connFormState = { mode: 'create', editId: null, passwordChanged: false, sshPasswordChanged: false, sshPassphraseChanged: false };

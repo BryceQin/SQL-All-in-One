@@ -17,6 +17,9 @@ export class PerformanceMonitor {
     private monitorLevel: MonitorLevel = 'light';
     private slowThreshold = 100;
     private configDisposable: import('vscode').Disposable | undefined;
+    // 慢操作告警节流：同一操作名 60 秒内只 warn 一次，避免刷屏
+    private slowOpWarnedAt = new Map<string, number>();
+    private static readonly SLOW_OP_WARN_THROTTLE_MS = 60000;
 
     constructor() {
         this.refreshConfig();
@@ -90,7 +93,13 @@ export class PerformanceMonitor {
         }
 
         if (duration > this.slowThreshold) {
-            console.warn(`[Performance] Slow operation: ${name} took ${duration.toFixed(2)}ms`);
+            // 节流：同一操作名 60 秒内只 warn 一次，避免频繁超阈值刷屏
+            const now = Date.now();
+            const lastWarned = this.slowOpWarnedAt.get(name);
+            if (lastWarned === undefined || now - lastWarned > PerformanceMonitor.SLOW_OP_WARN_THROTTLE_MS) {
+                this.slowOpWarnedAt.set(name, now);
+                console.warn(`[Performance] Slow operation: ${name} took ${duration.toFixed(2)}ms`);
+            }
         }
     }
 
@@ -147,6 +156,7 @@ export class PerformanceMonitor {
 
   dispose(): void {
     this.aggregateStats.clear();
+    this.slowOpWarnedAt.clear();
     this.configDisposable?.dispose();
     this.configDisposable = undefined;
   }

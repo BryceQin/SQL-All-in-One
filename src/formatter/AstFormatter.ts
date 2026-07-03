@@ -31,7 +31,15 @@ export class AstFormatter {
     public format(sql: string): string {
         this.indent.reset();
         const engine = getParserEngine();
-        const ast = engine.astify(sql, this.dialect);
+        let ast: AST[] | AST;
+        try {
+            ast = engine.astify(sql, this.dialect);
+        } catch (e) {
+            // 任务 5（P3）：astify 失败会直接抛 ParseError，原先 format 没有 try-catch，
+            // 错误会冒泡到 VSCode 调用方。捕获后记录错误并返回原始 SQL，保证调用方仍可用。
+            handleError(e, 'AstFormatter.format', ErrorCategory.FORMAT);
+            return sql;
+        }
         const statements = Array.isArray(ast) ? ast : [ast];
         return this.formatStatements(statements);
     }

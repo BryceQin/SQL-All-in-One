@@ -158,7 +158,9 @@ export class DDLFormatter {
             } else if (def.resource === 'constraint') {
                 this.formatConstraintDefinition(def);
             } else {
-                this.layout.add(JSON.stringify(def));
+                // 任务 3（P5）：未知 resource 类型原先输出 JSON.stringify(def) 会破坏 SQL 输出，
+                // 改为注释占位符保持输出为合法 SQL。
+                this.layout.add(`/* unsupported: ${String(def.resource || 'unknown')} */`);
             }
         });
 
@@ -326,7 +328,10 @@ export class DDLFormatter {
                 if (typeof n === 'object' && n !== null) {
                     if ('table' in n) return this.formatTableName(n);
                     if ('value' in n) return String((n as unknown as { value: unknown }).value);
-                    return JSON.stringify(n);
+                    // 任务 3（P5）：未知节点结构原先输出 JSON.stringify(n) 会破坏 SQL 输出，
+                    // 改为注释占位符保持输出为合法 SQL。
+                    const nodeType = (n as Record<string, unknown>).type;
+                    return `/* unsupported: ${String(nodeType || 'unknown')} */`;
                 }
                 return String(n);
             });

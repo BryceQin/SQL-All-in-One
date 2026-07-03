@@ -53,10 +53,7 @@ export class DataExporter {
                 stream.write(values.join(delimiter) + '\n');
             }
 
-            await new Promise<void>((resolve, reject) => {
-                stream.end(() => resolve());
-                stream.on('error', reject);
-            });
+            await this.finishStream(stream);
             vscode.window.setStatusBarMessage(t('database.exportCompleted'), 3000);
         } catch (error) {
             stream.destroy();
@@ -96,10 +93,7 @@ export class DataExporter {
 
             stream.write('\n]');
 
-            await new Promise<void>((resolve, reject) => {
-                stream.end(() => resolve());
-                stream.on('error', reject);
-            });
+            await this.finishStream(stream);
             vscode.window.setStatusBarMessage(t('database.exportCompleted'), 3000);
         } catch (error) {
             stream.destroy();
@@ -133,10 +127,7 @@ export class DataExporter {
                 stream.write(`INSERT INTO ${q(tableName)} (${columnNames}) VALUES ${valueGroups.join(', ')};\n`);
             }
 
-            await new Promise<void>((resolve, reject) => {
-                stream.end(() => resolve());
-                stream.on('error', reject);
-            });
+            await this.finishStream(stream);
             vscode.window.setStatusBarMessage(t('database.exportCompleted'), 3000);
         } catch (error) {
             stream.destroy();
@@ -161,6 +152,20 @@ export class DataExporter {
 
     async exportToExcel(): Promise<void> {
         throw new Error(t('database.excelNotAvailable'));
+    }
+
+    /**
+     * 结束写入流并等待其完全关闭。
+     *
+     * 必须先注册 `error` listener 再调用 `end()`：若在 `end()` 之后才注册
+     * error listener，则 end 过程中（或此前未消费的错误）触发的 error 事件
+     * 可能被错过，导致 Promise 永远不 resolve/reject（Node.js 流处理常见 bug）。
+     */
+    private finishStream(stream: fs.WriteStream): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
+            stream.on('error', reject);
+            stream.end(() => resolve());
+        });
     }
 
     private escapeCsvField(value: string, delimiter: string): string {

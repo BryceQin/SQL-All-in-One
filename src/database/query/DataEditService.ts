@@ -121,7 +121,25 @@ export async function executeInTransaction(
             await adapter.queryAdapter.rollback();
         } catch (rollbackError) {
             console.error('Rollback failed, disconnecting adapter:', rollbackError);
-            try { await adapter.disconnect(); } catch (e) { /* ignore: best-effort cleanup */ console.debug('[SQL All in One] DataEditService disconnect after rollback failure:', e) }
+            // 通过 ConnectionManager 触发断开，而非直接调 adapter.disconnect()，
+            // 以保证 ConnectionManager 的 runtimeStates 状态与 adapter 实际状态
+            // 一致（否则状态仍显示 connected 但 adapter 已 disconnected，后续
+            // 查询会失败）。当前 adapter 来自 active connection，因此通过
+            // getActiveConnection().id 解析对应的 connectionId。
+            try {
+                const connectionManager = getConnectionManager();
+                const activeConfig = connectionManager.getActiveConnection();
+                if (activeConfig) {
+                    await connectionManager.forceDisconnect(activeConfig.id);
+                } else {
+                    // 找不到对应 connectionId 的兜底路径：直接断开 adapter，
+                    // 避免完全无清理。此情形下无法同步 ConnectionManager 状态。
+                    await adapter.disconnect();
+                }
+            } catch (e) {
+                /* ignore: best-effort cleanup */
+                console.debug('[SQL All in One] DataEditService forceDisconnect after rollback failure:', e);
+            }
         }
         return { success: false, errors: [(error as Error).message] };
     }

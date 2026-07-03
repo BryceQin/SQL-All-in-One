@@ -390,11 +390,19 @@ export class ExpressionFormatter {
         if (this.formatSubqueryFn) {
             return '(' + this.formatSubqueryFn(expr) + ')';
         }
-        return '(' + JSON.stringify(expr) + ')';
+        // 任务 3（P5）：formatSubqueryFn 未设置时，原先输出 JSON.stringify(expr) 会破坏
+        // SQL 输出（产生 JSON 对象字面量）。改为返回注释占位符，保持输出为合法 SQL 片段。
+        return '(/* subquery */)';
     }
 
     private formatUnknown(expr: unknown): string {
         if (typeof expr === 'string') return expr;
+        // 任务 3（P5）：优先尝试原始文本（部分 AST 节点带 text 字段保留原始 SQL 片段），
+        // 避免 JSON.stringify 直接破坏 SQL 输出。JSON.stringify 仅作为最后兜底。
+        if (expr && typeof expr === 'object') {
+            const node = expr as Record<string, unknown>;
+            if (typeof node.text === 'string') return node.text;
+        }
         try {
             return JSON.stringify(expr);
         } catch (e) {

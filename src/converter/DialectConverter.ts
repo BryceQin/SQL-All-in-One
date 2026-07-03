@@ -29,6 +29,13 @@ export interface ConvertResult {
 }
 
 function deepCloneAst(ast: AST[] | AST): AST[] | AST {
+    // 使用结构化克隆替代 JSON 序列化，避免大 AST 产生巨大临时字符串。
+    // structuredClone 在 Node 17+ 可用，且能正确处理普通对象/数组。
+    // AST 仅含可序列化结构，无需处理 Date/Map/Set 等特殊类型。
+    if (typeof structuredClone === 'function') {
+        return structuredClone(ast) as AST[] | AST
+    }
+    // 降级路径：旧 Node 版本回退到 JSON 方案
     return JSON.parse(JSON.stringify(ast)) as AST[] | AST
 }
 

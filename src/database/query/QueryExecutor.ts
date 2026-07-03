@@ -233,7 +233,21 @@ export class QueryExecutor {
                         if (settled) {
                             return;
                         }
-                        await adapter.queryAdapter.cancelQuery(queryId);
+                        // 增加重试机制，与 cancel 方法保持一致，避免瞬时失败导致查询无法停止
+                        const maxRetries = this.getConfigCancelRetries();
+                        const retryDelay = this.getConfigCancelRetryDelay();
+                        for (let attempt = 0; attempt < maxRetries; attempt++) {
+                            if (settled) return;
+                            try {
+                                await adapter.queryAdapter.cancelQuery(queryId);
+                                return;
+                            } catch (e) {
+                                handleError(e, `QueryExecutor.timeoutCancel.attempt.${attempt}`, ErrorCategory.SUB_ITEM)
+                                if (attempt < maxRetries - 1) {
+                                    await this.delay(retryDelay * Math.pow(2, attempt));
+                                }
+                            }
+                        }
                     }
                 } catch (e) {
                     // best effort: log but do not propagate cancel failure
@@ -243,6 +257,7 @@ export class QueryExecutor {
 
             timer = setTimeout(() => {
                 if (!settled) {
+                    // 异步发起取消，不阻塞 settleReject，避免用户长时间等待
                     void attemptCancel();
                 }
                 settleReject(new Error(t('database.queryTimedOut', String(options.timeout))));

@@ -2,8 +2,9 @@ import {
     AdapterState,
     replaceSortDistributeCluster,
     restoreSortDistributeCluster,
-    extractUntilNextClause,
     escapeRegExp,
+    extractLateralView as sharedExtractLateralView,
+    restoreLateralView as sharedRestoreLateralView,
 } from "./HiveSparkSharedAdapter"
 
 interface UsingSlot {
@@ -62,48 +63,17 @@ export function postprocessSparkSql(formatted: string, state: SparkAdapterState)
 }
 
 function extractLateralView(sql: string, lateralViewSlots: LateralViewSlot[], counter: { value: number }): string {
-    let result = sql
-
-    const patterns = [
-        /\bLATERAL\s+VIEW\s+OUTER\b/gi,
-        /\bLATERAL\s+VIEW\b/gi,
-    ]
-
-    for (const pattern of patterns) {
-        let m
-        while ((m = pattern.exec(result)) !== null) {
-            const matchText = m[0]
-            const afterMatch = result.substring(m.index + matchText.length)
-            const clauseRest = extractUntilNextClause(afterMatch)
-            const fullClause = matchText + clauseRest
-
-            const id = `spark_lv_${counter.value++}`
-            lateralViewSlots.push({ id, original: fullClause })
-
-            const escaped = escapeRegExp(fullClause)
-            const replaceRegex = new RegExp(escaped, 'i')
-            result = result.replace(replaceRegex, `CROSS JOIN ${id}`)
-
-            pattern.lastIndex = 0
-        }
-    }
-
-    return result
+    // 任务 4（R4）：复用 HiveSparkSharedAdapter 中的共享实现。
+    // 任务 2（P4）：共享实现已采用两阶段模式（先收集 matches 再倒序替换），
+    // 移除了原先 exec+replace 混用对 pattern.lastIndex = 0 的脆弱依赖。
+    // Spark slot id 格式为 spark_lv_N（前缀 spark_lv_，无后缀）。
+    return sharedExtractLateralView(sql, lateralViewSlots, counter, 'spark_lv_', '')
 }
 
 function restoreLateralView(formatted: string, lateralViewSlots: LateralViewSlot[]): string {
-    let result = formatted
-
-    for (const slot of lateralViewSlots) {
-        const escapedId = escapeRegExp(slot.id)
-        const withBackticks = new RegExp(
-            `CROSS\\s+JOIN\\s+\`?${escapedId}\`?`,
-            'gi'
-        )
-        result = result.replace(withBackticks, slot.original)
-    }
-
-    return result
+    // 任务 4（R4）：复用 HiveSparkSharedAdapter 中的共享实现。
+    // idMarker='' 表示不做 id 过滤（Spark 的 lateralViewSlots 数组只含 lateral view slot）。
+    return sharedRestoreLateralView(formatted, lateralViewSlots, '')
 }
 
 function extractCreateTableUsing(sql: string, usingSlots: UsingSlot[]): string {

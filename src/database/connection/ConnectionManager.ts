@@ -223,6 +223,45 @@ export class ConnectionManager {
         }
     }
 
+    /**
+     * 强制断开指定连接并同步更新 runtimeStates 状态。
+     *
+     * 与 {@link disconnect} 的区别：本方法用于 adapter 可能已被外部代码
+     * （例如 DataEditService.rollback 失败路径）显式断开、或需要从外部
+     * 统一触发断开的场景。本方法会：
+     *   1. 调用 adapter.disconnect()（若存在 adapter），失败时仅记录日志；
+     *   2. 清理 adapter 引用、关闭 SSH tunnel、停止健康检查与重试计时器；
+     *   3. 将状态置为 `disconnected` 并触发 active 连接变更事件。
+     *
+     * 调用方应使用本方法而非直接调用 `adapter.disconnect()`，以避免
+     * ConnectionManager 状态与 adapter 实际状态不一致（状态仍显示
+     * connected 但 adapter 已 disconnected，后续查询会失败）。
+     */
+    async forceDisconnect(id: string): Promise<void> {
+        const runtime = this.runtimeStates.get(id);
+        this.stopHealthCheck(id);
+
+        if (runtime?.adapter) {
+            try {
+                await runtime.adapter.disconnect();
+            } catch (e) {
+                handleError(e, 'ConnectionManager.forceDisconnect', ErrorCategory.FEATURE);
+            }
+            runtime.adapter = undefined;
+        }
+
+        await this.closeSshTunnel(id);
+
+        this.updateConnectionState(id, 'disconnected');
+        this.cancelRetry(id);
+
+        if (this.activeConnectionId === id) {
+            const oldId = this.activeConnectionId;
+            this.activeConnectionId = undefined;
+            this._onDidChangeActiveConnection.fire({ oldId });
+        }
+    }
+
     async testConnection(id: string): Promise<TestConnectionResult>;
     async testConnection(config: ConnectionConfig, password?: string): Promise<TestConnectionResult>;
     async testConnection(arg: string | ConnectionConfig, password?: string): Promise<TestConnectionResult> {

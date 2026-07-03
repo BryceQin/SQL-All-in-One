@@ -86,33 +86,11 @@ function t(key) {
 }
 
 function applyI18n() {
-    document.querySelectorAll('[data-i18n]').forEach(function(el) {
-        var key = el.getAttribute('data-i18n');
-        var text = t(key);
-        if (text && text !== key) {
-            if (el.tagName === 'OPTION') {
-                el.textContent = text;
-            } else if (el.tagName === 'TITLE') {
-                document.title = text;
-            } else {
-                el.textContent = text;
-            }
-        }
-    });
-    document.querySelectorAll('[data-i18n-ph]').forEach(function(el) {
-        var key = el.getAttribute('data-i18n-ph');
-        var text = t(key);
-        if (text && text !== key) {
-            el.placeholder = text;
-        }
-    });
-    document.querySelectorAll('[data-i18n-title]').forEach(function(el) {
-        var key = el.getAttribute('data-i18n-title');
-        var text = t(key);
-        if (text && text !== key) {
-            el.title = text;
-        }
-    });
+    // 委托给 shared.js 的 window.applyI18n，translate 回调使用本面板的 t()。
+    // 旧版对 OPTION/TITLE 做特殊处理，但 OPTION 写 textContent 与通用分支
+    // 一致、TITLE 写 document.title 由 window.applyI18n 的 titleTagSpecial
+    // 默认开启处理，因此无需额外配置。
+    window.applyI18n(document, t);
 }
 
 // Read language from injected config
@@ -461,15 +439,9 @@ function updateCsvOptionsVisibility() {
     }
 }
 
-function escapeHtml(str) {
-    if (!str) return '';
-    return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-}
+// escapeHtml 已集中到 shared.js 的 window.escapeHtml（含 null/undefined
+// 安全检查），本文件直接调用 escapeHtml 即可（window 上的属性在脚本作用域
+// 中作为全局名可见）。
 
 window.addEventListener('message', function(event) {
     var message = event.data;
@@ -555,41 +527,8 @@ document.getElementById('fileFormat').addEventListener('change', function() {
     updateCsvOptionsVisibility();
 });
 
-function bindActions() {
-    document.querySelectorAll('[data-action]').forEach(function(el) {
-        var action = el.getAttribute('data-action');
-        var arg = el.getAttribute('data-action-arg');
-        if (action && typeof window[action] === 'function') {
-            if (el.tagName === 'SELECT') {
-                el.addEventListener('change', function() {
-                    if (arg !== null) {
-                        window[action](arg);
-                    } else {
-                        window[action]();
-                    }
-                });
-            } else if (el.tagName === 'INPUT' && (el.type === 'text' || el.type === 'number')) {
-                el.addEventListener('input', function() {
-                    if (arg !== null) {
-                        window[action](arg);
-                    } else {
-                        window[action](el.value);
-                    }
-                });
-            } else {
-                el.addEventListener('click', function(e) {
-                    if (arg !== null) {
-                        var numArg = Number(arg);
-                        window[action](isNaN(numArg) || arg.trim() === '' ? arg : numArg);
-                    } else {
-                        window[action]();
-                    }
-                });
-            }
-        }
-        el.removeAttribute('data-action');
-        el.removeAttribute('data-action-arg');
-    });
-}
-
-bindActions();
+// bindActions 委托给 shared.js 的 window.bindDataActions。本面板无特殊 case：
+// SELECT change 有 arg 传 arg、无 arg 无参调用；INPUT text/number input 有 arg
+// 传 arg、无 arg 传 el.value；click 有 arg 走数字强制、无 arg 无参调用。
+// 这与 window.bindDataActions 的默认行为完全一致，故直接调用。
+window.bindDataActions();

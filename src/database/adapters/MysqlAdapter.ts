@@ -343,6 +343,10 @@ interface MysqlCoreQuery {
     on(event: 'result', listener: (result: RowDataPacket | ResultSetHeader, index: number) => void): this;
     on(event: 'error', listener: (err: Error) => void): this;
     on(event: 'end', listener: () => void): this;
+    removeListener(event: 'fields', listener: (fields: FieldPacket[], index: number) => void): this;
+    removeListener(event: 'result', listener: (result: RowDataPacket | ResultSetHeader, index: number) => void): this;
+    removeListener(event: 'error', listener: (err: Error) => void): this;
+    removeListener(event: 'end', listener: () => void): this;
 }
 
 /**
@@ -614,11 +618,18 @@ export class MysqlQueryAdapter<TShared extends IMysqlProtocolSharedContext = IMy
         getColumns: () => ColumnMeta[];
     } {
         let columns: ColumnMeta[] = [];
-        let fieldsEmitted = false;
 
         const fieldsPromise = new Promise<void>((resolve) => {
-            query.on('fields', (fields: FieldPacket[]) => {
-                fieldsEmitted = true;
+            // 任一回调触发后立即移除全部 listener，避免 listener 泄漏。
+            // 注意：error 路径同样 resolve（而非 reject），因为 stream 后续
+            // 还会消费/迭代，真正的错误会在 for-await 循环中抛出。
+            const removeAll = (): void => {
+                query.removeListener('fields', onFields);
+                query.removeListener('end', onEnd);
+                query.removeListener('error', onError);
+            };
+            const onFields = (fields: FieldPacket[]): void => {
+                removeAll();
                 columns = fields.map(field => {
                     const flags = field.flags as number;
                     return {
@@ -631,19 +642,20 @@ export class MysqlQueryAdapter<TShared extends IMysqlProtocolSharedContext = IMy
                     };
                 });
                 resolve();
-            });
+            };
             // If the query is a non-SELECT (no fields), resolve immediately so
             // the consumer still receives a first (empty) batch.
-            query.on('end', () => {
-                if (!fieldsEmitted) {
-                    resolve();
-                }
-            });
-            query.on('error', () => {
-                if (!fieldsEmitted) {
-                    resolve();
-                }
-            });
+            const onEnd = (): void => {
+                removeAll();
+                resolve();
+            };
+            const onError = (): void => {
+                removeAll();
+                resolve();
+            };
+            query.on('fields', onFields);
+            query.on('end', onEnd);
+            query.on('error', onError);
         });
 
         return { fieldsPromise, getColumns: () => columns };
@@ -742,6 +754,14 @@ export class MysqlQueryAdapter<TShared extends IMysqlProtocolSharedContext = IMy
 
         this.shared.transactionConnection = await this.shared.pool.getConnection();
         await this.shared.transactionConnection.beginTransaction();
+        // 记录 transaction 连接的 threadId 到 activeQueryThreadIds，
+        // 使用特殊 key `__transaction__`，使事务内执行的查询能够通过
+        // cancelQuery 取消（否则事务路径下 queryId 不会被注册，cancelQuery
+        // 会静默无操作）。与 StarrocksQueryAdapter 保持一致。
+        const txThreadId = (this.shared.transactionConnection as unknown as { threadId?: number }).threadId;
+        if (txThreadId !== undefined) {
+            this.shared.activeQueryThreadIds.set('__transaction__', txThreadId);
+        }
     }
 
     async commit(): Promise<void> {
@@ -752,6 +772,7 @@ export class MysqlQueryAdapter<TShared extends IMysqlProtocolSharedContext = IMy
         try {
             await this.shared.transactionConnection.commit();
         } finally {
+            this.shared.activeQueryThreadIds.delete('__transaction__');
             this.shared.transactionConnection.release();
             this.shared.transactionConnection = null;
         }
@@ -769,6 +790,7 @@ export class MysqlQueryAdapter<TShared extends IMysqlProtocolSharedContext = IMy
             this.shared.transactionConnection.destroy();
             console.error('Rollback failed, connection destroyed:', rollbackError);
         } finally {
+            this.shared.activeQueryThreadIds.delete('__transaction__');
             this.shared.transactionConnection = null;
         }
     }
@@ -778,8 +800,13 @@ export class MysqlQueryAdapter<TShared extends IMysqlProtocolSharedContext = IMy
             return;
         }
 
-        const threadId = this.shared.activeQueryThreadIds.get(_queryId);
-        if (!threadId) {
+        // 先按 queryId 查找 threadId；若未找到且当前存在事务连接，则回退到
+        // `__transaction__` key，以便取消在事务内执行的查询。
+        let threadId = this.shared.activeQueryThreadIds.get(_queryId);
+        if (threadId === undefined && this.shared.transactionConnection) {
+            threadId = this.shared.activeQueryThreadIds.get('__transaction__');
+        }
+        if (threadId === undefined) {
             return;
         }
 

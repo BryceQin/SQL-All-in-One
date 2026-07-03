@@ -60,6 +60,14 @@ export class SshTunnel {
 
         await new Promise<void>((resolve, reject) => {
             const onError = (err: Error): void => {
+                // 在 reject 之前清理 client 资源，避免 client 实例及其内部
+                // socket 在连接失败路径上泄漏（此时 this.client 尚未赋值）。
+                try {
+                    client.end();
+                } catch (endErr) {
+                    // 忽略 end 错误，确保 reject 一定能执行
+                    void endErr;
+                }
                 if (err.message.includes('ECONNREFUSED')) {
                     reject(new Error(t('ssh.connectionRefused')));
                 } else if (
@@ -111,12 +119,21 @@ export class SshTunnel {
         });
 
         await new Promise<void>((resolve, reject) => {
+            // listen 阶段的 error 处理器：仅用于捕获 listen 失败并 reject。
+            const onListenError = (err: Error): void => {
+                reject(new Error(`Port forwarding failed: ${err.message}. Check target database address and port.`));
+            };
+            server.once('error', onListenError);
             server.listen(0, '127.0.0.1', () => {
+                server.removeListener('error', onListenError);
                 resolve();
             });
-            server.on('error', (err) => {
-                reject(new Error(`Port forwarding failed: ${err.message}. Check target database address and port.`));
-            });
+        });
+
+        // listen 成功后，注册运行期 error 处理器，避免 server 在运行期
+        // 发生 error 事件时作为未处理异常抛出（Node.js 默认行为会导致进程崩溃）。
+        server.on('error', (err) => {
+            console.error('[SQL All in One] SSH tunnel server runtime error:', err);
         });
 
         const addr = server.address() as net.AddressInfo;

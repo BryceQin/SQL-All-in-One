@@ -1,5 +1,40 @@
 # Changelog
 
+## [2.29.0] - 2026-07-03
+
+### Performance
+
+- **HiveSqlAdapter 正则编译缓存优化**：将 `extractWholeStatements` 内 30+ 条正则与 `extractCreateTableClauses` 内 9 条正则提升为模块级常量，并为 5 个 `restore*` 函数的 `new RegExp` 添加 LRU 缓存（参考 `CommentPreserver.hasWordRegexCache` 模式）。每次 Hive SQL 格式化省去 40+ 次正则编译，gi 标志正则在每次 exec 前显式重置 `lastIndex` 防止跨调用状态串扰
+- **DocumentAstCache 增量映射修复**：原 `mergedAst[idx] : mergedAst[0]` 兜底逻辑在单语句解析出多个 AST 节点时导致后续语句缓存错误的 AST，影响导航/悬停/补全定位。改为按 statement 在 mergedAst 中的消费顺序建立索引映射，沿用旧缓存中该索引处的 AST 节点数量，保证 1:N 映射稳定
+- **AstFormatter 解析失败兜底**：`format` 入口对 `engine.astify` 加 try/catch，捕获 ParseError 后通过 ErrorHandler 记录并返回原始 SQL，避免错误冒泡到 VSCode 导致用户体验恶化
+- **ExpressionFormatter/DDLFormatter 兜底输出修复**：未知表达式/节点不再输出 `JSON.stringify(expr)` 破坏 SQL，`formatSubquery` 在 formatter 未设置时返回 `(/* subquery */)`，DDLFormatter 改为 `/* unsupported: ${type} */` 注释占位符
+- **adjustAstLocations 递归深度限制**：`adjustAstLocationsInPlace` 与 `adjustAstLocationsLazy` 增加 `MAX_ADJUST_DEPTH = 1000` 限制，深度嵌套 AST 不再触发栈溢出
+- **deepCloneAst 性能优化**：优先使用 Node 17+ 的 `structuredClone` 替代 `JSON.parse(JSON.stringify(ast))`，避免大 AST 产生巨大临时字符串，旧 Node 版本自动降级到 JSON 方案
+- **SparkSqlAdapter 两阶段模式**：`extractLateralView` 改为先收集所有 matches 再倒序替换的两阶段模式，消除 exec+replace 混用对 `pattern.lastIndex = 0` 的脆弱依赖
+- **PerformanceMonitor 慢操作告警节流**：同类操作 60 秒内只 warn 一次，避免频繁超阈值刷屏
+
+### Code Refactoring
+
+- **Webview 代码集中化**：将 `bindActions`/`escapeHtml`/`applyI18n` 三类重复实现集中到 `media/shared.js`，data-transfer 与 explain-panel 移除本地实现，其余面板改为薄包装委托 `window.bindDataActions`/`window.escapeHtml`/`window.applyI18n`
+- **escapeHtml bug 修复**：`explain-panel.js` 原 `escapeHtml` 缺 null/undefined 检查，传 null 会抛 TypeError，统一版本包含防护
+- **config-editor.js vscode 声明位置修复**：`const vscode` 声明从第 1609 行移到文件顶部，消除 TDZ（暂时性死区）风险
+- **Hive/Spark LateralView 共享抽取**：将 `extractLateralView`/`restoreLateralView` 抽取到 `HiveSparkSharedAdapter`，通过 `idPrefix`/`idSuffix`/`idMarker` 参数化处理 slot id 差异，消除两个 Adapter 间的重复代码
+- **AstTransformEngine 死代码清理**：移除重构遗留的 `void walkAst` 无意义语句与对应的 `walkAst` import
+- **DataExporter stream 处理去重**：抽取 `finishStream(stream)` helper 统一 3 处流关闭逻辑
+
+### Bug Fixes
+
+- **DataExporter stream error 注册时机修复**：`stream.on('error', reject)` 原本在 `stream.end()` 之后注册，可能错过 error 事件（Node.js 流处理常见 bug）。改为先注册 error listener 再调用 end
+- **SshTunnel client 泄漏修复**：`client.on('error')` 触发 reject 后未调用 `client.end()`，client 实例和内部 socket 泄漏。现在 reject 前用 try/catch 包裹 `client.end()` 确保资源清理；同时为 server 注册运行期 error 处理器避免进程崩溃
+- **MysqlAdapter stream listener 泄漏修复**：`setupStreamFields` 注册的 `fields`/`end`/`error` 三个 listener 在 fieldsPromise resolve 后未移除。现在任一回调触发后通过 `removeAll()` 移除全部三个 listener
+- **MysqlAdapter transaction 内查询无法取消修复**：`withAcquiredConnection` 在 transaction 路径下不记录 threadId 到 `activeQueryThreadIds`，导致 transaction 内查询无法通过 cancelQuery 取消。参考 StarrocksAdapter 实现，beginTransaction 时用 `__transaction__` key 记录 threadId，commit/rollback 时删除
+- **DataEditService.rollback 状态一致性修复**：rollback 失败时直接调 `adapter.disconnect()` 绕过 ConnectionManager，导致状态显示仍为 connected 但 adapter 已 disconnected。新增 `ConnectionManager.forceDisconnect(id)` 方法，DataEditService 改为通过该方法触发断开，保证 runtimeStates 状态一致
+- **QueryExecutor 超时取消增强重试**：`attemptCancel` 原本无重试，timeout 触发的取消成功率低于用户主动 cancel。现在增加指数退避重试，与 `cancel` 方法行为一致
+- **ModuleRegistry 错误处理统一**：模块激活/停用失败原本仅 `console.error`，未进入 ErrorHandler 通道。现在调用 `handleError` 统一记录，便于聚合监控与用户通知
+- **Webview 事务定时器清理**：`query-result.js` 的事务状态轮询 `setInterval` 缺少面板级 dispose 钩子，面板关闭时若事务进行中 interval 不会立即停止。新增 `beforeunload` 监听器清理 interval
+
+---
+
 ## [2.28.1] - 2026-07-03
 
 ### Documentation

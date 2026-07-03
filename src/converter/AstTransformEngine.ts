@@ -1,5 +1,4 @@
 import type { AST } from 'node-sql-parser'
-import { walkAst } from '../parser/AstVisitor'
 import type { SqlDialect } from '../parser/dialectMapper'
 import { FunctionTransformer } from './nodeTransformers/FunctionTransformer'
 import { TypeTransformer } from './nodeTransformers/TypeTransformer'
@@ -92,7 +91,6 @@ export class AstTransformEngine {
             })
         }
 
-        void walkAst
         return { warnings: ctx.warnings }
     }
 }
