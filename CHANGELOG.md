@@ -1,5 +1,21 @@
 # Changelog
 
+## [2.29.5] - 2026-07-06
+
+### Performance
+- VSIX 体积优化：通过更精细的 `.vscodeignore` 规则，移除 node_modules 中的非运行时文件
+  - 排除 `@azure/msal-browser` 整个包（14 MB 浏览器端代码，VSCode 扩展在 Node.js 环境不会加载）
+  - 排除 `@azure/identity` 的 `dist/esm`、`dist/browser`、`dist/workerd` 三个非 Node.js 运行时变体
+  - 排除 `@azure/msal-common` 和 `@azure/msal-node` 的 ESM `.js` 副本（运行时只加载 `.cjs`）
+  - 排除所有 `.mjs` 文件（ESM 模块，Node.js `require()` 不使用）
+  - 排除 `better-sqlite3` 的 `test_extension.node` 测试二进制
+  - 排除 `@typespec`、`tar`、`tedious/node_modules/bl` 的测试目录
+  - VSIX 从 21.42 MB 减少到 20.45 MB（减少 ~5%，1 MB），文件数从 5625 减到 5382
+  - 所有 8 个运行时依赖（mysql2、pg、better-sqlite3、mssql、oracledb、odbc、ssh2、node-sql-parser）完整保留
+  - 1828 个测试用例全部通过，功能零回归
+
+---
+
 ## [2.29.4] - 2026-07-03
 
 修复 v2.29.3 打包问题：之前误用 `vsce publish --no-dependencies` 导致运行时依赖（mysql2、pg、better-sqlite3、mssql、oracledb、odbc、ssh2、node-sql-parser）未打入 VSIX，用户安装后报 "Cannot find package 'mysql2'" 错误。本次恢复正确的打包方式（不带 `--no-dependencies`，由 `.vscodeignore` 精简 node_modules）。代码内容与 v2.29.3 完全一致。

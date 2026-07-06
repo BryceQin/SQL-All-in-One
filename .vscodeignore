@@ -86,6 +86,76 @@ node_modules/**/tsconfig*.json
 node_modules/**/*.d.ts
 # Keep native binaries (.node) — required by better-sqlite3, odbc, ssh2, etc.
 !node_modules/**/*.node
+
+# --- v2.29.5 size optimization ---------------------------------------------
+# Strip platform-irrelevant & duplicate-format files from runtime deps that
+# esbuild marks as `external` (so they ship as node_modules).
+#
+# All rules below target files that are NOT loaded by Node.js `require()` in
+# a VSCode extension host (Node.js CommonJS environment):
+#
+# 1. `.mjs` files — ESM-only modules. Node.js `require()` loads `.js`/`.cjs`,
+#    never `.mjs`. Safe to strip globally from node_modules.
+node_modules/**/*.mjs
+# 2. `.cjs.map` — source maps for CommonJS files (already stripped .map above
+#    but that pattern only covers .js.map; .cjs.map is separate).
+node_modules/**/*.cjs.map
+# 3. @azure/identity ships 4 build outputs (commonjs, esm, browser, workerd).
+#    Node.js require() resolves to dist/commonjs/ via package.json exports.
+#    The other 3 variants are dead weight in a Node.js extension host.
+**/node_modules/@azure/identity/dist/esm/**
+**/node_modules/@azure/identity/dist/browser/**
+**/node_modules/@azure/identity/dist/workerd/**
+# 4. @azure/msal-browser is only loaded by InteractiveBrowserCredential
+#    (browser-only flow). In Node.js it's pulled in via
+#    @azure/identity/dist/commonjs/msal/browserFlows/msalBrowserCommon.js,
+#    but that file is itself only lazily loaded when a browser flow is
+#    requested — which never happens in a VSCode extension. Strip the
+#    browser-only package entirely (including nested copy under
+#    mssql/node_modules/); if it's ever required, Node.js will throw a
+#    clear "Cannot find module" error at the point of use, which is
+#    preferable to silently shipping 14 MB of unused code.
+node_modules/@azure/msal-browser/**
+node_modules/**/node_modules/@azure/msal-browser/**
+# 5. @azure/msal-common ESM output (the .js files inside dist are ESM because
+#    package.json has "type": "module"; Node.js require() loads via the
+#    "main" field which points to the .js file but CJS-interop handles it).
+#    The .mjs variants are pure ESM duplicates — already covered by rule 1.
+#    Strip the TypeScript source maps and type definitions.
+node_modules/@azure/msal-common/dist/**/*.ts
+node_modules/@azure/msal-common/dist/**/*.d.ts
+node_modules/**/node_modules/@azure/msal-common/dist/**/*.ts
+node_modules/**/node_modules/@azure/msal-common/dist/**/*.d.ts
+# 6. @typespec compiler/emitter artifacts — @azure/keyvault-keys depends on
+#    @typespec/ts-http-runtime which ships a compiler. We only need the
+#    runtime output, not the compiler's own source maps and tests.
+**/node_modules/@typespec/**/*.map
+**/node_modules/@typespec/**/test/**
+**/node_modules/@typespec/**/tests/**
+# 7. tar (transitive dep of @azure/core-rest-pipeline) ships a huge test
+#    tree and bench scripts.
+node_modules/tar/test/**
+node_modules/tar/bench/**
+node_modules/**/node_modules/tar/test/**
+node_modules/**/node_modules/tar/bench/**
+# 8. tedious (mssql driver) ships nested node_modules with its own copy of
+#    `bl` which has a test directory.
+node_modules/tedious/node_modules/bl/test/**
+# 9. uuid v10 ships ESM + browser bundles in addition to commonjs.
+**/node_modules/uuid/dist/**/uuid.browser.js
+**/node_modules/uuid/dist/**/uuid.random.browser.js
+# 10. better-sqlite3 test extension binary (not needed at runtime).
+node_modules/better-sqlite3/build/Release/test_extension.node
+# 11. @azure/msal-common ships ESM (.js) + CJS (.cjs). Runtime require()
+#     loads the .cjs entry, so the ESM .js duplicate is dead weight.
+node_modules/@azure/msal-common/**/*.js
+node_modules/**/node_modules/@azure/msal-common/**/*.js
+# 12. @azure/msal-node ships ESM (.js) + CJS (.cjs). Same as above.
+node_modules/@azure/msal-node/**/*.js
+node_modules/**/node_modules/@azure/msal-node/**/*.js
+# 13. @azure/msal-node ESM source maps (.cjs.map already covered, but .js.map
+#     is double-protected here).
+node_modules/@azure/msal-node/**/*.js.map
 out/commands/**
 out/completion/**
 out/config/**
