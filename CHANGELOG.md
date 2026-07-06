@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.29.4] - 2026-07-03
+
+修复 v2.29.3 打包问题：之前误用 `vsce publish --no-dependencies` 导致运行时依赖（mysql2、pg、better-sqlite3、mssql、oracledb、odbc、ssh2、node-sql-parser）未打入 VSIX，用户安装后报 "Cannot find package 'mysql2'" 错误。本次恢复正确的打包方式（不带 `--no-dependencies`，由 `.vscodeignore` 精简 node_modules）。代码内容与 v2.29.3 完全一致。
+
+---
+
 ## [2.29.3] - 2026-07-03
 
 v2.29.2 版本号在 Marketplace 端被占用（首次 publish 时 PAT 验证失败但版本号已部分上传）。本次重新打包为 v2.29.3 发布，代码内容与 v2.29.2 完全一致，无功能变更。详见 [2.29.2] 条目。
