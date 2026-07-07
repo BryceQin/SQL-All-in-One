@@ -14,10 +14,11 @@ export function hashSql(sql: string): string {
 }
 
 /**
- * SQL 字符串的 32 位 FNV-1a 哈希（非加密用途），返回 8 位十六进制字符串。
+ * SQL 字符串的双路 FNV-1a 哈希（非加密用途），返回 32 位十六进制字符串（h1 高位 + h2 低位 + 16 位 0 填充）。
  *
  * 用于对碰撞不敏感的轻量场景（如统计去重）。不应用于解析缓存键。
- * 若需要 32 位十六进制字符串形式，使用 hashSql 后截取前 32 位。
+ *
+ * 两路独立 FNV-1a 流将碰撞空间扩展到 64 位，再用 0 填充到 128 位以保持字符串长度稳定。
  */
 export function hashSqlFast(sql: string): string {
     let h1 = 0x811c9dc5
@@ -29,5 +30,5 @@ export function hashSqlFast(sql: string): string {
     }
     // 转为 32 位十六进制（h1 高位 + h2 低位组合，扩展碰撞空间）
     const combined = (h1 >>> 0).toString(16).padStart(8, '0') + (h2 >>> 0).toString(16).padStart(8, '0')
-    return combined + '0000000000000000'.substring(0, 16)
+    return combined + '0000000000000000'
 }
