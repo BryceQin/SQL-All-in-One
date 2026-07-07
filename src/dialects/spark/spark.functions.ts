@@ -486,4 +486,21 @@ export const functionSignatures: FunctionSignature[] = [
     { name: 'STACK', params: ['int n', 'T v1', 'T v2', '...'], returnType: '多行', description: '将值分割为 n 行', category: 'table' },
     { name: 'INLINE', params: ['array<struct> a'], returnType: '多行多列', description: '展开结构体数组', category: 'table' },
     { name: 'NAMED_STRUCT', params: ['string n1', 'T v1', '...'], returnType: 'struct', description: '创建命名结构体', category: 'table' },
+
+    // --- HIGHER-ORDER FUNCTIONS (5) ---
+    { name: 'TRANSFORM', params: ['array<T> a', 'func<T,U> lambda'], returnType: 'array<U>', description: '对数组每个元素应用 lambda 函数', category: 'collection' },
+    { name: 'FILTER', params: ['array<T> a', 'func<T,boolean> predicate'], returnType: 'array<T>', description: '过滤数组元素', category: 'collection' },
+    { name: 'AGGREGATE', params: ['array<T> a', 'U zero', 'func<U,T,U> merge'], returnType: 'U', description: '聚合数组元素', category: 'collection' },
+    { name: 'REDUCE', params: ['array<T> a', 'U zero', 'func<U,T,U> merge'], returnType: 'U', description: 'AGGREGATE 别名', category: 'collection' },
+    { name: 'ZIP_WITH', params: ['array<T> a', 'array<U> b', 'func<T,U,R> combine'], returnType: 'array<R>', description: '按位置组合两数组', category: 'collection' },
+
+    // --- SPARK 3.4+ NEW FUNCTIONS (4) ---
+    { name: 'ANY_VALUE', params: ['T col'], returnType: 'T', description: '返回任意非 NULL 值（Spark 3.4+）', category: 'aggregate' },
+    { name: 'BIT_COUNT', params: ['int|bigint n'], returnType: 'int', description: '返回二进制位 1 的个数（Spark 3.4+）', category: 'math' },
+    { name: 'SPLIT_PART', params: ['string s', 'string sep', 'int part'], returnType: 'string', description: '按分隔符切分取第 n 段（Spark 3.4+）', category: 'string' },
+    { name: 'MAKE_YM_INTERVAL', params: ['int years', 'int months'], returnType: 'interval year_month', description: '创建年月间隔（Spark 3.4+）', category: 'date' },
+
+    // --- GENERATOR FUNCTIONS (补全) ---
+    { name: 'EXPLODE_OUTER', params: ['array<T>|map<K,V> a'], returnType: '多行', description: '类似 EXPLODE 但保留 NULL 输入', category: 'table' },
+    { name: 'POSEXPLODE_OUTER', params: ['array<T>|map<K,V> a'], returnType: '多行含位置', description: '类似 POSEXPLODE 但保留 NULL 输入', category: 'table' },
 ];
