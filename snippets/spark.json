@@ -14,5 +14,180 @@
             "SELECT $2 FROM $3 WHERE $4;"
         ],
         "description": "Create Spark global temporary view"
+    },
+    "Spark Create Table (Parquet)": {
+        "prefix": "sparkcrtparquet",
+        "body": [
+            "CREATE TABLE IF NOT EXISTS $1 (",
+            "    $2",
+            ")",
+            "USING PARQUET",
+            "PARTITIONED BY ($3)",
+            "LOCATION '$4';"
+        ],
+        "description": "Create Spark table stored as Parquet"
+    },
+    "Spark Create Table (JDBC)": {
+        "prefix": "sparkcrtjdbc",
+        "body": [
+            "CREATE TABLE $1 (",
+            "    $2",
+            ") USING JDBC",
+            "OPTIONS (",
+            "    'url' = '$3',",
+            "    'dbtable' = '$4',",
+            "    'user' = '$5',",
+            "    'password' = '$6'",
+            ");"
+        ],
+        "description": "Create Spark table backed by JDBC"
+    },
+    "Spark Create Table (Delta)": {
+        "prefix": "sparkcrtdelta",
+        "body": [
+            "CREATE TABLE IF NOT EXISTS $1 (",
+            "    $2",
+            ") USING DELTA",
+            "LOCATION '$3';"
+        ],
+        "description": "Create Spark table stored as Delta Lake"
+    },
+    "Spark Insert Overwrite Table": {
+        "prefix": "sparkins",
+        "body": [
+            "INSERT OVERWRITE TABLE $1",
+            "SELECT $2",
+            "FROM $3",
+            "WHERE $4;"
+        ],
+        "description": "Insert overwrite into Spark table"
+    },
+    "Spark Insert Into Table": {
+        "prefix": "sparkinsinto",
+        "body": [
+            "INSERT INTO TABLE $1",
+            "SELECT $2",
+            "FROM $3",
+            "WHERE $4;"
+        ],
+        "description": "Insert into Spark table"
+    },
+    "Spark Lateral View Explode": {
+        "prefix": "sparklv",
+        "body": [
+            "SELECT $1,",
+            "    ${2:item} AS ${3:item_alias}",
+            "FROM $4",
+            "LATERAL VIEW EXPLODE($5) ${6:t} AS ${3:item_alias};"
+        ],
+        "description": "Spark LATERAL VIEW EXPLODE"
+    },
+    "Spark Lateral View Posexplode": {
+        "prefix": "sparklvp",
+        "body": [
+            "SELECT $1,",
+            "    ${6:pos}, ${2:item}",
+            "FROM $3",
+            "LATERAL VIEW POSEXPLODE($4) ${5:t} AS ${6:pos}, ${2:item};"
+        ],
+        "description": "Spark LATERAL VIEW POSEXPLODE (with position)"
+    },
+    "Spark Merge Into (Delta)": {
+        "prefix": "sparkmerge",
+        "body": [
+            "MERGE INTO $1 AS t",
+            "USING $2 AS s",
+            "ON t.$3 = s.$3",
+            "WHEN MATCHED THEN UPDATE SET *",
+            "WHEN NOT MATCHED THEN INSERT *;"
+        ],
+        "description": "Spark Delta MERGE INTO upsert"
+    },
+    "Spark Window Function": {
+        "prefix": "sparkwin",
+        "body": [
+            "SELECT $1,",
+            "    ROW_NUMBER() OVER (",
+            "        PARTITION BY $2",
+            "        ORDER BY $3",
+            "    ) AS rn",
+            "FROM $4;"
+        ],
+        "description": "Spark ROW_NUMBER window function"
+    },
+    "Spark Cache Table": {
+        "prefix": "sparkcache",
+        "body": [
+            "CACHE TABLE $1",
+            "OPTIONS ('storageLevel' = 'MEMORY_AND_DISK')",
+            "AS",
+            "SELECT $2 FROM $3 WHERE $4;"
+        ],
+        "description": "Cache Spark table"
+    },
+    "Spark Pivot": {
+        "prefix": "sparkpivot",
+        "body": [
+            "SELECT *",
+            "FROM (",
+            "    SELECT $1, $2, $3",
+            "    FROM $4",
+            ")",
+            "PIVOT (",
+            "    ${5:SUM}($3)",
+            "    FOR $2 IN ($6)",
+            ");"
+        ],
+        "description": "Spark PIVOT query"
+    },
+    "Spark Create Function": {
+        "prefix": "sparkfn",
+        "body": [
+            "CREATE TEMPORARY FUNCTION $1",
+            "AS '${2:com.example.YourUdf}'",
+            "USING JAR '$3';"
+        ],
+        "description": "Create Spark temporary function (Java/Scala UDF)"
+    },
+    "Spark Analyze Table": {
+        "prefix": "sparkstats",
+        "body": [
+            "ANALYZE TABLE $1",
+            "COMPUTE STATISTICS FOR COLUMNS $2;"
+        ],
+        "description": "Compute column statistics for Spark table"
+    },
+    "Spark Convert To Delta": {
+        "prefix": "sparkconvdelta",
+        "body": [
+            "CONVERT TO DELTA $1",
+            "PARTITIONED BY ($2);"
+        ],
+        "description": "Convert Parquet table to Delta Lake format"
+    },
+    "Spark Optimize ZOrder (Delta)": {
+        "prefix": "sparkoptimize",
+        "body": [
+            "OPTIMIZE $1",
+            "WHERE $2",
+            "ZORDER BY ($3);"
+        ],
+        "description": "Delta OPTIMIZE with ZORDER"
+    },
+    "Spark Vacuum (Delta)": {
+        "prefix": "sparkvacuum",
+        "body": [
+            "VACUUM $1 RETAIN $2 HOURS;",
+            "VACUUM $1 RETAIN $2 HOURS DRY RUN;"
+        ],
+        "description": "Delta VACUUM retention"
+    },
+    "Spark Show Table Details": {
+        "prefix": "sparkdesc",
+        "body": [
+            "DESCRIBE TABLE EXTENDED $1;",
+            "DESCRIBE DETAIL $1;"
+        ],
+        "description": "Show Spark table details"
     }
 }

@@ -28,8 +28,8 @@ import { generateShortId } from '../../utils/idGenerator';
  *     `describeTableForeignKeys` (collect columns under a key, push into a
  *     `columns` array on the accumulator).
  *   - The `quoteIdentifier` body, which differs only in the quote char
- *     (`` ` `` for MySQL, `"` for Postgres/Oracle/SQLite/Dameng, `[` for
- *     SQL Server).
+ *     (backtick for MySQL, double-quote for Postgres/Oracle/SQLite/Dameng,
+ *     `[` for SQL Server).
  *   - The `validateIdentifier` wrapper, which differs only in the max
  *     length (64 / 63 / 128).
  *   - The `getDialectCapabilities` literal, which is ~95% identical across
@@ -43,8 +43,8 @@ import { generateShortId } from '../../utils/idGenerator';
  * into whichever helpers they need; the {@link describeTable} template
  * method is intentionally NOT provided here because the per-dialect
  * describe-helpers have divergent argument passing (Oracle/Dameng use
- * `(table, owner)`, Postgres/SqlServer/SQLite use `(_database, table,
- * schema)`, MySQL uses `(database, table)`). Forcing them into a common
+ * (table, owner), Postgres/SqlServer/SQLite use (_database, table,
+ * schema), MySQL uses (database, table)). Forcing them into a common
  * signature would require rewriting every dialect's private helpers for
  * no behavior change and significant risk.
  *
@@ -63,8 +63,8 @@ export abstract class BaseSchemaAdapter<TShared = unknown> implements ISchemaAda
     /**
      * Runs a list/describe query and maps each result row through
      * `rowMapper`. Returns `[]` when the underlying query did not succeed,
-     * matching the previous inlined `if (result.status !== 'success')
-     * return []` guard.
+     * matching the previous inlined if (result.status !== 'success')
+     * return [] guard.
      */
     protected async runListQuery<T>(
         sql: string,
@@ -166,8 +166,8 @@ export abstract class BaseSchemaAdapter<TShared = unknown> implements ISchemaAda
 
     /**
      * The quote character used by {@link quoteIdentifier}. Subclasses
-     * declare this as a `protected` field: `` '`' `` for MySQL/StarRocks,
-     * `'"'` for Postgres/Oracle/SQLite/Dameng, `'['` for SQL Server.
+     * declare this as a `protected` field: single-quote for MySQL/StarRocks,
+     * double-quote for Postgres/Oracle/SQLite/Dameng, `[` for SQL Server.
      *
      * `abstract` rather than default-valued so that forgetting to declare
      * it is a compile error rather than a silent quoting bug.

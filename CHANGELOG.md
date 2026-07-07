@@ -1,5 +1,62 @@
 # Changelog
 
+## [2.30.0] - 2026-07-06
+
+### New Features
+
+#### FlinkSQL 全面强化
+
+- **FlinkSqlAdapter 新建**：新增 [src/formatter/FlinkSqlAdapter.ts](src/formatter/FlinkSqlAdapter.ts)，对 Flink 特有语法做 slot 化预处理，解决 parser 不识别导致格式化失败或丢字的问题
+  - 窗口表函数 TVF：`TUMBLE(TABLE t, DESCRIPTOR(col), INTERVAL '10' MINUTE)` / `HOP` / `CUMULATE` / `SESSION`
+  - 表定义子句：`WATERMARK FOR col AS expr`、`PRIMARY KEY (cols) NOT ENFORCED`、`UNIQUE (cols)`、`CONSTRAINT name PRIMARY KEY`、`METADATA FROM 'key' VIRTUAL`、计算列 `col AS expr`
+  - Connector 配置：`WITH ('connector'='...', ...)`（平衡括号扫描，支持嵌套）
+  - Temporal Join：`FOR SYSTEM_TIME AS OF s.proc_time AS t`
+  - CEP 模式识别：`MATCH_RECOGNIZE (...)`（含 `MEASURES`/`PATTERN`/`DEFINE`/`ONE ROW PER MATCH`/`AFTER MATCH SKIP` 等子句）
+  - 整段语句 slot 化：`CREATE TABLE ... LIKE`、`CREATE CATALOG/DATABASE ... WITH`、`DROP CATALOG`、`USE CATALOG/MODULES`、`ALTER TABLE ADD CONSTRAINT`、`CREATE/ALTER FUNCTION ... LANGUAGE PYTHON/JAVA/SCALA`、`EXECUTE STATEMENT SET BEGIN ... END`、`BEGIN STATEMENT SET ... END`、`ADD/REMOVE JAR`、`SHOW JARS/MODULES/CATALOGS`、`LOAD/UNLOAD MODULE`、`STOP/CANCEL JOB`、`DESCRIBE [EXTENDED]`、`EXPLAIN [CODEGEN/EXTENDED]`、`ALTER TABLE SET/UNSET TBLPROPERTIES`、`ALTER DATABASE`、`ALTER FUNCTION`
+  - 流式输出策略：`EMIT AFTER WATERMARK`（INSERT/SELECT/CREATE VIEW 三种上下文）
+  - SET 配置：`SET key = value`（多空格兼容）
+- **FlinkSQL 函数悬停提示接入**：[src/hover/FunctionHoverResolver.ts](src/hover/FunctionHoverResolver.ts) 的函数签名 map 补全 `flinksql` 方言，悬停 Flink 函数即可查看签名
+- **FlinkSQL 关键字补全**：[src/dialects/flinksql/flinksql.keywords.ts](src/dialects/flinksql/flinksql.keywords.ts) 补 17 个 `MATCH_RECOGNIZE` (CEP) 相关关键字：`MATCH_RECOGNIZE`、`MEASURES`、`PATTERN`、`SUBSET`、`WITHIN`、`ONE`、`PER`、`MATCH`、`AFTER`、`MATCHED`、`SKIP`、`PAST`、`PERMUTE`、`RUNNING`、`FINAL`、`EMIT`、`ASOF`
+
+#### SparkSQL / Delta Lake 强化
+
+- **SparkSqlAdapter 扩展 Delta Lake 语句**：[src/formatter/SparkSqlAdapter.ts](src/formatter/SparkSqlAdapter.ts) 新增整段 slot 化支持
+  - `OPTIMIZE table [WHERE ...] ZORDER BY (cols)`
+  - `VACUUM table [RETAIN N HOURS] [DRY RUN]`
+  - `CONVERT TO DELTA table [PARTITIONED BY (...)]`
+  - `DESCRIBE HISTORY table` / `DESCRIBE DETAIL table`
+  - `CREATE TABLE ... DEEP/SHALLOW CLONE source`
+  - `GENERATE symlink_format_manifest FOR TABLE table`
+- **SparkSQL 关键字补全**：[src/dialects/spark/spark.keywords.ts](src/dialects/spark/spark.keywords.ts) 补 15 个 Delta Lake/Iceberg/Hudi 关键字：`DELTA`、`VACUUM`、`ZORDER`、`ZORDERBY`、`CLONE`、`DEEP`、`SHALLOW`、`HISTORY`、`DETAIL`、`MANIFEST`、`SYMLINK`、`GENERATE`、`RETAIN`、`DRY`、`RUN`
+- **SparkSQL Snippets 扩充**：[snippets/spark.json](snippets/spark.json) 从 2 个扩充到 19 个
+  - 表创建：`sparkcrtparquet`、`sparkcrtjdbc`、`sparkcrtdelta`
+  - 数据写入：`sparkins`、`sparkinsinto`、`sparkmerge`
+  - 查询：`sparklv`、`sparklvp`、`sparkwin`、`sparkpivot`
+  - 缓存与统计：`sparkcache`、`sparkstats`
+  - 函数：`sparkfn`
+  - Delta Lake：`sparkconvdelta`、`sparkoptimize`、`sparkvacuum`、`sparkdesc`
+  - 临时视图：`sparktemp`、`sparkglobaltemp`
+
+### Code Quality
+
+- **Lint warnings 清零**：修复 [src/database/adapters/BaseSchemaAdapter.ts](src/database/adapters/BaseSchemaAdapter.ts) 与 [src/database/adapters/DamengAdapter.ts](src/database/adapters/DamengAdapter.ts) 中遗留的 20 个 ESLint warnings
+  - 8 个 tsdoc 反引号 code span 解析警告（移除嵌套反引号与跨行 code span）
+  - 4 个 tsdoc 大括号转义警告（`DRIVER={DM8 ODBC DRIVER}` → `DRIVER=\{DM8 ODBC DRIVER\}`）
+  - 8 个 `Array<T>` → `T[]` 风格警告
+  - 当前 ESLint 状态：0 errors, 0 warnings
+
+### Tests
+
+- **新增 FlinkSqlAdapter 测试套件**：[src/test/flinkSqlAdapter.test.ts](src/test/flinkSqlAdapter.test.ts)
+  - P1 核心结构：TUMBLE TVF / WATERMARK / WITH connector / PRIMARY KEY / Temporal Join / MATCH_RECOGNIZE / CREATE TABLE LIKE（10 个用例）
+  - P3 长尾语法：EMIT / CREATE DATABASE WITH / ALTER TABLE ADD CONSTRAINT / STOP JOB / DESCRIBE / EXPLAIN / LOAD MODULE / ALTER TABLE SET TBLPROPERTIES / ALTER FUNCTION LANGUAGE / SET 多空格 / 多语句共存（21 个用例）
+  - 格式化集成：Flink SELECT / CREATE TABLE with WATERMARK / TUMBLE 窗口查询（3 个用例）
+- **新增 SparkSqlAdapter 测试套件**：[src/test/sparkSqlAdapter.test.ts](src/test/sparkSqlAdapter.test.ts)
+  - Delta Lake 语句 slot 化：OPTIMIZE / VACUUM / CONVERT TO DELTA / DESCRIBE HISTORY / DESCRIBE DETAIL / DEEP CLONE / SHALLOW CLONE / GENERATE manifest（9 个用例）
+  - 原有功能回归：LATERAL VIEW EXPLODE / MERGE INTO / CREATE TABLE USING delta / SORT BY / CLUSTER BY / DISTRIBUTE BY / 普通 SELECT / 多语句共存 / 多段 Delta 顺序还原（9 个用例）
+
+---
+
 ## [2.29.5] - 2026-07-06
 
 ### Performance

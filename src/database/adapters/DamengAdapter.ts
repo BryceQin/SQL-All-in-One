@@ -61,7 +61,7 @@ class DamengSharedContext extends BaseSharedContext implements IOracleDialectSha
  * actually used.
  *
  * The ODBC connection string format is:
- *   DRIVER={DM8 ODBC DRIVER};SERVER=host:port;UID=user;PWD=pwd;[SCHEMA=schema;][CHARSET=UTF-8;]
+ *   DRIVER=\{DM8 ODBC DRIVER\};SERVER=host:port;UID=user;PWD=pwd;[SCHEMA=schema;][CHARSET=UTF-8;]
  *
  * Used internally by DamengAdapter; common lifecycle logic lives in
  * BaseDatabaseAdapter.
@@ -211,7 +211,7 @@ class DamengConnectionAdapter extends BaseConnectionAdapter<DamengSharedContext>
      * prepended the same tag and otherwise delegated to the base class.
      */
     protected override extractErrorCodeTag(error: unknown): string | null {
-        const odbcErrors = (error as { odbcErrors?: Array<{ code?: number; state?: string; message?: string }> })?.odbcErrors ?? [];
+        const odbcErrors = (error as { odbcErrors?: { code?: number; state?: string; message?: string }[] })?.odbcErrors ?? [];
         const firstError = odbcErrors[0];
         const state = firstError?.state ?? '';
         if (state) {
@@ -230,7 +230,7 @@ class DamengConnectionAdapter extends BaseConnectionAdapter<DamengSharedContext>
         // reuses Oracle-style error codes (e.g. ORA-01017) for backward
         // compatibility, so we pattern-match on both the SQLSTATE and the
         // raw message text.
-        const odbcErrors = (error as { odbcErrors?: Array<{ code?: number; state?: string; message?: string }> })?.odbcErrors ?? [];
+        const odbcErrors = (error as { odbcErrors?: { code?: number; state?: string; message?: string }[] })?.odbcErrors ?? [];
         const firstError = odbcErrors[0];
         const state = firstError?.state ?? '';
         const codeStr = firstError?.code !== undefined ? String(firstError.code) : '';
@@ -269,7 +269,7 @@ class DamengConnectionAdapter extends BaseConnectionAdapter<DamengSharedContext>
      * config.
      *
      * Format:
-     *   DRIVER={DM8 ODBC DRIVER};SERVER=host:port;UID=user;PWD=pwd;[SCHEMA=schema;][CHARSET=UTF-8;]
+     *   DRIVER=\{DM8 ODBC DRIVER\};SERVER=host:port;UID=user;PWD=pwd;[SCHEMA=schema;][CHARSET=UTF-8;]
      *
      * If `config.options.connectString` is provided it is used verbatim,
      * taking precedence over the host/port/database derivation. The driver
@@ -373,7 +373,7 @@ class DamengQueryAdapter extends BaseQueryAdapter<DamengSharedContext> {
             const timeoutSeconds = Math.max(1, Math.floor(DamengQueryAdapter.DEFAULT_QUERY_TIMEOUT_MS / 1000));
             const result = await queryConn.query<QueryRow, { timeout: number }>(
                 finalSql,
-                binds as Array<number | string>,
+                binds as (number | string)[],
                 { timeout: timeoutSeconds },
             );
             const executionTime = Date.now() - startTime;
@@ -423,7 +423,7 @@ class DamengQueryAdapter extends BaseQueryAdapter<DamengSharedContext> {
      * first `odbcErrors` entry, falling back to the ODBC SQLSTATE.
      */
     protected override mapError(error: unknown, sql: string, queryId: string, executionTime: number): QueryResult {
-        const odbcError = error as { odbcErrors?: Array<{ code?: number; state?: string }>; message?: string };
+        const odbcError = error as { odbcErrors?: { code?: number; state?: string }[]; message?: string };
         const firstError = odbcError.odbcErrors?.[0];
         const code = firstError?.code !== undefined
             ? `DM-${String(firstError.code)}`
@@ -547,12 +547,12 @@ class DamengQueryAdapter extends BaseQueryAdapter<DamengSharedContext> {
     private prepareSqlAndBinds(
         sql: string,
         params?: QueryParam[]
-    ): { finalSql: string; binds: Array<number | string | null> } {
+    ): { finalSql: string; binds: (number | string | null)[] } {
         if (!params || params.length === 0) {
             return { finalSql: sql, binds: [] };
         }
 
-        const binds: Array<number | string | null> = [];
+        const binds: (number | string | null)[] = [];
         for (const p of params) {
             const v = p.value;
             if (v === null || v === undefined) {
@@ -610,10 +610,10 @@ interface DamengSynonymInfo {
  *   - {@link resolveOwner} to fall back to `'SYSDBA'` instead of `'SYS'`.
  *   - {@link defaultDatabaseName} to fall back to `'DAMENG'` instead of
  *     `'ORCL'`.
- *   - {@link listSchemas} to use Dameng's bare `SELECT username FROM
- *     all_users` projection (Oracle aliases the column as `username AS
- *     username`; the alias is cosmetic but preserved for exact parity with
- *     the pre-refactor behaviour).
+ *   - {@link listSchemas} to use Dameng's bare SELECT-username-FROM-all_users
+ *     projection (Oracle aliases the column as username-AS-username; the
+ *     alias is cosmetic but preserved for exact parity with the pre-refactor
+ *     behaviour).
  *
  * In addition to the base IMetadataAdapter surface, this adapter exposes
  * `listSequences` and `listSynonyms` which enumerate the all_sequences and

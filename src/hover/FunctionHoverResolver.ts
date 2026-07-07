@@ -9,6 +9,7 @@ const _functionSigMap: Record<string, FunctionSignature[]> = {
     hive: allDialects.hiveFunctionSignatures,
     mysql: allDialects.mysqlFunctionSignatures,
     spark: allDialects.sparkFunctionSignatures,
+    flinksql: allDialects.flinksqlFunctionSignatures,
     sql: allDialects.sqlFunctionSignatures,
     postgresql: allDialects.pgFunctionSignatures,
     bigquery: allDialects.bqFunctionSignatures,

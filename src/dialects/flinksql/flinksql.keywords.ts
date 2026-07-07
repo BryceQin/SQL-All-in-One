@@ -334,7 +334,25 @@ export const keywords: string[] = [
     'UNSIGNED',
     'VARIABLES',
     'YEAR_MONTH',
-    'REGEXP'
+    'REGEXP',
+    // MATCH_RECOGNIZE (CEP) 相关关键字（去除与原表重复的 SHOW/DEFINE）
+    'MATCH_RECOGNIZE',
+    'MEASURES',
+    'PATTERN',
+    'SUBSET',
+    'WITHIN',
+    'ONE',
+    'PER',
+    'MATCH',
+    'AFTER',
+    'MATCHED',
+    'SKIP',
+    'PAST',
+    'PERMUTE',
+    'RUNNING',
+    'FINAL',
+    'EMIT',
+    'ASOF'
 ];
 
 export const dataTypes: string[] = [

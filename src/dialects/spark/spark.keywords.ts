@@ -264,7 +264,23 @@ export const keywords: string[] = [
     'TYPES',
     'UNSIGNED',
     'VARIABLES',
-    'YEAR_MONTH'
+    'YEAR_MONTH',
+    // Delta Lake / Hudi / Iceberg 相关关键字
+    'DELTA',
+    'VACUUM',
+    'ZORDER',
+    'ZORDERBY',
+    'CLONE',
+    'DEEP',
+    'SHALLOW',
+    'HISTORY',
+    'DETAIL',
+    'MANIFEST',
+    'SYMLINK',
+    'GENERATE',
+    'RETAIN',
+    'DRY',
+    'RUN'
 ];
 
 export const dataTypes: string[] = [
