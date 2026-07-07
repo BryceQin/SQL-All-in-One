@@ -194,20 +194,40 @@ function extractCreateTableClauses(sql: string, slots: ReplacementSlot[], counte
 }
 
 // 在 CREATE TABLE 语句范围内提取 WITH ('...'='...') connector 子句。
-// 使用平衡括号扫描，避免嵌套括号导致正则吞不掉。
+// 仅在 CREATE TABLE 的列定义右括号之后到下一个分号之间搜索 WITH (，
+// 避免误伤 SELECT/CTE 中的 WITH。
 function extractWithConnectorInCreateTable(sql: string, slots: ReplacementSlot[], counter: { value: number }): string {
-    // 先定位 CREATE TABLE ... ( ... ) [其他子句] WITH ( ... )
-    // 简化策略：扫描所有 \bWITH\s*\( 位置，平衡括号取到右括号，整段 slot 化。
-    const withPattern = /\bWITH\s*\(/gi
+    // 先定位所有 CREATE TABLE ... ( ... ) 语句的右括号位置
+    const createPattern = /\bCREATE\s+(?:EXTERNAL\s+)?TABLE\b[^;]*?\(/gi
     const matches: { index: number; end: number; text: string }[] = []
     let m
 
-    while ((m = withPattern.exec(sql)) !== null) {
+    while ((m = createPattern.exec(sql)) !== null) {
+        // 列定义块的左括号位置
         const openParenIdx = m.index + m[0].length - 1
         const closeIdx = findMatchingParen(sql, openParenIdx)
         if (closeIdx === -1) continue
-        const fullText = sql.substring(m.index, closeIdx + 1)
-        matches.push({ index: m.index, end: closeIdx + 1, text: fullText })
+
+        // 在列定义右括号之后到下一个分号之间搜索 WITH (
+        const searchStart = closeIdx + 1
+        let searchEnd = sql.indexOf(';', searchStart)
+        if (searchEnd === -1) searchEnd = sql.length
+
+        const segment = sql.substring(searchStart, searchEnd)
+        const withPattern = /\bWITH\s*\(/gi
+        let wm
+        while ((wm = withPattern.exec(segment)) !== null) {
+            const withOpenInSegment = wm.index + wm[0].length - 1
+            const withOpenInSql = searchStart + withOpenInSegment
+            const withCloseIdx = findMatchingParen(sql, withOpenInSql)
+            if (withCloseIdx === -1) continue
+            const fullText = sql.substring(withOpenInSql - wm[0].length + 1, withCloseIdx + 1)
+            matches.push({
+                index: withOpenInSql - wm[0].length + 1,
+                end: withCloseIdx + 1,
+                text: fullText,
+            })
+        }
     }
 
     if (matches.length === 0) return sql
