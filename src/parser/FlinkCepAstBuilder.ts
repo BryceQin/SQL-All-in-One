@@ -86,13 +86,21 @@ function extractOutputMode(body: string): string {
 }
 
 function extractPattern(body: string): MatchRecognizePattern | null {
-    const m = /\bPATTERN\s*\(([\s\S]*?)\)/i.exec(body)
-    if (!m) return null
-    const raw = m[1].trim()
-    // 提取模式变量名：大写字母开头，后跟字母数字下划线
-    const variables = Array.from(raw.matchAll(/\b([A-Z][A-Z0-9_]*)\b/g))
+    // 定位 PATTERN 关键字后的 '('，再用 findMatchingParen 找匹配的 ')'
+    // 避免 non-greedy 正则在嵌套括号处截断（如 PATTERN ((A B)+ C)）
+    const headerMatch = /\bPATTERN\s*\(/i.exec(body)
+    if (!headerMatch) return null
+    const openParenIdx = headerMatch.index + headerMatch[0].length - 1
+    const closeIdx = findMatchingParen(body, openParenIdx)
+    if (closeIdx === -1) return null
+    const raw = body.substring(openParenIdx + 1, closeIdx).trim()
+
+    // 提取模式变量名：大小写敏感的标识符，后跟可选量词（* + ? {n,m}）
+    // 过滤掉正则操作符和 SQL 关键字
+    const reservedWords = new Set(['PER', 'MATCH', 'WITHIN', 'DEFINE', 'MEASURES', 'PARTITION', 'ORDER', 'BY'])
+    const variables = Array.from(raw.matchAll(/\b([A-Za-z_][A-Za-z0-9_]*)\b/g))
         .map(match => match[1])
-        .filter(v => !['PER', 'MATCH', 'WITHIN', 'DEFINE', 'MEASURES', 'PARTITION', 'ORDER', 'BY'].includes(v))
+        .filter(v => !reservedWords.has(v.toUpperCase()))
     // 去重，保持顺序
     const seen = new Set<string>()
     const uniqueVars: string[] = []

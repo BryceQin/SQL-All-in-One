@@ -99,6 +99,53 @@ suite('Flink CEP AST Builder Tests', () => {
         const node = parseMatchRecognize('MATCH_RECOGNIZE (')
         assert.strictEqual(node, null)
     })
+
+    test('解析嵌套括号的 PATTERN（如 (A B)+ C）', () => {
+        const sql = `MATCH_RECOGNIZE (
+    PATTERN ((A B)+ C)
+    MEASURES A.id AS aid
+)`
+        const node = parseMatchRecognize(sql)
+        assert.ok(node !== null)
+        assert.ok(node.pattern !== null)
+        // raw 应包含完整的 "(A B)+ C"，不被截断为 "(A B"
+        assert.strictEqual(node.pattern!.raw, '(A B)+ C')
+        assert.deepStrictEqual(node.pattern!.variables, ['A', 'B', 'C'])
+    })
+
+    test('解析小写模式变量名', () => {
+        const sql = `MATCH_RECOGNIZE (
+    PATTERN (a b c)
+    MEASURES a.id AS aid
+)`
+        const node = parseMatchRecognize(sql)
+        assert.ok(node !== null)
+        assert.ok(node.pattern !== null)
+        assert.deepStrictEqual(node.pattern!.variables, ['a', 'b', 'c'])
+    })
+
+    test('解析混合大小写模式变量名', () => {
+        const sql = `MATCH_RECOGNIZE (
+    PATTERN (StartRow up down+)
+    MEASURES StartRow.id AS sid
+)`
+        const node = parseMatchRecognize(sql)
+        assert.ok(node !== null)
+        assert.ok(node.pattern !== null)
+        assert.deepStrictEqual(node.pattern!.variables, ['StartRow', 'up', 'down'])
+    })
+
+    test('解析带量词的嵌套 PATTERN', () => {
+        const sql = `MATCH_RECOGNIZE (
+    PATTERN ((A | B)* C?)
+    MEASURES A.id AS aid
+)`
+        const node = parseMatchRecognize(sql)
+        assert.ok(node !== null)
+        assert.ok(node.pattern !== null)
+        assert.strictEqual(node.pattern!.raw, '(A | B)* C?')
+        assert.deepStrictEqual(node.pattern!.variables, ['A', 'B', 'C'])
+    })
 })
 
 suite('Flink CEP Slot Integration Tests', () => {
