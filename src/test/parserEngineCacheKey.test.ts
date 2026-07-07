@@ -17,8 +17,11 @@ suite('Parser Engine Cache Key Tests', () => {
 
     test('中间修改的 SQL 不命中缓存（关键回归）', () => {
         const engine = new SqlParserEngine()
-        const sql1 = 'SELECT a, b, c, d, e, f, g, h, i, j FROM t WHERE x = 1'
-        const sql2 = 'SELECT a, b, X, d, e, f, g, h, i, j FROM t WHERE x = 1'
+        // SQL > 64 字符，编辑点在 [32, len-32) 中间盲区。
+        // 旧方案 head32+tail32 不覆盖此区域，会碰撞；SHA-256 不会。
+        // sql1/sql2 长 83 字符，"table2"→"xable2" 的编辑点位于 index 34（盲区 [32, 51)）。
+        const sql1 = 'SELECT a, b, c, d, e FROM table1, table2 WHERE id = 1 AND name = "test" ORDER BY id'
+        const sql2 = 'SELECT a, b, c, d, e FROM table1, xable2 WHERE id = 1 AND name = "test" ORDER BY id'
         const r1 = engine.tryAstify(sql1, 'mysql')
         const r2 = engine.tryAstify(sql2, 'mysql')
         assert.ok(r1.success && r2.success)
