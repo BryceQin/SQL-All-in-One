@@ -5,6 +5,7 @@ import { toNodeSqlParserDialect } from './dialectMapper';
 import { ParseError } from './ParseError';
 import { getContainer, Tokens } from '../core/diContainer';
 import { LRUCache } from '../utils/lruCache';
+import { hashSql } from './sqlHasher';
 
 interface AstifyCacheEntry {
     ast: AST[] | AST;
@@ -38,21 +39,10 @@ export class SqlParserEngine {
     }
 
     private makeCacheKey(sql: string, dialect: SqlDialect): string {
-        // Use length + head + tail as the key instead of a 32-bit FNV hash.
-        // The previous FNV-1a hash had a non-trivial collision probability on
-        // large SQL inputs (32-bit space, ~50k entriesBirthday-bound ≈ 0.1%
-        // at 100k distinct statements). A collision would silently return the
-        // wrong AST, producing formatter/linter bugs that are nearly
-        // impossible to reproduce.
-        //
-        // Length + first 32 + last 32 chars uniquely identifies virtually all
-        // real-world SQL (two statements with identical length AND identical
-        // 64-char head+tail but different middles are astronomically unlikely).
-        // For statements shorter than 64 chars, the whole string is covered.
-        const len = sql.length;
-        const head = sql.substring(0, 32);
-        const tail = len > 32 ? sql.substring(len - 32) : '';
-        return `${dialect}::${len}::${head}::${tail}`;
+        // SHA-256 哈希提供抗碰撞保证，消除长 SQL 缓存命中错误 AST 的风险。
+        // 之前的 `len + head32 + tail32` 方案对中间修改会碰撞，导致格式化/lint bug。
+        // 性能：100KB SQL 哈希耗时小于 1ms，远小于解析耗时（10-100ms）。
+        return `${dialect}::${hashSql(sql)}`
     }
 
     astify(sql: string, dialect: SqlDialect): AST[] | AST {
