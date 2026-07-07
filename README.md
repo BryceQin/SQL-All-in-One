@@ -30,7 +30,7 @@
 | | |
 |---|---|
 | **发布者** | bryce-qin |
-| **版本** | 2.29.4 |
+| **版本** | 2.30.0 |
 | **许可证** | MIT |
 | **VSCode 引擎** | ^1.85.0 |
 | **仓库** | [GitHub](https://github.com/BryceQin/SQL-All-in-One) |
@@ -529,6 +529,8 @@ SELECT、FROM、WHERE、GROUP BY、HAVING、ORDER BY、LIMIT、JOIN、ON、USING
 
 **Hive**：`hivepart`、`hiveselpart`、`hiveext`
 
+**SparkSQL**：`sparktemp`、`sparkglobaltemp`、`sparkcrtparquet`、`sparkcrtjdbc`、`sparkcrtdelta`、`sparkins`、`sparkinsinto`、`sparklv`、`sparklvp`、`sparkmerge`、`sparkwin`、`sparkcache`、`sparkpivot`、`sparkfn`、`sparkstats`、`sparkconvdelta`、`sparkoptimize`、`sparkvacuum`、`sparkdesc`
+
 **FlinkSQL**：`flinkkafka`、`flinkjdbc`、`flinktumble`、`flinkhop`、`flinkcumulate`、`flinkwatermark`、`flinktemporal`、`flinkdedup`
 
 **注释**：`header`、`todo`、`fixme`、`hack`、`desc`、`section`、`col`、`tbl`
@@ -882,7 +884,7 @@ MIT License
 | | |
 |---|---|
 | **Publisher** | bryce-qin |
-| **Version** | 2.29.5 |
+| **Version** | 2.30.0 |
 | **License** | MIT |
 | **VSCode Engine** | ^1.85.0 |
 | **Repository** | [GitHub](https://github.com/BryceQin/SQL-All-in-One) |
@@ -1380,6 +1382,8 @@ Open via `Ctrl+Shift+P` → `SQL All in One Config`:
 **Common SQL**: `sel` (SELECT), `seld` (SELECT DISTINCT), `join`, `leftjoin`, `groupby`, `case`, `insert`, `insertsel`, `update`, `delete`, `ct` (CREATE TABLE), `ctas`, `with`, `union`
 
 **Hive**: `hivepart`, `hiveselpart`, `hiveext`
+
+**SparkSQL**: `sparktemp`, `sparkglobaltemp`, `sparkcrtparquet`, `sparkcrtjdbc`, `sparkcrtdelta`, `sparkins`, `sparkinsinto`, `sparklv`, `sparklvp`, `sparkmerge`, `sparkwin`, `sparkcache`, `sparkpivot`, `sparkfn`, `sparkstats`, `sparkconvdelta`, `sparkoptimize`, `sparkvacuum`, `sparkdesc`
 
 **FlinkSQL**: `flinkkafka`, `flinkjdbc`, `flinktumble`, `flinkhop`, `flinkcumulate`, `flinkwatermark`, `flinktemporal`, `flinkdedup`
 
