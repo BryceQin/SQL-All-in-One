@@ -10,6 +10,8 @@ interface ReplacementSlot {
 
 export interface FlinkAdapterState extends AdapterState {
     slots: ReplacementSlot[]
+    /** CEP (MATCH_RECOGNIZE) slot 的 id 列表，供 definition provider 快速定位 */
+    cepSlotIds: string[]
 }
 
 function nextId(prefix: string, counter: { value: number }): string {
@@ -109,6 +111,9 @@ export function preprocessFlinkSql(sql: string): { processedSql: string; state: 
         state: {
             keywordOccurrences: [],
             slots,
+            cepSlotIds: slots
+                .filter(s => /MATCH_RECOGNIZE/i.test(s.original))
+                .map(s => s.id),
         },
     }
 }

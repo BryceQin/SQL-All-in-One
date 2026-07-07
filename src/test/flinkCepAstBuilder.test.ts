@@ -1,5 +1,6 @@
 import * as assert from 'assert'
 import { parseMatchRecognize } from '../parser/FlinkCepAstBuilder'
+import { preprocessFlinkSql } from '../formatter/FlinkSqlAdapter'
 
 suite('Flink CEP AST Builder Tests', () => {
 
@@ -97,5 +98,48 @@ suite('Flink CEP AST Builder Tests', () => {
     test('不完整的 MATCH_RECOGNIZE 返回 null', () => {
         const node = parseMatchRecognize('MATCH_RECOGNIZE (')
         assert.strictEqual(node, null)
+    })
+})
+
+suite('Flink CEP Slot Integration Tests', () => {
+
+    test('slot 化的 CEP 语句可通过 state 还原原始文本', () => {
+        const sql = `SELECT *
+FROM ticker
+MATCH_RECOGNIZE (
+    PARTITION BY symbol
+    ORDER BY rowtime
+    MEASURES START_ROW.rowtime AS start_time
+    ONE ROW PER MATCH
+    PATTERN (START_ROW UP DOWN+ END_ROW)
+    DEFINE UP AS UP.price > START_ROW.price
+)`
+        const { state } = preprocessFlinkSql(sql)
+        // 找到包含 MATCH_RECOGNIZE 的 slot
+        const cepSlot = state.slots.find(s => /MATCH_RECOGNIZE/i.test(s.original))
+        assert.ok(cepSlot, 'should have CEP slot')
+        // 从 slot 原文解析结构化 AST
+        const node = parseMatchRecognize(cepSlot!.original)
+        assert.ok(node !== null)
+        assert.strictEqual(node!.partitionBy.length, 1)
+        assert.strictEqual(node!.pattern!.variables.length, 4)
+    })
+
+    test('无 CEP 语句时不产生 CEP slot', () => {
+        const sql = 'SELECT id FROM t'
+        const { state } = preprocessFlinkSql(sql)
+        const cepSlot = state.slots.find(s => /MATCH_RECOGNIZE/i.test(s.original))
+        assert.ok(!cepSlot, 'should not have CEP slot')
+    })
+
+    test('cepSlotIds 包含 CEP slot 的 id', () => {
+        const sql = `SELECT * FROM t MATCH_RECOGNIZE (PATTERN (A) DEFINE A AS A.id > 0)`
+        const { state } = preprocessFlinkSql(sql)
+        const cepSlot = state.slots.find(s => /MATCH_RECOGNIZE/i.test(s.original))
+        assert.ok(cepSlot, 'should have CEP slot')
+        assert.ok(
+            state.cepSlotIds && state.cepSlotIds.includes(cepSlot!.id),
+            'cepSlotIds should contain the CEP slot id'
+        )
     })
 })
