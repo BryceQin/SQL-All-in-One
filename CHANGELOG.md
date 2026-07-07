@@ -1,5 +1,50 @@
 # Changelog
 
+## [2.31.0] - 2026-07-07
+
+### New Features
+
+#### 解析器能力补全（P0）
+
+- **SHA-256 缓存键**：[src/parser/sqlHasher.ts](src/parser/sqlHasher.ts) 新增 SHA-256 SQL 哈希工具，替换原 `len + head32 + tail32` 方案，消除长 SQL 中间修改导致的缓存碰撞，避免格式化/lint 命中错误 AST
+- **多语句错误恢复**：[src/parser/MultiStatementParser.ts](src/parser/MultiStatementParser.ts) 新增 `parseMultiStatement`，按分号切分逐条解析，单条失败不影响其他语句的 AST 服务（hover/completion/lint）
+- **位置感知错误诊断**：[src/parser/ParseError.ts](src/parser/ParseError.ts) 扩展 `position`（行列号）与 `dialectHint`（FlinkSQL/SparkSQL 方言特定修复建议），从 node-sql-parser 错误信息中提取位置
+- **Flink MATCH_RECOGNIZE 结构化 AST**：[src/parser/FlinkCepAstBuilder.ts](src/parser/FlinkCepAstBuilder.ts) 新增 `parseMatchRecognize`，将 CEP 子句解析为结构化 `MatchRecognizeNode`（PARTITION BY / ORDER BY / MEASURES / PATTERN / DEFINE / WITHIN），供后续 definition provider / linter 使用
+  - 支持嵌套括号 PATTERN（如 `PATTERN ((A B)+ C)`）
+  - 支持大小写敏感的模式变量名（小写、混合大小写）
+- **CEP slot 标记**：[src/formatter/FlinkSqlAdapter.ts](src/formatter/FlinkSqlAdapter.ts) 的 `FlinkAdapterState` 新增 `cepSlotIds` 字段，供 definition provider 快速定位 CEP slot
+
+#### FlinkSQL 函数签名补全
+
+- **窗口辅助函数**：[src/dialects/flinksql/flinksql.functions.ts](src/dialects/flinksql/flinksql.functions.ts) 补全 8 个窗口辅助函数签名：`TUMBLE_START` / `TUMBLE_END` / `HOP_START` / `HOP_END` / `SESSION_START` / `SESSION_END` / `CUMULATE_START` / `CUMULATE_END`
+
+#### SparkSQL 函数签名补全
+
+- **高阶函数**：[src/dialects/spark/spark.functions.ts](src/dialects/spark/spark.functions.ts) 补全 5 个高阶函数签名：`TRANSFORM` / `FILTER` / `AGGREGATE` / `REDUCE` / `ZIP_WITH`
+- **Spark 3.4+ 新函数**：补全 4 个新函数签名：`ANY_VALUE` / `BIT_COUNT` / `SPLIT_PART` / `MAKE_YM_INTERVAL`
+- **Generator 函数补全**：补全 `EXPLODE_OUTER` / `POSEXPLODE_OUTER`
+
+### Bug Fixes
+
+- **Flink WITH 子句作用域限定**：[src/formatter/FlinkSqlAdapter.ts](src/formatter/FlinkSqlAdapter.ts) 的 `extractWithConnectorInCreateTable` 现在仅在 CREATE TABLE 上下文搜索 `WITH (`，避免误伤 SELECT/CTE 中的 WITH 子句
+- **extractPattern 嵌套括号修复**：`PATTERN ((A B)+ C)` 等嵌套括号场景不再被截断
+- **extractPattern 小写变量名修复**：小写与混合大小写模式变量名不再被丢弃
+
+### Tests
+
+- 新增 8 个测试文件，共 70+ 测试用例：
+  - `sqlHasher.test.ts`（8 用例）— SHA-256 哈希行为
+  - `parserEngineCacheKey.test.ts`（5 用例）— 缓存键碰撞回归
+  - `parseError.test.ts`（6 用例）— 位置提取与方言提示
+  - `multiStatementParser.test.ts`（10 用例）— 多语句错误恢复
+  - `flinkWithClauseScope.test.ts`（7 用例）— WITH 子句作用域
+  - `flinkCepAstBuilder.test.ts`（15 用例）— CEP 结构化解析 + slot 集成
+  - `flinkFunctionSignatures.test.ts`（16 用例）— Flink 函数签名完整性
+  - `sparkFunctionSignatures.test.ts`（17 用例）— Spark 函数签名完整性
+- 全量测试：1960 passing, 0 failing
+
+---
+
 ## [2.30.0] - 2026-07-06
 
 ### New Features
