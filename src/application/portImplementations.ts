@@ -300,6 +300,7 @@ export class SchemaServiceImpl implements ISchemaService {
             name: mv.name,
             definition: mv.definition,
             comment: mv.comment,
+            status: mv.status,
         }));
     }
 

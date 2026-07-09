@@ -542,7 +542,8 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
                             parent.connectionId,
                             parent.databaseName,
                             mv.comment,
-                            parent
+                            parent,
+                            mv.status
                         ));
                     }
                     break;

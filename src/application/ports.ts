@@ -147,7 +147,7 @@ export interface ISchemaService {
     getDatabases(connectionId: string): Promise<{ name: string; charset?: string; collation?: string }[]>;
     getTables(connectionId: string, database: string): Promise<{ name: string; type?: string; rowCount?: number; comment?: string }[]>;
     getViews(connectionId: string, database: string): Promise<{ name: string; definition?: string; comment?: string }[]>;
-    getMaterializedViews(connectionId: string, database: string): Promise<{ name: string; definition?: string; comment?: string }[]>;
+    getMaterializedViews(connectionId: string, database: string): Promise<{ name: string; definition?: string; comment?: string; status?: string }[]>;
     getFunctions(connectionId: string, database: string): Promise<{ name: string; returns?: string; definition?: string }[]>;
     getProcedures(connectionId: string, database: string): Promise<{ name: string; definition?: string }[]>;
     getColumns(connectionId: string, database: string, table: string): Promise<ColumnInfo[]>;

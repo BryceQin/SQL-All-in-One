@@ -239,10 +239,18 @@ class StarrocksMetadataAdapter extends MysqlMetadataAdapter<StarrocksSharedConte
         }
 
         const sql = `SHOW MATERIALIZED VIEWS FROM \`${db.replace(/`/g, '``')}\``;
-        return this.runListQuery<import('./IDatabaseAdapter').MaterializedViewInfo>(sql, undefined, (row: import('./IDatabaseAdapter').QueryRow) => ({
-            name: (row.name ?? row.Name ?? row.NAME) as string,
-            status: ((row.state ?? row.State ?? row.STATE) as string)?.toLowerCase(),
-        }));
+        return this.runListQuery<import('./IDatabaseAdapter').MaterializedViewInfo>(sql, undefined, (row: import('./IDatabaseAdapter').QueryRow) => {
+            const isActiveRaw = (row.is_active ?? row.state ?? row.State ?? row.STATE);
+            let status: string | undefined;
+            if (isActiveRaw !== undefined && isActiveRaw !== null) {
+                const val = String(isActiveRaw).toLowerCase();
+                status = (val === 'false' || val === '0' || val === 'inactive') ? 'inactive' : 'active';
+            }
+            return {
+                name: (row.name ?? row.Name ?? row.NAME) as string,
+                status,
+            };
+        });
     }
 }
 

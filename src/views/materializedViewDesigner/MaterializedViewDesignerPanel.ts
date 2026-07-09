@@ -369,32 +369,23 @@ export class MaterializedViewDesignerPanel extends BaseWebviewPanel {
                 const mvResult = await adapter.queryAdapter.execute(
                     `SHOW MATERIALIZED VIEWS FROM \`${database}\``
                 );
-                console.log(`[MV-Designer] SHOW MATERIALIZED VIEWS result: status=${mvResult.status}, rowCount=${mvResult.rows?.length ?? 0}`);
                 if (mvResult.status === 'success' && mvResult.rows.length > 0) {
-                    console.log(`[MV-Designer] columns:`, mvResult.columns);
-                    console.log(`[MV-Designer] all rows:`, JSON.stringify(mvResult.rows, null, 2));
                     const row = mvResult.rows.find((r: Record<string, unknown>) => {
                         return String(r.name || r.Name || r.TABLE_NAME || '').toLowerCase() === viewName.toLowerCase();
                     });
-                    console.log(`[MV-Designer] target viewName=${viewName}, matched row:`, row ? JSON.stringify(row) : 'NOT FOUND');
                     if (row) {
                         const isActive = row.is_active ?? row.active ?? row.IS_ACTIVE;
-                        console.log(`[MV-Designer] isActive raw value:`, isActive, `type:`, typeof isActive);
                         if (isActive !== undefined && isActive !== null) {
                             const activeBool = isActive === true || isActive === 'true' || isActive === 'TRUE' || isActive === 1 || isActive === '1';
-                            console.log(`[MV-Designer] activeBool=${activeBool}, final activeStatus=${activeBool ? 'ACTIVE' : 'INACTIVE'}`);
                             if (!activeBool) {
-                                (activeStatus as string) = 'INACTIVE';
+                                activeStatus = 'INACTIVE';
                             }
-                        } else {
-                            console.log(`[MV-Designer] isActive is undefined/null, keeping default ACTIVE`);
                         }
                     }
                 }
-            } catch (error) {
-                console.error(`[MV-Designer] Failed to query materialized views:`, error);
+            } catch {
+                // ignore query failures; default to ACTIVE
             }
-            console.log(`[MV-Designer] Final activeStatus=${activeStatus}`);
 
             this._panel.title = `Edit Materialized View - ${viewName}`;
             this._panel.webview.postMessage({
