@@ -97,7 +97,9 @@
         "onCommand:hive-formatter.importData",
         "onCommand:hive-formatter.showErrorLog",
         "onCommand:hive-formatter.exportConnections",
-        "onCommand:hive-formatter.importConnections"
+        "onCommand:hive-formatter.importConnections",
+        "onCommand:hive-formatter.selectDatabases",
+        "onCommand:hive-formatter.filterObjectGroup"
     ],
     "extensionKind": [
         "workspace"
@@ -550,6 +552,16 @@
             {
                 "command": "hive-formatter.importConnections",
                 "title": "%hive-formatter.command.importConnections.title%"
+            },
+            {
+                "command": "hive-formatter.selectDatabases",
+                "title": "%hive-formatter.command.selectDatabases.title%",
+                "icon": "$(filter)"
+            },
+            {
+                "command": "hive-formatter.filterObjectGroup",
+                "title": "%hive-formatter.command.filterObjectGroup.title%",
+                "icon": "$(filter)"
             }
         ],
         "keybindings": [
@@ -2075,6 +2087,16 @@
                     "command": "hive-formatter.refreshSchema",
                     "when": "view == hive-formatter.databaseExplorer && viewItem =~ /database|objectGroup|connectionConnected/",
                     "group": "8_refresh@1"
+                },
+                {
+                    "command": "hive-formatter.selectDatabases",
+                    "when": "view == hive-formatter.databaseExplorer && viewItem == connectionConnected",
+                    "group": "inline"
+                },
+                {
+                    "command": "hive-formatter.filterObjectGroup",
+                    "when": "view == hive-formatter.databaseExplorer && viewItem == objectGroup",
+                    "group": "inline"
                 }
             ]
         }
