@@ -3,6 +3,7 @@ import type {
     DatabaseInfo,
     TableInfo,
     ViewInfo,
+    MaterializedViewInfo,
     FunctionInfo,
     ProcedureInfo,
     TriggerInfo,
@@ -92,6 +93,14 @@ export abstract class BaseMetadataAdapter<TShared = unknown> implements IMetadat
      * rows into the `DatabaseInfo` shape.
      */
     protected abstract listDatabaseRows(): Promise<DatabaseInfo[]>;
+
+    /**
+     * Default no-op: returns an empty array. Dialects that don't support
+     * materialized views inherit this default.
+     */
+    async listMaterializedViews(_database?: string, _schema?: string): Promise<MaterializedViewInfo[]> {
+        return [];
+    }
 
     /**
      * Default no-op: returns an empty array. Dialects that don't support

@@ -152,6 +152,7 @@ export interface IMetadataAdapter {
     listSchemas(database?: string): Promise<string[]>;
     listTables(database?: string, schema?: string, filter?: string): Promise<TableInfo[]>;
     listViews(database?: string, schema?: string): Promise<ViewInfo[]>;
+    listMaterializedViews(database?: string, schema?: string): Promise<MaterializedViewInfo[]>;
     listFunctions(database?: string, schema?: string): Promise<FunctionInfo[]>;
     listProcedures(database?: string, schema?: string): Promise<ProcedureInfo[]>;
     listTriggers(database?: string, schema?: string): Promise<TriggerInfo[]>;
@@ -161,6 +162,7 @@ export interface ISchemaAdapter {
     describeTable(database: string, table: string, schema?: string): Promise<TableStructure>;
     getTableDDL(database: string, table: string, schema?: string): Promise<string>;
     getViewDDL(database: string, view: string, schema?: string): Promise<string>;
+    getMaterializedViewDDL(database: string, mvName: string, schema?: string): Promise<string>;
     getFunctionDDL(database: string, functionName: string, schema?: string): Promise<string>;
     getProcedureDDL(database: string, procedureName: string, schema?: string): Promise<string>;
     getTriggerDDL(database: string, triggerName: string, schema?: string): Promise<string>;
@@ -233,6 +235,12 @@ export interface TableInfo {
 }
 
 export interface ViewInfo {
+    name: string;
+    definition?: string;
+    comment?: string;
+}
+
+export interface MaterializedViewInfo {
     name: string;
     definition?: string;
     comment?: string;

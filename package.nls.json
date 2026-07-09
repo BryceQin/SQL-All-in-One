@@ -189,6 +189,7 @@
     "hive-formatter.command.viewTableData.title": "Query Data",
     "hive-formatter.command.viewTableDDL.title": "View DDL",
     "hive-formatter.command.viewViewDDL.title": "View View Definition",
+    "hive-formatter.command.viewMaterializedViewDDL.title": "View Materialized View Definition",
     "hive-formatter.command.viewFunctionDDL.title": "View Function Definition",
     "hive-formatter.command.viewProcedureDDL.title": "View Procedure Definition",
     "hive-formatter.command.viewTriggerDDL.title": "View Trigger Definition",

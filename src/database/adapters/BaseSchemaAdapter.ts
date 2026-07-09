@@ -227,6 +227,7 @@ export abstract class BaseSchemaAdapter<TShared = unknown> implements ISchemaAda
     abstract describeTable(database: string, table: string, schema?: string): Promise<TableStructure>;
     abstract getTableDDL(database: string, table: string, schema?: string): Promise<string>;
     abstract getViewDDL(database: string, view: string, schema?: string): Promise<string>;
+    abstract getMaterializedViewDDL(database: string, mvName: string, schema?: string): Promise<string>;
     abstract getFunctionDDL(database: string, functionName: string, schema?: string): Promise<string>;
     abstract getProcedureDDL(database: string, procedureName: string, schema?: string): Promise<string>;
     abstract getTriggerDDL(database: string, triggerName: string, schema?: string): Promise<string>;

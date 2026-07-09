@@ -72,6 +72,7 @@
         "onCommand:hive-formatter.viewTableData",
         "onCommand:hive-formatter.viewTableDDL",
         "onCommand:hive-formatter.viewViewDDL",
+        "onCommand:hive-formatter.viewMaterializedViewDDL",
         "onCommand:hive-formatter.viewFunctionDDL",
         "onCommand:hive-formatter.viewProcedureDDL",
         "onCommand:hive-formatter.viewTriggerDDL",
@@ -425,6 +426,10 @@
             {
                 "command": "hive-formatter.viewViewDDL",
                 "title": "%hive-formatter.command.viewViewDDL.title%"
+            },
+            {
+                "command": "hive-formatter.viewMaterializedViewDDL",
+                "title": "%hive-formatter.command.viewMaterializedViewDDL.title%"
             },
             {
                 "command": "hive-formatter.viewFunctionDDL",
@@ -1969,6 +1974,16 @@
                 {
                     "command": "hive-formatter.viewViewDDL",
                     "when": "view == hive-formatter.databaseExplorer && viewItem == view",
+                    "group": "3_table@2"
+                },
+                {
+                    "command": "hive-formatter.viewTableData",
+                    "when": "view == hive-formatter.databaseExplorer && viewItem == materializedView",
+                    "group": "3_table@1"
+                },
+                {
+                    "command": "hive-formatter.viewMaterializedViewDDL",
+                    "when": "view == hive-formatter.databaseExplorer && viewItem == materializedView",
                     "group": "3_table@2"
                 },
                 {

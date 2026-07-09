@@ -214,6 +214,35 @@ class StarrocksMetadataAdapter extends MysqlMetadataAdapter<StarrocksSharedConte
         // StarRocks does not support triggers.
         return [];
     }
+
+    override async listViews(database?: string, _schema?: string): Promise<import('./IDatabaseAdapter').ViewInfo[]> {
+        const db = database ?? this.shared.config?.database;
+        if (!db) {
+            return [];
+        }
+
+        const sql = `SELECT TABLE_NAME, TABLE_COMMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_TYPE = 'VIEW' ORDER BY TABLE_NAME`;
+        const views = await this.runListQuery<import('./IDatabaseAdapter').ViewInfo>(sql, [{ value: db }], (row: import('./IDatabaseAdapter').QueryRow) => ({
+            name: row.TABLE_NAME as string,
+            comment: row.TABLE_COMMENT as string,
+        }));
+
+        const mvs = await this.listMaterializedViews(database);
+        const mvNames = new Set(mvs.map(mv => mv.name));
+        return views.filter(v => !mvNames.has(v.name));
+    }
+
+    override async listMaterializedViews(database?: string, _schema?: string): Promise<import('./IDatabaseAdapter').MaterializedViewInfo[]> {
+        const db = database ?? this.shared.config?.database;
+        if (!db) {
+            return [];
+        }
+
+        const sql = `SHOW MATERIALIZED VIEWS FROM \`${db.replace(/`/g, '``')}\``;
+        return this.runListQuery<import('./IDatabaseAdapter').MaterializedViewInfo>(sql, undefined, (row: import('./IDatabaseAdapter').QueryRow) => ({
+            name: (row.name ?? row.Name ?? row.NAME) as string,
+        }));
+    }
 }
 
 /**
@@ -258,6 +287,18 @@ class StarrocksSchemaAdapter extends MysqlSchemaAdapter<StarrocksSharedContext> 
         // StarRocks returns "Create Table" column like MySQL, but for views
         // the same query may surface a "Create View" column instead.
         return (result.rows[0]['Create Table'] ?? result.rows[0]['Create View'] ?? '') as string;
+    }
+
+    override async getMaterializedViewDDL(database: string, mvName: string, _schema?: string): Promise<string> {
+        this.validateIdentifier(database);
+        this.validateIdentifier(mvName);
+        const sql = `SHOW CREATE MATERIALIZED VIEW ${this.quoteIdentifier(database)}.${this.quoteIdentifier(mvName)}`;
+        const result = await this.executeQuery(sql);
+        if (result.status !== 'success' || result.rows.length === 0) {
+            return '';
+        }
+
+        return (result.rows[0]['Create Materialized View'] ?? result.rows[0]['create materialized view'] ?? '') as string;
     }
 
     override async getFunctionDDL(_database: string, _functionName: string, _schema?: string): Promise<string> {
@@ -330,7 +371,7 @@ class StarrocksSchemaAdapter extends MysqlSchemaAdapter<StarrocksSharedContext> 
             supportsCancel: true,
             supportsSshTunnel: true,
             // StarRocks does not support procedures/triggers/foreign keys
-            supportedObjectTypes: ['table', 'view', 'index'],
+            supportedObjectTypes: ['table', 'view', 'materializedView', 'index'],
         };
     }
 

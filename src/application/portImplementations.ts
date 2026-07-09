@@ -52,6 +52,7 @@ import type {
     DatabaseInfo,
     TableInfo,
     ViewInfo,
+    MaterializedViewInfo,
     FunctionInfo,
     ProcedureInfo,
     ColumnInfo,
@@ -287,6 +288,18 @@ export class SchemaServiceImpl implements ISchemaService {
             name: v.name,
             definition: v.definition,
             comment: v.comment,
+        }));
+    }
+
+    async getMaterializedViews(
+        connectionId: string,
+        database: string,
+    ): Promise<{ name: string; definition?: string; comment?: string }[]> {
+        const mvs: MaterializedViewInfo[] = await getSchemaCache().getMaterializedViews(connectionId, database);
+        return mvs.map((mv) => ({
+            name: mv.name,
+            definition: mv.definition,
+            comment: mv.comment,
         }));
     }
 

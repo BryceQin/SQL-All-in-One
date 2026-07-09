@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import type { DatabaseInfo, TableInfo, ColumnInfo, FunctionInfo, ProcedureInfo, ViewInfo } from '../adapters/IDatabaseAdapter';
+import type { DatabaseInfo, TableInfo, ColumnInfo, FunctionInfo, ProcedureInfo, ViewInfo, MaterializedViewInfo } from '../adapters/IDatabaseAdapter';
 import { getConnectionManager } from '../connection/ConnectionManager';
 import { getConfigManager } from '../../core/configManager';
 import { getContainer, Tokens } from '../../core/diContainer';
@@ -11,7 +11,7 @@ interface CacheEntry<T> {
     expireAt: number;
 }
 
-type InvalidateScope = 'database' | 'table' | 'column' | 'function' | 'procedure' | 'view';
+type InvalidateScope = 'database' | 'table' | 'column' | 'function' | 'procedure' | 'view' | 'materializedView';
 
 export class SchemaCache {
     private static readonly MAX_ENTRIES_PER_CACHE = 200;
@@ -30,6 +30,7 @@ export class SchemaCache {
     private functionCache = new LRUCache<string, CacheEntry<FunctionInfo[]>>({ maxSize: SchemaCache.MAX_ENTRIES_PER_CACHE, maxAge: SchemaCache.MAX_AGE_MS });
     private procedureCache = new LRUCache<string, CacheEntry<ProcedureInfo[]>>({ maxSize: SchemaCache.MAX_ENTRIES_PER_CACHE, maxAge: SchemaCache.MAX_AGE_MS });
     private viewCache = new LRUCache<string, CacheEntry<ViewInfo[]>>({ maxSize: SchemaCache.MAX_ENTRIES_PER_CACHE, maxAge: SchemaCache.MAX_AGE_MS });
+    private materializedViewCache = new LRUCache<string, CacheEntry<MaterializedViewInfo[]>>({ maxSize: SchemaCache.MAX_ENTRIES_PER_CACHE, maxAge: SchemaCache.MAX_AGE_MS });
     private pendingRequests = new Map<string, Promise<unknown>>();
     private cachedTtls: Record<string, number> = {};
     private ttlConfigDisposable: vscode.Disposable | undefined;
@@ -51,6 +52,7 @@ export class SchemaCache {
             function: cfgMgr.get<number>('schemaCache.functionTtl', 600),
             procedure: cfgMgr.get<number>('schemaCache.procedureTtl', 600),
             view: cfgMgr.get<number>('schemaCache.tableTtl', 300),
+            materializedView: cfgMgr.get<number>('schemaCache.tableTtl', 300),
         };
     }
 
@@ -179,6 +181,18 @@ export class SchemaCache {
         );
     }
 
+    async getMaterializedViews(connectionId: string, database: string): Promise<MaterializedViewInfo[]> {
+        return this.cachedFetch(
+            this.materializedViewCache,
+            this.makeKey(connectionId, database),
+            'materializedView',
+            async () => {
+                const adapter = getConnectionManager().getAdapter(connectionId);
+                return adapter ? await adapter.metadataAdapter.listMaterializedViews(database) : [];
+            }
+        );
+    }
+
     invalidate(connectionId: string, scope?: InvalidateScope, database?: string, table?: string): void {
         if (!scope) {
             this.invalidateByPrefix(this.databaseCache, connectionId);
@@ -187,6 +201,7 @@ export class SchemaCache {
             this.invalidateByPrefix(this.functionCache, connectionId);
             this.invalidateByPrefix(this.procedureCache, connectionId);
             this.invalidateByPrefix(this.viewCache, connectionId);
+            this.invalidateByPrefix(this.materializedViewCache, connectionId);
             return;
         }
 
@@ -218,6 +233,11 @@ export class SchemaCache {
             case 'view':
                 if (database) {
                     this.viewCache.delete(this.makeKey(connectionId, database));
+                }
+                break;
+            case 'materializedView':
+                if (database) {
+                    this.materializedViewCache.delete(this.makeKey(connectionId, database));
                 }
                 break;
         }
@@ -256,6 +276,7 @@ export class SchemaCache {
         this.functionCache.clear();
         this.procedureCache.clear();
         this.viewCache.clear();
+        this.materializedViewCache.clear();
         this.pendingRequests.clear();
     }
 }

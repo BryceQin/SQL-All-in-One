@@ -663,6 +663,10 @@ class PostgresSchemaAdapter extends BaseSchemaAdapter<PostgresSharedContext> {
         return (result.rows[0].definition as string) ?? '';
     }
 
+    async getMaterializedViewDDL(_database: string, _mvName: string, _schema?: string): Promise<string> {
+        return '';
+    }
+
     async getFunctionDDL(_database: string, functionName: string, schema?: string): Promise<string> {
         const targetSchema = schema ?? 'public';
         const sql = `SELECT pg_get_functiondef($1::regprocedure) AS definition`;

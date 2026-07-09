@@ -10,6 +10,7 @@ import {
     ObjectGroupTreeNode,
     TableTreeNode,
     ViewTreeNode,
+    MaterializedViewTreeNode,
     FunctionTreeNode,
     ProcedureTreeNode,
     TriggerTreeNode,
@@ -203,6 +204,13 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
             return undefined;
         }
         if (element instanceof ViewTreeNode) {
+            return {
+                command: 'hive-formatter.viewTableData',
+                title: t('explorer.cmd.viewData'),
+                arguments: [element]
+            };
+        }
+        if (element instanceof MaterializedViewTreeNode) {
             return {
                 command: 'hive-formatter.viewTableData',
                 title: t('explorer.cmd.viewData'),
@@ -442,6 +450,9 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
                 return [];
             }
 
+            const capabilities = adapter.schemaAdapter.getDialectCapabilities();
+            const supportsMaterializedView = capabilities.supportedObjectTypes.includes('materializedView');
+
             const [tables, views, functions, procedures, triggers] = await Promise.all([
                 this.schemaCache.getTables(parent.connectionId, parent.databaseName),
                 this.schemaCache.getViews(parent.connectionId, parent.databaseName),
@@ -454,11 +465,19 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
 
             const children: ITreeNode[] = [
                 new ObjectGroupTreeNode('tables', parent.connectionId, parent.databaseName, Math.min(tables.length, maxTableSize), parent),
-                new ObjectGroupTreeNode('views', parent.connectionId, parent.databaseName, views.length, parent),
+                new ObjectGroupTreeNode('views', parent.connectionId, parent.databaseName, views.length, parent)
+            ];
+
+            if (supportsMaterializedView) {
+                const mvs = await this.schemaCache.getMaterializedViews(parent.connectionId, parent.databaseName);
+                children.push(new ObjectGroupTreeNode('materializedViews', parent.connectionId, parent.databaseName, mvs.length, parent));
+            }
+
+            children.push(
                 new ObjectGroupTreeNode('functions', parent.connectionId, parent.databaseName, functions.length, parent),
                 new ObjectGroupTreeNode('procedures', parent.connectionId, parent.databaseName, procedures.length, parent),
                 new ObjectGroupTreeNode('triggers', parent.connectionId, parent.databaseName, triggers.length, parent)
-            ];
+            );
 
             this.nodeCache.set(cacheKey, children);
             return children;
@@ -510,6 +529,19 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
                             parent.connectionId,
                             parent.databaseName,
                             view.comment,
+                            parent
+                        ));
+                    }
+                    break;
+
+                case 'materializedViews':
+                    const mvs = await this.schemaCache.getMaterializedViews(parent.connectionId, parent.databaseName);
+                    for (const mv of mvs) {
+                        children.push(new MaterializedViewTreeNode(
+                            mv.name,
+                            parent.connectionId,
+                            parent.databaseName,
+                            mv.comment,
                             parent
                         ));
                     }

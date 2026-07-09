@@ -589,6 +589,10 @@ class SqlServerSchemaAdapter extends BaseSchemaAdapter<SqlServerSharedContext> {
         return (result.rows[0].definition as string) ?? '';
     }
 
+    async getMaterializedViewDDL(_database: string, _mvName: string, _schema?: string): Promise<string> {
+        return '';
+    }
+
     async getFunctionDDL(database: string, functionName: string, _schema?: string): Promise<string> {
         this.validateIdentifier(database);
         this.validateIdentifier(functionName);
