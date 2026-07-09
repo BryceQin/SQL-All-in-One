@@ -241,6 +241,7 @@ class StarrocksMetadataAdapter extends MysqlMetadataAdapter<StarrocksSharedConte
         const sql = `SHOW MATERIALIZED VIEWS FROM \`${db.replace(/`/g, '``')}\``;
         return this.runListQuery<import('./IDatabaseAdapter').MaterializedViewInfo>(sql, undefined, (row: import('./IDatabaseAdapter').QueryRow) => ({
             name: (row.name ?? row.Name ?? row.NAME) as string,
+            status: ((row.state ?? row.State ?? row.STATE) as string)?.toLowerCase(),
         }));
     }
 }
@@ -299,6 +300,20 @@ class StarrocksSchemaAdapter extends MysqlSchemaAdapter<StarrocksSharedContext> 
         }
 
         return (result.rows[0]['Create Materialized View'] ?? result.rows[0]['create materialized view'] ?? '') as string;
+    }
+
+    async refreshMaterializedView(database: string, mvName: string): Promise<void> {
+        this.validateIdentifier(database);
+        this.validateIdentifier(mvName);
+        const sql = `REFRESH MATERIALIZED VIEW ${this.quoteIdentifier(database)}.${this.quoteIdentifier(mvName)}`;
+        await this.executeQuery(sql);
+    }
+
+    async dropMaterializedView(database: string, mvName: string): Promise<void> {
+        this.validateIdentifier(database);
+        this.validateIdentifier(mvName);
+        const sql = `DROP MATERIALIZED VIEW ${this.quoteIdentifier(database)}.${this.quoteIdentifier(mvName)}`;
+        await this.executeQuery(sql);
     }
 
     override async getFunctionDDL(_database: string, _functionName: string, _schema?: string): Promise<string> {

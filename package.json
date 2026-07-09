@@ -512,6 +512,26 @@
                 "title": "%hive-formatter.command.editTable.title%"
             },
             {
+                "command": "sqlAllInOne.createMaterializedView",
+                "title": "%sqlAllInOne.command.createMaterializedView.title%"
+            },
+            {
+                "command": "sqlAllInOne.editMaterializedView",
+                "title": "%sqlAllInOne.command.editMaterializedView.title%"
+            },
+            {
+                "command": "sqlAllInOne.dropMaterializedView",
+                "title": "%sqlAllInOne.command.dropMaterializedView.title%"
+            },
+            {
+                "command": "sqlAllInOne.refreshMaterializedView",
+                "title": "%sqlAllInOne.command.refreshMaterializedView.title%"
+            },
+            {
+                "command": "sqlAllInOne.viewMaterializedViewDDL",
+                "title": "%sqlAllInOne.command.viewMaterializedViewDDL.title%"
+            },
+            {
                 "command": "hive-formatter.explainQuery",
                 "title": "%hive-formatter.command.explainQuery.title%"
             },
@@ -1987,6 +2007,21 @@
                     "group": "3_table@2"
                 },
                 {
+                    "command": "sqlAllInOne.editMaterializedView",
+                    "when": "view == hive-formatter.databaseExplorer && viewItem == materializedView",
+                    "group": "3_table@3"
+                },
+                {
+                    "command": "sqlAllInOne.refreshMaterializedView",
+                    "when": "view == hive-formatter.databaseExplorer && viewItem == materializedView",
+                    "group": "3_table@4"
+                },
+                {
+                    "command": "sqlAllInOne.dropMaterializedView",
+                    "when": "view == hive-formatter.databaseExplorer && viewItem == materializedView",
+                    "group": "4_danger@1"
+                },
+                {
                     "command": "hive-formatter.viewFunctionDDL",
                     "when": "view == hive-formatter.databaseExplorer && viewItem == function",
                     "group": "3_table@1"
@@ -2030,6 +2065,11 @@
                     "command": "hive-formatter.setDefaultDatabase",
                     "when": "view == hive-formatter.databaseExplorer && viewItem == database",
                     "group": "7_database@1"
+                },
+                {
+                    "command": "sqlAllInOne.createMaterializedView",
+                    "when": "view == hive-formatter.databaseExplorer && viewItem == database",
+                    "group": "7_database@2"
                 },
                 {
                     "command": "hive-formatter.refreshSchema",

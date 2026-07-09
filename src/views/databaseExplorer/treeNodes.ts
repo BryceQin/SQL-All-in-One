@@ -304,16 +304,21 @@ export class MaterializedViewTreeNode extends BaseTreeNode {
     readonly connectionId: string;
     readonly databaseName: string;
     readonly comment?: string;
+    readonly status?: string;
     
     constructor(
         mvName: string,
         connectionId: string,
         databaseName: string,
         comment?: string,
-        parent?: ITreeNode
+        parent?: ITreeNode,
+        status?: string
     ) {
+        const isInactive = status === 'inactive';
         super({
-            iconPath: new vscode.ThemeIcon('layers'),
+            iconPath: isInactive
+                ? new vscode.ThemeIcon('layers', new vscode.ThemeColor('disabledForeground'))
+                : new vscode.ThemeIcon('layers'),
             collapsibleState: vscode.TreeItemCollapsibleState.None,
             parent,
             tooltip: comment ? `${t('explorer.materializedView', mvName)}\n${comment}` : t('explorer.materializedView', mvName)
@@ -325,6 +330,7 @@ export class MaterializedViewTreeNode extends BaseTreeNode {
         this.label = mvName;
         this.id = `mv-${connectionId}-${databaseName}-${mvName}`;
         this.comment = comment;
+        this.status = status;
     }
 }
 

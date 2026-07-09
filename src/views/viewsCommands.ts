@@ -3,9 +3,10 @@ import { ExplainPlanPanel } from './explainPlan/ExplainPlanPanel';
 import { DataTransferDialog } from './dataTransfer/DataTransferDialog';
 import { registerQueryResultCommands } from './queryResult/queryResultCommands';
 import { registerTableDesignerCommands } from './tableDesigner/tableDesignerCommands';
+import { registerMaterializedViewDesignerCommands } from './materializedViewDesigner/materializedViewDesignerCommands';
 import { registerTreeProviderCommands } from './databaseExplorer/treeProviderCommands';
 import { getContainer, Tokens } from '../core/diContainer';
-import type { IConnectionService, IDataTransferService, IExplainPlanService } from '../application/ports';
+import type { IConnectionService, IDataTransferService, IExplainPlanService, ISchemaService } from '../application/ports';
 
 /**
  * Register every views-layer command handler that the database layer
@@ -46,6 +47,14 @@ export function registerViewsCommands(context: vscode.ExtensionContext): vscode.
 
     // 3. Table designer handler (openTableDesigner).
     disposables.push(...registerTableDesignerCommands(context));
+
+    // 3.5 Materialized view designer handler.
+    const container = getContainer();
+    disposables.push(...registerMaterializedViewDesignerCommands(
+        context,
+        container.get<IConnectionService>(Tokens.ConnectionService),
+        container.get<ISchemaService>(Tokens.SchemaService),
+    ));
 
     // 4. Explain-plan handler. The database layer fires
     //    `hive-formatter.showExplainPlan(sql, isPanel?)` from
