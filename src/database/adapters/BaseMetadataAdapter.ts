@@ -9,7 +9,7 @@ import type {
     QueryResult,
     QueryParam,
     QueryRow,
-} from './IDatabaseAdapter';
+} from "./IDatabaseAdapter";
 
 /**
  * Shared base class for per-dialect metadata sub-adapters.
@@ -49,13 +49,9 @@ export abstract class BaseMetadataAdapter<TShared = unknown> implements IMetadat
      * the previous inlined `if (result.status !== 'success') return []`
      * guard present in every dialect's list methods.
      */
-    protected async runListQuery<T>(
-        sql: string,
-        params: QueryParam[] | undefined,
-        rowMapper: (row: QueryRow) => T,
-    ): Promise<T[]> {
+    protected async runListQuery<T>(sql: string, params: QueryParam[] | undefined, rowMapper: (row: QueryRow) => T): Promise<T[]> {
         const result = await this.executeQuery(sql, params);
-        if (result.status !== 'success') {
+        if (result.status !== "success") {
             return [];
         }
         return result.rows.map(rowMapper);

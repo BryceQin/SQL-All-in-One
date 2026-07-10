@@ -1,39 +1,22 @@
 {
     "Insert Into": {
         "prefix": "insert",
-        "body": [
-            "INSERT INTO $1 ($2)",
-            "VALUES",
-            "    ($3);"
-        ],
+        "body": ["INSERT INTO $1 ($2)", "VALUES", "    ($3);"],
         "description": "INSERT INTO statement"
     },
     "Insert Select": {
         "prefix": "insertsel",
-        "body": [
-            "INSERT INTO $1 ($2)",
-            "SELECT",
-            "    $3",
-            "FROM $4",
-            "WHERE $5;"
-        ],
+        "body": ["INSERT INTO $1 ($2)", "SELECT", "    $3", "FROM $4", "WHERE $5;"],
         "description": "INSERT ... SELECT statement"
     },
     "Update": {
         "prefix": "update",
-        "body": [
-            "UPDATE $1",
-            "SET $2 = $3",
-            "WHERE $4;"
-        ],
+        "body": ["UPDATE $1", "SET $2 = $3", "WHERE $4;"],
         "description": "UPDATE statement"
     },
     "Delete": {
         "prefix": "delete",
-        "body": [
-            "DELETE FROM $1",
-            "WHERE $2;"
-        ],
+        "body": ["DELETE FROM $1", "WHERE $2;"],
         "description": "DELETE statement"
     },
     "Create Table": {
@@ -50,40 +33,22 @@
     },
     "Create Table As Select": {
         "prefix": "ctas",
-        "body": [
-            "CREATE TABLE $1 AS",
-            "SELECT",
-            "    $2",
-            "FROM $3",
-            "WHERE $4;"
-        ],
+        "body": ["CREATE TABLE $1 AS", "SELECT", "    $2", "FROM $3", "WHERE $4;"],
         "description": "CREATE TABLE AS SELECT"
     },
     "With CTE": {
         "prefix": "with",
-        "body": [
-            "WITH $1 AS (",
-            "    SELECT $2 FROM $3 WHERE $4",
-            ")",
-            "SELECT $5",
-            "FROM $1",
-            "WHERE $6",
-            "LIMIT 100;"
-        ],
+        "body": ["WITH $1 AS (", "    SELECT $2 FROM $3 WHERE $4", ")", "SELECT $5", "FROM $1", "WHERE $6", "LIMIT 100;"],
         "description": "WITH common table expression"
     },
     "Column Comment": {
         "prefix": "col",
-        "body": [
-            "COMMENT '${1:列说明}'"
-        ],
+        "body": ["COMMENT '${1:列说明}'"],
         "description": "列 COMMENT 注释"
     },
     "Table Comment": {
         "prefix": "tbl",
-        "body": [
-            "COMMENT '${1:表说明}'"
-        ],
+        "body": ["COMMENT '${1:表说明}'"],
         "description": "表 COMMENT 注释"
     }
 }

@@ -1,4 +1,4 @@
-import * as vscode from 'vscode';
+import * as vscode from "vscode";
 
 export class InMemoryDocument implements vscode.TextDocument {
     readonly uri: vscode.Uri;
@@ -8,8 +8,8 @@ export class InMemoryDocument implements vscode.TextDocument {
     readonly isUntitled: boolean = true;
     readonly isClosed: boolean = false;
     readonly eol: vscode.EndOfLine = vscode.EndOfLine.LF;
-    readonly fileName: string = '';
-    readonly encoding: string = 'utf8';
+    readonly fileName: string = "";
+    readonly encoding: string = "utf8";
 
     private readonly _lines: string[];
     private readonly _lineCount: number;
@@ -17,7 +17,7 @@ export class InMemoryDocument implements vscode.TextDocument {
     constructor(content: string, languageId: string) {
         this.uri = vscode.Uri.parse(`hive-formatter://virtual/${Date.now()}.sql`);
         this.languageId = languageId;
-        this._lines = content.split('\n');
+        this._lines = content.split("\n");
         this._lineCount = this._lines.length;
     }
 
@@ -26,7 +26,7 @@ export class InMemoryDocument implements vscode.TextDocument {
     }
 
     getText(range?: vscode.Range): string {
-        const fullText = this._lines.join('\n');
+        const fullText = this._lines.join("\n");
         if (!range) return fullText;
         const startOffset = this.offsetAt(range.start);
         const endOffset = this.offsetAt(range.end);
@@ -34,7 +34,7 @@ export class InMemoryDocument implements vscode.TextDocument {
     }
 
     lineAt(lineOrPosition: number | vscode.Position): vscode.TextLine {
-        const line = typeof lineOrPosition === 'number' ? lineOrPosition : lineOrPosition.line;
+        const line = typeof lineOrPosition === "number" ? lineOrPosition : lineOrPosition.line;
         if (line < 0 || line >= this._lines.length) {
             throw new Error(`Line ${line} out of range (0-${this._lines.length - 1})`);
         }

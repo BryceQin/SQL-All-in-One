@@ -28,7 +28,7 @@ export function replaceQuestionMarkPlaceholders(
     sql: string,
     nameForIndex: (index: number) => string | undefined,
 ): { sql: string; consumedIndexes: number[] } {
-    let result = '';
+    let result = "";
     const consumedIndexes: number[] = [];
     let paramIndex = 0;
     let inString = false;
@@ -48,7 +48,7 @@ export function replaceQuestionMarkPlaceholders(
             continue;
         }
 
-        if (ch === '?' && !inString) {
+        if (ch === "?" && !inString) {
             paramIndex++;
             const replacement = nameForIndex(paramIndex);
             if (replacement !== undefined) {

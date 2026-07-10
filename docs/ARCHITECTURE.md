@@ -42,9 +42,9 @@ src/
 负责管理所有服务的生命周期：
 
 ```typescript
-const container = getContainer()
-container.registerSingleton(Token, factoryFn)
-const service = container.get<ServiceType>(Token)
+const container = getContainer();
+container.registerSingleton(Token, factoryFn);
+const service = container.get<ServiceType>(Token);
 ```
 
 ### ConfigManager (配置管理)

@@ -1,79 +1,79 @@
 export class Lazy<T> {
-  private instance: T | null = null;
-  private factory: () => T;
-  private initialized = false;
+    private instance: T | null = null;
+    private factory: () => T;
+    private initialized = false;
 
-  constructor(factory: () => T) {
-    this.factory = factory;
-  }
-
-  get(): T {
-    if (!this.initialized) {
-      this.instance = this.factory();
-      this.initialized = true;
+    constructor(factory: () => T) {
+        this.factory = factory;
     }
-    return this.instance as T;
-  }
 
-  get isInitialized(): boolean {
-    return this.initialized;
-  }
-
-  reset(): void {
-    this.instance = null;
-    this.initialized = false;
-  }
-
-  dispose(): void {
-    if (this.initialized && this.instance !== null) {
-      const obj = this.instance as unknown;
-      if (obj && typeof obj === 'object' && 'dispose' in obj && typeof (obj as { dispose: unknown }).dispose === 'function') {
-        (obj as { dispose: () => void }).dispose();
-      }
+    get(): T {
+        if (!this.initialized) {
+            this.instance = this.factory();
+            this.initialized = true;
+        }
+        return this.instance as T;
     }
-    this.instance = null;
-    this.initialized = false;
-  }
+
+    get isInitialized(): boolean {
+        return this.initialized;
+    }
+
+    reset(): void {
+        this.instance = null;
+        this.initialized = false;
+    }
+
+    dispose(): void {
+        if (this.initialized && this.instance !== null) {
+            const obj = this.instance as unknown;
+            if (obj && typeof obj === "object" && "dispose" in obj && typeof (obj as { dispose: unknown }).dispose === "function") {
+                (obj as { dispose: () => void }).dispose();
+            }
+        }
+        this.instance = null;
+        this.initialized = false;
+    }
 }
 
 export function lazy<T>(factory: () => T): Lazy<T> {
-  return new Lazy(factory);
+    return new Lazy(factory);
 }
 
 export class LazyAsync<T> {
-  private instance: T | null = null;
-  private factory: () => Promise<T>;
-  private promise: Promise<T> | null = null;
-  private initialized = false;
+    private instance: T | null = null;
+    private factory: () => Promise<T>;
+    private promise: Promise<T> | null = null;
+    private initialized = false;
 
-  constructor(factory: () => Promise<T>) {
-    this.factory = factory;
-  }
-
-  async get(): Promise<T> {
-    if (this.initialized && this.instance !== null) {
-      return this.instance;
+    constructor(factory: () => Promise<T>) {
+        this.factory = factory;
     }
 
-    if (this.promise !== null) {
-      return this.promise;
+    async get(): Promise<T> {
+        if (this.initialized && this.instance !== null) {
+            return this.instance;
+        }
+
+        if (this.promise !== null) {
+            return this.promise;
+        }
+
+        this.promise = this.factory();
+        try {
+            this.instance = await this.promise;
+            this.initialized = true;
+            return this.instance;
+        } finally {
+            this.promise = null;
+        }
     }
 
-    this.promise = this.factory();
-    try {
-      this.instance = await this.promise;
-      this.initialized = true;
-      return this.instance;
-    } finally {
-      this.promise = null;
+    get isInitialized(): boolean {
+        return this.initialized;
     }
-  }
-
-  get isInitialized(): boolean {
-    return this.initialized;
-  }
 }
 
 export function lazyAsync<T>(factory: () => Promise<T>): LazyAsync<T> {
-  return new LazyAsync(factory);
+    return new LazyAsync(factory);
 }

@@ -1,6 +1,6 @@
-import type { IQueryAdapter, QueryResult, QueryParam, SqlStatement, ConnectionConfig } from './IDatabaseAdapter';
-import { t } from '../../i18n/index';
-import { generateShortId } from '../../utils/idGenerator';
+import type { IQueryAdapter, QueryResult, QueryParam, SqlStatement, ConnectionConfig } from "./IDatabaseAdapter";
+import { t } from "../../i18n/index";
+import { generateShortId } from "../../utils/idGenerator";
 
 /**
  * Minimal shared-context contract required by {@link BaseQueryAdapter}'s
@@ -57,7 +57,7 @@ export abstract class BaseQueryAdapter<TShared extends IQuerySharedContext = IQu
      */
     async execute(sql: string, params?: QueryParam[]): Promise<QueryResult> {
         const startTime = Date.now();
-        const queryId = generateShortId('query');
+        const queryId = generateShortId("query");
 
         if (!this.isConnected()) {
             return this.buildNotConnectedResult(sql, queryId, startTime);
@@ -92,14 +92,14 @@ export abstract class BaseQueryAdapter<TShared extends IQuerySharedContext = IQu
         const executionTime = Date.now() - startTime;
         return {
             queryId,
-            status: 'error',
+            status: "error",
             columns: [],
             rows: [],
             rowCount: 0,
             executionTime,
             error: {
-                code: 'NOT_CONNECTED',
-                message: t('database.notConnected'),
+                code: "NOT_CONNECTED",
+                message: t("database.notConnected"),
                 sql,
             },
             database: this.shared.config?.database,
@@ -119,13 +119,13 @@ export abstract class BaseQueryAdapter<TShared extends IQuerySharedContext = IQu
         const message = error instanceof Error ? error.message : String(error);
         return {
             queryId,
-            status: 'error',
+            status: "error",
             columns: [],
             rows: [],
             rowCount: 0,
             executionTime,
             error: {
-                code: 'EXEC_ERROR',
+                code: "EXEC_ERROR",
                 message,
                 sql,
             },

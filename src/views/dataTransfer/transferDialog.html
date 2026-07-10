@@ -1,169 +1,194 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline' {{CSP_SOURCE}}; script-src 'nonce-{{CSP_NONCE}}' {{CSP_SOURCE}}; img-src data: {{CSP_SOURCE}};">
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title data-i18n="dataTransfer.title">Data Transfer</title>
-  <link rel="stylesheet" href="{{CSS_URI}}">
-  {{CONFIG_INJECT}}
-</head>
-<body>
-  <div class="transfer-dialog">
-    <div class="header-bar">
-      <div class="header-title">
-        <span class="header-icon">📤</span>
-        <span data-i18n="dataTransfer.title">Data Transfer</span>
-      </div>
-    </div>
+    <head>
+        <meta
+            http-equiv="Content-Security-Policy"
+            content="default-src 'none'; style-src 'unsafe-inline' {{CSP_SOURCE}}; script-src 'nonce-{{CSP_NONCE}}' {{CSP_SOURCE}}; img-src data: {{CSP_SOURCE}};"
+        />
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title data-i18n="dataTransfer.title">Data Transfer</title>
+        <link rel="stylesheet" href="{{CSS_URI}}" />
+        {{CONFIG_INJECT}}
+    </head>
+    <body>
+        <div class="transfer-dialog">
+            <div class="header-bar">
+                <div class="header-title">
+                    <span class="header-icon">📤</span>
+                    <span data-i18n="dataTransfer.title">Data Transfer</span>
+                </div>
+            </div>
 
-    <div class="step-indicators">
-      <div class="step-indicator active" data-step="1">
-        <span class="step-number">1</span>
-        <span class="step-label" data-i18n="dataTransfer.source">Source</span>
-      </div>
-      <div class="step-connector"></div>
-      <div class="step-indicator" data-step="2">
-        <span class="step-number">2</span>
-        <span class="step-label" data-i18n="dataTransfer.target">Target</span>
-      </div>
-      <div class="step-connector"></div>
-      <div class="step-indicator" data-step="3">
-        <span class="step-number">3</span>
-        <span class="step-label" data-i18n="dataTransfer.mapping">Mapping</span>
-      </div>
-      <div class="step-connector"></div>
-      <div class="step-indicator" data-step="4">
-        <span class="step-number">4</span>
-        <span class="step-label" data-i18n="dataTransfer.options">Options</span>
-      </div>
-      <div class="step-connector"></div>
-      <div class="step-indicator" data-step="5">
-        <span class="step-number">5</span>
-        <span class="step-label" data-i18n="dataTransfer.preview">Preview</span>
-      </div>
-    </div>
+            <div class="step-indicators">
+                <div class="step-indicator active" data-step="1">
+                    <span class="step-number">1</span>
+                    <span class="step-label" data-i18n="dataTransfer.source">Source</span>
+                </div>
+                <div class="step-connector"></div>
+                <div class="step-indicator" data-step="2">
+                    <span class="step-number">2</span>
+                    <span class="step-label" data-i18n="dataTransfer.target">Target</span>
+                </div>
+                <div class="step-connector"></div>
+                <div class="step-indicator" data-step="3">
+                    <span class="step-number">3</span>
+                    <span class="step-label" data-i18n="dataTransfer.mapping">Mapping</span>
+                </div>
+                <div class="step-connector"></div>
+                <div class="step-indicator" data-step="4">
+                    <span class="step-number">4</span>
+                    <span class="step-label" data-i18n="dataTransfer.options">Options</span>
+                </div>
+                <div class="step-connector"></div>
+                <div class="step-indicator" data-step="5">
+                    <span class="step-number">5</span>
+                    <span class="step-label" data-i18n="dataTransfer.preview">Preview</span>
+                </div>
+            </div>
 
-    <div class="step-content">
-      <!-- Step 1: Source -->
-      <div class="step-page active" id="step1">
-        <div class="form-group">
-          <label class="form-label" data-i18n="dataTransfer.filePath">File Path</label>
-          <div class="file-input-group">
-            <input type="text" id="filePath" class="form-input" placeholder="Select a data file..." data-i18n-ph="dataTransfer.selectFilePh" readonly>
-            <button class="btn btn-secondary" id="btnBrowse" data-action="selectFile" data-i18n="dataTransfer.selectFile">Browse</button>
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label" data-i18n="dataTransfer.format">Format</label>
-          <select id="fileFormat" class="form-select" data-action="updateCsvOptionsVisibility">
-            <option value="auto">Auto Detect</option>
-            <option value="csv">CSV</option>
-            <option value="json">JSON</option>
-            <option value="sql">SQL</option>
-          </select>
-        </div>
-        <div id="csvOptionsHint" class="form-hint" style="display:none;">
-          CSV-specific options (delimiter, encoding) can be configured in Step 4.
-        </div>
-      </div>
+            <div class="step-content">
+                <!-- Step 1: Source -->
+                <div class="step-page active" id="step1">
+                    <div class="form-group">
+                        <label class="form-label" data-i18n="dataTransfer.filePath">File Path</label>
+                        <div class="file-input-group">
+                            <input
+                                type="text"
+                                id="filePath"
+                                class="form-input"
+                                placeholder="Select a data file..."
+                                data-i18n-ph="dataTransfer.selectFilePh"
+                                readonly
+                            />
+                            <button class="btn btn-secondary" id="btnBrowse" data-action="selectFile" data-i18n="dataTransfer.selectFile">
+                                Browse
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" data-i18n="dataTransfer.format">Format</label>
+                        <select id="fileFormat" class="form-select" data-action="updateCsvOptionsVisibility">
+                            <option value="auto">Auto Detect</option>
+                            <option value="csv">CSV</option>
+                            <option value="json">JSON</option>
+                            <option value="sql">SQL</option>
+                        </select>
+                    </div>
+                    <div id="csvOptionsHint" class="form-hint" style="display: none">
+                        CSV-specific options (delimiter, encoding) can be configured in Step 4.
+                    </div>
+                </div>
 
-      <!-- Step 2: Target -->
-      <div class="step-page" id="step2">
-        <div class="form-group">
-          <label class="form-label" data-i18n="dataTransfer.targetTable">Target Table</label>
-          <select id="targetTable" class="form-select" data-action="onTargetTableChange">
-            <option value="">-- Select a table --</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label" data-i18n="dataTransfer.newTableName">Or Create New Table</label>
-          <input type="text" id="newTableName" class="form-input" placeholder="Enter new table name..." data-i18n-ph="dataTransfer.newTableNamePh">
-        </div>
-      </div>
+                <!-- Step 2: Target -->
+                <div class="step-page" id="step2">
+                    <div class="form-group">
+                        <label class="form-label" data-i18n="dataTransfer.targetTable">Target Table</label>
+                        <select id="targetTable" class="form-select" data-action="onTargetTableChange">
+                            <option value="">-- Select a table --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" data-i18n="dataTransfer.newTableName">Or Create New Table</label>
+                        <input
+                            type="text"
+                            id="newTableName"
+                            class="form-input"
+                            placeholder="Enter new table name..."
+                            data-i18n-ph="dataTransfer.newTableNamePh"
+                        />
+                    </div>
+                </div>
 
-      <!-- Step 3: Mapping -->
-      <div class="step-page" id="step3">
-        <div class="mapping-header">
-          <span class="mapping-col-source" data-i18n="dataTransfer.sourceColumn">Source Column</span>
-          <span class="mapping-arrow"></span>
-          <span class="mapping-col-target" data-i18n="dataTransfer.targetColumn">Target Column</span>
-        </div>
-        <div class="mapping-container" id="mappingContainer">
-          <div class="mapping-empty" data-i18n="dataTransfer.selectFileAndTable">Select a file and target table first.</div>
-        </div>
-      </div>
+                <!-- Step 3: Mapping -->
+                <div class="step-page" id="step3">
+                    <div class="mapping-header">
+                        <span class="mapping-col-source" data-i18n="dataTransfer.sourceColumn">Source Column</span>
+                        <span class="mapping-arrow"></span>
+                        <span class="mapping-col-target" data-i18n="dataTransfer.targetColumn">Target Column</span>
+                    </div>
+                    <div class="mapping-container" id="mappingContainer">
+                        <div class="mapping-empty" data-i18n="dataTransfer.selectFileAndTable">Select a file and target table first.</div>
+                    </div>
+                </div>
 
-      <!-- Step 4: Options -->
-      <div class="step-page" id="step4">
-        <div class="form-group">
-          <label class="form-label" data-i18n="dataTransfer.onError">On Error</label>
-          <select id="onError" class="form-select">
-            <option value="skip" data-i18n="dataTransfer.skipInvalidRows">Skip invalid rows</option>
-            <option value="abort" data-i18n="dataTransfer.abortOnError">Abort on error</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Dedup Strategy</label>
-          <select id="dedupStrategy" class="form-select">
-            <option value="ignore">Ignore duplicates</option>
-            <option value="skip">Skip duplicates</option>
-            <option value="update">Update duplicates</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label" data-i18n="dataTransfer.batchSize">Batch Size</label>
-          <input type="number" id="batchSize" class="form-input" value="100" min="1" max="10000">
-        </div>
-        <div class="form-group">
-          <label class="form-label" data-i18n="dataTransfer.previewRows">Preview Rows</label>
-          <input type="number" id="previewRows" class="form-input" value="10" min="1" max="100">
-        </div>
-        <div class="form-group csv-option" id="csvDelimiterGroup">
-          <label class="form-label" data-i18n="dataTransfer.csvDelimiter">CSV Delimiter</label>
-          <select id="csvDelimiter" class="form-select">
-            <option value="auto">Auto Detect</option>
-            <option value=",">Comma (,)</option>
-            <option value="tab">Tab</option>
-            <option value="semicolon">Semicolon (;)</option>
-          </select>
-        </div>
-        <div class="form-group csv-option" id="encodingGroup">
-          <label class="form-label" data-i18n="dataTransfer.encoding">Encoding</label>
-          <select id="encoding" class="form-select">
-            <option value="utf-8">UTF-8</option>
-            <option value="gbk">GBK</option>
-            <option value="gb2312">GB2312</option>
-            <option value="latin1">Latin1</option>
-          </select>
-        </div>
-      </div>
+                <!-- Step 4: Options -->
+                <div class="step-page" id="step4">
+                    <div class="form-group">
+                        <label class="form-label" data-i18n="dataTransfer.onError">On Error</label>
+                        <select id="onError" class="form-select">
+                            <option value="skip" data-i18n="dataTransfer.skipInvalidRows">Skip invalid rows</option>
+                            <option value="abort" data-i18n="dataTransfer.abortOnError">Abort on error</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Dedup Strategy</label>
+                        <select id="dedupStrategy" class="form-select">
+                            <option value="ignore">Ignore duplicates</option>
+                            <option value="skip">Skip duplicates</option>
+                            <option value="update">Update duplicates</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" data-i18n="dataTransfer.batchSize">Batch Size</label>
+                        <input type="number" id="batchSize" class="form-input" value="100" min="1" max="10000" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" data-i18n="dataTransfer.previewRows">Preview Rows</label>
+                        <input type="number" id="previewRows" class="form-input" value="10" min="1" max="100" />
+                    </div>
+                    <div class="form-group csv-option" id="csvDelimiterGroup">
+                        <label class="form-label" data-i18n="dataTransfer.csvDelimiter">CSV Delimiter</label>
+                        <select id="csvDelimiter" class="form-select">
+                            <option value="auto">Auto Detect</option>
+                            <option value=",">Comma (,)</option>
+                            <option value="tab">Tab</option>
+                            <option value="semicolon">Semicolon (;)</option>
+                        </select>
+                    </div>
+                    <div class="form-group csv-option" id="encodingGroup">
+                        <label class="form-label" data-i18n="dataTransfer.encoding">Encoding</label>
+                        <select id="encoding" class="form-select">
+                            <option value="utf-8">UTF-8</option>
+                            <option value="gbk">GBK</option>
+                            <option value="gb2312">GB2312</option>
+                            <option value="latin1">Latin1</option>
+                        </select>
+                    </div>
+                </div>
 
-      <!-- Step 5: Preview -->
-      <div class="step-page" id="step5">
-        <div class="preview-section" id="previewSection">
-          <div class="preview-title" data-i18n="dataTransfer.dataPreview">Data Preview</div>
-          <div class="preview-table-wrapper" id="previewTableWrapper">
-            <div class="mapping-empty" data-i18n="dataTransfer.loadingPreview">Loading preview...</div>
-          </div>
-        </div>
-        <div class="import-progress-section" id="importProgressSection" style="display:none;">
-          <div class="progress-bar-container">
-            <div class="progress-bar" id="importProgressBar"></div>
-          </div>
-          <div class="progress-text" id="importProgressText" data-i18n="dataTransfer.importing">Importing...</div>
-        </div>
-        <div class="import-result-section" id="importResultSection" style="display:none;">
-        </div>
-      </div>
-    </div>
+                <!-- Step 5: Preview -->
+                <div class="step-page" id="step5">
+                    <div class="preview-section" id="previewSection">
+                        <div class="preview-title" data-i18n="dataTransfer.dataPreview">Data Preview</div>
+                        <div class="preview-table-wrapper" id="previewTableWrapper">
+                            <div class="mapping-empty" data-i18n="dataTransfer.loadingPreview">Loading preview...</div>
+                        </div>
+                    </div>
+                    <div class="import-progress-section" id="importProgressSection" style="display: none">
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" id="importProgressBar"></div>
+                        </div>
+                        <div class="progress-text" id="importProgressText" data-i18n="dataTransfer.importing">Importing...</div>
+                    </div>
+                    <div class="import-result-section" id="importResultSection" style="display: none"></div>
+                </div>
+            </div>
 
-    <div class="footer-bar">
-      <button class="btn btn-secondary" id="btnPrev" data-action="prevStep" disabled>Previous</button>
-      <button class="btn btn-primary" id="btnNext" data-action="nextStep">Next</button>
-      <button class="btn btn-primary" id="btnStartImport" data-action="startImport" style="display:none;" data-i18n="dataTransfer.startImport">Start Import</button>
-    </div>
-  </div>
-  <script src="{{JS_URI}}"></script>
-</body>
+            <div class="footer-bar">
+                <button class="btn btn-secondary" id="btnPrev" data-action="prevStep" disabled>Previous</button>
+                <button class="btn btn-primary" id="btnNext" data-action="nextStep">Next</button>
+                <button
+                    class="btn btn-primary"
+                    id="btnStartImport"
+                    data-action="startImport"
+                    style="display: none"
+                    data-i18n="dataTransfer.startImport"
+                >
+                    Start Import
+                </button>
+            </div>
+        </div>
+        <script src="{{JS_URI}}"></script>
+    </body>
 </html>

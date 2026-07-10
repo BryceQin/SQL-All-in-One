@@ -1,17 +1,17 @@
-import * as vscode from 'vscode';
-import type { DatabaseInfo, TableInfo, ColumnInfo, FunctionInfo, ProcedureInfo, ViewInfo } from '../adapters/IDatabaseAdapter';
-import { getConnectionManager } from '../connection/ConnectionManager';
-import { getConfigManager } from '../../core/configManager';
-import { getContainer, Tokens } from '../../core/diContainer';
-import { handleError, ErrorCategory } from '../../core/errorHandler';
-import { LRUCache } from '../../utils/lruCache';
+import * as vscode from "vscode";
+import type { DatabaseInfo, TableInfo, ColumnInfo, FunctionInfo, ProcedureInfo, ViewInfo } from "../adapters/IDatabaseAdapter";
+import { getConnectionManager } from "../connection/ConnectionManager";
+import { getConfigManager } from "../../core/configManager";
+import { getContainer, Tokens } from "../../core/diContainer";
+import { handleError, ErrorCategory } from "../../core/errorHandler";
+import { LRUCache } from "../../utils/lruCache";
 
 interface CacheEntry<T> {
     data: T;
     expireAt: number;
 }
 
-type InvalidateScope = 'database' | 'table' | 'column' | 'function' | 'procedure' | 'view';
+type InvalidateScope = "database" | "table" | "column" | "function" | "procedure" | "view";
 
 export class SchemaCache {
     private static readonly MAX_ENTRIES_PER_CACHE = 200;
@@ -24,12 +24,30 @@ export class SchemaCache {
      * indefinitely when access is rare.
      */
     private static readonly MAX_AGE_MS = 600000;
-    private databaseCache = new LRUCache<string, CacheEntry<DatabaseInfo[]>>({ maxSize: SchemaCache.MAX_ENTRIES_PER_CACHE, maxAge: SchemaCache.MAX_AGE_MS });
-    private tableCache = new LRUCache<string, CacheEntry<TableInfo[]>>({ maxSize: SchemaCache.MAX_ENTRIES_PER_CACHE, maxAge: SchemaCache.MAX_AGE_MS });
-    private columnCache = new LRUCache<string, CacheEntry<ColumnInfo[]>>({ maxSize: SchemaCache.MAX_ENTRIES_PER_CACHE, maxAge: SchemaCache.MAX_AGE_MS });
-    private functionCache = new LRUCache<string, CacheEntry<FunctionInfo[]>>({ maxSize: SchemaCache.MAX_ENTRIES_PER_CACHE, maxAge: SchemaCache.MAX_AGE_MS });
-    private procedureCache = new LRUCache<string, CacheEntry<ProcedureInfo[]>>({ maxSize: SchemaCache.MAX_ENTRIES_PER_CACHE, maxAge: SchemaCache.MAX_AGE_MS });
-    private viewCache = new LRUCache<string, CacheEntry<ViewInfo[]>>({ maxSize: SchemaCache.MAX_ENTRIES_PER_CACHE, maxAge: SchemaCache.MAX_AGE_MS });
+    private databaseCache = new LRUCache<string, CacheEntry<DatabaseInfo[]>>({
+        maxSize: SchemaCache.MAX_ENTRIES_PER_CACHE,
+        maxAge: SchemaCache.MAX_AGE_MS,
+    });
+    private tableCache = new LRUCache<string, CacheEntry<TableInfo[]>>({
+        maxSize: SchemaCache.MAX_ENTRIES_PER_CACHE,
+        maxAge: SchemaCache.MAX_AGE_MS,
+    });
+    private columnCache = new LRUCache<string, CacheEntry<ColumnInfo[]>>({
+        maxSize: SchemaCache.MAX_ENTRIES_PER_CACHE,
+        maxAge: SchemaCache.MAX_AGE_MS,
+    });
+    private functionCache = new LRUCache<string, CacheEntry<FunctionInfo[]>>({
+        maxSize: SchemaCache.MAX_ENTRIES_PER_CACHE,
+        maxAge: SchemaCache.MAX_AGE_MS,
+    });
+    private procedureCache = new LRUCache<string, CacheEntry<ProcedureInfo[]>>({
+        maxSize: SchemaCache.MAX_ENTRIES_PER_CACHE,
+        maxAge: SchemaCache.MAX_AGE_MS,
+    });
+    private viewCache = new LRUCache<string, CacheEntry<ViewInfo[]>>({
+        maxSize: SchemaCache.MAX_ENTRIES_PER_CACHE,
+        maxAge: SchemaCache.MAX_AGE_MS,
+    });
     private pendingRequests = new Map<string, Promise<unknown>>();
     private cachedTtls: Record<string, number> = {};
     private ttlConfigDisposable: vscode.Disposable | undefined;
@@ -45,12 +63,12 @@ export class SchemaCache {
     private loadTtls(): void {
         const cfgMgr = getConfigManager();
         this.cachedTtls = {
-            database: cfgMgr.get<number>('schemaCache.databaseTtl', 600),
-            table: cfgMgr.get<number>('schemaCache.tableTtl', 300),
-            column: cfgMgr.get<number>('schemaCache.columnTtl', 120),
-            function: cfgMgr.get<number>('schemaCache.functionTtl', 600),
-            procedure: cfgMgr.get<number>('schemaCache.procedureTtl', 600),
-            view: cfgMgr.get<number>('schemaCache.tableTtl', 300),
+            database: cfgMgr.get<number>("schemaCache.databaseTtl", 600),
+            table: cfgMgr.get<number>("schemaCache.tableTtl", 300),
+            column: cfgMgr.get<number>("schemaCache.columnTtl", 120),
+            function: cfgMgr.get<number>("schemaCache.functionTtl", 600),
+            procedure: cfgMgr.get<number>("schemaCache.procedureTtl", 600),
+            view: cfgMgr.get<number>("schemaCache.tableTtl", 300),
         };
     }
 
@@ -64,14 +82,14 @@ export class SchemaCache {
     }
 
     private makeKey(...parts: string[]): string {
-        return parts.join(':');
+        return parts.join(":");
     }
 
     private async cachedFetch<T>(
         cache: LRUCache<string, CacheEntry<T>>,
         cacheKey: string,
         ttlType: string,
-        fetcher: () => Promise<T>
+        fetcher: () => Promise<T>,
     ): Promise<T> {
         // Lazy per-entry expiry check: O(1). The LRU layer enforces a hard
         // maxAge ceiling (MAX_AGE_MS = 600000 / 10 min) so long-unused entries
@@ -106,77 +124,47 @@ export class SchemaCache {
     }
 
     async getDatabases(connectionId: string): Promise<DatabaseInfo[]> {
-        return this.cachedFetch(
-            this.databaseCache,
-            this.makeKey(connectionId),
-            'database',
-            async () => {
-                const adapter = getConnectionManager().getAdapter(connectionId);
-                return adapter ? await adapter.metadataAdapter.listDatabases() : [];
-            }
-        );
+        return this.cachedFetch(this.databaseCache, this.makeKey(connectionId), "database", async () => {
+            const adapter = getConnectionManager().getAdapter(connectionId);
+            return adapter ? await adapter.metadataAdapter.listDatabases() : [];
+        });
     }
 
     async getTables(connectionId: string, database: string): Promise<TableInfo[]> {
-        return this.cachedFetch(
-            this.tableCache,
-            this.makeKey(connectionId, database),
-            'table',
-            async () => {
-                const adapter = getConnectionManager().getAdapter(connectionId);
-                return adapter ? await adapter.metadataAdapter.listTables(database) : [];
-            }
-        );
+        return this.cachedFetch(this.tableCache, this.makeKey(connectionId, database), "table", async () => {
+            const adapter = getConnectionManager().getAdapter(connectionId);
+            return adapter ? await adapter.metadataAdapter.listTables(database) : [];
+        });
     }
 
     async getColumns(connectionId: string, database: string, table: string): Promise<ColumnInfo[]> {
-        return this.cachedFetch(
-            this.columnCache,
-            this.makeKey(connectionId, database, table),
-            'column',
-            async () => {
-                const adapter = getConnectionManager().getAdapter(connectionId);
-                if (!adapter) return [];
-                const structure = await adapter.schemaAdapter.describeTable(database, table);
-                return structure.columns;
-            }
-        );
+        return this.cachedFetch(this.columnCache, this.makeKey(connectionId, database, table), "column", async () => {
+            const adapter = getConnectionManager().getAdapter(connectionId);
+            if (!adapter) return [];
+            const structure = await adapter.schemaAdapter.describeTable(database, table);
+            return structure.columns;
+        });
     }
 
     async getFunctions(connectionId: string, database: string): Promise<FunctionInfo[]> {
-        return this.cachedFetch(
-            this.functionCache,
-            this.makeKey(connectionId, database),
-            'function',
-            async () => {
-                const adapter = getConnectionManager().getAdapter(connectionId);
-                return adapter ? await adapter.metadataAdapter.listFunctions(database) : [];
-            }
-        );
+        return this.cachedFetch(this.functionCache, this.makeKey(connectionId, database), "function", async () => {
+            const adapter = getConnectionManager().getAdapter(connectionId);
+            return adapter ? await adapter.metadataAdapter.listFunctions(database) : [];
+        });
     }
 
     async getProcedures(connectionId: string, database: string): Promise<ProcedureInfo[]> {
-        return this.cachedFetch(
-            this.procedureCache,
-            this.makeKey(connectionId, database),
-            'procedure',
-            async () => {
-                const adapter = getConnectionManager().getAdapter(connectionId);
-                return adapter ? await adapter.metadataAdapter.listProcedures(database) : [];
-            }
-        );
+        return this.cachedFetch(this.procedureCache, this.makeKey(connectionId, database), "procedure", async () => {
+            const adapter = getConnectionManager().getAdapter(connectionId);
+            return adapter ? await adapter.metadataAdapter.listProcedures(database) : [];
+        });
     }
 
     async getViews(connectionId: string, database: string): Promise<ViewInfo[]> {
-        return this.cachedFetch(
-            this.viewCache,
-            this.makeKey(connectionId, database),
-            'view',
-            async () => {
-                const adapter = getConnectionManager().getAdapter(connectionId);
-                return adapter ? await adapter.metadataAdapter.listViews(database) : [];
-            }
-        );
+        return this.cachedFetch(this.viewCache, this.makeKey(connectionId, database), "view", async () => {
+            const adapter = getConnectionManager().getAdapter(connectionId);
+            return adapter ? await adapter.metadataAdapter.listViews(database) : [];
+        });
     }
 
     invalidate(connectionId: string, scope?: InvalidateScope, database?: string, table?: string): void {
@@ -191,31 +179,31 @@ export class SchemaCache {
         }
 
         switch (scope) {
-            case 'database':
+            case "database":
                 this.databaseCache.delete(this.makeKey(connectionId));
                 break;
-            case 'table':
+            case "table":
                 if (database) {
                     this.tableCache.delete(this.makeKey(connectionId, database));
                     this.invalidateByPrefix(this.columnCache, `${connectionId}:${database}`);
                 }
                 break;
-            case 'column':
+            case "column":
                 if (database && table) {
                     this.columnCache.delete(this.makeKey(connectionId, database, table));
                 }
                 break;
-            case 'function':
+            case "function":
                 if (database) {
                     this.functionCache.delete(this.makeKey(connectionId, database));
                 }
                 break;
-            case 'procedure':
+            case "procedure":
                 if (database) {
                     this.procedureCache.delete(this.makeKey(connectionId, database));
                 }
                 break;
-            case 'view':
+            case "view":
                 if (database) {
                     this.viewCache.delete(this.makeKey(connectionId, database));
                 }
@@ -229,7 +217,7 @@ export class SchemaCache {
 
     async prefetchOnConnect(connectionId: string, database: string): Promise<void> {
         const cfgMgr = getConfigManager();
-        const enabled = cfgMgr.get<boolean>('schemaCache.prefetchOnConnect', true);
+        const enabled = cfgMgr.get<boolean>("schemaCache.prefetchOnConnect", true);
         if (!enabled) return;
 
         try {
@@ -237,13 +225,11 @@ export class SchemaCache {
             const tables = await this.getTables(connectionId, database);
             // Phase 2: Prefetch columns for the first 5 tables only.
             // Further prefetching happens on-demand when users expand tree nodes.
-            const columnPromises = tables.slice(0, 5).map(t =>
-                this.getColumns(connectionId, database, t.name).catch(() => [])
-            );
+            const columnPromises = tables.slice(0, 5).map((t) => this.getColumns(connectionId, database, t.name).catch(() => []));
             await Promise.allSettled(columnPromises);
         } catch (e) {
             // prefetch failure should not affect normal usage
-            handleError(e, 'SchemaCache.prefetchOnConnect', ErrorCategory.FEATURE)
+            handleError(e, "SchemaCache.prefetchOnConnect", ErrorCategory.FEATURE);
         }
     }
 

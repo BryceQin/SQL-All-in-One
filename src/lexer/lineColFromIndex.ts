@@ -1,4 +1,4 @@
-import { precomputeLineStarts, lineFromOffset } from '../utils/lineIndex';
+import { precomputeLineStarts, lineFromOffset } from "../utils/lineIndex";
 
 export interface LineCol {
     line: number;
@@ -41,10 +41,7 @@ export const precomputeLineOffsets = precomputeLineStarts;
  * The returned `col` is 1-based and matches the semantics of
  * {@link lineColFromIndex}: a newline character belongs to the preceding line.
  */
-export function lineColFromIndexFast(
-    lineStarts: number[],
-    index: number,
-): LineCol {
+export function lineColFromIndexFast(lineStarts: number[], index: number): LineCol {
     // lineFromOffset returns the 1-based line number whose start offset is the
     // greatest value <= index. For an index pointing exactly at a newline
     // character, lineFromOffset treats it as part of the current line (start

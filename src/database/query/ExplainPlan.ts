@@ -1,7 +1,7 @@
-import type { ExplainResult, ExplainNode } from '../adapters/IDatabaseAdapter';
+import type { ExplainResult, ExplainNode } from "../adapters/IDatabaseAdapter";
 
 export interface OptimizationSuggestion {
-    severity: 'info' | 'warning' | 'critical';
+    severity: "info" | "warning" | "critical";
     message: string;
     table?: string;
 }
@@ -72,14 +72,14 @@ export class ExplainPlan {
 
     static parseMysqlExplain(raw: unknown): ExplainResult {
         // JSON format: raw is a string containing JSON, or already-parsed object
-        if (typeof raw === 'string') {
+        if (typeof raw === "string") {
             try {
                 const parsed: unknown = JSON.parse(raw);
                 return ExplainPlan.parseMysqlJsonExplain(parsed as MysqlExplainJsonRoot | MysqlExplainJsonRoot[]);
             } catch (e) {
                 // Not valid JSON, treat as raw text
-                console.debug('[SQL All in One] ExplainPlan.parseMysqlExplain JSON.parse failed, treating as raw text:', e)
-                return { format: 'mysql', raw: raw, nodes: [] };
+                console.debug("[SQL All in One] ExplainPlan.parseMysqlExplain JSON.parse failed, treating as raw text:", e);
+                return { format: "mysql", raw: raw, nodes: [] };
             }
         }
 
@@ -88,7 +88,7 @@ export class ExplainPlan {
             return ExplainPlan.parseMysqlTableExplain(raw as MysqlExplainTableRow[]);
         }
 
-        if (typeof raw === 'object' && raw !== null) {
+        if (typeof raw === "object" && raw !== null) {
             const obj = raw as MysqlExplainJsonRoot;
             // JSON EXPLAIN result (has query_block)
             if (obj.query_block) {
@@ -96,32 +96,34 @@ export class ExplainPlan {
             }
             // Could be wrapped in an array at top level of FORMAT=JSON
             // e.g. [{ query_block: ... }]
-            return { format: 'mysql', raw: JSON.stringify(raw), nodes: [] };
+            return { format: "mysql", raw: JSON.stringify(raw), nodes: [] };
         }
 
-        return { format: 'mysql', raw: String(raw), nodes: [] };
+        return { format: "mysql", raw: String(raw), nodes: [] };
     }
 
     /**
      * Recursively parse a query_block from MySQL JSON EXPLAIN output.
      */
     private static parseQueryBlock(block: MysqlExplainQueryBlock | MysqlExplainNestedLoopItem, parentId?: string): ExplainNode[] {
-        if (!block || typeof block !== 'object') {
+        if (!block || typeof block !== "object") {
             return [];
         }
 
         const nodes: ExplainNode[] = [];
-        const id = parentId ? `${parentId}-${nodes.length}` : '0';
+        const id = parentId ? `${parentId}-${nodes.length}` : "0";
 
         // Handle the table / nested_loop / ordering_operation / grouping_operation blocks
         // A query_block can contain a single table or a nested_loop join structure
 
         if (block.nested_loop) {
             // nested_loop contains an array of join tables
-            const joinNodes = block.nested_loop.map((item: MysqlExplainNestedLoopItem, index: number) => {
-                const childNodes = ExplainPlan.parseQueryBlock(item, `${id}-nl${index}`);
-                return childNodes;
-            }).flat();
+            const joinNodes = block.nested_loop
+                .map((item: MysqlExplainNestedLoopItem, index: number) => {
+                    const childNodes = ExplainPlan.parseQueryBlock(item, `${id}-nl${index}`);
+                    return childNodes;
+                })
+                .flat();
             nodes.push(...joinNodes);
         }
 
@@ -135,19 +137,19 @@ export class ExplainPlan {
                 rows: tableInfo.rows_examined ?? tableInfo.rows_produced_per_join ?? tableInfo.rows,
                 cost: tableInfo.read_cost ?? tableInfo.eval_cost ?? tableInfo.prefix_cost,
                 key: tableInfo.key ?? tableInfo.best_key,
-                extra: tableInfo.used_columns ?? (tableInfo.insert ? 'INSERT' : undefined),
+                extra: tableInfo.used_columns ?? (tableInfo.insert ? "INSERT" : undefined),
                 children: [],
             };
 
             // Build extra string from available fields
             const extras: string[] = [];
-            if (tableInfo.using_filesort) extras.push('Using filesort');
-            if (tableInfo.using_temporary_table) extras.push('Using temporary');
-            if (tableInfo.using_index) extras.push('Using index');
-            if (tableInfo.full_scan) extras.push('Full table scan');
-            if (tableInfo.range_scan) extras.push('Range scan');
+            if (tableInfo.using_filesort) extras.push("Using filesort");
+            if (tableInfo.using_temporary_table) extras.push("Using temporary");
+            if (tableInfo.using_index) extras.push("Using index");
+            if (tableInfo.full_scan) extras.push("Full table scan");
+            if (tableInfo.range_scan) extras.push("Range scan");
             if (extras.length > 0) {
-                node.extra = extras.join('; ');
+                node.extra = extras.join("; ");
             }
 
             nodes.push(node);
@@ -158,11 +160,11 @@ export class ExplainPlan {
             const orderBlock = block.ordering_operation;
             const orderNode: ExplainNode = {
                 id: `${id}-sort`,
-                operation: 'SORT',
+                operation: "SORT",
                 children: [],
             };
-            if ('using_filesort' in orderBlock && orderBlock.using_filesort) {
-                orderNode.extra = 'Using filesort';
+            if ("using_filesort" in orderBlock && orderBlock.using_filesort) {
+                orderNode.extra = "Using filesort";
             }
             const childNodes = ExplainPlan.parseQueryBlock(orderBlock, `${id}-sort`);
             orderNode.children = childNodes;
@@ -174,11 +176,11 @@ export class ExplainPlan {
             const groupBlock = block.grouping_operation;
             const groupNode: ExplainNode = {
                 id: `${id}-group`,
-                operation: 'TEMPORARY',
+                operation: "TEMPORARY",
                 children: [],
             };
-            if ('using_temporary_table' in groupBlock && groupBlock.using_temporary_table) {
-                groupNode.extra = 'Using temporary';
+            if ("using_temporary_table" in groupBlock && groupBlock.using_temporary_table) {
+                groupNode.extra = "Using temporary";
             }
             const childNodes = ExplainPlan.parseQueryBlock(groupBlock, `${id}-group`);
             groupNode.children = childNodes;
@@ -199,19 +201,26 @@ export class ExplainPlan {
         if (block.union_result) {
             const unionNode: ExplainNode = {
                 id: `${id}-union`,
-                operation: 'UNION',
-                extra: block.union_result.table_name ? `UNION result ${block.union_result.table_name}` : 'UNION result',
+                operation: "UNION",
+                extra: block.union_result.table_name ? `UNION result ${block.union_result.table_name}` : "UNION result",
                 children: [],
             };
             nodes.push(unionNode);
         }
 
         // If no specific structure found but block has a table_name directly
-        if (!block.table && !block.nested_loop && !block.ordering_operation && !block.grouping_operation && 'table_name' in block && block.table_name) {
+        if (
+            !block.table &&
+            !block.nested_loop &&
+            !block.ordering_operation &&
+            !block.grouping_operation &&
+            "table_name" in block &&
+            block.table_name
+        ) {
             const directBlock = block as MysqlExplainQueryBlock;
             nodes.push({
                 id: parentId ?? id,
-                operation: 'TABLE SCAN',
+                operation: "TABLE SCAN",
                 table: directBlock.table_name,
                 rows: directBlock.rows,
                 cost: directBlock.cost,
@@ -228,51 +237,51 @@ export class ExplainPlan {
      * Detect the operation type from a query block.
      */
     private static detectOperation(block: MysqlExplainQueryBlock | MysqlExplainNestedLoopItem): string {
-        if (!block || typeof block !== 'object') {
-            return 'UNKNOWN';
+        if (!block || typeof block !== "object") {
+            return "UNKNOWN";
         }
 
         const table = block.table;
         if (!table) {
-            return 'UNKNOWN';
+            return "UNKNOWN";
         }
 
         // Check for full table scan
-        if (table.access_type === 'ALL' || table.full_scan) {
-            return 'TABLE SCAN';
+        if (table.access_type === "ALL" || table.full_scan) {
+            return "TABLE SCAN";
         }
 
         // Check for index scan (range or index)
-        if (table.access_type === 'range' || table.range_scan) {
-            return 'INDEX SCAN';
+        if (table.access_type === "range" || table.range_scan) {
+            return "INDEX SCAN";
         }
 
         // Check for index seek (eq_ref, const, ref)
-        if (table.access_type === 'eq_ref' || table.access_type === 'const' || table.access_type === 'ref') {
-            return 'INDEX SEEK';
+        if (table.access_type === "eq_ref" || table.access_type === "const" || table.access_type === "ref") {
+            return "INDEX SEEK";
         }
 
         // Check for nested loop join
         if (block.nested_loop) {
-            return 'NESTED LOOP';
+            return "NESTED LOOP";
         }
 
         // Check for sort operation
         if (block.ordering_operation) {
-            return 'SORT';
+            return "SORT";
         }
 
         // Check for temporary table
         if (block.grouping_operation || table.using_temporary_table) {
-            return 'TEMPORARY';
+            return "TEMPORARY";
         }
 
         // Default based on access_type
-        if (table.access_type === 'index') {
-            return 'INDEX SCAN';
+        if (table.access_type === "index") {
+            return "INDEX SCAN";
         }
 
-        return 'TABLE SCAN';
+        return "TABLE SCAN";
     }
 
     /**
@@ -283,7 +292,7 @@ export class ExplainPlan {
         const seen = new Set<string>();
 
         const addSuggestion = (suggestion: OptimizationSuggestion): void => {
-            const key = `${suggestion.severity}:${suggestion.message}:${suggestion.table ?? ''}`;
+            const key = `${suggestion.severity}:${suggestion.message}:${suggestion.table ?? ""}`;
             if (!seen.has(key)) {
                 seen.add(key);
                 suggestions.push(suggestion);
@@ -292,49 +301,49 @@ export class ExplainPlan {
 
         const analyzeNode = (node: ExplainNode): void => {
             // TABLE SCAN → critical
-            if (node.operation === 'TABLE SCAN') {
+            if (node.operation === "TABLE SCAN") {
                 addSuggestion({
-                    severity: 'critical',
-                    message: 'Full table scan detected; consider adding an index for WHERE conditions',
+                    severity: "critical",
+                    message: "Full table scan detected; consider adding an index for WHERE conditions",
                     table: node.table,
                 });
             }
 
             // Using filesort → warning
-            if (node.extra?.includes('Using filesort')) {
+            if (node.extra?.includes("Using filesort")) {
                 addSuggestion({
-                    severity: 'warning',
-                    message: 'Filesort detected; consider adding an index for ORDER BY columns',
+                    severity: "warning",
+                    message: "Filesort detected; consider adding an index for ORDER BY columns",
                     table: node.table,
                 });
             }
 
             // Using temporary → warning
-            if (node.extra?.includes('Using temporary')) {
+            if (node.extra?.includes("Using temporary")) {
                 addSuggestion({
-                    severity: 'warning',
-                    message: 'Temporary table used; consider optimizing GROUP BY or DISTINCT',
+                    severity: "warning",
+                    message: "Temporary table used; consider optimizing GROUP BY or DISTINCT",
                     table: node.table,
                 });
             }
 
             // key = NULL → warning
-            if (node.key === 'NULL' || node.key === null || node.key === undefined) {
+            if (node.key === "NULL" || node.key === null || node.key === undefined) {
                 // Only warn about missing index if not already flagged as TABLE SCAN
-                if (node.operation !== 'TABLE SCAN') {
+                if (node.operation !== "TABLE SCAN") {
                     addSuggestion({
-                        severity: 'warning',
-                        message: 'No index used; consider adding an appropriate index',
+                        severity: "warning",
+                        message: "No index used; consider adding an appropriate index",
                         table: node.table,
                     });
                 }
             }
 
             // rows > 10000 with key → info (low selectivity)
-            if (node.rows && node.rows > 10000 && node.key && node.key !== 'NULL') {
+            if (node.rows && node.rows > 10000 && node.key && node.key !== "NULL") {
                 addSuggestion({
-                    severity: 'info',
-                    message: 'Low index selectivity (many rows scanned); consider a composite index',
+                    severity: "info",
+                    message: "Low index selectivity (many rows scanned); consider a composite index",
                     table: node.table,
                 });
             }
@@ -364,11 +373,11 @@ export class ExplainPlan {
         }
 
         if (!root.query_block) {
-            return { format: 'mysql', raw, nodes: [] };
+            return { format: "mysql", raw, nodes: [] };
         }
 
-        const nodes = ExplainPlan.parseQueryBlock(root.query_block, '0');
-        return { format: 'mysql', raw, nodes };
+        const nodes = ExplainPlan.parseQueryBlock(root.query_block, "0");
+        return { format: "mysql", raw, nodes };
     }
 
     private static parseMysqlTableExplain(rows: MysqlExplainTableRow[]): ExplainResult {
@@ -390,21 +399,21 @@ export class ExplainPlan {
 
         // Build tree structure based on id column
         const rootNodes = ExplainPlan.buildNodeTree(nodes);
-        return { format: 'mysql', raw, nodes: rootNodes };
+        return { format: "mysql", raw, nodes: rootNodes };
     }
 
     private static detectOperationFromTableRow(row: MysqlExplainTableRow): string {
-        const type = (row.type ?? row.access_type ?? '').toUpperCase();
-        const extra = (row.Extra ?? row.extra ?? '').toLowerCase();
+        const type = (row.type ?? row.access_type ?? "").toUpperCase();
+        const extra = (row.Extra ?? row.extra ?? "").toLowerCase();
 
-        if (type === 'ALL') return 'TABLE SCAN';
-        if (type === 'RANGE') return 'INDEX SCAN';
-        if (type === 'INDEX') return 'INDEX SCAN';
-        if (type === 'EQ_REF' || type === 'CONST' || type === 'REF') return 'INDEX SEEK';
-        if (extra.includes('using temporary')) return 'TEMPORARY';
-        if (extra.includes('using filesort')) return 'SORT';
+        if (type === "ALL") return "TABLE SCAN";
+        if (type === "RANGE") return "INDEX SCAN";
+        if (type === "INDEX") return "INDEX SCAN";
+        if (type === "EQ_REF" || type === "CONST" || type === "REF") return "INDEX SEEK";
+        if (extra.includes("using temporary")) return "TEMPORARY";
+        if (extra.includes("using filesort")) return "SORT";
 
-        return type || 'UNKNOWN';
+        return type || "UNKNOWN";
     }
 
     /**

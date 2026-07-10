@@ -1,9 +1,9 @@
-import type { DialectOptions } from "../dialect.ts"
-import { expandPhrases } from "../expandPhrases"
-import { functions } from "./sql.functions"
-import { dataTypes, keywords } from "./sql.keywords"
+import type { DialectOptions } from "../dialect.ts";
+import { expandPhrases } from "../expandPhrases";
+import { functions } from "./sql.functions";
+import { dataTypes, keywords } from "./sql.keywords";
 
-const reservedSelect = expandPhrases(["SELECT [ALL | DISTINCT]"])
+const reservedSelect = expandPhrases(["SELECT [ALL | DISTINCT]"]);
 
 const reservedClauses = expandPhrases([
     // queries
@@ -24,11 +24,9 @@ const reservedClauses = expandPhrases([
     "VALUES",
     // - update:
     "SET",
-])
+]);
 
-const standardOnelineClauses = expandPhrases([
-    "CREATE [GLOBAL TEMPORARY | LOCAL TEMPORARY] TABLE",
-])
+const standardOnelineClauses = expandPhrases(["CREATE [GLOBAL TEMPORARY | LOCAL TEMPORARY] TABLE"]);
 
 const tabularOnelineClauses = expandPhrases([
     // - create:
@@ -55,13 +53,9 @@ const tabularOnelineClauses = expandPhrases([
     "TRUNCATE TABLE",
     // other
     "SET SCHEMA",
-])
+]);
 
-const reservedSetOperations = expandPhrases([
-    "UNION [ALL | DISTINCT]",
-    "EXCEPT [ALL | DISTINCT]",
-    "INTERSECT [ALL | DISTINCT]",
-])
+const reservedSetOperations = expandPhrases(["UNION [ALL | DISTINCT]", "EXCEPT [ALL | DISTINCT]", "INTERSECT [ALL | DISTINCT]"]);
 
 const reservedJoins = expandPhrases([
     "JOIN",
@@ -69,24 +63,17 @@ const reservedJoins = expandPhrases([
     "{INNER | CROSS} JOIN",
     "NATURAL [INNER] JOIN",
     "NATURAL {LEFT | RIGHT | FULL} [OUTER] JOIN",
-])
+]);
 
-const reservedKeywordPhrases = expandPhrases([
-    "ON {UPDATE | DELETE} [SET NULL | SET DEFAULT]",
-    "{ROWS | RANGE} BETWEEN",
-])
+const reservedKeywordPhrases = expandPhrases(["ON {UPDATE | DELETE} [SET NULL | SET DEFAULT]", "{ROWS | RANGE} BETWEEN"]);
 
-const reservedDataTypePhrases = expandPhrases([])
+const reservedDataTypePhrases = expandPhrases([]);
 
 export const sql: DialectOptions = {
     name: "sql",
     tokenizerOptions: {
         reservedSelect,
-        reservedClauses: [
-            ...reservedClauses,
-            ...standardOnelineClauses,
-            ...tabularOnelineClauses,
-        ],
+        reservedClauses: [...reservedClauses, ...standardOnelineClauses, ...tabularOnelineClauses],
         reservedSetOperations,
         reservedJoins,
         reservedKeywordPhrases,
@@ -106,4 +93,4 @@ export const sql: DialectOptions = {
         onelineClauses: [...standardOnelineClauses, ...tabularOnelineClauses],
         tabularOnelineClauses,
     },
-}
+};

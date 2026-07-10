@@ -1,20 +1,20 @@
-import * as vscode from 'vscode';
-import * as fs from 'fs';
-import * as path from 'path';
-import { AstLinter } from '../../providers/AstLinter';
-import { SchemaCompletionProvider } from '../../completion/SchemaCompletionProvider';
-import { SqlCompletionProvider } from '../../completion/SqlCompletionProvider';
-import { SqlHoverProvider } from '../../providers/SqlHoverProvider';
-import { formatEditorText } from '../../utils/formatEditorText';
-import type { SchemaProvider } from '../../database/schema/SchemaProvider';
-import { createConfig } from '../../core/configManager';
-import { handleError, ErrorCategory } from '../../core/errorHandler';
-import { InMemoryDocument } from './InMemoryDocument';
-import { MonacoDataAdapter, type MonacoCompletionItem, type MonacoDiagnostic } from './MonacoDataAdapter';
-import { keywordMap, functionSigMap } from '../../dialects/dialectData';
-import type { FunctionSignature } from '../../completion/functionSignatures';
-import type { SqlDialect } from '../../parser/dialectMapper';
-import type { SqlLanguage } from '../../formatter/sqlFormatter';
+import * as vscode from "vscode";
+import * as fs from "fs";
+import * as path from "path";
+import { AstLinter } from "../../providers/AstLinter";
+import { SchemaCompletionProvider } from "../../completion/SchemaCompletionProvider";
+import { SqlCompletionProvider } from "../../completion/SqlCompletionProvider";
+import { SqlHoverProvider } from "../../providers/SqlHoverProvider";
+import { formatEditorText } from "../../utils/formatEditorText";
+import type { SchemaProvider } from "../../database/schema/SchemaProvider";
+import { createConfig } from "../../core/configManager";
+import { handleError, ErrorCategory } from "../../core/errorHandler";
+import { InMemoryDocument } from "./InMemoryDocument";
+import { MonacoDataAdapter, type MonacoCompletionItem, type MonacoDiagnostic } from "./MonacoDataAdapter";
+import { keywordMap, functionSigMap } from "../../dialects/dialectData";
+import type { FunctionSignature } from "../../completion/functionSignatures";
+import type { SqlDialect } from "../../parser/dialectMapper";
+import type { SqlLanguage } from "../../formatter/sqlFormatter";
 
 interface SnippetDef {
     prefix: string;
@@ -31,14 +31,14 @@ export interface LanguageData {
 }
 
 const dialectToLanguageId: Record<string, string> = {
-    hive: 'hive',
-    mysql: 'mysql',
-    spark: 'spark',
-    flinksql: 'flinksql',
-    sql: 'sql',
-    postgresql: 'postgresql',
-    bigquery: 'bigquery',
-    sqlite: 'sqlite',
+    hive: "hive",
+    mysql: "mysql",
+    spark: "spark",
+    flinksql: "flinksql",
+    sql: "sql",
+    postgresql: "postgresql",
+    bigquery: "bigquery",
+    sqlite: "sqlite",
 };
 
 export class LanguageBridge implements vscode.Disposable {
@@ -63,8 +63,8 @@ export class LanguageBridge implements vscode.Disposable {
     }
 
     exportLanguageData(dialect: string): LanguageData {
-        const kwData = keywordMap[dialect] || keywordMap['mysql'];
-        const funcData = functionSigMap[dialect] || functionSigMap['mysql'];
+        const kwData = keywordMap[dialect] || keywordMap["mysql"];
+        const funcData = functionSigMap[dialect] || functionSigMap["mysql"];
         const snippets = this._loadSnippets(dialect);
 
         return {
@@ -82,68 +82,58 @@ export class LanguageBridge implements vscode.Disposable {
         dialect: string,
     ): Promise<MonacoCompletionItem[]> {
         try {
-            const languageId = dialectToLanguageId[dialect] || 'mysql';
+            const languageId = dialectToLanguageId[dialect] || "mysql";
             const document = new InMemoryDocument(sql, languageId);
             const pos = new vscode.Position(position.line, position.column);
             const cts = new vscode.CancellationTokenSource();
             try {
-                const items = await this._schemaCompletionProvider.provideCompletionItems(
-                    document, pos, cts.token,
-                );
+                const items = await this._schemaCompletionProvider.provideCompletionItems(document, pos, cts.token);
                 if (items && items.length > 0) {
                     return MonacoDataAdapter.toMonacoCompletionItems(items);
                 }
 
-                const allItems = await this._completionProvider.provideCompletionItems(
-                    document, pos, cts.token,
-                );
+                const allItems = await this._completionProvider.provideCompletionItems(document, pos, cts.token);
                 return MonacoDataAdapter.toMonacoCompletionItems(allItems || []);
             } finally {
                 cts.dispose();
             }
         } catch (e) {
-            handleError(e, 'LanguageBridge.handleCompletionRequest', ErrorCategory.SUB_ITEM);
+            handleError(e, "LanguageBridge.handleCompletionRequest", ErrorCategory.SUB_ITEM);
             return [];
         }
     }
 
-    async handleHoverRequest(
-        sql: string,
-        position: { line: number; column: number },
-        dialect: string,
-    ): Promise<string[] | null> {
+    async handleHoverRequest(sql: string, position: { line: number; column: number }, dialect: string): Promise<string[] | null> {
         try {
-            const languageId = dialectToLanguageId[dialect] || 'mysql';
+            const languageId = dialectToLanguageId[dialect] || "mysql";
             const document = new InMemoryDocument(sql, languageId);
             const pos = new vscode.Position(position.line, position.column);
             const cts = new vscode.CancellationTokenSource();
             try {
-                const hover = await this._hoverProvider.provideHover(
-                    document, pos, cts.token,
-                );
+                const hover = await this._hoverProvider.provideHover(document, pos, cts.token);
                 if (!hover) return null;
                 return MonacoDataAdapter.toMonacoHoverContents(hover);
             } finally {
                 cts.dispose();
             }
         } catch (e) {
-            handleError(e, 'LanguageBridge.handleHoverRequest', ErrorCategory.SUB_ITEM);
+            handleError(e, "LanguageBridge.handleHoverRequest", ErrorCategory.SUB_ITEM);
             return null;
         }
     }
 
     async handleFormatRequest(sql: string, dialect: string): Promise<string> {
         try {
-            const languageId = (dialect || 'mysql') as SqlLanguage;
-            const extensionSettings = vscode.workspace.getConfiguration('SQL-All-in-One');
+            const languageId = (dialect || "mysql") as SqlLanguage;
+            const extensionSettings = vscode.workspace.getConfiguration("SQL-All-in-One");
             const formattingOptions: vscode.FormattingOptions = {
-                tabSize: extensionSettings.get<number>('format.tabSize', 2),
-                insertSpaces: extensionSettings.get<boolean>('format.useTabs', false) === false,
+                tabSize: extensionSettings.get<number>("format.tabSize", 2),
+                insertSpaces: extensionSettings.get<boolean>("format.useTabs", false) === false,
             };
             const config = createConfig(extensionSettings, formattingOptions, languageId);
             return formatEditorText(sql, config);
         } catch (e) {
-            handleError(e, 'LanguageBridge.handleFormatRequest', ErrorCategory.FORMAT);
+            handleError(e, "LanguageBridge.handleFormatRequest", ErrorCategory.FORMAT);
             return sql;
         }
     }
@@ -153,7 +143,7 @@ export class LanguageBridge implements vscode.Disposable {
             const diagnostics = this._linter.lint(sql, dialect as SqlDialect);
             return MonacoDataAdapter.toMonacoDiagnostics(diagnostics);
         } catch (e) {
-            handleError(e, 'LanguageBridge.handleDiagnosticsRequest', ErrorCategory.PARSE);
+            handleError(e, "LanguageBridge.handleDiagnosticsRequest", ErrorCategory.PARSE);
             return [];
         }
     }
@@ -163,12 +153,15 @@ export class LanguageBridge implements vscode.Disposable {
             return this._snippetCache.get(dialect)!;
         }
         const snippets: SnippetDef[] = [];
-        const snippetFiles = ['common', dialect];
+        const snippetFiles = ["common", dialect];
         for (const name of snippetFiles) {
-            const filePath = path.join(this._extensionPath, 'snippets', `${name}.json`);
+            const filePath = path.join(this._extensionPath, "snippets", `${name}.json`);
             if (fs.existsSync(filePath)) {
                 try {
-                    const content = JSON.parse(fs.readFileSync(filePath, 'utf-8')) as Record<string, { prefix: string; body: string[] | string; description: string }>;
+                    const content = JSON.parse(fs.readFileSync(filePath, "utf-8")) as Record<
+                        string,
+                        { prefix: string; body: string[] | string; description: string }
+                    >;
                     for (const [, value] of Object.entries(content)) {
                         const def = value;
                         snippets.push({
@@ -177,7 +170,9 @@ export class LanguageBridge implements vscode.Disposable {
                             description: def.description,
                         });
                     }
-                } catch (e) { /* skip invalid snippet files */ handleError(e, `LanguageBridge._loadSnippets (${name})`, ErrorCategory.SUB_ITEM); }
+                } catch (e) {
+                    /* skip invalid snippet files */ handleError(e, `LanguageBridge._loadSnippets (${name})`, ErrorCategory.SUB_ITEM);
+                }
             }
         }
         this._snippetCache.set(dialect, snippets);

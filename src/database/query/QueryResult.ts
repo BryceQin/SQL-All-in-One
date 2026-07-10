@@ -1,24 +1,24 @@
-import * as vscode from 'vscode';
-import { QueryParam } from '../adapters/IDatabaseAdapter';
+import * as vscode from "vscode";
+import { QueryParam } from "../adapters/IDatabaseAdapter";
 
 export type StatementType =
-    | 'SELECT'
-    | 'INSERT'
-    | 'UPDATE'
-    | 'DELETE'
-    | 'CREATE'
-    | 'ALTER'
-    | 'DROP'
-    | 'TRUNCATE'
-    | 'RENAME'
-    | 'GRANT'
-    | 'REVOKE'
-    | 'SET'
-    | 'SHOW'
-    | 'USE'
-    | 'CALL'
-    | 'EXPLAIN'
-    | 'OTHER';
+    | "SELECT"
+    | "INSERT"
+    | "UPDATE"
+    | "DELETE"
+    | "CREATE"
+    | "ALTER"
+    | "DROP"
+    | "TRUNCATE"
+    | "RENAME"
+    | "GRANT"
+    | "REVOKE"
+    | "SET"
+    | "SHOW"
+    | "USE"
+    | "CALL"
+    | "EXPLAIN"
+    | "OTHER";
 
 export interface DetectedStatement {
     sql: string;
@@ -51,12 +51,12 @@ export interface QueryStartEvent {
 
 export interface QueryEndEvent {
     queryId: string;
-    result: import('../adapters/IDatabaseAdapter').QueryResult;
+    result: import("../adapters/IDatabaseAdapter").QueryResult;
 }
 
-export type SafetyLevel = 'strict' | 'moderate' | 'off';
+export type SafetyLevel = "strict" | "moderate" | "off";
 
-export type SafetySeverity = 'warning' | 'confirmation';
+export type SafetySeverity = "warning" | "confirmation";
 
 export interface SafetyWarning {
     rule: string;
@@ -97,7 +97,7 @@ export interface QueryHistoryEntry {
     executionTime: number;
     rowCount: number;
     affectedRows?: number;
-    status: 'success' | 'error';
+    status: "success" | "error";
     errorMessage?: string;
     executionContext?: ExecutionContext;
 }

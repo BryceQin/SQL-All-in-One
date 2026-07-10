@@ -7,7 +7,7 @@
  * complete binding; extend it as additional APIs are required.
  */
 
-declare module 'oracledb' {
+declare module "oracledb" {
     export const version: number;
     /** Default is `true` in 6.x (thin mode). Set to `false` to force thick mode via initOracleClient. */
     export const thin: boolean;

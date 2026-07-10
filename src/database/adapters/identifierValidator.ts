@@ -17,14 +17,14 @@
  *     byte.
  */
 export function validateIdentifier(identifier: string, maxLength = 128): void {
-    if (!identifier || typeof identifier !== 'string') {
-        throw new Error('Invalid identifier: identifier must be a non-empty string');
+    if (!identifier || typeof identifier !== "string") {
+        throw new Error("Invalid identifier: identifier must be a non-empty string");
     }
     if (identifier.length > maxLength) {
-        throw new Error('Invalid identifier: identifier exceeds maximum length');
+        throw new Error("Invalid identifier: identifier exceeds maximum length");
     }
     // eslint-disable-next-line no-control-regex
     if (/\u0000/.test(identifier)) {
-        throw new Error('Invalid identifier: identifier contains null bytes');
+        throw new Error("Invalid identifier: identifier contains null bytes");
     }
 }

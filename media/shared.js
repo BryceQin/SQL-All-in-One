@@ -35,7 +35,7 @@
  */
 
 (function () {
-    'use strict';
+    "use strict";
 
     /**
      * Cached acquireVsCodeApi() handle. VS Code only allows this to be called
@@ -43,7 +43,7 @@
      * this cached handle via `const vscode = window.vscode || acquireVsCodeApi();`
      * instead of calling acquireVsCodeApi() directly.
      */
-    if (typeof window.vscode === 'undefined') {
+    if (typeof window.vscode === "undefined") {
         try {
             window.vscode = acquireVsCodeApi();
         } catch (e) {
@@ -63,7 +63,7 @@
             return arg;
         }
         var numArg = Number(arg);
-        return isNaN(numArg) || arg.trim() === '' ? arg : numArg;
+        return isNaN(numArg) || arg.trim() === "" ? arg : numArg;
     }
 
     /**
@@ -80,13 +80,13 @@
      * 避免调用 .replace 时抛 TypeError。所有面板通过 window.escapeHtml 复用。
      */
     function escapeHtml(str) {
-        if (str === null || str === undefined) return '';
+        if (str === null || str === undefined) return "";
         return String(str)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#39;');
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
     }
 
     /**
@@ -140,19 +140,19 @@
         var keepArg = !!options.keepArg;
         var handlers = options.handlers || {};
 
-        document.querySelectorAll('[data-action]').forEach(function (el) {
-            var action = el.getAttribute('data-action');
-            var arg = el.getAttribute('data-action-arg');
-            if (!action || typeof window[action] !== 'function') {
-                el.removeAttribute('data-action');
-                if (!keepArg) el.removeAttribute('data-action-arg');
+        document.querySelectorAll("[data-action]").forEach(function (el) {
+            var action = el.getAttribute("data-action");
+            var arg = el.getAttribute("data-action-arg");
+            if (!action || typeof window[action] !== "function") {
+                el.removeAttribute("data-action");
+                if (!keepArg) el.removeAttribute("data-action-arg");
                 return;
             }
 
             var customHandler = handlers[action];
 
-            if (el.tagName === 'SELECT') {
-                el.addEventListener('change', function (event) {
+            if (el.tagName === "SELECT") {
+                el.addEventListener("change", function (event) {
                     if (customHandler) {
                         customHandler(el, arg, event);
                     } else if (arg !== null) {
@@ -163,9 +163,9 @@
                         window[action]();
                     }
                 });
-            } else if (el.tagName === 'INPUT') {
-                if (el.type === 'checkbox' && handleCheckbox) {
-                    el.addEventListener('change', function (event) {
+            } else if (el.tagName === "INPUT") {
+                if (el.type === "checkbox" && handleCheckbox) {
+                    el.addEventListener("change", function (event) {
                         if (customHandler) {
                             customHandler(el, arg, event);
                         } else if (arg !== null) {
@@ -174,7 +174,7 @@
                             window[action](el.checked);
                         }
                     });
-                } else if (el.type === 'text' || el.type === 'number' || inputEventForAllInputs) {
+                } else if (el.type === "text" || el.type === "number" || inputEventForAllInputs) {
                     var inputFn = function (event) {
                         if (customHandler) {
                             customHandler(el, arg, event);
@@ -184,13 +184,13 @@
                             window[action](el.value);
                         }
                     };
-                    el.addEventListener('input', inputFn);
+                    el.addEventListener("input", inputFn);
                     if (inputBindChange) {
-                        el.addEventListener('change', inputFn);
+                        el.addEventListener("change", inputFn);
                     }
                 } else {
                     // 其他 INPUT 类型（如 password）走 click 分支
-                    el.addEventListener('click', function (event) {
+                    el.addEventListener("click", function (event) {
                         if (customHandler) {
                             customHandler(el, arg, event);
                         } else if (arg !== null) {
@@ -201,7 +201,7 @@
                     });
                 }
             } else {
-                el.addEventListener('click', function (event) {
+                el.addEventListener("click", function (event) {
                     if (customHandler) {
                         customHandler(el, arg, event);
                     } else if (arg !== null) {
@@ -212,8 +212,8 @@
                 });
             }
 
-            el.removeAttribute('data-action');
-            if (!keepArg) el.removeAttribute('data-action-arg');
+            el.removeAttribute("data-action");
+            if (!keepArg) el.removeAttribute("data-action-arg");
         });
     }
 
@@ -238,37 +238,41 @@
      * window.applyI18n(root, translate, opts)。
      */
     function applyI18n(root, translate, opts) {
-        if (typeof root === 'function' && typeof translate === 'undefined') {
+        if (typeof root === "function" && typeof translate === "undefined") {
             // 兼容无参调用形式：applyI18n() 等价于 applyI18n(document, t)
             translate = root;
             root = document;
         }
         root = root || document;
-        translate = translate || function (k) { return k; };
+        translate =
+            translate ||
+            function (k) {
+                return k;
+            };
         opts = opts || {};
         var optionTagSpecial = opts.optionTagSpecial !== false;
         var titleTagSpecial = opts.titleTagSpecial !== false;
 
-        root.querySelectorAll('[data-i18n]').forEach(function (el) {
-            var key = el.getAttribute('data-i18n');
+        root.querySelectorAll("[data-i18n]").forEach(function (el) {
+            var key = el.getAttribute("data-i18n");
             var text = translate(key);
             if (text && text !== key) {
-                if (titleTagSpecial && el.tagName === 'TITLE') {
+                if (titleTagSpecial && el.tagName === "TITLE") {
                     document.title = text;
                 } else {
                     el.textContent = text;
                 }
             }
         });
-        root.querySelectorAll('[data-i18n-ph]').forEach(function (el) {
-            var key = el.getAttribute('data-i18n-ph');
+        root.querySelectorAll("[data-i18n-ph]").forEach(function (el) {
+            var key = el.getAttribute("data-i18n-ph");
             var text = translate(key);
             if (text && text !== key) {
                 el.placeholder = text;
             }
         });
-        root.querySelectorAll('[data-i18n-title]').forEach(function (el) {
-            var key = el.getAttribute('data-i18n-title');
+        root.querySelectorAll("[data-i18n-title]").forEach(function (el) {
+            var key = el.getAttribute("data-i18n-title");
             var text = translate(key);
             if (text && text !== key) {
                 el.title = text;

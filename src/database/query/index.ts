@@ -1,8 +1,8 @@
-export { SqlStatementDetector } from './SqlStatementDetector';
-export { QueryExecutor } from './QueryExecutor';
-export { SafeQueryGuard } from './SafeQueryGuard';
-export { ExplainPlan } from './ExplainPlan';
-export type { OptimizationSuggestion } from './ExplainPlan';
+export { SqlStatementDetector } from "./SqlStatementDetector";
+export { QueryExecutor } from "./QueryExecutor";
+export { SafeQueryGuard } from "./SafeQueryGuard";
+export { ExplainPlan } from "./ExplainPlan";
+export type { OptimizationSuggestion } from "./ExplainPlan";
 export {
     DetectedStatement,
     StatementType,
@@ -17,4 +17,4 @@ export {
     SafetyCheckResult,
     QueryHistoryEntry,
     ExecutionContext,
-} from './QueryResult';
+} from "./QueryResult";

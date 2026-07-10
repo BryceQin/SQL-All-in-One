@@ -1,47 +1,47 @@
-import * as vscode from 'vscode';
-import { BaseWebviewPanel, type WebviewPanelConfig } from '../BaseWebviewPanel';
-import type { QueryResult, QueryError, QueryRow } from '../../database/adapters/IDatabaseAdapter';
-import type { QueryHistoryEntry } from '../../database/query/QueryResult';
-import { getLanguage, t } from '../../i18n';
-import { LanguageBridge } from './LanguageBridge';
-import type { IConnectionService, IDataTransferService } from '../../application/ports';
-import type { IQueryResultPanel } from '../../application/QueryResultController';
-import type { SchemaProvider } from '../../database/schema/SchemaProvider';
-import type { SqlHoverProvider } from '../../providers/SqlHoverProvider';
-import type { SqlCompletionProvider } from '../../completion/SqlCompletionProvider';
-import { getTokenColors } from '../../utils/themeColors';
-import { handleError, ErrorCategory } from '../../core/errorHandler';
+import * as vscode from "vscode";
+import { BaseWebviewPanel, type WebviewPanelConfig } from "../BaseWebviewPanel";
+import type { QueryResult, QueryError, QueryRow } from "../../database/adapters/IDatabaseAdapter";
+import type { QueryHistoryEntry } from "../../database/query/QueryResult";
+import { getLanguage, t } from "../../i18n";
+import { LanguageBridge } from "./LanguageBridge";
+import type { IConnectionService, IDataTransferService } from "../../application/ports";
+import type { IQueryResultPanel } from "../../application/QueryResultController";
+import type { SchemaProvider } from "../../database/schema/SchemaProvider";
+import type { SqlHoverProvider } from "../../providers/SqlHoverProvider";
+import type { SqlCompletionProvider } from "../../completion/SqlCompletionProvider";
+import { getTokenColors } from "../../utils/themeColors";
+import { handleError, ErrorCategory } from "../../core/errorHandler";
 // Types are imported from the shared type layer so that neither the
 // `database` nor `views` layer needs to import from the other for these
 // shared contract types. Re-exported here for backward compatibility.
-export type { FilterCondition, PendingChange, ForeignKeyOption } from '../../shared/editTypes';
-import type { FilterCondition, PendingChange, ForeignKeyOption } from '../../shared/editTypes';
+export type { FilterCondition, PendingChange, ForeignKeyOption } from "../../shared/editTypes";
+import type { FilterCondition, PendingChange, ForeignKeyOption } from "../../shared/editTypes";
 
 type WebviewMessage =
-    | { command: 'executeQuery'; sql: string }
-    | { command: 'executePanelSql'; sql: string }
-    | { command: 'cancelQuery' }
-    | { command: 'requestExport'; format: string; options?: Record<string, unknown> }
-    | { command: 'requestSort'; column: string; direction: string }
-    | { command: 'requestFilter'; conditions: FilterCondition[] }
-    | { command: 'requestPage'; page: number }
-    | { command: 'commitChanges'; changes: PendingChange[]; tableName: string; database: string }
-    | { command: 'requestForeignKeyOptions'; column: string; referencedTable: string; database: string }
-    | { command: 'beginTransaction' }
-    | { command: 'commitTransaction' }
-    | { command: 'rollbackTransaction' }
-    | { command: 'createSavepoint'; name: string }
-    | { command: 'rollbackToSavepoint'; name: string }
-    | { command: 'requestBlobPreview'; rowIndex: number; colIndex: number }
-    | { command: 'requestCompletion'; requestId: string; sql: string; position: { line: number; column: number }; dialect: string }
-    | { command: 'requestHover'; requestId: string; sql: string; position: { line: number; column: number }; dialect: string }
-    | { command: 'requestFormat'; requestId: string; sql: string; dialect: string }
-    | { command: 'requestDiagnostics'; requestId: string; sql: string; dialect: string }
-    | { command: 'changeDatabase'; database: string }
-    | { command: 'webviewReady' };
+    | { command: "executeQuery"; sql: string }
+    | { command: "executePanelSql"; sql: string }
+    | { command: "cancelQuery" }
+    | { command: "requestExport"; format: string; options?: Record<string, unknown> }
+    | { command: "requestSort"; column: string; direction: string }
+    | { command: "requestFilter"; conditions: FilterCondition[] }
+    | { command: "requestPage"; page: number }
+    | { command: "commitChanges"; changes: PendingChange[]; tableName: string; database: string }
+    | { command: "requestForeignKeyOptions"; column: string; referencedTable: string; database: string }
+    | { command: "beginTransaction" }
+    | { command: "commitTransaction" }
+    | { command: "rollbackTransaction" }
+    | { command: "createSavepoint"; name: string }
+    | { command: "rollbackToSavepoint"; name: string }
+    | { command: "requestBlobPreview"; rowIndex: number; colIndex: number }
+    | { command: "requestCompletion"; requestId: string; sql: string; position: { line: number; column: number }; dialect: string }
+    | { command: "requestHover"; requestId: string; sql: string; position: { line: number; column: number }; dialect: string }
+    | { command: "requestFormat"; requestId: string; sql: string; dialect: string }
+    | { command: "requestDiagnostics"; requestId: string; sql: string; dialect: string }
+    | { command: "changeDatabase"; database: string }
+    | { command: "webviewReady" };
 
 export class QueryResultPanel extends BaseWebviewPanel implements IQueryResultPanel {
-    public static readonly viewType = 'sqlAllInOneQueryResult';
+    public static readonly viewType = "sqlAllInOneQueryResult";
 
     /**
      * The query result panel runs long-lived operations (queries, transactions,
@@ -58,14 +58,14 @@ export class QueryResultPanel extends BaseWebviewPanel implements IQueryResultPa
 
     protected readonly panelConfig: WebviewPanelConfig = {
         viewType: QueryResultPanel.viewType,
-        htmlFileName: 'query-result.html',
-        cssFileName: 'query-result.css',
-        jsFileName: 'query-result.js',
+        htmlFileName: "query-result.html",
+        cssFileName: "query-result.css",
+        jsFileName: "query-result.js",
     };
 
     private _currentResult: QueryResult | undefined;
     private _languageBridge: LanguageBridge;
-    private _currentDialect = 'mysql';
+    private _currentDialect = "mysql";
     private _sendLanguageDataTimer: ReturnType<typeof setTimeout> | undefined;
     private _webviewReady = false;
     private _pendingSql: { sql: string; autoExecute: boolean } | undefined;
@@ -77,7 +77,11 @@ export class QueryResultPanel extends BaseWebviewPanel implements IQueryResultPa
     public onRequestSort?: (column: string, direction: string) => void;
     public onRequestFilter?: (conditions: FilterCondition[]) => void;
     public onRequestPage?: (page: number) => void;
-    public onCommitChanges?: (changes: PendingChange[], tableName: string, database: string) => Promise<{ success: boolean; errors?: string[] }>;
+    public onCommitChanges?: (
+        changes: PendingChange[],
+        tableName: string,
+        database: string,
+    ) => Promise<{ success: boolean; errors?: string[] }>;
     public onRequestForeignKeyOptions?: (column: string, referencedTable: string, database: string) => Promise<ForeignKeyOption[]>;
     public onBeginTransaction?: () => Promise<void>;
     public onCommitTransaction?: () => Promise<void>;
@@ -96,9 +100,7 @@ export class QueryResultPanel extends BaseWebviewPanel implements IQueryResultPa
         hoverProvider: SqlHoverProvider,
         completionProvider: SqlCompletionProvider,
     ): QueryResultPanel {
-        const column = vscode.window.activeTextEditor
-            ? vscode.window.activeTextEditor.viewColumn
-            : undefined;
+        const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
 
         const existing = BaseWebviewPanel.getExistingInstance<QueryResultPanel>(QueryResultPanel.viewType);
         if (existing) {
@@ -106,12 +108,9 @@ export class QueryResultPanel extends BaseWebviewPanel implements IQueryResultPa
             return existing;
         }
 
-        const panel = QueryResultPanel.createWebviewPanel(
-            QueryResultPanel.viewType,
-            t('resultPanel.queryResult'),
-            extensionUri,
-            { viewColumn: column ? column + 1 : vscode.ViewColumn.Two }
-        );
+        const panel = QueryResultPanel.createWebviewPanel(QueryResultPanel.viewType, t("resultPanel.queryResult"), extensionUri, {
+            viewColumn: column ? column + 1 : vscode.ViewColumn.Two,
+        });
 
         const instance = new QueryResultPanel(
             panel,
@@ -138,12 +137,7 @@ export class QueryResultPanel extends BaseWebviewPanel implements IQueryResultPa
         super(panel, extensionUri);
         this._connectionService = connectionService;
         this._dataTransferService = dataTransferService;
-        this._languageBridge = new LanguageBridge(
-            extensionUri,
-            schemaProvider,
-            hoverProvider,
-            completionProvider,
-        );
+        this._languageBridge = new LanguageBridge(extensionUri, schemaProvider, hoverProvider, completionProvider);
         this._initialize();
     }
 
@@ -152,220 +146,194 @@ export class QueryResultPanel extends BaseWebviewPanel implements IQueryResultPa
         this._disposables.push(
             vscode.window.onDidChangeActiveColorTheme(async (theme) => {
                 this.postMessage({
-                    type: 'themeChange',
+                    type: "themeChange",
                     data: { kind: theme.kind, tokenColors: await getTokenColors() },
                 });
-            })
+            }),
         );
 
         // Build Monaco URIs
         const monacoLoaderUri = this._panel.webview.asWebviewUri(
-            vscode.Uri.joinPath(this._extensionUri, 'media', 'monaco', 'vs', 'loader.js')
+            vscode.Uri.joinPath(this._extensionUri, "media", "monaco", "vs", "loader.js"),
         );
-        const monacoBaseUri = this._panel.webview.asWebviewUri(
-            vscode.Uri.joinPath(this._extensionUri, 'media', 'monaco', 'vs')
-        );
+        const monacoBaseUri = this._panel.webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, "media", "monaco", "vs"));
 
         // Build config injection (no nonce — base class regex adds it)
-        const config = vscode.workspace.getConfiguration('SQL-All-in-One');
+        const config = vscode.workspace.getConfiguration("SQL-All-in-One");
         const configData = {
-            pageSize: config.get<number>('query.pageSize', 100),
-            nullPlaceholder: config.get<string>('query.nullPlaceholder', '(NULL)'),
-            enablePreload: config.get<boolean>('results.enablePreload', true),
-            jsonPrettyPrint: config.get<boolean>('results.jsonPrettyPrint', true),
-            dateFormat: config.get<string>('results.dateFormat', 'local'),
-            longTextThreshold: config.get<number>('results.longTextThreshold', 200),
-            editMode: config.get<string>('dataEditor.editMode', 'readonly'),
-            autoCommit: config.get<boolean>('dataEditor.autoCommit', true),
-            defaultView: config.get<string>('dataEditor.defaultView', 'grid'),
-            optimisticLocking: config.get<boolean>('dataEditor.optimisticLocking', false),
-            maxBlobPreviewSize: config.get<number>('dataEditor.maxBlobPreviewSize', 5242880),
-            blobTextPreviewSize: config.get<number>('dataEditor.blobTextPreviewSize', 1048576),
-            longTransactionWarning: config.get<number>('dataEditor.longTransactionWarning', 300),
-            showTransactionStatus: config.get<boolean>('dataEditor.showTransactionStatus', true),
-            enableValidation: config.get<boolean>('dataEditor.enableValidation', true),
-            validateOnEdit: config.get<boolean>('dataEditor.validateOnEdit', true),
-            validateForeignKeys: config.get<boolean>('dataEditor.validateForeignKeys', false),
+            pageSize: config.get<number>("query.pageSize", 100),
+            nullPlaceholder: config.get<string>("query.nullPlaceholder", "(NULL)"),
+            enablePreload: config.get<boolean>("results.enablePreload", true),
+            jsonPrettyPrint: config.get<boolean>("results.jsonPrettyPrint", true),
+            dateFormat: config.get<string>("results.dateFormat", "local"),
+            longTextThreshold: config.get<number>("results.longTextThreshold", 200),
+            editMode: config.get<string>("dataEditor.editMode", "readonly"),
+            autoCommit: config.get<boolean>("dataEditor.autoCommit", true),
+            defaultView: config.get<string>("dataEditor.defaultView", "grid"),
+            optimisticLocking: config.get<boolean>("dataEditor.optimisticLocking", false),
+            maxBlobPreviewSize: config.get<number>("dataEditor.maxBlobPreviewSize", 5242880),
+            blobTextPreviewSize: config.get<number>("dataEditor.blobTextPreviewSize", 1048576),
+            longTransactionWarning: config.get<number>("dataEditor.longTransactionWarning", 300),
+            showTransactionStatus: config.get<boolean>("dataEditor.showTransactionStatus", true),
+            enableValidation: config.get<boolean>("dataEditor.enableValidation", true),
+            validateOnEdit: config.get<boolean>("dataEditor.validateOnEdit", true),
+            validateForeignKeys: config.get<boolean>("dataEditor.validateForeignKeys", false),
             dialect: this._currentDialect,
             monacoBasePath: monacoBaseUri.toString(),
             themeKind: vscode.window.activeColorTheme.kind,
             tokenColors: await getTokenColors(),
             lang: getLanguage(),
         };
-        const configJson = JSON.stringify(configData).replace(/<\/script>/gi, '<\\/script>');
-        const configScript = '<script>window.__CONFIG__ = ' + configJson + ';</script>';
+        const configJson = JSON.stringify(configData).replace(/<\/script>/gi, "<\\/script>");
+        const configScript = "<script>window.__CONFIG__ = " + configJson + ";</script>";
 
         // Initialize HTML with custom injections
         await this.initializeHtml([
-            { placeholder: '{{MONACO_LOADER_URI}}', value: monacoLoaderUri.toString() },
-            { placeholder: '{{CONFIG_INJECT}}', value: configScript },
+            { placeholder: "{{MONACO_LOADER_URI}}", value: monacoLoaderUri.toString() },
+            { placeholder: "{{CONFIG_INJECT}}", value: configScript },
         ]);
 
         // Send language data after HTML is loaded
         this._sendLanguageData();
 
         // Register message handler
-        this.onDidReceiveMessage(
-            async (message: unknown) => {
-                const msg = message as WebviewMessage;
-                switch (msg.command) {
-                    case 'executeQuery':
-                        if (msg.sql && this.onExecuteQuery) {
-                            this.onExecuteQuery(msg.sql);
-                        }
-                        break;
-                    case 'cancelQuery':
-                        if (this.onCancelQuery) {
-                            this.onCancelQuery();
-                        }
-                        break;
-                    case 'requestExport':
-                        await this._handleExport(msg.format, msg.options);
-                        break;
-                    case 'requestSort':
-                        if (msg.column && msg.direction && this.onRequestSort) {
-                            this.onRequestSort(msg.column, msg.direction);
-                        }
-                        break;
-                    case 'requestFilter':
-                        if (msg.conditions && this.onRequestFilter) {
-                            this.onRequestFilter(msg.conditions);
-                        }
-                        break;
-                    case 'requestPage':
-                        if (msg.page !== undefined && this.onRequestPage) {
-                            this.onRequestPage(msg.page);
-                        }
-                        break;
-                    case 'commitChanges':
-                        if (msg.changes && this.onCommitChanges) {
-                            const result = await this.onCommitChanges(
-                                msg.changes,
-                                msg.tableName || '',
-                                msg.database || ''
-                            );
-                            this.postMessage({
-                                type: 'commitResult',
-                                data: result,
-                            });
-                        }
-                        break;
-                    case 'requestForeignKeyOptions':
-                        if (msg.column && this.onRequestForeignKeyOptions) {
-                            const options = await this.onRequestForeignKeyOptions(
-                                msg.column,
-                                msg.referencedTable || '',
-                                msg.database || ''
-                            );
-                            this.postMessage({
-                                type: 'foreignKeyOptions',
-                                data: { column: msg.column, options },
-                            });
-                        }
-                        break;
-                    case 'beginTransaction':
-                        if (this.onBeginTransaction) {
-                            await this.onBeginTransaction();
-                            this.postMessage({ type: 'transactionStatus', data: { active: true } });
-                        }
-                        break;
-                    case 'commitTransaction':
-                        if (this.onCommitTransaction) {
-                            await this.onCommitTransaction();
-                            this.postMessage({ type: 'transactionStatus', data: { active: false } });
-                        }
-                        break;
-                    case 'rollbackTransaction':
-                        if (this.onRollbackTransaction) {
-                            await this.onRollbackTransaction();
-                            this.postMessage({ type: 'transactionStatus', data: { active: false } });
-                        }
-                        break;
-                    case 'createSavepoint':
-                        if (this.onCreateSavepoint) {
-                            await this.onCreateSavepoint(msg.name || 'sp1');
-                        }
-                        break;
-                    case 'rollbackToSavepoint':
-                        if (this.onRollbackToSavepoint) {
-                            await this.onRollbackToSavepoint(msg.name || 'sp1');
-                        }
-                        break;
-                    case 'requestBlobPreview':
-                        this._handleBlobPreview(msg.rowIndex, msg.colIndex);
-                        break;
-                    case 'executePanelSql':
-                        if (msg.sql && this.onExecutePanelSql) {
-                            await this.onExecutePanelSql(msg.sql);
-                        }
-                        break;
-                    case 'changeDatabase':
-                        if (this.onChangeDatabase) {
-                            await this.onChangeDatabase(msg.database);
-                        }
-                        break;
-                    case 'requestCompletion': {
-                        const items = await this._languageBridge.handleCompletionRequest(
-                            msg.sql,
-                            msg.position,
-                            msg.dialect,
-                        );
+        this.onDidReceiveMessage(async (message: unknown) => {
+            const msg = message as WebviewMessage;
+            switch (msg.command) {
+                case "executeQuery":
+                    if (msg.sql && this.onExecuteQuery) {
+                        this.onExecuteQuery(msg.sql);
+                    }
+                    break;
+                case "cancelQuery":
+                    if (this.onCancelQuery) {
+                        this.onCancelQuery();
+                    }
+                    break;
+                case "requestExport":
+                    await this._handleExport(msg.format, msg.options);
+                    break;
+                case "requestSort":
+                    if (msg.column && msg.direction && this.onRequestSort) {
+                        this.onRequestSort(msg.column, msg.direction);
+                    }
+                    break;
+                case "requestFilter":
+                    if (msg.conditions && this.onRequestFilter) {
+                        this.onRequestFilter(msg.conditions);
+                    }
+                    break;
+                case "requestPage":
+                    if (msg.page !== undefined && this.onRequestPage) {
+                        this.onRequestPage(msg.page);
+                    }
+                    break;
+                case "commitChanges":
+                    if (msg.changes && this.onCommitChanges) {
+                        const result = await this.onCommitChanges(msg.changes, msg.tableName || "", msg.database || "");
                         this.postMessage({
-                            type: 'completionResult',
-                            data: { requestId: msg.requestId, items },
+                            type: "commitResult",
+                            data: result,
                         });
-                        break;
                     }
-                    case 'requestHover': {
-                        const contents = await this._languageBridge.handleHoverRequest(
-                            msg.sql,
-                            msg.position,
-                            msg.dialect,
-                        );
+                    break;
+                case "requestForeignKeyOptions":
+                    if (msg.column && this.onRequestForeignKeyOptions) {
+                        const options = await this.onRequestForeignKeyOptions(msg.column, msg.referencedTable || "", msg.database || "");
                         this.postMessage({
-                            type: 'hoverResult',
-                            data: { requestId: msg.requestId, contents },
+                            type: "foreignKeyOptions",
+                            data: { column: msg.column, options },
                         });
-                        break;
                     }
-                    case 'requestFormat': {
-                        const formattedSql = await this._languageBridge.handleFormatRequest(
-                            msg.sql,
-                            msg.dialect,
-                        );
+                    break;
+                case "beginTransaction":
+                    if (this.onBeginTransaction) {
+                        await this.onBeginTransaction();
+                        this.postMessage({ type: "transactionStatus", data: { active: true } });
+                    }
+                    break;
+                case "commitTransaction":
+                    if (this.onCommitTransaction) {
+                        await this.onCommitTransaction();
+                        this.postMessage({ type: "transactionStatus", data: { active: false } });
+                    }
+                    break;
+                case "rollbackTransaction":
+                    if (this.onRollbackTransaction) {
+                        await this.onRollbackTransaction();
+                        this.postMessage({ type: "transactionStatus", data: { active: false } });
+                    }
+                    break;
+                case "createSavepoint":
+                    if (this.onCreateSavepoint) {
+                        await this.onCreateSavepoint(msg.name || "sp1");
+                    }
+                    break;
+                case "rollbackToSavepoint":
+                    if (this.onRollbackToSavepoint) {
+                        await this.onRollbackToSavepoint(msg.name || "sp1");
+                    }
+                    break;
+                case "requestBlobPreview":
+                    this._handleBlobPreview(msg.rowIndex, msg.colIndex);
+                    break;
+                case "executePanelSql":
+                    if (msg.sql && this.onExecutePanelSql) {
+                        await this.onExecutePanelSql(msg.sql);
+                    }
+                    break;
+                case "changeDatabase":
+                    if (this.onChangeDatabase) {
+                        await this.onChangeDatabase(msg.database);
+                    }
+                    break;
+                case "requestCompletion": {
+                    const items = await this._languageBridge.handleCompletionRequest(msg.sql, msg.position, msg.dialect);
+                    this.postMessage({
+                        type: "completionResult",
+                        data: { requestId: msg.requestId, items },
+                    });
+                    break;
+                }
+                case "requestHover": {
+                    const contents = await this._languageBridge.handleHoverRequest(msg.sql, msg.position, msg.dialect);
+                    this.postMessage({
+                        type: "hoverResult",
+                        data: { requestId: msg.requestId, contents },
+                    });
+                    break;
+                }
+                case "requestFormat": {
+                    const formattedSql = await this._languageBridge.handleFormatRequest(msg.sql, msg.dialect);
+                    this.postMessage({
+                        type: "formatResult",
+                        data: { requestId: msg.requestId, formattedSql },
+                    });
+                    break;
+                }
+                case "requestDiagnostics": {
+                    const diagnostics = await this._languageBridge.handleDiagnosticsRequest(msg.sql, msg.dialect);
+                    this.postMessage({
+                        type: "diagnosticsResult",
+                        data: { requestId: msg.requestId, diagnostics },
+                    });
+                    break;
+                }
+                case "webviewReady": {
+                    this._webviewReady = true;
+                    this._sendLanguageData();
+                    this._sendDatabaseList();
+                    if (this._pendingSql) {
                         this.postMessage({
-                            type: 'formatResult',
-                            data: { requestId: msg.requestId, formattedSql },
+                            type: "setEditorSql",
+                            data: this._pendingSql,
                         });
-                        break;
+                        this._pendingSql = undefined;
                     }
-                    case 'requestDiagnostics': {
-                        const diagnostics = await this._languageBridge.handleDiagnosticsRequest(
-                            msg.sql,
-                            msg.dialect,
-                        );
-                        this.postMessage({
-                            type: 'diagnosticsResult',
-                            data: { requestId: msg.requestId, diagnostics },
-                        });
-                        break;
-                    }
-                    case 'webviewReady': {
-                        this._webviewReady = true;
-                        this._sendLanguageData();
-                        this._sendDatabaseList();
-                        if (this._pendingSql) {
-                            this.postMessage({
-                                type: 'setEditorSql',
-                                data: this._pendingSql,
-                            });
-                            this._pendingSql = undefined;
-                        }
-                        break;
-                    }
+                    break;
                 }
             }
-        );
+        });
     }
 
     public showResult(result: QueryResult, connectionName?: string, connectionColor?: string, tableName?: string): void {
@@ -374,13 +342,15 @@ export class QueryResultPanel extends BaseWebviewPanel implements IQueryResultPa
         try {
             const activeConn = this._connectionService.getActiveConnection();
             if (activeConn) {
-                const newDialect = activeConn.dialect || 'mysql';
+                const newDialect = activeConn.dialect || "mysql";
                 if (newDialect !== this._currentDialect) {
                     this._currentDialect = newDialect;
                     this._sendLanguageData();
                 }
             }
-        } catch (e) { /* ignore: dialect detection is best-effort */ handleError(e, 'QueryResultPanel.dialectDetection', ErrorCategory.SUB_ITEM) }
+        } catch (e) {
+            /* ignore: dialect detection is best-effort */ handleError(e, "QueryResultPanel.dialectDetection", ErrorCategory.SUB_ITEM);
+        }
 
         // Threshold above which we drop the main-thread copy of rows after
         // streaming them to the webview. 100k rows is large enough to keep the
@@ -415,16 +385,16 @@ export class QueryResultPanel extends BaseWebviewPanel implements IQueryResultPa
             executionTime: result.executionTime,
             error: result.error,
             database: result.database,
-            connectionName: connectionName || '',
-            connectionColor: connectionColor || '',
-            tableName: tableName || '',
+            connectionName: connectionName || "",
+            connectionColor: connectionColor || "",
+            tableName: tableName || "",
             // Signal to the webview that client-side sort/filter is disabled
             // and the user should push these operations into SQL.
             largeResultSet: isLargeResultSet,
         };
 
         this.postMessage({
-            type: 'queryResultStart',
+            type: "queryResultStart",
             data: metadata,
         });
 
@@ -458,7 +428,7 @@ export class QueryResultPanel extends BaseWebviewPanel implements IQueryResultPa
             }
 
             this.postMessage({
-                type: 'queryResultBatch',
+                type: "queryResultBatch",
                 data: {
                     batchIndex,
                     totalBatches,
@@ -479,21 +449,21 @@ export class QueryResultPanel extends BaseWebviewPanel implements IQueryResultPa
         }
 
         this.postMessage({
-            type: 'queryResultEnd',
+            type: "queryResultEnd",
             data: { queryId: result.queryId },
         });
     }
 
     public showLoading(sql: string): void {
         this.postMessage({
-            type: 'queryStart',
+            type: "queryStart",
             data: { sql },
         });
     }
 
     public showError(error: QueryError): void {
         this.postMessage({
-            type: 'queryError',
+            type: "queryError",
             data: error,
         });
     }
@@ -502,7 +472,7 @@ export class QueryResultPanel extends BaseWebviewPanel implements IQueryResultPa
         const data = { sql, autoExecute: true };
         if (this._webviewReady) {
             this.postMessage({
-                type: 'setEditorSql',
+                type: "setEditorSql",
                 data,
             });
         } else {
@@ -514,7 +484,7 @@ export class QueryResultPanel extends BaseWebviewPanel implements IQueryResultPa
         const data = { sql, autoExecute: false };
         if (this._webviewReady) {
             this.postMessage({
-                type: 'setEditorSql',
+                type: "setEditorSql",
                 data,
             });
         } else {
@@ -525,13 +495,13 @@ export class QueryResultPanel extends BaseWebviewPanel implements IQueryResultPa
     public clear(): void {
         this._currentResult = undefined;
         this.postMessage({
-            type: 'clear',
+            type: "clear",
         });
     }
 
     public sendHistoryData(entries: QueryHistoryEntry[]): void {
         this.postMessage({
-            type: 'historyData',
+            type: "historyData",
             data: entries,
         });
     }
@@ -551,7 +521,7 @@ export class QueryResultPanel extends BaseWebviewPanel implements IQueryResultPa
 
     public sendDatabaseList(databases: string[], currentDatabase: string): void {
         this.postMessage({
-            type: 'databaseList',
+            type: "databaseList",
             data: { databases, currentDatabase },
         });
     }
@@ -572,7 +542,7 @@ export class QueryResultPanel extends BaseWebviewPanel implements IQueryResultPa
         this._sendLanguageDataTimer = setTimeout(() => {
             const data = this._languageBridge.exportLanguageData(this._currentDialect);
             this.postMessage({
-                type: 'languageData',
+                type: "languageData",
                 data,
             });
             this._sendLanguageDataTimer = undefined;
@@ -585,40 +555,51 @@ export class QueryResultPanel extends BaseWebviewPanel implements IQueryResultPa
             if (activeConn) {
                 const adapter = this._connectionService.getAdapter(activeConn.id);
                 if (adapter) {
-                    adapter.metadataAdapter.listDatabases().then(dbs => {
-                        const databases = dbs.map(d => d.name);
-                        this.sendDatabaseList(databases, activeConn.database || '');
-                    }).catch((_e) => { /* ignore: database list prefetch is best-effort */ handleError(_e, 'QueryResultPanel.databaseListPrefetch', ErrorCategory.SUB_ITEM) });
+                    adapter.metadataAdapter
+                        .listDatabases()
+                        .then((dbs) => {
+                            const databases = dbs.map((d) => d.name);
+                            this.sendDatabaseList(databases, activeConn.database || "");
+                        })
+                        .catch((_e) => {
+                            /* ignore: database list prefetch is best-effort */ handleError(
+                                _e,
+                                "QueryResultPanel.databaseListPrefetch",
+                                ErrorCategory.SUB_ITEM,
+                            );
+                        });
                 }
             }
-        } catch (e) { /* ignore: database list is best-effort */ handleError(e, 'QueryResultPanel.sendDatabaseList', ErrorCategory.SUB_ITEM) }
+        } catch (e) {
+            /* ignore: database list is best-effort */ handleError(e, "QueryResultPanel.sendDatabaseList", ErrorCategory.SUB_ITEM);
+        }
     }
 
     private async _handleExport(format: string, options?: Record<string, unknown>): Promise<void> {
         if (!this._currentResult) {
-            vscode.window.showWarningMessage(t('resultPanel.noResultToExport'));
+            vscode.window.showWarningMessage(t("resultPanel.noResultToExport"));
             return;
         }
 
         try {
             const columns = this._currentResult.columns;
             const rows = this._currentResult.rows;
-            const tableName = (options?.tableName as string) || 'exported_table';
+            const tableName = (options?.tableName as string) || "exported_table";
 
             switch (format) {
-                case 'csv':
+                case "csv":
                     await this._dataTransferService.exportToCsv(rows, columns);
                     break;
-                case 'json':
+                case "json":
                     await this._dataTransferService.exportToJson(rows, columns);
                     break;
-                case 'insert': {
+                case "insert": {
                     const activeConnCfg = this._connectionService.getActiveConnection();
                     const insertAdapter = activeConnCfg ? this._connectionService.getAdapter(activeConnCfg.id) : undefined;
                     await this._dataTransferService.exportToInsert(rows, columns, tableName, undefined, insertAdapter);
                     break;
                 }
-                case 'ddl':
+                case "ddl":
                     await this._handleDdlExport(options);
                     break;
                 default:
@@ -630,24 +611,20 @@ export class QueryResultPanel extends BaseWebviewPanel implements IQueryResultPa
         }
     }
 
-    private async _handleDdlExport(
-        options?: Record<string, unknown>
-    ): Promise<void> {
+    private async _handleDdlExport(options?: Record<string, unknown>): Promise<void> {
         const activeConfig = this._connectionService.getActiveConnection();
-        const adapter = activeConfig
-            ? this._connectionService.getAdapter(activeConfig.id)
-            : undefined;
+        const adapter = activeConfig ? this._connectionService.getAdapter(activeConfig.id) : undefined;
 
         if (!adapter) {
-            vscode.window.showWarningMessage(t('resultPanel.noActiveConnectionForDDL'));
+            vscode.window.showWarningMessage(t("resultPanel.noActiveConnectionForDDL"));
             return;
         }
 
-        const database = options?.database as string || activeConfig?.database || '';
-        const table = options?.tableName as string || '';
+        const database = (options?.database as string) || activeConfig?.database || "";
+        const table = (options?.tableName as string) || "";
 
         if (!table) {
-            vscode.window.showWarningMessage(t('resultPanel.noTableForDDL'));
+            vscode.window.showWarningMessage(t("resultPanel.noTableForDDL"));
             return;
         }
 
@@ -663,16 +640,16 @@ export class QueryResultPanel extends BaseWebviewPanel implements IQueryResultPa
         const value = row[col.name];
         if (value === null || value === undefined) {
             this.postMessage({
-                type: 'blobPreview',
-                data: { rowIndex, colIndex, content: null, mode: 'null' },
+                type: "blobPreview",
+                data: { rowIndex, colIndex, content: null, mode: "null" },
             });
             return;
         }
 
-        if (typeof value === 'number' || typeof value === 'boolean') {
+        if (typeof value === "number" || typeof value === "boolean") {
             this.postMessage({
-                type: 'blobPreview',
-                data: { rowIndex, colIndex, content: String(value), mode: 'text' },
+                type: "blobPreview",
+                data: { rowIndex, colIndex, content: String(value), mode: "text" },
             });
             return;
         }
@@ -680,55 +657,55 @@ export class QueryResultPanel extends BaseWebviewPanel implements IQueryResultPa
         let buffer: Buffer;
         if (Buffer.isBuffer(value)) {
             buffer = value;
-        } else if (typeof value === 'string') {
-            buffer = Buffer.from(value, 'base64');
+        } else if (typeof value === "string") {
+            buffer = Buffer.from(value, "base64");
         } else {
             buffer = Buffer.from(String(value));
         }
 
-        const config = vscode.workspace.getConfiguration('SQL-All-in-One');
-        const maxSize = config.get<number>('dataEditor.maxBlobPreviewSize', 5242880);
+        const config = vscode.workspace.getConfiguration("SQL-All-in-One");
+        const maxSize = config.get<number>("dataEditor.maxBlobPreviewSize", 5242880);
 
         if (buffer.length > maxSize) {
             this.postMessage({
-                type: 'blobPreview',
-                data: { rowIndex, colIndex, size: buffer.length, mode: 'too_large' },
+                type: "blobPreview",
+                data: { rowIndex, colIndex, size: buffer.length, mode: "too_large" },
             });
             return;
         }
 
         const isImage = this._detectImageBuffer(buffer);
         if (isImage) {
-            const base64 = buffer.toString('base64');
+            const base64 = buffer.toString("base64");
             const mimeType = this._getImageMimeType(buffer);
             this.postMessage({
-                type: 'blobPreview',
-                data: { rowIndex, colIndex, content: base64, mimeType, mode: 'image' },
+                type: "blobPreview",
+                data: { rowIndex, colIndex, content: base64, mimeType, mode: "image" },
             });
             return;
         }
 
-        const textMaxSize = config.get<number>('dataEditor.blobTextPreviewSize', 1048576);
+        const textMaxSize = config.get<number>("dataEditor.blobTextPreviewSize", 1048576);
         if (buffer.length <= textMaxSize) {
             try {
-                const text = buffer.toString('utf-8');
+                const text = buffer.toString("utf-8");
                 this.postMessage({
-                    type: 'blobPreview',
-                    data: { rowIndex, colIndex, content: text, mode: 'text' },
+                    type: "blobPreview",
+                    data: { rowIndex, colIndex, content: text, mode: "text" },
                 });
             } catch (e) {
                 // Text preview failed; fall back to hex representation
-                handleError(e, 'QueryResultPanel.blobTextPreview', ErrorCategory.SUB_ITEM)
+                handleError(e, "QueryResultPanel.blobTextPreview", ErrorCategory.SUB_ITEM);
                 this.postMessage({
-                    type: 'blobPreview',
-                    data: { rowIndex, colIndex, content: buffer.toString('hex'), mode: 'hex' },
+                    type: "blobPreview",
+                    data: { rowIndex, colIndex, content: buffer.toString("hex"), mode: "hex" },
                 });
             }
         } else {
-            const hexPreview = buffer.subarray(0, 1024).toString('hex');
+            const hexPreview = buffer.subarray(0, 1024).toString("hex");
             this.postMessage({
-                type: 'blobPreview',
-                data: { rowIndex, colIndex, content: hexPreview, mode: 'hex' },
+                type: "blobPreview",
+                data: { rowIndex, colIndex, content: hexPreview, mode: "hex" },
             });
         }
     }
@@ -736,17 +713,17 @@ export class QueryResultPanel extends BaseWebviewPanel implements IQueryResultPa
     private _detectImageBuffer(buf: Buffer): boolean {
         if (buf.length < 4) return false;
         const header = buf.subarray(0, 4);
-        if (header[0] === 0x89 && header[1] === 0x50 && header[2] === 0x4E && header[3] === 0x47) return true;
-        if (header[0] === 0xFF && header[1] === 0xD8) return true;
+        if (header[0] === 0x89 && header[1] === 0x50 && header[2] === 0x4e && header[3] === 0x47) return true;
+        if (header[0] === 0xff && header[1] === 0xd8) return true;
         if (header[0] === 0x47 && header[1] === 0x49 && header[2] === 0x46) return true;
         return false;
     }
 
     private _getImageMimeType(buf: Buffer): string {
-        if (buf.length < 4) return 'application/octet-stream';
-        if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4E && buf[3] === 0x47) return 'image/png';
-        if (buf[0] === 0xFF && buf[1] === 0xD8) return 'image/jpeg';
-        if (buf[0] === 0x47 && buf[1] === 0x49 && buf[2] === 0x46) return 'image/gif';
-        return 'application/octet-stream';
+        if (buf.length < 4) return "application/octet-stream";
+        if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) return "image/png";
+        if (buf[0] === 0xff && buf[1] === 0xd8) return "image/jpeg";
+        if (buf[0] === 0x47 && buf[1] === 0x49 && buf[2] === 0x46) return "image/gif";
+        return "application/octet-stream";
     }
 }

@@ -1,18 +1,14 @@
-import * as vscode from 'vscode';
-import { EventEmitter } from 'vscode';
-import {
-    IQueryAdapter,
-    QueryResult,
-    QueryStreamOptions,
-} from '../adapters/IDatabaseAdapter';
-import { DatabaseAdapter } from '../adapters/AdapterFactory';
-import { getConnectionManager } from '../connection/ConnectionManager';
-import { QueryOptions, QueryStartEvent, QueryEndEvent, RunningQuery } from './QueryResult';
-import { getConfigManager } from '../../core/configManager';
-import { handleError, ErrorCategory } from '../../core/errorHandler';
-import { t } from '../../i18n/index';
-import { generateShortId } from '../../utils/idGenerator';
-import { collectStreamToResult } from './streamCollector';
+import * as vscode from "vscode";
+import { EventEmitter } from "vscode";
+import { IQueryAdapter, QueryResult, QueryStreamOptions } from "../adapters/IDatabaseAdapter";
+import { DatabaseAdapter } from "../adapters/AdapterFactory";
+import { getConnectionManager } from "../connection/ConnectionManager";
+import { QueryOptions, QueryStartEvent, QueryEndEvent, RunningQuery } from "./QueryResult";
+import { getConfigManager } from "../../core/configManager";
+import { handleError, ErrorCategory } from "../../core/errorHandler";
+import { t } from "../../i18n/index";
+import { generateShortId } from "../../utils/idGenerator";
+import { collectStreamToResult } from "./streamCollector";
 
 /**
  * Adapter surface required by {@link QueryExecutor.execute} /
@@ -25,7 +21,6 @@ import { collectStreamToResult } from './streamCollector';
  * dialect-capabilities probe via `adapter.schemaAdapter.getDialectCapabilities()`.
  */
 type QueryExecutorAdapter = DatabaseAdapter;
-
 
 export class QueryExecutor {
     private runningQueries = new Map<string, RunningQuery>();
@@ -49,17 +44,17 @@ export class QueryExecutor {
 
     private refreshConfigCache(): void {
         const cfg = getConfigManager();
-        this.cachedMaxRows = cfg.get<number>('query.maxRows', 1000);
-        this.cachedTimeout = cfg.get<number>('query.timeout', 30000);
-        this.cachedCancelRetries = cfg.get<number>('execution.cancelRetries', 3);
-        this.cachedCancelRetryDelay = cfg.get<number>('execution.cancelRetryDelay', 500);
+        this.cachedMaxRows = cfg.get<number>("query.maxRows", 1000);
+        this.cachedTimeout = cfg.get<number>("query.timeout", 30000);
+        this.cachedCancelRetries = cfg.get<number>("execution.cancelRetries", 3);
+        this.cachedCancelRetryDelay = cfg.get<number>("execution.cancelRetryDelay", 500);
     }
 
     async execute(
         adapter: QueryExecutorAdapter,
         sql: string,
         options?: Partial<QueryOptions>,
-        connectionId?: string
+        connectionId?: string,
     ): Promise<QueryResult> {
         const queryId = this.generateQueryId();
         const cts = new vscode.CancellationTokenSource();
@@ -75,7 +70,7 @@ export class QueryExecutor {
         const runningQuery: RunningQuery = {
             queryId,
             sql,
-            connectionId: connectionId || '',
+            connectionId: connectionId || "",
             database: mergedOptions.database,
             startTime,
             cancellationTokenSource: cts,
@@ -86,18 +81,12 @@ export class QueryExecutor {
         this._onDidStartQuery.fire({
             queryId,
             sql,
-            connectionId: connectionId || '',
+            connectionId: connectionId || "",
             database: mergedOptions.database,
         });
 
         try {
-            const result = await this.raceExecution(
-                adapter,
-                sql,
-                mergedOptions,
-                cts.token,
-                queryId
-            );
+            const result = await this.raceExecution(adapter, sql, mergedOptions, cts.token, queryId);
 
             const executionTime = Date.now() - startTime;
 
@@ -115,13 +104,13 @@ export class QueryExecutor {
 
             const result: QueryResult = {
                 queryId,
-                status: 'error',
+                status: "error",
                 columns: [],
                 rows: [],
                 rowCount: 0,
                 executionTime,
                 error: {
-                    code: 'EXEC_ERROR',
+                    code: "EXEC_ERROR",
                     message: errorMessage,
                     sql,
                 },
@@ -150,11 +139,9 @@ export class QueryExecutor {
         if (adapter) {
             const capabilities = adapter.schemaAdapter.getDialectCapabilities();
             if (capabilities.supportsCancel) {
-                const cancelled = await this.cancelWithRetry(adapter, queryId, 'cancelQueryAttempt');
+                const cancelled = await this.cancelWithRetry(adapter, queryId, "cancelQueryAttempt");
                 if (!cancelled) {
-                    vscode.window.showWarningMessage(
-                        t('database.queryMayStillBeRunning')
-                    );
+                    vscode.window.showWarningMessage(t("database.queryMayStillBeRunning"));
                 }
             }
         }
@@ -206,7 +193,7 @@ export class QueryExecutor {
         sql: string,
         options: QueryOptions,
         token: vscode.CancellationToken,
-        queryId: string
+        queryId: string,
     ): Promise<QueryResult> {
         return new Promise<QueryResult>((resolve, reject) => {
             let timer: ReturnType<typeof setTimeout> | undefined;
@@ -254,16 +241,11 @@ export class QueryExecutor {
                             return;
                         }
                         // 复用 cancelWithRetry，与 cancel 方法保持一致的重试策略
-                        await this.cancelWithRetry(
-                            adapter,
-                            queryId,
-                            'timeoutCancel',
-                            () => settled,
-                        );
+                        await this.cancelWithRetry(adapter, queryId, "timeoutCancel", () => settled);
                     }
                 } catch (e) {
                     // best effort: log but do not propagate cancel failure
-                    handleError(e, 'QueryExecutor.timeoutCancel', ErrorCategory.SUB_ITEM)
+                    handleError(e, "QueryExecutor.timeoutCancel", ErrorCategory.SUB_ITEM);
                 }
             };
 
@@ -272,14 +254,14 @@ export class QueryExecutor {
                     // 异步发起取消，不阻塞 settleReject，避免用户长时间等待
                     void attemptCancel();
                 }
-                settleReject(new Error(t('database.queryTimedOut', String(options.timeout))));
+                settleReject(new Error(t("database.queryTimedOut", String(options.timeout))));
             }, options.timeout);
 
             cancellationDisposable = token.onCancellationRequested(() => {
                 if (!settled) {
                     void attemptCancel();
                 }
-                settleReject(new Error(t('database.queryWasCancelled')));
+                settleReject(new Error(t("database.queryWasCancelled")));
             });
 
             // Prefer the streaming path when the adapter implements
@@ -331,7 +313,7 @@ export class QueryExecutor {
                         // safe; the streaming path is only chosen for
                         // read-only row-returning statements (see
                         // shouldUseStream).
-                        if (result.status === 'error' && !settled) {
+                        if (result.status === "error" && !settled) {
                             try {
                                 const fallback = await adapter.queryAdapter.execute(sql, options.params);
                                 if (!settled) {
@@ -365,7 +347,8 @@ export class QueryExecutor {
                         }
                     });
             } else {
-                adapter.queryAdapter.execute(sql, options.params)
+                adapter.queryAdapter
+                    .execute(sql, options.params)
                     .then((result) => settleResolve(result))
                     .catch((error: unknown) => settleReject(error));
             }
@@ -373,7 +356,7 @@ export class QueryExecutor {
     }
 
     private generateQueryId(): string {
-        return generateShortId('q');
+        return generateShortId("q");
     }
 
     private getConfigMaxRows(): number {
@@ -422,8 +405,8 @@ export class QueryExecutor {
  * streaming path cannot handle transparently falls back to the one-shot
  * {@link IDatabaseAdapter.execute} path.
  */
-function shouldUseStream(adapter: Pick<IQueryAdapter, 'executeStream'>, sql: string): boolean {
-    if (typeof adapter.executeStream !== 'function') {
+function shouldUseStream(adapter: Pick<IQueryAdapter, "executeStream">, sql: string): boolean {
+    if (typeof adapter.executeStream !== "function") {
         return false;
     }
     return isReadOnlyRowReturningStatement(sql);
@@ -437,16 +420,11 @@ function shouldUseStream(adapter: Pick<IQueryAdapter, 'executeStream'>, sql: str
 function isReadOnlyRowReturningStatement(sql: string): boolean {
     const trimmed = sql.trim();
     // Strip leading SQL comments / block comments conservatively.
-    const withoutComments = trimmed.replace(/\/\*[\s\S]*?\*\//g, '').trim();
+    const withoutComments = trimmed.replace(/\/\*[\s\S]*?\*\//g, "").trim();
     const keywordMatch = withoutComments.match(/^([A-Za-z_]+)/);
     if (!keywordMatch) {
         return false;
     }
     const first = keywordMatch[1].toUpperCase();
-    return first === 'SELECT'
-        || first === 'WITH'
-        || first === 'TABLE'
-        || first === 'VALUES'
-        || first === 'SHOW'
-        || first === 'EXPLAIN';
+    return first === "SELECT" || first === "WITH" || first === "TABLE" || first === "VALUES" || first === "SHOW" || first === "EXPLAIN";
 }

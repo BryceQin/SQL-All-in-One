@@ -1,13 +1,39 @@
-import type { Pool, Connection, PoolAttributes } from 'oracledb';
-import type { DialectMetadata, IConnectionLifecycle, IMetadataAdapter, IQueryAdapter, ISchemaAdapter, ConnectionConfig, TestConnectionResult, QueryResult, QueryRow, QueryParam, DatabaseInfo, TableInfo, ViewInfo, FunctionInfo, ProcedureInfo, TriggerInfo, ColumnInfo, IndexInfo, ForeignKeyInfo, TableStructure, RoutineParameterInfo, DialectCapabilities, DataTypeCategory, ExplainResult, ExplainNode } from './IDatabaseAdapter';
-import { t } from '../../i18n/index';
-import { replaceQuestionMarkPlaceholders } from './placeholderRewriter';
-import { BaseDatabaseAdapter } from './BaseDatabaseAdapter';
-import { BaseSharedContext } from './BaseSharedContext';
-import { BaseConnectionAdapter } from './BaseConnectionAdapter';
-import { BaseQueryAdapter } from './BaseQueryAdapter';
-import { BaseMetadataAdapter } from './BaseMetadataAdapter';
-import { BaseSchemaAdapter } from './BaseSchemaAdapter';
+import type { Pool, Connection, PoolAttributes } from "oracledb";
+import type {
+    DialectMetadata,
+    IConnectionLifecycle,
+    IMetadataAdapter,
+    IQueryAdapter,
+    ISchemaAdapter,
+    ConnectionConfig,
+    TestConnectionResult,
+    QueryResult,
+    QueryRow,
+    QueryParam,
+    DatabaseInfo,
+    TableInfo,
+    ViewInfo,
+    FunctionInfo,
+    ProcedureInfo,
+    TriggerInfo,
+    ColumnInfo,
+    IndexInfo,
+    ForeignKeyInfo,
+    TableStructure,
+    RoutineParameterInfo,
+    DialectCapabilities,
+    DataTypeCategory,
+    ExplainResult,
+    ExplainNode,
+} from "./IDatabaseAdapter";
+import { t } from "../../i18n/index";
+import { replaceQuestionMarkPlaceholders } from "./placeholderRewriter";
+import { BaseDatabaseAdapter } from "./BaseDatabaseAdapter";
+import { BaseSharedContext } from "./BaseSharedContext";
+import { BaseConnectionAdapter } from "./BaseConnectionAdapter";
+import { BaseQueryAdapter } from "./BaseQueryAdapter";
+import { BaseMetadataAdapter } from "./BaseMetadataAdapter";
+import { BaseSchemaAdapter } from "./BaseSchemaAdapter";
 
 /**
  * Structural shape shared by {@link OracleSharedContext} and
@@ -76,13 +102,13 @@ export class OracleConnectionAdapter extends BaseConnectionAdapter<OracleSharedC
             // level flag so repeated connect() calls stay idempotent.
             await this.maybeInitThickMode(config);
 
-            const oracledb = await import('oracledb');
+            const oracledb = await import("oracledb");
             this.shared.pool = await oracledb.createPool(poolAttrs);
 
             // Verify connectivity with a trivial query.
             const conn = await this.shared.pool.getConnection();
             try {
-                await conn.execute('SELECT 1 AS ONE FROM dual');
+                await conn.execute("SELECT 1 AS ONE FROM dual");
             } finally {
                 await conn.close();
             }
@@ -101,12 +127,12 @@ export class OracleConnectionAdapter extends BaseConnectionAdapter<OracleSharedC
             try {
                 await this.shared.transactionConnection.rollback();
             } catch (e) {
-                console.debug('[SQL All in One] Oracle rollback error on disconnect:', e);
+                console.debug("[SQL All in One] Oracle rollback error on disconnect:", e);
             }
             try {
                 await this.shared.transactionConnection.close();
             } catch (e) {
-                console.debug('[SQL All in One] Oracle close transaction connection error:', e);
+                console.debug("[SQL All in One] Oracle close transaction connection error:", e);
             }
             this.shared.transactionConnection = null;
         }
@@ -115,7 +141,7 @@ export class OracleConnectionAdapter extends BaseConnectionAdapter<OracleSharedC
             try {
                 await this.shared.pool.close();
             } catch (e) {
-                console.debug('[SQL All in One] Oracle pool close error:', e);
+                console.debug("[SQL All in One] Oracle pool close error:", e);
             }
             this.shared.pool = null;
         }
@@ -128,16 +154,14 @@ export class OracleConnectionAdapter extends BaseConnectionAdapter<OracleSharedC
         try {
             await this.maybeInitThickMode(config);
 
-            const oracledb = await import('oracledb');
+            const oracledb = await import("oracledb");
             tempPool = await oracledb.createPool(this.createPoolAttributes(config, 1));
             const conn = await tempPool.getConnection();
             try {
-                const result = await conn.execute<{ BANNER: string }>(
-                    'SELECT banner FROM v$version WHERE ROWNUM = 1'
-                );
+                const result = await conn.execute<{ BANNER: string }>("SELECT banner FROM v$version WHERE ROWNUM = 1");
                 const endTime = Date.now();
                 const versionRow = result.rows?.[0];
-                const serverVersion = (versionRow?.BANNER as string)?.split('\n')[0]?.trim() ?? 'Oracle';
+                const serverVersion = (versionRow?.BANNER as string)?.split("\n")[0]?.trim() ?? "Oracle";
 
                 return {
                     success: true,
@@ -158,7 +182,7 @@ export class OracleConnectionAdapter extends BaseConnectionAdapter<OracleSharedC
                 try {
                     await tempPool.close();
                 } catch (e) {
-                    console.debug('[SQL All in One] Oracle temp pool close error:', e);
+                    console.debug("[SQL All in One] Oracle temp pool close error:", e);
                 }
             }
         }
@@ -179,11 +203,10 @@ export class OracleConnectionAdapter extends BaseConnectionAdapter<OracleSharedC
                 await conn.close();
             }
         } catch (e) {
-            console.debug('[SQL All in One] OracleConnectionAdapter.checkConnectionHealth failed:', e);
+            console.debug("[SQL All in One] OracleConnectionAdapter.checkConnectionHealth failed:", e);
             return false;
         }
     }
-
 
     /**
      * Surfaces the Oracle error number as an `ORA-XXXXX` tag so that
@@ -197,7 +220,7 @@ export class OracleConnectionAdapter extends BaseConnectionAdapter<OracleSharedC
         if (!errorNum) {
             return null;
         }
-        return `ORA-${String(errorNum).padStart(5, '0')}`;
+        return `ORA-${String(errorNum).padStart(5, "0")}`;
     }
 
     protected override formatDriverSpecificError(error: unknown, config: ConnectionConfig): Error | undefined {
@@ -206,28 +229,28 @@ export class OracleConnectionAdapter extends BaseConnectionAdapter<OracleSharedC
 
         // Oracle error numbers are surfaced as ORA-XXXXX or DPI-XXXX.
         const errorNum = (error as { errorNum?: number })?.errorNum;
-        const oraCode = errorNum ? `ORA-${String(errorNum).padStart(5, '0')}` : '';
+        const oraCode = errorNum ? `ORA-${String(errorNum).padStart(5, "0")}` : "";
 
-        if (oraCode === 'ORA-01017' || msg.includes('ORA-01017') || msg.includes('invalid username/password')) {
-            return new Error(t('database.accessDenied', config.username, hostPort));
+        if (oraCode === "ORA-01017" || msg.includes("ORA-01017") || msg.includes("invalid username/password")) {
+            return new Error(t("database.accessDenied", config.username, hostPort));
         }
-        if (oraCode === 'ORA-12505' || msg.includes('ORA-12505') || msg.includes('TNS:listener does not currently know of SID')) {
-            return new Error(t('database.databaseNotExist', config.database || '(none)', hostPort));
+        if (oraCode === "ORA-12505" || msg.includes("ORA-12505") || msg.includes("TNS:listener does not currently know of SID")) {
+            return new Error(t("database.databaseNotExist", config.database || "(none)", hostPort));
         }
-        if (oraCode === 'ORA-12514' || msg.includes('ORA-12514') || msg.includes('TNS:listener does not currently know of service')) {
-            return new Error(t('database.databaseNotExist', config.database || '(none)', hostPort));
+        if (oraCode === "ORA-12514" || msg.includes("ORA-12514") || msg.includes("TNS:listener does not currently know of service")) {
+            return new Error(t("database.databaseNotExist", config.database || "(none)", hostPort));
         }
-        if (oraCode === 'ORA-12541' || msg.includes('ORA-12541') || msg.includes('TNS:no listener')) {
-            return new Error(t('database.connectionRefused', hostPort));
+        if (oraCode === "ORA-12541" || msg.includes("ORA-12541") || msg.includes("TNS:no listener")) {
+            return new Error(t("database.connectionRefused", hostPort));
         }
-        if (oraCode === 'ORA-12170' || msg.includes('ORA-12170') || msg.includes('TNS:Connect timeout occurred')) {
-            return new Error(t('database.connectionTimedOut', hostPort));
+        if (oraCode === "ORA-12170" || msg.includes("ORA-12170") || msg.includes("TNS:Connect timeout occurred")) {
+            return new Error(t("database.connectionTimedOut", hostPort));
         }
-        if (oraCode === 'ORA-12545' || msg.includes('ORA-12545') || msg.includes('TNS:unable to resolve the connect identifier')) {
-            return new Error(t('database.hostNotFound', config.host));
+        if (oraCode === "ORA-12545" || msg.includes("ORA-12545") || msg.includes("TNS:unable to resolve the connect identifier")) {
+            return new Error(t("database.hostNotFound", config.host));
         }
-        if (msg.includes('DPI-1080') || msg.includes('connection was closed')) {
-            return new Error(t('database.connectionLost', hostPort));
+        if (msg.includes("DPI-1080") || msg.includes("connection was closed")) {
+            return new Error(t("database.connectionLost", hostPort));
         }
 
         // SSL/certificate and common network errors are handled by the base
@@ -247,14 +270,14 @@ export class OracleConnectionAdapter extends BaseConnectionAdapter<OracleSharedC
      */
     private buildConnectString(config: ConnectionConfig): string {
         const explicit = config.options?.connectString;
-        if (typeof explicit === 'string' && explicit.length > 0) {
+        if (typeof explicit === "string" && explicit.length > 0) {
             return explicit;
         }
 
         const host = config.host;
         const port = String(config.port ?? 1521);
         const useSid = config.options?.useSid === true;
-        const serviceOrSid = config.database ?? 'ORCL';
+        const serviceOrSid = config.database ?? "ORCL";
 
         if (useSid) {
             // host:port:sid  →  //(HOST:PORT)(SID=...)
@@ -284,7 +307,7 @@ export class OracleConnectionAdapter extends BaseConnectionAdapter<OracleSharedC
         // through the relevant options when SSL is enabled.
         if (config.ssl?.enabled) {
             poolAttrs.ssl = true;
-            if (typeof config.options?.sslServerCertDN === 'string') {
+            if (typeof config.options?.sslServerCertDN === "string") {
                 poolAttrs.sslServerCertDN = config.options.sslServerCertDN as string;
             }
             // When rejectUnauthorized is false, allow weak DN matching so that
@@ -317,14 +340,14 @@ export class OracleConnectionAdapter extends BaseConnectionAdapter<OracleSharedC
             return;
         }
 
-        const oracledb = await import('oracledb');
+        const oracledb = await import("oracledb");
         const initOptions: { libDir?: string; configDir?: string } = {};
         const instantClientPath = config.options?.instantClientPath;
-        if (typeof instantClientPath === 'string' && instantClientPath.length > 0) {
+        if (typeof instantClientPath === "string" && instantClientPath.length > 0) {
             initOptions.libDir = instantClientPath;
         }
         const configDir = config.options?.configDir;
-        if (typeof configDir === 'string' && configDir.length > 0) {
+        if (typeof configDir === "string" && configDir.length > 0) {
             initOptions.configDir = configDir;
         }
 
@@ -336,7 +359,7 @@ export class OracleConnectionAdapter extends BaseConnectionAdapter<OracleSharedC
             // another adapter instance), oracledb throws DPI-1074. Treat that
             // as success.
             const msg = e instanceof Error ? e.message : String(e);
-            if (msg.includes('DPI-1074') || msg.includes('already initialized')) {
+            if (msg.includes("DPI-1074") || msg.includes("already initialized")) {
                 OracleConnectionAdapter.thickModeInitialised = true;
                 return;
             }
@@ -359,7 +382,12 @@ export class OracleConnectionAdapter extends BaseConnectionAdapter<OracleSharedC
  * `breakExecution()`).
  */
 export class OracleQueryAdapter extends BaseQueryAdapter<OracleSharedContext> {
-    protected override async executeWithConnection(sql: string, params: QueryParam[] | undefined, queryId: string, startTime: number): Promise<QueryResult> {
+    protected override async executeWithConnection(
+        sql: string,
+        params: QueryParam[] | undefined,
+        queryId: string,
+        startTime: number,
+    ): Promise<QueryResult> {
         let acquiredConn: Connection | null = null;
 
         // Use the transaction connection if active, otherwise acquire one
@@ -375,7 +403,7 @@ export class OracleQueryAdapter extends BaseQueryAdapter<OracleSharedContext> {
         }
 
         try {
-            const oracledb = await import('oracledb');
+            const oracledb = await import("oracledb");
             // Map ? placeholders to oracledb named binds (:1, :2, ...).
             const { finalSql, binds } = this.prepareSqlAndBinds(sql, params);
 
@@ -387,9 +415,9 @@ export class OracleQueryAdapter extends BaseQueryAdapter<OracleSharedContext> {
             const executionTime = Date.now() - startTime;
 
             const rows = (result.rows ?? []) as QueryRow[];
-            const columns = (result.metaData ?? []).map(meta => ({
+            const columns = (result.metaData ?? []).map((meta) => ({
                 name: meta.name,
-                type: String(meta.dbType ?? meta.fetchType ?? 'UNKNOWN'),
+                type: String(meta.dbType ?? meta.fetchType ?? "UNKNOWN"),
                 nullable: meta.nullable ?? true,
                 isPrimaryKey: false,
                 isAutoIncrement: false,
@@ -397,11 +425,11 @@ export class OracleQueryAdapter extends BaseQueryAdapter<OracleSharedContext> {
             }));
 
             const rowCount = rows.length;
-            const affectedRows = typeof result.rowsAffected === 'number' ? result.rowsAffected : undefined;
+            const affectedRows = typeof result.rowsAffected === "number" ? result.rowsAffected : undefined;
 
             return {
                 queryId,
-                status: 'success',
+                status: "success",
                 columns,
                 rows,
                 rowCount,
@@ -416,7 +444,7 @@ export class OracleQueryAdapter extends BaseQueryAdapter<OracleSharedContext> {
                 try {
                     await acquiredConn.close();
                 } catch (e) {
-                    console.debug('[SQL All in One] Oracle connection close error:', e);
+                    console.debug("[SQL All in One] Oracle connection close error:", e);
                 }
             }
         }
@@ -428,10 +456,10 @@ export class OracleQueryAdapter extends BaseQueryAdapter<OracleSharedContext> {
      */
     protected override mapError(error: unknown, sql: string, queryId: string, executionTime: number): QueryResult {
         const oracleError = error as { errorNum?: number; message?: string };
-        const code = oracleError.errorNum ? `ORA-${String(oracleError.errorNum).padStart(5, '0')}` : 'EXEC_ERROR';
+        const code = oracleError.errorNum ? `ORA-${String(oracleError.errorNum).padStart(5, "0")}` : "EXEC_ERROR";
         return {
             queryId,
-            status: 'error',
+            status: "error",
             columns: [],
             rows: [],
             rowCount: 0,
@@ -447,10 +475,10 @@ export class OracleQueryAdapter extends BaseQueryAdapter<OracleSharedContext> {
 
     async beginTransaction(): Promise<void> {
         if (this.shared.transactionConnection) {
-            throw new Error(t('database.transactionInProgress'));
+            throw new Error(t("database.transactionInProgress"));
         }
         if (!this.shared.pool) {
-            throw new Error(t('database.notConnected'));
+            throw new Error(t("database.notConnected"));
         }
 
         // Oracle does not have an explicit BEGIN TRANSACTION statement; an
@@ -464,7 +492,7 @@ export class OracleQueryAdapter extends BaseQueryAdapter<OracleSharedContext> {
 
     async commit(): Promise<void> {
         if (!this.shared.transactionConnection) {
-            throw new Error(t('database.noTransactionInProgress'));
+            throw new Error(t("database.noTransactionInProgress"));
         }
 
         try {
@@ -473,7 +501,7 @@ export class OracleQueryAdapter extends BaseQueryAdapter<OracleSharedContext> {
             try {
                 await this.shared.transactionConnection.close();
             } catch (e) {
-                console.debug('[SQL All in One] Oracle close after commit error:', e);
+                console.debug("[SQL All in One] Oracle close after commit error:", e);
             }
             this.shared.transactionConnection = null;
         }
@@ -481,18 +509,18 @@ export class OracleQueryAdapter extends BaseQueryAdapter<OracleSharedContext> {
 
     async rollback(): Promise<void> {
         if (!this.shared.transactionConnection) {
-            throw new Error(t('database.noTransactionInProgress'));
+            throw new Error(t("database.noTransactionInProgress"));
         }
 
         try {
             await this.shared.transactionConnection.rollback();
         } catch (rollbackError) {
-            console.error('Oracle rollback failed:', rollbackError);
+            console.error("Oracle rollback failed:", rollbackError);
         } finally {
             try {
                 await this.shared.transactionConnection.close();
             } catch (e) {
-                console.debug('[SQL All in One] Oracle close after rollback error:', e);
+                console.debug("[SQL All in One] Oracle close after rollback error:", e);
             }
             this.shared.transactionConnection = null;
         }
@@ -510,7 +538,7 @@ export class OracleQueryAdapter extends BaseQueryAdapter<OracleSharedContext> {
             // break() is the documented alias for breakExecution() in oracledb.
             await conn.break();
         } catch (e) {
-            console.debug('[SQL All in One] Oracle cancel query error:', e);
+            console.debug("[SQL All in One] Oracle cancel query error:", e);
         }
     }
 
@@ -524,10 +552,7 @@ export class OracleQueryAdapter extends BaseQueryAdapter<OracleSharedContext> {
      * object keyed by bind name. We use the positional array form because it
      * matches the existing QueryParam[] shape used by the other adapters.
      */
-    private prepareSqlAndBinds(
-        sql: string,
-        params?: QueryParam[]
-    ): { finalSql: string; binds: unknown[] } {
+    private prepareSqlAndBinds(sql: string, params?: QueryParam[]): { finalSql: string; binds: unknown[] } {
         const binds: unknown[] = [];
         if (!params || params.length === 0) {
             return { finalSql: sql, binds };
@@ -536,9 +561,8 @@ export class OracleQueryAdapter extends BaseQueryAdapter<OracleSharedContext> {
         // Oracle uses named binds `:1, :2, …`. The shared rewriter handles
         // string-literal / `?`-skipping; we collect bind values in the same
         // order as the consumed placeholders.
-        const { sql: finalSql, consumedIndexes } = replaceQuestionMarkPlaceholders(
-            sql,
-            (index) => (index <= params.length ? `:${index}` : undefined),
+        const { sql: finalSql, consumedIndexes } = replaceQuestionMarkPlaceholders(sql, (index) =>
+            index <= params.length ? `:${index}` : undefined,
         );
         for (const idx of consumedIndexes) {
             binds.push(params[idx - 1].value);
@@ -565,7 +589,9 @@ export class OracleQueryAdapter extends BaseQueryAdapter<OracleSharedContext> {
  * only override {@link placeholderFor}, {@link resolveOwner} and
  * {@link defaultDatabaseName}.
  */
-export class OracleMetadataAdapter<TShared extends IOracleDialectSharedContext = IOracleDialectSharedContext> extends BaseMetadataAdapter<TShared> {
+export class OracleMetadataAdapter<
+    TShared extends IOracleDialectSharedContext = IOracleDialectSharedContext,
+> extends BaseMetadataAdapter<TShared> {
     /**
      * Placeholder token emitted by this dialect for the 1-based bind position.
      * Oracle uses `:N` named binds; Dameng overrides this to return `?` for
@@ -581,7 +607,7 @@ export class OracleMetadataAdapter<TShared extends IOracleDialectSharedContext =
      * Dameng overrides to return `'DAMENG'`.
      */
     protected defaultDatabaseName(): string {
-        return 'ORCL';
+        return "ORCL";
     }
 
     /**
@@ -597,7 +623,7 @@ export class OracleMetadataAdapter<TShared extends IOracleDialectSharedContext =
         // Return a single entry describing the current container (CDB/PDB).
         const sql = `SELECT SYS_CONTEXT('USERENV', 'CON_NAME') AS name, SYS_CONTEXT('USERENV', 'DB_NAME') AS db_name FROM dual`;
         const result = await this.executeQuery(sql);
-        if (result.status !== 'success' || result.rows.length === 0) {
+        if (result.status !== "success" || result.rows.length === 0) {
             return [{ name: this.shared.config?.database ?? this.defaultDatabaseName() }];
         }
 
@@ -673,7 +699,7 @@ export class OracleMetadataAdapter<TShared extends IOracleDialectSharedContext =
             name: row.trigger_name as string,
             event: row.event as string,
             timing: row.timing as string,
-            statement: (row.statement as string) ?? '',
+            statement: (row.statement as string) ?? "",
         }));
     }
 
@@ -693,7 +719,7 @@ export class OracleMetadataAdapter<TShared extends IOracleDialectSharedContext =
         if (fromConfig && fromConfig.length > 0) {
             return fromConfig.toUpperCase();
         }
-        return 'SYS';
+        return "SYS";
     }
 }
 
@@ -748,10 +774,10 @@ export class OracleSchemaAdapter<TShared extends IOracleDialectSharedContext = O
         // required.
         const sql = `SELECT DBMS_METADATA.GET_DDL('TABLE', ${this.placeholderFor(1)}, ${this.placeholderFor(2)}) AS ddl FROM dual`;
         const result = await this.executeQuery(sql, [{ value: table }, { value: owner }]);
-        if (result.status !== 'success' || result.rows.length === 0) {
-            return '';
+        if (result.status !== "success" || result.rows.length === 0) {
+            return "";
         }
-        return (result.rows[0].ddl as string) ?? '';
+        return (result.rows[0].ddl as string) ?? "";
     }
 
     async getViewDDL(_database: string, view: string, schema?: string): Promise<string> {
@@ -759,10 +785,10 @@ export class OracleSchemaAdapter<TShared extends IOracleDialectSharedContext = O
         this.validateIdentifier(view);
         const sql = `SELECT DBMS_METADATA.GET_DDL('VIEW', ${this.placeholderFor(1)}, ${this.placeholderFor(2)}) AS ddl FROM dual`;
         const result = await this.executeQuery(sql, [{ value: view }, { value: owner }]);
-        if (result.status !== 'success' || result.rows.length === 0) {
-            return '';
+        if (result.status !== "success" || result.rows.length === 0) {
+            return "";
         }
-        return (result.rows[0].ddl as string) ?? '';
+        return (result.rows[0].ddl as string) ?? "";
     }
 
     async getFunctionDDL(_database: string, functionName: string, schema?: string): Promise<string> {
@@ -770,10 +796,10 @@ export class OracleSchemaAdapter<TShared extends IOracleDialectSharedContext = O
         this.validateIdentifier(functionName);
         const sql = `SELECT DBMS_METADATA.GET_DDL('FUNCTION', ${this.placeholderFor(1)}, ${this.placeholderFor(2)}) AS ddl FROM dual`;
         const result = await this.executeQuery(sql, [{ value: functionName }, { value: owner }]);
-        if (result.status !== 'success' || result.rows.length === 0) {
-            return '';
+        if (result.status !== "success" || result.rows.length === 0) {
+            return "";
         }
-        return (result.rows[0].ddl as string) ?? '';
+        return (result.rows[0].ddl as string) ?? "";
     }
 
     async getProcedureDDL(_database: string, procedureName: string, schema?: string): Promise<string> {
@@ -781,10 +807,10 @@ export class OracleSchemaAdapter<TShared extends IOracleDialectSharedContext = O
         this.validateIdentifier(procedureName);
         const sql = `SELECT DBMS_METADATA.GET_DDL('PROCEDURE', ${this.placeholderFor(1)}, ${this.placeholderFor(2)}) AS ddl FROM dual`;
         const result = await this.executeQuery(sql, [{ value: procedureName }, { value: owner }]);
-        if (result.status !== 'success' || result.rows.length === 0) {
-            return '';
+        if (result.status !== "success" || result.rows.length === 0) {
+            return "";
         }
-        return (result.rows[0].ddl as string) ?? '';
+        return (result.rows[0].ddl as string) ?? "";
     }
 
     async getTriggerDDL(_database: string, triggerName: string, schema?: string): Promise<string> {
@@ -792,19 +818,24 @@ export class OracleSchemaAdapter<TShared extends IOracleDialectSharedContext = O
         this.validateIdentifier(triggerName);
         const sql = `SELECT DBMS_METADATA.GET_DDL('TRIGGER', ${this.placeholderFor(1)}, ${this.placeholderFor(2)}) AS ddl FROM dual`;
         const result = await this.executeQuery(sql, [{ value: triggerName }, { value: owner }]);
-        if (result.status !== 'success' || result.rows.length === 0) {
-            return '';
+        if (result.status !== "success" || result.rows.length === 0) {
+            return "";
         }
-        return (result.rows[0].ddl as string) ?? '';
+        return (result.rows[0].ddl as string) ?? "";
     }
 
-    async getRoutineParameters(_database: string, routineName: string, _routineType: 'FUNCTION' | 'PROCEDURE', schema?: string): Promise<RoutineParameterInfo[]> {
+    async getRoutineParameters(
+        _database: string,
+        routineName: string,
+        _routineType: "FUNCTION" | "PROCEDURE",
+        schema?: string,
+    ): Promise<RoutineParameterInfo[]> {
         const owner = this.resolveOwner(schema);
         this.validateIdentifier(routineName);
         // all_arguments lists parameters for procedures and functions.
         const sql = `SELECT argument_name AS argument_name, data_type AS data_type, in_out AS in_out FROM all_arguments WHERE owner = ${this.placeholderFor(1)} AND object_name = ${this.placeholderFor(2)} AND argument_name IS NOT NULL ORDER BY position`;
         const result = await this.executeQuery(sql, [{ value: owner }, { value: routineName }]);
-        if (result.status !== 'success') {
+        if (result.status !== "success") {
             return [];
         }
 
@@ -817,7 +848,7 @@ export class OracleSchemaAdapter<TShared extends IOracleDialectSharedContext = O
 
     async getExplainPlan(_database: string, sql: string): Promise<ExplainResult> {
         if (!this.shared.pool) {
-            return { format: 'table', raw: '', nodes: [] };
+            return { format: "table", raw: "", nodes: [] };
         }
 
         // Use DBMS_XPLAN.DISPLAY for a readable text plan. We need a dedicated
@@ -852,36 +883,44 @@ export class OracleSchemaAdapter<TShared extends IOracleDialectSharedContext = O
             // Read the plan via DBMS_XPLAN.DISPLAY for our statement_id only.
             // DBMS_XPLAN.DISPLAY accepts (table_name, statement_id, format).
             const xplanSql = `SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY('PLAN_TABLE', :id, 'ALL'))`;
-            const oracledb = await import('oracledb');
-            const result = await conn.execute<QueryRow>(xplanSql, { id: statementId }, {
-                outFormat: oracledb.OUT_FORMAT_OBJECT,
-            });
+            const oracledb = await import("oracledb");
+            const result = await conn.execute<QueryRow>(
+                xplanSql,
+                { id: statementId },
+                {
+                    outFormat: oracledb.OUT_FORMAT_OBJECT,
+                },
+            );
 
             const planRows = (result.rows ?? []) as QueryRow[];
-            const raw = planRows.map(r => (r.plan_table_output as string) ?? '').join('\n');
+            const raw = planRows.map((r) => (r.plan_table_output as string) ?? "").join("\n");
 
             // Also fetch the structured plan_table rows for THIS statement_id
             // so we can build a node tree for the UI.
             const structuredSql = `SELECT id, depth, parent_id, operation, options, object_name, cardinality AS rows, cost FROM plan_table WHERE statement_id = :id ORDER BY id`;
-            const structuredResult = await conn.execute<QueryRow>(structuredSql, { id: statementId }, {
-                outFormat: oracledb.OUT_FORMAT_OBJECT,
-            });
+            const structuredResult = await conn.execute<QueryRow>(
+                structuredSql,
+                { id: statementId },
+                {
+                    outFormat: oracledb.OUT_FORMAT_OBJECT,
+                },
+            );
             const nodes = this.buildExplainNodes(structuredResult.rows ?? []);
 
             // Clean up only the plan rows we generated.
             await conn.execute(`DELETE FROM plan_table WHERE statement_id = :id`, { id: statementId });
             await conn.commit();
 
-            return { format: 'table', raw, nodes };
+            return { format: "table", raw, nodes };
         } catch (e) {
-            console.debug('[SQL All in One] Oracle EXPLAIN error:', e);
-            return { format: 'table', raw: '', nodes: [] };
+            console.debug("[SQL All in One] Oracle EXPLAIN error:", e);
+            return { format: "table", raw: "", nodes: [] };
         } finally {
             if (conn) {
                 try {
                     await conn.close();
                 } catch (e) {
-                    console.debug('[SQL All in One] Oracle explain connection close error:', e);
+                    console.debug("[SQL All in One] Oracle explain connection close error:", e);
                 }
             }
         }
@@ -893,7 +932,7 @@ export class OracleSchemaAdapter<TShared extends IOracleDialectSharedContext = O
         // estimate and avoids a full table scan.
         const sql = `SELECT num_rows AS row_count FROM all_tables WHERE owner = ${this.placeholderFor(1)} AND table_name = ${this.placeholderFor(2)}`;
         const result = await this.executeQuery(sql, [{ value: owner }, { value: table }]);
-        if (result.status !== 'success' || result.rows.length === 0) {
+        if (result.status !== "success" || result.rows.length === 0) {
             return 0;
         }
         const rowCount = result.rows[0].row_count;
@@ -910,70 +949,55 @@ export class OracleSchemaAdapter<TShared extends IOracleDialectSharedContext = O
             supportsExplainAnalyze: false,
             supportsCancel: true,
             supportsSshTunnel: true,
-            supportedObjectTypes: ['table', 'view', 'function', 'procedure', 'trigger', 'index'],
+            supportedObjectTypes: ["table", "view", "function", "procedure", "trigger", "index"],
         };
     }
 
     getSupportedDataTypes(): DataTypeCategory[] {
         return [
             {
-                category: 'Integer',
+                category: "Integer",
+                types: [{ name: "NUMBER" }, { name: "INTEGER" }, { name: "INT" }, { name: "SMALLINT" }],
+            },
+            {
+                category: "Float",
                 types: [
-                    { name: 'NUMBER' },
-                    { name: 'INTEGER' },
-                    { name: 'INT' },
-                    { name: 'SMALLINT' },
+                    { name: "NUMBER", needsPrecision: true, needsScale: true },
+                    { name: "FLOAT", needsPrecision: true },
+                    { name: "BINARY_FLOAT" },
+                    { name: "BINARY_DOUBLE" },
                 ],
             },
             {
-                category: 'Float',
+                category: "String",
                 types: [
-                    { name: 'NUMBER', needsPrecision: true, needsScale: true },
-                    { name: 'FLOAT', needsPrecision: true },
-                    { name: 'BINARY_FLOAT' },
-                    { name: 'BINARY_DOUBLE' },
+                    { name: "CHAR", needsLength: true },
+                    { name: "VARCHAR2", needsLength: true },
+                    { name: "NCHAR", needsLength: true },
+                    { name: "NVARCHAR2", needsLength: true },
+                    { name: "CLOB" },
+                    { name: "NCLOB" },
+                    { name: "LONG" },
                 ],
             },
             {
-                category: 'String',
+                category: "Date & Time",
                 types: [
-                    { name: 'CHAR', needsLength: true },
-                    { name: 'VARCHAR2', needsLength: true },
-                    { name: 'NCHAR', needsLength: true },
-                    { name: 'NVARCHAR2', needsLength: true },
-                    { name: 'CLOB' },
-                    { name: 'NCLOB' },
-                    { name: 'LONG' },
+                    { name: "DATE" },
+                    { name: "TIMESTAMP", needsPrecision: true },
+                    { name: "TIMESTAMP WITH TIME ZONE", needsPrecision: true },
+                    { name: "TIMESTAMP WITH LOCAL TIME ZONE", needsPrecision: true },
+                    { name: "INTERVAL YEAR TO MONTH" },
+                    { name: "INTERVAL DAY TO SECOND" },
                 ],
             },
             {
-                category: 'Date & Time',
-                types: [
-                    { name: 'DATE' },
-                    { name: 'TIMESTAMP', needsPrecision: true },
-                    { name: 'TIMESTAMP WITH TIME ZONE', needsPrecision: true },
-                    { name: 'TIMESTAMP WITH LOCAL TIME ZONE', needsPrecision: true },
-                    { name: 'INTERVAL YEAR TO MONTH' },
-                    { name: 'INTERVAL DAY TO SECOND' },
-                ],
+                category: "Binary",
+                types: [{ name: "RAW", needsLength: true }, { name: "BLOB" }, { name: "BFILE" }, { name: "LONG RAW" }],
             },
             {
-                category: 'Binary',
-                types: [
-                    { name: 'RAW', needsLength: true },
-                    { name: 'BLOB' },
-                    { name: 'BFILE' },
-                    { name: 'LONG RAW' },
-                ],
-            },
-            {
-                category: 'Other',
-                types: [
-                    { name: 'ROWID' },
-                    { name: 'UROWID' },
-                    { name: 'JSON' },
-                    { name: 'XMLTYPE' },
-                ],
+                category: "Other",
+                types: [{ name: "ROWID" }, { name: "UROWID" }, { name: "JSON" }, { name: "XMLTYPE" }],
             },
         ];
     }
@@ -986,28 +1010,28 @@ export class OracleSchemaAdapter<TShared extends IOracleDialectSharedContext = O
         if (fromConfig && fromConfig.length > 0) {
             return fromConfig.toUpperCase();
         }
-        return 'SYS';
+        return "SYS";
     }
 
-    protected parseDirection(inOut: string): 'IN' | 'OUT' | 'INOUT' {
+    protected parseDirection(inOut: string): "IN" | "OUT" | "INOUT" {
         if (!inOut) {
-            return 'IN';
+            return "IN";
         }
         const upper = inOut.toUpperCase();
-        if (upper === 'OUT') {
-            return 'OUT';
+        if (upper === "OUT") {
+            return "OUT";
         }
-        if (upper === 'IN/OUT' || upper === 'INOUT') {
-            return 'INOUT';
+        if (upper === "IN/OUT" || upper === "INOUT") {
+            return "INOUT";
         }
-        return 'IN';
+        return "IN";
     }
 
     protected async describeTableColumns(table: string, owner: string): Promise<ColumnInfo[]> {
         this.validateIdentifier(table);
         const sql = `SELECT column_name, data_type, data_length, data_precision, data_scale, nullable, data_default, column_id FROM all_tab_columns WHERE owner = ${this.placeholderFor(1)} AND table_name = ${this.placeholderFor(2)} ORDER BY column_id`;
         const result = await this.executeQuery(sql, [{ value: owner }, { value: table }]);
-        if (result.status !== 'success') {
+        if (result.status !== "success") {
             return [];
         }
 
@@ -1026,7 +1050,7 @@ export class OracleSchemaAdapter<TShared extends IOracleDialectSharedContext = O
             let type = dataType;
             if (lengthParameterisedTypes.has(dataType)) {
                 type = `${dataType}(${dataLength})`;
-            } else if (dataType === 'NUMBER') {
+            } else if (dataType === "NUMBER") {
                 if (dataPrecision !== null && dataScale !== null) {
                     type = `NUMBER(${dataPrecision}, ${dataScale})`;
                 } else if (dataPrecision !== null) {
@@ -1039,7 +1063,7 @@ export class OracleSchemaAdapter<TShared extends IOracleDialectSharedContext = O
                 name: columnName,
                 type,
                 length: dataLength > 0 ? dataLength : undefined,
-                nullable: row.nullable === 'Y',
+                nullable: row.nullable === "Y",
                 defaultValue: (row.data_default as string | null)?.trim() || null,
                 isPrimaryKey: pkSet.has(columnName),
                 isAutoIncrement: false,
@@ -1056,14 +1080,14 @@ export class OracleSchemaAdapter<TShared extends IOracleDialectSharedContext = O
      * treats as a length-parameterised type distinct from `VARCHAR2`).
      */
     protected lengthParameterisedDataTypes(): Set<string> {
-        return new Set(['VARCHAR2', 'CHAR', 'NVARCHAR2', 'NCHAR', 'RAW']);
+        return new Set(["VARCHAR2", "CHAR", "NVARCHAR2", "NCHAR", "RAW"]);
     }
 
     protected async getPrimaryKeyColumns(table: string, owner: string): Promise<string[]> {
         this.validateIdentifier(table);
         const sql = `SELECT acc.column_name AS column_name FROM all_constraints c JOIN all_cons_columns acc ON c.constraint_name = acc.constraint_name AND c.owner = acc.owner WHERE c.constraint_type = 'P' AND c.owner = ${this.placeholderFor(1)} AND c.table_name = ${this.placeholderFor(2)} ORDER BY acc.position`;
         const result = await this.executeQuery(sql, [{ value: owner }, { value: table }]);
-        if (result.status !== 'success') {
+        if (result.status !== "success") {
             return [];
         }
         return result.rows.map((row: QueryRow) => row.column_name as string);
@@ -1077,7 +1101,7 @@ export class OracleSchemaAdapter<TShared extends IOracleDialectSharedContext = O
         // unique index that happens to span the same columns as the PK.
         const sql = `SELECT i.index_name, i.index_type, i.uniqueness, ic.column_name, CASE WHEN c.constraint_type = 'P' THEN 1 ELSE 0 END AS is_pk FROM all_indexes i JOIN all_ind_columns ic ON i.index_name = ic.index_name AND i.owner = ic.index_owner LEFT JOIN all_constraints c ON c.index_owner = i.owner AND c.index_name = i.index_name AND c.constraint_type = 'P' AND c.owner = i.owner AND c.table_name = i.table_name WHERE i.owner = ${this.placeholderFor(1)} AND i.table_name = ${this.placeholderFor(2)} ORDER BY i.index_name, ic.column_position`;
         const result = await this.executeQuery(sql, [{ value: owner }, { value: table }]);
-        if (result.status !== 'success') {
+        if (result.status !== "success") {
             return [];
         }
 
@@ -1089,9 +1113,9 @@ export class OracleSchemaAdapter<TShared extends IOracleDialectSharedContext = O
                 const isPk = row.is_pk === 1 || row.is_pk === true;
                 indexMap.set(indexName, {
                     name: indexName,
-                    type: (row.index_type as string) ?? 'NORMAL',
+                    type: (row.index_type as string) ?? "NORMAL",
                     columns: [],
-                    isUnique: uniqueness === 'UNIQUE' || isPk,
+                    isUnique: uniqueness === "UNIQUE" || isPk,
                     isPrimary: isPk,
                 });
             }
@@ -1105,7 +1129,7 @@ export class OracleSchemaAdapter<TShared extends IOracleDialectSharedContext = O
         this.validateIdentifier(table);
         const sql = `SELECT a.constraint_name, acc.column_name, r.owner AS r_owner, r.table_name AS r_table_name, rcc.column_name AS r_column_name, a.delete_rule FROM all_constraints a JOIN all_cons_columns acc ON a.constraint_name = acc.constraint_name AND a.owner = acc.owner JOIN all_constraints r ON a.r_constraint_name = r.constraint_name AND a.r_owner = r.owner JOIN all_cons_columns rcc ON r.constraint_name = rcc.constraint_name AND r.owner = rcc.owner WHERE a.constraint_type = 'R' AND a.owner = ${this.placeholderFor(1)} AND a.table_name = ${this.placeholderFor(2)} ORDER BY a.constraint_name, acc.position`;
         const result = await this.executeQuery(sql, [{ value: owner }, { value: table }]);
-        if (result.status !== 'success') {
+        if (result.status !== "success") {
             return [];
         }
 
@@ -1118,8 +1142,8 @@ export class OracleSchemaAdapter<TShared extends IOracleDialectSharedContext = O
                     columns: [],
                     referencedTable: row.r_table_name as string,
                     referencedColumns: [],
-                    onDelete: (row.delete_rule as string) ?? 'NO ACTION',
-                    onUpdate: 'NO ACTION',
+                    onDelete: (row.delete_rule as string) ?? "NO ACTION",
+                    onUpdate: "NO ACTION",
                 });
             }
             const fk = fkMap.get(fkName)!;
@@ -1150,7 +1174,7 @@ export class OracleSchemaAdapter<TShared extends IOracleDialectSharedContext = O
         for (const row of rows) {
             const id = String(row.id);
             const numericId = Number(row.id);
-            const operation = (row.operation as string) ?? 'unknown';
+            const operation = (row.operation as string) ?? "unknown";
             const options = row.options as string | undefined;
             const node: ExplainNode = {
                 id,
@@ -1209,33 +1233,30 @@ export class OracleAdapter extends BaseDatabaseAdapter<OracleSharedContext> {
         return new OracleQueryAdapter(this.shared);
     }
     protected override createMetadataAdapter(): IMetadataAdapter {
-        return new OracleMetadataAdapter(
-            this.shared,
-            (sql, params) => this.queryAdapter.execute(sql, params)
-        );
+        return new OracleMetadataAdapter(this.shared, (sql, params) => this.queryAdapter.execute(sql, params));
     }
     protected override createSchemaAdapter(): ISchemaAdapter {
         return new OracleSchemaAdapter(
             this.shared,
             (sql, params) => this.queryAdapter.execute(sql, params),
-            (db, schema) => this.metadataAdapter.listTriggers(db, schema)
+            (db, schema) => this.metadataAdapter.listTriggers(db, schema),
         );
     }
 
     protected override getReapLogPrefix(): string {
-        return 'Oracle';
+        return "Oracle";
     }
 
     static getDialectMetadata(): DialectMetadata {
         return {
-            dialect: 'oracle',
-            displayName: 'Oracle',
+            dialect: "oracle",
+            displayName: "Oracle",
             defaultPort: 1521,
-            defaultUsername: 'system',
-            iconKey: 'oracle',
+            defaultUsername: "system",
+            iconKey: "oracle",
             supportsSshTunnel: true,
             supportsSsl: true,
-            isFileBased: false
+            isFileBased: false,
         };
     }
 }

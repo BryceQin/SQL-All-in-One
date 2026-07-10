@@ -1,57 +1,61 @@
-import * as vscode from 'vscode'
-import type { RuleContext } from './LintRule'
-import { BaseRule } from './BaseRule'
-import type { AstLocation } from '../../parser/astTypes'
-import { getConfigManager } from '../../core/configManager'
-import { precomputeLineStarts, lineFromOffset } from '../../utils/lineIndex'
+import * as vscode from "vscode";
+import type { RuleContext } from "./LintRule";
+import { BaseRule } from "./BaseRule";
+import type { AstLocation } from "../../parser/astTypes";
+import { getConfigManager } from "../../core/configManager";
+import { precomputeLineStarts, lineFromOffset } from "../../utils/lineIndex";
 
 export class ExpiredTodoRule extends BaseRule {
-    readonly id = 'expired_todo'
-    readonly applicableTypes: string[] = []
-    readonly name = 'linter.expiredTodo.name'
-    readonly description = 'linter.expiredTodo.description'
-    readonly category = 'best-practices'
-    readonly defaultSeverity = vscode.DiagnosticSeverity.Information
-    readonly defaultEnabled = true
+    readonly id = "expired_todo";
+    readonly applicableTypes: string[] = [];
+    readonly name = "linter.expiredTodo.name";
+    readonly description = "linter.expiredTodo.description";
+    readonly category = "best-practices";
+    readonly defaultSeverity = vscode.DiagnosticSeverity.Information;
+    readonly defaultEnabled = true;
 
     check(context: RuleContext): vscode.Diagnostic[] {
-        const diagnostics: vscode.Diagnostic[] = []
-        const ruleConfig = getConfigManager().get<{ enabled?: boolean; severity?: string; gracePeriodDays?: number }>('lint.expired_todo', { enabled: true, severity: 'information', gracePeriodDays: 7 })
-        const gracePeriod = ruleConfig.gracePeriodDays ?? 7
+        const diagnostics: vscode.Diagnostic[] = [];
+        const ruleConfig = getConfigManager().get<{ enabled?: boolean; severity?: string; gracePeriodDays?: number }>("lint.expired_todo", {
+            enabled: true,
+            severity: "information",
+            gracePeriodDays: 7,
+        });
+        const gracePeriod = ruleConfig.gracePeriodDays ?? 7;
 
-        const lineStarts = precomputeLineStarts(context.sql)
+        const lineStarts = precomputeLineStarts(context.sql);
 
         const patterns = [
             /--\s*(TODO|FIXME)\s*\(\s*(\d{4}[-/]\d{2}[-/]\d{2})\s*\):?\s*.*/gi,
             /--\s*(TODO|FIXME)\s*\([^),]+,\s*(\d{4}[-/]\d{2}[-/]\d{2})\s*\):?\s*.*/gi,
             /--\s*(TODO|FIXME)[^\n]*@deadline\s+(\d{4}[-/]\d{2}[-/]\d{2})/gi,
-        ]
+        ];
 
         for (const pattern of patterns) {
-            let match
+            let match;
             while ((match = pattern.exec(context.sql)) !== null) {
-                const dateStr = match[2].replace(/\//g, '-')
-                const todoDate = new Date(dateStr)
-                const now = new Date()
-                now.setHours(0, 0, 0, 0)
+                const dateStr = match[2].replace(/\//g, "-");
+                const todoDate = new Date(dateStr);
+                const now = new Date();
+                now.setHours(0, 0, 0, 0);
 
                 if (isNaN(todoDate.getTime())) {
-                    continue
+                    continue;
                 }
 
-                const diffMs = now.getTime() - todoDate.getTime()
-                const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+                const diffMs = now.getTime() - todoDate.getTime();
+                const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
                 if (diffDays <= gracePeriod) {
-                    continue
+                    continue;
                 }
 
-                const startLine = lineFromOffset(lineStarts, match.index)
-                const loc: AstLocation = { line: startLine, column: 1 }
-                diagnostics.push(this.addDiagnostic(loc, match[0].length, 'linter.expiredTodo.description', dateStr, String(diffDays)))
+                const startLine = lineFromOffset(lineStarts, match.index);
+                const loc: AstLocation = { line: startLine, column: 1 };
+                diagnostics.push(this.addDiagnostic(loc, match[0].length, "linter.expiredTodo.description", dateStr, String(diffDays)));
             }
         }
 
-        return diagnostics
+        return diagnostics;
     }
 }

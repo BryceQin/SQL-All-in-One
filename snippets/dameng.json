@@ -1,36 +1,17 @@
 {
     "Dameng PL/SQL Block": {
         "prefix": "dmplsql",
-        "body": [
-            "DECLARE",
-            "    $1",
-            "BEGIN",
-            "    $2",
-            "EXCEPTION",
-            "    WHEN OTHERS THEN",
-            "        $3",
-            "END;",
-            "/"
-        ],
+        "body": ["DECLARE", "    $1", "BEGIN", "    $2", "EXCEPTION", "    WHEN OTHERS THEN", "        $3", "END;", "/"],
         "description": "Dameng PL/SQL block with DECLARE/BEGIN/EXCEPTION"
     },
     "Dameng Package": {
         "prefix": "dmpkg",
-        "body": [
-            "CREATE OR REPLACE PACKAGE $1 IS",
-            "    $2",
-            "END $1;"
-        ],
+        "body": ["CREATE OR REPLACE PACKAGE $1 IS", "    $2", "END $1;"],
         "description": "Dameng CREATE OR REPLACE PACKAGE"
     },
     "Dameng Connect By": {
         "prefix": "dmconnect",
-        "body": [
-            "SELECT $1",
-            "FROM $2",
-            "START WITH $3",
-            "CONNECT BY PRIOR $4 = $5;"
-        ],
+        "body": ["SELECT $1", "FROM $2", "START WITH $3", "CONNECT BY PRIOR $4 = $5;"],
         "description": "Dameng hierarchical query with CONNECT BY"
     },
     "Dameng Merge": {
@@ -49,63 +30,42 @@
     },
     "Dameng Hint": {
         "prefix": "dmhint",
-        "body": [
-            "SELECT /*+ FULL($1) */ $2",
-            "FROM $1;"
-        ],
+        "body": ["SELECT /*+ FULL($1) */ $2", "FROM $1;"],
         "description": "Dameng SELECT with optimizer hint"
     },
     "Dameng Decode": {
         "prefix": "dmdecode",
-        "body": [
-            "DECODE($1, $2, $3, $4, $5, $6)"
-        ],
+        "body": ["DECODE($1, $2, $3, $4, $5, $6)"],
         "description": "Dameng DECODE function"
     },
     "Dameng Dual": {
         "prefix": "dmdual",
-        "body": [
-            "SELECT $1",
-            "FROM DUAL;"
-        ],
+        "body": ["SELECT $1", "FROM DUAL;"],
         "description": "Dameng SELECT FROM DUAL"
     },
     "Dameng NVL": {
         "prefix": "dmnvl",
-        "body": [
-            "NVL($1, $2)"
-        ],
+        "body": ["NVL($1, $2)"],
         "description": "Dameng NVL function"
     },
     "Dameng Sequence": {
         "prefix": "dmseq",
-        "body": [
-            "CREATE SEQUENCE ${1:name} START WITH ${2:1} INCREMENT BY ${3:1};"
-        ],
+        "body": ["CREATE SEQUENCE ${1:name} START WITH ${2:1} INCREMENT BY ${3:1};"],
         "description": "Dameng CREATE SEQUENCE"
     },
     "Dameng Synonym": {
         "prefix": "dmsyn",
-        "body": [
-            "CREATE [OR REPLACE] SYNONYM ${1:name} FOR ${2:object};"
-        ],
+        "body": ["CREATE [OR REPLACE] SYNONYM ${1:name} FOR ${2:object};"],
         "description": "Dameng CREATE SYNONYM"
     },
     "Dameng Top": {
         "prefix": "dmtop",
-        "body": [
-            "SELECT TOP ${1:n} ${2:columns}",
-            "FROM ${3:table};"
-        ],
+        "body": ["SELECT TOP ${1:n} ${2:columns}", "FROM ${3:table};"],
         "description": "Dameng SELECT TOP"
     },
     "Dameng Database Link": {
         "prefix": "dmdblink",
-        "body": [
-            "CREATE DATABASE LINK ${1:name}",
-            "    CONNECT TO ${2:user} IDENTIFIED BY ${3:password}",
-            "    USING '${4:service}';"
-        ],
+        "body": ["CREATE DATABASE LINK ${1:name}", "    CONNECT TO ${2:user} IDENTIFIED BY ${3:password}", "    USING '${4:service}';"],
         "description": "Dameng CREATE DATABASE LINK"
     }
 }

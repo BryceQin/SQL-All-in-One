@@ -9,10 +9,10 @@ import type {
     DataTypeCategory,
     ExplainResult,
     RoutineParameterInfo,
-} from './IDatabaseAdapter';
-import { validateIdentifier as validateIdentifierHelper } from './identifierValidator';
-import { t } from '../../i18n/index';
-import { generateShortId } from '../../utils/idGenerator';
+} from "./IDatabaseAdapter";
+import { validateIdentifier as validateIdentifierHelper } from "./identifierValidator";
+import { t } from "../../i18n/index";
+import { generateShortId } from "../../utils/idGenerator";
 
 /**
  * Shared base class for per-dialect schema sub-adapters.
@@ -66,13 +66,9 @@ export abstract class BaseSchemaAdapter<TShared = unknown> implements ISchemaAda
      * matching the previous inlined if (result.status !== 'success')
      * return [] guard.
      */
-    protected async runListQuery<T>(
-        sql: string,
-        params: QueryParam[] | undefined,
-        rowMapper: (row: QueryRow) => T,
-    ): Promise<T[]> {
+    protected async runListQuery<T>(sql: string, params: QueryParam[] | undefined, rowMapper: (row: QueryRow) => T): Promise<T[]> {
         const result = await this.executeQuery(sql, params);
-        if (result.status !== 'success') {
+        if (result.status !== "success") {
             return [];
         }
         return result.rows.map(rowMapper);
@@ -84,13 +80,9 @@ export abstract class BaseSchemaAdapter<TShared = unknown> implements ISchemaAda
      * fails or yields no rows, matching the previous inlined guards in
      * `getTableRowCount` across dialects.
      */
-    protected async runRowCountQuery(
-        sql: string,
-        params: QueryParam[],
-        rowField = 'row_count',
-    ): Promise<number> {
+    protected async runRowCountQuery(sql: string, params: QueryParam[], rowField = "row_count"): Promise<number> {
         const result = await this.executeQuery(sql, params);
-        if (result.status !== 'success' || result.rows.length === 0) {
+        if (result.status !== "success" || result.rows.length === 0) {
             return 0;
         }
         const v = result.rows[0][rowField];
@@ -131,15 +123,15 @@ export abstract class BaseSchemaAdapter<TShared = unknown> implements ISchemaAda
      */
     protected buildNotConnectedResult(sql: string, startTime: number): QueryResult {
         const executionTime = Date.now() - startTime;
-        const queryId = generateShortId('query');
+        const queryId = generateShortId("query");
         return {
             queryId,
-            status: 'error',
+            status: "error",
             columns: [],
             rows: [],
             rowCount: 0,
             executionTime,
-            error: { code: 'NOT_CONNECTED', message: t('database.notConnected'), sql },
+            error: { code: "NOT_CONNECTED", message: t("database.notConnected"), sql },
         };
     }
 
@@ -147,13 +139,13 @@ export abstract class BaseSchemaAdapter<TShared = unknown> implements ISchemaAda
      * Builds a standard error result for schema-side queries that surface
      * errors inline rather than throwing.
      */
-    protected buildErrorResult(error: unknown, sql: string, startTime: number, code = 'EXECUTION_ERROR'): QueryResult {
+    protected buildErrorResult(error: unknown, sql: string, startTime: number, code = "EXECUTION_ERROR"): QueryResult {
         const executionTime = Date.now() - startTime;
-        const queryId = generateShortId('query');
+        const queryId = generateShortId("query");
         const message = error instanceof Error ? error.message : String(error);
         return {
             queryId,
-            status: 'error',
+            status: "error",
             columns: [],
             rows: [],
             rowCount: 0,
@@ -172,16 +164,16 @@ export abstract class BaseSchemaAdapter<TShared = unknown> implements ISchemaAda
      * `abstract` rather than default-valued so that forgetting to declare
      * it is a compile error rather than a silent quoting bug.
      */
-    protected abstract readonly quoteChar: '"' | '`' | '[';
+    protected abstract readonly quoteChar: '"' | "`" | "[";
 
     quoteIdentifier(identifier: string): string {
         // Bracket-quoting (SQL Server) escapes `]` as `]]`; the backtick
         // and double-quote forms escape their quote char by doubling it.
-        if (this.quoteChar === '[') {
-            return `[${identifier.replace(/]/g, ']]')}]`;
+        if (this.quoteChar === "[") {
+            return `[${identifier.replace(/]/g, "]]")}]`;
         }
         const ch = this.quoteChar;
-        return `${ch}${identifier.replace(new RegExp(`[${ch}]`, 'g'), (m) => m + m)}${ch}`;
+        return `${ch}${identifier.replace(new RegExp(`[${ch}]`, "g"), (m) => m + m)}${ch}`;
     }
 
     // ----- Default `validateIdentifier` parameterised by `maxLength` -----
@@ -218,7 +210,7 @@ export abstract class BaseSchemaAdapter<TShared = unknown> implements ISchemaAda
             supportsExplainAnalyze: false,
             supportsCancel: true,
             supportsSshTunnel: true,
-            supportedObjectTypes: ['table', 'view', 'function', 'procedure', 'trigger', 'index'],
+            supportedObjectTypes: ["table", "view", "function", "procedure", "trigger", "index"],
         };
     }
 
@@ -230,7 +222,12 @@ export abstract class BaseSchemaAdapter<TShared = unknown> implements ISchemaAda
     abstract getFunctionDDL(database: string, functionName: string, schema?: string): Promise<string>;
     abstract getProcedureDDL(database: string, procedureName: string, schema?: string): Promise<string>;
     abstract getTriggerDDL(database: string, triggerName: string, schema?: string): Promise<string>;
-    abstract getRoutineParameters(database: string, routineName: string, routineType: 'FUNCTION' | 'PROCEDURE', schema?: string): Promise<RoutineParameterInfo[]>;
+    abstract getRoutineParameters(
+        database: string,
+        routineName: string,
+        routineType: "FUNCTION" | "PROCEDURE",
+        schema?: string,
+    ): Promise<RoutineParameterInfo[]>;
     abstract getExplainPlan(database: string, sql: string): Promise<ExplainResult>;
     abstract getTableRowCount(database: string, table: string, schema?: string): Promise<number>;
     abstract getSupportedDataTypes(): DataTypeCategory[];

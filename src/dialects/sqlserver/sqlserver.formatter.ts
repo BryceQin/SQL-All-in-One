@@ -1,12 +1,12 @@
-import type { DialectOptions } from "../dialect"
-import { expandPhrases } from "../expandPhrases"
-import { dataTypes, keywords } from "./sqlserver.keywords"
-import { functions } from "./sqlserver.functions"
+import type { DialectOptions } from "../dialect";
+import { expandPhrases } from "../expandPhrases";
+import { dataTypes, keywords } from "./sqlserver.keywords";
+import { functions } from "./sqlserver.functions";
 
 // SQL Server (T-SQL) dialect options.
 // Reference: https://learn.microsoft.com/en-us/sql/t-sql/language-reference
 
-const reservedSelect = expandPhrases(["SELECT [ALL | DISTINCT]"])
+const reservedSelect = expandPhrases(["SELECT [ALL | DISTINCT]"]);
 
 const reservedClauses = expandPhrases([
     // queries
@@ -34,11 +34,9 @@ const reservedClauses = expandPhrases([
     "WHEN NOT MATCHED BY SOURCE [THEN]",
     // - select into
     "SELECT [ALL | DISTINCT] [TOP] INTO",
-])
+]);
 
-const standardOnelineClauses = expandPhrases([
-    "CREATE TABLE",
-])
+const standardOnelineClauses = expandPhrases(["CREATE TABLE"]);
 
 const tabularOnelineClauses = expandPhrases([
     // - create:
@@ -282,41 +280,22 @@ const tabularOnelineClauses = expandPhrases([
     "TRY_CAST",
     "STRING_AGG WITHIN GROUP",
     "WITHIN GROUP",
-])
+]);
 
-const reservedSetOperations = expandPhrases([
-    "UNION [ALL]",
-    "INTERSECT",
-    "EXCEPT",
-])
+const reservedSetOperations = expandPhrases(["UNION [ALL]", "INTERSECT", "EXCEPT"]);
 
-const reservedJoins = expandPhrases([
-    "JOIN",
-    "{LEFT | RIGHT | FULL} [OUTER] JOIN",
-    "{INNER | CROSS} JOIN",
-    "APPLY",
-    "{OUTER} APPLY",
-])
+const reservedJoins = expandPhrases(["JOIN", "{LEFT | RIGHT | FULL} [OUTER] JOIN", "{INNER | CROSS} JOIN", "APPLY", "{OUTER} APPLY"]);
 
-const reservedKeywordPhrases = expandPhrases([
-    "ON {UPDATE | DELETE} [SET NULL]",
-    "{ROWS | RANGE} BETWEEN",
-    "WITHIN GROUP",
-    "WITH TIES",
-])
+const reservedKeywordPhrases = expandPhrases(["ON {UPDATE | DELETE} [SET NULL]", "{ROWS | RANGE} BETWEEN", "WITHIN GROUP", "WITH TIES"]);
 
-const reservedDataTypePhrases = expandPhrases([])
+const reservedDataTypePhrases = expandPhrases([]);
 
 // https://learn.microsoft.com/en-us/sql/t-sql/language-reference
 export const sqlserver: DialectOptions = {
     name: "sqlserver",
     tokenizerOptions: {
         reservedSelect,
-        reservedClauses: [
-            ...reservedClauses,
-            ...standardOnelineClauses,
-            ...tabularOnelineClauses,
-        ],
+        reservedClauses: [...reservedClauses, ...standardOnelineClauses, ...tabularOnelineClauses],
         reservedSetOperations,
         reservedJoins,
         reservedKeywordPhrases,
@@ -340,9 +319,7 @@ export const sqlserver: DialectOptions = {
         // SQL Server variables:
         // - @name: local variables
         // - @@name: global/system variables (e.g., @@ROWCOUNT, @@IDENTITY)
-        variableTypes: [
-            { regex: "@@?[A-Za-z0-9_.$]+" },
-        ],
+        variableTypes: [{ regex: "@@?[A-Za-z0-9_.$]+" }],
         paramTypes: { positional: true },
         lineCommentTypes: ["--"],
         operators: [
@@ -365,4 +342,4 @@ export const sqlserver: DialectOptions = {
         onelineClauses: [...standardOnelineClauses, ...tabularOnelineClauses],
         tabularOnelineClauses,
     },
-}
+};

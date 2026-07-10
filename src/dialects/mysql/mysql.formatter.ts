@@ -1,6 +1,6 @@
-import type { DialectOptions } from "../dialect"
-import { dataTypes, keywords } from "./mysql.keywords"
-import { functions } from "./mysql.functions"
+import type { DialectOptions } from "../dialect";
+import { dataTypes, keywords } from "./mysql.keywords";
+import { functions } from "./mysql.functions";
 import {
     baseIdentChars,
     baseIdentTypes,
@@ -18,23 +18,19 @@ import {
     baseTabularOnelineClauses,
     baseVariableTypes,
     postProcess,
-} from "../mysqlProtocolBase"
+} from "../mysqlProtocolBase";
 
 // Shared functionality used by all MariaDB-like SQL dialects.
 
 // MySQL uses the shared base tabular oneline clauses unchanged.
-const tabularOnelineClauses = baseTabularOnelineClauses
+const tabularOnelineClauses = baseTabularOnelineClauses;
 
 // https://dev.mysql.com/doc/refman/8.0/en/
 export const mysql: DialectOptions = {
     name: "mysql",
     tokenizerOptions: {
         reservedSelect: baseReservedSelect,
-        reservedClauses: [
-            ...baseReservedClauses,
-            ...baseStandardOnelineClauses,
-            ...tabularOnelineClauses,
-        ],
+        reservedClauses: [...baseReservedClauses, ...baseStandardOnelineClauses, ...tabularOnelineClauses],
         reservedSetOperations: baseReservedSetOperations,
         reservedJoins: baseReservedJoins,
         reservedKeywordPhrases: baseReservedKeywordPhrases,
@@ -57,4 +53,4 @@ export const mysql: DialectOptions = {
         onelineClauses: [...baseStandardOnelineClauses, ...tabularOnelineClauses],
         tabularOnelineClauses,
     },
-}
+};

@@ -13,7 +13,7 @@
  */
 export function clampBatchSize(value: number | undefined): number {
     const DEFAULT = 1000;
-    if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+    if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
         return DEFAULT;
     }
     return Math.floor(value);

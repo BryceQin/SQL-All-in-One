@@ -24,17 +24,17 @@ import type {
     DataTypeCategory,
     ExplainResult,
     ExplainNode,
-} from './IDatabaseAdapter';
-import type { ConnectionPool, Request, Transaction, IResult, IColumnMetadata, config as MssqlConfig } from 'mssql';
-import { BaseSharedContext } from './BaseSharedContext';
-import { BaseConnectionAdapter } from './BaseConnectionAdapter';
-import { BaseQueryAdapter } from './BaseQueryAdapter';
-import { BaseMetadataAdapter } from './BaseMetadataAdapter';
-import { BaseSchemaAdapter } from './BaseSchemaAdapter';
-import { getSystemDatabases } from '../../utils/systemDatabases';
-import { BaseDatabaseAdapter } from './BaseDatabaseAdapter';
-import { t } from '../../i18n/index';
-import { replaceQuestionMarkPlaceholders } from './placeholderRewriter';
+} from "./IDatabaseAdapter";
+import type { ConnectionPool, Request, Transaction, IResult, IColumnMetadata, config as MssqlConfig } from "mssql";
+import { BaseSharedContext } from "./BaseSharedContext";
+import { BaseConnectionAdapter } from "./BaseConnectionAdapter";
+import { BaseQueryAdapter } from "./BaseQueryAdapter";
+import { BaseMetadataAdapter } from "./BaseMetadataAdapter";
+import { BaseSchemaAdapter } from "./BaseSchemaAdapter";
+import { getSystemDatabases } from "../../utils/systemDatabases";
+import { BaseDatabaseAdapter } from "./BaseDatabaseAdapter";
+import { t } from "../../i18n/index";
+import { replaceQuestionMarkPlaceholders } from "./placeholderRewriter";
 
 /**
  * SQL Server shared context.
@@ -71,13 +71,13 @@ class SqlServerConnectionAdapter extends BaseConnectionAdapter<SqlServerSharedCo
         const poolConfig = this.createPoolConfig(config);
 
         try {
-            const mssql = await import('mssql');
+            const mssql = await import("mssql");
             const pool = new mssql.ConnectionPool(poolConfig);
             await pool.connect();
 
             // Verify connectivity with a trivial query.
             const request = pool.request();
-            await request.query('SELECT 1');
+            await request.query("SELECT 1");
 
             this.shared.pool = pool;
             this.shared.totalConnectionCount = config.poolConfig?.minConnections ?? 1;
@@ -94,7 +94,7 @@ class SqlServerConnectionAdapter extends BaseConnectionAdapter<SqlServerSharedCo
             try {
                 await this.shared.transaction.rollback();
             } catch (e) {
-                console.debug('[SQL All in One] SQL Server rollback error on disconnect:', e);
+                console.debug("[SQL All in One] SQL Server rollback error on disconnect:", e);
             }
             this.shared.transaction = null;
         }
@@ -110,16 +110,16 @@ class SqlServerConnectionAdapter extends BaseConnectionAdapter<SqlServerSharedCo
         let tempPool: ConnectionPool | null = null;
 
         try {
-            const mssql = await import('mssql');
+            const mssql = await import("mssql");
             tempPool = new mssql.ConnectionPool(this.createPoolConfig(config));
             await tempPool.connect();
 
             const request = tempPool.request();
-            const result = await request.query('SELECT @@VERSION AS version');
+            const result = await request.query("SELECT @@VERSION AS version");
             const endTime = Date.now();
 
             const versionRow = result.recordset[0] as Record<string, unknown> | undefined;
-            const serverVersion = (versionRow?.version as string)?.split('\n')[0]?.trim() ?? 'SQL Server';
+            const serverVersion = (versionRow?.version as string)?.split("\n")[0]?.trim() ?? "SQL Server";
 
             return {
                 success: true,
@@ -137,7 +137,7 @@ class SqlServerConnectionAdapter extends BaseConnectionAdapter<SqlServerSharedCo
                 try {
                     await tempPool.close();
                 } catch (e) {
-                    console.debug('[SQL All in One] SQL Server temp pool close error:', e);
+                    console.debug("[SQL All in One] SQL Server temp pool close error:", e);
                 }
             }
         }
@@ -150,14 +150,13 @@ class SqlServerConnectionAdapter extends BaseConnectionAdapter<SqlServerSharedCo
 
         try {
             const request = this.shared.pool.request();
-            await request.query('SELECT 1');
+            await request.query("SELECT 1");
             return true;
         } catch (e) {
-            console.debug('[SQL All in One] SqlServerConnectionAdapter.checkConnectionHealth failed:', e);
+            console.debug("[SQL All in One] SqlServerConnectionAdapter.checkConnectionHealth failed:", e);
             return false;
         }
     }
-
 
     protected override formatDriverSpecificError(error: unknown, config: ConnectionConfig): Error | undefined {
         const msg = error instanceof Error ? error.message : String(error);
@@ -165,17 +164,17 @@ class SqlServerConnectionAdapter extends BaseConnectionAdapter<SqlServerSharedCo
 
         // mssql/tedious error codes (MSSQLError.code)
         const code = (error as { code?: string })?.code;
-        if (code === 'ELOGIN' || msg.includes('Login failed')) {
-            return new Error(t('database.accessDenied', config.username, hostPort));
+        if (code === "ELOGIN" || msg.includes("Login failed")) {
+            return new Error(t("database.accessDenied", config.username, hostPort));
         }
-        if (code === 'EINSTLOOKUP' || msg.includes('Server not found') || msg.includes('Cannot connect to server')) {
-            return new Error(t('database.hostNotFound', config.host));
+        if (code === "EINSTLOOKUP" || msg.includes("Server not found") || msg.includes("Cannot connect to server")) {
+            return new Error(t("database.hostNotFound", config.host));
         }
-        if (code === 'ETIMEOUT' || msg.includes('timeout') || msg.includes('Timeout')) {
-            return new Error(t('database.connectionTimedOut', hostPort));
+        if (code === "ETIMEOUT" || msg.includes("timeout") || msg.includes("Timeout")) {
+            return new Error(t("database.connectionTimedOut", hostPort));
         }
-        if (code === 'ESOCKET' || msg.includes('socket') || msg.includes('ECONNRESET')) {
-            return new Error(t('database.connectionLost', hostPort));
+        if (code === "ESOCKET" || msg.includes("socket") || msg.includes("ECONNRESET")) {
+            return new Error(t("database.connectionLost", hostPort));
         }
 
         // SSL/certificate and common network errors are handled by the base
@@ -199,20 +198,20 @@ class SqlServerConnectionAdapter extends BaseConnectionAdapter<SqlServerSharedCo
             },
             options: {
                 encrypt: config.ssl?.enabled ?? false,
-                trustServerCertificate: config.ssl?.enabled ? (config.ssl.rejectUnauthorized === false) : true,
+                trustServerCertificate: config.ssl?.enabled ? config.ssl.rejectUnauthorized === false : true,
             },
         };
 
         // Allow dialect-specific options (e.g. appName, domain) to pass through.
         if (config.options) {
             const opts = config.options;
-            if (typeof opts.appName === 'string') {
+            if (typeof opts.appName === "string") {
                 (poolConfig.options as Record<string, unknown>).appName = opts.appName;
             }
-            if (typeof opts.domain === 'string') {
+            if (typeof opts.domain === "string") {
                 poolConfig.domain = opts.domain;
             }
-            if (typeof opts.charset === 'string') {
+            if (typeof opts.charset === "string") {
                 (poolConfig.options as Record<string, unknown>).collation = opts.charset;
             }
         }
@@ -230,11 +229,14 @@ class SqlServerConnectionAdapter extends BaseConnectionAdapter<SqlServerSharedCo
  * `request.cancel()`.
  */
 class SqlServerQueryAdapter extends BaseQueryAdapter<SqlServerSharedContext> {
-    protected override async executeWithConnection(sql: string, params: QueryParam[] | undefined, queryId: string, startTime: number): Promise<QueryResult> {
+    protected override async executeWithConnection(
+        sql: string,
+        params: QueryParam[] | undefined,
+        queryId: string,
+        startTime: number,
+    ): Promise<QueryResult> {
         // Build the request from the transaction (if active) or the pool.
-        const request = this.shared.transaction
-            ? this.shared.transaction.request()
-            : this.shared.pool!.request();
+        const request = this.shared.transaction ? this.shared.transaction.request() : this.shared.pool!.request();
 
         // Bind parameters positionally via @p1, @p2, ... (mssql uses named params).
         let finalSql = sql;
@@ -246,9 +248,8 @@ class SqlServerQueryAdapter extends BaseQueryAdapter<SqlServerSharedContext> {
                 paramNames.push(`@${name}`);
             });
             // Replace ? placeholders with named params in order.
-            finalSql = replaceQuestionMarkPlaceholders(
-                sql,
-                (index) => (index <= paramNames.length ? paramNames[index - 1] : undefined),
+            finalSql = replaceQuestionMarkPlaceholders(sql, (index) =>
+                index <= paramNames.length ? paramNames[index - 1] : undefined,
             ).sql;
         }
 
@@ -268,7 +269,7 @@ class SqlServerQueryAdapter extends BaseQueryAdapter<SqlServerSharedContext> {
 
             return {
                 queryId,
-                status: 'success',
+                status: "success",
                 columns,
                 rows,
                 rowCount,
@@ -289,13 +290,13 @@ class SqlServerQueryAdapter extends BaseQueryAdapter<SqlServerSharedContext> {
         const mssqlError = error as { code?: string; message?: string };
         return {
             queryId,
-            status: 'error',
+            status: "error",
             columns: [],
             rows: [],
             rowCount: 0,
             executionTime,
             error: {
-                code: mssqlError.code ?? 'EXEC_ERROR',
+                code: mssqlError.code ?? "EXEC_ERROR",
                 message: error instanceof Error ? error.message : String(error),
                 sql,
             },
@@ -305,10 +306,10 @@ class SqlServerQueryAdapter extends BaseQueryAdapter<SqlServerSharedContext> {
 
     async beginTransaction(): Promise<void> {
         if (this.shared.transaction) {
-            throw new Error(t('database.transactionInProgress'));
+            throw new Error(t("database.transactionInProgress"));
         }
         if (!this.shared.pool) {
-            throw new Error(t('database.notConnected'));
+            throw new Error(t("database.notConnected"));
         }
 
         const transaction = this.shared.pool.transaction();
@@ -318,7 +319,7 @@ class SqlServerQueryAdapter extends BaseQueryAdapter<SqlServerSharedContext> {
 
     async commit(): Promise<void> {
         if (!this.shared.transaction) {
-            throw new Error(t('database.noTransactionInProgress'));
+            throw new Error(t("database.noTransactionInProgress"));
         }
 
         try {
@@ -330,13 +331,13 @@ class SqlServerQueryAdapter extends BaseQueryAdapter<SqlServerSharedContext> {
 
     async rollback(): Promise<void> {
         if (!this.shared.transaction) {
-            throw new Error(t('database.noTransactionInProgress'));
+            throw new Error(t("database.noTransactionInProgress"));
         }
 
         try {
             await this.shared.transaction.rollback();
         } catch (rollbackError) {
-            console.error('SQL Server rollback failed:', rollbackError);
+            console.error("SQL Server rollback failed:", rollbackError);
         } finally {
             this.shared.transaction = null;
         }
@@ -351,22 +352,20 @@ class SqlServerQueryAdapter extends BaseQueryAdapter<SqlServerSharedContext> {
         try {
             request.cancel();
         } catch (e) {
-            console.debug('[SQL All in One] SQL Server cancel query error:', e);
+            console.debug("[SQL All in One] SQL Server cancel query error:", e);
         }
     }
 
-    private extractColumns(result: IResult<unknown>, _request: Request): QueryResult['columns'] {
-        const recordset = (result.recordsets as unknown[] | undefined)?.[0] as
-            | { columns?: IColumnMetadata }
-            | undefined;
+    private extractColumns(result: IResult<unknown>, _request: Request): QueryResult["columns"] {
+        const recordset = (result.recordsets as unknown[] | undefined)?.[0] as { columns?: IColumnMetadata } | undefined;
         const meta = recordset?.columns;
         if (!meta) {
             return [];
         }
 
-        return Object.values(meta).map(col => ({
+        return Object.values(meta).map((col) => ({
             name: col.name,
-            type: typeof col.type === 'function' ? col.type.name : String(col.type ?? 'UNKNOWN'),
+            type: typeof col.type === "function" ? col.type.name : String(col.type ?? "UNKNOWN"),
             nullable: col.nullable,
             isPrimaryKey: false,
             isAutoIncrement: col.identity,
@@ -393,16 +392,14 @@ class SqlServerMetadataAdapter extends BaseMetadataAdapter<SqlServerSharedContex
     }
 
     async listSchemas(_database?: string): Promise<string[]> {
-        const result = await this.executeQuery(
-            `SELECT name FROM sys.schemas ORDER BY name`
-        );
-        if (result.status !== 'success') {
+        const result = await this.executeQuery(`SELECT name FROM sys.schemas ORDER BY name`);
+        if (result.status !== "success") {
             return [];
         }
 
         return result.rows
             .map((row: QueryRow) => row.name as string)
-            .filter((name: string) => !name.startsWith('sys') && name !== 'INFORMATION_SCHEMA');
+            .filter((name: string) => !name.startsWith("sys") && name !== "INFORMATION_SCHEMA");
     }
 
     async listTables(database?: string, _schema?: string, filter?: string): Promise<TableInfo[]> {
@@ -416,7 +413,7 @@ class SqlServerMetadataAdapter extends BaseMetadataAdapter<SqlServerSharedContex
 
         if (filter) {
             sql += ` AND t.name LIKE @filter`;
-            params.push({ name: 'filter', value: `%${filter}%` });
+            params.push({ name: "filter", value: `%${filter}%` });
         }
 
         sql += ` ORDER BY t.name`;
@@ -473,24 +470,24 @@ class SqlServerMetadataAdapter extends BaseMetadataAdapter<SqlServerSharedContex
         const sql = `SELECT tr.name AS trigger_name, OBJECTPROPERTY(tr.object_id, 'ExecIsUpdateTrigger') AS is_update, OBJECTPROPERTY(tr.object_id, 'ExecIsInsertTrigger') AS is_insert, OBJECTPROPERTY(tr.object_id, 'ExecIsDeleteTrigger') AS is_delete, OBJECTPROPERTY(tr.object_id, 'ExecIsAfterTrigger') AS is_after FROM ${this.quoteIdentifier(db)}.sys.triggers tr WHERE tr.parent_class = 1 AND tr.is_ms_shipped = 0 ORDER BY tr.name`;
         return this.runListQuery<TriggerInfo>(sql, undefined, (row: QueryRow) => {
             const events: string[] = [];
-            if (row.is_update) events.push('UPDATE');
-            if (row.is_insert) events.push('INSERT');
-            if (row.is_delete) events.push('DELETE');
+            if (row.is_update) events.push("UPDATE");
+            if (row.is_insert) events.push("INSERT");
+            if (row.is_delete) events.push("DELETE");
             return {
                 name: row.trigger_name as string,
-                event: events.join(',') || 'UNKNOWN',
-                timing: row.is_after ? 'AFTER' : 'INSTEAD OF',
-                statement: '',
+                event: events.join(",") || "UNKNOWN",
+                timing: row.is_after ? "AFTER" : "INSTEAD OF",
+                statement: "",
             };
         });
     }
 
     protected override isSystemDatabase(name: string): boolean {
-        return getSystemDatabases('sqlserver').includes(name.toLowerCase());
+        return getSystemDatabases("sqlserver").includes(name.toLowerCase());
     }
 
     private quoteIdentifier(identifier: string): string {
-        return '[' + identifier.replace(/]/g, ']]') + ']';
+        return "[" + identifier.replace(/]/g, "]]") + "]";
     }
 }
 
@@ -508,7 +505,7 @@ class SqlServerMetadataAdapter extends BaseMetadataAdapter<SqlServerSharedContex
  * from {@link BaseSchemaAdapter}.
  */
 class SqlServerSchemaAdapter extends BaseSchemaAdapter<SqlServerSharedContext> {
-    protected readonly quoteChar = '[' as const;
+    protected readonly quoteChar = "[" as const;
 
     async describeTable(database: string, table: string, schema?: string): Promise<TableStructure> {
         const [columns, indexes, foreignKeys, triggers] = await Promise.all([
@@ -532,13 +529,13 @@ class SqlServerSchemaAdapter extends BaseSchemaAdapter<SqlServerSharedContext> {
         ]);
 
         if (columns.length === 0) {
-            return '';
+            return "";
         }
 
-        const columnDefs = columns.map(c => {
+        const columnDefs = columns.map((c) => {
             let def = `    ${this.quoteIdentifier(c.name)} ${c.type}`;
-            if (!c.nullable) def += ' NOT NULL';
-            if (c.isAutoIncrement) def += ' IDENTITY(1,1)';
+            if (!c.nullable) def += " NOT NULL";
+            if (c.isAutoIncrement) def += " IDENTITY(1,1)";
             if (c.defaultValue !== null && c.defaultValue !== undefined && !c.isAutoIncrement) {
                 def += ` DEFAULT ${c.defaultValue}`;
             }
@@ -546,33 +543,33 @@ class SqlServerSchemaAdapter extends BaseSchemaAdapter<SqlServerSharedContext> {
         });
 
         // Inline PRIMARY KEY constraint if present.
-        const pkColumns = columns.filter(c => c.isPrimaryKey).map(c => this.quoteIdentifier(c.name));
+        const pkColumns = columns.filter((c) => c.isPrimaryKey).map((c) => this.quoteIdentifier(c.name));
         if (pkColumns.length > 0) {
-            columnDefs.push(`    CONSTRAINT [PK_${table}] PRIMARY KEY (${pkColumns.join(', ')})`);
+            columnDefs.push(`    CONSTRAINT [PK_${table}] PRIMARY KEY (${pkColumns.join(", ")})`);
         }
 
-        let ddl = `CREATE TABLE ${this.quoteIdentifier(database)}.${this.quoteIdentifier(table)} (\n${columnDefs.join(',\n')}\n);`;
+        let ddl = `CREATE TABLE ${this.quoteIdentifier(database)}.${this.quoteIdentifier(table)} (\n${columnDefs.join(",\n")}\n);`;
 
         // Non-clustered indexes (skip the PK which is already declared above).
         const indexDefs = indexes
-            .filter(i => !i.isPrimary)
-            .map(i => {
-                const unique = i.isUnique ? 'UNIQUE ' : '';
-                return `CREATE ${unique}INDEX ${this.quoteIdentifier(i.name)} ON ${this.quoteIdentifier(database)}.${this.quoteIdentifier(table)} (${i.columns.map(c => this.quoteIdentifier(c)).join(', ')});`;
+            .filter((i) => !i.isPrimary)
+            .map((i) => {
+                const unique = i.isUnique ? "UNIQUE " : "";
+                return `CREATE ${unique}INDEX ${this.quoteIdentifier(i.name)} ON ${this.quoteIdentifier(database)}.${this.quoteIdentifier(table)} (${i.columns.map((c) => this.quoteIdentifier(c)).join(", ")});`;
             });
         if (indexDefs.length > 0) {
-            ddl += '\n' + indexDefs.join('\n');
+            ddl += "\n" + indexDefs.join("\n");
         }
 
-        const fkDefs = foreignKeys.map(fk => {
-            const cols = fk.columns.map(c => this.quoteIdentifier(c)).join(', ');
-            const refCols = fk.referencedColumns.map(c => this.quoteIdentifier(c)).join(', ');
-            const onDelete = fk.onDelete && fk.onDelete !== 'NO ACTION' ? ` ON DELETE ${fk.onDelete}` : '';
-            const onUpdate = fk.onUpdate && fk.onUpdate !== 'NO ACTION' ? ` ON UPDATE ${fk.onUpdate}` : '';
+        const fkDefs = foreignKeys.map((fk) => {
+            const cols = fk.columns.map((c) => this.quoteIdentifier(c)).join(", ");
+            const refCols = fk.referencedColumns.map((c) => this.quoteIdentifier(c)).join(", ");
+            const onDelete = fk.onDelete && fk.onDelete !== "NO ACTION" ? ` ON DELETE ${fk.onDelete}` : "";
+            const onUpdate = fk.onUpdate && fk.onUpdate !== "NO ACTION" ? ` ON UPDATE ${fk.onUpdate}` : "";
             return `ALTER TABLE ${this.quoteIdentifier(database)}.${this.quoteIdentifier(table)} ADD CONSTRAINT ${this.quoteIdentifier(fk.name)} FOREIGN KEY (${cols}) REFERENCES ${this.quoteIdentifier(database)}.${this.quoteIdentifier(fk.referencedTable)} (${refCols})${onDelete}${onUpdate};`;
         });
         if (fkDefs.length > 0) {
-            ddl += '\n' + fkDefs.join('\n');
+            ddl += "\n" + fkDefs.join("\n");
         }
 
         return ddl;
@@ -582,66 +579,71 @@ class SqlServerSchemaAdapter extends BaseSchemaAdapter<SqlServerSharedContext> {
         this.validateIdentifier(database);
         this.validateIdentifier(view);
         const sql = `SELECT m.definition AS definition FROM ${this.quoteIdentifier(database)}.sys.sql_modules m JOIN ${this.quoteIdentifier(database)}.sys.objects o ON m.object_id = o.object_id WHERE o.type = 'V' AND o.name = @name`;
-        const result = await this.executeQuery(sql, [{ name: 'name', value: view }]);
-        if (result.status !== 'success' || result.rows.length === 0) {
-            return '';
+        const result = await this.executeQuery(sql, [{ name: "name", value: view }]);
+        if (result.status !== "success" || result.rows.length === 0) {
+            return "";
         }
-        return (result.rows[0].definition as string) ?? '';
+        return (result.rows[0].definition as string) ?? "";
     }
 
     async getFunctionDDL(database: string, functionName: string, _schema?: string): Promise<string> {
         this.validateIdentifier(database);
         this.validateIdentifier(functionName);
         const sql = `SELECT m.definition AS definition FROM ${this.quoteIdentifier(database)}.sys.sql_modules m JOIN ${this.quoteIdentifier(database)}.sys.objects o ON m.object_id = o.object_id WHERE o.type IN ('FN', 'IF', 'TF') AND o.name = @name`;
-        const result = await this.executeQuery(sql, [{ name: 'name', value: functionName }]);
-        if (result.status !== 'success' || result.rows.length === 0) {
-            return '';
+        const result = await this.executeQuery(sql, [{ name: "name", value: functionName }]);
+        if (result.status !== "success" || result.rows.length === 0) {
+            return "";
         }
-        return (result.rows[0].definition as string) ?? '';
+        return (result.rows[0].definition as string) ?? "";
     }
 
     async getProcedureDDL(database: string, procedureName: string, _schema?: string): Promise<string> {
         this.validateIdentifier(database);
         this.validateIdentifier(procedureName);
         const sql = `SELECT m.definition AS definition FROM ${this.quoteIdentifier(database)}.sys.sql_modules m JOIN ${this.quoteIdentifier(database)}.sys.procedures p ON m.object_id = p.object_id WHERE p.name = @name`;
-        const result = await this.executeQuery(sql, [{ name: 'name', value: procedureName }]);
-        if (result.status !== 'success' || result.rows.length === 0) {
-            return '';
+        const result = await this.executeQuery(sql, [{ name: "name", value: procedureName }]);
+        if (result.status !== "success" || result.rows.length === 0) {
+            return "";
         }
-        return (result.rows[0].definition as string) ?? '';
+        return (result.rows[0].definition as string) ?? "";
     }
 
     async getTriggerDDL(database: string, triggerName: string, _schema?: string): Promise<string> {
         this.validateIdentifier(database);
         this.validateIdentifier(triggerName);
         const sql = `SELECT m.definition AS definition FROM ${this.quoteIdentifier(database)}.sys.sql_modules m JOIN ${this.quoteIdentifier(database)}.sys.triggers tr ON m.object_id = tr.object_id WHERE tr.name = @name`;
-        const result = await this.executeQuery(sql, [{ name: 'name', value: triggerName }]);
-        if (result.status !== 'success' || result.rows.length === 0) {
-            return '';
+        const result = await this.executeQuery(sql, [{ name: "name", value: triggerName }]);
+        if (result.status !== "success" || result.rows.length === 0) {
+            return "";
         }
-        return (result.rows[0].definition as string) ?? '';
+        return (result.rows[0].definition as string) ?? "";
     }
 
-    async getRoutineParameters(database: string, routineName: string, _routineType: 'FUNCTION' | 'PROCEDURE', _schema?: string): Promise<RoutineParameterInfo[]> {
+    async getRoutineParameters(
+        database: string,
+        routineName: string,
+        _routineType: "FUNCTION" | "PROCEDURE",
+        _schema?: string,
+    ): Promise<RoutineParameterInfo[]> {
         this.validateIdentifier(database);
         this.validateIdentifier(routineName);
         const sql = `SELECT p.name AS parameter_name, TYPE_NAME(p.user_type_id) AS data_type, p.is_output AS is_output FROM ${this.quoteIdentifier(database)}.sys.parameters p WHERE p.object_id = OBJECT_ID(@qualified) AND p.name IS NOT NULL ORDER BY p.parameter_id`;
         const qualified = `${database}..${routineName}`;
-        const result = await this.executeQuery(sql, [{ name: 'qualified', value: qualified }]);
-        if (result.status !== 'success') {
+        const result = await this.executeQuery(sql, [{ name: "qualified", value: qualified }]);
+        if (result.status !== "success") {
             return [];
         }
 
         return result.rows.map((row: QueryRow) => ({
-            name: (row.parameter_name as string).replace(/^@/, ''),
+            name: (row.parameter_name as string).replace(/^@/, ""),
             type: row.data_type as string,
-            direction: row.is_output ? 'OUT' : 'IN',
+            direction: row.is_output ? "OUT" : "IN",
         }));
     }
 
     async getExplainPlan(database: string, sql: string): Promise<ExplainResult> {
         if (!this.shared.pool) {
-            return { format: 'xml', raw: '', nodes: [] };
+            return { format: "xml", raw: "", nodes: [] };
         }
 
         // SHOWPLAN_XML is a session-level setting. If `SET SHOWPLAN_XML OFF`
@@ -659,30 +661,29 @@ class SqlServerSchemaAdapter extends BaseSchemaAdapter<SqlServerSharedContext> {
             await transaction.begin();
 
             const setReq = transaction.request();
-            await setReq.query('SET SHOWPLAN_XML ON');
+            await setReq.query("SET SHOWPLAN_XML ON");
 
             const planReq = transaction.request();
             if (database) {
                 this.validateIdentifier(database);
                 await planReq.query(`USE ${this.quoteIdentifier(database)}`);
             }
-            const result = await planReq.query(sql) as { recordset: Record<string, unknown>[] };
-            const raw = result.recordset[0]?.MicrosoftSQLServerXMLShowplan as string
-                ?? result.recordset[0]?.ShowPlanXML as string
-                ?? '';
+            const result = (await planReq.query(sql)) as { recordset: Record<string, unknown>[] };
+            const raw =
+                (result.recordset[0]?.MicrosoftSQLServerXMLShowplan as string) ?? (result.recordset[0]?.ShowPlanXML as string) ?? "";
 
             // Reset SHOWPLAN_XML on the SAME connection before committing.
             const resetReq = transaction.request();
-            await resetReq.query('SET SHOWPLAN_XML OFF');
+            await resetReq.query("SET SHOWPLAN_XML OFF");
 
             await transaction.commit();
             committed = true;
 
             const nodes = this.parseShowplanXml(raw);
-            return { format: 'xml', raw, nodes };
+            return { format: "xml", raw, nodes };
         } catch (e) {
-            console.debug('[SQL All in One] SQL Server EXPLAIN error:', e);
-            return { format: 'xml', raw: '', nodes: [] };
+            console.debug("[SQL All in One] SQL Server EXPLAIN error:", e);
+            return { format: "xml", raw: "", nodes: [] };
         } finally {
             if (!committed) {
                 // The transaction was not committed (begin/query/off failed).
@@ -693,7 +694,10 @@ class SqlServerSchemaAdapter extends BaseSchemaAdapter<SqlServerSharedContext> {
                 try {
                     await transaction.rollback();
                 } catch (rollbackErr) {
-                    console.warn('[SQL All in One] SQL Server EXPLAIN rollback failed; tainted connection may be reclaimed by pool idle timeout.', rollbackErr);
+                    console.warn(
+                        "[SQL All in One] SQL Server EXPLAIN rollback failed; tainted connection may be reclaimed by pool idle timeout.",
+                        rollbackErr,
+                    );
                 }
             }
         }
@@ -704,8 +708,8 @@ class SqlServerSchemaAdapter extends BaseSchemaAdapter<SqlServerSharedContext> {
         this.validateIdentifier(table);
         // sys.partitions gives an approximate row count without a full table scan.
         const sql = `SELECT SUM(p.rows) AS row_count FROM ${this.quoteIdentifier(database)}.sys.partitions p JOIN ${this.quoteIdentifier(database)}.sys.tables t ON p.object_id = t.object_id WHERE t.name = @name AND p.index_id IN (0, 1)`;
-        const result = await this.executeQuery(sql, [{ name: 'name', value: table }]);
-        if (result.status !== 'success' || result.rows.length === 0) {
+        const result = await this.executeQuery(sql, [{ name: "name", value: table }]);
+        if (result.status !== "success" || result.rows.length === 0) {
             return 0;
         }
         const rowCount = result.rows[0].row_count;
@@ -722,77 +726,65 @@ class SqlServerSchemaAdapter extends BaseSchemaAdapter<SqlServerSharedContext> {
             supportsExplainAnalyze: false,
             supportsCancel: true,
             supportsSshTunnel: true,
-            supportedObjectTypes: ['table', 'view', 'function', 'procedure', 'trigger', 'index'],
+            supportedObjectTypes: ["table", "view", "function", "procedure", "trigger", "index"],
         };
     }
 
     getSupportedDataTypes(): DataTypeCategory[] {
         return [
             {
-                category: 'Integer',
+                category: "Integer",
+                types: [{ name: "tinyint" }, { name: "smallint" }, { name: "int" }, { name: "bigint" }],
+            },
+            {
+                category: "Float",
                 types: [
-                    { name: 'tinyint' },
-                    { name: 'smallint' },
-                    { name: 'int' },
-                    { name: 'bigint' },
+                    { name: "decimal", needsPrecision: true, needsScale: true },
+                    { name: "numeric", needsPrecision: true, needsScale: true },
+                    { name: "real" },
+                    { name: "float" },
                 ],
             },
             {
-                category: 'Float',
+                category: "Money",
+                types: [{ name: "money" }, { name: "smallmoney" }],
+            },
+            {
+                category: "String",
                 types: [
-                    { name: 'decimal', needsPrecision: true, needsScale: true },
-                    { name: 'numeric', needsPrecision: true, needsScale: true },
-                    { name: 'real' },
-                    { name: 'float' },
+                    { name: "char", needsLength: true },
+                    { name: "varchar", needsLength: true },
+                    { name: "text" },
+                    { name: "nchar", needsLength: true },
+                    { name: "nvarchar", needsLength: true },
+                    { name: "ntext" },
                 ],
             },
             {
-                category: 'Money',
+                category: "Date & Time",
                 types: [
-                    { name: 'money' },
-                    { name: 'smallmoney' },
+                    { name: "date" },
+                    { name: "time", needsPrecision: true },
+                    { name: "datetime" },
+                    { name: "datetime2", needsPrecision: true },
+                    { name: "datetimeoffset", needsPrecision: true },
+                    { name: "smalldatetime" },
                 ],
             },
             {
-                category: 'String',
-                types: [
-                    { name: 'char', needsLength: true },
-                    { name: 'varchar', needsLength: true },
-                    { name: 'text' },
-                    { name: 'nchar', needsLength: true },
-                    { name: 'nvarchar', needsLength: true },
-                    { name: 'ntext' },
-                ],
+                category: "Binary",
+                types: [{ name: "binary", needsLength: true }, { name: "varbinary", needsLength: true }, { name: "image" }],
             },
             {
-                category: 'Date & Time',
+                category: "Other",
                 types: [
-                    { name: 'date' },
-                    { name: 'time', needsPrecision: true },
-                    { name: 'datetime' },
-                    { name: 'datetime2', needsPrecision: true },
-                    { name: 'datetimeoffset', needsPrecision: true },
-                    { name: 'smalldatetime' },
-                ],
-            },
-            {
-                category: 'Binary',
-                types: [
-                    { name: 'binary', needsLength: true },
-                    { name: 'varbinary', needsLength: true },
-                    { name: 'image' },
-                ],
-            },
-            {
-                category: 'Other',
-                types: [
-                    { name: 'bit' },
-                    { name: 'uniqueidentifier' },
-                    { name: 'xml' },
-                    { name: 'sql_variant' },
-                    { name: 'hierarchyid' },
-                    { name: 'geometry' },
-                    { name: 'geography' },
+                    { name: "bit" },
+                    { name: "uniqueidentifier" },
+                    { name: "xml" },
+                    { name: "sql_variant" },
+                    { name: "hierarchyid" },
+                    { name: "geometry" },
+                    { name: "geography" },
                 ],
             },
         ];
@@ -803,8 +795,8 @@ class SqlServerSchemaAdapter extends BaseSchemaAdapter<SqlServerSharedContext> {
         this.validateIdentifier(table);
         const sql = `SELECT c.name AS column_name, TYPE_NAME(c.user_type_id) AS data_type, c.max_length, c.precision, c.scale, c.is_nullable, c.is_identity, OBJECT_DEFINITION(c.default_object_id) AS column_default, CASE WHEN pk.column_id IS NOT NULL THEN 1 ELSE 0 END AS is_primary_key FROM ${this.quoteIdentifier(database)}.sys.columns c LEFT JOIN (SELECT ic.object_id, ic.column_id FROM ${this.quoteIdentifier(database)}.sys.indexes i JOIN ${this.quoteIdentifier(database)}.sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id WHERE i.is_primary_key = 1) pk ON c.object_id = pk.object_id AND c.column_id = pk.column_id WHERE c.object_id = OBJECT_ID(@qualified) ORDER BY c.column_id`;
         const qualified = `${database}..${table}`;
-        const result = await this.executeQuery(sql, [{ name: 'qualified', value: qualified }]);
-        if (result.status !== 'success') {
+        const result = await this.executeQuery(sql, [{ name: "qualified", value: qualified }]);
+        if (result.status !== "success") {
             return [];
         }
 
@@ -814,15 +806,22 @@ class SqlServerSchemaAdapter extends BaseSchemaAdapter<SqlServerSharedContext> {
             const precision = row.precision != null ? Number(row.precision) : 0;
             const scale = row.scale != null ? Number(row.scale) : 0;
             let type = dataType;
-            if (dataType === 'varchar' || dataType === 'nvarchar' || dataType === 'char' || dataType === 'nchar' || dataType === 'varbinary' || dataType === 'binary') {
+            if (
+                dataType === "varchar" ||
+                dataType === "nvarchar" ||
+                dataType === "char" ||
+                dataType === "nchar" ||
+                dataType === "varbinary" ||
+                dataType === "binary"
+            ) {
                 if (maxLength === -1) {
                     type = `${dataType}(MAX)`;
                 } else if (maxLength > 0) {
                     // nchar/nvarchar store 2 bytes per char
-                    const displayLength = dataType.startsWith('n') ? maxLength / 2 : maxLength;
+                    const displayLength = dataType.startsWith("n") ? maxLength / 2 : maxLength;
                     type = `${dataType}(${displayLength})`;
                 }
-            } else if (dataType === 'decimal' || dataType === 'numeric') {
+            } else if (dataType === "decimal" || dataType === "numeric") {
                 type = `${dataType}(${precision}, ${scale})`;
             }
 
@@ -844,8 +843,8 @@ class SqlServerSchemaAdapter extends BaseSchemaAdapter<SqlServerSharedContext> {
         this.validateIdentifier(table);
         const sql = `SELECT i.name AS index_name, i.type_desc, i.is_unique, i.is_primary_key, c.name AS column_name FROM ${this.quoteIdentifier(database)}.sys.indexes i JOIN ${this.quoteIdentifier(database)}.sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id JOIN ${this.quoteIdentifier(database)}.sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id WHERE i.object_id = OBJECT_ID(@qualified) ORDER BY i.name, ic.key_ordinal`;
         const qualified = `${database}..${table}`;
-        const result = await this.executeQuery(sql, [{ name: 'qualified', value: qualified }]);
-        if (result.status !== 'success') {
+        const result = await this.executeQuery(sql, [{ name: "qualified", value: qualified }]);
+        if (result.status !== "success") {
             return [];
         }
 
@@ -872,8 +871,8 @@ class SqlServerSchemaAdapter extends BaseSchemaAdapter<SqlServerSharedContext> {
         this.validateIdentifier(table);
         const sql = `SELECT fk.name AS constraint_name, COL_NAME(fc.parent_object_id, fc.parent_column_id) AS column_name, OBJECT_NAME(fc.referenced_object_id) AS referenced_table, COL_NAME(fc.referenced_object_id, fc.referenced_column_id) AS referenced_column, fk.delete_referential_action_desc AS on_delete, fk.update_referential_action_desc AS on_update FROM ${this.quoteIdentifier(database)}.sys.foreign_keys fk JOIN ${this.quoteIdentifier(database)}.sys.foreign_key_columns fc ON fk.object_id = fc.constraint_object_id WHERE fk.parent_object_id = OBJECT_ID(@qualified) ORDER BY fk.name, fc.constraint_column_id`;
         const qualified = `${database}..${table}`;
-        const result = await this.executeQuery(sql, [{ name: 'qualified', value: qualified }]);
-        if (result.status !== 'success') {
+        const result = await this.executeQuery(sql, [{ name: "qualified", value: qualified }]);
+        if (result.status !== "success") {
             return [];
         }
 
@@ -886,8 +885,8 @@ class SqlServerSchemaAdapter extends BaseSchemaAdapter<SqlServerSharedContext> {
                     columns: [],
                     referencedTable: row.referenced_table as string,
                     referencedColumns: [],
-                    onDelete: (row.on_delete as string)?.replace(/_/g, ' '),
-                    onUpdate: (row.on_update as string)?.replace(/_/g, ' '),
+                    onDelete: (row.on_delete as string)?.replace(/_/g, " "),
+                    onUpdate: (row.on_update as string)?.replace(/_/g, " "),
                 });
             }
             const fk = fkMap.get(fkName)!;
@@ -980,33 +979,30 @@ export class SqlServerAdapter extends BaseDatabaseAdapter<SqlServerSharedContext
         return new SqlServerQueryAdapter(this.shared);
     }
     protected override createMetadataAdapter(): IMetadataAdapter {
-        return new SqlServerMetadataAdapter(
-            this.shared,
-            (sql, params) => this.queryAdapter.execute(sql, params)
-        );
+        return new SqlServerMetadataAdapter(this.shared, (sql, params) => this.queryAdapter.execute(sql, params));
     }
     protected override createSchemaAdapter(): ISchemaAdapter {
         return new SqlServerSchemaAdapter(
             this.shared,
             (sql, params) => this.queryAdapter.execute(sql, params),
-            (db, schema) => this.metadataAdapter.listTriggers(db, schema)
+            (db, schema) => this.metadataAdapter.listTriggers(db, schema),
         );
     }
 
     protected override getReapLogPrefix(): string {
-        return 'SQL Server';
+        return "SQL Server";
     }
 
     static getDialectMetadata(): DialectMetadata {
         return {
-            dialect: 'sqlserver',
-            displayName: 'SQL Server',
+            dialect: "sqlserver",
+            displayName: "SQL Server",
             defaultPort: 1433,
-            defaultUsername: 'sa',
-            iconKey: 'sqlserver',
+            defaultUsername: "sa",
+            iconKey: "sqlserver",
             supportsSshTunnel: true,
             supportsSsl: true,
-            isFileBased: false
+            isFileBased: false,
         };
     }
 }

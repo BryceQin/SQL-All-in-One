@@ -1,9 +1,9 @@
-import type { DialectOptions } from "../dialect"
-import { expandPhrases } from "../expandPhrases"
-import { functions } from "./hive.functions"
-import { dataTypes, keywords } from "./hive.keywords"
+import type { DialectOptions } from "../dialect";
+import { expandPhrases } from "../expandPhrases";
+import { functions } from "./hive.functions";
+import { dataTypes, keywords } from "./hive.keywords";
 
-const reservedSelect = expandPhrases(["SELECT [ALL | DISTINCT]"])
+const reservedSelect = expandPhrases(["SELECT [ALL | DISTINCT]"]);
 
 const reservedClauses = expandPhrases([
     // queries
@@ -40,11 +40,9 @@ const reservedClauses = expandPhrases([
     "LOAD DATA [LOCAL] INPATH",
     "[OVERWRITE] INTO TABLE",
     "LATERAL VIEW",
-])
+]);
 
-const standardOnelineClauses = expandPhrases([
-    "CREATE [TEMPORARY] [EXTERNAL] TABLE [IF NOT EXISTS]",
-])
+const standardOnelineClauses = expandPhrases(["CREATE [TEMPORARY] [EXTERNAL] TABLE [IF NOT EXISTS]"]);
 
 const tabularOnelineClauses = expandPhrases([
     // - create:
@@ -71,9 +69,9 @@ const tabularOnelineClauses = expandPhrases([
     "STORED AS",
     "STORED BY",
     "ROW FORMAT",
-])
+]);
 
-const reservedSetOperations = expandPhrases(["UNION [ALL | DISTINCT]"])
+const reservedSetOperations = expandPhrases(["UNION [ALL | DISTINCT]"]);
 
 const reservedJoins = expandPhrases([
     "JOIN",
@@ -81,22 +79,18 @@ const reservedJoins = expandPhrases([
     "{INNER | CROSS} JOIN",
     // non-standard joins
     "LEFT SEMI JOIN",
-])
+]);
 
-const reservedPhrases = expandPhrases(["{ROWS | RANGE} BETWEEN"])
+const reservedPhrases = expandPhrases(["{ROWS | RANGE} BETWEEN"]);
 
-const reservedDataTypePhrases = expandPhrases([])
+const reservedDataTypePhrases = expandPhrases([]);
 
 // https://cwiki.apache.org/confluence/display/Hive/LanguageManual
 export const hive: DialectOptions = {
     name: "hive",
     tokenizerOptions: {
         reservedSelect,
-        reservedClauses: [
-            ...reservedClauses,
-            ...standardOnelineClauses,
-            ...tabularOnelineClauses,
-        ],
+        reservedClauses: [...reservedClauses, ...standardOnelineClauses, ...tabularOnelineClauses],
         reservedSetOperations,
         reservedJoins,
         reservedKeywordPhrases: reservedPhrases,
@@ -114,4 +108,4 @@ export const hive: DialectOptions = {
         onelineClauses: [...standardOnelineClauses, ...tabularOnelineClauses],
         tabularOnelineClauses,
     },
-}
+};

@@ -1,6 +1,6 @@
-import * as vscode from 'vscode';
-import * as path from 'path';
-import { handleError, ErrorCategory } from '../core/errorHandler';
+import * as vscode from "vscode";
+import * as path from "path";
+import { handleError, ErrorCategory } from "../core/errorHandler";
 
 /**
  * Mapping from Monaco token types to their resolved hex colors.
@@ -24,37 +24,37 @@ export interface TokenColorMap {
  */
 const SCOPE_TO_MONACO: [string, keyof TokenColorMap][] = [
     // Operator (must come before keyword to override keyword.operator)
-    ['keyword.operator', 'operator'],
+    ["keyword.operator", "operator"],
 
     // Keyword
-    ['keyword.control', 'keyword'],
-    ['keyword', 'keyword'],
+    ["keyword.control", "keyword"],
+    ["keyword", "keyword"],
 
     // String
-    ['string', 'string'],
+    ["string", "string"],
 
     // Comment
-    ['comment', 'comment'],
+    ["comment", "comment"],
 
     // Number
-    ['constant.numeric', 'number'],
+    ["constant.numeric", "number"],
 
     // Type
-    ['support.type', 'type'],
-    ['entity.name.type', 'type'],
-    ['storage.type', 'type'],
+    ["support.type", "type"],
+    ["entity.name.type", "type"],
+    ["storage.type", "type"],
 
     // Function
-    ['entity.name.function', 'function'],
-    ['support.function', 'function'],
+    ["entity.name.function", "function"],
+    ["support.function", "function"],
 
     // Delimiter / punctuation
-    ['punctuation', 'delimiter'],
+    ["punctuation", "delimiter"],
 
     // Variable
-    ['variable.parameter', 'variable'],
-    ['variable.other', 'variable'],
-    ['variable', 'variable'],
+    ["variable.parameter", "variable"],
+    ["variable.other", "variable"],
+    ["variable", "variable"],
 ];
 
 interface TokenColorSetting {
@@ -89,9 +89,7 @@ export function invalidateTokenColorCache(): void {
 }
 
 export async function getTokenColors(): Promise<TokenColorMap | undefined> {
-    const themeName = vscode.workspace
-        .getConfiguration('workbench')
-        .get<string>('colorTheme');
+    const themeName = vscode.workspace.getConfiguration("workbench").get<string>("colorTheme");
     if (!themeName) return undefined;
 
     if (cachedColors && cachedThemeName === themeName) {
@@ -105,16 +103,16 @@ export async function getTokenColors(): Promise<TokenColorMap | undefined> {
         const themeFilePath = resolveThemeFilePath(themeExtension, themeName);
         if (!themeFilePath) return undefined;
 
-        const fsPromises = await import('fs/promises');
-        const themeContent = await fsPromises.readFile(themeFilePath, 'utf-8');
-        const cleanContent = themeContent.replace(/^\uFEFF/, '');
+        const fsPromises = await import("fs/promises");
+        const themeContent = await fsPromises.readFile(themeFilePath, "utf-8");
+        const cleanContent = themeContent.replace(/^\uFEFF/, "");
         const themeJson = JSON.parse(cleanContent) as ThemeFile;
         const tokenColors = themeJson.tokenColors ?? [];
         const colorMap = resolveTokenColors(tokenColors);
 
         const customizations = vscode.workspace
-            .getConfiguration('editor')
-            .get<{ tokenColors?: TokenColorSetting[] }>('tokenColorCustomizations');
+            .getConfiguration("editor")
+            .get<{ tokenColors?: TokenColorSetting[] }>("tokenColorCustomizations");
         if (customizations?.tokenColors) {
             mergeTokenColors(colorMap, customizations.tokenColors);
         }
@@ -126,7 +124,7 @@ export async function getTokenColors(): Promise<TokenColorMap | undefined> {
         cachedThemeName = themeName;
         return cachedColors;
     } catch (e) {
-        handleError(e, 'themeColors.getTokenColors', ErrorCategory.FEATURE)
+        handleError(e, "themeColors.getTokenColors", ErrorCategory.FEATURE);
         return undefined;
     }
 }
@@ -157,10 +155,7 @@ function findThemeExtension(themeName: string): vscode.Extension<unknown> | unde
 /**
  * Resolve the theme file path from the extension and theme name.
  */
-function resolveThemeFilePath(
-    ext: vscode.Extension<unknown>,
-    themeName: string
-): string | undefined {
+function resolveThemeFilePath(ext: vscode.Extension<unknown>, themeName: string): string | undefined {
     const pkgJson = ext.packageJSON as Record<string, unknown> | undefined;
     const contributes = pkgJson?.contributes as { themes?: { label?: string; id?: string; path?: string }[] } | undefined;
     if (!contributes?.themes) {
@@ -193,9 +188,7 @@ function resolveTokenColors(tokenColors: TokenColorSetting[]): Partial<TokenColo
             continue;
         }
 
-        const scopes = Array.isArray(tokenColor.scope)
-            ? tokenColor.scope
-            : [tokenColor.scope];
+        const scopes = Array.isArray(tokenColor.scope) ? tokenColor.scope : [tokenColor.scope];
 
         for (const scope of scopes) {
             const monacoType = resolveScopeToMonacoType(scope);
@@ -214,7 +207,7 @@ function resolveTokenColors(tokenColors: TokenColorSetting[]): Partial<TokenColo
  */
 function resolveScopeToMonacoType(scope: string): keyof TokenColorMap | undefined {
     for (const [prefix, monacoType] of SCOPE_TO_MONACO) {
-        if (scope === prefix || scope.startsWith(prefix + '.')) {
+        if (scope === prefix || scope.startsWith(prefix + ".")) {
             return monacoType;
         }
     }
@@ -225,19 +218,14 @@ function resolveScopeToMonacoType(scope: string): keyof TokenColorMap | undefine
  * Merge custom token color overrides into the existing color map.
  * Customizations take precedence over theme defaults.
  */
-function mergeTokenColors(
-    colorMap: Partial<TokenColorMap>,
-    customColors: TokenColorSetting[]
-): void {
+function mergeTokenColors(colorMap: Partial<TokenColorMap>, customColors: TokenColorSetting[]): void {
     for (const tokenColor of customColors) {
         const foreground = tokenColor.settings?.foreground;
         if (!foreground) {
             continue;
         }
 
-        const scopes = Array.isArray(tokenColor.scope)
-            ? tokenColor.scope
-            : [tokenColor.scope];
+        const scopes = Array.isArray(tokenColor.scope) ? tokenColor.scope : [tokenColor.scope];
 
         for (const scope of scopes) {
             const monacoType = resolveScopeToMonacoType(scope);

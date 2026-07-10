@@ -1,9 +1,9 @@
-import type { DialectOptions } from "../dialect"
-import { expandPhrases } from "../expandPhrases"
-import { functions } from "./postgresql.functions"
-import { dataTypes, keywords } from "./postgresql.keywords"
+import type { DialectOptions } from "../dialect";
+import { expandPhrases } from "../expandPhrases";
+import { functions } from "./postgresql.functions";
+import { dataTypes, keywords } from "./postgresql.keywords";
 
-const reservedSelect = expandPhrases(["SELECT [ALL | DISTINCT]"])
+const reservedSelect = expandPhrases(["SELECT [ALL | DISTINCT]"]);
 
 const reservedClauses = expandPhrases([
     "WITH",
@@ -25,14 +25,14 @@ const reservedClauses = expandPhrases([
     "LATERAL",
     "TABLESAMPLE",
     "WITH ORDINALITY",
-])
+]);
 
 const standardOnelineClauses = expandPhrases([
     "CREATE [TEMPORARY] TABLE [IF NOT EXISTS]",
     "CREATE INDEX [CONCURRENTLY]",
     "CREATE [OR REPLACE] FUNCTION",
     "COPY",
-])
+]);
 
 const tabularOnelineClauses = expandPhrases([
     "ALTER TABLE",
@@ -49,34 +49,26 @@ const tabularOnelineClauses = expandPhrases([
     "CREATE",
     "SET",
     "SHOW",
-])
+]);
 
-const reservedSetOperations = expandPhrases([
-    "UNION [ALL | DISTINCT]",
-    "INTERSECT [ALL | DISTINCT]",
-    "EXCEPT [ALL | DISTINCT]",
-])
+const reservedSetOperations = expandPhrases(["UNION [ALL | DISTINCT]", "INTERSECT [ALL | DISTINCT]", "EXCEPT [ALL | DISTINCT]"]);
 
 const reservedJoins = expandPhrases([
     "JOIN",
     "{LEFT | RIGHT | FULL} [OUTER] JOIN",
     "{INNER | CROSS} JOIN",
     "NATURAL [INNER | LEFT | RIGHT | FULL] JOIN",
-])
+]);
 
-const reservedPhrases = expandPhrases(["{ROWS | RANGE} BETWEEN"])
+const reservedPhrases = expandPhrases(["{ROWS | RANGE} BETWEEN"]);
 
-const reservedDataTypePhrases = expandPhrases([])
+const reservedDataTypePhrases = expandPhrases([]);
 
 export const postgresql: DialectOptions = {
     name: "postgresql",
     tokenizerOptions: {
         reservedSelect,
-        reservedClauses: [
-            ...reservedClauses,
-            ...standardOnelineClauses,
-            ...tabularOnelineClauses,
-        ],
+        reservedClauses: [...reservedClauses, ...standardOnelineClauses, ...tabularOnelineClauses],
         reservedSetOperations,
         reservedJoins,
         reservedKeywordPhrases: reservedPhrases,
@@ -85,7 +77,13 @@ export const postgresql: DialectOptions = {
         reservedDataTypes: dataTypes,
         reservedFunctionNames: functions,
         extraParens: ["[]"],
-        stringTypes: ['""-qq-bs', "''-qq-bs", { quote: "''-bs", prefixes: ["E"] }, { quote: "''-bs", prefixes: ["U&"] }, { regex: "\\$.*?\\$" }],
+        stringTypes: [
+            '""-qq-bs',
+            "''-qq-bs",
+            { quote: "''-bs", prefixes: ["E"] },
+            { quote: "''-bs", prefixes: ["U&"] },
+            { regex: "\\$.*?\\$" },
+        ],
         identTypes: ['""-qq', "``"],
         lineCommentTypes: ["--"],
         operators: ["::", "->", "->>", "#>", "#>>", "@>", "<@", "?", "?|", "?&", "~", "~*", "!~", "!~*", "@@", "@@@", "||"],
@@ -96,4 +94,4 @@ export const postgresql: DialectOptions = {
         onelineClauses: [...standardOnelineClauses, ...tabularOnelineClauses],
         tabularOnelineClauses,
     },
-}
+};

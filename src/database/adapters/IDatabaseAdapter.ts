@@ -6,23 +6,15 @@ import type {
     ConnectionState,
     TestConnectionResult,
     ConnectionGroup,
-} from '../connection/ConnectionConfig'
+} from "../connection/ConnectionConfig";
 
-export type {
-    ConnectionConfig,
-    SSLConfig,
-    SshConfig,
-    ConnectionPoolConfig,
-    ConnectionState,
-    TestConnectionResult,
-    ConnectionGroup,
-}
+export type { ConnectionConfig, SSLConfig, SshConfig, ConnectionPoolConfig, ConnectionState, TestConnectionResult, ConnectionGroup };
 
 export interface IPoolStatus {
     totalConnections: number;
     activeConnections: number;
     idleConnections: number;
-    waitingRequests: number | 'unknown';
+    waitingRequests: number | "unknown";
     connectionLimit: number;
     acquireTimeout: number;
 }
@@ -164,7 +156,12 @@ export interface ISchemaAdapter {
     getFunctionDDL(database: string, functionName: string, schema?: string): Promise<string>;
     getProcedureDDL(database: string, procedureName: string, schema?: string): Promise<string>;
     getTriggerDDL(database: string, triggerName: string, schema?: string): Promise<string>;
-    getRoutineParameters(database: string, routineName: string, routineType: 'FUNCTION' | 'PROCEDURE', schema?: string): Promise<RoutineParameterInfo[]>;
+    getRoutineParameters(
+        database: string,
+        routineName: string,
+        routineType: "FUNCTION" | "PROCEDURE",
+        schema?: string,
+    ): Promise<RoutineParameterInfo[]>;
     getExplainPlan(database: string, sql: string): Promise<ExplainResult>;
     getTableRowCount(database: string, table: string, schema?: string): Promise<number>;
     getDialectCapabilities(): DialectCapabilities;
@@ -189,7 +186,7 @@ export interface SqlStatement {
 
 export interface QueryResult {
     queryId: string;
-    status: 'success' | 'error';
+    status: "success" | "error";
     columns: ColumnMeta[];
     rows: QueryRow[];
     rowCount: number;
@@ -259,7 +256,7 @@ export interface TriggerInfo {
 export interface RoutineParameterInfo {
     name: string;
     type: string;
-    direction: 'IN' | 'OUT' | 'INOUT';
+    direction: "IN" | "OUT" | "INOUT";
 }
 
 export interface TableStructure {
@@ -357,4 +354,3 @@ export interface DialectMetadata {
     supportsSsl: boolean;
     isFileBased: boolean;
 }
-

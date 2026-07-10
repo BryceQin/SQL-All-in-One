@@ -1,132 +1,130 @@
-import * as vscode from 'vscode'
-import type { AstLocation, AstNode } from './astTypes'
-import { isAstNode } from './AstVisitor'
-import type { SqlDialect } from './dialectMapper'
-import { getParserEngine } from './SqlParserEngine'
+import * as vscode from "vscode";
+import type { AstLocation, AstNode } from "./astTypes";
+import { isAstNode } from "./AstVisitor";
+import type { SqlDialect } from "./dialectMapper";
+import { getParserEngine } from "./SqlParserEngine";
 
 export function resolveAstList(sql: string, dialect: SqlDialect, preParsedAst?: unknown[]): unknown[] {
     if (preParsedAst) {
-        return preParsedAst
+        return preParsedAst;
     }
-    const result = getParserEngine().tryAstify(sql, dialect)
+    const result = getParserEngine().tryAstify(sql, dialect);
     if (!result.success || !result.ast) {
-        return []
+        return [];
     }
-    return Array.isArray(result.ast) ? result.ast : [result.ast]
+    return Array.isArray(result.ast) ? result.ast : [result.ast];
 }
 
 export function extractName(name: unknown): string | null {
-    if (typeof name === 'string' && name.length > 0) {
-        return name
+    if (typeof name === "string" && name.length > 0) {
+        return name;
     }
-    if (name != null && typeof name === 'object') {
-        const nameObj = name as Record<string, unknown>
-        if (typeof nameObj.value === 'string' && nameObj.value.length > 0) {
-            return nameObj.value
+    if (name != null && typeof name === "object") {
+        const nameObj = name as Record<string, unknown>;
+        if (typeof nameObj.value === "string" && nameObj.value.length > 0) {
+            return nameObj.value;
         }
     }
-    return null
+    return null;
 }
 
 export function getNodeLocation(node: AstNode): AstLocation | null {
-    const loc = (node as Record<string, unknown>).loc as { start?: AstLocation; end?: AstLocation } | undefined
+    const loc = (node as Record<string, unknown>).loc as { start?: AstLocation; end?: AstLocation } | undefined;
     if (loc?.start?.line !== undefined && loc?.start?.column !== undefined) {
         return {
             line: loc.start.line,
             column: loc.start.column,
-        }
+        };
     }
-    return null
+    return null;
 }
 
 export function getStatementEndLocation(node: AstNode): AstLocation | null {
-    const loc = (node as Record<string, unknown>).loc as { start?: AstLocation; end?: AstLocation } | undefined
+    const loc = (node as Record<string, unknown>).loc as { start?: AstLocation; end?: AstLocation } | undefined;
     if (loc?.end?.line !== undefined && loc?.end?.column !== undefined) {
         return {
             line: loc.end.line,
             column: loc.end.column,
-        }
+        };
     }
-    return null
+    return null;
 }
 
 export function getFunctionName(node: AstNode): string | null {
-    const name = node.name
-    if (typeof name === 'string') {
-        return name
+    const name = node.name;
+    if (typeof name === "string") {
+        return name;
     }
     if (isAstNode(name)) {
-        const nameNode = name as AstNode
-        if (typeof nameNode.value === 'string') {
-            return nameNode.value
+        const nameNode = name as AstNode;
+        if (typeof nameNode.value === "string") {
+            return nameNode.value;
         }
         if (Array.isArray(nameNode.name) && nameNode.name.length > 0) {
-            const firstEntry = nameNode.name[0] as Record<string, unknown>
-            if (typeof firstEntry.value === 'string') {
-                return firstEntry.value
+            const firstEntry = nameNode.name[0] as Record<string, unknown>;
+            if (typeof firstEntry.value === "string") {
+                return firstEntry.value;
             }
         }
     }
-    if (name != null && typeof name === 'object') {
-        const nameObj = name as Record<string, unknown>
+    if (name != null && typeof name === "object") {
+        const nameObj = name as Record<string, unknown>;
         if (Array.isArray(nameObj.name) && nameObj.name.length > 0) {
-            const firstEntry = nameObj.name[0] as Record<string, unknown>
-            if (typeof firstEntry.value === 'string') {
-                return firstEntry.value
+            const firstEntry = nameObj.name[0] as Record<string, unknown>;
+            if (typeof firstEntry.value === "string") {
+                return firstEntry.value;
             }
         }
-        if (typeof nameObj.value === 'string') {
-            return nameObj.value
+        if (typeof nameObj.value === "string") {
+            return nameObj.value;
         }
     }
-    return null
+    return null;
 }
 
 export function getColumnLoc(col: Record<string, unknown>): AstLocation | null {
-    const loc = col.loc as { start?: AstLocation; end?: AstLocation } | undefined
+    const loc = col.loc as { start?: AstLocation; end?: AstLocation } | undefined;
     if (loc?.start?.line !== undefined && loc?.start?.column !== undefined) {
-        return loc.start
+        return loc.start;
     }
-    const expr = col.expr
-    if (expr != null && typeof expr === 'object') {
-        const exprLoc = (expr as Record<string, unknown>).loc as { start?: AstLocation; end?: AstLocation } | undefined
+    const expr = col.expr;
+    if (expr != null && typeof expr === "object") {
+        const exprLoc = (expr as Record<string, unknown>).loc as { start?: AstLocation; end?: AstLocation } | undefined;
         if (exprLoc?.start?.line !== undefined && exprLoc?.start?.column !== undefined) {
-            return exprLoc.start
+            return exprLoc.start;
         }
     }
-    return null
+    return null;
 }
 
 export function extractTableName(node: Record<string, unknown>): string | null {
-    const table = node.table
-    if (typeof table === 'string' && table.length > 0) return table
-    if (table != null && typeof table === 'object') {
-        const tableObj = table as Record<string, unknown>
-        if (typeof tableObj.value === 'string' && tableObj.value.length > 0) {
-            return tableObj.value
+    const table = node.table;
+    if (typeof table === "string" && table.length > 0) return table;
+    if (table != null && typeof table === "object") {
+        const tableObj = table as Record<string, unknown>;
+        if (typeof tableObj.value === "string" && tableObj.value.length > 0) {
+            return tableObj.value;
         }
     }
-    return null
+    return null;
 }
 
 export function getLocFromAny(obj: Record<string, unknown>): AstLocation | null {
-    const loc = obj.loc as { start?: AstLocation; end?: AstLocation } | undefined
+    const loc = obj.loc as { start?: AstLocation; end?: AstLocation } | undefined;
     if (loc?.start?.line !== undefined && loc?.start?.column !== undefined) {
-        return loc.start
+        return loc.start;
     }
-    return null
+    return null;
 }
 
 export function toVscodeLocationFromLoc(
     loc: { start?: AstLocation; end?: AstLocation } | undefined,
     document: vscode.TextDocument,
 ): vscode.Location | null {
-    if (!loc?.start?.line || !loc?.start?.column) return null
-    const startPos = new vscode.Position(loc.start.line - 1, loc.start.column - 1)
-    const endPos = loc?.end?.line && loc?.end?.column
-        ? new vscode.Position(loc.end.line - 1, loc.end.column - 1)
-        : startPos
-    return new vscode.Location(document.uri, new vscode.Range(startPos, endPos))
+    if (!loc?.start?.line || !loc?.start?.column) return null;
+    const startPos = new vscode.Position(loc.start.line - 1, loc.start.column - 1);
+    const endPos = loc?.end?.line && loc?.end?.column ? new vscode.Position(loc.end.line - 1, loc.end.column - 1) : startPos;
+    return new vscode.Location(document.uri, new vscode.Range(startPos, endPos));
 }
 
 export function createDiagnostic(
@@ -135,14 +133,14 @@ export function createDiagnostic(
     code: string,
     message: string,
     severity: vscode.DiagnosticSeverity,
-    source = 'SQL All in One',
+    source = "SQL All in One",
 ): vscode.Diagnostic {
     const diagnostic = new vscode.Diagnostic(
         new vscode.Range(loc.line - 1, loc.column - 1, loc.line - 1, loc.column - 1 + length),
         message,
         severity,
-    )
-    diagnostic.source = source
-    diagnostic.code = code
-    return diagnostic
+    );
+    diagnostic.source = source;
+    diagnostic.code = code;
+    return diagnostic;
 }

@@ -1,8 +1,8 @@
-import type { FormatOptions } from '../FormatOptions';
-import Indentation from '../Indentation';
-import { SelectFormatter } from './SelectFormatter';
-import { DDLFormatter } from './DDLFormatter';
-import { InsertFormatter } from './InsertFormatter';
+import type { FormatOptions } from "../FormatOptions";
+import Indentation from "../Indentation";
+import { SelectFormatter } from "./SelectFormatter";
+import { DDLFormatter } from "./DDLFormatter";
+import { InsertFormatter } from "./InsertFormatter";
 
 /**
  * Build a cache key that uniquely identifies a formatter configuration.
@@ -43,7 +43,7 @@ export class FormatterFactory {
     private instanceToKey = new WeakMap<SelectFormatter | DDLFormatter | InsertFormatter, string>();
 
     getSelectFormatter(cfg: FormatOptions, indent: Indentation): SelectFormatter {
-        const key = buildCacheKey('select', cfg, indent);
+        const key = buildCacheKey("select", cfg, indent);
         const entry = this.instances.get(key);
         if (!entry) {
             const instance = new SelectFormatter(cfg, indent, this);
@@ -64,7 +64,7 @@ export class FormatterFactory {
     }
 
     getDDLFormatter(cfg: FormatOptions, indent: Indentation): DDLFormatter {
-        const key = buildCacheKey('ddl', cfg, indent);
+        const key = buildCacheKey("ddl", cfg, indent);
         const entry = this.instances.get(key);
         if (!entry) {
             const instance = new DDLFormatter(cfg, indent, this);
@@ -81,7 +81,7 @@ export class FormatterFactory {
     }
 
     getInsertFormatter(cfg: FormatOptions, indent: Indentation): InsertFormatter {
-        const key = buildCacheKey('insert', cfg, indent);
+        const key = buildCacheKey("insert", cfg, indent);
         const entry = this.instances.get(key);
         if (!entry) {
             const instance = new InsertFormatter(cfg, indent, this);

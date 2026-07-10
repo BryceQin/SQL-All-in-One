@@ -1,5 +1,46 @@
 # Changelog
 
+## [2.32.0] - 2026-07-10
+
+### 工具链大迁移
+
+#### ESLint → oxlint
+
+- **lint 工具替换**：移除 ESLint，采用 [oxlint](https://oxc.rs/docs/guide/usage/linter) 1.73.0 作为新的代码检查工具
+    - 新增配置文件 [.oxlintrc.json](.oxlintrc.json)，启用 `typescript` / `oxc` / `eslint` / `import` 插件
+    - 规则分级：`correctness: error`、`suspicious: warn`、`pedantic/style/perf: off`
+    - 对 `src/views/**` 与 `src/test/**` 设置覆盖规则，放宽 `no-explicit-any` / `no-unsafe-*` 等
+    - `npm run lint` 现调用 `oxlint src`，`npm run lint:fix` 调用 `oxlint src --fix`
+
+#### TypeScript 5 → TypeScript 7
+
+- **TS 版本升级**：`typescript` 从 ^5.x 升级到 ^7.0.0（实际 7.0.2）
+    - [tsconfig.json](tsconfig.json) 保持 `target: ES2022`、`module: Node16`、`strict: true`
+    - 全量 `tsc --noEmit` 通过，无类型错误
+
+#### 新增 oxfmt 代码格式化
+
+- **格式化工具**：新增 [oxfmt](https://oxc.rs/docs/guide/usage/formatter) 0.58.0，配置见 [.oxfmtrc.jsonc](.oxfmtrc.jsonc)
+    - 风格：单引号、4 空格缩进、`printWidth: 140`、`trailingComma: all`
+    - 忽略 `out/`、`node_modules/`、`media/`、生成文件等
+    - 新增脚本：`npm run format`（`oxfmt . --write`）、`npm run format:check`（`oxfmt . --check`）
+
+### Bug Fixes
+
+- **测试断言兼容性修复**：[src/test/queryResult.test.ts](src/test/queryResult.test.ts) 中 7 处断言因 `media/query-result.js` 引号样式从单引号迁移到双引号而失效，已更新为双引号匹配
+    - `window.addEventListener("message", ...)` 断言
+    - 6 个 `command: "xxx"` 断言（executeQuery / cancelQuery / requestExport / requestSort / requestFilter / requestPage）
+- **tsconfig.json 格式化**：`exclude` 数组按 oxfmt 规则折叠为单行
+
+### Tests
+
+- 全量回归测试：**1960 passing, 1 pending, 0 failing**
+- TypeScript 7 类型检查：0 error
+- oxlint 检查：0 error，0 warning
+- oxfmt 格式检查：全部通过
+
+---
+
 ## [2.31.0] - 2026-07-07
 
 ### New Features
@@ -10,8 +51,8 @@
 - **多语句错误恢复**：[src/parser/MultiStatementParser.ts](src/parser/MultiStatementParser.ts) 新增 `parseMultiStatement`，按分号切分逐条解析，单条失败不影响其他语句的 AST 服务（hover/completion/lint）
 - **位置感知错误诊断**：[src/parser/ParseError.ts](src/parser/ParseError.ts) 扩展 `position`（行列号）与 `dialectHint`（FlinkSQL/SparkSQL 方言特定修复建议），从 node-sql-parser 错误信息中提取位置
 - **Flink MATCH_RECOGNIZE 结构化 AST**：[src/parser/FlinkCepAstBuilder.ts](src/parser/FlinkCepAstBuilder.ts) 新增 `parseMatchRecognize`，将 CEP 子句解析为结构化 `MatchRecognizeNode`（PARTITION BY / ORDER BY / MEASURES / PATTERN / DEFINE / WITHIN），供后续 definition provider / linter 使用
-  - 支持嵌套括号 PATTERN（如 `PATTERN ((A B)+ C)`）
-  - 支持大小写敏感的模式变量名（小写、混合大小写）
+    - 支持嵌套括号 PATTERN（如 `PATTERN ((A B)+ C)`）
+    - 支持大小写敏感的模式变量名（小写、混合大小写）
 - **CEP slot 标记**：[src/formatter/FlinkSqlAdapter.ts](src/formatter/FlinkSqlAdapter.ts) 的 `FlinkAdapterState` 新增 `cepSlotIds` 字段，供 definition provider 快速定位 CEP slot
 
 #### FlinkSQL 函数签名补全
@@ -33,14 +74,14 @@
 ### Tests
 
 - 新增 8 个测试文件，共 70+ 测试用例：
-  - `sqlHasher.test.ts`（8 用例）— SHA-256 哈希行为
-  - `parserEngineCacheKey.test.ts`（5 用例）— 缓存键碰撞回归
-  - `parseError.test.ts`（6 用例）— 位置提取与方言提示
-  - `multiStatementParser.test.ts`（10 用例）— 多语句错误恢复
-  - `flinkWithClauseScope.test.ts`（7 用例）— WITH 子句作用域
-  - `flinkCepAstBuilder.test.ts`（15 用例）— CEP 结构化解析 + slot 集成
-  - `flinkFunctionSignatures.test.ts`（16 用例）— Flink 函数签名完整性
-  - `sparkFunctionSignatures.test.ts`（17 用例）— Spark 函数签名完整性
+    - `sqlHasher.test.ts`（8 用例）— SHA-256 哈希行为
+    - `parserEngineCacheKey.test.ts`（5 用例）— 缓存键碰撞回归
+    - `parseError.test.ts`（6 用例）— 位置提取与方言提示
+    - `multiStatementParser.test.ts`（10 用例）— 多语句错误恢复
+    - `flinkWithClauseScope.test.ts`（7 用例）— WITH 子句作用域
+    - `flinkCepAstBuilder.test.ts`（15 用例）— CEP 结构化解析 + slot 集成
+    - `flinkFunctionSignatures.test.ts`（16 用例）— Flink 函数签名完整性
+    - `sparkFunctionSignatures.test.ts`（17 用例）— Spark 函数签名完整性
 - 全量测试：1960 passing, 0 failing
 
 ---
@@ -52,69 +93,70 @@
 #### FlinkSQL 全面强化
 
 - **FlinkSqlAdapter 新建**：新增 [src/formatter/FlinkSqlAdapter.ts](src/formatter/FlinkSqlAdapter.ts)，对 Flink 特有语法做 slot 化预处理，解决 parser 不识别导致格式化失败或丢字的问题
-  - 窗口表函数 TVF：`TUMBLE(TABLE t, DESCRIPTOR(col), INTERVAL '10' MINUTE)` / `HOP` / `CUMULATE` / `SESSION`
-  - 表定义子句：`WATERMARK FOR col AS expr`、`PRIMARY KEY (cols) NOT ENFORCED`、`UNIQUE (cols)`、`CONSTRAINT name PRIMARY KEY`、`METADATA FROM 'key' VIRTUAL`、计算列 `col AS expr`
-  - Connector 配置：`WITH ('connector'='...', ...)`（平衡括号扫描，支持嵌套）
-  - Temporal Join：`FOR SYSTEM_TIME AS OF s.proc_time AS t`
-  - CEP 模式识别：`MATCH_RECOGNIZE (...)`（含 `MEASURES`/`PATTERN`/`DEFINE`/`ONE ROW PER MATCH`/`AFTER MATCH SKIP` 等子句）
-  - 整段语句 slot 化：`CREATE TABLE ... LIKE`、`CREATE CATALOG/DATABASE ... WITH`、`DROP CATALOG`、`USE CATALOG/MODULES`、`ALTER TABLE ADD CONSTRAINT`、`CREATE/ALTER FUNCTION ... LANGUAGE PYTHON/JAVA/SCALA`、`EXECUTE STATEMENT SET BEGIN ... END`、`BEGIN STATEMENT SET ... END`、`ADD/REMOVE JAR`、`SHOW JARS/MODULES/CATALOGS`、`LOAD/UNLOAD MODULE`、`STOP/CANCEL JOB`、`DESCRIBE [EXTENDED]`、`EXPLAIN [CODEGEN/EXTENDED]`、`ALTER TABLE SET/UNSET TBLPROPERTIES`、`ALTER DATABASE`、`ALTER FUNCTION`
-  - 流式输出策略：`EMIT AFTER WATERMARK`（INSERT/SELECT/CREATE VIEW 三种上下文）
-  - SET 配置：`SET key = value`（多空格兼容）
+    - 窗口表函数 TVF：`TUMBLE(TABLE t, DESCRIPTOR(col), INTERVAL '10' MINUTE)` / `HOP` / `CUMULATE` / `SESSION`
+    - 表定义子句：`WATERMARK FOR col AS expr`、`PRIMARY KEY (cols) NOT ENFORCED`、`UNIQUE (cols)`、`CONSTRAINT name PRIMARY KEY`、`METADATA FROM 'key' VIRTUAL`、计算列 `col AS expr`
+    - Connector 配置：`WITH ('connector'='...', ...)`（平衡括号扫描，支持嵌套）
+    - Temporal Join：`FOR SYSTEM_TIME AS OF s.proc_time AS t`
+    - CEP 模式识别：`MATCH_RECOGNIZE (...)`（含 `MEASURES`/`PATTERN`/`DEFINE`/`ONE ROW PER MATCH`/`AFTER MATCH SKIP` 等子句）
+    - 整段语句 slot 化：`CREATE TABLE ... LIKE`、`CREATE CATALOG/DATABASE ... WITH`、`DROP CATALOG`、`USE CATALOG/MODULES`、`ALTER TABLE ADD CONSTRAINT`、`CREATE/ALTER FUNCTION ... LANGUAGE PYTHON/JAVA/SCALA`、`EXECUTE STATEMENT SET BEGIN ... END`、`BEGIN STATEMENT SET ... END`、`ADD/REMOVE JAR`、`SHOW JARS/MODULES/CATALOGS`、`LOAD/UNLOAD MODULE`、`STOP/CANCEL JOB`、`DESCRIBE [EXTENDED]`、`EXPLAIN [CODEGEN/EXTENDED]`、`ALTER TABLE SET/UNSET TBLPROPERTIES`、`ALTER DATABASE`、`ALTER FUNCTION`
+    - 流式输出策略：`EMIT AFTER WATERMARK`（INSERT/SELECT/CREATE VIEW 三种上下文）
+    - SET 配置：`SET key = value`（多空格兼容）
 - **FlinkSQL 函数悬停提示接入**：[src/hover/FunctionHoverResolver.ts](src/hover/FunctionHoverResolver.ts) 的函数签名 map 补全 `flinksql` 方言，悬停 Flink 函数即可查看签名
 - **FlinkSQL 关键字补全**：[src/dialects/flinksql/flinksql.keywords.ts](src/dialects/flinksql/flinksql.keywords.ts) 补 17 个 `MATCH_RECOGNIZE` (CEP) 相关关键字：`MATCH_RECOGNIZE`、`MEASURES`、`PATTERN`、`SUBSET`、`WITHIN`、`ONE`、`PER`、`MATCH`、`AFTER`、`MATCHED`、`SKIP`、`PAST`、`PERMUTE`、`RUNNING`、`FINAL`、`EMIT`、`ASOF`
 
 #### SparkSQL / Delta Lake 强化
 
 - **SparkSqlAdapter 扩展 Delta Lake 语句**：[src/formatter/SparkSqlAdapter.ts](src/formatter/SparkSqlAdapter.ts) 新增整段 slot 化支持
-  - `OPTIMIZE table [WHERE ...] ZORDER BY (cols)`
-  - `VACUUM table [RETAIN N HOURS] [DRY RUN]`
-  - `CONVERT TO DELTA table [PARTITIONED BY (...)]`
-  - `DESCRIBE HISTORY table` / `DESCRIBE DETAIL table`
-  - `CREATE TABLE ... DEEP/SHALLOW CLONE source`
-  - `GENERATE symlink_format_manifest FOR TABLE table`
+    - `OPTIMIZE table [WHERE ...] ZORDER BY (cols)`
+    - `VACUUM table [RETAIN N HOURS] [DRY RUN]`
+    - `CONVERT TO DELTA table [PARTITIONED BY (...)]`
+    - `DESCRIBE HISTORY table` / `DESCRIBE DETAIL table`
+    - `CREATE TABLE ... DEEP/SHALLOW CLONE source`
+    - `GENERATE symlink_format_manifest FOR TABLE table`
 - **SparkSQL 关键字补全**：[src/dialects/spark/spark.keywords.ts](src/dialects/spark/spark.keywords.ts) 补 15 个 Delta Lake/Iceberg/Hudi 关键字：`DELTA`、`VACUUM`、`ZORDER`、`ZORDERBY`、`CLONE`、`DEEP`、`SHALLOW`、`HISTORY`、`DETAIL`、`MANIFEST`、`SYMLINK`、`GENERATE`、`RETAIN`、`DRY`、`RUN`
 - **SparkSQL Snippets 扩充**：[snippets/spark.json](snippets/spark.json) 从 2 个扩充到 19 个
-  - 表创建：`sparkcrtparquet`、`sparkcrtjdbc`、`sparkcrtdelta`
-  - 数据写入：`sparkins`、`sparkinsinto`、`sparkmerge`
-  - 查询：`sparklv`、`sparklvp`、`sparkwin`、`sparkpivot`
-  - 缓存与统计：`sparkcache`、`sparkstats`
-  - 函数：`sparkfn`
-  - Delta Lake：`sparkconvdelta`、`sparkoptimize`、`sparkvacuum`、`sparkdesc`
-  - 临时视图：`sparktemp`、`sparkglobaltemp`
+    - 表创建：`sparkcrtparquet`、`sparkcrtjdbc`、`sparkcrtdelta`
+    - 数据写入：`sparkins`、`sparkinsinto`、`sparkmerge`
+    - 查询：`sparklv`、`sparklvp`、`sparkwin`、`sparkpivot`
+    - 缓存与统计：`sparkcache`、`sparkstats`
+    - 函数：`sparkfn`
+    - Delta Lake：`sparkconvdelta`、`sparkoptimize`、`sparkvacuum`、`sparkdesc`
+    - 临时视图：`sparktemp`、`sparkglobaltemp`
 
 ### Code Quality
 
 - **Lint warnings 清零**：修复 [src/database/adapters/BaseSchemaAdapter.ts](src/database/adapters/BaseSchemaAdapter.ts) 与 [src/database/adapters/DamengAdapter.ts](src/database/adapters/DamengAdapter.ts) 中遗留的 20 个 ESLint warnings
-  - 8 个 tsdoc 反引号 code span 解析警告（移除嵌套反引号与跨行 code span）
-  - 4 个 tsdoc 大括号转义警告（`DRIVER={DM8 ODBC DRIVER}` → `DRIVER=\{DM8 ODBC DRIVER\}`）
-  - 8 个 `Array<T>` → `T[]` 风格警告
-  - 当前 ESLint 状态：0 errors, 0 warnings
+    - 8 个 tsdoc 反引号 code span 解析警告（移除嵌套反引号与跨行 code span）
+    - 4 个 tsdoc 大括号转义警告（`DRIVER={DM8 ODBC DRIVER}` → `DRIVER=\{DM8 ODBC DRIVER\}`）
+    - 8 个 `Array<T>` → `T[]` 风格警告
+    - 当前 ESLint 状态：0 errors, 0 warnings
 
 ### Tests
 
 - **新增 FlinkSqlAdapter 测试套件**：[src/test/flinkSqlAdapter.test.ts](src/test/flinkSqlAdapter.test.ts)
-  - P1 核心结构：TUMBLE TVF / WATERMARK / WITH connector / PRIMARY KEY / Temporal Join / MATCH_RECOGNIZE / CREATE TABLE LIKE（10 个用例）
-  - P3 长尾语法：EMIT / CREATE DATABASE WITH / ALTER TABLE ADD CONSTRAINT / STOP JOB / DESCRIBE / EXPLAIN / LOAD MODULE / ALTER TABLE SET TBLPROPERTIES / ALTER FUNCTION LANGUAGE / SET 多空格 / 多语句共存（21 个用例）
-  - 格式化集成：Flink SELECT / CREATE TABLE with WATERMARK / TUMBLE 窗口查询（3 个用例）
+    - P1 核心结构：TUMBLE TVF / WATERMARK / WITH connector / PRIMARY KEY / Temporal Join / MATCH_RECOGNIZE / CREATE TABLE LIKE（10 个用例）
+    - P3 长尾语法：EMIT / CREATE DATABASE WITH / ALTER TABLE ADD CONSTRAINT / STOP JOB / DESCRIBE / EXPLAIN / LOAD MODULE / ALTER TABLE SET TBLPROPERTIES / ALTER FUNCTION LANGUAGE / SET 多空格 / 多语句共存（21 个用例）
+    - 格式化集成：Flink SELECT / CREATE TABLE with WATERMARK / TUMBLE 窗口查询（3 个用例）
 - **新增 SparkSqlAdapter 测试套件**：[src/test/sparkSqlAdapter.test.ts](src/test/sparkSqlAdapter.test.ts)
-  - Delta Lake 语句 slot 化：OPTIMIZE / VACUUM / CONVERT TO DELTA / DESCRIBE HISTORY / DESCRIBE DETAIL / DEEP CLONE / SHALLOW CLONE / GENERATE manifest（9 个用例）
-  - 原有功能回归：LATERAL VIEW EXPLODE / MERGE INTO / CREATE TABLE USING delta / SORT BY / CLUSTER BY / DISTRIBUTE BY / 普通 SELECT / 多语句共存 / 多段 Delta 顺序还原（9 个用例）
+    - Delta Lake 语句 slot 化：OPTIMIZE / VACUUM / CONVERT TO DELTA / DESCRIBE HISTORY / DESCRIBE DETAIL / DEEP CLONE / SHALLOW CLONE / GENERATE manifest（9 个用例）
+    - 原有功能回归：LATERAL VIEW EXPLODE / MERGE INTO / CREATE TABLE USING delta / SORT BY / CLUSTER BY / DISTRIBUTE BY / 普通 SELECT / 多语句共存 / 多段 Delta 顺序还原（9 个用例）
 
 ---
 
 ## [2.29.5] - 2026-07-06
 
 ### Performance
+
 - VSIX 体积优化：通过更精细的 `.vscodeignore` 规则，移除 node_modules 中的非运行时文件
-  - 排除 `@azure/msal-browser` 整个包（14 MB 浏览器端代码，VSCode 扩展在 Node.js 环境不会加载）
-  - 排除 `@azure/identity` 的 `dist/esm`、`dist/browser`、`dist/workerd` 三个非 Node.js 运行时变体
-  - 排除 `@azure/msal-common` 和 `@azure/msal-node` 的 ESM `.js` 副本（运行时只加载 `.cjs`）
-  - 排除所有 `.mjs` 文件（ESM 模块，Node.js `require()` 不使用）
-  - 排除 `better-sqlite3` 的 `test_extension.node` 测试二进制
-  - 排除 `@typespec`、`tar`、`tedious/node_modules/bl` 的测试目录
-  - VSIX 从 21.42 MB 减少到 20.45 MB（减少 ~5%，1 MB），文件数从 5625 减到 5382
-  - 所有 8 个运行时依赖（mysql2、pg、better-sqlite3、mssql、oracledb、odbc、ssh2、node-sql-parser）完整保留
-  - 1828 个测试用例全部通过，功能零回归
+    - 排除 `@azure/msal-browser` 整个包（14 MB 浏览器端代码，VSCode 扩展在 Node.js 环境不会加载）
+    - 排除 `@azure/identity` 的 `dist/esm`、`dist/browser`、`dist/workerd` 三个非 Node.js 运行时变体
+    - 排除 `@azure/msal-common` 和 `@azure/msal-node` 的 ESM `.js` 副本（运行时只加载 `.cjs`）
+    - 排除所有 `.mjs` 文件（ESM 模块，Node.js `require()` 不使用）
+    - 排除 `better-sqlite3` 的 `test_extension.node` 测试二进制
+    - 排除 `@typespec`、`tar`、`tedious/node_modules/bl` 的测试目录
+    - VSIX 从 21.42 MB 减少到 20.45 MB（减少 ~5%，1 MB），文件数从 5625 减到 5382
+    - 所有 8 个运行时依赖（mysql2、pg、better-sqlite3、mssql、oracledb、odbc、ssh2、node-sql-parser）完整保留
+    - 1828 个测试用例全部通过，功能零回归
 
 ---
 
@@ -216,13 +258,13 @@ v2.29.2 版本号在 Marketplace 端被占用（首次 publish 时 PAT 验证失
 ### New Features
 
 - **支持格式化不完整的 SQL（partial SQL formatting）**：在编写 SQL 时，用户经常需要格式化尚未写完的 SQL 语句（如缺少 `GROUP BY`、未闭合的 `)`、不完整的 `IN(...)`、缺少 `BETWEEN` 的第二个操作数等）。此前解析器遇到不完整 SQL 会抛出 `end of input found` 错误，`formatWithFallback` 只能原样返回，格式化无效果。新增 `formatPartialSql` 机制：当正常解析失败时，自动补全最小化的语法 token（`AND 1=1`、闭合 `)`、表别名 `AS __sub__`、`IN` 列表末尾值等）使解析器能成功解析，格式化后再精确移除这些补全 token，保留用户已写的部分并正确格式化。支持场景包括：
-  - `SELECT a FROM t WHERE`（WHERE 后无条件）
-  - `SELECT a FROM (SELECT b FROM t`（子查询未闭合）
-  - `SELECT a FROM t WHERE a IN (1,2,3`（IN 列表未闭合）
-  - `SELECT a FROM t WHERE a BETWEEN 1`（BETWEEN 缺少第二个操作数）
-  - 嵌套子查询带 WHERE 条件的不完整语句
-  - 未闭合的字符串字面量
-  - 所有 5 种方言（mysql/sql/hive/spark/postgresql）均支持
+    - `SELECT a FROM t WHERE`（WHERE 后无条件）
+    - `SELECT a FROM (SELECT b FROM t`（子查询未闭合）
+    - `SELECT a FROM t WHERE a IN (1,2,3`（IN 列表未闭合）
+    - `SELECT a FROM t WHERE a BETWEEN 1`（BETWEEN 缺少第二个操作数）
+    - 嵌套子查询带 WHERE 条件的不完整语句
+    - 未闭合的字符串字面量
+    - 所有 5 种方言（mysql/sql/hive/spark/postgresql）均支持
 
 ---
 
@@ -266,9 +308,9 @@ v2.29.2 版本号在 Marketplace 端被占用（首次 publish 时 PAT 验证失
 ### Bug Fixes
 
 - **Webview 面板脚本因 `acquireVsCodeApi()` 重复调用而崩溃（P0）**：`media/shared.js` 在所有 webview 面板中首先加载并调用 `acquireVsCodeApi()` 缓存到 `window.vscode`，但 6 个面板脚本（query-result、config-editor、data-transfer、explain-panel、table-designer、connection-dialog）各自又调用 `acquireVsCodeApi()`。VS Code 规定每个 webview 只能调用一次该 API，第二次调用会抛出异常，且异常发生在全局错误处理器注册之前导致整个脚本崩溃。这是 v2.26.2 修复后仍存在的两个 bug 的真正根因：
-  - **数据表 "query data" 查询无结果**：脚本在 `acquireVsCodeApi()` 第二次调用处崩溃，`init()` 永不执行 → `webviewReady` 消息永不发送 → 扩展宿主侧的 `_pendingSql` 永不投递 → 查询永不执行
-  - **可视化配置页面无法切换编辑器/数据库标签页**：脚本崩溃导致 `bindActions()` 永不执行 → 标签页按钮无点击事件处理器，点击只切换默认高亮但不切换内容
-  - 修复：所有面板脚本改为 `const vscode = window.vscode || acquireVsCodeApi();`，复用 `shared.js` 已缓存的句柄；同步修正 `shared.js` 中错误的注释（原注释错误声称"acquireVsCodeApi() 可安全多次调用"）
+    - **数据表 "query data" 查询无结果**：脚本在 `acquireVsCodeApi()` 第二次调用处崩溃，`init()` 永不执行 → `webviewReady` 消息永不发送 → 扩展宿主侧的 `_pendingSql` 永不投递 → 查询永不执行
+    - **可视化配置页面无法切换编辑器/数据库标签页**：脚本崩溃导致 `bindActions()` 永不执行 → 标签页按钮无点击事件处理器，点击只切换默认高亮但不切换内容
+    - 修复：所有面板脚本改为 `const vscode = window.vscode || acquireVsCodeApi();`，复用 `shared.js` 已缓存的句柄；同步修正 `shared.js` 中错误的注释（原注释错误声称"acquireVsCodeApi() 可安全多次调用"）
 - **其他 4 个面板（data-transfer、explain-panel、table-designer、connection-dialog）存在同样的潜在崩溃**：虽然此前未收到用户反馈，但代码路径完全一致，本次一并修复
 
 ---
@@ -301,9 +343,9 @@ v2.29.2 版本号在 Marketplace 端被占用（首次 publish 时 PAT 验证失
 - **数据表 "query data" 查询无结果（P1）**：`viewTableData` 生成的 SQL 带末尾分号 `SELECT * FROM \`db\`.\`table\` LIMIT 1000;`，MySQL 流式查询路径及部分驱动将末尾分号视为第二条空语句，导致查询出错或返回空结果。修复：去除末尾分号
 - **可视化配置页面无法切换编辑器/数据库标签页（P1）**：`config-editor.js` 的 `bindActions()` 在绑定事件后移除 `data-action-arg` 属性，但 `switchTab()`、`switchConnFormTab()` 及键盘导航在绑定后仍通过 `getAttribute('data-action-arg')` 查找按钮以更新激活态，属性被移除后查找永远返回 `null`，导致切换 tab 时按钮激活态无法更新、键盘导航失效。修复：仅移除 `data-action`（防重复绑定），保留 `data-action-arg`
 - **配置页面与资源管理器未按插件语言设置显示中英文（P2）**：
-  - 配置编辑器 webview 初始化时未请求 i18n 数据包，扩展宿主在 `_update()` 中主动发送的 `initI18n` 消息在 webview 加载完成、注册监听器之前就已发出被丢弃，导致 webview 仅依赖覆盖约 18 个 key 的内联字典，其余 `data-i18n` 元素保留 HTML 默认的英文文本。修复：webview 初始化时主动发送 `requestI18n` 消息，确保 i18n 数据可靠送达
-  - `DatabaseTreeProvider` 未监听配置变更，用户切换 `displayLanguage` 后树节点标签（缓存在节点上）不刷新。修复：订阅 `ConfigManager.onConfigChange` 事件，语言变更时刷新树视图
-  - 补充缺失的 `configEditor.noModified` 翻译 key（en/zh 两个语言包）
+    - 配置编辑器 webview 初始化时未请求 i18n 数据包，扩展宿主在 `_update()` 中主动发送的 `initI18n` 消息在 webview 加载完成、注册监听器之前就已发出被丢弃，导致 webview 仅依赖覆盖约 18 个 key 的内联字典，其余 `data-i18n` 元素保留 HTML 默认的英文文本。修复：webview 初始化时主动发送 `requestI18n` 消息，确保 i18n 数据可靠送达
+    - `DatabaseTreeProvider` 未监听配置变更，用户切换 `displayLanguage` 后树节点标签（缓存在节点上）不刷新。修复：订阅 `ConfigManager.onConfigChange` 事件，语言变更时刷新树视图
+    - 补充缺失的 `configEditor.noModified` 翻译 key（en/zh 两个语言包）
 
 ---
 
@@ -320,17 +362,17 @@ v2.29.2 版本号在 Marketplace 端被占用（首次 publish 时 PAT 验证失
 ### Refactor
 
 - **大规模代码重构**：完成自 v2.25.0 以来的架构级重构，覆盖方言聚合层、关键字/悬停模块、AST 转换器、视图依赖注入等多个方向，合计 18+ 文件变更（225 insertions, 182 deletions）
-  - **方言聚合层迁移**：将 `src/languages/` 聚合文件统一迁移至 `src/dialects/`，删除 `src/languages/` 目录；per-dialect 文件迁移至 `src/dialects/`（保留 re-export shim 兼容）；`keywords/` 与 `hover` 子目录合并到 `src/dialects/keywords/`
-  - **AST 类型单一真相源**：合并 `astTypes.extended.ts` 到 `astTypes.ts`，消除 9 个同名 interface 字段定义不一致的隐蔽 bug 来源
-  - **转换规则数据驱动化**：引入 `ConversionRuleRegistry`，移除硬编码的方言转换对分支；数据驱动剩余 2 个硬编码 transformer 分支
-  - **TreeNode 类型标签分发**：`database` 层 `TreeNode` 用 type-tag dispatch 替代 `instanceof` 检查
-  - **方言数据补全**：补全 starrocks/sqlserver/oracle/dameng 4 个方言到 `dialectData`
-  - **MySQL/StarRocks Adapter 泛型化**：`MysqlConnectionAdapter`/`MysqlMetadataAdapter` 改为泛型，`StarrocksConnectionAdapter`/`StarrocksMetadataAdapter` 改为继承覆写钩子；新增 `BaseSharedContext` 抽象基类消除约 150 行重复 getter/setter
-  - **languages formatter 共享抽象**：新增 `mysqlProtocolBase.ts` 抽取 MySQL 协议族共享常量，`mysql.formatter.ts` 314→60 行，`starrocks.formatter.ts` 325→89 行
-  - **Webview 共享样式**：新增 `media/shared.css` 与 `shared.js`，6 个 CSS 文件合计减少 330 行重复
-  - **视图依赖注入显式化**：`LanguageBridge`、`QueryResultPanel`、`ConnectionDialog`、`DataTransferDialog`、`ExplainPlanPanel`、`TableDesignerPanel` 等面板从 DI 容器隐式 `tryGet` 改为构造函数显式注入 `SchemaProvider`/`SqlHoverProvider`/`SqlCompletionProvider`，消除服务定位反模式，提升可测试性
-  - **超长函数拆分**：`MysqlSchemaAdapter.parseExplainNodes` 77→11 行；`MysqlQueryAdapter.execute` 105→13 行；`executeStream` 168→93 行
-  - **Oracle/Dameng 错误处理去重**：`BaseConnectionAdapter` 新增 `extractErrorCodeTag` 模板方法，删除重复的 `formatConnectionError` 覆写
+    - **方言聚合层迁移**：将 `src/languages/` 聚合文件统一迁移至 `src/dialects/`，删除 `src/languages/` 目录；per-dialect 文件迁移至 `src/dialects/`（保留 re-export shim 兼容）；`keywords/` 与 `hover` 子目录合并到 `src/dialects/keywords/`
+    - **AST 类型单一真相源**：合并 `astTypes.extended.ts` 到 `astTypes.ts`，消除 9 个同名 interface 字段定义不一致的隐蔽 bug 来源
+    - **转换规则数据驱动化**：引入 `ConversionRuleRegistry`，移除硬编码的方言转换对分支；数据驱动剩余 2 个硬编码 transformer 分支
+    - **TreeNode 类型标签分发**：`database` 层 `TreeNode` 用 type-tag dispatch 替代 `instanceof` 检查
+    - **方言数据补全**：补全 starrocks/sqlserver/oracle/dameng 4 个方言到 `dialectData`
+    - **MySQL/StarRocks Adapter 泛型化**：`MysqlConnectionAdapter`/`MysqlMetadataAdapter` 改为泛型，`StarrocksConnectionAdapter`/`StarrocksMetadataAdapter` 改为继承覆写钩子；新增 `BaseSharedContext` 抽象基类消除约 150 行重复 getter/setter
+    - **languages formatter 共享抽象**：新增 `mysqlProtocolBase.ts` 抽取 MySQL 协议族共享常量，`mysql.formatter.ts` 314→60 行，`starrocks.formatter.ts` 325→89 行
+    - **Webview 共享样式**：新增 `media/shared.css` 与 `shared.js`，6 个 CSS 文件合计减少 330 行重复
+    - **视图依赖注入显式化**：`LanguageBridge`、`QueryResultPanel`、`ConnectionDialog`、`DataTransferDialog`、`ExplainPlanPanel`、`TableDesignerPanel` 等面板从 DI 容器隐式 `tryGet` 改为构造函数显式注入 `SchemaProvider`/`SqlHoverProvider`/`SqlCompletionProvider`，消除服务定位反模式，提升可测试性
+    - **超长函数拆分**：`MysqlSchemaAdapter.parseExplainNodes` 77→11 行；`MysqlQueryAdapter.execute` 105→13 行；`executeStream` 168→93 行
+    - **Oracle/Dameng 错误处理去重**：`BaseConnectionAdapter` 新增 `extractErrorCodeTag` 模板方法，删除重复的 `formatConnectionError` 覆写
 
 ### Performance
 
@@ -403,10 +445,10 @@ v2.29.2 版本号在 Marketplace 端被占用（首次 publish 时 PAT 验证失
 ### Tests
 
 - **测试覆盖扩充**：新增 64 个单元测试用例，全部通过，总数达 1826 项
-  - `mysqlAdapter.test.ts`（12 项）：`createPoolOptions`/`createConnectionOptions` 默认配置、SSL、charset、边界情况
-  - `mysqlExplainParser.test.ts`（14 项）：`parseExplainNodes` 的 query_block 嵌套、cost_info、EXPLAIN_SKIP_KEYS 过滤、edge cases
-  - `linterRules.test.ts`（15 项）：AvoidSelectStarRule、UppercaseKeywordsRule、LimitWithOrderByRule 各 5 项最小用例
-  - `schemaCompletion.test.ts`（+23 项）：MruTracker 表级 MRU 队列、SchemaProvider MRU 排序算法、resolveCompletionItem MRU 记录
+    - `mysqlAdapter.test.ts`（12 项）：`createPoolOptions`/`createConnectionOptions` 默认配置、SSL、charset、边界情况
+    - `mysqlExplainParser.test.ts`（14 项）：`parseExplainNodes` 的 query_block 嵌套、cost_info、EXPLAIN_SKIP_KEYS 过滤、edge cases
+    - `linterRules.test.ts`（15 项）：AvoidSelectStarRule、UppercaseKeywordsRule、LimitWithOrderByRule 各 5 项最小用例
+    - `schemaCompletion.test.ts`（+23 项）：MruTracker 表级 MRU 队列、SchemaProvider MRU 排序算法、resolveCompletionItem MRU 记录
 
 ---
 

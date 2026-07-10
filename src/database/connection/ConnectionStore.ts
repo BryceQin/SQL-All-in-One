@@ -1,10 +1,10 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import * as os from 'os';
-import * as vscode from 'vscode';
-import { ConnectionConfig, ConnectionGroup } from './ConnectionConfig';
-import { t } from '../../i18n';
-import { getContainer, Tokens } from '../../core/diContainer';
+import * as fs from "fs";
+import * as path from "path";
+import * as os from "os";
+import * as vscode from "vscode";
+import { ConnectionConfig, ConnectionGroup } from "./ConnectionConfig";
+import { t } from "../../i18n";
+import { getContainer, Tokens } from "../../core/diContainer";
 
 interface ConnectionsFile {
     version: number;
@@ -27,10 +27,10 @@ export class ConnectionStore implements vscode.Disposable {
     private readonly SAVE_DEBOUNCE_MS = 300;
 
     constructor() {
-        this.configDir = path.join(os.homedir(), '.hive-formatter');
-        this.configFilePath = path.join(this.configDir, 'connections.json');
-        this.legacyConfigDir = path.join(os.homedir(), '.sql-all-in-one');
-        this.legacyConfigFilePath = path.join(this.legacyConfigDir, 'connections.json');
+        this.configDir = path.join(os.homedir(), ".hive-formatter");
+        this.configFilePath = path.join(this.configDir, "connections.json");
+        this.legacyConfigDir = path.join(os.homedir(), ".sql-all-in-one");
+        this.legacyConfigFilePath = path.join(this.legacyConfigDir, "connections.json");
     }
 
     async init(): Promise<void> {
@@ -71,20 +71,20 @@ export class ConnectionStore implements vscode.Disposable {
             // config file does not exist yet, proceed with migration
         }
         try {
-            const content = await fs.promises.readFile(this.legacyConfigFilePath, 'utf8');
+            const content = await fs.promises.readFile(this.legacyConfigFilePath, "utf8");
             const data: unknown = JSON.parse(content);
-            if (data && typeof data === 'object' && Array.isArray((data as Record<string, unknown>).connections)) {
+            if (data && typeof data === "object" && Array.isArray((data as Record<string, unknown>).connections)) {
                 await this.ensureConfigDir();
-                await fs.promises.writeFile(this.configFilePath, content, 'utf8');
+                await fs.promises.writeFile(this.configFilePath, content, "utf8");
                 try {
                     await fs.promises.chmod(this.configFilePath, 0o600);
                 } catch (_e) {
                     // chmod not supported on all platforms
                 }
-                console.info('[SQL All in One] Migrated connections from ~/.sql-all-in-one to ~/.hive-formatter');
+                console.info("[SQL All in One] Migrated connections from ~/.sql-all-in-one to ~/.hive-formatter");
             }
         } catch (e) {
-            console.warn('[SQL All in One] Failed to migrate legacy connections:', e);
+            console.warn("[SQL All in One] Failed to migrate legacy connections:", e);
         }
     }
 
@@ -99,11 +99,11 @@ export class ConnectionStore implements vscode.Disposable {
 
     private async saveToFile(data: ConnectionsFile): Promise<void> {
         const dataStr = JSON.stringify(data, null, 2);
-        await fs.promises.writeFile(this.configFilePath, dataStr, 'utf8');
+        await fs.promises.writeFile(this.configFilePath, dataStr, "utf8");
         try {
             await fs.promises.chmod(this.configFilePath, 0o600);
         } catch {
-            console.warn('Could not set file permissions for connections.json');
+            console.warn("Could not set file permissions for connections.json");
         }
     }
 
@@ -116,11 +116,11 @@ export class ConnectionStore implements vscode.Disposable {
             await this.writeDefaultConfig();
         }
         try {
-            const content = await fs.promises.readFile(this.configFilePath, 'utf8');
+            const content = await fs.promises.readFile(this.configFilePath, "utf8");
             const data = JSON.parse(content) as ConnectionsFile;
             return data;
         } catch (e) {
-            console.error('Error loading connections:', e);
+            console.error("Error loading connections:", e);
             return {
                 version: 1,
                 groups: [],
@@ -319,11 +319,11 @@ export class ConnectionStore implements vscode.Disposable {
     async exportConnections(filePath: string, includePasswords = false): Promise<void> {
         if (includePasswords) {
             const confirm = await vscode.window.showWarningMessage(
-                t('connStore.exportPasswordWarning'),
+                t("connStore.exportPasswordWarning"),
                 { modal: true },
-                t('connStore.export')
+                t("connStore.export"),
             );
-            if (confirm !== t('connStore.export')) {
+            if (confirm !== t("connStore.export")) {
                 return;
             }
         }
@@ -343,32 +343,36 @@ export class ConnectionStore implements vscode.Disposable {
                     return {
                         ...conn,
                         password: password || undefined,
-                        ssh: conn.ssh ? {
-                            ...conn.ssh,
-                            password: sshPassword || undefined,
-                            passphrase: sshPassphrase || undefined,
-                        } : undefined,
+                        ssh: conn.ssh
+                            ? {
+                                  ...conn.ssh,
+                                  password: sshPassword || undefined,
+                                  passphrase: sshPassphrase || undefined,
+                              }
+                            : undefined,
                     };
-                })
+                }),
             );
         } else {
             data.connections = data.connections.map((conn) => ({
                 ...conn,
                 password: undefined,
-                ssh: conn.ssh ? {
-                    ...conn.ssh,
-                    password: undefined,
-                    passphrase: undefined,
-                } : undefined,
+                ssh: conn.ssh
+                    ? {
+                          ...conn.ssh,
+                          password: undefined,
+                          passphrase: undefined,
+                      }
+                    : undefined,
             }));
         }
 
-        await fs.promises.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8');
-        if (process.platform !== 'win32') {
+        await fs.promises.writeFile(filePath, JSON.stringify(data, null, 2), "utf8");
+        if (process.platform !== "win32") {
             try {
                 await fs.promises.chmod(filePath, 0o600);
             } catch {
-                console.warn('Could not set file permissions for exported connections file');
+                console.warn("Could not set file permissions for exported connections file");
             }
         }
     }
@@ -376,13 +380,13 @@ export class ConnectionStore implements vscode.Disposable {
     private validateImportData(data: unknown): { valid: boolean; data: ConnectionsFile | null; errors: string[] } {
         const errors: string[] = [];
 
-        if (!data || typeof data !== 'object') {
-            return { valid: false, data: null, errors: ['Imported data is not a valid object'] };
+        if (!data || typeof data !== "object") {
+            return { valid: false, data: null, errors: ["Imported data is not a valid object"] };
         }
 
         const obj = data as Record<string, unknown>;
 
-        if (typeof obj.version !== 'number') {
+        if (typeof obj.version !== "number") {
             errors.push('Missing or invalid "version" field');
         }
 
@@ -390,12 +394,12 @@ export class ConnectionStore implements vscode.Disposable {
             errors.push('Missing or invalid "groups" field');
         } else {
             for (const group of obj.groups) {
-                if (!group || typeof group !== 'object') {
-                    errors.push('Invalid group entry');
+                if (!group || typeof group !== "object") {
+                    errors.push("Invalid group entry");
                     continue;
                 }
                 const g = group as Record<string, unknown>;
-                if (typeof g.name !== 'string' || typeof g.color !== 'string') {
+                if (typeof g.name !== "string" || typeof g.color !== "string") {
                     errors.push(`Invalid group: missing "name" or "color"`);
                 }
             }
@@ -405,16 +409,16 @@ export class ConnectionStore implements vscode.Disposable {
             errors.push('Missing or invalid "connections" field');
         } else {
             for (const conn of obj.connections) {
-                if (!conn || typeof conn !== 'object') {
-                    errors.push('Invalid connection entry');
+                if (!conn || typeof conn !== "object") {
+                    errors.push("Invalid connection entry");
                     continue;
                 }
                 const c = conn as Record<string, unknown>;
-                if (typeof c.id !== 'string' || typeof c.name !== 'string' || typeof c.dialect !== 'string') {
-                    errors.push(`Invalid connection "${c.name || c.id || 'unknown'}": missing required fields (id, name, dialect)`);
+                if (typeof c.id !== "string" || typeof c.name !== "string" || typeof c.dialect !== "string") {
+                    errors.push(`Invalid connection "${c.name || c.id || "unknown"}": missing required fields (id, name, dialect)`);
                 }
-                if (typeof c.host !== 'string' || typeof c.port !== 'number' || typeof c.username !== 'string') {
-                    errors.push(`Invalid connection "${c.name || c.id || 'unknown'}": missing required fields (host, port, username)`);
+                if (typeof c.host !== "string" || typeof c.port !== "number" || typeof c.username !== "string") {
+                    errors.push(`Invalid connection "${c.name || c.id || "unknown"}": missing required fields (host, port, username)`);
                 }
             }
         }
@@ -427,17 +431,17 @@ export class ConnectionStore implements vscode.Disposable {
     }
 
     async importConnections(filePath: string): Promise<{ added: number; skipped: number }> {
-        const content = await fs.promises.readFile(filePath, 'utf8');
+        const content = await fs.promises.readFile(filePath, "utf8");
         let parsed: unknown;
         try {
             parsed = JSON.parse(content);
         } catch (_e) {
-            throw new Error('Failed to parse connections file: invalid JSON');
+            throw new Error("Failed to parse connections file: invalid JSON", { cause: _e });
         }
 
         const validation = this.validateImportData(parsed);
         if (!validation.valid || !validation.data) {
-            throw new Error(`Invalid connections file format:\n${validation.errors.join('\n')}`);
+            throw new Error(`Invalid connections file format:\n${validation.errors.join("\n")}`);
         }
 
         const data = validation.data;
@@ -450,9 +454,7 @@ export class ConnectionStore implements vscode.Disposable {
             }
         }
 
-        const existingNames = new Set(
-            Array.from(this.connections.values()).map(c => c.name)
-        );
+        const existingNames = new Set(Array.from(this.connections.values()).map((c) => c.name));
 
         for (const conn of data.connections) {
             if (!this.connections.has(conn.id)) {

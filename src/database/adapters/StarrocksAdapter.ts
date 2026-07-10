@@ -1,4 +1,4 @@
-import type { Pool, PoolConnection, RowDataPacket } from 'mysql2/promise';
+import type { Pool, PoolConnection, RowDataPacket } from "mysql2/promise";
 import type {
     DialectMetadata,
     IConnectionLifecycle,
@@ -13,19 +13,14 @@ import type {
     DialectCapabilities,
     DataTypeCategory,
     ExplainResult,
-    ExplainNode
-} from './IDatabaseAdapter';
-import { BaseDatabaseAdapter } from './BaseDatabaseAdapter';
-import { BaseSharedContext } from './BaseSharedContext';
-import { t } from '../../i18n/index';
-import { getSystemDatabases } from '../../utils/systemDatabases';
-import {
-    MysqlConnectionAdapter,
-    MysqlQueryAdapter,
-    MysqlMetadataAdapter,
-    MysqlSchemaAdapter
-} from './MysqlAdapter';
-import type { IMysqlProtocolSharedContext } from './MysqlAdapter';
+    ExplainNode,
+} from "./IDatabaseAdapter";
+import { BaseDatabaseAdapter } from "./BaseDatabaseAdapter";
+import { BaseSharedContext } from "./BaseSharedContext";
+import { t } from "../../i18n/index";
+import { getSystemDatabases } from "../../utils/systemDatabases";
+import { MysqlConnectionAdapter, MysqlQueryAdapter, MysqlMetadataAdapter, MysqlSchemaAdapter } from "./MysqlAdapter";
+import type { IMysqlProtocolSharedContext } from "./MysqlAdapter";
 
 /**
  * StarRocks shared context.
@@ -66,23 +61,23 @@ class StarrocksConnectionAdapter extends MysqlConnectionAdapter<StarrocksSharedC
      * and decoupled from MySQL's canonical `SELECT VERSION() AS version`.
      */
     protected override getServerVersionSql(): string {
-        return 'SELECT version() AS version';
+        return "SELECT version() AS version";
     }
 
     protected override defaultServerVersion(): string {
-        return 'StarRocks';
+        return "StarRocks";
     }
 
     protected override warmupFailureLogPrefix(): string {
-        return 'StarRocks';
+        return "StarRocks";
     }
 
     protected override rollbackFailureLogPrefix(): string {
-        return 'StarRocks';
+        return "StarRocks";
     }
 
     protected override healthCheckFailureLogPrefix(): string {
-        return 'StarrocksConnectionAdapter';
+        return "StarrocksConnectionAdapter";
     }
 }
 
@@ -108,10 +103,10 @@ class StarrocksQueryAdapter extends MysqlQueryAdapter<StarrocksSharedContext> {
 
     override async beginTransaction(): Promise<void> {
         if (this.shared.transactionConnection) {
-            throw new Error(t('database.transactionInProgress'));
+            throw new Error(t("database.transactionInProgress"));
         }
         if (!this.shared.pool) {
-            throw new Error(t('database.notConnected'));
+            throw new Error(t("database.notConnected"));
         }
 
         this.shared.transactionConnection = await this.shared.pool.getConnection();
@@ -122,19 +117,19 @@ class StarrocksQueryAdapter extends MysqlQueryAdapter<StarrocksSharedContext> {
         // was never registered in activeQueryThreadIds.
         const txThreadId = (this.shared.transactionConnection as unknown as { threadId?: number }).threadId;
         if (txThreadId !== undefined) {
-            this.shared.activeQueryThreadIds.set('__transaction__', txThreadId);
+            this.shared.activeQueryThreadIds.set("__transaction__", txThreadId);
         }
     }
 
     override async commit(): Promise<void> {
         if (!this.shared.transactionConnection) {
-            throw new Error(t('database.noTransactionInProgress'));
+            throw new Error(t("database.noTransactionInProgress"));
         }
 
         try {
             await this.shared.transactionConnection.commit();
         } finally {
-            this.shared.activeQueryThreadIds.delete('__transaction__');
+            this.shared.activeQueryThreadIds.delete("__transaction__");
             this.shared.transactionConnection.release();
             this.shared.transactionConnection = null;
         }
@@ -142,7 +137,7 @@ class StarrocksQueryAdapter extends MysqlQueryAdapter<StarrocksSharedContext> {
 
     override async rollback(): Promise<void> {
         if (!this.shared.transactionConnection) {
-            throw new Error(t('database.noTransactionInProgress'));
+            throw new Error(t("database.noTransactionInProgress"));
         }
 
         try {
@@ -150,9 +145,9 @@ class StarrocksQueryAdapter extends MysqlQueryAdapter<StarrocksSharedContext> {
             this.shared.transactionConnection.release();
         } catch (rollbackError) {
             this.shared.transactionConnection.destroy();
-            console.error('Rollback failed, connection destroyed:', rollbackError);
+            console.error("Rollback failed, connection destroyed:", rollbackError);
         } finally {
-            this.shared.activeQueryThreadIds.delete('__transaction__');
+            this.shared.activeQueryThreadIds.delete("__transaction__");
             this.shared.transactionConnection = null;
         }
     }
@@ -167,7 +162,7 @@ class StarrocksQueryAdapter extends MysqlQueryAdapter<StarrocksSharedContext> {
         // threadId so transaction-scoped queries can also be cancelled.
         let threadId = this.shared.activeQueryThreadIds.get(_queryId);
         if (threadId === undefined && this.shared.transactionConnection) {
-            threadId = this.shared.activeQueryThreadIds.get('__transaction__');
+            threadId = this.shared.activeQueryThreadIds.get("__transaction__");
         }
         if (threadId === undefined) {
             return;
@@ -183,7 +178,7 @@ class StarrocksQueryAdapter extends MysqlQueryAdapter<StarrocksSharedContext> {
                 conn.release();
             }
         } catch (e) {
-            console.debug('[SQL All in One] StarRocks cancel query error:', e);
+            console.debug("[SQL All in One] StarRocks cancel query error:", e);
         }
     }
 }
@@ -207,7 +202,7 @@ class StarrocksQueryAdapter extends MysqlQueryAdapter<StarrocksSharedContext> {
  */
 class StarrocksMetadataAdapter extends MysqlMetadataAdapter<StarrocksSharedContext> {
     protected override isSystemDatabase(name: string): boolean {
-        return getSystemDatabases('starrocks').includes(name.toLowerCase());
+        return getSystemDatabases("starrocks").includes(name.toLowerCase());
     }
 
     override async listTriggers(_database?: string, _schema?: string): Promise<TriggerInfo[]> {
@@ -241,7 +236,7 @@ class StarrocksSchemaAdapter extends MysqlSchemaAdapter<StarrocksSharedContext> 
     constructor(
         shared: StarrocksSharedContext,
         executeQuery: (sql: string, params?: QueryParam[]) => Promise<QueryResult>,
-        listTriggersFn: (database?: string, schema?: string) => Promise<TriggerInfo[]>
+        listTriggersFn: (database?: string, schema?: string) => Promise<TriggerInfo[]>,
     ) {
         super(shared, executeQuery, listTriggersFn);
     }
@@ -251,31 +246,36 @@ class StarrocksSchemaAdapter extends MysqlSchemaAdapter<StarrocksSharedContext> 
         this.validateIdentifier(table);
         const sql = `SHOW CREATE TABLE ${this.quoteIdentifier(database)}.${this.quoteIdentifier(table)}`;
         const result = await this.executeQuery(sql);
-        if (result.status !== 'success' || result.rows.length === 0) {
-            return '';
+        if (result.status !== "success" || result.rows.length === 0) {
+            return "";
         }
 
         // StarRocks returns "Create Table" column like MySQL, but for views
         // the same query may surface a "Create View" column instead.
-        return (result.rows[0]['Create Table'] ?? result.rows[0]['Create View'] ?? '') as string;
+        return (result.rows[0]["Create Table"] ?? result.rows[0]["Create View"] ?? "") as string;
     }
 
     override async getFunctionDDL(_database: string, _functionName: string, _schema?: string): Promise<string> {
         // StarRocks does not support user-defined functions.
-        return '';
+        return "";
     }
 
     override async getProcedureDDL(_database: string, _procedureName: string, _schema?: string): Promise<string> {
         // StarRocks does not support stored procedures.
-        return '';
+        return "";
     }
 
     override async getTriggerDDL(_database: string, _triggerName: string, _schema?: string): Promise<string> {
         // StarRocks does not support triggers.
-        return '';
+        return "";
     }
 
-    override async getRoutineParameters(_database: string, _routineName: string, _routineType: 'FUNCTION' | 'PROCEDURE', _schema?: string): Promise<RoutineParameterInfo[]> {
+    override async getRoutineParameters(
+        _database: string,
+        _routineName: string,
+        _routineType: "FUNCTION" | "PROCEDURE",
+        _schema?: string,
+    ): Promise<RoutineParameterInfo[]> {
         // StarRocks does not support stored procedures or UDFs.
         return [];
     }
@@ -283,7 +283,7 @@ class StarrocksSchemaAdapter extends MysqlSchemaAdapter<StarrocksSharedContext> 
     override async getExplainPlan(database: string, sql: string): Promise<ExplainResult> {
         const useDb = database ?? this.shared.config?.database;
         if (!this.shared.pool) {
-            return { format: 'text', raw: '', nodes: [] };
+            return { format: "text", raw: "", nodes: [] };
         }
 
         let conn: PoolConnection | null = null;
@@ -298,22 +298,24 @@ class StarrocksSchemaAdapter extends MysqlSchemaAdapter<StarrocksSharedContext> 
             const explainSql = `EXPLAIN ${sql}`;
             const [result] = await conn.query<RowDataPacket[]>(explainSql);
             if (!result || result.length === 0) {
-                return { format: 'text', raw: '', nodes: [] };
+                return { format: "text", raw: "", nodes: [] };
             }
 
             // StarRocks EXPLAIN returns rows with a single column containing
             // multi-line text. Concatenate all rows into a single raw string.
-            const raw = result.map((row: RowDataPacket) => {
-                const value = row[0] as unknown;
-                return typeof value === 'string' ? value : String(value ?? '');
-            }).join('\n');
+            const raw = result
+                .map((row: RowDataPacket) => {
+                    const value = row[0] as unknown;
+                    return typeof value === "string" ? value : String(value ?? "");
+                })
+                .join("\n");
 
             const nodes = this.parseExplainText(raw);
 
-            return { format: 'text', raw, nodes };
+            return { format: "text", raw, nodes };
         } catch (e) {
-            console.debug('[SQL All in One] StarRocks EXPLAIN plan error:', e);
-            return { format: 'text', raw: '', nodes: [] };
+            console.debug("[SQL All in One] StarRocks EXPLAIN plan error:", e);
+            return { format: "text", raw: "", nodes: [] };
         } finally {
             conn?.release();
         }
@@ -330,60 +332,52 @@ class StarrocksSchemaAdapter extends MysqlSchemaAdapter<StarrocksSharedContext> 
             supportsCancel: true,
             supportsSshTunnel: true,
             // StarRocks does not support procedures/triggers/foreign keys
-            supportedObjectTypes: ['table', 'view', 'index'],
+            supportedObjectTypes: ["table", "view", "index"],
         };
     }
 
     override getSupportedDataTypes(): DataTypeCategory[] {
         return [
             {
-                category: 'Integer',
+                category: "Integer",
                 types: [
-                    { name: 'TINYINT', needsLength: true },
-                    { name: 'SMALLINT', needsLength: true },
-                    { name: 'INT', needsLength: true },
-                    { name: 'INTEGER', needsLength: true },
-                    { name: 'BIGINT', needsLength: true },
-                    { name: 'LARGEINT' },
+                    { name: "TINYINT", needsLength: true },
+                    { name: "SMALLINT", needsLength: true },
+                    { name: "INT", needsLength: true },
+                    { name: "INTEGER", needsLength: true },
+                    { name: "BIGINT", needsLength: true },
+                    { name: "LARGEINT" },
                 ],
             },
             {
-                category: 'Float',
+                category: "Float",
                 types: [
-                    { name: 'FLOAT', needsPrecision: true },
-                    { name: 'DOUBLE', needsPrecision: true },
-                    { name: 'DECIMAL', needsPrecision: true, needsScale: true },
-                    { name: 'DECIMALV2', needsPrecision: true, needsScale: true },
-                    { name: 'DECIMALV3', needsPrecision: true, needsScale: true },
+                    { name: "FLOAT", needsPrecision: true },
+                    { name: "DOUBLE", needsPrecision: true },
+                    { name: "DECIMAL", needsPrecision: true, needsScale: true },
+                    { name: "DECIMALV2", needsPrecision: true, needsScale: true },
+                    { name: "DECIMALV3", needsPrecision: true, needsScale: true },
                 ],
             },
             {
-                category: 'String',
-                types: [
-                    { name: 'CHAR', needsLength: true },
-                    { name: 'VARCHAR', needsLength: true },
-                    { name: 'STRING' },
-                ],
+                category: "String",
+                types: [{ name: "CHAR", needsLength: true }, { name: "VARCHAR", needsLength: true }, { name: "STRING" }],
             },
             {
-                category: 'Date & Time',
-                types: [
-                    { name: 'DATE' },
-                    { name: 'DATETIME' },
-                    { name: 'TIMESTAMP' },
-                ],
+                category: "Date & Time",
+                types: [{ name: "DATE" }, { name: "DATETIME" }, { name: "TIMESTAMP" }],
             },
             {
-                category: 'Other',
+                category: "Other",
                 types: [
-                    { name: 'BOOLEAN' },
-                    { name: 'JSON' },
-                    { name: 'BITMAP' },
-                    { name: 'HLL' },
-                    { name: 'PERCENTILE' },
-                    { name: 'ARRAY' },
-                    { name: 'MAP' },
-                    { name: 'STRUCT' },
+                    { name: "BOOLEAN" },
+                    { name: "JSON" },
+                    { name: "BITMAP" },
+                    { name: "HLL" },
+                    { name: "PERCENTILE" },
+                    { name: "ARRAY" },
+                    { name: "MAP" },
+                    { name: "STRUCT" },
                 ],
             },
         ];
@@ -404,7 +398,7 @@ class StarrocksSchemaAdapter extends MysqlSchemaAdapter<StarrocksSharedContext> 
      */
     private parseExplainText(text: string): ExplainNode[] {
         const nodes: ExplainNode[] = [];
-        const lines = text.split('\n');
+        const lines = text.split("\n");
         let idCounter = 0;
 
         for (const line of lines) {
@@ -456,33 +450,30 @@ export class StarrocksAdapter extends BaseDatabaseAdapter<StarrocksSharedContext
         return new StarrocksQueryAdapter(this.shared);
     }
     protected override createMetadataAdapter(): IMetadataAdapter {
-        return new StarrocksMetadataAdapter(
-            this.shared,
-            (sql, params) => this.queryAdapter.execute(sql, params)
-        );
+        return new StarrocksMetadataAdapter(this.shared, (sql, params) => this.queryAdapter.execute(sql, params));
     }
     protected override createSchemaAdapter(): ISchemaAdapter {
         return new StarrocksSchemaAdapter(
             this.shared,
             (sql, params) => this.queryAdapter.execute(sql, params),
-            (db, schema) => this.metadataAdapter.listTriggers(db, schema)
+            (db, schema) => this.metadataAdapter.listTriggers(db, schema),
         );
     }
 
     protected override getReapLogPrefix(): string {
-        return 'StarRocks';
+        return "StarRocks";
     }
 
     static getDialectMetadata(): DialectMetadata {
         return {
-            dialect: 'starrocks',
-            displayName: 'StarRocks',
+            dialect: "starrocks",
+            displayName: "StarRocks",
             defaultPort: 9030,
-            defaultUsername: 'root',
-            iconKey: 'starrocks',
+            defaultUsername: "root",
+            iconKey: "starrocks",
             supportsSshTunnel: true,
             supportsSsl: true,
-            isFileBased: false
+            isFileBased: false,
         };
     }
 }

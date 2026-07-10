@@ -1,9 +1,9 @@
-import type { DialectOptions } from "../dialect"
-import { expandPhrases } from "../expandPhrases"
-import { functions } from "./bigquery.functions"
-import { dataTypes, keywords } from "./bigquery.keywords"
+import type { DialectOptions } from "../dialect";
+import { expandPhrases } from "../expandPhrases";
+import { functions } from "./bigquery.functions";
+import { dataTypes, keywords } from "./bigquery.keywords";
 
-const reservedSelect = expandPhrases(["SELECT [ALL | DISTINCT]"])
+const reservedSelect = expandPhrases(["SELECT [ALL | DISTINCT]"]);
 
 const reservedClauses = expandPhrases([
     "WITH",
@@ -28,7 +28,7 @@ const reservedClauses = expandPhrases([
     "TABLESAMPLE",
     "FOR SYSTEM_TIME AS OF",
     "OPTIONS",
-])
+]);
 
 const standardOnelineClauses = expandPhrases([
     "CREATE [OR REPLACE] TABLE [IF NOT EXISTS]",
@@ -36,7 +36,7 @@ const standardOnelineClauses = expandPhrases([
     "CREATE EXTERNAL TABLE [IF NOT EXISTS]",
     "CREATE MATERIALIZED VIEW [IF NOT EXISTS]",
     "CREATE [OR REPLACE] FUNCTION [IF NOT EXISTS]",
-])
+]);
 
 const tabularOnelineClauses = expandPhrases([
     "ALTER TABLE",
@@ -48,33 +48,21 @@ const tabularOnelineClauses = expandPhrases([
     "CREATE",
     "ALTER",
     "DROP",
-])
+]);
 
-const reservedSetOperations = expandPhrases([
-    "UNION [ALL | DISTINCT]",
-    "INTERSECT [ALL | DISTINCT]",
-    "EXCEPT [ALL | DISTINCT]",
-])
+const reservedSetOperations = expandPhrases(["UNION [ALL | DISTINCT]", "INTERSECT [ALL | DISTINCT]", "EXCEPT [ALL | DISTINCT]"]);
 
-const reservedJoins = expandPhrases([
-    "JOIN",
-    "{LEFT | RIGHT | FULL} [OUTER] JOIN",
-    "{INNER | CROSS} JOIN",
-])
+const reservedJoins = expandPhrases(["JOIN", "{LEFT | RIGHT | FULL} [OUTER] JOIN", "{INNER | CROSS} JOIN"]);
 
-const reservedPhrases = expandPhrases(["{ROWS | RANGE} BETWEEN"])
+const reservedPhrases = expandPhrases(["{ROWS | RANGE} BETWEEN"]);
 
-const reservedDataTypePhrases = expandPhrases([])
+const reservedDataTypePhrases = expandPhrases([]);
 
 export const bigquery: DialectOptions = {
     name: "bigquery",
     tokenizerOptions: {
         reservedSelect,
-        reservedClauses: [
-            ...reservedClauses,
-            ...standardOnelineClauses,
-            ...tabularOnelineClauses,
-        ],
+        reservedClauses: [...reservedClauses, ...standardOnelineClauses, ...tabularOnelineClauses],
         reservedSetOperations,
         reservedJoins,
         reservedKeywordPhrases: reservedPhrases,
@@ -83,27 +71,10 @@ export const bigquery: DialectOptions = {
         reservedDataTypes: dataTypes,
         reservedFunctionNames: functions,
         extraParens: ["[]"],
-        stringTypes: [
-            '""-bs',
-            "''-bs",
-            { regex: "r[bf]?'([^']*)'" },
-            { regex: "'''([^']*)'''" },
-        ],
+        stringTypes: ['""-bs', "''-bs", { regex: "r[bf]?'([^']*)'" }, { regex: "'''([^']*)'''" }],
         identTypes: ["``"],
         lineCommentTypes: ["--", "#"],
-        operators: [
-            "%",
-            "~",
-            "^",
-            "|",
-            "&",
-            "<=>",
-            "==",
-            "!",
-            "||",
-            ">>",
-            "<<",
-        ],
+        operators: ["%", "~", "^", "|", "&", "<=>", "==", "!", "||", ">>", "<<"],
         paramTypes: { named: ["@"], positional: false },
         variableTypes: [{ regex: "@[A-Za-z_][A-Za-z0-9_]*" }],
     },
@@ -111,4 +82,4 @@ export const bigquery: DialectOptions = {
         onelineClauses: [...standardOnelineClauses, ...tabularOnelineClauses],
         tabularOnelineClauses,
     },
-}
+};

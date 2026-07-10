@@ -13,7 +13,7 @@ export interface FilterCondition {
  * flushed to the database.
  */
 export interface PendingChange {
-    type: 'update' | 'insert' | 'delete';
+    type: "update" | "insert" | "delete";
     table: string;
     primaryKey: Record<string, unknown>;
     changes?: Record<string, { old: unknown; new: unknown }>;

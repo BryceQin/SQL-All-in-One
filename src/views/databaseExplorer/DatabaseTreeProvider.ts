@@ -1,4 +1,4 @@
-import * as vscode from 'vscode';
+import * as vscode from "vscode";
 import {
     ITreeNode,
     RootTreeNode,
@@ -17,22 +17,21 @@ import {
     IndexTreeNode,
     RoutineParameterTreeNode,
     RoutineReturnTreeNode,
-    TriggerDetailTreeNode
-} from './treeNodes';
-import type { IConnectionService, ISchemaService, IDatabaseAdapter } from '../../application/ports';
-import type { ConnectionConfig } from '../../database/connection/ConnectionConfig';
-import { getConfigManager } from '../../core/configManager';
-import { handleError, ErrorCategory } from '../../core/errorHandler';
-import { LRUCache } from '../../utils/lruCache';
-import { getSystemDatabases } from '../../utils/systemDatabases';
-import { t } from '../../i18n';
-
+    TriggerDetailTreeNode,
+} from "./treeNodes";
+import type { IConnectionService, ISchemaService, IDatabaseAdapter } from "../../application/ports";
+import type { ConnectionConfig } from "../../database/connection/ConnectionConfig";
+import { getConfigManager } from "../../core/configManager";
+import { handleError, ErrorCategory } from "../../core/errorHandler";
+import { LRUCache } from "../../utils/lruCache";
+import { getSystemDatabases } from "../../utils/systemDatabases";
+import { t } from "../../i18n";
 
 interface FavoriteItem {
     connectionId: string;
     connectionName: string;
     database: string;
-    objectType: 'table' | 'view';
+    objectType: "table" | "view";
     objectName: string;
 }
 
@@ -60,7 +59,7 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
     private schemaCache: ISchemaService;
     private nodeCache = new LRUCache<string, ITreeNode[]>({ maxSize: 200, maxAge: 60000 });
     private favorites: FavoriteItem[] = [];
-    private readonly FAVORITES_KEY = 'hive-formatter.favorites';
+    private readonly FAVORITES_KEY = "hive-formatter.favorites";
 
     private _disposables: vscode.Disposable[] = [];
 
@@ -83,7 +82,7 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
             }),
             this.connectionManager.onDidChangeActiveConnection(() => {
                 this.refresh();
-            })
+            }),
         );
         // Re-render the tree when the plugin's `displayLanguage` setting
         // changes. Tree node labels are resolved through `t()` at construction
@@ -93,7 +92,7 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
         this._disposables.push(
             getConfigManager().onConfigChange(() => {
                 this.refresh();
-            })
+            }),
         );
     }
 
@@ -119,42 +118,31 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
         connectionId: string,
         connectionName: string,
         database: string,
-        objectType: 'table' | 'view',
-        objectName: string
+        objectType: "table" | "view",
+        objectName: string,
     ): Promise<void> {
         const exists = this.favorites.some(
-            f => f.connectionId === connectionId &&
-                 f.database === database &&
-                 f.objectType === objectType &&
-                 f.objectName === objectName
+            (f) => f.connectionId === connectionId && f.database === database && f.objectType === objectType && f.objectName === objectName,
         );
-        
+
         if (!exists) {
             this.favorites.push({
                 connectionId,
                 connectionName,
                 database,
                 objectType,
-                objectName
+                objectName,
             });
             await this.saveFavorites();
             this.refresh();
         }
     }
 
-    async removeFavorite(
-        connectionId: string,
-        database: string,
-        objectType: 'table' | 'view',
-        objectName: string
-    ): Promise<void> {
+    async removeFavorite(connectionId: string, database: string, objectType: "table" | "view", objectName: string): Promise<void> {
         const index = this.favorites.findIndex(
-            f => f.connectionId === connectionId &&
-                 f.database === database &&
-                 f.objectType === objectType &&
-                 f.objectName === objectName
+            (f) => f.connectionId === connectionId && f.database === database && f.objectType === objectType && f.objectName === objectName,
         );
-        
+
         if (index !== -1) {
             this.favorites.splice(index, 1);
             await this.saveFavorites();
@@ -193,62 +181,62 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
 
     private getCommandForNode(element: ITreeNode): vscode.Command | undefined {
         if (element instanceof ConnectionTreeNode) {
-            if (element.connectionState === 'disconnected' || element.connectionState === 'error') {
+            if (element.connectionState === "disconnected" || element.connectionState === "error") {
                 return {
-                    command: 'hive-formatter.connect',
-                    title: t('explorer.cmd.connect'),
-                    arguments: [element]
+                    command: "hive-formatter.connect",
+                    title: t("explorer.cmd.connect"),
+                    arguments: [element],
                 };
             }
             return undefined;
         }
         if (element instanceof ViewTreeNode) {
             return {
-                command: 'hive-formatter.viewTableData',
-                title: t('explorer.cmd.viewData'),
-                arguments: [element]
+                command: "hive-formatter.viewTableData",
+                title: t("explorer.cmd.viewData"),
+                arguments: [element],
             };
         }
         if (element instanceof TableTreeNode) {
             return {
-                command: 'hive-formatter.viewTableData',
-                title: t('explorer.cmd.queryData'),
-                arguments: [element]
+                command: "hive-formatter.viewTableData",
+                title: t("explorer.cmd.queryData"),
+                arguments: [element],
             };
         }
         if (element instanceof FunctionTreeNode) {
             return {
-                command: 'hive-formatter.viewFunctionDDL',
-                title: t('explorer.cmd.viewDefinition'),
-                arguments: [element]
+                command: "hive-formatter.viewFunctionDDL",
+                title: t("explorer.cmd.viewDefinition"),
+                arguments: [element],
             };
         }
         if (element instanceof ProcedureTreeNode) {
             return {
-                command: 'hive-formatter.viewProcedureDDL',
-                title: t('explorer.cmd.viewDefinition'),
-                arguments: [element]
+                command: "hive-formatter.viewProcedureDDL",
+                title: t("explorer.cmd.viewDefinition"),
+                arguments: [element],
             };
         }
         if (element instanceof TriggerTreeNode) {
             return {
-                command: 'hive-formatter.viewTriggerDDL',
-                title: t('explorer.cmd.viewDefinition'),
-                arguments: [element]
+                command: "hive-formatter.viewTriggerDDL",
+                title: t("explorer.cmd.viewDefinition"),
+                arguments: [element],
             };
         }
         if (element instanceof ColumnTreeNode) {
             return {
-                command: 'hive-formatter.copyColumnName',
-                title: t('explorer.cmd.copyName'),
-                arguments: [element]
+                command: "hive-formatter.copyColumnName",
+                title: t("explorer.cmd.copyName"),
+                arguments: [element],
             };
         }
         if (element instanceof FavoriteTreeNode) {
             return {
-                command: 'hive-formatter.revealInExplorer',
-                title: t('explorer.cmd.reveal'),
-                arguments: [element]
+                command: "hive-formatter.revealInExplorer",
+                title: t("explorer.cmd.reveal"),
+                arguments: [element],
             };
         }
         return undefined;
@@ -308,16 +296,16 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
 
     private getRootChildren(): ITreeNode[] {
         const children: ITreeNode[] = [];
-        
+
         const root = new RootTreeNode();
-        
+
         children.push(new FavoritesTreeNode(root));
-        
+
         const connections = this.connectionManager.getAllConnections();
         const groupMap = new Map<string, ConnectionConfig[]>();
-        
+
         for (const conn of connections) {
-            const groupName = conn.group || t('explorer.defaultGroup');
+            const groupName = conn.group || t("explorer.defaultGroup");
             if (!groupMap.has(groupName)) {
                 groupMap.set(groupName, []);
             }
@@ -326,18 +314,18 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
                 groupConnections.push(conn);
             }
         }
-        
+
         for (const [groupName] of groupMap) {
             const groupNode = new GroupTreeNode(groupName, undefined, root);
             children.push(groupNode);
         }
-        
+
         return children;
     }
 
     private getFavoriteChildren(parent: FavoritesTreeNode): ITreeNode[] {
         return this.favorites.map((fav) => {
-            const isAvailable = this.connectionManager.getState(fav.connectionId) === 'connected';
+            const isAvailable = this.connectionManager.getState(fav.connectionId) === "connected";
             return new FavoriteTreeNode(
                 fav.connectionId,
                 fav.connectionName,
@@ -345,29 +333,23 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
                 fav.objectName,
                 fav.objectType,
                 isAvailable,
-                parent
+                parent,
             );
         });
     }
 
     private getGroupChildren(parent: GroupTreeNode): ITreeNode[] {
         const connections = this.connectionManager.getAllConnections();
-        const groupConnections = connections.filter((c) => (c.group || t('explorer.defaultGroup')) === parent.groupName);
-        
+        const groupConnections = connections.filter((c) => (c.group || t("explorer.defaultGroup")) === parent.groupName);
+
         return groupConnections.map((conn) => {
             const state = this.connectionManager.getState(conn.id);
-            return new ConnectionTreeNode(
-                conn.id,
-                conn.name,
-                state,
-                conn.color,
-                parent
-            );
+            return new ConnectionTreeNode(conn.id, conn.name, state, conn.color, parent);
         });
     }
 
     private async getConnectionChildren(parent: ConnectionTreeNode): Promise<ITreeNode[]> {
-        if (parent.connectionState !== 'connected') {
+        if (parent.connectionState !== "connected") {
             return [];
         }
 
@@ -388,32 +370,25 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
             const defaultDatabase = config?.database;
 
             const dialect = this.resolveDialect(parent.connectionId, config);
-            const showSystemDatabases = getConfigManager().get<boolean>('explorer.showSystemDatabases', false);
+            const showSystemDatabases = getConfigManager().get<boolean>("explorer.showSystemDatabases", false);
 
-            const filteredDatabases = showSystemDatabases
-                ? databases
-                : databases.filter(db => !this.isSystemDatabase(db.name, dialect));
+            const filteredDatabases = showSystemDatabases ? databases : databases.filter((db) => !this.isSystemDatabase(db.name, dialect));
 
-            const children = filteredDatabases.map(db => 
-                new DatabaseTreeNode(
-                    db.name,
-                    parent.connectionId,
-                    db.name === defaultDatabase,
-                    parent
-                )
+            const children = filteredDatabases.map(
+                (db) => new DatabaseTreeNode(db.name, parent.connectionId, db.name === defaultDatabase, parent),
             );
 
             this.nodeCache.set(cacheKey, children);
             return children;
         } catch (error) {
-            handleError(error, 'DatabaseTreeProvider.getConnectionChildren', ErrorCategory.FEATURE);
+            handleError(error, "DatabaseTreeProvider.getConnectionChildren", ErrorCategory.FEATURE);
             return [];
         }
     }
 
     private isSystemDatabase(name: string, dialect: string): boolean {
         const systemDatabases = getSystemDatabases(dialect);
-        return systemDatabases.some(sys => name.toLowerCase() === sys.toLowerCase());
+        return systemDatabases.some((sys) => name.toLowerCase() === sys.toLowerCase());
     }
 
     /**
@@ -425,8 +400,8 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
      * `getSystemDatabases` to return its backwards-compatible default list.
      */
     private resolveDialect(connectionId: string, activeConfig?: ConnectionConfig): string {
-        const connConfig = this.connectionManager.getAllConnections().find(c => c.id === connectionId);
-        return connConfig?.dialect ?? activeConfig?.dialect ?? '';
+        const connConfig = this.connectionManager.getAllConnections().find((c) => c.id === connectionId);
+        return connConfig?.dialect ?? activeConfig?.dialect ?? "";
     }
 
     private async getDatabaseChildren(parent: DatabaseTreeNode): Promise<ITreeNode[]> {
@@ -447,23 +422,23 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
                 this.schemaCache.getViews(parent.connectionId, parent.databaseName),
                 this.schemaCache.getFunctions(parent.connectionId, parent.databaseName),
                 this.schemaCache.getProcedures(parent.connectionId, parent.databaseName),
-                adapter.metadataAdapter.listTriggers(parent.databaseName)
+                adapter.metadataAdapter.listTriggers(parent.databaseName),
             ]);
 
-            const maxTableSize = getConfigManager().get<number>('explorer.maxTableListSize', 500);
+            const maxTableSize = getConfigManager().get<number>("explorer.maxTableListSize", 500);
 
             const children: ITreeNode[] = [
-                new ObjectGroupTreeNode('tables', parent.connectionId, parent.databaseName, Math.min(tables.length, maxTableSize), parent),
-                new ObjectGroupTreeNode('views', parent.connectionId, parent.databaseName, views.length, parent),
-                new ObjectGroupTreeNode('functions', parent.connectionId, parent.databaseName, functions.length, parent),
-                new ObjectGroupTreeNode('procedures', parent.connectionId, parent.databaseName, procedures.length, parent),
-                new ObjectGroupTreeNode('triggers', parent.connectionId, parent.databaseName, triggers.length, parent)
+                new ObjectGroupTreeNode("tables", parent.connectionId, parent.databaseName, Math.min(tables.length, maxTableSize), parent),
+                new ObjectGroupTreeNode("views", parent.connectionId, parent.databaseName, views.length, parent),
+                new ObjectGroupTreeNode("functions", parent.connectionId, parent.databaseName, functions.length, parent),
+                new ObjectGroupTreeNode("procedures", parent.connectionId, parent.databaseName, procedures.length, parent),
+                new ObjectGroupTreeNode("triggers", parent.connectionId, parent.databaseName, triggers.length, parent),
             ];
 
             this.nodeCache.set(cacheKey, children);
             return children;
         } catch (error) {
-            handleError(error, 'DatabaseTreeProvider.getDatabaseChildren', ErrorCategory.FEATURE);
+            handleError(error, "DatabaseTreeProvider.getDatabaseChildren", ErrorCategory.FEATURE);
             return [];
         }
     }
@@ -482,75 +457,55 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
             }
 
             const children: ITreeNode[] = [];
-            const maxTableSize = getConfigManager().get<number>('explorer.maxTableListSize', 500);
+            const maxTableSize = getConfigManager().get<number>("explorer.maxTableListSize", 500);
 
             let tables, views, functions, procedures, triggers, limitedTables;
-            
+
             switch (parent.groupType) {
-                case 'tables':
+                case "tables":
                     tables = await this.schemaCache.getTables(parent.connectionId, parent.databaseName);
                     limitedTables = tables.slice(0, maxTableSize);
                     for (const table of limitedTables) {
-                        children.push(new TableTreeNode(
-                            table.name,
-                            parent.connectionId,
-                            parent.databaseName,
-                            table.rowCount,
-                            table.comment,
-                            parent
-                        ));
+                        children.push(
+                            new TableTreeNode(table.name, parent.connectionId, parent.databaseName, table.rowCount, table.comment, parent),
+                        );
                     }
                     break;
 
-                case 'views':
+                case "views":
                     views = await this.schemaCache.getViews(parent.connectionId, parent.databaseName);
                     for (const view of views) {
-                        children.push(new ViewTreeNode(
-                            view.name,
-                            parent.connectionId,
-                            parent.databaseName,
-                            view.comment,
-                            parent
-                        ));
+                        children.push(new ViewTreeNode(view.name, parent.connectionId, parent.databaseName, view.comment, parent));
                     }
                     break;
 
-                case 'functions':
+                case "functions":
                     functions = await this.schemaCache.getFunctions(parent.connectionId, parent.databaseName);
                     for (const func of functions) {
-                        children.push(new FunctionTreeNode(
-                            func.name,
-                            parent.connectionId,
-                            parent.databaseName,
-                            func.returns,
-                            parent
-                        ));
+                        children.push(new FunctionTreeNode(func.name, parent.connectionId, parent.databaseName, func.returns, parent));
                     }
                     break;
 
-                case 'procedures':
+                case "procedures":
                     procedures = await this.schemaCache.getProcedures(parent.connectionId, parent.databaseName);
                     for (const proc of procedures) {
-                        children.push(new ProcedureTreeNode(
-                            proc.name,
-                            parent.connectionId,
-                            parent.databaseName,
-                            parent
-                        ));
+                        children.push(new ProcedureTreeNode(proc.name, parent.connectionId, parent.databaseName, parent));
                     }
                     break;
 
-                case 'triggers':
+                case "triggers":
                     triggers = await adapter.metadataAdapter.listTriggers(parent.databaseName);
                     for (const trigger of triggers) {
-                        children.push(new TriggerTreeNode(
-                            trigger.name,
-                            parent.connectionId,
-                            parent.databaseName,
-                            trigger.event,
-                            trigger.timing,
-                            parent
-                        ));
+                        children.push(
+                            new TriggerTreeNode(
+                                trigger.name,
+                                parent.connectionId,
+                                parent.databaseName,
+                                trigger.event,
+                                trigger.timing,
+                                parent,
+                            ),
+                        );
                     }
                     break;
             }
@@ -558,7 +513,7 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
             this.nodeCache.set(cacheKey, children);
             return children;
         } catch (error) {
-            handleError(error, 'DatabaseTreeProvider.getObjectGroupChildren', ErrorCategory.FEATURE);
+            handleError(error, "DatabaseTreeProvider.getObjectGroupChildren", ErrorCategory.FEATURE);
             return [];
         }
     }
@@ -580,13 +535,7 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
             const children: ITreeNode[] = [];
 
             for (const column of columns) {
-                children.push(new ColumnTreeNode(
-                    column,
-                    parent.connectionId,
-                    parent.databaseName,
-                    parent.tableName,
-                    parent
-                ));
+                children.push(new ColumnTreeNode(column, parent.connectionId, parent.databaseName, parent.tableName, parent));
             }
 
             // Still need adapter for indexes - describeTable returns full structure
@@ -594,24 +543,18 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
                 const structure = await adapter.schemaAdapter.describeTable(parent.databaseName, parent.tableName);
                 if (structure.indexes.length > 0) {
                     for (const index of structure.indexes) {
-                        children.push(new IndexTreeNode(
-                            index,
-                            parent.connectionId,
-                            parent.databaseName,
-                            parent.tableName,
-                            parent
-                        ));
+                        children.push(new IndexTreeNode(index, parent.connectionId, parent.databaseName, parent.tableName, parent));
                     }
                 }
             } catch (e) {
                 // Index info is optional, columns are already loaded from cache
-                handleError(e, 'DatabaseTreeProvider.getTableChildren.indexInfo', ErrorCategory.SUB_ITEM)
+                handleError(e, "DatabaseTreeProvider.getTableChildren.indexInfo", ErrorCategory.SUB_ITEM);
             }
 
             this.nodeCache.set(cacheKey, children);
             return children;
         } catch (error) {
-            handleError(error, 'DatabaseTreeProvider.getTableChildren', ErrorCategory.FEATURE);
+            handleError(error, "DatabaseTreeProvider.getTableChildren", ErrorCategory.FEATURE);
             return [];
         }
     }
@@ -631,29 +574,19 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
 
             const children: ITreeNode[] = [];
 
-            const parameters = await adapter.schemaAdapter.getRoutineParameters(parent.databaseName, parent.functionName, 'FUNCTION');
+            const parameters = await adapter.schemaAdapter.getRoutineParameters(parent.databaseName, parent.functionName, "FUNCTION");
             for (const param of parameters) {
-                children.push(new RoutineParameterTreeNode(
-                    param,
-                    parent.connectionId,
-                    parent.databaseName,
-                    parent
-                ));
+                children.push(new RoutineParameterTreeNode(param, parent.connectionId, parent.databaseName, parent));
             }
 
             if (parent.returns) {
-                children.push(new RoutineReturnTreeNode(
-                    parent.returns,
-                    parent.connectionId,
-                    parent.databaseName,
-                    parent
-                ));
+                children.push(new RoutineReturnTreeNode(parent.returns, parent.connectionId, parent.databaseName, parent));
             }
 
             this.nodeCache.set(cacheKey, children);
             return children;
         } catch (error) {
-            handleError(error, 'DatabaseTreeProvider.getFunctionChildren', ErrorCategory.FEATURE);
+            handleError(error, "DatabaseTreeProvider.getFunctionChildren", ErrorCategory.FEATURE);
             return [];
         }
     }
@@ -673,20 +606,15 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
 
             const children: ITreeNode[] = [];
 
-            const parameters = await adapter.schemaAdapter.getRoutineParameters(parent.databaseName, parent.procedureName, 'PROCEDURE');
+            const parameters = await adapter.schemaAdapter.getRoutineParameters(parent.databaseName, parent.procedureName, "PROCEDURE");
             for (const param of parameters) {
-                children.push(new RoutineParameterTreeNode(
-                    param,
-                    parent.connectionId,
-                    parent.databaseName,
-                    parent
-                ));
+                children.push(new RoutineParameterTreeNode(param, parent.connectionId, parent.databaseName, parent));
             }
 
             this.nodeCache.set(cacheKey, children);
             return children;
         } catch (error) {
-            handleError(error, 'DatabaseTreeProvider.getProcedureChildren', ErrorCategory.FEATURE);
+            handleError(error, "DatabaseTreeProvider.getProcedureChildren", ErrorCategory.FEATURE);
             return [];
         }
     }
@@ -707,46 +635,30 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
             const children: ITreeNode[] = [];
 
             if (parent.timing) {
-                children.push(new TriggerDetailTreeNode(
-                    'timing',
-                    parent.timing,
-                    parent.connectionId,
-                    parent.databaseName,
-                    parent
-                ));
+                children.push(new TriggerDetailTreeNode("timing", parent.timing, parent.connectionId, parent.databaseName, parent));
             }
 
             if (parent.event) {
-                children.push(new TriggerDetailTreeNode(
-                    'event',
-                    parent.event,
-                    parent.connectionId,
-                    parent.databaseName,
-                    parent
-                ));
+                children.push(new TriggerDetailTreeNode("event", parent.event, parent.connectionId, parent.databaseName, parent));
             }
 
             try {
                 const triggers = await adapter.metadataAdapter.listTriggers(parent.databaseName);
-                const triggerInfo = triggers.find(t => t.name === parent.triggerName);
+                const triggerInfo = triggers.find((t) => t.name === parent.triggerName);
                 if (triggerInfo?.statement) {
-                    children.push(new TriggerDetailTreeNode(
-                        'statement',
-                        triggerInfo.statement,
-                        parent.connectionId,
-                        parent.databaseName,
-                        parent
-                    ));
+                    children.push(
+                        new TriggerDetailTreeNode("statement", triggerInfo.statement, parent.connectionId, parent.databaseName, parent),
+                    );
                 }
             } catch (e) {
                 // statement is optional
-                handleError(e, 'DatabaseTreeProvider.getTriggerChildren.statementLoad', ErrorCategory.SUB_ITEM)
+                handleError(e, "DatabaseTreeProvider.getTriggerChildren.statementLoad", ErrorCategory.SUB_ITEM);
             }
 
             this.nodeCache.set(cacheKey, children);
             return children;
         } catch (error) {
-            handleError(error, 'DatabaseTreeProvider.getTriggerChildren', ErrorCategory.FEATURE);
+            handleError(error, "DatabaseTreeProvider.getTriggerChildren", ErrorCategory.FEATURE);
             return [];
         }
     }

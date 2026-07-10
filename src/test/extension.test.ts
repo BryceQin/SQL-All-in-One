@@ -1,7 +1,7 @@
-import * as assert from 'assert';
-import * as vscode from 'vscode';
+import * as assert from "assert";
+import * as vscode from "vscode";
 
-const EXTENSION_IDS = ['bryce-qin.hive-formatter', 'bryce-qin.hive-formatter'];
+const EXTENSION_IDS = ["bryce-qin.hive-formatter", "bryce-qin.hive-formatter"];
 
 function findExtension(): vscode.Extension<unknown> | undefined {
     for (const id of EXTENSION_IDS) {
@@ -11,25 +11,25 @@ function findExtension(): vscode.Extension<unknown> | undefined {
     return undefined;
 }
 
-suite('Extension Test Suite', () => {
-    vscode.window.showInformationMessage('Start all tests.');
+suite("Extension Test Suite", () => {
+    vscode.window.showInformationMessage("Start all tests.");
 
-    test('Extension should be present', async function() {
+    test("Extension should be present", async function () {
         this.timeout(15000);
         let ext = findExtension();
         if (!ext) {
-            await new Promise(resolve => setTimeout(resolve, 3000));
+            await new Promise((resolve) => setTimeout(resolve, 3000));
             ext = findExtension();
         }
-        assert.ok(ext, 'SQL All in One extension should be installed');
+        assert.ok(ext, "SQL All in One extension should be installed");
     });
 
-    test('Extension should activate', async function() {
+    test("Extension should activate", async function () {
         this.timeout(15000);
         const ext = findExtension();
         if (ext) {
             await ext.activate();
-            assert.ok(ext.isActive, 'Extension should be active after activation');
+            assert.ok(ext.isActive, "Extension should be active after activation");
         }
     });
 });

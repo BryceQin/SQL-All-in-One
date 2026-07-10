@@ -1,7 +1,7 @@
-import type { SqlStatement, QueryParam, QueryRow, ColumnMeta } from '../adapters/IDatabaseAdapter';
-import type { PendingChange } from '../../shared/editTypes';
-import type { DatabaseAdapter } from '../adapters/AdapterFactory';
-import { getConnectionManager } from '../connection/ConnectionManager';
+import type { SqlStatement, QueryParam, QueryRow, ColumnMeta } from "../adapters/IDatabaseAdapter";
+import type { PendingChange } from "../../shared/editTypes";
+import type { DatabaseAdapter } from "../adapters/AdapterFactory";
+import { getConnectionManager } from "../connection/ConnectionManager";
 
 /**
  * Generates SQL statements for data editing operations (insert, update, delete).
@@ -12,7 +12,7 @@ export function generateEditSql(
     tableName: string,
     columns: ColumnMeta[],
     rows: QueryRow[],
-    quoteIdentifier: (id: string) => string
+    quoteIdentifier: (id: string) => string,
 ): SqlStatement[] {
     const statements: SqlStatement[] = [];
 
@@ -22,11 +22,11 @@ export function generateEditSql(
     });
 
     for (const change of sorted) {
-        if (change.type === 'delete') {
+        if (change.type === "delete") {
             statements.push(generateDeleteSql(change, tableName, quoteIdentifier));
-        } else if (change.type === 'update') {
+        } else if (change.type === "update") {
             statements.push(generateUpdateSql(change, tableName, quoteIdentifier));
-        } else if (change.type === 'insert') {
+        } else if (change.type === "insert") {
             const stmt = generateInsertSql(change, tableName, columns, rows, quoteIdentifier);
             if (stmt) {
                 statements.push(stmt);
@@ -37,11 +37,7 @@ export function generateEditSql(
     return statements;
 }
 
-function generateDeleteSql(
-    change: PendingChange,
-    tableName: string,
-    quoteIdentifier: (id: string) => string
-): SqlStatement {
+function generateDeleteSql(change: PendingChange, tableName: string, quoteIdentifier: (id: string) => string): SqlStatement {
     const conditions: string[] = [];
     const params: QueryParam[] = [];
     for (const [k, v] of Object.entries(change.primaryKey)) {
@@ -49,16 +45,12 @@ function generateDeleteSql(
         params.push({ name: k, value: v as string | number | boolean | null | undefined });
     }
     return {
-        sql: `DELETE FROM ${quoteIdentifier(tableName)} WHERE ${conditions.join(' AND ')}`,
+        sql: `DELETE FROM ${quoteIdentifier(tableName)} WHERE ${conditions.join(" AND ")}`,
         params,
     };
 }
 
-function generateUpdateSql(
-    change: PendingChange,
-    tableName: string,
-    quoteIdentifier: (id: string) => string
-): SqlStatement {
+function generateUpdateSql(change: PendingChange, tableName: string, quoteIdentifier: (id: string) => string): SqlStatement {
     const setClauses: string[] = [];
     const params: QueryParam[] = [];
     for (const [k, v] of Object.entries(change.changes || {})) {
@@ -71,7 +63,7 @@ function generateUpdateSql(
         params.push({ name: k, value: v as string | number | boolean | null | undefined });
     }
     return {
-        sql: `UPDATE ${quoteIdentifier(tableName)} SET ${setClauses.join(', ')} WHERE ${whereClauses.join(' AND ')}`,
+        sql: `UPDATE ${quoteIdentifier(tableName)} SET ${setClauses.join(", ")} WHERE ${whereClauses.join(" AND ")}`,
         params,
     };
 }
@@ -81,16 +73,16 @@ function generateInsertSql(
     tableName: string,
     columns: ColumnMeta[],
     rows: QueryRow[],
-    quoteIdentifier: (id: string) => string
+    quoteIdentifier: (id: string) => string,
 ): SqlStatement | null {
     const row = rows[change.rowIndex];
     if (!row) {
         return null;
     }
 
-    const colNames = columns.map(c => quoteIdentifier(c.name)).join(', ');
-    const placeholders = columns.map(() => '?').join(', ');
-    const vals: QueryParam[] = columns.map(c => ({
+    const colNames = columns.map((c) => quoteIdentifier(c.name)).join(", ");
+    const placeholders = columns.map(() => "?").join(", ");
+    const vals: QueryParam[] = columns.map((c) => ({
         name: c.name,
         value: row[c.name] as string | number | boolean | null | undefined,
     }));
@@ -107,7 +99,7 @@ function generateInsertSql(
  */
 export async function executeInTransaction(
     adapter: DatabaseAdapter,
-    statements: SqlStatement[]
+    statements: SqlStatement[],
 ): Promise<{ success: boolean; errors?: string[] }> {
     try {
         await adapter.queryAdapter.beginTransaction();
@@ -120,7 +112,7 @@ export async function executeInTransaction(
         try {
             await adapter.queryAdapter.rollback();
         } catch (rollbackError) {
-            console.error('Rollback failed, disconnecting adapter:', rollbackError);
+            console.error("Rollback failed, disconnecting adapter:", rollbackError);
             // 通过 ConnectionManager 触发断开，而非直接调 adapter.disconnect()，
             // 以保证 ConnectionManager 的 runtimeStates 状态与 adapter 实际状态
             // 一致（否则状态仍显示 connected 但 adapter 已 disconnected，后续
@@ -138,7 +130,7 @@ export async function executeInTransaction(
                 }
             } catch (e) {
                 /* ignore: best-effort cleanup */
-                console.debug('[SQL All in One] DataEditService forceDisconnect after rollback failure:', e);
+                console.debug("[SQL All in One] DataEditService forceDisconnect after rollback failure:", e);
             }
         }
         return { success: false, errors: [(error as Error).message] };

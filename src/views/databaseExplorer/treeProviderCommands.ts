@@ -1,7 +1,7 @@
-import * as vscode from 'vscode';
-import { DatabaseTreeProvider } from './DatabaseTreeProvider';
-import { getContainer, Tokens } from '../../core/diContainer';
-import type { IConnectionService, ISchemaService } from '../../application/ports';
+import * as vscode from "vscode";
+import { DatabaseTreeProvider } from "./DatabaseTreeProvider";
+import { getContainer, Tokens } from "../../core/diContainer";
+import type { IConnectionService, ISchemaService } from "../../application/ports";
 
 /**
  * Module-level handle to the singleton DatabaseTreeProvider + TreeView created
@@ -38,7 +38,7 @@ export function registerTreeProviderCommands(context: vscode.ExtensionContext): 
     const disposables: vscode.Disposable[] = [];
 
     disposables.push(
-        vscode.commands.registerCommand('hive-formatter.createTreeProvider', () => {
+        vscode.commands.registerCommand("hive-formatter.createTreeProvider", () => {
             if (treeProvider) {
                 return treeProvider;
             }
@@ -48,7 +48,7 @@ export function registerTreeProviderCommands(context: vscode.ExtensionContext): 
                 container.get<IConnectionService>(Tokens.ConnectionService),
                 container.get<ISchemaService>(Tokens.SchemaService),
             );
-            treeView = vscode.window.createTreeView('hive-formatter.databaseExplorer', {
+            treeView = vscode.window.createTreeView("hive-formatter.databaseExplorer", {
                 treeDataProvider: treeProvider,
                 showCollapseAll: true,
                 canSelectMany: false,
@@ -65,49 +65,27 @@ export function registerTreeProviderCommands(context: vscode.ExtensionContext): 
     );
 
     disposables.push(
-        vscode.commands.registerCommand('hive-formatter.refreshTreeProvider', () => {
+        vscode.commands.registerCommand("hive-formatter.refreshTreeProvider", () => {
             treeProvider?.refresh();
         }),
     );
 
     disposables.push(
         vscode.commands.registerCommand(
-            'hive-formatter.addTreeFavorite',
-            async (
-                connectionId: string,
-                connectionName: string,
-                database: string,
-                objectType: 'table' | 'view',
-                objectName: string,
-            ) => {
+            "hive-formatter.addTreeFavorite",
+            async (connectionId: string, connectionName: string, database: string, objectType: "table" | "view", objectName: string) => {
                 if (!treeProvider) return;
-                await treeProvider.addFavorite(
-                    connectionId,
-                    connectionName,
-                    database,
-                    objectType,
-                    objectName,
-                );
+                await treeProvider.addFavorite(connectionId, connectionName, database, objectType, objectName);
             },
         ),
     );
 
     disposables.push(
         vscode.commands.registerCommand(
-            'hive-formatter.removeTreeFavorite',
-            async (
-                connectionId: string,
-                database: string,
-                objectType: 'table' | 'view',
-                objectName: string,
-            ) => {
+            "hive-formatter.removeTreeFavorite",
+            async (connectionId: string, database: string, objectType: "table" | "view", objectName: string) => {
                 if (!treeProvider) return;
-                await treeProvider.removeFavorite(
-                    connectionId,
-                    database,
-                    objectType,
-                    objectName,
-                );
+                await treeProvider.removeFavorite(connectionId, database, objectType, objectName);
             },
         ),
     );

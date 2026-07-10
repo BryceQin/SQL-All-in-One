@@ -1,58 +1,42 @@
 {
     "Attach Database": {
         "prefix": "attach",
-        "body": [
-            "ATTACH DATABASE '${1:database_file}' AS ${2:alias};"
-        ],
+        "body": ["ATTACH DATABASE '${1:database_file}' AS ${2:alias};"],
         "description": "Attach a database file"
     },
     "Detach Database": {
         "prefix": "detach",
-        "body": [
-            "DETACH DATABASE ${1:alias};"
-        ],
+        "body": ["DETACH DATABASE ${1:alias};"],
         "description": "Detach a database"
     },
     "Pragma Table Info": {
         "prefix": "pragmat",
-        "body": [
-            "PRAGMA table_info(${1:table_name});"
-        ],
+        "body": ["PRAGMA table_info(${1:table_name});"],
         "description": "Get table structure info"
     },
     "Pragma Table List": {
         "prefix": "pragmatl",
-        "body": [
-            "PRAGMA table_list;"
-        ],
+        "body": ["PRAGMA table_list;"],
         "description": "List all tables"
     },
     "Pragma Foreign Keys": {
         "prefix": "pragmafk",
-        "body": [
-            "PRAGMA foreign_key_list(${1:table_name});"
-        ],
+        "body": ["PRAGMA foreign_key_list(${1:table_name});"],
         "description": "List foreign keys for a table"
     },
     "Pragma Index List": {
         "prefix": "pragmail",
-        "body": [
-            "PRAGMA index_list(${1:table_name});"
-        ],
+        "body": ["PRAGMA index_list(${1:table_name});"],
         "description": "List indexes for a table"
     },
     "Pragma Journal Mode": {
         "prefix": "pragmajm",
-        "body": [
-            "PRAGMA journal_mode = ${1|DELETE,TRUNCATE,PERSIST,MEMORY,WAL,OFF|};"
-        ],
+        "body": ["PRAGMA journal_mode = ${1|DELETE,TRUNCATE,PERSIST,MEMORY,WAL,OFF|};"],
         "description": "Set journal mode"
     },
     "Pragma Synchronous": {
         "prefix": "pragmasy",
-        "body": [
-            "PRAGMA synchronous = ${1|OFF,NORMAL,FULL|};"
-        ],
+        "body": ["PRAGMA synchronous = ${1|OFF,NORMAL,FULL|};"],
         "description": "Set synchronous mode"
     },
     "Create Table SQLite": {
@@ -69,32 +53,22 @@
     },
     "Create Virtual Table": {
         "prefix": "crtvt",
-        "body": [
-            "CREATE VIRTUAL TABLE ${1:table_name} USING ${2:module_name}(${3:arguments});"
-        ],
+        "body": ["CREATE VIRTUAL TABLE ${1:table_name} USING ${2:module_name}(${3:arguments});"],
         "description": "Create virtual table (FTS, R-Tree, etc.)"
     },
     "Create FTS5 Table": {
         "prefix": "crtfts",
-        "body": [
-            "CREATE VIRTUAL TABLE ${1:table_name} USING fts5(${2:content_column}, content='${3:content_table}');"
-        ],
+        "body": ["CREATE VIRTUAL TABLE ${1:table_name} USING fts5(${2:content_column}, content='${3:content_table}');"],
         "description": "Create FTS5 full-text search table"
     },
     "Insert Or Replace": {
         "prefix": "insor",
-        "body": [
-            "INSERT OR REPLACE INTO ${1:table_name} (${2:columns})",
-            "VALUES (${3:values});"
-        ],
+        "body": ["INSERT OR REPLACE INTO ${1:table_name} (${2:columns})", "VALUES (${3:values});"],
         "description": "INSERT OR REPLACE statement"
     },
     "Insert Or Ignore": {
         "prefix": "insoi",
-        "body": [
-            "INSERT OR IGNORE INTO ${1:table_name} (${2:columns})",
-            "VALUES (${3:values});"
-        ],
+        "body": ["INSERT OR IGNORE INTO ${1:table_name} (${2:columns})", "VALUES (${3:values});"],
         "description": "INSERT OR IGNORE statement"
     }
 }

@@ -1,8 +1,8 @@
-import * as vscode from 'vscode';
-import { QueryHistoryEntry } from '../query/QueryResult';
-import { generateShortId } from '../../utils/idGenerator';
+import * as vscode from "vscode";
+import { QueryHistoryEntry } from "../query/QueryResult";
+import { generateShortId } from "../../utils/idGenerator";
 
-const STORAGE_KEY = 'hive-formatter.queryHistory';
+const STORAGE_KEY = "hive-formatter.queryHistory";
 const MAX_SQL_LENGTH = 2000;
 
 export class QueryHistory {
@@ -13,7 +13,7 @@ export class QueryHistory {
         this.context = context;
     }
 
-    async add(entry: Omit<QueryHistoryEntry, 'id'>): Promise<void> {
+    async add(entry: Omit<QueryHistoryEntry, "id">): Promise<void> {
         if (!this.context) return;
 
         const entries = this.getAll();
@@ -47,9 +47,7 @@ export class QueryHistory {
 
     search(keyword: string): QueryHistoryEntry[] {
         const lowerKeyword = keyword.toLowerCase();
-        return this.getAll().filter((entry) =>
-            entry.sql.toLowerCase().includes(lowerKeyword)
-        );
+        return this.getAll().filter((entry) => entry.sql.toLowerCase().includes(lowerKeyword));
     }
 
     async clear(): Promise<void> {
@@ -66,18 +64,18 @@ export class QueryHistory {
     }
 
     private generateId(): string {
-        return generateShortId('h');
+        return generateShortId("h");
     }
 
     private getMaxEntries(): number {
-        const config = vscode.workspace.getConfiguration('SQL-All-in-One');
-        return config.get<number>('history.maxEntries', 500);
+        const config = vscode.workspace.getConfiguration("SQL-All-in-One");
+        return config.get<number>("history.maxEntries", 500);
     }
 
     private truncateSql(sql: string): string {
         if (sql.length <= MAX_SQL_LENGTH) {
             return sql;
         }
-        return sql.substring(0, MAX_SQL_LENGTH) + '...(truncated)';
+        return sql.substring(0, MAX_SQL_LENGTH) + "...(truncated)";
     }
 }

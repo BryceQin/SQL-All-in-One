@@ -1,14 +1,14 @@
-import * as allDialects from './allDialects'
-import type { FunctionSignature } from '../completion/functionSignatures'
+import * as allDialects from "./allDialects";
+import type { FunctionSignature } from "../completion/functionSignatures";
 
 interface KeywordEntry {
-    keywords: string[]
-    dataTypes: string[]
+    keywords: string[];
+    dataTypes: string[];
 }
 
 interface KeywordData {
-    keywords: string[]
-    dataTypes: string[]
+    keywords: string[];
+    dataTypes: string[];
 }
 
 const _keywordMap: Record<string, KeywordEntry> = {
@@ -24,7 +24,7 @@ const _keywordMap: Record<string, KeywordEntry> = {
     sqlserver: { keywords: allDialects.sqlserverKeywords, dataTypes: allDialects.sqlserverDataTypes },
     oracle: { keywords: allDialects.oracleKeywords, dataTypes: allDialects.oracleDataTypes },
     dameng: { keywords: allDialects.damengKeywords, dataTypes: allDialects.damengDataTypes },
-}
+};
 
 const _functionSigMap: Record<string, FunctionSignature[]> = {
     hive: allDialects.hiveFunctionSignatures,
@@ -39,50 +39,50 @@ const _functionSigMap: Record<string, FunctionSignature[]> = {
     sqlserver: allDialects.sqlserverFunctionSignatures,
     oracle: allDialects.oracleFunctionSignatures,
     dameng: allDialects.damengFunctionSignatures,
-}
+};
 
-const resolvedKeywordCache = new Map<string, KeywordData | undefined>()
-const resolvedFunctionCache = new Map<string, FunctionSignature[] | undefined>()
+const resolvedKeywordCache = new Map<string, KeywordData | undefined>();
+const resolvedFunctionCache = new Map<string, FunctionSignature[] | undefined>();
 
 export const keywordMap = new Proxy({} as Record<string, KeywordData>, {
     get(_target: Record<string, KeywordData>, dialect: string): KeywordData | undefined {
-        const cached = resolvedKeywordCache.get(dialect)
-        if (cached !== undefined) return cached
-        const entry = _keywordMap[dialect]
-        if (!entry) return undefined
-        const resolved: KeywordData = { keywords: entry.keywords, dataTypes: entry.dataTypes }
-        resolvedKeywordCache.set(dialect, resolved)
-        return resolved
+        const cached = resolvedKeywordCache.get(dialect);
+        if (cached !== undefined) return cached;
+        const entry = _keywordMap[dialect];
+        if (!entry) return undefined;
+        const resolved: KeywordData = { keywords: entry.keywords, dataTypes: entry.dataTypes };
+        resolvedKeywordCache.set(dialect, resolved);
+        return resolved;
     },
     has(_target: Record<string, KeywordData>, dialect: string): boolean {
-        return dialect in _keywordMap
+        return dialect in _keywordMap;
     },
     ownKeys(_target: Record<string, KeywordData>): string[] {
-        return Object.keys(_keywordMap)
+        return Object.keys(_keywordMap);
     },
     getOwnPropertyDescriptor(_target: Record<string, KeywordData>, dialect: string): PropertyDescriptor | undefined {
-        if (dialect in _keywordMap) return { configurable: true, enumerable: true }
-        return undefined
+        if (dialect in _keywordMap) return { configurable: true, enumerable: true };
+        return undefined;
     },
-})
+});
 
 export const functionSigMap = new Proxy({} as Record<string, FunctionSignature[]>, {
     get(_target: Record<string, FunctionSignature[]>, dialect: string): FunctionSignature[] | undefined {
-        const cached = resolvedFunctionCache.get(dialect)
-        if (cached !== undefined) return cached
-        const entry = _functionSigMap[dialect]
-        if (!entry) return undefined
-        resolvedFunctionCache.set(dialect, entry)
-        return entry
+        const cached = resolvedFunctionCache.get(dialect);
+        if (cached !== undefined) return cached;
+        const entry = _functionSigMap[dialect];
+        if (!entry) return undefined;
+        resolvedFunctionCache.set(dialect, entry);
+        return entry;
     },
     has(_target: Record<string, FunctionSignature[]>, dialect: string): boolean {
-        return dialect in _functionSigMap
+        return dialect in _functionSigMap;
     },
     ownKeys(_target: Record<string, FunctionSignature[]>): string[] {
-        return Object.keys(_functionSigMap)
+        return Object.keys(_functionSigMap);
     },
     getOwnPropertyDescriptor(_target: Record<string, FunctionSignature[]>, dialect: string): PropertyDescriptor | undefined {
-        if (dialect in _functionSigMap) return { configurable: true, enumerable: true }
-        return undefined
+        if (dialect in _functionSigMap) return { configurable: true, enumerable: true };
+        return undefined;
     },
-})
+});

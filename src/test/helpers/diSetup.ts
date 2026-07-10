@@ -1,5 +1,5 @@
-import { getContainer, resetContainer } from '../../core/diContainer';
-import { registerAdapters, registerServicesToContainer } from '../../core/serviceRegistration';
+import { getContainer, resetContainer } from "../../core/diContainer";
+import { registerAdapters, registerServicesToContainer } from "../../core/serviceRegistration";
 
 let initialized = false;
 
@@ -12,7 +12,7 @@ export function setupTestContainer(): void {
     // Tests only need the MySQL adapter; the full adapter set is registered
     // by the production bootstrap in extension.ts.
     registerAdapters(false);
-    registerServicesToContainer(getContainer(), '');
+    registerServicesToContainer(getContainer(), "");
 }
 
 export function teardownTestContainer(): void {
@@ -23,5 +23,5 @@ export function teardownTestContainer(): void {
 try {
     setupTestContainer();
 } catch (e) {
-    console.error('[diSetup] Failed to setup test container:', e);
+    console.error("[diSetup] Failed to setup test container:", e);
 }

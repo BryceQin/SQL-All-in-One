@@ -1,9 +1,9 @@
-import * as vscode from 'vscode';
-import { BaseWebviewPanel, type WebviewPanelConfig } from '../BaseWebviewPanel';
-import type { IConnectionService, ISchemaService, IDatabaseAdapter } from '../../application/ports';
-import type { TableStructure, DataTypeCategory } from '../../database/adapters/IDatabaseAdapter';
-import { getLanguage } from '../../i18n/index.js';
-import { handleError, ErrorCategory } from '../../core/errorHandler';
+import * as vscode from "vscode";
+import { BaseWebviewPanel, type WebviewPanelConfig } from "../BaseWebviewPanel";
+import type { IConnectionService, ISchemaService, IDatabaseAdapter } from "../../application/ports";
+import type { TableStructure, DataTypeCategory } from "../../database/adapters/IDatabaseAdapter";
+import { getLanguage } from "../../i18n/index.js";
+import { handleError, ErrorCategory } from "../../core/errorHandler";
 
 interface ColumnDesign {
     id: string;
@@ -60,7 +60,7 @@ interface TableDesignData {
     foreignKeys: FkDesign[];
     triggers: TriggerDesign[];
     options: TableOptions;
-    mode: 'create' | 'edit';
+    mode: "create" | "edit";
     originalStructure?: TableStructure;
 }
 
@@ -72,18 +72,18 @@ interface DesignerMessage {
 }
 
 export class TableDesignerPanel extends BaseWebviewPanel {
-    public static readonly viewType = 'sqlAllInOneTableDesigner';
+    public static readonly viewType = "sqlAllInOneTableDesigner";
 
     protected readonly panelConfig: WebviewPanelConfig = {
         viewType: TableDesignerPanel.viewType,
-        htmlFileName: 'table-designer.html',
-        cssFileName: 'table-designer.css',
-        jsFileName: 'table-designer.js',
+        htmlFileName: "table-designer.html",
+        cssFileName: "table-designer.css",
+        jsFileName: "table-designer.js",
     };
 
-    private _mode: 'create' | 'edit' = 'create';
-    private _database = '';
-    private _tableName = '';
+    private _mode: "create" | "edit" = "create";
+    private _database = "";
+    private _tableName = "";
     private _originalStructure?: TableStructure;
     private readonly _connectionService: IConnectionService;
     private readonly _schemaService: ISchemaService;
@@ -94,9 +94,7 @@ export class TableDesignerPanel extends BaseWebviewPanel {
         connectionService: IConnectionService,
         schemaService: ISchemaService,
     ): TableDesignerPanel {
-        const column = vscode.window.activeTextEditor
-            ? vscode.window.activeTextEditor.viewColumn
-            : undefined;
+        const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
 
         const existing = BaseWebviewPanel.getExistingInstance<TableDesignerPanel>(TableDesignerPanel.viewType);
         if (existing) {
@@ -104,12 +102,9 @@ export class TableDesignerPanel extends BaseWebviewPanel {
             return existing;
         }
 
-        const panel = BaseWebviewPanel.createWebviewPanel(
-            TableDesignerPanel.viewType,
-            'Table Designer',
-            extensionUri,
-            { viewColumn: column ? column + 1 : vscode.ViewColumn.Two }
-        );
+        const panel = BaseWebviewPanel.createWebviewPanel(TableDesignerPanel.viewType, "Table Designer", extensionUri, {
+            viewColumn: column ? column + 1 : vscode.ViewColumn.Two,
+        });
 
         const instance = new TableDesignerPanel(panel, extensionUri, connectionService, schemaService);
         BaseWebviewPanel.registerInstance(instance);
@@ -135,30 +130,28 @@ export class TableDesignerPanel extends BaseWebviewPanel {
             tableName: this._tableName,
             lang: getLanguage(),
         };
-        const configScript = '<script>window.__TABLE_DESIGNER_CONFIG__ = ' + JSON.stringify(configData) + ';</script>';
-        await this.initializeHtml([
-            { placeholder: '{{CONFIG_INJECT}}', value: configScript },
-        ]);
+        const configScript = "<script>window.__TABLE_DESIGNER_CONFIG__ = " + JSON.stringify(configData) + ";</script>";
+        await this.initializeHtml([{ placeholder: "{{CONFIG_INJECT}}", value: configScript }]);
         this.onDidReceiveMessage(async (message: unknown) => {
             const msg = message as DesignerMessage;
             switch (msg.command) {
-                case 'save':
+                case "save":
                     if (msg.data) {
                         await this._handleSave(msg.data);
                     }
                     break;
-                case 'requestTableList':
+                case "requestTableList":
                     await this._handleRequestTableList();
                     break;
-                case 'requestColumnList':
-                    await this._handleRequestColumnList(msg.table ?? '');
+                case "requestColumnList":
+                    await this._handleRequestColumnList(msg.table ?? "");
                     break;
-                case 'exportSql':
+                case "exportSql":
                     if (msg.sql) {
                         await this._handleExportSql(msg.sql);
                     }
                     break;
-                case 'close':
+                case "close":
                     this.dispose();
                     break;
             }
@@ -166,11 +159,11 @@ export class TableDesignerPanel extends BaseWebviewPanel {
     }
 
     public async openForCreate(database: string): Promise<void> {
-        this._mode = 'create';
+        this._mode = "create";
         this._database = database;
-        this._tableName = '';
+        this._tableName = "";
         this._originalStructure = undefined;
-        this._panel.title = '\u{1F4CB} New Table - Table Designer';
+        this._panel.title = "\u{1F4CB} New Table - Table Designer";
 
         const adapter = this._getAdapter();
         let dataTypes: DataTypeCategory[] = [];
@@ -178,43 +171,43 @@ export class TableDesignerPanel extends BaseWebviewPanel {
             try {
                 dataTypes = adapter.schemaAdapter.getSupportedDataTypes();
             } catch (e) {
-                handleError(e, 'TableDesignerPanel.getSupportedDataTypes', ErrorCategory.SUB_ITEM)
+                handleError(e, "TableDesignerPanel.getSupportedDataTypes", ErrorCategory.SUB_ITEM);
                 dataTypes = [];
             }
         }
 
         const emptyData: TableDesignData = {
-            tableName: '',
+            tableName: "",
             columns: [this._createDefaultColumn()],
             indexes: [],
             foreignKeys: [],
             triggers: [],
             options: {
-                engine: 'InnoDB',
-                charset: 'utf8mb4',
-                collation: 'utf8mb4_general_ci',
-                autoIncrement: '',
-                comment: '',
+                engine: "InnoDB",
+                charset: "utf8mb4",
+                collation: "utf8mb4_general_ci",
+                autoIncrement: "",
+                comment: "",
             },
-            mode: 'create',
+            mode: "create",
         };
 
         this.postMessage({
-            command: 'tableStructure',
+            command: "tableStructure",
             data: emptyData,
             dataTypes: dataTypes,
         });
     }
 
     public async openForEdit(database: string, table: string): Promise<void> {
-        this._mode = 'edit';
+        this._mode = "edit";
         this._database = database;
         this._tableName = table;
         this._panel.title = `\u{1F4CB} ${table} - Table Designer`;
 
         const adapter = this._getAdapter();
         if (!adapter) {
-            vscode.window.showErrorMessage('No active database connection');
+            vscode.window.showErrorMessage("No active database connection");
             return;
         }
 
@@ -222,7 +215,7 @@ export class TableDesignerPanel extends BaseWebviewPanel {
         try {
             dataTypes = adapter.schemaAdapter.getSupportedDataTypes();
         } catch (e) {
-            handleError(e, 'TableDesignerPanel.getSupportedDataTypes', ErrorCategory.SUB_ITEM)
+            handleError(e, "TableDesignerPanel.getSupportedDataTypes", ErrorCategory.SUB_ITEM);
             dataTypes = [];
         }
 
@@ -240,10 +233,10 @@ export class TableDesignerPanel extends BaseWebviewPanel {
             id: `col_${idx}_${Date.now()}`,
             name: col.name,
             type: col.type,
-            length: col.length !== undefined ? String(col.length) : '',
+            length: col.length !== undefined ? String(col.length) : "",
             nullable: col.nullable,
-            defaultValue: col.defaultValue !== undefined ? String(col.defaultValue) : '',
-            comment: col.comment || '',
+            defaultValue: col.defaultValue !== undefined ? String(col.defaultValue) : "",
+            comment: col.comment || "",
             isPrimaryKey: col.isPrimaryKey,
             isAutoIncrement: col.isAutoIncrement,
             isUnique: col.isUnique,
@@ -283,18 +276,18 @@ export class TableDesignerPanel extends BaseWebviewPanel {
             foreignKeys,
             triggers,
             options: {
-                engine: structure.engine || 'InnoDB',
-                charset: structure.charset || 'utf8mb4',
-                collation: '',
-                autoIncrement: '',
-                comment: structure.comment || '',
+                engine: structure.engine || "InnoDB",
+                charset: structure.charset || "utf8mb4",
+                collation: "",
+                autoIncrement: "",
+                comment: structure.comment || "",
             },
-            mode: 'edit',
+            mode: "edit",
             originalStructure: structure,
         };
 
         this.postMessage({
-            command: 'tableStructure',
+            command: "tableStructure",
             data: designData,
             dataTypes: dataTypes,
         });
@@ -316,12 +309,12 @@ export class TableDesignerPanel extends BaseWebviewPanel {
     private _createDefaultColumn(): ColumnDesign {
         return {
             id: `col_0_${Date.now()}`,
-            name: '',
-            type: 'INT',
-            length: '',
+            name: "",
+            type: "INT",
+            length: "",
             nullable: false,
-            defaultValue: '',
-            comment: '',
+            defaultValue: "",
+            comment: "",
             isPrimaryKey: false,
             isAutoIncrement: false,
             isUnique: false,
@@ -329,23 +322,23 @@ export class TableDesignerPanel extends BaseWebviewPanel {
     }
 
     private _validateDesign(data: TableDesignData): string | null {
-        if (!data.tableName || data.tableName.trim() === '') {
-            return 'Table name is required';
+        if (!data.tableName || data.tableName.trim() === "") {
+            return "Table name is required";
         }
 
         if (!data.columns || data.columns.length === 0) {
-            return 'At least one column is required';
+            return "At least one column is required";
         }
 
-        const emptyNames = data.columns.filter(c => !c.name || c.name.trim() === '');
+        const emptyNames = data.columns.filter((c) => !c.name || c.name.trim() === "");
         if (emptyNames.length > 0) {
-            return 'Column names cannot be empty';
+            return "Column names cannot be empty";
         }
 
-        const names = data.columns.map(c => c.name.toLowerCase());
+        const names = data.columns.map((c) => c.name.toLowerCase());
         const duplicates = names.filter((name, idx) => names.indexOf(name) !== idx);
         if (duplicates.length > 0) {
-            return `Duplicate column names: ${[...new Set(duplicates)].join(', ')}`;
+            return `Duplicate column names: ${[...new Set(duplicates)].join(", ")}`;
         }
 
         return null;
@@ -355,7 +348,7 @@ export class TableDesignerPanel extends BaseWebviewPanel {
         const validationError = this._validateDesign(data);
         if (validationError) {
             this.postMessage({
-                command: 'saveResult',
+                command: "saveResult",
                 success: false,
                 error: validationError,
             });
@@ -365,64 +358,63 @@ export class TableDesignerPanel extends BaseWebviewPanel {
         const adapter = this._getAdapter();
         if (!adapter) {
             this.postMessage({
-                command: 'saveResult',
+                command: "saveResult",
                 success: false,
-                error: 'No active database connection',
+                error: "No active database connection",
             });
             return;
         }
 
         let sql: string;
         try {
-            if (this._mode === 'create') {
+            if (this._mode === "create") {
                 sql = this._generateCreateDDL(data);
             } else {
                 sql = this._generateAlterDDL(data);
             }
         } catch (error) {
             this.postMessage({
-                command: 'saveResult',
+                command: "saveResult",
                 success: false,
                 error: `Failed to generate DDL: ${(error as Error).message}`,
             });
             return;
         }
 
-        if (!sql || sql.trim() === '') {
-            vscode.window.showInformationMessage('No changes detected');
+        if (!sql || sql.trim() === "") {
+            vscode.window.showInformationMessage("No changes detected");
             return;
         }
 
-        const confirmed = await vscode.window.showWarningMessage(
-            'Execute the following SQL?',
-            { modal: true, detail: sql },
-            'Execute'
-        );
+        const confirmed = await vscode.window.showWarningMessage("Execute the following SQL?", { modal: true, detail: sql }, "Execute");
 
-        if (confirmed !== 'Execute') {
+        if (confirmed !== "Execute") {
             return;
         }
 
         try {
-            const statements = sql.split(';').map(s => s.trim()).filter(s => s.length > 0);
+            const statements = sql
+                .split(";")
+                .map((s) => s.trim())
+                .filter((s) => s.length > 0);
             for (const stmt of statements) {
                 await adapter.queryAdapter.execute(stmt);
             }
 
             const activeConn = this._connectionService.getActiveConnection();
             if (activeConn) {
-                this._schemaService.invalidate(activeConn.id, 'table', this._database);
+                this._schemaService.invalidate(activeConn.id, "table", this._database);
             }
 
             this.dispose();
             vscode.window.showInformationMessage(
-                this._mode === 'create'
+                this._mode === "create"
                     ? `Table \`${data.tableName}\` created successfully`
-                    : `Table \`${data.tableName}\` updated successfully`
+                    : `Table \`${data.tableName}\` updated successfully`,
             );
         } catch (error) {
             this.postMessage({
-                command: 'saveResult',
+                command: "saveResult",
                 success: false,
                 error: (error as Error).message,
             });
@@ -433,7 +425,7 @@ export class TableDesignerPanel extends BaseWebviewPanel {
         const adapter = this._getAdapter();
         if (!adapter) {
             this.postMessage({
-                command: 'tableList',
+                command: "tableList",
                 tables: [],
             });
             return;
@@ -442,13 +434,13 @@ export class TableDesignerPanel extends BaseWebviewPanel {
         try {
             const tables = await adapter.metadataAdapter.listTables(this._database);
             this.postMessage({
-                command: 'tableList',
-                tables: tables.map(t => t.name),
+                command: "tableList",
+                tables: tables.map((t) => t.name),
             });
         } catch (e) {
-            handleError(e, 'TableDesignerPanel._handleRequestTableList', ErrorCategory.FEATURE)
+            handleError(e, "TableDesignerPanel._handleRequestTableList", ErrorCategory.FEATURE);
             this.postMessage({
-                command: 'tableList',
+                command: "tableList",
                 tables: [],
             });
         }
@@ -458,7 +450,7 @@ export class TableDesignerPanel extends BaseWebviewPanel {
         const adapter = this._getAdapter();
         if (!adapter) {
             this.postMessage({
-                command: 'columnList',
+                command: "columnList",
                 table: table,
                 columns: [],
             });
@@ -468,14 +460,14 @@ export class TableDesignerPanel extends BaseWebviewPanel {
         try {
             const structure = await adapter.schemaAdapter.describeTable(this._database, table);
             this.postMessage({
-                command: 'columnList',
+                command: "columnList",
                 table: table,
-                columns: structure.columns.map(c => c.name),
+                columns: structure.columns.map((c) => c.name),
             });
         } catch (e) {
-            handleError(e, 'TableDesignerPanel._handleRequestColumnList', ErrorCategory.FEATURE)
+            handleError(e, "TableDesignerPanel._handleRequestColumnList", ErrorCategory.FEATURE);
             this.postMessage({
-                command: 'columnList',
+                command: "columnList",
                 table: table,
                 columns: [],
             });
@@ -486,7 +478,7 @@ export class TableDesignerPanel extends BaseWebviewPanel {
         if (!sql) return;
         const document = await vscode.workspace.openTextDocument({
             content: sql,
-            language: 'sql',
+            language: "sql",
         });
         await vscode.window.showTextDocument(document);
     }
@@ -497,15 +489,17 @@ export class TableDesignerPanel extends BaseWebviewPanel {
             line += `(${col.length})`;
         }
         if (!col.nullable) {
-            line += ' NOT NULL';
+            line += " NOT NULL";
         }
         if (col.isAutoIncrement) {
-            line += ' AUTO_INCREMENT';
+            line += " AUTO_INCREMENT";
         }
         if (col.defaultValue) {
-            if (col.defaultValue.toUpperCase() === 'NULL' ||
-                col.defaultValue.toUpperCase() === 'CURRENT_TIMESTAMP' ||
-                col.defaultValue.toUpperCase() === 'CURRENT_DATE') {
+            if (
+                col.defaultValue.toUpperCase() === "NULL" ||
+                col.defaultValue.toUpperCase() === "CURRENT_TIMESTAMP" ||
+                col.defaultValue.toUpperCase() === "CURRENT_DATE"
+            ) {
                 line += ` DEFAULT ${col.defaultValue}`;
             } else {
                 line += ` DEFAULT '${col.defaultValue.replace(/'/g, "''")}'`;
@@ -521,24 +515,24 @@ export class TableDesignerPanel extends BaseWebviewPanel {
         const lines: string[] = [];
 
         for (const col of data.columns) {
-            lines.push('  ' + this._buildColumnDefinition(col));
+            lines.push("  " + this._buildColumnDefinition(col));
         }
 
-        const pkColumns = data.columns.filter(c => c.isPrimaryKey);
+        const pkColumns = data.columns.filter((c) => c.isPrimaryKey);
         if (pkColumns.length > 0) {
-            lines.push(`  PRIMARY KEY (${pkColumns.map(c => `\`${c.name}\``).join(', ')})`);
+            lines.push(`  PRIMARY KEY (${pkColumns.map((c) => `\`${c.name}\``).join(", ")})`);
         }
 
         for (const idx of data.indexes) {
             if (idx.isUnique) {
-                lines.push(`  UNIQUE KEY \`${idx.name}\` (${idx.columns.map(c => `\`${c}\``).join(', ')})`);
+                lines.push(`  UNIQUE KEY \`${idx.name}\` (${idx.columns.map((c) => `\`${c}\``).join(", ")})`);
             } else {
-                lines.push(`  KEY \`${idx.name}\` (${idx.columns.map(c => `\`${c}\``).join(', ')})`);
+                lines.push(`  KEY \`${idx.name}\` (${idx.columns.map((c) => `\`${c}\``).join(", ")})`);
             }
         }
 
         for (const fk of data.foreignKeys) {
-            let fkLine = `  CONSTRAINT \`${fk.name}\` FOREIGN KEY (${fk.columns.map(c => `\`${c}\``).join(', ')}) REFERENCES \`${fk.referencedTable}\` (${fk.referencedColumns.map(c => `\`${c}\``).join(', ')})`;
+            let fkLine = `  CONSTRAINT \`${fk.name}\` FOREIGN KEY (${fk.columns.map((c) => `\`${c}\``).join(", ")}) REFERENCES \`${fk.referencedTable}\` (${fk.referencedColumns.map((c) => `\`${c}\``).join(", ")})`;
             if (fk.onDelete) {
                 fkLine += ` ON DELETE ${fk.onDelete}`;
             }
@@ -548,7 +542,7 @@ export class TableDesignerPanel extends BaseWebviewPanel {
             lines.push(fkLine);
         }
 
-        let ddl = `CREATE TABLE \`${data.tableName}\` (\n${lines.join(',\n')}\n)`;
+        let ddl = `CREATE TABLE \`${data.tableName}\` (\n${lines.join(",\n")}\n)`;
 
         const options: string[] = [];
         if (data.options.engine) {
@@ -568,10 +562,10 @@ export class TableDesignerPanel extends BaseWebviewPanel {
         }
 
         if (options.length > 0) {
-            ddl += ' ' + options.join(' ');
+            ddl += " " + options.join(" ");
         }
 
-        ddl += ';';
+        ddl += ";";
 
         return ddl;
     }
@@ -590,42 +584,43 @@ export class TableDesignerPanel extends BaseWebviewPanel {
         statements.push(...this._generateTriggerAlters(data, original));
         statements.push(...this._generateTableOptionAlters(data, original));
 
-        return statements.join('\n');
+        return statements.join("\n");
     }
 
     private _generateColumnAlters(data: TableDesignData, original: TableStructure): string[] {
         const statements: string[] = [];
 
         for (const col of data.columns) {
-            const originalCol = original.columns.find(c => c.name === (col.originalName || col.name));
+            const originalCol = original.columns.find((c) => c.name === (col.originalName || col.name));
 
             if (!originalCol && !col.originalName) {
                 const addSql = `ALTER TABLE \`${data.tableName}\` ADD COLUMN ` + this._buildColumnDefinition(col);
-                statements.push(addSql + ';');
+                statements.push(addSql + ";");
             } else if (originalCol) {
                 const isRenamed = col.originalName && col.originalName !== col.name;
                 const isModified =
                     originalCol.type.toUpperCase() !== col.type.toUpperCase() ||
-                    String(originalCol.length || '') !== col.length ||
+                    String(originalCol.length || "") !== col.length ||
                     originalCol.nullable !== col.nullable ||
                     originalCol.isAutoIncrement !== col.isAutoIncrement ||
-                    String(originalCol.defaultValue || '') !== col.defaultValue ||
-                    (originalCol.comment || '') !== col.comment;
+                    String(originalCol.defaultValue || "") !== col.defaultValue ||
+                    (originalCol.comment || "") !== col.comment;
 
                 if (isRenamed || isModified) {
                     let modSql: string;
                     if (isRenamed) {
-                        modSql = `ALTER TABLE \`${data.tableName}\` CHANGE COLUMN \`${col.originalName}\` ` + this._buildColumnDefinition(col);
+                        modSql =
+                            `ALTER TABLE \`${data.tableName}\` CHANGE COLUMN \`${col.originalName}\` ` + this._buildColumnDefinition(col);
                     } else {
                         modSql = `ALTER TABLE \`${data.tableName}\` MODIFY COLUMN ` + this._buildColumnDefinition(col);
                     }
-                    statements.push(modSql + ';');
+                    statements.push(modSql + ";");
                 }
             }
         }
 
         for (const origCol of original.columns) {
-            const stillExists = data.columns.some(c => c.name === origCol.name || c.originalName === origCol.name);
+            const stillExists = data.columns.some((c) => c.name === origCol.name || c.originalName === origCol.name);
             if (!stillExists) {
                 statements.push(`ALTER TABLE \`${data.tableName}\` DROP COLUMN \`${origCol.name}\`;`);
             }
@@ -636,15 +631,19 @@ export class TableDesignerPanel extends BaseWebviewPanel {
 
     private _generateIndexAlters(data: TableDesignData, original: TableStructure): string[] {
         const statements: string[] = [];
-        const originalIdxNames = new Set(original.indexes.map(i => i.name));
-        const newIdxNames = new Set(data.indexes.map(i => i.name));
+        const originalIdxNames = new Set(original.indexes.map((i) => i.name));
+        const newIdxNames = new Set(data.indexes.map((i) => i.name));
 
         for (const idx of data.indexes) {
             if (!originalIdxNames.has(idx.name)) {
                 if (idx.isUnique) {
-                    statements.push(`ALTER TABLE \`${data.tableName}\` ADD UNIQUE KEY \`${idx.name}\` (${idx.columns.map(c => `\`${c}\``).join(', ')});`);
+                    statements.push(
+                        `ALTER TABLE \`${data.tableName}\` ADD UNIQUE KEY \`${idx.name}\` (${idx.columns.map((c) => `\`${c}\``).join(", ")});`,
+                    );
                 } else {
-                    statements.push(`ALTER TABLE \`${data.tableName}\` ADD KEY \`${idx.name}\` (${idx.columns.map(c => `\`${c}\``).join(', ')});`);
+                    statements.push(
+                        `ALTER TABLE \`${data.tableName}\` ADD KEY \`${idx.name}\` (${idx.columns.map((c) => `\`${c}\``).join(", ")});`,
+                    );
                 }
             }
         }
@@ -660,8 +659,8 @@ export class TableDesignerPanel extends BaseWebviewPanel {
 
     private _generateForeignKeyAlters(data: TableDesignData, original: TableStructure): string[] {
         const statements: string[] = [];
-        const originalFkNames = new Set(original.foreignKeys.map(f => f.name));
-        const newFkNames = new Set(data.foreignKeys.map(f => f.name));
+        const originalFkNames = new Set(original.foreignKeys.map((f) => f.name));
+        const newFkNames = new Set(data.foreignKeys.map((f) => f.name));
 
         for (const origFk of original.foreignKeys) {
             if (!newFkNames.has(origFk.name)) {
@@ -671,14 +670,14 @@ export class TableDesignerPanel extends BaseWebviewPanel {
 
         for (const fk of data.foreignKeys) {
             if (!originalFkNames.has(fk.name)) {
-                let addFkSql = `ALTER TABLE \`${data.tableName}\` ADD CONSTRAINT \`${fk.name}\` FOREIGN KEY (${fk.columns.map(c => `\`${c}\``).join(', ')}) REFERENCES \`${fk.referencedTable}\` (${fk.referencedColumns.map(c => `\`${c}\``).join(', ')})`;
+                let addFkSql = `ALTER TABLE \`${data.tableName}\` ADD CONSTRAINT \`${fk.name}\` FOREIGN KEY (${fk.columns.map((c) => `\`${c}\``).join(", ")}) REFERENCES \`${fk.referencedTable}\` (${fk.referencedColumns.map((c) => `\`${c}\``).join(", ")})`;
                 if (fk.onDelete) {
                     addFkSql += ` ON DELETE ${fk.onDelete}`;
                 }
                 if (fk.onUpdate) {
                     addFkSql += ` ON UPDATE ${fk.onUpdate}`;
                 }
-                statements.push(addFkSql + ';');
+                statements.push(addFkSql + ";");
             }
         }
 
@@ -687,8 +686,8 @@ export class TableDesignerPanel extends BaseWebviewPanel {
 
     private _generateTriggerAlters(data: TableDesignData, original: TableStructure): string[] {
         const statements: string[] = [];
-        const originalTrgNames = new Set(original.triggers.map(t => t.name));
-        const newTrgNames = new Set(data.triggers.map(t => t.name));
+        const originalTrgNames = new Set(original.triggers.map((t) => t.name));
+        const newTrgNames = new Set(data.triggers.map((t) => t.name));
 
         for (const origTrg of original.triggers) {
             if (!newTrgNames.has(origTrg.name)) {
@@ -698,7 +697,9 @@ export class TableDesignerPanel extends BaseWebviewPanel {
 
         for (const trg of data.triggers) {
             if (!originalTrgNames.has(trg.name)) {
-                statements.push(`CREATE TRIGGER \`${trg.name}\` ${trg.timing} ${trg.event} ON \`${data.tableName}\` FOR EACH ROW ${trg.statement};`);
+                statements.push(
+                    `CREATE TRIGGER \`${trg.name}\` ${trg.timing} ${trg.event} ON \`${data.tableName}\` FOR EACH ROW ${trg.statement};`,
+                );
             }
         }
 
@@ -708,7 +709,7 @@ export class TableDesignerPanel extends BaseWebviewPanel {
     private _generateTableOptionAlters(data: TableDesignData, original: TableStructure): string[] {
         const statements: string[] = [];
 
-        if (data.options.comment !== (original.comment || '')) {
+        if (data.options.comment !== (original.comment || "")) {
             const optionParts: string[] = [];
             if (data.options.engine) {
                 optionParts.push(`ENGINE=${data.options.engine}`);
@@ -723,7 +724,7 @@ export class TableDesignerPanel extends BaseWebviewPanel {
                 optionParts.push(`COMMENT='${data.options.comment.replace(/'/g, "\\'")}'`);
             }
             if (optionParts.length > 0) {
-                statements.push(`ALTER TABLE \`${data.tableName}\` ${optionParts.join(' ')};`);
+                statements.push(`ALTER TABLE \`${data.tableName}\` ${optionParts.join(" ")};`);
             }
         }
 

@@ -1,7 +1,7 @@
-import type { DialectOptions } from "../dialect"
-import { expandPhrases } from "../expandPhrases"
-import { dataTypes, keywords } from "./starrocks.keywords"
-import { functions } from "./starrocks.functions"
+import type { DialectOptions } from "../dialect";
+import { expandPhrases } from "../expandPhrases";
+import { dataTypes, keywords } from "./starrocks.keywords";
+import { functions } from "./starrocks.functions";
 import {
     baseIdentChars,
     baseIdentTypes,
@@ -19,7 +19,7 @@ import {
     baseTabularOnelineClauses,
     baseVariableTypes,
     postProcess,
-} from "../mysqlProtocolBase"
+} from "../mysqlProtocolBase";
 
 // StarRocks is MySQL-protocol compatible. We derive from the MySQL formatter
 // configuration and add StarRocks-specific DDL clauses (materialized views,
@@ -40,11 +40,11 @@ const starrocksExtraTabularClauses = expandPhrases([
     "DROP ROLLUP",
     "ADMIN SET CONFIG",
     "SET VARIABLE",
-])
+]);
 
 // Index of "TRUNCATE TABLE" in the shared base list. The StarRocks extras
 // are inserted immediately after it to match the original ordering.
-const TRUNCATE_TABLE_INDEX = baseTabularOnelineClauses.indexOf("TRUNCATE TABLE")
+const TRUNCATE_TABLE_INDEX = baseTabularOnelineClauses.indexOf("TRUNCATE TABLE");
 
 // StarRocks tabular oneline clauses = base list with StarRocks extras spliced
 // in right after TRUNCATE [TABLE].
@@ -52,18 +52,14 @@ const tabularOnelineClauses = [
     ...baseTabularOnelineClauses.slice(0, TRUNCATE_TABLE_INDEX + 1),
     ...starrocksExtraTabularClauses,
     ...baseTabularOnelineClauses.slice(TRUNCATE_TABLE_INDEX + 1),
-]
+];
 
 // StarRocks is MySQL-protocol compatible, so tokenizer options mirror MySQL.
 export const starrocks: DialectOptions = {
     name: "starrocks",
     tokenizerOptions: {
         reservedSelect: baseReservedSelect,
-        reservedClauses: [
-            ...baseReservedClauses,
-            ...baseStandardOnelineClauses,
-            ...tabularOnelineClauses,
-        ],
+        reservedClauses: [...baseReservedClauses, ...baseStandardOnelineClauses, ...tabularOnelineClauses],
         reservedSetOperations: baseReservedSetOperations,
         reservedJoins: baseReservedJoins,
         reservedKeywordPhrases: baseReservedKeywordPhrases,
@@ -86,4 +82,4 @@ export const starrocks: DialectOptions = {
         onelineClauses: [...baseStandardOnelineClauses, ...tabularOnelineClauses],
         tabularOnelineClauses,
     },
-}
+};

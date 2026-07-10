@@ -1,114 +1,132 @@
-import * as vscode from 'vscode'
-import type { RuleContext } from './LintRule'
-import { BaseRule } from './BaseRule'
-import type { AstLocation } from '../../parser/astTypes'
-import { getConfigManager } from '../../core/configManager'
-import { precomputeLineStarts, lineFromOffset } from '../../utils/lineIndex'
+import * as vscode from "vscode";
+import type { RuleContext } from "./LintRule";
+import { BaseRule } from "./BaseRule";
+import type { AstLocation } from "../../parser/astTypes";
+import { getConfigManager } from "../../core/configManager";
+import { precomputeLineStarts, lineFromOffset } from "../../utils/lineIndex";
 
-const SQL_KEYWORDS_FOR_COMMENT_CHECK = ['SELECT', 'FROM', 'WHERE', 'JOIN', 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'DROP', 'ALTER', 'GROUP BY', 'ORDER BY', 'HAVING', 'UNION']
-const SQL_KEYWORD_REGEXES = SQL_KEYWORDS_FOR_COMMENT_CHECK.map(kw => ({
-    regex: new RegExp(`\\b${kw}\\b`, 'i'),
+const SQL_KEYWORDS_FOR_COMMENT_CHECK = [
+    "SELECT",
+    "FROM",
+    "WHERE",
+    "JOIN",
+    "INSERT",
+    "UPDATE",
+    "DELETE",
+    "CREATE",
+    "DROP",
+    "ALTER",
+    "GROUP BY",
+    "ORDER BY",
+    "HAVING",
+    "UNION",
+];
+const SQL_KEYWORD_REGEXES = SQL_KEYWORDS_FOR_COMMENT_CHECK.map((kw) => ({
+    regex: new RegExp(`\\b${kw}\\b`, "i"),
     keyword: kw,
-}))
+}));
 
 export class CommentedOutCodeRule extends BaseRule {
-    readonly id = 'commented_out_code'
-    readonly applicableTypes: string[] = []
-    readonly name = 'linter.commentedOutCode.name'
-    readonly description = 'linter.commentedOutCode.description'
-    readonly category = 'code-style'
-    readonly defaultSeverity = vscode.DiagnosticSeverity.Information
-    readonly defaultEnabled = true
+    readonly id = "commented_out_code";
+    readonly applicableTypes: string[] = [];
+    readonly name = "linter.commentedOutCode.name";
+    readonly description = "linter.commentedOutCode.description";
+    readonly category = "code-style";
+    readonly defaultSeverity = vscode.DiagnosticSeverity.Information;
+    readonly defaultEnabled = true;
 
     check(context: RuleContext): vscode.Diagnostic[] {
-        const diagnostics: vscode.Diagnostic[] = []
-        const sql = context.sql
-        const ruleConfig = getConfigManager().get<{ enabled?: boolean; severity?: string; thresholdLines?: number }>('lint.commented_out_code', { enabled: true, severity: 'information', thresholdLines: 3 })
-        const thresholdLines = ruleConfig.thresholdLines ?? 3
+        const diagnostics: vscode.Diagnostic[] = [];
+        const sql = context.sql;
+        const ruleConfig = getConfigManager().get<{ enabled?: boolean; severity?: string; thresholdLines?: number }>(
+            "lint.commented_out_code",
+            { enabled: true, severity: "information", thresholdLines: 3 },
+        );
+        const thresholdLines = ruleConfig.thresholdLines ?? 3;
 
-        const lineStarts = precomputeLineStarts(sql)
+        const lineStarts = precomputeLineStarts(sql);
 
-        const blockCommentPattern = /\/\*([\s\S]*?)\*\//g
-        let match
+        const blockCommentPattern = /\/\*([\s\S]*?)\*\//g;
+        let match;
         while ((match = blockCommentPattern.exec(sql)) !== null) {
-            const content = match[1]
+            const content = match[1];
             if (!this.isCommentedOutCode(content, thresholdLines)) {
-                continue
+                continue;
             }
 
-            const lines = content.split('\n').filter(l => l.trim().length > 0)
-            const startLine = lineFromOffset(lineStarts, match.index)
-            const loc: AstLocation = { line: startLine, column: 1 }
-            diagnostics.push(this.addDiagnostic(loc, 2, 'linter.commentedOutCode.description', String(lines.length)))
+            const lines = content.split("\n").filter((l) => l.trim().length > 0);
+            const startLine = lineFromOffset(lineStarts, match.index);
+            const loc: AstLocation = { line: startLine, column: 1 };
+            diagnostics.push(this.addDiagnostic(loc, 2, "linter.commentedOutCode.description", String(lines.length)));
         }
 
-        const lineCommentGroups = this.findConsecutiveLineComments(sql)
+        const lineCommentGroups = this.findConsecutiveLineComments(sql);
         for (const group of lineCommentGroups) {
             if (!this.isCommentedOutCode(group.text, thresholdLines)) {
-                continue
+                continue;
             }
 
-            const startLine = lineFromOffset(lineStarts, group.startIndex)
-            const loc: AstLocation = { line: startLine, column: 1 }
-            diagnostics.push(this.addDiagnostic(loc, 2, 'linter.commentedOutCode.description', String(group.lineCount)))
+            const startLine = lineFromOffset(lineStarts, group.startIndex);
+            const loc: AstLocation = { line: startLine, column: 1 };
+            diagnostics.push(this.addDiagnostic(loc, 2, "linter.commentedOutCode.description", String(group.lineCount)));
         }
 
-        return diagnostics
+        return diagnostics;
     }
 
     private isCommentedOutCode(content: string, thresholdLines: number): boolean {
         if (/sql-formatter-disable|sql-formatter-enable/i.test(content)) {
-            return false
+            return false;
         }
 
-        const lines = content.split('\n').filter(l => l.trim().length > 0)
+        const lines = content.split("\n").filter((l) => l.trim().length > 0);
         if (lines.length < thresholdLines) {
-            return false
+            return false;
         }
 
-        let keywordCount = 0
+        let keywordCount = 0;
         for (const { regex } of SQL_KEYWORD_REGEXES) {
             if (regex.test(content)) {
-                keywordCount++
+                keywordCount++;
             }
         }
         if (keywordCount < 3) {
-            return false
+            return false;
         }
 
-        return true
+        return true;
     }
 
     private findConsecutiveLineComments(text: string): { startIndex: number; lineCount: number; text: string }[] {
-        const groups: { startIndex: number; lineCount: number; text: string }[] = []
-        const lines = text.split('\n')
-        let groupStart = -1
-        let groupText = ''
-        let groupStartIndex = 0
-        let offset = 0
+        const groups: { startIndex: number; lineCount: number; text: string }[] = [];
+        const lines = text.split("\n");
+        let groupStart = -1;
+        let groupText = "";
+        let groupStartIndex = 0;
+        let offset = 0;
 
         for (let i = 0; i < lines.length; i++) {
-            const trimmed = lines[i].trim()
-            if (trimmed.startsWith('--')) {
+            const trimmed = lines[i].trim();
+            if (trimmed.startsWith("--")) {
                 if (groupStart === -1) {
-                    groupStart = i
-                    groupStartIndex = offset
-                    groupText = trimmed
+                    groupStart = i;
+                    groupStartIndex = offset;
+                    groupText = trimmed;
                 } else {
-                    groupText += '\n' + trimmed
+                    groupText += "\n" + trimmed;
                 }
             } else if (trimmed.length > 0) {
                 if (groupStart !== -1) {
-                    groups.push({ startIndex: groupStartIndex, lineCount: i - groupStart, text: groupText })
-                    groupStart = -1
-                    groupText = ''
+                    groups.push({ startIndex: groupStartIndex, lineCount: i - groupStart, text: groupText });
+                    groupStart = -1;
+                    groupText = "";
                 }
             }
-            offset += lines[i].length + 1
+            offset += lines[i].length + 1;
         }
         if (groupStart !== -1) {
-            groups.push({ startIndex: groupStartIndex, lineCount: lines.length - groupStart, text: groupText })
+            groups.push({ startIndex: groupStartIndex, lineCount: lines.length - groupStart, text: groupText });
         }
-        return groups
+        return groups;
     }
 }

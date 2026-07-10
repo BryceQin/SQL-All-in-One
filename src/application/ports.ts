@@ -1,6 +1,6 @@
-import type { ConnectionState } from '../shared/treeNodeTypes';
-import type { ForeignKeyOption, PendingChange } from '../shared/editTypes';
-import type { ConnectionConfig, ConnectionGroup, TestConnectionResult } from '../database/connection/ConnectionConfig';
+import type { ConnectionState } from "../shared/treeNodeTypes";
+import type { ForeignKeyOption, PendingChange } from "../shared/editTypes";
+import type { ConnectionConfig, ConnectionGroup, TestConnectionResult } from "../database/connection/ConnectionConfig";
 
 // ─── Connection ────────────────────────────────────────────────────────────
 
@@ -21,7 +21,7 @@ export interface ConnectionInfo {
  * consumers can subscribe without importing the database layer.
  */
 export interface ConnectionEvent {
-    type: 'add' | 'remove' | 'update';
+    type: "add" | "remove" | "update";
     connectionId: string;
 }
 
@@ -58,7 +58,7 @@ export interface IConnectionStore {
 }
 
 export interface IQueryAdapter {
-    execute(sql: string): Promise<{ rows: QueryResultRow[]; columns: QueryResultMeta['columns'] }>;
+    execute(sql: string): Promise<{ rows: QueryResultRow[]; columns: QueryResultMeta["columns"] }>;
     beginTransaction(): Promise<void>;
     commit(): Promise<void>;
     rollback(): Promise<void>;
@@ -73,7 +73,7 @@ export interface IQueryAdapter {
  * import of the database adapter type. This is a *type-only* dependency,
  * not a value import, so it does not reintroduce a runtime coupling.
  */
-export type IDatabaseAdapter = import('../database/adapters/AdapterFactory').DatabaseAdapter;
+export type IDatabaseAdapter = import("../database/adapters/AdapterFactory").DatabaseAdapter;
 
 export interface IConnectionService {
     getActiveConnection(): ConnectionConfig | undefined;
@@ -96,7 +96,7 @@ export interface IConnectionService {
  * forcing the views layer to import the factory directly.
  */
 export interface IDialectMetadataProvider {
-    getAllMetadata(): import('../database/adapters/IDatabaseAdapter').DialectMetadata[];
+    getAllMetadata(): import("../database/adapters/IDatabaseAdapter").DialectMetadata[];
 }
 
 // ─── Query ─────────────────────────────────────────────────────────────────
@@ -111,9 +111,9 @@ export interface QueryResultMeta {
 }
 
 export interface QueryExecutionResult {
-    status: 'success' | 'error';
+    status: "success" | "error";
     rows?: QueryResultRow[];
-    columns?: QueryResultMeta['columns'];
+    columns?: QueryResultMeta["columns"];
     executionTime?: number;
     rowCount?: number;
     affectedRows?: number;
@@ -133,8 +133,8 @@ export interface IQueryService {
 // components can rely on the port interface without re-declaring (and
 // drifting from) the concrete shape. This is a *type-only* re-export — it
 // does not introduce a runtime dependency on the database layer.
-export type ColumnInfo = import('../database/adapters/IDatabaseAdapter').ColumnInfo;
-export type TableStructure = import('../database/adapters/IDatabaseAdapter').TableStructure;
+export type ColumnInfo = import("../database/adapters/IDatabaseAdapter").ColumnInfo;
+export type TableStructure = import("../database/adapters/IDatabaseAdapter").TableStructure;
 
 /**
  * Schema-cache contract used by views-layer components (database explorer,
@@ -165,7 +165,7 @@ export interface IDataEditService {
         tableName: string,
         database: string,
         columns: { name: string }[],
-        rows: QueryResultRow[]
+        rows: QueryResultRow[],
     ): Promise<{ success: boolean; errors?: string[] }>;
     beginTransaction(): Promise<void>;
     commit(): Promise<void>;
@@ -182,15 +182,15 @@ export interface CsvImportOptions {
     encoding?: string;
     hasHeaders?: boolean;
     batchSize?: number;
-    onError: 'skip' | 'abort';
-    dedupStrategy: 'ignore' | 'skip' | 'update';
+    onError: "skip" | "abort";
+    dedupStrategy: "ignore" | "skip" | "update";
     mapping?: Record<string, string>;
 }
 
 export interface JsonImportOptions {
     batchSize?: number;
-    onError: 'skip' | 'abort';
-    dedupStrategy: 'ignore' | 'skip' | 'update';
+    onError: "skip" | "abort";
+    dedupStrategy: "ignore" | "skip" | "update";
 }
 
 export interface ImportErrorEntry {
@@ -241,7 +241,13 @@ export interface IDataTransferService {
     parseCsvLine(line: string, delimiter: string): string[];
     exportToCsv(rows: QueryResultRow[], columns: { name: string }[], options?: CsvExportOptions): Promise<void>;
     exportToJson(rows: QueryResultRow[], columns: { name: string }[], options?: JsonExportOptions): Promise<void>;
-    exportToInsert(rows: QueryResultRow[], columns: { name: string }[], tableName: string, options?: InsertExportOptions, adapter?: IDatabaseAdapter): Promise<void>;
+    exportToInsert(
+        rows: QueryResultRow[],
+        columns: { name: string }[],
+        tableName: string,
+        options?: InsertExportOptions,
+        adapter?: IDatabaseAdapter,
+    ): Promise<void>;
     exportToDdl(adapter: IDatabaseAdapter, database: string, table: string): Promise<void>;
 }
 
@@ -280,12 +286,12 @@ export interface ExplainResult {
         cost?: number;
         key?: string;
         extra?: string;
-        children: ExplainResult['nodes'];
+        children: ExplainResult["nodes"];
     }[];
 }
 
 export interface OptimizationSuggestion {
-    severity: 'info' | 'warning' | 'critical';
+    severity: "info" | "warning" | "critical";
     message: string;
     table?: string;
 }

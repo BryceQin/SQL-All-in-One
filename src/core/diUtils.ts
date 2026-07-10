@@ -1,5 +1,5 @@
-import type * as vscode from 'vscode';
-import type { DIContainer } from './diContainer';
+import type * as vscode from "vscode";
+import type { DIContainer } from "./diContainer";
 
 /**
  * Creates a lazy provider factory that defers service instantiation until first
@@ -15,11 +15,7 @@ import type { DIContainer } from './diContainer';
  * @param context - The VSCode extension context for subscription management
  * @returns A getter function that returns the cached service instance
  */
-export function createLazyProvider<T>(
-    container: DIContainer,
-    token: string,
-    context: vscode.ExtensionContext,
-): () => T {
+export function createLazyProvider<T>(container: DIContainer, token: string, context: vscode.ExtensionContext): () => T {
     let instance: T | undefined;
     return () => {
         if (!instance) {

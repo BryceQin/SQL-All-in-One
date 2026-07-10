@@ -1,15 +1,15 @@
-import { MysqlToHiveConverter } from './mysqlToHiveConverter'
-import { HiveToMysqlConverter } from './hiveToMysqlConverter'
+import { MysqlToHiveConverter } from "./mysqlToHiveConverter";
+import { HiveToMysqlConverter } from "./hiveToMysqlConverter";
 
 export class SqlConverter {
-  private mysqlConverter = new MysqlToHiveConverter()
-  private hiveConverter = new HiveToMysqlConverter()
+    private mysqlConverter = new MysqlToHiveConverter();
+    private hiveConverter = new HiveToMysqlConverter();
 
-  public mysqlToHive(sql: string): string {
-    return this.mysqlConverter.convert(sql)
-  }
+    public mysqlToHive(sql: string): string {
+        return this.mysqlConverter.convert(sql);
+    }
 
-  public hiveToMysql(sql: string): string {
-    return this.hiveConverter.convert(sql)
-  }
+    public hiveToMysql(sql: string): string {
+        return this.hiveConverter.convert(sql);
+    }
 }

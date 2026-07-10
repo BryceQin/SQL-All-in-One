@@ -1,8 +1,8 @@
-import * as vscode from 'vscode';
-import type { IConnectionService, IQueryService, IDataEditService, QueryExecutionResult } from './ports';
-import type { FilterCondition, PendingChange, ForeignKeyOption } from '../shared/editTypes';
-import { t } from '../i18n/index';
-import { handleError, ErrorCategory } from '../core/errorHandler';
+import * as vscode from "vscode";
+import type { IConnectionService, IQueryService, IDataEditService, QueryExecutionResult } from "./ports";
+import type { FilterCondition, PendingChange, ForeignKeyOption } from "../shared/editTypes";
+import { t } from "../i18n/index";
+import { handleError, ErrorCategory } from "../core/errorHandler";
 
 /**
  * Interface that the query result panel must satisfy.
@@ -80,26 +80,26 @@ export class QueryResultController {
         // and route the corresponding callbacks through those methods instead
         // of re-running the editor query.
         panel.onExecuteQuery = (_sql: string): void => {
-            vscode.commands.executeCommand('hive-formatter.executeQuery');
+            vscode.commands.executeCommand("hive-formatter.executeQuery");
         };
 
         panel.onCancelQuery = (): void => {
-            vscode.commands.executeCommand('hive-formatter.cancelQuery');
+            vscode.commands.executeCommand("hive-formatter.cancelQuery");
         };
 
         panel.onRequestSort = (_column: string, _direction: string): void => {
             // See TODO above — sort params dropped until IQueryService extended.
-            vscode.commands.executeCommand('hive-formatter.executeQuery');
+            vscode.commands.executeCommand("hive-formatter.executeQuery");
         };
 
         panel.onRequestFilter = (_conditions: FilterCondition[]): void => {
             // See TODO above — filter conditions dropped until IQueryService extended.
-            vscode.commands.executeCommand('hive-formatter.executeQuery');
+            vscode.commands.executeCommand("hive-formatter.executeQuery");
         };
 
         panel.onRequestPage = (_page: number): void => {
             // See TODO above — page number dropped until IQueryService extended.
-            vscode.commands.executeCommand('hive-formatter.executeQuery');
+            vscode.commands.executeCommand("hive-formatter.executeQuery");
         };
 
         panel.onCommitChanges = async (
@@ -110,31 +110,21 @@ export class QueryResultController {
             try {
                 const currentResult = panel.getCurrentResult();
                 if (!currentResult) {
-                    return { success: false, errors: [t('database.noQueryResult')] };
+                    return { success: false, errors: [t("database.noQueryResult")] };
                 }
-                return await this.dataEditService.commitChanges(
-                    changes,
-                    tableName,
-                    database,
-                    currentResult.columns,
-                    currentResult.rows,
-                );
+                return await this.dataEditService.commitChanges(changes, tableName, database, currentResult.columns, currentResult.rows);
             } catch (error) {
                 return { success: false, errors: [(error as Error).message] };
             }
         };
 
-        panel.onRequestForeignKeyOptions = async (
-            column: string,
-            referencedTable: string,
-            db: string,
-        ): Promise<ForeignKeyOption[]> => {
+        panel.onRequestForeignKeyOptions = async (column: string, referencedTable: string, db: string): Promise<ForeignKeyOption[]> => {
             try {
                 return await this.dataEditService.requestForeignKeyOptions(column, referencedTable, db);
             } catch (e) {
                 // Surface via ErrorHandler instead of silently console.debug —
                 // silent failures make FK option retrieval impossible to debug.
-                handleError(e, 'QueryResultController.onRequestForeignKeyOptions', ErrorCategory.FEATURE);
+                handleError(e, "QueryResultController.onRequestForeignKeyOptions", ErrorCategory.FEATURE);
                 return [];
             }
         };
@@ -168,7 +158,7 @@ export class QueryResultController {
                 // to the active connection.
                 const adapterId = this.connectionId ?? this.connectionService.getActiveConnection()?.id;
                 if (!adapterId) {
-                    panel.showError({ code: 'NO_CONNECTION', message: t('database.noActiveAdapter'), sql });
+                    panel.showError({ code: "NO_CONNECTION", message: t("database.noActiveAdapter"), sql });
                     return;
                 }
 
@@ -179,10 +169,8 @@ export class QueryResultController {
 
                 if (panel.isDisposed) return;
 
-                if (result.status === 'error') {
-                    panel.showError(
-                        result.error ?? { code: 'EXEC_ERROR', message: t('database.unknownError'), sql },
-                    );
+                if (result.status === "error") {
+                    panel.showError(result.error ?? { code: "EXEC_ERROR", message: t("database.unknownError"), sql });
                 } else {
                     const conn = this.connectionId
                         ? this.connectionService.getConnection(this.connectionId)
@@ -192,7 +180,7 @@ export class QueryResultController {
             } catch (error) {
                 const msg = error instanceof Error ? error.message : String(error);
                 if (panel.isDisposed) return;
-                panel.showError({ code: 'EXEC_ERROR', message: msg, sql });
+                panel.showError({ code: "EXEC_ERROR", message: msg, sql });
             }
         };
 
@@ -205,7 +193,7 @@ export class QueryResultController {
                 if (cfg) {
                     await this.connectionService.updateConnection(connId, {
                         ...cfg,
-                        database: changedDb || cfg.database || '',
+                        database: changedDb || cfg.database || "",
                     });
                 }
                 if (changedDb) {
@@ -221,7 +209,7 @@ export class QueryResultController {
             } catch (e) {
                 // Database change is best-effort, but still surface the error
                 // for observability (previously silently console.debug'd).
-                handleError(e, 'QueryResultController.onChangeDatabase', ErrorCategory.FEATURE);
+                handleError(e, "QueryResultController.onChangeDatabase", ErrorCategory.FEATURE);
             }
         };
     }

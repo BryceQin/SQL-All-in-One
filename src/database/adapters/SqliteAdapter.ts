@@ -1,5 +1,5 @@
-import type Database from 'better-sqlite3';
-import { t } from '../../i18n/index';
+import type Database from "better-sqlite3";
+import { t } from "../../i18n/index";
 import type {
     ColumnInfo,
     ConnectionConfig,
@@ -24,13 +24,13 @@ import type {
     TestConnectionResult,
     TriggerInfo,
     ViewInfo,
-} from './IDatabaseAdapter';
-import { BaseConnectionAdapter } from './BaseConnectionAdapter';
-import { BaseDatabaseAdapter } from './BaseDatabaseAdapter';
-import { BaseMetadataAdapter } from './BaseMetadataAdapter';
-import { BaseQueryAdapter } from './BaseQueryAdapter';
-import { BaseSchemaAdapter } from './BaseSchemaAdapter';
-import { BaseSharedContext } from './BaseSharedContext';
+} from "./IDatabaseAdapter";
+import { BaseConnectionAdapter } from "./BaseConnectionAdapter";
+import { BaseDatabaseAdapter } from "./BaseDatabaseAdapter";
+import { BaseMetadataAdapter } from "./BaseMetadataAdapter";
+import { BaseQueryAdapter } from "./BaseQueryAdapter";
+import { BaseSchemaAdapter } from "./BaseSchemaAdapter";
+import { BaseSharedContext } from "./BaseSharedContext";
 
 /**
  * SQLite shared context.
@@ -52,9 +52,9 @@ class SqliteConnectionAdapter extends BaseConnectionAdapter<SqliteSharedContext>
 
     async connect(config: ConnectionConfig): Promise<void> {
         try {
-            const Database = (await import('better-sqlite3')).default;
+            const Database = (await import("better-sqlite3")).default;
             this.shared.db = new Database(config.host, { readonly: false });
-            this.shared.db.pragma('journal_mode = WAL');
+            this.shared.db.pragma("journal_mode = WAL");
             this.shared.totalConnectionCount = 1;
             this.shared.activeConnectionCount = 0;
             this.shared.lastActivityTime = Date.now();
@@ -68,9 +68,9 @@ class SqliteConnectionAdapter extends BaseConnectionAdapter<SqliteSharedContext>
         if (this.shared.db) {
             if (this.shared.inTransaction) {
                 try {
-                    this.shared.db.exec('ROLLBACK');
+                    this.shared.db.exec("ROLLBACK");
                 } catch (e) {
-                    console.debug('[SQL All in One] SQLite rollback on disconnect:', e);
+                    console.debug("[SQL All in One] SQLite rollback on disconnect:", e);
                 }
                 this.shared.inTransaction = false;
             }
@@ -81,12 +81,12 @@ class SqliteConnectionAdapter extends BaseConnectionAdapter<SqliteSharedContext>
 
     async testConnection(config: ConnectionConfig): Promise<TestConnectionResult> {
         const startTime = Date.now();
-        let tempDb: import('better-sqlite3').Database | null = null;
+        let tempDb: import("better-sqlite3").Database | null = null;
 
         try {
-            const Database = (await import('better-sqlite3')).default;
+            const Database = (await import("better-sqlite3")).default;
             tempDb = new Database(config.host, { readonly: true });
-            const version = tempDb.prepare('SELECT sqlite_version() AS version').get() as Record<string, unknown>;
+            const version = tempDb.prepare("SELECT sqlite_version() AS version").get() as Record<string, unknown>;
             const endTime = Date.now();
             return {
                 success: true,
@@ -111,10 +111,10 @@ class SqliteConnectionAdapter extends BaseConnectionAdapter<SqliteSharedContext>
             return false;
         }
         try {
-            this.shared.db.prepare('SELECT 1').get();
+            this.shared.db.prepare("SELECT 1").get();
             return true;
         } catch (e) {
-            console.debug('[SQL All in One] SqliteConnectionAdapter.checkConnectionHealth failed:', e);
+            console.debug("[SQL All in One] SqliteConnectionAdapter.checkConnectionHealth failed:", e);
             return false;
         }
     }
@@ -122,11 +122,11 @@ class SqliteConnectionAdapter extends BaseConnectionAdapter<SqliteSharedContext>
     protected override formatDriverSpecificError(error: unknown, config: ConnectionConfig): Error | undefined {
         const msg = error instanceof Error ? error.message : String(error);
 
-        if (msg.includes('SQLITE_CANTOPEN') || msg.includes('unable to open database')) {
-            return new Error(t('database.databaseNotExist', config.host, config.host));
+        if (msg.includes("SQLITE_CANTOPEN") || msg.includes("unable to open database")) {
+            return new Error(t("database.databaseNotExist", config.host, config.host));
         }
-        if (msg.includes('SQLITE_READONLY')) {
-            return new Error(t('database.sqliteReadonly', config.host));
+        if (msg.includes("SQLITE_READONLY")) {
+            return new Error(t("database.sqliteReadonly", config.host));
         }
 
         // SQLite is file-based; there are no network/SSL errors to fall back
@@ -146,29 +146,39 @@ class SqliteQueryAdapter extends BaseQueryAdapter<SqliteSharedContext> {
         const executionTime = Date.now() - startTime;
         return {
             queryId,
-            status: 'error',
+            status: "error",
             columns: [],
             rows: [],
             rowCount: 0,
             executionTime,
             error: {
-                code: 'NOT_CONNECTED',
-                message: t('database.notConnected'),
+                code: "NOT_CONNECTED",
+                message: t("database.notConnected"),
                 sql,
             },
         };
     }
 
-    protected override async executeWithConnection(sql: string, params: QueryParam[] | undefined, queryId: string, startTime: number): Promise<QueryResult> {
-        const values = params?.map(p => p.value);
+    protected override async executeWithConnection(
+        sql: string,
+        params: QueryParam[] | undefined,
+        queryId: string,
+        startTime: number,
+    ): Promise<QueryResult> {
+        const values = params?.map((p) => p.value);
         const trimmedSql = sql.trim().toUpperCase();
 
-        if (trimmedSql.startsWith('SELECT') || trimmedSql.startsWith('PRAGMA') || trimmedSql.startsWith('WITH') || trimmedSql.startsWith('EXPLAIN')) {
+        if (
+            trimmedSql.startsWith("SELECT") ||
+            trimmedSql.startsWith("PRAGMA") ||
+            trimmedSql.startsWith("WITH") ||
+            trimmedSql.startsWith("EXPLAIN")
+        ) {
             const stmt = this.shared.db!.prepare(sql);
-            const rows = values && values.length > 0 ? stmt.all(...values) as QueryRow[] : stmt.all() as QueryRow[];
-            const columns = stmt.columns().map(col => ({
+            const rows = values && values.length > 0 ? (stmt.all(...values) as QueryRow[]) : (stmt.all() as QueryRow[]);
+            const columns = stmt.columns().map((col) => ({
                 name: col.name,
-                type: String(col.type ?? 'UNKNOWN'),
+                type: String(col.type ?? "UNKNOWN"),
                 nullable: true,
                 isPrimaryKey: false,
                 isAutoIncrement: false,
@@ -177,20 +187,18 @@ class SqliteQueryAdapter extends BaseQueryAdapter<SqliteSharedContext> {
 
             return {
                 queryId,
-                status: 'success',
+                status: "success",
                 columns,
                 rows,
                 rowCount: rows.length,
                 executionTime: Date.now() - startTime,
             };
         } else {
-            const info = values && values.length > 0
-                ? this.shared.db!.prepare(sql).run(...values)
-                : this.shared.db!.prepare(sql).run();
+            const info = values && values.length > 0 ? this.shared.db!.prepare(sql).run(...values) : this.shared.db!.prepare(sql).run();
 
             return {
                 queryId,
-                status: 'success',
+                status: "success",
                 columns: [],
                 rows: [],
                 rowCount: 0,
@@ -211,13 +219,13 @@ class SqliteQueryAdapter extends BaseQueryAdapter<SqliteSharedContext> {
         const sqliteError = error as { code?: string; message?: string };
         return {
             queryId,
-            status: 'error',
+            status: "error",
             columns: [],
             rows: [],
             rowCount: 0,
             executionTime,
             error: {
-                code: sqliteError.code ?? 'EXEC_ERROR',
+                code: sqliteError.code ?? "EXEC_ERROR",
                 message: error instanceof Error ? error.message : String(error),
                 sql,
             },
@@ -226,31 +234,31 @@ class SqliteQueryAdapter extends BaseQueryAdapter<SqliteSharedContext> {
 
     async beginTransaction(): Promise<void> {
         if (this.shared.inTransaction) {
-            throw new Error(t('database.transactionInProgress'));
+            throw new Error(t("database.transactionInProgress"));
         }
         if (!this.shared.db) {
-            throw new Error(t('database.notConnected'));
+            throw new Error(t("database.notConnected"));
         }
-        this.shared.db.exec('BEGIN');
+        this.shared.db.exec("BEGIN");
         this.shared.inTransaction = true;
     }
 
     async commit(): Promise<void> {
         if (!this.shared.inTransaction) {
-            throw new Error(t('database.noTransactionInProgress'));
+            throw new Error(t("database.noTransactionInProgress"));
         }
-        this.shared.db!.exec('COMMIT');
+        this.shared.db!.exec("COMMIT");
         this.shared.inTransaction = false;
     }
 
     async rollback(): Promise<void> {
         if (!this.shared.inTransaction) {
-            throw new Error(t('database.noTransactionInProgress'));
+            throw new Error(t("database.noTransactionInProgress"));
         }
         try {
-            this.shared.db!.exec('ROLLBACK');
+            this.shared.db!.exec("ROLLBACK");
         } catch (e) {
-            console.error('SQLite rollback failed:', e);
+            console.error("SQLite rollback failed:", e);
         } finally {
             this.shared.inTransaction = false;
         }
@@ -263,7 +271,7 @@ class SqliteQueryAdapter extends BaseQueryAdapter<SqliteSharedContext> {
         try {
             (this.shared.db as unknown as { interrupt(): void }).interrupt();
         } catch (e) {
-            console.debug('[SQL All in One] SQLite interrupt error:', e);
+            console.debug("[SQL All in One] SQLite interrupt error:", e);
         }
     }
 }
@@ -275,15 +283,15 @@ class SqliteMetadataAdapter extends BaseMetadataAdapter<SqliteSharedContext> {
      * to return this constant rather than going through {@link listDatabaseRows}.
      */
     protected async listDatabaseRows(): Promise<DatabaseInfo[]> {
-        return [{ name: 'main' }];
+        return [{ name: "main" }];
     }
 
     override async listDatabases(): Promise<DatabaseInfo[]> {
-        return [{ name: 'main' }];
+        return [{ name: "main" }];
     }
 
     async listSchemas(_database?: string): Promise<string[]> {
-        return ['main'];
+        return ["main"];
     }
 
     async listTables(_database?: string, _schema?: string, filter?: string): Promise<TableInfo[]> {
@@ -298,7 +306,7 @@ class SqliteMetadataAdapter extends BaseMetadataAdapter<SqliteSharedContext> {
         sql += ` ORDER BY name`;
         return this.runListQuery<TableInfo>(sql, params, (row: QueryRow) => ({
             name: row.name as string,
-            type: 'table',
+            type: "table",
         }));
     }
 
@@ -317,8 +325,8 @@ class SqliteMetadataAdapter extends BaseMetadataAdapter<SqliteSharedContext> {
             const eventMatch = sqlText.match(/(?:INSERT|UPDATE|DELETE)/i);
             return {
                 name: row.name as string,
-                event: eventMatch ? eventMatch[0].toUpperCase() : 'UNKNOWN',
-                timing: timingMatch ? timingMatch[0].toUpperCase() : 'UNKNOWN',
+                event: eventMatch ? eventMatch[0].toUpperCase() : "UNKNOWN",
+                timing: timingMatch ? timingMatch[0].toUpperCase() : "UNKNOWN",
                 statement: sqlText,
             };
         });
@@ -328,7 +336,7 @@ class SqliteMetadataAdapter extends BaseMetadataAdapter<SqliteSharedContext> {
 class SqliteSchemaAdapter extends BaseSchemaAdapter<unknown> {
     constructor(
         executeQuery: (sql: string, params?: QueryParam[]) => Promise<QueryResult>,
-        listTriggersFn: (database?: string, schema?: string) => Promise<TriggerInfo[]>
+        listTriggersFn: (database?: string, schema?: string) => Promise<TriggerInfo[]>,
     ) {
         super(undefined, executeQuery, listTriggersFn);
     }
@@ -350,53 +358,60 @@ class SqliteSchemaAdapter extends BaseSchemaAdapter<unknown> {
 
     async getTableDDL(_database: string, table: string, _schema?: string): Promise<string> {
         const result = await this.executeQuery(`SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?`, [{ value: table }]);
-        if (result.status !== 'success' || result.rows.length === 0) {
-            return '';
+        if (result.status !== "success" || result.rows.length === 0) {
+            return "";
         }
-        return (result.rows[0].sql as string) ?? '';
+        return (result.rows[0].sql as string) ?? "";
     }
 
     async getViewDDL(_database: string, view: string, _schema?: string): Promise<string> {
         const result = await this.executeQuery(`SELECT sql FROM sqlite_master WHERE type = 'view' AND name = ?`, [{ value: view }]);
-        if (result.status !== 'success' || result.rows.length === 0) {
-            return '';
+        if (result.status !== "success" || result.rows.length === 0) {
+            return "";
         }
-        return (result.rows[0].sql as string) ?? '';
+        return (result.rows[0].sql as string) ?? "";
     }
 
     async getFunctionDDL(_database: string, _functionName: string, _schema?: string): Promise<string> {
-        return '';
+        return "";
     }
 
     async getProcedureDDL(_database: string, _procedureName: string, _schema?: string): Promise<string> {
-        return '';
+        return "";
     }
 
     async getTriggerDDL(_database: string, triggerName: string, _schema?: string): Promise<string> {
-        const result = await this.executeQuery(`SELECT sql FROM sqlite_master WHERE type = 'trigger' AND name = ?`, [{ value: triggerName }]);
-        if (result.status !== 'success' || result.rows.length === 0) {
-            return '';
+        const result = await this.executeQuery(`SELECT sql FROM sqlite_master WHERE type = 'trigger' AND name = ?`, [
+            { value: triggerName },
+        ]);
+        if (result.status !== "success" || result.rows.length === 0) {
+            return "";
         }
-        return (result.rows[0].sql as string) ?? '';
+        return (result.rows[0].sql as string) ?? "";
     }
 
-    async getRoutineParameters(_database: string, _routineName: string, _routineType: 'FUNCTION' | 'PROCEDURE', _schema?: string): Promise<RoutineParameterInfo[]> {
+    async getRoutineParameters(
+        _database: string,
+        _routineName: string,
+        _routineType: "FUNCTION" | "PROCEDURE",
+        _schema?: string,
+    ): Promise<RoutineParameterInfo[]> {
         return [];
     }
 
     async getExplainPlan(_database: string, sql: string): Promise<ExplainResult> {
         const result = await this.executeQuery(`EXPLAIN QUERY PLAN ${sql}`);
-        if (result.status !== 'success') {
-            return { format: 'text', raw: '', nodes: [] };
+        if (result.status !== "success") {
+            return { format: "text", raw: "", nodes: [] };
         }
 
         const nodes = this.parseExplainRows(result.rows);
-        return { format: 'text', raw: JSON.stringify(result.rows), nodes };
+        return { format: "text", raw: JSON.stringify(result.rows), nodes };
     }
 
     async getTableRowCount(_database: string, table: string, _schema?: string): Promise<number> {
         const result = await this.executeQuery(`SELECT COUNT(*) AS cnt FROM ${this.quoteIdentifier(table)}`);
-        if (result.status !== 'success' || result.rows.length === 0) {
+        if (result.status !== "success" || result.rows.length === 0) {
             return 0;
         }
         const cnt = result.rows[0].cnt;
@@ -413,66 +428,56 @@ class SqliteSchemaAdapter extends BaseSchemaAdapter<unknown> {
             supportsExplainAnalyze: false,
             supportsCancel: true,
             supportsSshTunnel: false,
-            supportedObjectTypes: ['table', 'view', 'trigger', 'index'],
+            supportedObjectTypes: ["table", "view", "trigger", "index"],
         };
     }
 
     getSupportedDataTypes(): DataTypeCategory[] {
         return [
             {
-                category: 'Integer',
+                category: "Integer",
                 types: [
-                    { name: 'INTEGER' },
-                    { name: 'INT' },
-                    { name: 'TINYINT' },
-                    { name: 'SMALLINT' },
-                    { name: 'MEDIUMINT' },
-                    { name: 'BIGINT' },
-                    { name: 'UNSIGNED BIG INT' },
+                    { name: "INTEGER" },
+                    { name: "INT" },
+                    { name: "TINYINT" },
+                    { name: "SMALLINT" },
+                    { name: "MEDIUMINT" },
+                    { name: "BIGINT" },
+                    { name: "UNSIGNED BIG INT" },
                 ],
             },
             {
-                category: 'Float',
+                category: "Float",
                 types: [
-                    { name: 'REAL' },
-                    { name: 'DOUBLE' },
-                    { name: 'DOUBLE PRECISION' },
-                    { name: 'FLOAT' },
-                    { name: 'DECIMAL', needsPrecision: true, needsScale: true },
+                    { name: "REAL" },
+                    { name: "DOUBLE" },
+                    { name: "DOUBLE PRECISION" },
+                    { name: "FLOAT" },
+                    { name: "DECIMAL", needsPrecision: true, needsScale: true },
                 ],
             },
             {
-                category: 'String',
+                category: "String",
                 types: [
-                    { name: 'TEXT' },
-                    { name: 'CHARACTER', needsLength: true },
-                    { name: 'VARCHAR', needsLength: true },
-                    { name: 'NCHAR', needsLength: true },
-                    { name: 'NVARCHAR', needsLength: true },
-                    { name: 'CLOB' },
+                    { name: "TEXT" },
+                    { name: "CHARACTER", needsLength: true },
+                    { name: "VARCHAR", needsLength: true },
+                    { name: "NCHAR", needsLength: true },
+                    { name: "NVARCHAR", needsLength: true },
+                    { name: "CLOB" },
                 ],
             },
             {
-                category: 'Date & Time',
-                types: [
-                    { name: 'DATE' },
-                    { name: 'DATETIME' },
-                    { name: 'TIMESTAMP' },
-                    { name: 'TIME' },
-                ],
+                category: "Date & Time",
+                types: [{ name: "DATE" }, { name: "DATETIME" }, { name: "TIMESTAMP" }, { name: "TIME" }],
             },
             {
-                category: 'Binary',
-                types: [{ name: 'BLOB' }],
+                category: "Binary",
+                types: [{ name: "BLOB" }],
             },
             {
-                category: 'Other',
-                types: [
-                    { name: 'NUMERIC' },
-                    { name: 'BOOLEAN' },
-                    { name: 'NULL' },
-                    { name: 'JSON' },
-                ],
+                category: "Other",
+                types: [{ name: "NUMERIC" }, { name: "BOOLEAN" }, { name: "NULL" }, { name: "JSON" }],
             },
         ];
     }
@@ -481,7 +486,7 @@ class SqliteSchemaAdapter extends BaseSchemaAdapter<unknown> {
 
     private async describeTableColumns(table: string): Promise<ColumnInfo[]> {
         const result = await this.executeQuery(`PRAGMA table_info(${this.quoteIdentifier(table)})`);
-        if (result.status !== 'success') {
+        if (result.status !== "success") {
             return [];
         }
 
@@ -490,7 +495,7 @@ class SqliteSchemaAdapter extends BaseSchemaAdapter<unknown> {
             const lengthMatch = typeStr.match(/\((\d+)\)/);
             return {
                 name: row.name as string,
-                type: typeStr.replace(/\(.*\)/, '').trim(),
+                type: typeStr.replace(/\(.*\)/, "").trim(),
                 length: lengthMatch ? parseInt(lengthMatch[1], 10) : undefined,
                 nullable: Number(row.notnull) === 0,
                 defaultValue: row.dflt_value as string | number | boolean | null,
@@ -503,7 +508,7 @@ class SqliteSchemaAdapter extends BaseSchemaAdapter<unknown> {
 
     private async describeTableIndexes(table: string): Promise<IndexInfo[]> {
         const result = await this.executeQuery(`PRAGMA index_list(${this.quoteIdentifier(table)})`);
-        if (result.status !== 'success') {
+        if (result.status !== "success") {
             return [];
         }
 
@@ -512,17 +517,17 @@ class SqliteSchemaAdapter extends BaseSchemaAdapter<unknown> {
             const indexName = row.name as string;
             const indexInfoResult = await this.executeQuery(`PRAGMA index_info(${this.quoteIdentifier(indexName)})`);
             const columns: string[] = [];
-            if (indexInfoResult.status === 'success') {
+            if (indexInfoResult.status === "success") {
                 for (const infoRow of indexInfoResult.rows) {
                     columns.push(infoRow.name as string);
                 }
             }
             indexes.push({
                 name: indexName,
-                type: 'btree',
+                type: "btree",
                 columns,
                 isUnique: Number(row.unique) === 1,
-                isPrimary: (row.origin as string) === 'pk',
+                isPrimary: (row.origin as string) === "pk",
             });
         }
 
@@ -531,7 +536,7 @@ class SqliteSchemaAdapter extends BaseSchemaAdapter<unknown> {
 
     private async describeTableForeignKeys(table: string): Promise<ForeignKeyInfo[]> {
         const result = await this.executeQuery(`PRAGMA foreign_key_list(${this.quoteIdentifier(table)})`);
-        if (result.status !== 'success') {
+        if (result.status !== "success") {
             return [];
         }
 
@@ -544,8 +549,8 @@ class SqliteSchemaAdapter extends BaseSchemaAdapter<unknown> {
                     columns: [],
                     referencedTable: row.table as string,
                     referencedColumns: [],
-                    onDelete: (row.on_delete as string) || 'NO ACTION',
-                    onUpdate: (row.on_update as string) || 'NO ACTION',
+                    onDelete: (row.on_delete as string) || "NO ACTION",
+                    onUpdate: (row.on_update as string) || "NO ACTION",
                 });
             }
             const fk = fkMap.get(id)!;
@@ -563,7 +568,7 @@ class SqliteSchemaAdapter extends BaseSchemaAdapter<unknown> {
         for (const row of rows) {
             nodes.push({
                 id: String(++idCounter),
-                operation: (row.detail as string) ?? 'unknown',
+                operation: (row.detail as string) ?? "unknown",
                 children: [],
             });
         }
@@ -592,15 +597,12 @@ export class SqliteAdapter extends BaseDatabaseAdapter<SqliteSharedContext> {
         return new SqliteQueryAdapter(this.shared);
     }
     protected override createMetadataAdapter(): IMetadataAdapter {
-        return new SqliteMetadataAdapter(
-            this.shared,
-            (sql, params) => this.queryAdapter.execute(sql, params)
-        );
+        return new SqliteMetadataAdapter(this.shared, (sql, params) => this.queryAdapter.execute(sql, params));
     }
     protected override createSchemaAdapter(): ISchemaAdapter {
         return new SqliteSchemaAdapter(
             (sql, params) => this.queryAdapter.execute(sql, params),
-            (db, schema) => this.metadataAdapter.listTriggers(db, schema)
+            (db, schema) => this.metadataAdapter.listTriggers(db, schema),
         );
     }
 
@@ -614,20 +616,20 @@ export class SqliteAdapter extends BaseDatabaseAdapter<SqliteSharedContext> {
         try {
             await this.connectionAdapter.reapIdleConnections();
         } catch (e) {
-            console.debug('[SQL All in One] SQLite reap idle connections error:', e);
+            console.debug("[SQL All in One] SQLite reap idle connections error:", e);
         }
     }
 
     static getDialectMetadata(): DialectMetadata {
         return {
-            dialect: 'sqlite',
-            displayName: 'SQLite',
+            dialect: "sqlite",
+            displayName: "SQLite",
             defaultPort: 0,
-            defaultUsername: '',
-            iconKey: 'sqlite',
+            defaultUsername: "",
+            iconKey: "sqlite",
             supportsSshTunnel: false,
             supportsSsl: false,
-            isFileBased: true
+            isFileBased: true,
         };
     }
 }

@@ -1,12 +1,12 @@
-import * as vscode from 'vscode'
-import type { SqlLanguage } from '../formatter/sqlFormatter'
-import type { HoverResolver } from './HoverResolver'
-import { extractParameterAtPosition, buildParameterMarkdown } from './hoverUtils'
-import { LRUCache } from '../utils/lruCache'
+import * as vscode from "vscode";
+import type { SqlLanguage } from "../formatter/sqlFormatter";
+import type { HoverResolver } from "./HoverResolver";
+import { extractParameterAtPosition, buildParameterMarkdown } from "./hoverUtils";
+import { LRUCache } from "../utils/lruCache";
 
 interface ParamScanResult {
-    paramName: string
-    locations: { line: number; context: string }[]
+    paramName: string;
+    locations: { line: number; context: string }[];
 }
 
 const scanCache = new LRUCache<string, { version: number; result: Map<string, ParamScanResult> }>({
@@ -14,58 +14,58 @@ const scanCache = new LRUCache<string, { version: number; result: Map<string, Pa
     // switching between many open SQL files.
     maxSize: 100,
     maxAge: 300000,
-})
+});
 
 export function clearParameterScanCache(): void {
-    scanCache.clear()
+    scanCache.clear();
 }
 
 function scanDocumentParameters(document: vscode.TextDocument): Map<string, ParamScanResult> {
-    const cacheKey = document.uri.toString()
-    const cached = scanCache.get(cacheKey)
+    const cacheKey = document.uri.toString();
+    const cached = scanCache.get(cacheKey);
     if (cached && cached.version === document.version) {
-        return cached.result
+        return cached.result;
     }
 
-    const paramMap = new Map<string, ParamScanResult>()
+    const paramMap = new Map<string, ParamScanResult>();
     // Fetch the whole document once and scan it with a single regex pass,
     // instead of calling document.lineAt(i).text per line. The `\$\{(\w+)\}`
     // pattern does not depend on line boundaries, so no `m` flag is needed.
-    const text = document.getText()
-    const paramRegex = /\$\{(\w+)\}/g
-    let match: RegExpExecArray | null
+    const text = document.getText();
+    const paramRegex = /\$\{(\w+)\}/g;
+    let match: RegExpExecArray | null;
     while ((match = paramRegex.exec(text)) !== null) {
-        const name = match[1]
+        const name = match[1];
         // Convert the match's character offset back to a 0-based line number,
         // then derive the 1-based line number and the line's text the same way
         // the previous per-line implementation did.
-        const matchOffset = match.index
-        const position = document.positionAt(matchOffset)
-        const lineNumber = position.line + 1
-        const lineText = document.lineAt(position.line).text
-        const existing = paramMap.get(name)
-        const location = { line: lineNumber, context: lineText.trim() }
+        const matchOffset = match.index;
+        const position = document.positionAt(matchOffset);
+        const lineNumber = position.line + 1;
+        const lineText = document.lineAt(position.line).text;
+        const existing = paramMap.get(name);
+        const location = { line: lineNumber, context: lineText.trim() };
         if (existing) {
-            existing.locations.push(location)
+            existing.locations.push(location);
         } else {
-            paramMap.set(name, { paramName: name, locations: [location] })
+            paramMap.set(name, { paramName: name, locations: [location] });
         }
     }
 
-    scanCache.set(cacheKey, { version: document.version, result: paramMap })
-    return paramMap
+    scanCache.set(cacheKey, { version: document.version, result: paramMap });
+    return paramMap;
 }
 
 export class ParameterHoverResolver implements HoverResolver {
     resolve(_word: string, _dialect: SqlLanguage, document: vscode.TextDocument, position: vscode.Position): vscode.Hover | null {
-        const paramInfo = extractParameterAtPosition(document, position)
-        if (!paramInfo) return null
+        const paramInfo = extractParameterAtPosition(document, position);
+        if (!paramInfo) return null;
 
-        const paramMap = scanDocumentParameters(document)
-        const scanResult = paramMap.get(paramInfo.paramName)
-        if (!scanResult) return null
+        const paramMap = scanDocumentParameters(document);
+        const scanResult = paramMap.get(paramInfo.paramName);
+        if (!scanResult) return null;
 
-        const md = buildParameterMarkdown(scanResult.paramName, scanResult.locations)
-        return new vscode.Hover(md, paramInfo.range)
+        const md = buildParameterMarkdown(scanResult.paramName, scanResult.locations);
+        return new vscode.Hover(md, paramInfo.range);
     }
 }

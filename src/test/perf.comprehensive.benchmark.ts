@@ -7,8 +7,8 @@
  * by at least 15% after optimization.
  */
 
-import { precomputeLineOffsets, lineColFromIndexFast } from '../lexer/lineColFromIndex';
-import { NestedComment } from '../lexer/NestedComment';
+import { precomputeLineOffsets, lineColFromIndexFast } from "../lexer/lineColFromIndex";
+import { NestedComment } from "../lexer/NestedComment";
 
 function measureTime(fn: () => void, iterations = 50): number {
     for (let i = 0; i < 5; i++) fn();
@@ -23,7 +23,7 @@ function measureTime(fn: () => void, iterations = 50): number {
 }
 
 function formatMs(ms: number): string {
-    return ms.toFixed(4) + 'ms';
+    return ms.toFixed(4) + "ms";
 }
 
 function generateLongSql(lineCount: number): string {
@@ -31,7 +31,7 @@ function generateLongSql(lineCount: number): string {
     for (let i = 0; i < lineCount; i++) {
         lines.push(`SELECT column_${i} AS alias_${i}, COUNT(*) AS cnt_${i} FROM table_${i} GROUP BY column_${i}`);
     }
-    return lines.join('\n');
+    return lines.join("\n");
 }
 
 function generateSqlWithComments(count: number): string {
@@ -39,7 +39,7 @@ function generateSqlWithComments(count: number): string {
     for (let i = 0; i < count; i++) {
         parts.push(`/* comment ${i} */ SELECT ${i}`);
     }
-    return parts.join('\n');
+    return parts.join("\n");
 }
 
 function generateLargeSql(statementCount: number): string {
@@ -47,13 +47,13 @@ function generateLargeSql(statementCount: number): string {
     for (let i = 0; i < statementCount; i++) {
         parts.push(`SELECT col${i}_1, col${i}_2 FROM table_${i} WHERE id = ${i}`);
     }
-    return parts.join(';\n');
+    return parts.join(";\n");
 }
 
-console.log('='.repeat(70));
-console.log('Comprehensive Performance Benchmarks');
-console.log('='.repeat(70));
-console.log('');
+console.log("=".repeat(70));
+console.log("Comprehensive Performance Benchmarks");
+console.log("=".repeat(70));
+console.log("");
 
 {
     const sql = generateLongSql(2000);
@@ -68,7 +68,7 @@ console.log('');
     const lineStarts = precomputeLineOffsets(sql);
     const positions: number[] = [];
     let idx = 0;
-    while ((idx = sql.indexOf(',', idx + 1)) !== -1) {
+    while ((idx = sql.indexOf(",", idx + 1)) !== -1) {
         positions.push(idx);
     }
     const time = measureTime(() => {
@@ -106,7 +106,7 @@ console.log('');
         for (let i = 0; i < sql.length; i++) {
             if (sql.charCodeAt(i) === 59) {
                 const stmt = sql.substring(start, i + 1);
-                if (stmt.replace(/;/g, '').trim().length > 0) {
+                if (stmt.replace(/;/g, "").trim().length > 0) {
                     statements.push(stmt);
                 }
                 start = i + 1;
@@ -119,7 +119,7 @@ console.log('');
 {
     const obj: Record<string, number> = {};
     for (let i = 0; i < 20; i++) {
-        obj['key' + i] = i;
+        obj["key" + i] = i;
     }
     const time = measureTime(() => {
         const keys = Object.keys(obj);
@@ -130,7 +130,7 @@ console.log('');
     console.log(`[5] Object.keys traversal (20 keys): ${formatMs(time)} median`);
 }
 
-console.log('');
-console.log('='.repeat(70));
-console.log('Benchmark complete.');
-console.log('='.repeat(70));
+console.log("");
+console.log("=".repeat(70));
+console.log("Benchmark complete.");
+console.log("=".repeat(70));

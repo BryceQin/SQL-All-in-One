@@ -1,9 +1,9 @@
-import type { DialectOptions } from "../dialect"
-import { expandPhrases } from "../expandPhrases"
-import { functions } from "./sqlite.functions"
-import { dataTypes, keywords } from "./sqlite.keywords"
+import type { DialectOptions } from "../dialect";
+import { expandPhrases } from "../expandPhrases";
+import { functions } from "./sqlite.functions";
+import { dataTypes, keywords } from "./sqlite.keywords";
 
-const reservedSelect = expandPhrases(["SELECT [ALL | DISTINCT]"])
+const reservedSelect = expandPhrases(["SELECT [ALL | DISTINCT]"]);
 
 const reservedClauses = expandPhrases([
     // queries
@@ -22,12 +22,9 @@ const reservedClauses = expandPhrases([
     "SET",
     "ON CONFLICT",
     "RETURNING",
-])
+]);
 
-const standardOnelineClauses = expandPhrases([
-    "CREATE TABLE [IF NOT EXISTS]",
-    "CREATE VIRTUAL TABLE",
-])
+const standardOnelineClauses = expandPhrases(["CREATE TABLE [IF NOT EXISTS]", "CREATE VIRTUAL TABLE"]);
 
 const tabularOnelineClauses = expandPhrases([
     "ALTER TABLE",
@@ -43,30 +40,21 @@ const tabularOnelineClauses = expandPhrases([
     "DROP",
     "INSERT",
     "REPLACE",
-])
+]);
 
-const reservedSetOperations = expandPhrases(["UNION [ALL]", "INTERSECT", "EXCEPT"])
+const reservedSetOperations = expandPhrases(["UNION [ALL]", "INTERSECT", "EXCEPT"]);
 
-const reservedJoins = expandPhrases([
-    "JOIN",
-    "{LEFT | INNER | CROSS} JOIN",
-    "NATURAL JOIN",
-    "NATURAL LEFT JOIN",
-])
+const reservedJoins = expandPhrases(["JOIN", "{LEFT | INNER | CROSS} JOIN", "NATURAL JOIN", "NATURAL LEFT JOIN"]);
 
-const reservedPhrases = expandPhrases(["{ROWS | RANGE} BETWEEN"])
+const reservedPhrases = expandPhrases(["{ROWS | RANGE} BETWEEN"]);
 
-const reservedDataTypePhrases = expandPhrases([])
+const reservedDataTypePhrases = expandPhrases([]);
 
 export const sqlite: DialectOptions = {
     name: "sqlite",
     tokenizerOptions: {
         reservedSelect,
-        reservedClauses: [
-            ...reservedClauses,
-            ...standardOnelineClauses,
-            ...tabularOnelineClauses,
-        ],
+        reservedClauses: [...reservedClauses, ...standardOnelineClauses, ...tabularOnelineClauses],
         reservedSetOperations,
         reservedJoins,
         reservedKeywordPhrases: reservedPhrases,
@@ -84,4 +72,4 @@ export const sqlite: DialectOptions = {
         onelineClauses: [...standardOnelineClauses, ...tabularOnelineClauses],
         tabularOnelineClauses,
     },
-}
+};

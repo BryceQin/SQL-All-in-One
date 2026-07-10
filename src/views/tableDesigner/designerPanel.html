@@ -1,221 +1,251 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline' {{CSP_SOURCE}}; script-src 'nonce-{{CSP_NONCE}}' {{CSP_SOURCE}}; img-src data: {{CSP_SOURCE}};">
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Table Designer</title>
-  <link rel="stylesheet" href="{{CSS_URI}}">
-  {{CONFIG_INJECT}}
-</head>
-<body>
-  <div class="designer-panel">
-    <div class="header-bar">
-      <div class="header-title">
-        <span class="header-icon">&#128203;</span>
-        <span id="headerTableName" data-i18n="tableDesigner">Table Designer</span>
-      </div>
-      <div class="header-actions">
-        <button class="btn btn-primary" id="btnSave" data-action="handleSave" data-i18n="save">Save</button>
-        <button class="btn btn-secondary" id="btnClose" data-action="handleClose">&#10005;</button>
-      </div>
-    </div>
+    <head>
+        <meta
+            http-equiv="Content-Security-Policy"
+            content="default-src 'none'; style-src 'unsafe-inline' {{CSP_SOURCE}}; script-src 'nonce-{{CSP_NONCE}}' {{CSP_SOURCE}}; img-src data: {{CSP_SOURCE}};"
+        />
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Table Designer</title>
+        <link rel="stylesheet" href="{{CSS_URI}}" />
+        {{CONFIG_INJECT}}
+    </head>
+    <body>
+        <div class="designer-panel">
+            <div class="header-bar">
+                <div class="header-title">
+                    <span class="header-icon">&#128203;</span>
+                    <span id="headerTableName" data-i18n="tableDesigner">Table Designer</span>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-primary" id="btnSave" data-action="handleSave" data-i18n="save">Save</button>
+                    <button class="btn btn-secondary" id="btnClose" data-action="handleClose">&#10005;</button>
+                </div>
+            </div>
 
-    <div class="tab-bar">
-      <button class="tab-btn active" data-tab="fields" data-action="switchTab" data-action-arg="fields" data-i18n="fields">Fields</button>
-      <button class="tab-btn" data-tab="indexes" data-action="switchTab" data-action-arg="indexes" data-i18n="indexes">Indexes</button>
-      <button class="tab-btn" data-tab="foreignKeys" data-action="switchTab" data-action-arg="foreignKeys" data-i18n="foreignKeys">Foreign Keys</button>
-      <button class="tab-btn" data-tab="triggers" data-action="switchTab" data-action-arg="triggers" data-i18n="triggers">Triggers</button>
-      <button class="tab-btn" data-tab="options" data-action="switchTab" data-action-arg="options" data-i18n="options">Options</button>
-      <button class="tab-btn" data-tab="sql" data-action="switchTab" data-action-arg="sql" data-i18n="sql">SQL</button>
-    </div>
+            <div class="tab-bar">
+                <button class="tab-btn active" data-tab="fields" data-action="switchTab" data-action-arg="fields" data-i18n="fields">
+                    Fields
+                </button>
+                <button class="tab-btn" data-tab="indexes" data-action="switchTab" data-action-arg="indexes" data-i18n="indexes">
+                    Indexes
+                </button>
+                <button
+                    class="tab-btn"
+                    data-tab="foreignKeys"
+                    data-action="switchTab"
+                    data-action-arg="foreignKeys"
+                    data-i18n="foreignKeys"
+                >
+                    Foreign Keys
+                </button>
+                <button class="tab-btn" data-tab="triggers" data-action="switchTab" data-action-arg="triggers" data-i18n="triggers">
+                    Triggers
+                </button>
+                <button class="tab-btn" data-tab="options" data-action="switchTab" data-action-arg="options" data-i18n="options">
+                    Options
+                </button>
+                <button class="tab-btn" data-tab="sql" data-action="switchTab" data-action-arg="sql" data-i18n="sql">SQL</button>
+            </div>
 
-    <div class="tab-content">
-      <div class="tab-page active" id="pageFields">
-        <div class="table-name-row">
-          <label class="table-name-label" data-i18n="tableName">Table Name</label>
-          <input type="text" class="table-name-input" id="tableNameInput" data-action="updateTableName">
-        </div>
-        <div class="fields-toolbar">
-          <button class="btn btn-secondary btn-add" data-action="addColumn" data-i18n="addField">+ Add Field</button>
-        </div>
-        <div class="fields-table-wrapper">
-          <table class="design-table fields-table">
-            <thead>
-              <tr>
-                <th class="th-drag"></th>
-                <th class="th-name" data-i18n="fieldNameHeader">Field Name</th>
-                <th class="th-type" data-i18n="type">Type</th>
-                <th class="th-length" data-i18n="lengthHeader">Length</th>
-                <th class="th-nullable" data-i18n="nullable">Nullable</th>
-                <th class="th-default" data-i18n="defaultHeader">Default</th>
-                <th class="th-comment" data-i18n="commentHeader">Comment</th>
-                <th class="th-constraints" data-i18n="constraints">Constraints</th>
-                <th class="th-actions" data-i18n="actions">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="fieldsBody"></tbody>
-          </table>
-        </div>
-      </div>
+            <div class="tab-content">
+                <div class="tab-page active" id="pageFields">
+                    <div class="table-name-row">
+                        <label class="table-name-label" data-i18n="tableName">Table Name</label>
+                        <input type="text" class="table-name-input" id="tableNameInput" data-action="updateTableName" />
+                    </div>
+                    <div class="fields-toolbar">
+                        <button class="btn btn-secondary btn-add" data-action="addColumn" data-i18n="addField">+ Add Field</button>
+                    </div>
+                    <div class="fields-table-wrapper">
+                        <table class="design-table fields-table">
+                            <thead>
+                                <tr>
+                                    <th class="th-drag"></th>
+                                    <th class="th-name" data-i18n="fieldNameHeader">Field Name</th>
+                                    <th class="th-type" data-i18n="type">Type</th>
+                                    <th class="th-length" data-i18n="lengthHeader">Length</th>
+                                    <th class="th-nullable" data-i18n="nullable">Nullable</th>
+                                    <th class="th-default" data-i18n="defaultHeader">Default</th>
+                                    <th class="th-comment" data-i18n="commentHeader">Comment</th>
+                                    <th class="th-constraints" data-i18n="constraints">Constraints</th>
+                                    <th class="th-actions" data-i18n="actions">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="fieldsBody"></tbody>
+                        </table>
+                    </div>
+                </div>
 
-      <div class="tab-page" id="pageIndexes">
-        <div class="fields-toolbar">
-          <button class="btn btn-secondary btn-add" data-action="addIndex" data-i18n="addIndex">+ Add Index</button>
-        </div>
-        <div class="fields-table-wrapper">
-          <table class="design-table indexes-table">
-            <thead>
-              <tr>
-                <th class="th-name" data-i18n="indexNameHeader">Index Name</th>
-                <th class="th-type" data-i18n="type">Type</th>
-                <th class="th-columns" data-i18n="columns">Columns</th>
-                <th class="th-unique" data-i18n="uniqueHeader">Unique</th>
-                <th class="th-actions" data-i18n="actions">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="indexesBody"></tbody>
-          </table>
-        </div>
-      </div>
+                <div class="tab-page" id="pageIndexes">
+                    <div class="fields-toolbar">
+                        <button class="btn btn-secondary btn-add" data-action="addIndex" data-i18n="addIndex">+ Add Index</button>
+                    </div>
+                    <div class="fields-table-wrapper">
+                        <table class="design-table indexes-table">
+                            <thead>
+                                <tr>
+                                    <th class="th-name" data-i18n="indexNameHeader">Index Name</th>
+                                    <th class="th-type" data-i18n="type">Type</th>
+                                    <th class="th-columns" data-i18n="columns">Columns</th>
+                                    <th class="th-unique" data-i18n="uniqueHeader">Unique</th>
+                                    <th class="th-actions" data-i18n="actions">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="indexesBody"></tbody>
+                        </table>
+                    </div>
+                </div>
 
-      <div class="tab-page" id="pageForeignKeys">
-        <div class="fields-toolbar">
-          <button class="btn btn-secondary btn-add" data-action="addForeignKey" data-i18n="addForeignKey">+ Add Foreign Key</button>
-        </div>
-        <div class="fields-table-wrapper">
-          <table class="design-table fk-table">
-            <thead>
-              <tr>
-                <th class="th-name" data-i18n="fkNameHeader">FK Name</th>
-                <th class="th-columns" data-i18n="columns">Columns</th>
-                <th class="th-ref-table" data-i18n="referencedTable">Referenced Table</th>
-                <th class="th-ref-columns" data-i18n="referencedColumns">Referenced Columns</th>
-                <th class="th-on-delete" data-i18n="onDelete">ON DELETE</th>
-                <th class="th-on-update" data-i18n="onUpdate">ON UPDATE</th>
-                <th class="th-actions" data-i18n="actions">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="foreignKeysBody"></tbody>
-          </table>
-        </div>
-      </div>
+                <div class="tab-page" id="pageForeignKeys">
+                    <div class="fields-toolbar">
+                        <button class="btn btn-secondary btn-add" data-action="addForeignKey" data-i18n="addForeignKey">
+                            + Add Foreign Key
+                        </button>
+                    </div>
+                    <div class="fields-table-wrapper">
+                        <table class="design-table fk-table">
+                            <thead>
+                                <tr>
+                                    <th class="th-name" data-i18n="fkNameHeader">FK Name</th>
+                                    <th class="th-columns" data-i18n="columns">Columns</th>
+                                    <th class="th-ref-table" data-i18n="referencedTable">Referenced Table</th>
+                                    <th class="th-ref-columns" data-i18n="referencedColumns">Referenced Columns</th>
+                                    <th class="th-on-delete" data-i18n="onDelete">ON DELETE</th>
+                                    <th class="th-on-update" data-i18n="onUpdate">ON UPDATE</th>
+                                    <th class="th-actions" data-i18n="actions">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="foreignKeysBody"></tbody>
+                        </table>
+                    </div>
+                </div>
 
-      <div class="tab-page" id="pageTriggers">
-        <div class="fields-toolbar">
-          <button class="btn btn-secondary btn-add" data-action="addTrigger">+ Add Trigger</button>
-        </div>
-        <div class="fields-table-wrapper">
-          <table class="design-table triggers-table">
-            <thead>
-              <tr>
-                <th class="th-name">Trigger Name</th>
-                <th class="th-timing">Timing</th>
-                <th class="th-event">Event</th>
-                <th class="th-statement">Statement</th>
-                <th class="th-actions">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="triggersBody"></tbody>
-          </table>
-        </div>
-      </div>
+                <div class="tab-page" id="pageTriggers">
+                    <div class="fields-toolbar">
+                        <button class="btn btn-secondary btn-add" data-action="addTrigger">+ Add Trigger</button>
+                    </div>
+                    <div class="fields-table-wrapper">
+                        <table class="design-table triggers-table">
+                            <thead>
+                                <tr>
+                                    <th class="th-name">Trigger Name</th>
+                                    <th class="th-timing">Timing</th>
+                                    <th class="th-event">Event</th>
+                                    <th class="th-statement">Statement</th>
+                                    <th class="th-actions">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="triggersBody"></tbody>
+                        </table>
+                    </div>
+                </div>
 
-      <div class="tab-page" id="pageOptions">
-        <div class="options-form">
-          <div class="option-row">
-            <label class="option-label">Engine</label>
-            <select class="option-select" id="optEngine" data-action="updateOption" data-action-arg="engine">
-              <option value="InnoDB">InnoDB</option>
-              <option value="MyISAM">MyISAM</option>
-              <option value="MEMORY">MEMORY</option>
-              <option value="CSV">CSV</option>
-              <option value="ARCHIVE">ARCHIVE</option>
-              <option value="BLACKHOLE">BLACKHOLE</option>
-              <option value="FEDERATED">FEDERATED</option>
-              <option value="MRG_MYISAM">Merge</option>
-              <option value="NDBCLUSTER">NDB</option>
-            </select>
-          </div>
-          <div class="option-row">
-            <label class="option-label">Charset</label>
-            <select class="option-select" id="optCharset" data-action="updateOption" data-action-arg="charset">
-              <option value="utf8mb4">utf8mb4</option>
-              <option value="utf8">utf8</option>
-              <option value="latin1">latin1</option>
-              <option value="ascii">ascii</option>
-              <option value="binary">binary</option>
-              <option value="big5">big5</option>
-              <option value="dec8">dec8</option>
-              <option value="cp850">cp850</option>
-              <option value="hp8">hp8</option>
-              <option value="koi8r">koi8r</option>
-            </select>
-          </div>
-          <div class="option-row">
-            <label class="option-label" data-i18n="collation">Collation</label>
-            <select class="option-select" id="optCollation" data-action="updateOption" data-action-arg="collation">
-              <option value="utf8mb4_general_ci">utf8mb4_general_ci</option>
-              <option value="utf8mb4_unicode_ci">utf8mb4_unicode_ci</option>
-              <option value="utf8mb4_bin">utf8mb4_bin</option>
-              <option value="utf8_general_ci">utf8_general_ci</option>
-              <option value="utf8_unicode_ci">utf8_unicode_ci</option>
-              <option value="latin1_swedish_ci">latin1_swedish_ci</option>
-              <option value="latin1_general_ci">latin1_general_ci</option>
-              <option value="ascii_general_ci">ascii_general_ci</option>
-              <option value="binary">binary</option>
-            </select>
-          </div>
-          <div class="option-row">
-            <label class="option-label" data-i18n="autoIncrementOption">Auto Increment</label>
-            <input type="number" class="option-input" id="optAutoIncrement" data-action="updateOption" data-action-arg="autoIncrement">
-          </div>
-          <div class="option-row">
-            <label class="option-label">Table Comment</label>
-            <input type="text" class="option-input" id="optComment" data-action="updateOption" data-action-arg="comment">
-          </div>
-        </div>
-      </div>
+                <div class="tab-page" id="pageOptions">
+                    <div class="options-form">
+                        <div class="option-row">
+                            <label class="option-label">Engine</label>
+                            <select class="option-select" id="optEngine" data-action="updateOption" data-action-arg="engine">
+                                <option value="InnoDB">InnoDB</option>
+                                <option value="MyISAM">MyISAM</option>
+                                <option value="MEMORY">MEMORY</option>
+                                <option value="CSV">CSV</option>
+                                <option value="ARCHIVE">ARCHIVE</option>
+                                <option value="BLACKHOLE">BLACKHOLE</option>
+                                <option value="FEDERATED">FEDERATED</option>
+                                <option value="MRG_MYISAM">Merge</option>
+                                <option value="NDBCLUSTER">NDB</option>
+                            </select>
+                        </div>
+                        <div class="option-row">
+                            <label class="option-label">Charset</label>
+                            <select class="option-select" id="optCharset" data-action="updateOption" data-action-arg="charset">
+                                <option value="utf8mb4">utf8mb4</option>
+                                <option value="utf8">utf8</option>
+                                <option value="latin1">latin1</option>
+                                <option value="ascii">ascii</option>
+                                <option value="binary">binary</option>
+                                <option value="big5">big5</option>
+                                <option value="dec8">dec8</option>
+                                <option value="cp850">cp850</option>
+                                <option value="hp8">hp8</option>
+                                <option value="koi8r">koi8r</option>
+                            </select>
+                        </div>
+                        <div class="option-row">
+                            <label class="option-label" data-i18n="collation">Collation</label>
+                            <select class="option-select" id="optCollation" data-action="updateOption" data-action-arg="collation">
+                                <option value="utf8mb4_general_ci">utf8mb4_general_ci</option>
+                                <option value="utf8mb4_unicode_ci">utf8mb4_unicode_ci</option>
+                                <option value="utf8mb4_bin">utf8mb4_bin</option>
+                                <option value="utf8_general_ci">utf8_general_ci</option>
+                                <option value="utf8_unicode_ci">utf8_unicode_ci</option>
+                                <option value="latin1_swedish_ci">latin1_swedish_ci</option>
+                                <option value="latin1_general_ci">latin1_general_ci</option>
+                                <option value="ascii_general_ci">ascii_general_ci</option>
+                                <option value="binary">binary</option>
+                            </select>
+                        </div>
+                        <div class="option-row">
+                            <label class="option-label" data-i18n="autoIncrementOption">Auto Increment</label>
+                            <input
+                                type="number"
+                                class="option-input"
+                                id="optAutoIncrement"
+                                data-action="updateOption"
+                                data-action-arg="autoIncrement"
+                            />
+                        </div>
+                        <div class="option-row">
+                            <label class="option-label">Table Comment</label>
+                            <input type="text" class="option-input" id="optComment" data-action="updateOption" data-action-arg="comment" />
+                        </div>
+                    </div>
+                </div>
 
-      <div class="tab-page" id="pageSql">
-        <pre class="sql-preview-full"><code id="sqlPreviewFull"></code></pre>
-      </div>
-    </div>
+                <div class="tab-page" id="pageSql">
+                    <pre class="sql-preview-full"><code id="sqlPreviewFull"></code></pre>
+                </div>
+            </div>
 
-    <div class="sql-preview-bar">
-      <div class="sql-preview-header" data-i18n="sqlPreview">SQL Preview</div>
-      <pre class="sql-preview-code"><code id="sqlPreviewBottom"></code></pre>
-    </div>
+            <div class="sql-preview-bar">
+                <div class="sql-preview-header" data-i18n="sqlPreview">SQL Preview</div>
+                <pre class="sql-preview-code"><code id="sqlPreviewBottom"></code></pre>
+            </div>
 
-    <div class="dialog-overlay" id="saveDialog" style="display:none;">
-      <div class="dialog">
-        <div class="dialog-header" data-i18n="confirmSave">Confirm Save</div>
-        <div class="dialog-body">
-          <div class="dialog-label" data-i18n="sqlWillBeExecuted">The following SQL will be executed:</div>
-          <pre class="dialog-sql" id="saveSqlPreview"></pre>
-        </div>
-        <div class="dialog-footer">
-          <button class="btn btn-primary" data-action="confirmSave" data-i18n="execute">Execute</button>
-          <button class="btn btn-secondary" data-action="exportSqlOnly" data-i18n="exportSqlOnly">Export SQL Only</button>
-          <button class="btn btn-secondary" data-action="cancelSave" data-i18n="cancel">Cancel</button>
-        </div>
-      </div>
-    </div>
+            <div class="dialog-overlay" id="saveDialog" style="display: none">
+                <div class="dialog">
+                    <div class="dialog-header" data-i18n="confirmSave">Confirm Save</div>
+                    <div class="dialog-body">
+                        <div class="dialog-label" data-i18n="sqlWillBeExecuted">The following SQL will be executed:</div>
+                        <pre class="dialog-sql" id="saveSqlPreview"></pre>
+                    </div>
+                    <div class="dialog-footer">
+                        <button class="btn btn-primary" data-action="confirmSave" data-i18n="execute">Execute</button>
+                        <button class="btn btn-secondary" data-action="exportSqlOnly" data-i18n="exportSqlOnly">Export SQL Only</button>
+                        <button class="btn btn-secondary" data-action="cancelSave" data-i18n="cancel">Cancel</button>
+                    </div>
+                </div>
+            </div>
 
-    <div class="dialog-overlay" id="reorderDialog" style="display:none;">
-      <div class="dialog">
-        <div class="dialog-header" data-i18n="columnReorderWarning">Column Reorder Warning</div>
-        <div class="dialog-body">
-          <div class="dialog-warning" data-i18n="reorderWarningText">Column order changes will rebuild the table, which may be slow for large tables. Consider exporting SQL and executing manually.</div>
+            <div class="dialog-overlay" id="reorderDialog" style="display: none">
+                <div class="dialog">
+                    <div class="dialog-header" data-i18n="columnReorderWarning">Column Reorder Warning</div>
+                    <div class="dialog-body">
+                        <div class="dialog-warning" data-i18n="reorderWarningText">
+                            Column order changes will rebuild the table, which may be slow for large tables. Consider exporting SQL and
+                            executing manually.
+                        </div>
+                    </div>
+                    <div class="dialog-footer">
+                        <button class="btn btn-primary" data-action="confirmReorder" data-i18n="continueBtn">Continue</button>
+                        <button class="btn btn-secondary" data-action="exportReorderSql" data-i18n="exportSqlOnly">Export SQL Only</button>
+                        <button class="btn btn-secondary" data-action="cancelReorder" data-i18n="cancel">Cancel</button>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="dialog-footer">
-          <button class="btn btn-primary" data-action="confirmReorder" data-i18n="continueBtn">Continue</button>
-          <button class="btn btn-secondary" data-action="exportReorderSql" data-i18n="exportSqlOnly">Export SQL Only</button>
-          <button class="btn btn-secondary" data-action="cancelReorder" data-i18n="cancel">Cancel</button>
-        </div>
-      </div>
-    </div>
-  </div>
-  <script src="{{JS_URI}}"></script>
-</body>
+        <script src="{{JS_URI}}"></script>
+    </body>
 </html>

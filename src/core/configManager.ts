@@ -1,10 +1,10 @@
-import * as vscode from 'vscode';
-import { initI18n } from '../i18n';
-import { getContainer, Tokens } from './diContainer';
-import { LRUCache } from '../utils/lruCache';
-import { getFormatterConfigKeys, LINT_CONFIG_KEYS } from '../config/configDefinitions';
-import type { SqlLanguage, FormatOptionsWithLanguage } from '../formatter/sqlFormatter';
-import type { FormatOptions } from '../formatter/FormatOptions';
+import * as vscode from "vscode";
+import { initI18n } from "../i18n";
+import { getContainer, Tokens } from "./diContainer";
+import { LRUCache } from "../utils/lruCache";
+import { getFormatterConfigKeys, LINT_CONFIG_KEYS } from "../config/configDefinitions";
+import type { SqlLanguage, FormatOptionsWithLanguage } from "../formatter/sqlFormatter";
+import type { FormatOptions } from "../formatter/FormatOptions";
 
 export class ConfigManager {
     private static readonly MAX_CACHE_SIZE = 500;
@@ -24,14 +24,14 @@ export class ConfigManager {
 
     private getConfig(): vscode.WorkspaceConfiguration {
         if (!this.config) {
-            this.config = vscode.workspace.getConfiguration('SQL-All-in-One');
+            this.config = vscode.workspace.getConfiguration("SQL-All-in-One");
         }
         return this.config;
     }
 
     private deepEqual(a: unknown, b: unknown, seen = new WeakSet()): boolean {
         if (a === b) return true;
-        if (a === null || b === null || typeof a !== 'object' || typeof b !== 'object') return false;
+        if (a === null || b === null || typeof a !== "object" || typeof b !== "object") return false;
         if (seen.has(a as object) || seen.has(b as object)) return a === b;
         seen.add(a as object);
         seen.add(b as object);
@@ -52,20 +52,18 @@ export class ConfigManager {
     constructor() {
         this.disposables.push(
             vscode.workspace.onDidChangeConfiguration((e) => {
-                if (e.affectsConfiguration('SQL-All-in-One')) {
+                if (e.affectsConfiguration("SQL-All-in-One")) {
                     // Selective per-key invalidation: only remove cache entries
                     // for config sections that actually changed.
                     const keysToDelete: string[] = [];
                     for (const [cacheKey] of this.cache.entries()) {
-                        if (cacheKey.startsWith('__sectionKeys::')) {
+                        if (cacheKey.startsWith("__sectionKeys::")) {
                             // Parse: __sectionKeys::prefix::key1,key2,key3
-                            const parts = cacheKey.split('::');
+                            const parts = cacheKey.split("::");
                             const prefix = parts[1];
-                            const keys = parts[2].split(',');
-                            const affected = keys.some(key => {
-                                const section = prefix
-                                    ? `SQL-All-in-One.${prefix}.${key}`
-                                    : `SQL-All-in-One.${key}`;
+                            const keys = parts[2].split(",");
+                            const affected = keys.some((key) => {
+                                const section = prefix ? `SQL-All-in-One.${prefix}.${key}` : `SQL-All-in-One.${key}`;
                                 return e.affectsConfiguration(section);
                             });
                             if (affected) {
@@ -83,17 +81,17 @@ export class ConfigManager {
                     }
 
                     this.config = undefined;
-                    if (e.affectsConfiguration('SQL-All-in-One.displayLanguage')) {
+                    if (e.affectsConfiguration("SQL-All-in-One.displayLanguage")) {
                         try {
                             initI18n();
                         } catch (e) {
                             // ignore: i18n reinit failure is non-fatal
-                            console.debug('[SQL All in One] ConfigManager i18n reinit failed:', e)
+                            console.debug("[SQL All in One] ConfigManager i18n reinit failed:", e);
                         }
                     }
                     this._onDidChangeConfig.fire();
                 }
-            })
+            }),
         );
     }
 
@@ -129,7 +127,7 @@ export class ConfigManager {
     }
 
     getSectionKeys<T extends Record<string, unknown>>(prefix: string, keys: string[], defaults: T): T {
-        const cacheKey = `__sectionKeys::${prefix}::${keys.slice().sort().join(',')}`;
+        const cacheKey = `__sectionKeys::${prefix}::${keys.slice().sort().join(",")}`;
         if (this.cache.has(cacheKey)) {
             return this.cache.get(cacheKey) as T;
         }
@@ -186,7 +184,7 @@ export class ConfigManager {
             // A key is linter-relevant if it is one of the feature-level
             // lint toggles (LINT_CONFIG_KEYS) or any per-rule key registered
             // with the `lint.` prefix.
-            if (lintFeatureKeySet.has(key) || key.startsWith('lint.')) {
+            if (lintFeatureKeySet.has(key) || key.startsWith("lint.")) {
                 const oldValue = this.lastConfigSnapshot.get(key);
                 if (!this.deepEqual(oldValue, value)) {
                     this.lastConfigSnapshot = newSnapshot;
@@ -203,7 +201,9 @@ export class ConfigManager {
     }
 
     dispose(): void {
-        this.disposables.forEach((d) => { d.dispose(); });
+        this.disposables.forEach((d) => {
+            d.dispose();
+        });
         this._onDidChangeConfig.dispose();
     }
 
@@ -230,15 +230,10 @@ export class ConfigManager {
         formattingOptions: vscode.FormattingOptions,
         detectedDialect: SqlLanguage,
     ): FormatOptionsWithLanguage {
-        const configuredDialect = extensionSettings.get<
-            SqlLanguage | 'auto-detect'
-        >('dialect');
+        const configuredDialect = extensionSettings.get<SqlLanguage | "auto-detect">("dialect");
 
         const cfg: Record<string, unknown> = {
-            language:
-                configuredDialect === 'auto-detect'
-                    ? detectedDialect
-                    : configuredDialect,
+            language: configuredDialect === "auto-detect" ? detectedDialect : configuredDialect,
             ...ConfigManager.createIndentationConfig(extensionSettings, formattingOptions),
         };
 
@@ -252,12 +247,12 @@ export class ConfigManager {
     private static createIndentationConfig(
         extensionSettings: vscode.WorkspaceConfiguration,
         formattingOptions: vscode.FormattingOptions,
-    ): Pick<FormatOptions, 'tabWidth' | 'useTabs'> {
-        if (extensionSettings.get<boolean>('ignoreTabSettings')) {
-            const tabSizeOverride = extensionSettings.get<number>('tabSizeOverride');
+    ): Pick<FormatOptions, "tabWidth" | "useTabs"> {
+        if (extensionSettings.get<boolean>("ignoreTabSettings")) {
+            const tabSizeOverride = extensionSettings.get<number>("tabSizeOverride");
             return {
-                tabWidth: (tabSizeOverride !== undefined && tabSizeOverride > 0) ? tabSizeOverride : 2,
-                useTabs: !extensionSettings.get<boolean>('insertSpacesOverride', true),
+                tabWidth: tabSizeOverride !== undefined && tabSizeOverride > 0 ? tabSizeOverride : 2,
+                useTabs: !extensionSettings.get<boolean>("insertSpacesOverride", true),
             };
         } else {
             return {

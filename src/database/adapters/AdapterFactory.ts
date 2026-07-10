@@ -1,4 +1,11 @@
-import type { DialectMetadata, IConnectionAdapter, IQueryAdapter, IMetadataAdapter, ISchemaAdapter, ConnectionConfig } from './IDatabaseAdapter';
+import type {
+    DialectMetadata,
+    IConnectionAdapter,
+    IQueryAdapter,
+    IMetadataAdapter,
+    ISchemaAdapter,
+    ConnectionConfig,
+} from "./IDatabaseAdapter";
 
 /**
  * Aggregated database adapter type returned by {@link AdapterFactory.create}.
@@ -108,5 +115,5 @@ export const AdapterFactory = {
      */
     resetInstantiationStats(): void {
         instantiationCounts.clear();
-    }
+    },
 };

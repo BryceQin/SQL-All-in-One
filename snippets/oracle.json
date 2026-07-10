@@ -1,36 +1,17 @@
 {
     "Oracle PL/SQL Block": {
         "prefix": "orplsql",
-        "body": [
-            "DECLARE",
-            "    $1",
-            "BEGIN",
-            "    $2",
-            "EXCEPTION",
-            "    WHEN OTHERS THEN",
-            "        $3",
-            "END;",
-            "/"
-        ],
+        "body": ["DECLARE", "    $1", "BEGIN", "    $2", "EXCEPTION", "    WHEN OTHERS THEN", "        $3", "END;", "/"],
         "description": "Oracle PL/SQL block with DECLARE/BEGIN/EXCEPTION"
     },
     "Oracle Package": {
         "prefix": "orpkg",
-        "body": [
-            "CREATE OR REPLACE PACKAGE $1 IS",
-            "    $2",
-            "END $1;"
-        ],
+        "body": ["CREATE OR REPLACE PACKAGE $1 IS", "    $2", "END $1;"],
         "description": "Oracle CREATE OR REPLACE PACKAGE"
     },
     "Oracle Connect By": {
         "prefix": "orconnect",
-        "body": [
-            "SELECT $1",
-            "FROM $2",
-            "START WITH $3",
-            "CONNECT BY PRIOR $4 = $5;"
-        ],
+        "body": ["SELECT $1", "FROM $2", "START WITH $3", "CONNECT BY PRIOR $4 = $5;"],
         "description": "Oracle hierarchical query with CONNECT BY"
     },
     "Oracle Merge": {
@@ -49,32 +30,22 @@
     },
     "Oracle Hint": {
         "prefix": "orhint",
-        "body": [
-            "SELECT /*+ FULL($1) */ $2",
-            "FROM $1;"
-        ],
+        "body": ["SELECT /*+ FULL($1) */ $2", "FROM $1;"],
         "description": "Oracle SELECT with optimizer hint"
     },
     "Oracle Decode": {
         "prefix": "ordecode",
-        "body": [
-            "DECODE($1, $2, $3, $4, $5, $6)"
-        ],
+        "body": ["DECODE($1, $2, $3, $4, $5, $6)"],
         "description": "Oracle DECODE function"
     },
     "Oracle Dual": {
         "prefix": "ordual",
-        "body": [
-            "SELECT $1",
-            "FROM DUAL;"
-        ],
+        "body": ["SELECT $1", "FROM DUAL;"],
         "description": "Oracle SELECT FROM DUAL"
     },
     "Oracle NVL": {
         "prefix": "ornvl",
-        "body": [
-            "NVL($1, $2)"
-        ],
+        "body": ["NVL($1, $2)"],
         "description": "Oracle NVL function"
     }
 }

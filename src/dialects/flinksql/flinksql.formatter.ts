@@ -1,9 +1,9 @@
-import type { DialectOptions } from "../dialect"
-import { expandPhrases } from "../expandPhrases"
-import { dataTypes, keywords } from "./flinksql.keywords"
-import { functions } from "./flinksql.functions"
+import type { DialectOptions } from "../dialect";
+import { expandPhrases } from "../expandPhrases";
+import { dataTypes, keywords } from "./flinksql.keywords";
+import { functions } from "./flinksql.functions";
 
-const reservedSelect = expandPhrases(["SELECT [ALL | DISTINCT]"])
+const reservedSelect = expandPhrases(["SELECT [ALL | DISTINCT]"]);
 
 const reservedClauses = expandPhrases([
     "WITH",
@@ -17,11 +17,9 @@ const reservedClauses = expandPhrases([
     "LIMIT",
     "INSERT [INTO | OVERWRITE] [TABLE]",
     "VALUES",
-])
+]);
 
-const standardOnelineClauses = expandPhrases([
-    "CREATE [EXTERNAL] TABLE [IF NOT EXISTS]",
-])
+const standardOnelineClauses = expandPhrases(["CREATE [EXTERNAL] TABLE [IF NOT EXISTS]"]);
 
 const tabularOnelineClauses = expandPhrases([
     "CREATE [OR REPLACE] [TEMPORARY] VIEW [IF NOT EXISTS]",
@@ -54,13 +52,9 @@ const tabularOnelineClauses = expandPhrases([
     "SHOW MODULES",
     "SHOW JARS",
     "RESET",
-])
+]);
 
-const reservedSetOperations = expandPhrases([
-    "UNION [ALL | DISTINCT]",
-    "EXCEPT [ALL | DISTINCT]",
-    "INTERSECT [ALL | DISTINCT]",
-])
+const reservedSetOperations = expandPhrases(["UNION [ALL | DISTINCT]", "EXCEPT [ALL | DISTINCT]", "INTERSECT [ALL | DISTINCT]"]);
 
 const reservedJoins = expandPhrases([
     "JOIN",
@@ -70,26 +64,17 @@ const reservedJoins = expandPhrases([
     "NATURAL {LEFT | RIGHT | FULL} [OUTER] JOIN",
     "[LEFT] {ANTI | SEMI} JOIN",
     "NATURAL [LEFT] {ANTI | SEMI} JOIN",
-])
+]);
 
-const reservedKeywordPhrases = expandPhrases([
-    "ON DELETE",
-    "ON UPDATE",
-    "CURRENT ROW",
-    "{ROWS | RANGE} BETWEEN",
-])
+const reservedKeywordPhrases = expandPhrases(["ON DELETE", "ON UPDATE", "CURRENT ROW", "{ROWS | RANGE} BETWEEN"]);
 
-const reservedDataTypePhrases = expandPhrases([])
+const reservedDataTypePhrases = expandPhrases([]);
 
 export const flinksql: DialectOptions = {
     name: "flinksql",
     tokenizerOptions: {
         reservedSelect,
-        reservedClauses: [
-            ...reservedClauses,
-            ...standardOnelineClauses,
-            ...tabularOnelineClauses,
-        ],
+        reservedClauses: [...reservedClauses, ...standardOnelineClauses, ...tabularOnelineClauses],
         reservedSetOperations,
         reservedJoins,
         reservedKeywordPhrases,
@@ -98,10 +83,7 @@ export const flinksql: DialectOptions = {
         reservedKeywords: keywords,
         reservedDataTypes: dataTypes,
         reservedFunctionNames: functions,
-        stringTypes: [
-            "''-bs",
-            '""-bs',
-        ],
+        stringTypes: ["''-bs", '""-bs'],
         identTypes: ["``"],
         identChars: { allowFirstCharNumber: true },
         variableTypes: [{ quote: "{}", prefixes: ["$"], requirePrefix: true }],
@@ -111,4 +93,4 @@ export const flinksql: DialectOptions = {
         onelineClauses: [...standardOnelineClauses, ...tabularOnelineClauses],
         tabularOnelineClauses,
     },
-}
+};

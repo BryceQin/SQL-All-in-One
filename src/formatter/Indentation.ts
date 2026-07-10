@@ -1,50 +1,47 @@
-import { last } from "../lexer/utils"
+import { last } from "../lexer/utils";
 
-const INDENT_TYPE_TOP_LEVEL = "top-level"
-const INDENT_TYPE_BLOCK_LEVEL = "block-level"
+const INDENT_TYPE_TOP_LEVEL = "top-level";
+const INDENT_TYPE_BLOCK_LEVEL = "block-level";
 
 export default class Indentation {
-    private indentTypes: string[] = []
+    private indentTypes: string[] = [];
 
-    private indent: string
+    private indent: string;
     constructor(indent: string) {
-        this.indent = indent
+        this.indent = indent;
     }
 
     getSingleIndent(): string {
-        return this.indent
+        return this.indent;
     }
 
     getLevel(): number {
-        return this.indentTypes.length
+        return this.indentTypes.length;
     }
 
     reset(): void {
-        this.indentTypes = []
+        this.indentTypes = [];
     }
 
     increaseTopLevel(): void {
-        this.indentTypes.push(INDENT_TYPE_TOP_LEVEL)
+        this.indentTypes.push(INDENT_TYPE_TOP_LEVEL);
     }
 
     increaseBlockLevel(): void {
-        this.indentTypes.push(INDENT_TYPE_BLOCK_LEVEL)
+        this.indentTypes.push(INDENT_TYPE_BLOCK_LEVEL);
     }
 
     decreaseTopLevel(): void {
-        if (
-            this.indentTypes.length > 0 &&
-            last(this.indentTypes) === INDENT_TYPE_TOP_LEVEL
-        ) {
-            this.indentTypes.pop()
+        if (this.indentTypes.length > 0 && last(this.indentTypes) === INDENT_TYPE_TOP_LEVEL) {
+            this.indentTypes.pop();
         }
     }
 
     decreaseBlockLevel(): void {
         while (this.indentTypes.length > 0) {
-            const type = this.indentTypes.pop()
+            const type = this.indentTypes.pop();
             if (type !== INDENT_TYPE_TOP_LEVEL) {
-                break
+                break;
             }
         }
     }

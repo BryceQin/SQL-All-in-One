@@ -1,9 +1,4 @@
-import type {
-    ColumnMeta,
-    QueryResult,
-    QueryRow,
-    StreamBatch,
-} from '../adapters/IDatabaseAdapter';
+import type { ColumnMeta, QueryResult, QueryRow, StreamBatch } from "../adapters/IDatabaseAdapter";
 
 /**
  * Input for {@link collectStreamToResult}.
@@ -63,9 +58,7 @@ export interface CollectStreamToResultOptions {
  *   {@link QueryResult} (code `STREAM_ERROR`) so callers see the same
  *   error-shape they would from {@link IDatabaseAdapter.execute}.
  */
-export async function collectStreamToResult(
-    options: CollectStreamToResultOptions,
-): Promise<QueryResult> {
+export async function collectStreamToResult(options: CollectStreamToResultOptions): Promise<QueryResult> {
     const { stream, queryId, maxRows, executionTime, database, sql } = options;
 
     const columns: ColumnMeta[] = [];
@@ -115,13 +108,13 @@ export async function collectStreamToResult(
         const message = error instanceof Error ? error.message : String(error);
         return {
             queryId,
-            status: 'error',
+            status: "error",
             columns,
             rows,
             rowCount: rows.length,
             executionTime,
             error: {
-                code: 'STREAM_ERROR',
+                code: "STREAM_ERROR",
                 message,
                 sql,
             },
@@ -133,9 +126,7 @@ export async function collectStreamToResult(
     // When the stream was truncated we intentionally report `rowCount` as
     // the number of rows we retained (matching rows.length) so downstream
     // pagination logic does not assume there are more rows than we hold.
-    const reportedRowCount = truncated
-        ? rows.length
-        : (rowCount > 0 ? rowCount : rows.length);
+    const reportedRowCount = truncated ? rows.length : rowCount > 0 ? rowCount : rows.length;
 
     // `truncated` is intentionally not surfaced on the returned QueryResult:
     // the QueryResult interface is shared with the non-streaming path and
@@ -144,7 +135,7 @@ export async function collectStreamToResult(
     // the QueryExecutor-level logging.
     return {
         queryId,
-        status: 'success',
+        status: "success",
         columns,
         rows,
         rowCount: reportedRowCount,

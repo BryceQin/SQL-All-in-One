@@ -1,15 +1,15 @@
-import { EventEmitter, Event } from 'vscode';
-import { ConnectionConfig, ConnectionState, TestConnectionResult } from './ConnectionConfig';
-import { ConnectionStore, getConnectionStore } from './ConnectionStore';
-import { AdapterFactory, DatabaseAdapter } from '../adapters/AdapterFactory';
-import { IPoolStatus } from '../adapters/IDatabaseAdapter';
-import { SshTunnel } from './SshTunnel';
-import { handleError, ErrorCategory } from '../../core/errorHandler';
-import { getContainer, Tokens } from '../../core/diContainer';
-import { t } from '../../i18n/index';
+import { EventEmitter, Event } from "vscode";
+import { ConnectionConfig, ConnectionState, TestConnectionResult } from "./ConnectionConfig";
+import { ConnectionStore, getConnectionStore } from "./ConnectionStore";
+import { AdapterFactory, DatabaseAdapter } from "../adapters/AdapterFactory";
+import { IPoolStatus } from "../adapters/IDatabaseAdapter";
+import { SshTunnel } from "./SshTunnel";
+import { handleError, ErrorCategory } from "../../core/errorHandler";
+import { getContainer, Tokens } from "../../core/diContainer";
+import { t } from "../../i18n/index";
 
 export interface ConnectionEvent {
-    type: 'add' | 'remove' | 'update';
+    type: "add" | "remove" | "update";
     connectionId: string;
 }
 
@@ -56,7 +56,7 @@ export class ConnectionManager {
         let runtime = this.runtimeStates.get(id);
         if (!runtime) {
             runtime = {
-                state: 'disconnected',
+                state: "disconnected",
                 retryAttempts: 0,
                 consecutiveHealthFailures: 0,
                 isHealthChecking: false,
@@ -75,13 +75,13 @@ export class ConnectionManager {
         // without emitting events.
         const loaded = this.connectionStore.getConnections();
         for (const conn of loaded) {
-            this._onDidChangeConnections.fire({ type: 'add', connectionId: conn.id });
+            this._onDidChangeConnections.fire({ type: "add", connectionId: conn.id });
         }
     }
 
     async addConnection(config: ConnectionConfig, password?: string): Promise<void> {
         await this.connectionStore.addConnection(config, password);
-        this._onDidChangeConnections.fire({ type: 'add', connectionId: config.id });
+        this._onDidChangeConnections.fire({ type: "add", connectionId: config.id });
     }
 
     async removeConnection(id: string): Promise<void> {
@@ -94,7 +94,7 @@ export class ConnectionManager {
             this._onDidChangeActiveConnection.fire({ oldId });
         }
 
-        this._onDidChangeConnections.fire({ type: 'remove', connectionId: id });
+        this._onDidChangeConnections.fire({ type: "remove", connectionId: id });
 
         // disconnect() already stops health check and retry timers;
         // clean up runtime state to prevent memory leak from accumulated entries
@@ -103,27 +103,27 @@ export class ConnectionManager {
 
     async updateConnection(id: string, config: ConnectionConfig, password?: string): Promise<void> {
         const runtime = this.runtimeStates.get(id);
-        const oldState = runtime?.state || 'disconnected';
-        if (oldState !== 'disconnected') {
+        const oldState = runtime?.state || "disconnected";
+        if (oldState !== "disconnected") {
             await this.disconnect(id);
         }
 
         await this.connectionStore.updateConnection(id, config, password);
-        this._onDidChangeConnections.fire({ type: 'update', connectionId: id });
+        this._onDidChangeConnections.fire({ type: "update", connectionId: id });
     }
 
     async connect(id: string): Promise<void> {
         const runtime = this.getOrCreateRuntime(id);
-        if (runtime.state === 'connected' || runtime.state === 'connecting') {
+        if (runtime.state === "connected" || runtime.state === "connecting") {
             return;
         }
 
-        this.updateConnectionState(id, 'connecting');
+        this.updateConnectionState(id, "connecting");
 
         const config = this.connectionStore.getConnection(id);
         if (!config) {
-            this.updateConnectionState(id, 'disconnected');
-            throw new Error(t('database.connectionNotFoundWithId', id));
+            this.updateConnectionState(id, "disconnected");
+            throw new Error(t("database.connectionNotFoundWithId", id));
         }
 
         const password = await this.connectionStore.getPassword(id);
@@ -138,19 +138,14 @@ export class ConnectionManager {
                 if (sshPassword) sshConfig.password = sshPassword;
                 if (sshPassphrase) sshConfig.passphrase = sshPassphrase;
 
-                const tunnelResult = await tunnel.open(
-                    sshConfig,
-                    config.host,
-                    config.port,
-                    config.connectTimeout
-                );
+                const tunnelResult = await tunnel.open(sshConfig, config.host, config.port, config.connectTimeout);
 
                 runtime.sshTunnel = tunnel;
                 connectConfig.host = tunnelResult.localHost;
                 connectConfig.port = tunnelResult.localPort;
             } catch (error: unknown) {
-                this.updateConnectionState(id, 'error');
-                throw new Error(t('database.sshTunnelFailed', error instanceof Error ? error.message : String(error)));
+                this.updateConnectionState(id, "error");
+                throw new Error(t("database.sshTunnelFailed", error instanceof Error ? error.message : String(error)), { cause: error });
             }
         }
 
@@ -161,7 +156,7 @@ export class ConnectionManager {
             connectConfig.password = undefined;
 
             runtime.adapter = adapter;
-            this.updateConnectionState(id, 'connected');
+            this.updateConnectionState(id, "connected");
             runtime.retryAttempts = 0;
 
             this.startHealthCheck(id, connectConfig);
@@ -172,7 +167,7 @@ export class ConnectionManager {
         } catch (error: unknown) {
             connectConfig.password = undefined;
             await this.closeSshTunnel(id);
-            this.updateConnectionState(id, 'error');
+            this.updateConnectionState(id, "error");
             const errorMessage = error instanceof Error ? error.message : String(error);
             const isAuthError = /access denied|authentication failed|invalid password|login failed/i.test(errorMessage);
             if (!isAuthError) {
@@ -184,9 +179,9 @@ export class ConnectionManager {
 
     async disconnect(id: string): Promise<void> {
         const runtime = this.runtimeStates.get(id);
-        const oldState = runtime?.state || 'disconnected';
+        const oldState = runtime?.state || "disconnected";
         this.stopHealthCheck(id);
-        if (oldState === 'disconnected') {
+        if (oldState === "disconnected") {
             return;
         }
 
@@ -194,14 +189,14 @@ export class ConnectionManager {
             try {
                 await runtime.adapter.disconnect();
             } catch (e) {
-                handleError(e, 'ConnectionManager.disconnect', ErrorCategory.FEATURE);
+                handleError(e, "ConnectionManager.disconnect", ErrorCategory.FEATURE);
             }
             runtime.adapter = undefined;
         }
 
         await this.closeSshTunnel(id);
 
-        this.updateConnectionState(id, 'disconnected');
+        this.updateConnectionState(id, "disconnected");
         this.cancelRetry(id);
 
         if (this.activeConnectionId === id) {
@@ -213,12 +208,10 @@ export class ConnectionManager {
 
     async disconnectAll(): Promise<void> {
         const ids = Array.from(this.runtimeStates.keys());
-        const results = await Promise.allSettled(
-            ids.map(id => this.disconnect(id))
-        );
+        const results = await Promise.allSettled(ids.map((id) => this.disconnect(id)));
         for (const result of results) {
-            if (result.status === 'rejected') {
-                console.error('Failed to disconnect:', result.reason);
+            if (result.status === "rejected") {
+                console.error("Failed to disconnect:", result.reason);
             }
         }
     }
@@ -245,14 +238,14 @@ export class ConnectionManager {
             try {
                 await runtime.adapter.disconnect();
             } catch (e) {
-                handleError(e, 'ConnectionManager.forceDisconnect', ErrorCategory.FEATURE);
+                handleError(e, "ConnectionManager.forceDisconnect", ErrorCategory.FEATURE);
             }
             runtime.adapter = undefined;
         }
 
         await this.closeSshTunnel(id);
 
-        this.updateConnectionState(id, 'disconnected');
+        this.updateConnectionState(id, "disconnected");
         this.cancelRetry(id);
 
         if (this.activeConnectionId === id) {
@@ -268,10 +261,10 @@ export class ConnectionManager {
         let config: ConnectionConfig;
         let pass: string | undefined;
 
-        if (typeof arg === 'string') {
+        if (typeof arg === "string") {
             const conn = this.connectionStore.getConnection(arg);
             if (!conn) {
-                throw new Error(t('database.connectionNotFoundWithId', arg));
+                throw new Error(t("database.connectionNotFoundWithId", arg));
             }
             config = conn;
             pass = await this.connectionStore.getPassword(arg);
@@ -288,7 +281,12 @@ export class ConnectionManager {
                     sshConfig.password = config.ssh.password;
                 }
                 const tunnelResult = await tunnel.open(sshConfig, config.host, config.port);
-                const connectConfig: ConnectionConfig = { ...config, password: pass, host: tunnelResult.localHost, port: tunnelResult.localPort };
+                const connectConfig: ConnectionConfig = {
+                    ...config,
+                    password: pass,
+                    host: tunnelResult.localHost,
+                    port: tunnelResult.localPort,
+                };
                 try {
                     const adapter = AdapterFactory.create(config.dialect, connectConfig);
                     const result = await adapter.testConnection(connectConfig);
@@ -298,7 +296,7 @@ export class ConnectionManager {
                     await tunnel.close();
                 }
             } catch (error: unknown) {
-                return { success: false, error: t('database.sshTunnelFailed', error instanceof Error ? error.message : String(error)) };
+                return { success: false, error: t("database.sshTunnelFailed", error instanceof Error ? error.message : String(error)) };
             }
         }
 
@@ -314,7 +312,7 @@ export class ConnectionManager {
     }
 
     getState(id: string): ConnectionState {
-        return this.runtimeStates.get(id)?.state || 'disconnected';
+        return this.runtimeStates.get(id)?.state || "disconnected";
     }
 
     getAllConnections(): ConnectionConfig[] {
@@ -373,11 +371,11 @@ export class ConnectionManager {
 
         runtime.retryTimer = setTimeout(async () => {
             runtime.retryTimer = undefined;
-            if (runtime.state === 'error') {
+            if (runtime.state === "error") {
                 try {
                     await this.connect(id);
                 } catch (e) {
-                    handleError(e, 'ConnectionManager.retryConnection', ErrorCategory.FEATURE);
+                    handleError(e, "ConnectionManager.retryConnection", ErrorCategory.FEATURE);
                 }
             }
         }, delay);
@@ -399,7 +397,7 @@ export class ConnectionManager {
             try {
                 await runtime.sshTunnel.close();
             } catch (e) {
-                handleError(e, 'ConnectionManager.closeSshTunnel', ErrorCategory.FEATURE);
+                handleError(e, "ConnectionManager.closeSshTunnel", ErrorCategory.FEATURE);
             }
             runtime.sshTunnel = undefined;
         }
@@ -411,14 +409,14 @@ export class ConnectionManager {
             await adapter.disconnect();
         } catch (e) {
             // ignore disconnect error on unhealthy connection; log for debugging
-            console.debug('[SQL All in One] ConnectionManager.handleUnhealthyConnection disconnect failed:', e)
+            console.debug("[SQL All in One] ConnectionManager.handleUnhealthyConnection disconnect failed:", e);
         }
         const runtime = this.runtimeStates.get(id);
         if (runtime) {
             runtime.adapter = undefined;
         }
         await this.closeSshTunnel(id);
-        this.updateConnectionState(id, 'error');
+        this.updateConnectionState(id, "error");
         this.scheduleRetry(id);
     }
 
@@ -490,14 +488,14 @@ export class ConnectionManager {
 
         await Promise.allSettled(
             Array.from(this.runtimeStates.values())
-                .filter(r => r.adapter)
-                .map(r => r.adapter!.disconnect().catch((_e) => undefined))
+                .filter((r) => r.adapter)
+                .map((r) => r.adapter!.disconnect().catch((_e) => undefined)),
         );
 
         await Promise.allSettled(
             Array.from(this.runtimeStates.values())
-                .filter(r => r.sshTunnel)
-                .map(r => r.sshTunnel!.close().catch((_e) => undefined))
+                .filter((r) => r.sshTunnel)
+                .map((r) => r.sshTunnel!.close().catch((_e) => undefined)),
         );
 
         this._onDidChangeConnections.dispose();

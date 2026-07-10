@@ -1,0 +1,94 @@
+{
+    "$schema": "./node_modules/oxlint/configuration_schema.json",
+    "plugins": ["typescript", "oxc", "eslint", "import"],
+    "categories": {
+        "correctness": "error",
+        "suspicious": "warn",
+        "pedantic": "off",
+        "style": "off",
+        "perf": "off"
+    },
+    "env": {
+        "node": true,
+        "es2024": true
+    },
+    "ignorePatterns": [
+        "out/**",
+        "node_modules/**",
+        ".vscode-test/**",
+        "src/parser/grammar.ts",
+        "src/completion/generated/**",
+        "tmp_*.ts",
+        "test-*.js"
+    ],
+    "rules": {
+        "eslint/no-unused-vars": [
+            "error",
+            {
+                "argsIgnorePattern": "^_",
+                "varsIgnorePattern": "^_",
+                "caughtErrorsIgnorePattern": "^_"
+            }
+        ],
+        "typescript/no-unused-vars": [
+            "error",
+            {
+                "argsIgnorePattern": "^_",
+                "varsIgnorePattern": "^_",
+                "caughtErrorsIgnorePattern": "^_"
+            }
+        ],
+        "typescript/no-explicit-any": "warn",
+        "typescript/no-unsafe-return": "warn",
+        "typescript/no-unsafe-assignment": "warn",
+        "typescript/no-unsafe-argument": "warn",
+        "typescript/no-unsafe-call": "warn",
+        "typescript/no-unsafe-member-access": "warn",
+        "typescript/explicit-function-return-type": "warn",
+        "typescript/consistent-generic-constructors": "warn",
+        "typescript/no-empty-function": "warn",
+        "typescript/array-type": "warn",
+        "eslint/prefer-const": "warn",
+        "eslint/no-underscore-dangle": "off",
+        "eslint/no-shadow": "off",
+        "eslint/no-useless-constructor": "off",
+        "eslint/no-new": "off",
+        "eslint/preserve-caught-error": "off",
+        "eslint/no-empty-function": "off",
+        "typescript/no-extraneous-class": "off",
+        "import/namespace": "off",
+        "import/no-unassigned-import": "off"
+    },
+    "overrides": [
+        {
+            "files": ["src/views/**/*.js", "src/views/**/*.ts"],
+            "rules": {
+                "eslint/no-unused-vars": "off",
+                "typescript/no-unused-vars": "off",
+                "typescript/no-explicit-any": "off",
+                "typescript/no-unsafe-return": "off",
+                "typescript/no-unsafe-assignment": "off",
+                "typescript/no-unsafe-argument": "off",
+                "typescript/no-unsafe-call": "off",
+                "typescript/no-unsafe-member-access": "off",
+                "typescript/explicit-function-return-type": "off",
+                "eslint/block-scoped-var": "off",
+                "eslint/no-dupe-keys": "warn"
+            }
+        },
+        {
+            "files": ["src/test/**", "src/**/*.test.ts"],
+            "rules": {
+                "typescript/no-explicit-any": "off",
+                "typescript/no-unsafe-return": "off",
+                "typescript/no-unsafe-assignment": "off",
+                "typescript/no-unsafe-argument": "off",
+                "typescript/no-unsafe-call": "off",
+                "typescript/no-unsafe-member-access": "off",
+                "typescript/no-empty-function": "off",
+                "typescript/explicit-function-return-type": "off",
+                "eslint/max-lines-per-function": "off"
+            }
+        }
+    ]
+}

@@ -1,30 +1,27 @@
-import type { IndentStyle } from "./FormatOptions"
-import { isLogicalOperator, TokenType } from "../lexer/token"
+import type { IndentStyle } from "./FormatOptions";
+import { isLogicalOperator, TokenType } from "../lexer/token";
 
 /**
  * 当制表符风格开启的时候将 Token 文本格式化为 10 字符宽度的字符串
  */
-export default function toTabularFormat(
-    tokenText: string,
-    indentStyle: IndentStyle,
-): string {
+export default function toTabularFormat(tokenText: string, indentStyle: IndentStyle): string {
     if (indentStyle === "standard") {
-        return tokenText
+        return tokenText;
     }
 
-    let tail = [] as string[] // rest of keyword
+    let tail = [] as string[]; // rest of keyword
     if (tokenText.length >= 10 && tokenText.includes(" ")) {
         // 若文本长度 ≥10 且包含空格（如 INNER JOIN/UNION DISTINCT），按空格拆分为「首段 + 剩余段」，仅处理首段
-        ;[tokenText, ...tail] = tokenText.split(" ")
+        [tokenText, ...tail] = tokenText.split(" ");
     }
 
     if (indentStyle === "tabularLeft") {
-        tokenText = tokenText.padEnd(9, " ")
+        tokenText = tokenText.padEnd(9, " ");
     } else {
-        tokenText = tokenText.padStart(9, " ")
+        tokenText = tokenText.padStart(9, " ");
     }
 
-    return tokenText + ["", ...tail].join(" ")
+    return tokenText + ["", ...tail].join(" ");
 }
 
 /**
@@ -38,5 +35,5 @@ export function isTabularToken(type: TokenType): boolean {
         type === TokenType.RESERVED_SET_OPERATION ||
         type === TokenType.RESERVED_JOIN ||
         type === TokenType.LIMIT
-    )
+    );
 }

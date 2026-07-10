@@ -1,16 +1,16 @@
-import * as vscode from 'vscode';
-import type { AST } from 'node-sql-parser';
-import { getParserEngine } from './SqlParserEngine';
-import type { SqlDialect } from './dialectMapper';
-import type { ParseError } from './ParseError';
-import { LRUCache } from '../utils/lruCache';
-import { getPerformanceMonitor } from '../core/performanceMonitor';
-import { handleError, ErrorCategory } from '../core/errorHandler';
-import { getContainer, Tokens } from '../core/diContainer';
-import { isAstNode } from './AstVisitor';
-import { extractName, toVscodeLocationFromLoc } from './astUtils';
-import type { AstNode, AstLocation } from './astTypes';
-import { precomputeLineOffsets } from '../lexer/lineColFromIndex';
+import * as vscode from "vscode";
+import type { AST } from "node-sql-parser";
+import { getParserEngine } from "./SqlParserEngine";
+import type { SqlDialect } from "./dialectMapper";
+import type { ParseError } from "./ParseError";
+import { LRUCache } from "../utils/lruCache";
+import { getPerformanceMonitor } from "../core/performanceMonitor";
+import { handleError, ErrorCategory } from "../core/errorHandler";
+import { getContainer, Tokens } from "../core/diContainer";
+import { isAstNode } from "./AstVisitor";
+import { extractName, toVscodeLocationFromLoc } from "./astUtils";
+import type { AstNode, AstLocation } from "./astTypes";
+import { precomputeLineOffsets } from "../lexer/lineColFromIndex";
 
 export interface SymbolIndex {
     cteDefinitions: Map<string, vscode.Location>;
@@ -53,12 +53,12 @@ function buildIndex(ast: unknown[] | unknown, document: vscode.TextDocument): Sy
         if (!isAstNode(stmt)) continue;
         const node = stmt as AstNode;
 
-        if (node.type === 'select') {
+        if (node.type === "select") {
             processSelectForIndex(node, document, index);
         }
 
-        if (node.type === 'with' || (node.type === 'select' && node.with)) {
-            const withClause = node.type === 'with' ? node : node.with;
+        if (node.type === "with" || (node.type === "select" && node.with)) {
+            const withClause = node.type === "with" ? node : node.with;
             processWithForIndex(withClause, document, index);
         }
     }
@@ -69,7 +69,7 @@ function buildIndex(ast: unknown[] | unknown, document: vscode.TextDocument): Sy
 function processWithForIndex(withClause: unknown, document: vscode.TextDocument, index: SymbolIndex): void {
     let cteItems: unknown[] = [];
 
-    if (isAstNode(withClause) && (withClause as AstNode).type === 'with') {
+    if (isAstNode(withClause) && (withClause as AstNode).type === "with") {
         const withNode = withClause as AstNode;
         const value = withNode.value;
         if (Array.isArray(value)) {
@@ -80,14 +80,12 @@ function processWithForIndex(withClause: unknown, document: vscode.TextDocument,
     }
 
     for (const item of cteItems) {
-        if (item == null || typeof item !== 'object') continue;
+        if (item == null || typeof item !== "object") continue;
         const itemNode = item as Record<string, unknown>;
         const cteName = extractName(itemNode.name);
         if (cteName) {
             const loc = (item as Record<string, unknown>).loc as { start?: AstLocation; end?: AstLocation } | undefined;
-            const location = loc
-                ? toVscodeLocationFromLoc(loc, document)
-                : null;
+            const location = loc ? toVscodeLocationFromLoc(loc, document) : null;
             if (location) {
                 index.cteDefinitions.set(cteName.toLowerCase(), location);
             }
@@ -99,7 +97,7 @@ function processSelectForIndex(node: AstNode, document: vscode.TextDocument, ind
     const from = node.from;
     if (Array.isArray(from)) {
         for (const item of from) {
-            if (item == null || typeof item !== 'object') continue;
+            if (item == null || typeof item !== "object") continue;
             const fromEntry = item as Record<string, unknown>;
 
             const aliasSource = fromEntry.as || fromEntry.alias;
@@ -111,9 +109,7 @@ function processSelectForIndex(node: AstNode, document: vscode.TextDocument, ind
                         index.aliasMap.set(aliasName.toLowerCase(), tableName);
                     }
                     const loc = fromEntry.loc as { start?: AstLocation; end?: AstLocation } | undefined;
-                    const location = loc
-                        ? toVscodeLocationFromLoc(loc, document)
-                        : null;
+                    const location = loc ? toVscodeLocationFromLoc(loc, document) : null;
                     if (location) {
                         index.tableAliasDefinitions.set(aliasName.toLowerCase(), location);
                     }
@@ -125,15 +121,13 @@ function processSelectForIndex(node: AstNode, document: vscode.TextDocument, ind
     const columns = node.columns;
     if (Array.isArray(columns)) {
         for (const col of columns) {
-            if (col == null || typeof col !== 'object') continue;
+            if (col == null || typeof col !== "object") continue;
             const colEntry = col as Record<string, unknown>;
             if (colEntry.as) {
                 const aliasName = extractName(colEntry.as);
                 if (aliasName) {
                     const loc = colEntry.loc as { start?: AstLocation; end?: AstLocation } | undefined;
-                    const location = loc
-                        ? toVscodeLocationFromLoc(loc, document)
-                        : null;
+                    const location = loc ? toVscodeLocationFromLoc(loc, document) : null;
                     if (location) {
                         index.columnAliasDefinitions.set(aliasName.toLowerCase(), location);
                     }
@@ -157,11 +151,7 @@ function processSelectForIndex(node: AstNode, document: vscode.TextDocument, ind
  * Returns the delimiter string and the index just past it, or `null` if the
  * text at `start` is not a dollar-quote opening delimiter.
  */
-function matchDollarQuoteDelimiter(
-    text: string,
-    start: number,
-    len: number,
-): { delimiter: string; nextIndex: number } | null {
+function matchDollarQuoteDelimiter(text: string, start: number, len: number): { delimiter: string; nextIndex: number } | null {
     if (text.charCodeAt(start) !== 36) return null; // '$'
     let j = start + 1;
     // Optional tag: must start with a letter or underscore, then identifier chars.
@@ -334,10 +324,7 @@ export function computeLineColumn(text: string, offset: number): { line: number;
  * {@link computeLineColumn} when many lookups are needed.
  * @internal Exported for testing only.
  */
-export function computeLineColumnFast(
-    lineOffsets: number[],
-    offset: number,
-): { line: number; column: number } {
+export function computeLineColumnFast(lineOffsets: number[], offset: number): { line: number; column: number } {
     let low = 0;
     let high = lineOffsets.length - 1;
     while (low < high) {
@@ -379,7 +366,7 @@ export function adjustAstLocationsInPlace(
     const MAX_ADJUST_DEPTH = 1000;
 
     function adjust(obj: unknown, depth: number): void {
-        if (obj == null || typeof obj !== 'object') return;
+        if (obj == null || typeof obj !== "object") return;
         if (depth > MAX_ADJUST_DEPTH) return;
         if (Array.isArray(obj)) {
             for (const item of obj) adjust(item, depth + 1);
@@ -387,7 +374,7 @@ export function adjustAstLocationsInPlace(
         }
         const record = obj as Record<string, unknown>;
         const loc = record.loc;
-        if (loc != null && typeof loc === 'object') {
+        if (loc != null && typeof loc === "object") {
             const l = loc as { start?: { line: number; column: number }; end?: { line: number; column: number } };
             if (l.start && l.start.line > 0) {
                 if (l.start.line === oldStartLine) {
@@ -403,7 +390,7 @@ export function adjustAstLocationsInPlace(
             }
         }
         for (const key in record) {
-            if (key === 'loc') continue;
+            if (key === "loc") continue;
             if (!Object.prototype.hasOwnProperty.call(record, key)) continue;
             adjust(record[key], depth + 1);
         }
@@ -455,7 +442,7 @@ export function adjustAstLocationsLazy(
      * have been replaced with adjusted copies.
      */
     function adjust(obj: unknown, depth: number): unknown {
-        if (obj == null || typeof obj !== 'object') return obj;
+        if (obj == null || typeof obj !== "object") return obj;
         if (depth > MAX_ADJUST_DEPTH) return obj;
 
         if (Array.isArray(obj)) {
@@ -473,7 +460,7 @@ export function adjustAstLocationsLazy(
         // First recurse into children (excluding loc, which we handle below).
         let clonedRecord: Record<string, unknown> | null = null;
         for (const key in record) {
-            if (key === 'loc') continue;
+            if (key === "loc") continue;
             if (!Object.prototype.hasOwnProperty.call(record, key)) continue;
             const child = record[key];
             const newChild = adjust(child, depth + 1);
@@ -487,7 +474,7 @@ export function adjustAstLocationsLazy(
 
         // Then decide whether `loc` needs to be cloned + adjusted.
         const loc = record.loc;
-        if (loc != null && typeof loc === 'object') {
+        if (loc != null && typeof loc === "object") {
             const l = loc as {
                 start?: { line: number; column: number };
                 end?: { line: number; column: number };
@@ -516,7 +503,7 @@ export function adjustAstLocationsLazy(
                     newEnd.line += lineDelta;
                     newLoc.end = newEnd;
                 }
-                clonedRecord.loc = newLoc as unknown as Record<string, unknown>['loc'];
+                clonedRecord.loc = newLoc as unknown as Record<string, unknown>["loc"];
             }
         }
 
@@ -542,11 +529,14 @@ export class DocumentAstCache {
         this.disposables.push(
             vscode.workspace.onDidCloseTextDocument((doc) => {
                 this.cache.deleteByPrefix(doc.uri.toString());
-            })
+            }),
         );
     }
 
-    private getOrParseInternal(document: vscode.TextDocument, dialect: SqlDialect): {
+    private getOrParseInternal(
+        document: vscode.TextDocument,
+        dialect: SqlDialect,
+    ): {
         success: boolean;
         ast: AST[] | AST | null;
         error: ParseError | null;
@@ -642,9 +632,7 @@ export class DocumentAstCache {
                                 let nodeCount = 1;
                                 const oldEntry = oldStmts[idx];
                                 if (oldEntry && oldEntry.ast) {
-                                    const oldArr = Array.isArray(oldEntry.ast)
-                                        ? oldEntry.ast
-                                        : [oldEntry.ast];
+                                    const oldArr = Array.isArray(oldEntry.ast) ? oldEntry.ast : [oldEntry.ast];
                                     nodeCount = oldArr.length;
                                 }
                                 // 防御性：不能超过剩余可用节点数
@@ -674,7 +662,7 @@ export class DocumentAstCache {
                         }
                     } catch (e) {
                         // Fall through to full parse on any unexpected error
-                        handleError(e, 'DocumentAstCache.incrementalParse', ErrorCategory.PARSE)
+                        handleError(e, "DocumentAstCache.incrementalParse", ErrorCategory.PARSE);
                     }
                 }
             }
@@ -715,12 +703,15 @@ export class DocumentAstCache {
         return result;
     }
 
-    getOrParse(document: vscode.TextDocument, dialect: SqlDialect): {
+    getOrParse(
+        document: vscode.TextDocument,
+        dialect: SqlDialect,
+    ): {
         success: boolean;
         ast: AST[] | AST | null;
         error: ParseError | null;
     } {
-        return this.perfMonitor.measure('DocumentAstCache.getOrParse', () => {
+        return this.perfMonitor.measure("DocumentAstCache.getOrParse", () => {
             return this.getOrParseInternal(document, dialect);
         });
     }
@@ -767,7 +758,9 @@ export class DocumentAstCache {
 
     dispose(): void {
         this.cache.clear();
-        this.disposables.forEach((d) => { d.dispose(); });
+        this.disposables.forEach((d) => {
+            d.dispose();
+        });
     }
 }
 

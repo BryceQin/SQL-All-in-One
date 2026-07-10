@@ -1,32 +1,32 @@
-import { escapeRegExp } from "../lexer/regexUtil"
-import { SqlTextScanner } from "../utils/sqlTextScanner"
+import { escapeRegExp } from "../lexer/regexUtil";
+import { SqlTextScanner } from "../utils/sqlTextScanner";
 
 export interface CommentSlot {
-    id: string
-    original: string
-    isOnOwnLine: boolean
-    isAfterSemicolon: boolean
-    isTailComment: boolean
-    anchor: string
+    id: string;
+    original: string;
+    isOnOwnLine: boolean;
+    isAfterSemicolon: boolean;
+    isTailComment: boolean;
+    anchor: string;
 }
 
 export function extract(sql: string): { processedSql: string; slots: CommentSlot[] } {
-    let counter = 0
-    const slots: CommentSlot[] = []
+    let counter = 0;
+    const slots: CommentSlot[] = [];
 
-    const comments = findAllComments(sql)
+    const comments = findAllComments(sql);
 
-    if (comments.length === 0) return { processedSql: sql, slots }
+    if (comments.length === 0) return { processedSql: sql, slots };
 
-    let result = sql
+    let result = sql;
     for (let i = comments.length - 1; i >= 0; i--) {
-        const c = comments[i]
-        const id = `CMT_${counter++}`
+        const c = comments[i];
+        const id = `CMT_${counter++}`;
 
         if (c.isOnOwnLine) {
-            const lineStart = findLineStart(result, c.start)
-            const lineEnd = findLineEnd(result, c.end)
-            const anchor = findNextWord(result, lineEnd)
+            const lineStart = findLineStart(result, c.start);
+            const lineEnd = findLineEnd(result, c.end);
+            const anchor = findNextWord(result, lineEnd);
 
             slots.push({
                 id,
@@ -35,13 +35,11 @@ export function extract(sql: string): { processedSql: string; slots: CommentSlot
                 isAfterSemicolon: c.isAfterSemicolon,
                 isTailComment: false,
                 anchor,
-            })
+            });
 
-            result =
-                result.substring(0, lineStart) +
-                result.substring(lineEnd)
+            result = result.substring(0, lineStart) + result.substring(lineEnd);
         } else if (c.isAfterSemicolon) {
-            const anchor = findNextWord(result, c.end)
+            const anchor = findNextWord(result, c.end);
 
             slots.push({
                 id,
@@ -50,13 +48,11 @@ export function extract(sql: string): { processedSql: string; slots: CommentSlot
                 isAfterSemicolon: true,
                 isTailComment: false,
                 anchor,
-            })
+            });
 
-            result =
-                result.substring(0, c.start) +
-                result.substring(c.end)
+            result = result.substring(0, c.start) + result.substring(c.end);
         } else if (c.isTailComment) {
-            const anchor = findPrevWord(sql, c.start)
+            const anchor = findPrevWord(sql, c.start);
 
             slots.push({
                 id,
@@ -65,11 +61,9 @@ export function extract(sql: string): { processedSql: string; slots: CommentSlot
                 isAfterSemicolon: false,
                 isTailComment: true,
                 anchor,
-            })
+            });
 
-            result =
-                result.substring(0, c.start) +
-                result.substring(c.end)
+            result = result.substring(0, c.start) + result.substring(c.end);
         } else {
             slots.push({
                 id,
@@ -77,78 +71,75 @@ export function extract(sql: string): { processedSql: string; slots: CommentSlot
                 isOnOwnLine: false,
                 isAfterSemicolon: false,
                 isTailComment: false,
-                anchor: '',
-            })
+                anchor: "",
+            });
 
-            result =
-                result.substring(0, c.start) +
-                id +
-                result.substring(c.end)
+            result = result.substring(0, c.start) + id + result.substring(c.end);
         }
     }
 
-    slots.reverse()
+    slots.reverse();
 
-    return { processedSql: result, slots }
+    return { processedSql: result, slots };
 }
 
 export function restore(formatted: string, slots: CommentSlot[]): string {
-    let result = formatted
+    let result = formatted;
 
     for (const slot of slots) {
         if (slot.isOnOwnLine || slot.isAfterSemicolon || slot.isTailComment) {
-            result = restoreStandalone(slot, result)
+            result = restoreStandalone(slot, result);
         } else {
-            const escapedId = escapeRegExp(slot.id)
-            result = restoreInline(slot.original, escapedId, result)
+            const escapedId = escapeRegExp(slot.id);
+            result = restoreInline(slot.original, escapedId, result);
         }
     }
 
-    return result
+    return result;
 }
 
 function normalizeCommentText(text: string): string {
-    if (text.startsWith('--')) {
-        const content = text.substring(2)
-        const trimmed = content.trimStart()
-        if (trimmed.length === 0) return text
-        return '-- ' + trimmed
+    if (text.startsWith("--")) {
+        const content = text.substring(2);
+        const trimmed = content.trimStart();
+        if (trimmed.length === 0) return text;
+        return "-- " + trimmed;
     }
-    if (text.startsWith('/*') && text.endsWith('*/')) {
-        const inner = text.substring(2, text.length - 2)
-        const trimmed = inner.trim()
-        if (trimmed.length === 0) return '/* */'
-        return '/* ' + trimmed + ' */'
+    if (text.startsWith("/*") && text.endsWith("*/")) {
+        const inner = text.substring(2, text.length - 2);
+        const trimmed = inner.trim();
+        if (trimmed.length === 0) return "/* */";
+        return "/* " + trimmed + " */";
     }
-    return text
+    return text;
 }
 
 function restoreStandalone(slot: CommentSlot, text: string): string {
     if (!slot.anchor) {
-        const escapedId = escapeRegExp(slot.id)
-        return restoreInline(slot.original, escapedId, text)
+        const escapedId = escapeRegExp(slot.id);
+        return restoreInline(slot.original, escapedId, text);
     }
 
-    const lines = text.split('\n')
-    let anchorIdx = -1
+    const lines = text.split("\n");
+    let anchorIdx = -1;
 
     for (let li = 0; li < lines.length; li++) {
         if (hasWord(lines[li], slot.anchor)) {
-            anchorIdx = li
-            break
+            anchorIdx = li;
+            break;
         }
     }
 
     if (anchorIdx >= 0) {
-        const anchorLine = lines[anchorIdx]
-        const indentMatch = /^(\s*)/.exec(anchorLine)
-        const indent = indentMatch ? indentMatch[1] : ''
-        lines.splice(anchorIdx, 0, indent + slot.original)
-        return lines.join('\n')
+        const anchorLine = lines[anchorIdx];
+        const indentMatch = /^(\s*)/.exec(anchorLine);
+        const indent = indentMatch ? indentMatch[1] : "";
+        lines.splice(anchorIdx, 0, indent + slot.original);
+        return lines.join("\n");
     }
 
-    const escapedId = escapeRegExp(slot.id)
-    return restoreInline(slot.original, escapedId, text)
+    const escapedId = escapeRegExp(slot.id);
+    return restoreInline(slot.original, escapedId, text);
 }
 
 const hasWordRegexCache = new Map<string, RegExp>();
@@ -156,112 +147,106 @@ function hasWord(line: string, word: string): boolean {
     let regex = hasWordRegexCache.get(word);
     if (!regex) {
         const escaped = escapeRegExp(word);
-        regex = new RegExp(`\\b${escaped}\\b`, 'i');
+        regex = new RegExp(`\\b${escaped}\\b`, "i");
         hasWordRegexCache.set(word, regex);
     }
     return regex.test(line);
 }
 
-function restoreInline(
-    original: string,
-    escapedId: string,
-    text: string,
-): string {
-    const patterns = [
-        new RegExp(`\`?${escapedId}\`?`, 'gi'),
-    ]
+function restoreInline(original: string, escapedId: string, text: string): string {
+    const patterns = [new RegExp(`\`?${escapedId}\`?`, "gi")];
 
     for (const pattern of patterns) {
-        const before = text
-        text = text.replace(pattern, () => original)
-        if (text !== before) break
+        const before = text;
+        text = text.replace(pattern, () => original);
+        if (text !== before) break;
     }
 
-    return text
+    return text;
 }
 
 function findLineStart(sql: string, pos: number): number {
-    let idx = pos
-    while (idx > 0 && sql[idx - 1] !== '\n') {
-        idx--
+    let idx = pos;
+    while (idx > 0 && sql[idx - 1] !== "\n") {
+        idx--;
     }
-    return idx
+    return idx;
 }
 
 function findLineEnd(sql: string, pos: number): number {
-    let idx = pos
-    const len = sql.length
-    while (idx < len && sql[idx] !== '\n') {
-        idx++
+    let idx = pos;
+    const len = sql.length;
+    while (idx < len && sql[idx] !== "\n") {
+        idx++;
     }
-    if (idx < len && sql[idx] === '\n') {
-        idx++
+    if (idx < len && sql[idx] === "\n") {
+        idx++;
     }
-    return idx
+    return idx;
 }
 
 function findNextWord(sql: string, startPos: number): string {
-    let i = startPos
-    const len = sql.length
+    let i = startPos;
+    const len = sql.length;
 
-    while (i < len && (sql[i] === ' ' || sql[i] === '\t' || sql[i] === '\n' || sql[i] === '\r')) {
-        i++
+    while (i < len && (sql[i] === " " || sql[i] === "\t" || sql[i] === "\n" || sql[i] === "\r")) {
+        i++;
     }
 
-    if (i >= len) return ''
+    if (i >= len) return "";
 
-    const wordStart = i
+    const wordStart = i;
     while (i < len && /[\w`."]/.test(sql[i])) {
-        i++
+        i++;
     }
 
-    return sql.substring(wordStart, i)
+    return sql.substring(wordStart, i);
 }
 
 function findPrevWord(sql: string, startPos: number): string {
-    let i = startPos - 1
+    let i = startPos - 1;
 
-    while (i >= 0 && (sql[i] === ' ' || sql[i] === '\t')) {
-        i--
+    while (i >= 0 && (sql[i] === " " || sql[i] === "\t")) {
+        i--;
     }
 
-    if (i < 0) return ''
+    if (i < 0) return "";
 
-    const wordEnd = i + 1
+    const wordEnd = i + 1;
     while (i >= 0 && /[\w`."]/.test(sql[i])) {
-        i--
+        i--;
     }
 
-    return sql.substring(i + 1, wordEnd)
+    return sql.substring(i + 1, wordEnd);
 }
 
 function findAllComments(sql: string): {
-    start: number
-    end: number
-    text: string
-    isOnOwnLine: boolean
-    isAfterSemicolon: boolean
-    isTailComment: boolean
+    start: number;
+    end: number;
+    text: string;
+    isOnOwnLine: boolean;
+    isAfterSemicolon: boolean;
+    isTailComment: boolean;
 }[] {
-    const rawComments = SqlTextScanner.findAllComments(sql)
+    const rawComments = SqlTextScanner.findAllComments(sql);
 
-    return rawComments.map(c => {
-        const isOnOwnLine = isStartOfLine(sql, c.start)
-        const isAfterSemi = isAfterSemicolon(sql, c.start)
-        let isTailComment = false
+    return rawComments.map((c) => {
+        const isOnOwnLine = isStartOfLine(sql, c.start);
+        const isAfterSemi = isAfterSemicolon(sql, c.start);
+        let isTailComment = false;
         if (!isOnOwnLine && !isAfterSemi) {
-            if (c.type === 'line') {
-                isTailComment = true
+            if (c.type === "line") {
+                isTailComment = true;
             } else {
-                let j = c.end
-                while (j < sql.length && sql[j] !== '\n') {
-                    if (sql[j] !== ' ' && sql[j] !== '\t') {
-                        break
+                let j = c.end;
+                while (j < sql.length && sql[j] !== "\n") {
+                    if (sql[j] !== " " && sql[j] !== "\t") {
+                        break;
                     }
-                    j++
+                    j++;
                 }
-                if (j >= sql.length || sql[j] === '\n') {
-                    isTailComment = true
+                if (j >= sql.length || sql[j] === "\n") {
+                    isTailComment = true;
                 }
             }
         }
@@ -272,34 +257,34 @@ function findAllComments(sql: string): {
             isOnOwnLine,
             isAfterSemicolon: isAfterSemi,
             isTailComment,
-        }
-    })
+        };
+    });
 }
 
 function isStartOfLine(sql: string, pos: number): boolean {
-    let idx = pos - 1
+    let idx = pos - 1;
     while (idx >= 0) {
-        const ch = sql[idx]
-        if (ch === '\n') return true
-        if (ch === ' ' || ch === '\t') {
-            idx--
-            continue
+        const ch = sql[idx];
+        if (ch === "\n") return true;
+        if (ch === " " || ch === "\t") {
+            idx--;
+            continue;
         }
-        return false
+        return false;
     }
-    return true
+    return true;
 }
 
 function isAfterSemicolon(sql: string, pos: number): boolean {
-    let idx = pos - 1
+    let idx = pos - 1;
     while (idx >= 0) {
-        const ch = sql[idx]
-        if (ch === ';') return true
-        if (ch === ' ' || ch === '\t' || ch === '\n' || ch === '\r') {
-            idx--
-            continue
+        const ch = sql[idx];
+        if (ch === ";") return true;
+        if (ch === " " || ch === "\t" || ch === "\n" || ch === "\r") {
+            idx--;
+            continue;
         }
-        return false
+        return false;
     }
-    return false
+    return false;
 }

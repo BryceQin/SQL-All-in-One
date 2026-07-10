@@ -1,4 +1,4 @@
-import type { Pool, Connection, PoolParameters } from 'odbc';
+import type { Pool, Connection, PoolParameters } from "odbc";
 import type {
     ConnectionConfig,
     TestConnectionResult,
@@ -15,14 +15,14 @@ import type {
     IMetadataAdapter,
     IQueryAdapter,
     ISchemaAdapter,
-} from './IDatabaseAdapter';
-import { t } from '../../i18n/index';
-import { BaseDatabaseAdapter } from './BaseDatabaseAdapter';
-import { BaseSharedContext } from './BaseSharedContext';
-import { BaseConnectionAdapter } from './BaseConnectionAdapter';
-import { BaseQueryAdapter } from './BaseQueryAdapter';
-import { OracleMetadataAdapter, OracleSchemaAdapter } from './OracleAdapter';
-import type { IOracleDialectSharedContext } from './OracleAdapter';
+} from "./IDatabaseAdapter";
+import { t } from "../../i18n/index";
+import { BaseDatabaseAdapter } from "./BaseDatabaseAdapter";
+import { BaseSharedContext } from "./BaseSharedContext";
+import { BaseConnectionAdapter } from "./BaseConnectionAdapter";
+import { BaseQueryAdapter } from "./BaseQueryAdapter";
+import { OracleMetadataAdapter, OracleSchemaAdapter } from "./OracleAdapter";
+import type { IOracleDialectSharedContext } from "./OracleAdapter";
 
 /**
  * Dameng (DM8) shared context.
@@ -75,13 +75,13 @@ class DamengConnectionAdapter extends BaseConnectionAdapter<DamengSharedContext>
         const poolParams = this.createPoolParameters(config);
 
         try {
-            const odbc = await import('odbc');
+            const odbc = await import("odbc");
             this.shared.pool = await odbc.pool(poolParams);
 
             // Verify connectivity with a trivial query.
             const conn = await this.shared.pool.connect();
             try {
-                await conn.query('SELECT 1 AS ONE FROM dual');
+                await conn.query("SELECT 1 AS ONE FROM dual");
             } finally {
                 await conn.close();
             }
@@ -100,12 +100,12 @@ class DamengConnectionAdapter extends BaseConnectionAdapter<DamengSharedContext>
             try {
                 await this.shared.transactionConnection.rollback();
             } catch (e) {
-                console.debug('[SQL All in One] Dameng rollback error on disconnect:', e);
+                console.debug("[SQL All in One] Dameng rollback error on disconnect:", e);
             }
             try {
                 await this.shared.transactionConnection.close();
             } catch (e) {
-                console.debug('[SQL All in One] Dameng close transaction connection error:', e);
+                console.debug("[SQL All in One] Dameng close transaction connection error:", e);
             }
             this.shared.transactionConnection = null;
         }
@@ -115,7 +115,7 @@ class DamengConnectionAdapter extends BaseConnectionAdapter<DamengSharedContext>
             try {
                 await conn.close();
             } catch (e) {
-                console.debug('[SQL All in One] Dameng close leaked query connection error:', e);
+                console.debug("[SQL All in One] Dameng close leaked query connection error:", e);
             }
         }
         this.shared.activeQueryConnections.clear();
@@ -124,7 +124,7 @@ class DamengConnectionAdapter extends BaseConnectionAdapter<DamengSharedContext>
             try {
                 await this.shared.pool.close();
             } catch (e) {
-                console.debug('[SQL All in One] Dameng pool close error:', e);
+                console.debug("[SQL All in One] Dameng pool close error:", e);
             }
             this.shared.pool = null;
         }
@@ -133,22 +133,18 @@ class DamengConnectionAdapter extends BaseConnectionAdapter<DamengSharedContext>
     async testConnection(config: ConnectionConfig): Promise<TestConnectionResult> {
         const startTime = Date.now();
         let tempPool: Pool | null = null;
-        let conn: import('odbc').Connection | null = null;
+        let conn: import("odbc").Connection | null = null;
 
         try {
-            const odbc = await import('odbc');
+            const odbc = await import("odbc");
             tempPool = await odbc.pool(this.createPoolParameters(config, 1));
             conn = await tempPool.connect();
             // Dameng exposes version information through v$version, mirroring
             // Oracle's dynamic performance view.
-            const result = await conn.query<{ BANNER: string }>(
-                'SELECT banner FROM v$version WHERE ROWNUM = 1'
-            );
+            const result = await conn.query<{ BANNER: string }>("SELECT banner FROM v$version WHERE ROWNUM = 1");
             const endTime = Date.now();
             const versionRow = result[0];
-            const serverVersion = (versionRow?.BANNER as string | undefined)
-                ?.split('\n')[0]
-                ?.trim() ?? 'Dameng DM';
+            const serverVersion = (versionRow?.BANNER as string | undefined)?.split("\n")[0]?.trim() ?? "Dameng DM";
 
             return {
                 success: true,
@@ -166,14 +162,14 @@ class DamengConnectionAdapter extends BaseConnectionAdapter<DamengSharedContext>
                 try {
                     await conn.close();
                 } catch (e) {
-                    console.debug('[SQL All in One] Dameng test connection close error:', e);
+                    console.debug("[SQL All in One] Dameng test connection close error:", e);
                 }
             }
             if (tempPool) {
                 try {
                     await tempPool.close();
                 } catch (e) {
-                    console.debug('[SQL All in One] Dameng temp pool close error:', e);
+                    console.debug("[SQL All in One] Dameng temp pool close error:", e);
                 }
             }
         }
@@ -190,17 +186,16 @@ class DamengConnectionAdapter extends BaseConnectionAdapter<DamengSharedContext>
             try {
                 // ODBC connections do not expose a ping() method; run a
                 // trivial SELECT to verify the connection is alive.
-                await conn.query('SELECT 1 AS ONE FROM dual');
+                await conn.query("SELECT 1 AS ONE FROM dual");
                 return true;
             } finally {
                 await conn.close();
             }
         } catch (e) {
-            console.debug('[SQL All in One] DamengConnectionAdapter.checkConnectionHealth failed:', e);
+            console.debug("[SQL All in One] DamengConnectionAdapter.checkConnectionHealth failed:", e);
             return false;
         }
     }
-
 
     /**
      * Surfaces the ODBC SQLSTATE (or a `DM-XXXX` tag derived from the ODBC
@@ -213,11 +208,11 @@ class DamengConnectionAdapter extends BaseConnectionAdapter<DamengSharedContext>
     protected override extractErrorCodeTag(error: unknown): string | null {
         const odbcErrors = (error as { odbcErrors?: { code?: number; state?: string; message?: string }[] })?.odbcErrors ?? [];
         const firstError = odbcErrors[0];
-        const state = firstError?.state ?? '';
+        const state = firstError?.state ?? "";
         if (state) {
             return state;
         }
-        const codeStr = firstError?.code !== undefined ? String(firstError.code) : '';
+        const codeStr = firstError?.code !== undefined ? String(firstError.code) : "";
         return codeStr ? `DM-${codeStr}` : null;
     }
 
@@ -232,31 +227,43 @@ class DamengConnectionAdapter extends BaseConnectionAdapter<DamengSharedContext>
         // raw message text.
         const odbcErrors = (error as { odbcErrors?: { code?: number; state?: string; message?: string }[] })?.odbcErrors ?? [];
         const firstError = odbcErrors[0];
-        const state = firstError?.state ?? '';
-        const codeStr = firstError?.code !== undefined ? String(firstError.code) : '';
+        const state = firstError?.state ?? "";
+        const codeStr = firstError?.code !== undefined ? String(firstError.code) : "";
 
         // Authentication failures.
-        if (state === '28000' || codeStr === '1017' || msg.includes('ORA-01017') || msg.includes('invalid username/password') || msg.includes('authentication')) {
-            return new Error(t('database.accessDenied', config.username, hostPort));
+        if (
+            state === "28000" ||
+            codeStr === "1017" ||
+            msg.includes("ORA-01017") ||
+            msg.includes("invalid username/password") ||
+            msg.includes("authentication")
+        ) {
+            return new Error(t("database.accessDenied", config.username, hostPort));
         }
         // Database / service not found.
-        if (codeStr === '12505' || codeStr === '12514' || msg.includes('ORA-12505') || msg.includes('ORA-12514') || msg.includes('service') && msg.includes('not found')) {
-            return new Error(t('database.databaseNotExist', config.database || '(none)', hostPort));
+        if (
+            codeStr === "12505" ||
+            codeStr === "12514" ||
+            msg.includes("ORA-12505") ||
+            msg.includes("ORA-12514") ||
+            (msg.includes("service") && msg.includes("not found"))
+        ) {
+            return new Error(t("database.databaseNotExist", config.database || "(none)", hostPort));
         }
         // No listener / connection refused.
-        if (codeStr === '12541' || msg.includes('ORA-12541') || msg.includes('no listener')) {
-            return new Error(t('database.connectionRefused', hostPort));
+        if (codeStr === "12541" || msg.includes("ORA-12541") || msg.includes("no listener")) {
+            return new Error(t("database.connectionRefused", hostPort));
         }
         // Connect timeout.
-        if (codeStr === '12170' || msg.includes('ORA-12170') || msg.includes('connect timeout') || state === 'HYT01') {
-            return new Error(t('database.connectionTimedOut', hostPort));
+        if (codeStr === "12170" || msg.includes("ORA-12170") || msg.includes("connect timeout") || state === "HYT01") {
+            return new Error(t("database.connectionTimedOut", hostPort));
         }
         // Host not found / unreachable.
-        if (codeStr === '12545' || msg.includes('ORA-12545')) {
-            return new Error(t('database.hostNotFound', config.host));
+        if (codeStr === "12545" || msg.includes("ORA-12545")) {
+            return new Error(t("database.hostNotFound", config.host));
         }
-        if (msg.includes('connection was closed') || msg.includes('connection lost')) {
-            return new Error(t('database.connectionLost', hostPort));
+        if (msg.includes("connection was closed") || msg.includes("connection lost")) {
+            return new Error(t("database.connectionLost", hostPort));
         }
 
         // SSL/certificate and common network errors are handled by the base
@@ -278,11 +285,11 @@ class DamengConnectionAdapter extends BaseConnectionAdapter<DamengSharedContext>
      */
     private buildConnectionString(config: ConnectionConfig): string {
         const explicit = config.options?.connectString;
-        if (typeof explicit === 'string' && explicit.length > 0) {
+        if (typeof explicit === "string" && explicit.length > 0) {
             return explicit;
         }
 
-        const driver = (config.options?.driver as string | undefined) ?? 'DM8 ODBC DRIVER';
+        const driver = (config.options?.driver as string | undefined) ?? "DM8 ODBC DRIVER";
         const host = config.host;
         const port = String(config.port ?? 5236);
         const server = `${host}:${port}`;
@@ -299,16 +306,16 @@ class DamengConnectionAdapter extends BaseConnectionAdapter<DamengSharedContext>
         // that unqualified object names resolve against it (Dameng mirrors
         // Oracle's schema-as-user model).
         const schema = (config.options?.schema as string | undefined) ?? config.database;
-        if (typeof schema === 'string' && schema.length > 0) {
+        if (typeof schema === "string" && schema.length > 0) {
             parts.push(`SCHEMA=${schema}`);
         }
 
         const charset = config.options?.charset as string | undefined;
-        if (typeof charset === 'string' && charset.length > 0) {
+        if (typeof charset === "string" && charset.length > 0) {
             parts.push(`CHARSET=${charset}`);
         }
 
-        return parts.join(';') + ';';
+        return parts.join(";") + ";";
     }
 
     private createPoolParameters(config: ConnectionConfig, maxSizeOverride?: number): PoolParameters {
@@ -351,7 +358,12 @@ class DamengQueryAdapter extends BaseQueryAdapter<DamengSharedContext> {
     /** Per-query timeout (ms) passed to odbc `query` options. Bounds runaway queries. */
     private static readonly DEFAULT_QUERY_TIMEOUT_MS = 30000;
 
-    protected override async executeWithConnection(sql: string, params: QueryParam[] | undefined, queryId: string, startTime: number): Promise<QueryResult> {
+    protected override async executeWithConnection(
+        sql: string,
+        params: QueryParam[] | undefined,
+        queryId: string,
+        startTime: number,
+    ): Promise<QueryResult> {
         let acquiredConn: Connection | null = null;
 
         // Use the transaction connection if active, otherwise acquire one
@@ -371,19 +383,17 @@ class DamengQueryAdapter extends BaseQueryAdapter<DamengSharedContext> {
             // Pass the per-query timeout so ODBC aborts runaway queries.
             // ODBC's QueryOptions.timeout is in seconds; convert ms -> s.
             const timeoutSeconds = Math.max(1, Math.floor(DamengQueryAdapter.DEFAULT_QUERY_TIMEOUT_MS / 1000));
-            const result = await queryConn.query<QueryRow, { timeout: number }>(
-                finalSql,
-                binds as (number | string)[],
-                { timeout: timeoutSeconds },
-            );
+            const result = await queryConn.query<QueryRow, { timeout: number }>(finalSql, binds as (number | string)[], {
+                timeout: timeoutSeconds,
+            });
             const executionTime = Date.now() - startTime;
 
             // odbc's Result extends Array<T>, so the rows ARE the result
             // itself. `count` holds the affected-rows count for DML.
             const rows = Array.isArray(result) ? (result as QueryRow[]) : [];
-            const columns = (result.columns ?? []).map(col => ({
+            const columns = (result.columns ?? []).map((col) => ({
                 name: col.name,
-                type: col.dataTypeName || String(col.dataType) || 'UNKNOWN',
+                type: col.dataTypeName || String(col.dataType) || "UNKNOWN",
                 nullable: col.nullable ?? true,
                 isPrimaryKey: false,
                 isAutoIncrement: false,
@@ -391,13 +401,11 @@ class DamengQueryAdapter extends BaseQueryAdapter<DamengSharedContext> {
             }));
 
             const rowCount = rows.length;
-            const affectedRows = typeof result.count === 'number' && result.count > 0
-                ? result.count
-                : undefined;
+            const affectedRows = typeof result.count === "number" && result.count > 0 ? result.count : undefined;
 
             return {
                 queryId,
-                status: 'success',
+                status: "success",
                 columns,
                 rows,
                 rowCount,
@@ -412,7 +420,7 @@ class DamengQueryAdapter extends BaseQueryAdapter<DamengSharedContext> {
                 try {
                     await acquiredConn.close();
                 } catch (e) {
-                    console.debug('[SQL All in One] Dameng connection close error:', e);
+                    console.debug("[SQL All in One] Dameng connection close error:", e);
                 }
             }
         }
@@ -425,12 +433,10 @@ class DamengQueryAdapter extends BaseQueryAdapter<DamengSharedContext> {
     protected override mapError(error: unknown, sql: string, queryId: string, executionTime: number): QueryResult {
         const odbcError = error as { odbcErrors?: { code?: number; state?: string }[]; message?: string };
         const firstError = odbcError.odbcErrors?.[0];
-        const code = firstError?.code !== undefined
-            ? `DM-${String(firstError.code)}`
-            : (firstError?.state ?? 'EXEC_ERROR');
+        const code = firstError?.code !== undefined ? `DM-${String(firstError.code)}` : (firstError?.state ?? "EXEC_ERROR");
         return {
             queryId,
-            status: 'error',
+            status: "error",
             columns: [],
             rows: [],
             rowCount: 0,
@@ -446,10 +452,10 @@ class DamengQueryAdapter extends BaseQueryAdapter<DamengSharedContext> {
 
     async beginTransaction(): Promise<void> {
         if (this.shared.transactionConnection) {
-            throw new Error(t('database.transactionInProgress'));
+            throw new Error(t("database.transactionInProgress"));
         }
         if (!this.shared.pool) {
-            throw new Error(t('database.notConnected'));
+            throw new Error(t("database.notConnected"));
         }
 
         // Acquire a dedicated connection from the pool and start an explicit
@@ -462,7 +468,7 @@ class DamengQueryAdapter extends BaseQueryAdapter<DamengSharedContext> {
             try {
                 await conn.close();
             } catch (closeErr) {
-                console.debug('[SQL All in One] Dameng close after beginTransaction error:', closeErr);
+                console.debug("[SQL All in One] Dameng close after beginTransaction error:", closeErr);
             }
             throw e;
         }
@@ -471,7 +477,7 @@ class DamengQueryAdapter extends BaseQueryAdapter<DamengSharedContext> {
 
     async commit(): Promise<void> {
         if (!this.shared.transactionConnection) {
-            throw new Error(t('database.noTransactionInProgress'));
+            throw new Error(t("database.noTransactionInProgress"));
         }
 
         const conn = this.shared.transactionConnection;
@@ -482,27 +488,27 @@ class DamengQueryAdapter extends BaseQueryAdapter<DamengSharedContext> {
             try {
                 await conn.close();
             } catch (e) {
-                console.debug('[SQL All in One] Dameng close after commit error:', e);
+                console.debug("[SQL All in One] Dameng close after commit error:", e);
             }
         }
     }
 
     async rollback(): Promise<void> {
         if (!this.shared.transactionConnection) {
-            throw new Error(t('database.noTransactionInProgress'));
+            throw new Error(t("database.noTransactionInProgress"));
         }
 
         const conn = this.shared.transactionConnection;
         try {
             await conn.rollback();
         } catch (rollbackError) {
-            console.error('Dameng rollback failed:', rollbackError);
+            console.error("Dameng rollback failed:", rollbackError);
         } finally {
             this.shared.transactionConnection = null;
             try {
                 await conn.close();
             } catch (e) {
-                console.debug('[SQL All in One] Dameng close after rollback error:', e);
+                console.debug("[SQL All in One] Dameng close after rollback error:", e);
             }
         }
     }
@@ -544,10 +550,7 @@ class DamengQueryAdapter extends BaseQueryAdapter<DamengSharedContext> {
      * caller: since we do not rewrite the SQL, the driver handles the
      * placeholder binding directly.
      */
-    private prepareSqlAndBinds(
-        sql: string,
-        params?: QueryParam[]
-    ): { finalSql: string; binds: (number | string | null)[] } {
+    private prepareSqlAndBinds(sql: string, params?: QueryParam[]): { finalSql: string; binds: (number | string | null)[] } {
         if (!params || params.length === 0) {
             return { finalSql: sql, binds: [] };
         }
@@ -557,9 +560,9 @@ class DamengQueryAdapter extends BaseQueryAdapter<DamengSharedContext> {
             const v = p.value;
             if (v === null || v === undefined) {
                 binds.push(null);
-            } else if (typeof v === 'boolean') {
+            } else if (typeof v === "boolean") {
                 binds.push(v ? 1 : 0);
-            } else if (typeof v === 'number') {
+            } else if (typeof v === "number") {
                 binds.push(v);
             } else {
                 binds.push(String(v));
@@ -623,11 +626,11 @@ interface DamengSynonymInfo {
  */
 class DamengMetadataAdapter extends OracleMetadataAdapter<DamengSharedContext> {
     protected override placeholderFor(_index: number): string {
-        return '?';
+        return "?";
     }
 
     protected override defaultDatabaseName(): string {
-        return 'DAMENG';
+        return "DAMENG";
     }
 
     protected override resolveOwner(schema?: string): string {
@@ -638,7 +641,7 @@ class DamengMetadataAdapter extends OracleMetadataAdapter<DamengSharedContext> {
         if (fromConfig && fromConfig.length > 0) {
             return fromConfig.toUpperCase();
         }
-        return 'SYSDBA';
+        return "SYSDBA";
     }
 
     override async listSchemas(_database?: string): Promise<string[]> {
@@ -648,7 +651,7 @@ class DamengMetadataAdapter extends OracleMetadataAdapter<DamengSharedContext> {
         // parity with the pre-refactor behaviour.
         const sql = `SELECT username FROM all_users ORDER BY username`;
         const result = await this.executeQuery(sql);
-        if (result.status !== 'success') {
+        if (result.status !== "success") {
             return [];
         }
 
@@ -665,7 +668,7 @@ class DamengMetadataAdapter extends OracleMetadataAdapter<DamengSharedContext> {
         const owner = this.resolveOwner(schema);
         const sql = `SELECT sequence_name, min_value, max_value, increment_by AS increment, last_number AS last_value FROM all_sequences WHERE sequence_owner = ${this.placeholderFor(1)} ORDER BY sequence_name`;
         const result = await this.executeQuery(sql, [{ value: owner }]);
-        if (result.status !== 'success') {
+        if (result.status !== "success") {
             return [];
         }
 
@@ -689,7 +692,7 @@ class DamengMetadataAdapter extends OracleMetadataAdapter<DamengSharedContext> {
         const owner = this.resolveOwner(schema);
         const sql = `SELECT synonym_name, table_owner, table_name, db_link FROM all_synonyms WHERE owner = ${this.placeholderFor(1)} ORDER BY synonym_name`;
         const result = await this.executeQuery(sql, [{ value: owner }]);
-        if (result.status !== 'success') {
+        if (result.status !== "success") {
             return [];
         }
 
@@ -737,48 +740,50 @@ class DamengSchemaAdapter extends OracleSchemaAdapter<DamengSharedContext> {
     constructor(
         shared: DamengSharedContext,
         executeQuery: (sql: string, params?: QueryParam[]) => Promise<QueryResult>,
-        listTriggersFn: (database?: string, schema?: string) => Promise<TriggerInfo[]>
+        listTriggersFn: (database?: string, schema?: string) => Promise<TriggerInfo[]>,
     ) {
         super(shared, executeQuery, listTriggersFn);
     }
 
     protected override placeholderFor(_index: number): string {
-        return '?';
+        return "?";
     }
 
     override async getExplainPlan(_database: string, sql: string): Promise<ExplainResult> {
         if (!this.shared.pool) {
-            return { format: 'table', raw: '', nodes: [] };
+            return { format: "table", raw: "", nodes: [] };
         }
 
         // Dameng supports `EXPLAIN <sql>` (without the `FOR` keyword that
         // Oracle uses). We need a dedicated connection because the EXPLAIN
         // output is tied to the session.
-        let conn: import('odbc').Connection | null = null;
+        let conn: import("odbc").Connection | null = null;
         try {
             conn = await this.shared.pool.connect();
             const explainSql = `EXPLAIN ${sql}`;
             const result = await conn.query<QueryRow>(explainSql);
 
-            const planRows = (Array.isArray(result) ? (result as QueryRow[]) : []);
+            const planRows = Array.isArray(result) ? (result as QueryRow[]) : [];
             const raw = planRows
-                .map(r => Object.entries(r)
-                    .map(([k, v]) => `${k}=${v === null || v === undefined ? 'NULL' : String(v)}`)
-                    .join('  '))
-                .join('\n');
+                .map((r) =>
+                    Object.entries(r)
+                        .map(([k, v]) => `${k}=${v === null || v === undefined ? "NULL" : String(v)}`)
+                        .join("  "),
+                )
+                .join("\n");
 
             const nodes = this.buildDamengExplainNodes(planRows);
 
-            return { format: 'table', raw, nodes };
+            return { format: "table", raw, nodes };
         } catch (e) {
-            console.debug('[SQL All in One] Dameng EXPLAIN error:', e);
-            return { format: 'table', raw: '', nodes: [] };
+            console.debug("[SQL All in One] Dameng EXPLAIN error:", e);
+            return { format: "table", raw: "", nodes: [] };
         } finally {
             if (conn) {
                 try {
                     await conn.close();
                 } catch (e) {
-                    console.debug('[SQL All in One] Dameng explain connection close error:', e);
+                    console.debug("[SQL All in One] Dameng explain connection close error:", e);
                 }
             }
         }
@@ -796,7 +801,7 @@ class DamengSchemaAdapter extends OracleSchemaAdapter<DamengSharedContext> {
             // SESSION as a best-effort path.
             supportsCancel: false,
             supportsSshTunnel: true,
-            supportedObjectTypes: ['table', 'view', 'function', 'procedure', 'trigger', 'index', 'sequence', 'synonym'],
+            supportedObjectTypes: ["table", "view", "function", "procedure", "trigger", "index", "sequence", "synonym"],
         };
     }
 
@@ -806,68 +811,62 @@ class DamengSchemaAdapter extends OracleSchemaAdapter<DamengSharedContext> {
         // structure for consistency.
         return [
             {
-                category: 'Integer',
+                category: "Integer",
                 types: [
-                    { name: 'INT' },
-                    { name: 'INTEGER' },
-                    { name: 'BIGINT' },
-                    { name: 'SMALLINT' },
-                    { name: 'TINYINT' },
-                    { name: 'NUMBER' },
+                    { name: "INT" },
+                    { name: "INTEGER" },
+                    { name: "BIGINT" },
+                    { name: "SMALLINT" },
+                    { name: "TINYINT" },
+                    { name: "NUMBER" },
                 ],
             },
             {
-                category: 'Float',
+                category: "Float",
                 types: [
-                    { name: 'NUMBER', needsPrecision: true, needsScale: true },
-                    { name: 'FLOAT', needsPrecision: true },
-                    { name: 'REAL' },
-                    { name: 'DOUBLE' },
-                    { name: 'BINARY_FLOAT' },
-                    { name: 'BINARY_DOUBLE' },
+                    { name: "NUMBER", needsPrecision: true, needsScale: true },
+                    { name: "FLOAT", needsPrecision: true },
+                    { name: "REAL" },
+                    { name: "DOUBLE" },
+                    { name: "BINARY_FLOAT" },
+                    { name: "BINARY_DOUBLE" },
                 ],
             },
             {
-                category: 'String',
+                category: "String",
                 types: [
-                    { name: 'CHAR', needsLength: true },
-                    { name: 'VARCHAR', needsLength: true },
-                    { name: 'VARCHAR2', needsLength: true },
-                    { name: 'TEXT' },
-                    { name: 'LONG' },
-                    { name: 'CLOB' },
+                    { name: "CHAR", needsLength: true },
+                    { name: "VARCHAR", needsLength: true },
+                    { name: "VARCHAR2", needsLength: true },
+                    { name: "TEXT" },
+                    { name: "LONG" },
+                    { name: "CLOB" },
                 ],
             },
             {
-                category: 'Date & Time',
+                category: "Date & Time",
                 types: [
-                    { name: 'DATE' },
-                    { name: 'TIME' },
-                    { name: 'TIMESTAMP', needsPrecision: true },
-                    { name: 'TIMESTAMP WITH TIME ZONE', needsPrecision: true },
-                    { name: 'TIMESTAMP WITH LOCAL TIME ZONE', needsPrecision: true },
-                    { name: 'INTERVAL YEAR TO MONTH' },
-                    { name: 'INTERVAL DAY TO SECOND' },
+                    { name: "DATE" },
+                    { name: "TIME" },
+                    { name: "TIMESTAMP", needsPrecision: true },
+                    { name: "TIMESTAMP WITH TIME ZONE", needsPrecision: true },
+                    { name: "TIMESTAMP WITH LOCAL TIME ZONE", needsPrecision: true },
+                    { name: "INTERVAL YEAR TO MONTH" },
+                    { name: "INTERVAL DAY TO SECOND" },
                 ],
             },
             {
-                category: 'Binary',
+                category: "Binary",
                 types: [
-                    { name: 'BINARY', needsLength: true },
-                    { name: 'VARBINARY', needsLength: true },
-                    { name: 'BLOB' },
-                    { name: 'IMAGE' },
+                    { name: "BINARY", needsLength: true },
+                    { name: "VARBINARY", needsLength: true },
+                    { name: "BLOB" },
+                    { name: "IMAGE" },
                 ],
             },
             {
-                category: 'Other',
-                types: [
-                    { name: 'BOOLEAN' },
-                    { name: 'BIT' },
-                    { name: 'JSON' },
-                    { name: 'XMLTYPE' },
-                    { name: 'ROWID' },
-                ],
+                category: "Other",
+                types: [{ name: "BOOLEAN" }, { name: "BIT" }, { name: "JSON" }, { name: "XMLTYPE" }, { name: "ROWID" }],
             },
         ];
     }
@@ -883,7 +882,7 @@ class DamengSchemaAdapter extends OracleSchemaAdapter<DamengSharedContext> {
         if (fromConfig && fromConfig.length > 0) {
             return fromConfig.toUpperCase();
         }
-        return 'SYSDBA';
+        return "SYSDBA";
     }
 
     /**
@@ -891,7 +890,7 @@ class DamengSchemaAdapter extends OracleSchemaAdapter<DamengSharedContext> {
      * (distinct from `VARCHAR2`); Oracle's canonical list excludes it.
      */
     protected override lengthParameterisedDataTypes(): Set<string> {
-        return new Set(['VARCHAR2', 'CHAR', 'NVARCHAR2', 'NCHAR', 'RAW', 'VARCHAR']);
+        return new Set(["VARCHAR2", "CHAR", "NVARCHAR2", "NCHAR", "RAW", "VARCHAR"]);
     }
 
     /**
@@ -913,9 +912,9 @@ class DamengSchemaAdapter extends OracleSchemaAdapter<DamengSharedContext> {
         }
 
         const first = rows[0];
-        const hasId = 'id' in first || 'ID' in first;
-        const hasParentId = 'parent_id' in first || 'PARENT_ID' in first;
-        const hasDepth = 'depth' in first || 'DEPTH' in first;
+        const hasId = "id" in first || "ID" in first;
+        const hasParentId = "parent_id" in first || "PARENT_ID" in first;
+        const hasDepth = "depth" in first || "DEPTH" in first;
 
         // Build node objects keyed by id (when available).
         const nodeMap = new Map<string, ExplainNode>();
@@ -923,7 +922,7 @@ class DamengSchemaAdapter extends OracleSchemaAdapter<DamengSharedContext> {
         for (let i = 0; i < rows.length; i++) {
             const row = rows[i];
             const id = String(row.id ?? row.ID ?? i);
-            const operation = (row.operation ?? row.OPERATION ?? row.NODE ?? 'step') as string;
+            const operation = (row.operation ?? row.OPERATION ?? row.NODE ?? "step") as string;
             const options = (row.options ?? row.OPTIONS) as string | undefined;
             const rowsRaw = row.rows ?? row.CARDINALITY ?? row.ROWS;
             const costRaw = row.cost ?? row.COST;
@@ -1020,33 +1019,30 @@ export class DamengAdapter extends BaseDatabaseAdapter<DamengSharedContext> {
         return new DamengQueryAdapter(this.shared);
     }
     protected override createMetadataAdapter(): IMetadataAdapter {
-        return new DamengMetadataAdapter(
-            this.shared,
-            (sql, params) => this.queryAdapter.execute(sql, params)
-        );
+        return new DamengMetadataAdapter(this.shared, (sql, params) => this.queryAdapter.execute(sql, params));
     }
     protected override createSchemaAdapter(): ISchemaAdapter {
         return new DamengSchemaAdapter(
             this.shared,
             (sql, params) => this.queryAdapter.execute(sql, params),
-            (db, schema) => this.metadataAdapter.listTriggers(db, schema)
+            (db, schema) => this.metadataAdapter.listTriggers(db, schema),
         );
     }
 
     protected override getReapLogPrefix(): string {
-        return 'Dameng';
+        return "Dameng";
     }
 
     static getDialectMetadata(): DialectMetadata {
         return {
-            dialect: 'dameng',
-            displayName: '达梦 DM',
+            dialect: "dameng",
+            displayName: "达梦 DM",
             defaultPort: 5236,
-            defaultUsername: 'SYSDBA',
-            iconKey: 'dameng',
+            defaultUsername: "SYSDBA",
+            iconKey: "dameng",
             supportsSshTunnel: true,
             supportsSsl: false,
-            isFileBased: false
+            isFileBased: false,
         };
     }
 }

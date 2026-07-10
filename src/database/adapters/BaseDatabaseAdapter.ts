@@ -7,10 +7,10 @@ import type {
     IPoolStatus,
     ConnectionConfig,
     TestConnectionResult,
-} from './IDatabaseAdapter';
-import { BaseSharedContext } from './BaseSharedContext';
-import { t } from '../../i18n/index';
-import { validateIdentifier } from './identifierValidator';
+} from "./IDatabaseAdapter";
+import { BaseSharedContext } from "./BaseSharedContext";
+import { t } from "../../i18n/index";
+import { validateIdentifier } from "./identifierValidator";
 
 /**
  * Shared base class for per-dialect top-level database adapters.
@@ -56,8 +56,7 @@ import { validateIdentifier } from './identifierValidator';
  * subclasses' factory methods can return the concrete shared-context
  * subclass (e.g. `MysqlSharedContext`) rather than the abstract base.
  */
-export abstract class BaseDatabaseAdapter<TShared extends BaseSharedContext = BaseSharedContext>
-        implements IConnectionAdapter {
+export abstract class BaseDatabaseAdapter<TShared extends BaseSharedContext = BaseSharedContext> implements IConnectionAdapter {
     /** @internal Tracked by subclasses via connect/disconnect lifecycle */
     protected isConnected_ = false;
     /** @internal Updated by updateActivity() and sub-adapter operations */
@@ -217,7 +216,7 @@ export abstract class BaseDatabaseAdapter<TShared extends BaseSharedContext = Ba
                     await this.connectionAdapter.reapIdleConnections();
                 } catch (e) {
                     const prefix = this.getReapLogPrefix();
-                    const label = prefix ? `${prefix} ` : '';
+                    const label = prefix ? `${prefix} ` : "";
                     console.debug(`[SQL All in One] ${label}Reap idle connections error:`, e);
                 }
             }
@@ -231,7 +230,7 @@ export abstract class BaseDatabaseAdapter<TShared extends BaseSharedContext = Ba
      * such as `PG`, `SQLite`, `StarRocks`, `SQL Server`, `Oracle`, `Dameng`.
      */
     protected getReapLogPrefix(): string {
-        return '';
+        return "";
     }
 
     // ── Shared connection error formatting ──────────────────────────────
@@ -257,17 +256,17 @@ export abstract class BaseDatabaseAdapter<TShared extends BaseSharedContext = Ba
 
         const msg = error instanceof Error ? error.message : String(error);
 
-        if (msg.includes('ECONNREFUSED')) {
-            return new Error(t('database.connectionRefused', context));
+        if (msg.includes("ECONNREFUSED")) {
+            return new Error(t("database.connectionRefused", context));
         }
-        if (msg.includes('ETIMEDOUT') || msg.includes('connectTimeout')) {
-            return new Error(t('database.connectionTimedOut', context));
+        if (msg.includes("ETIMEDOUT") || msg.includes("connectTimeout")) {
+            return new Error(t("database.connectionTimedOut", context));
         }
-        if (msg.includes('EHOSTUNREACH')) {
-            return new Error(t('database.hostUnreachable', context));
+        if (msg.includes("EHOSTUNREACH")) {
+            return new Error(t("database.hostUnreachable", context));
         }
-        if (msg.includes('ENOTFOUND')) {
-            return new Error(t('database.hostNotFound', context));
+        if (msg.includes("ENOTFOUND")) {
+            return new Error(t("database.hostNotFound", context));
         }
 
         return error instanceof Error ? error : new Error(msg);
@@ -287,8 +286,8 @@ export abstract class BaseDatabaseAdapter<TShared extends BaseSharedContext = Ba
      */
     protected formatDriverSpecificError(_error: unknown, _context: string): Error | undefined {
         const msg = _error instanceof Error ? _error.message : String(_error);
-        if (msg.includes('self signed certificate') || msg.includes('certificate') || msg.includes('SSL')) {
-            return new Error(t('database.sslError', _context));
+        if (msg.includes("self signed certificate") || msg.includes("certificate") || msg.includes("SSL")) {
+            return new Error(t("database.sslError", _context));
         }
         return undefined;
     }

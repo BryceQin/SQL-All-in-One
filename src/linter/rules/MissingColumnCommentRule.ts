@@ -1,111 +1,118 @@
-import * as vscode from 'vscode'
-import type { RuleContext } from './LintRule'
-import { BaseRule } from './BaseRule'
-import { isAstNode } from '../../parser/AstVisitor'
-import { getNodeLocation } from '../../parser/astUtils'
-import type { AstNode } from '../../parser/astTypes'
-import { getConfigManager } from '../../core/configManager'
+import * as vscode from "vscode";
+import type { RuleContext } from "./LintRule";
+import { BaseRule } from "./BaseRule";
+import { isAstNode } from "../../parser/AstVisitor";
+import { getNodeLocation } from "../../parser/astUtils";
+import type { AstNode } from "../../parser/astTypes";
+import { getConfigManager } from "../../core/configManager";
 
 export class MissingColumnCommentRule extends BaseRule {
-    readonly id = 'missing_column_comment'
-    readonly applicableTypes = ['create']
-    readonly name = 'linter.createTableMissingComment.name'
-    readonly description = 'linter.createTableMissingComment.description'
-    readonly category = 'best-practices'
-    readonly defaultSeverity = vscode.DiagnosticSeverity.Warning
-    readonly defaultEnabled = true
+    readonly id = "missing_column_comment";
+    readonly applicableTypes = ["create"];
+    readonly name = "linter.createTableMissingComment.name";
+    readonly description = "linter.createTableMissingComment.description";
+    readonly category = "best-practices";
+    readonly defaultSeverity = vscode.DiagnosticSeverity.Warning;
+    readonly defaultEnabled = true;
 
     check(context: RuleContext): vscode.Diagnostic[] {
-        const diagnostics: vscode.Diagnostic[] = []
-        const node = context.node
+        const diagnostics: vscode.Diagnostic[] = [];
+        const node = context.node;
 
-        if (node.keyword !== 'table') {
-            return diagnostics
+        if (node.keyword !== "table") {
+            return diagnostics;
         }
 
-        const createDefinitions = node.create_definitions
+        const createDefinitions = node.create_definitions;
         if (!Array.isArray(createDefinitions)) {
-            return diagnostics
+            return diagnostics;
         }
 
-        const missingColumns: { name: string; node: AstNode }[] = []
+        const missingColumns: { name: string; node: AstNode }[] = [];
 
         for (const def of createDefinitions) {
             if (!isAstNode(def)) {
-                continue
+                continue;
             }
-            const defNode = def as AstNode
+            const defNode = def as AstNode;
 
-            if (defNode.resource === 'constraint') {
-                continue
+            if (defNode.resource === "constraint") {
+                continue;
             }
 
-            const columnName = this.getColumnNameFromDefinition(defNode)
+            const columnName = this.getColumnNameFromDefinition(defNode);
             if (columnName == null) {
-                continue
+                continue;
             }
 
-            const hasComment = this.definitionHasComment(defNode)
+            const hasComment = this.definitionHasComment(defNode);
             if (!hasComment) {
-                missingColumns.push({ name: columnName, node: defNode })
+                missingColumns.push({ name: columnName, node: defNode });
             }
         }
 
         if (missingColumns.length === 0) {
-            return diagnostics
+            return diagnostics;
         }
 
-        const ruleConfig = getConfigManager().get<{ enabled?: boolean; severity?: string; aggregate?: boolean; externalTableExempt?: boolean }>('lint.missing_column_comment', { enabled: true, severity: 'warning', aggregate: true, externalTableExempt: false })
-        const aggregate = ruleConfig.aggregate ?? true
+        const ruleConfig = getConfigManager().get<{
+            enabled?: boolean;
+            severity?: string;
+            aggregate?: boolean;
+            externalTableExempt?: boolean;
+        }>("lint.missing_column_comment", { enabled: true, severity: "warning", aggregate: true, externalTableExempt: false });
+        const aggregate = ruleConfig.aggregate ?? true;
 
         if (aggregate && missingColumns.length > 1) {
-            const loc = getNodeLocation(node)
+            const loc = getNodeLocation(node);
             if (loc) {
-                diagnostics.push(this.addDiagnostic(loc, 12, 'linter.createTableMissingComment.description', String(missingColumns.length)))
+                diagnostics.push(
+                    this.addDiagnostic(loc, 12, "linter.createTableMissingComment.description", String(missingColumns.length)),
+                );
             }
         } else {
             for (const col of missingColumns) {
-                const loc = getNodeLocation(col.node)
+                const loc = getNodeLocation(col.node);
                 if (loc) {
-                    diagnostics.push(this.addDiagnostic(loc, col.name.length, 'linter.columnMissingComment.description', col.name))
+                    diagnostics.push(this.addDiagnostic(loc, col.name.length, "linter.columnMissingComment.description", col.name));
                 }
             }
         }
 
-        return diagnostics
+        return diagnostics;
     }
 
     private getColumnNameFromDefinition(defNode: AstNode): string | null {
-        const column = defNode.column
+        const column = defNode.column;
         if (isAstNode(column)) {
-            const colNode = column as AstNode
-            if (typeof colNode.value === 'string') {
-                return colNode.value
+            const colNode = column as AstNode;
+            if (typeof colNode.value === "string") {
+                return colNode.value;
             }
         }
-        if (typeof column === 'string') {
-            return column
+        if (typeof column === "string") {
+            return column;
         }
-        return null
+        return null;
     }
 
     private definitionHasComment(defNode: AstNode): boolean {
-        if (typeof defNode.comment === 'string') {
-            return true
+        if (typeof defNode.comment === "string") {
+            return true;
         }
 
-        const suffixes = defNode.suffixes
+        const suffixes = defNode.suffixes;
         if (Array.isArray(suffixes)) {
             for (const suffix of suffixes) {
                 if (isAstNode(suffix)) {
-                    const suffixNode = suffix as AstNode
-                    if (suffixNode.type === 'comment') {
-                        return true
+                    const suffixNode = suffix as AstNode;
+                    if (suffixNode.type === "comment") {
+                        return true;
                     }
                 }
             }
         }
 
-        return false
+        return false;
     }
 }

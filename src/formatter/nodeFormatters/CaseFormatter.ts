@@ -1,9 +1,9 @@
-import type { FormatOptions } from '../FormatOptions';
-import Indentation from '../Indentation';
-import Layout, { WS } from '../Layout';
-import { formatKeyword } from './CommonFormatter';
-import { ExpressionFormatter } from './ExpressionFormatter';
-import type { AstNode } from '../../parser/astTypes';
+import type { FormatOptions } from "../FormatOptions";
+import Indentation from "../Indentation";
+import Layout, { WS } from "../Layout";
+import { formatKeyword } from "./CommonFormatter";
+import { ExpressionFormatter } from "./ExpressionFormatter";
+import type { AstNode } from "../../parser/astTypes";
 
 export class CaseFormatter {
     private cfg: FormatOptions;
@@ -20,7 +20,7 @@ export class CaseFormatter {
     }
 
     public format(expr: AstNode): string {
-        this.layout.add(formatKeyword('CASE', this.cfg.keywordCase));
+        this.layout.add(formatKeyword("CASE", this.cfg.keywordCase));
 
         if (expr.expr) {
             this.layout.add(WS.SPACE, this.exprFmt.format(expr.expr));
@@ -32,9 +32,9 @@ export class CaseFormatter {
 
         if (expr.args) {
             for (const arg of expr.args as AstNode[]) {
-                if (arg.type === 'when') {
+                if (arg.type === "when") {
                     this.formatWhen(arg);
-                } else if (arg.type === 'else') {
+                } else if (arg.type === "else") {
                     this.formatElse(arg);
                 }
             }
@@ -44,7 +44,7 @@ export class CaseFormatter {
             this.indent.decreaseBlockLevel();
         }
 
-        this.layout.add(WS.NEWLINE, WS.INDENT, formatKeyword('END', this.cfg.keywordCase));
+        this.layout.add(WS.NEWLINE, WS.INDENT, formatKeyword("END", this.cfg.keywordCase));
 
         return this.layout.toString().trimEnd();
     }
@@ -56,7 +56,7 @@ export class CaseFormatter {
             this.layout.add(WS.SPACE);
         }
 
-        this.layout.add(formatKeyword('WHEN', this.cfg.keywordCase));
+        this.layout.add(formatKeyword("WHEN", this.cfg.keywordCase));
 
         if (this.cfg.newlineAfterWhen) {
             this.layout.add(WS.NEWLINE, WS.INDENT);
@@ -66,7 +66,7 @@ export class CaseFormatter {
 
         this.layout.add(this.exprFmt.format(arg.cond));
 
-        this.layout.add(WS.SPACE, formatKeyword('THEN', this.cfg.keywordCase));
+        this.layout.add(WS.SPACE, formatKeyword("THEN", this.cfg.keywordCase));
 
         if (this.cfg.newlineAfterThen) {
             this.layout.add(WS.NEWLINE, WS.INDENT);
@@ -78,7 +78,7 @@ export class CaseFormatter {
     }
 
     private formatElse(arg: AstNode): void {
-        this.layout.add(WS.NEWLINE, WS.INDENT, formatKeyword('ELSE', this.cfg.keywordCase));
+        this.layout.add(WS.NEWLINE, WS.INDENT, formatKeyword("ELSE", this.cfg.keywordCase));
 
         if (this.cfg.newlineAfterElse) {
             this.layout.add(WS.NEWLINE, WS.INDENT);

@@ -1,352 +1,276 @@
-import * as vscode from 'vscode'
-import { t } from '../i18n'
-import { toSqlDialect } from '../core/dialectRegistry'
+import * as vscode from "vscode";
+import { t } from "../i18n";
+import { toSqlDialect } from "../core/dialectRegistry";
 
 function getQuoteCharForDialect(langId: string): string {
-    const dialect = toSqlDialect(langId)
+    const dialect = toSqlDialect(langId);
     switch (dialect) {
-        case 'mysql':
-        case 'hive':
-        case 'spark':
-        case 'flinksql':
-            return '`'
-        case 'postgresql':
-        case 'sqlite':
-        case 'bigquery':
-            return '"'
+        case "mysql":
+        case "hive":
+        case "spark":
+        case "flinksql":
+            return "`";
+        case "postgresql":
+        case "sqlite":
+        case "bigquery":
+            return '"';
         default:
-            return '"'
+            return '"';
     }
 }
 
 function quoteIdentifierForDialect(name: string, langId: string): string {
-    const q = getQuoteCharForDialect(langId)
-    return q + name.replace(new RegExp(q === '`' ? '`' : '"', 'g'), q === '`' ? '``' : '""') + q
+    const q = getQuoteCharForDialect(langId);
+    return q + name.replace(new RegExp(q === "`" ? "`" : '"', "g"), q === "`" ? "``" : '""') + q;
 }
 
 export class SqlCodeActionProvider implements vscode.CodeActionProvider {
-    public static readonly providedCodeActionKinds = [
-        vscode.CodeActionKind.QuickFix
-    ]
+    public static readonly providedCodeActionKinds = [vscode.CodeActionKind.QuickFix];
 
     provideCodeActions(
         document: vscode.TextDocument,
         _range: vscode.Range | vscode.Selection,
         context: vscode.CodeActionContext,
-        _token: vscode.CancellationToken
+        _token: vscode.CancellationToken,
     ): vscode.CodeAction[] {
         try {
-            const actions: vscode.CodeAction[] = []
+            const actions: vscode.CodeAction[] = [];
 
             for (const diagnostic of context.diagnostics) {
-                const fix = this.tryCreateFix(document, diagnostic)
+                const fix = this.tryCreateFix(document, diagnostic);
                 if (fix) {
-                    actions.push(...(Array.isArray(fix) ? fix : [fix]))
+                    actions.push(...(Array.isArray(fix) ? fix : [fix]));
                 }
             }
 
-            return actions
+            return actions;
         } catch (error) {
-            console.error('[SqlCodeActionProvider] Error providing code actions:', error)
-            return []
+            console.error("[SqlCodeActionProvider] Error providing code actions:", error);
+            return [];
         }
     }
 
-    private tryCreateFix(
-        document: vscode.TextDocument,
-        diagnostic: vscode.Diagnostic
-    ): vscode.CodeAction | vscode.CodeAction[] | null {
-        const code = typeof diagnostic.code === 'object' ? diagnostic.code.value : diagnostic.code
+    private tryCreateFix(document: vscode.TextDocument, diagnostic: vscode.Diagnostic): vscode.CodeAction | vscode.CodeAction[] | null {
+        const code = typeof diagnostic.code === "object" ? diagnostic.code.value : diagnostic.code;
 
-        if (code === 'missing_query_comment') {
-            return this.createMissingQueryCommentFix(document, diagnostic)
+        if (code === "missing_query_comment") {
+            return this.createMissingQueryCommentFix(document, diagnostic);
         }
-        if (code === 'missing_column_comment') {
-            return this.createMissingColumnCommentFix(document, diagnostic)
+        if (code === "missing_column_comment") {
+            return this.createMissingColumnCommentFix(document, diagnostic);
         }
-        if (code === 'commented_out_code') {
-            return this.createCommentedOutCodeFixes(document, diagnostic)
+        if (code === "commented_out_code") {
+            return this.createCommentedOutCodeFixes(document, diagnostic);
         }
-        if (code === 'expired_todo') {
-            return this.createExpiredTodoFixes(document, diagnostic)
+        if (code === "expired_todo") {
+            return this.createExpiredTodoFixes(document, diagnostic);
         }
 
-        if (code === 'suspicious_null_comparison') {
-            return this.createNullComparisonFix(document, diagnostic)
+        if (code === "suspicious_null_comparison") {
+            return this.createNullComparisonFix(document, diagnostic);
         }
-        if (code === 'having_without_group_by') {
-            return this.createHavingFix(document, diagnostic)
+        if (code === "having_without_group_by") {
+            return this.createHavingFix(document, diagnostic);
         }
-        if (code === 'reserved_word_identifier') {
-            return this.createReservedWordFix(document, diagnostic)
+        if (code === "reserved_word_identifier") {
+            return this.createReservedWordFix(document, diagnostic);
         }
-        if (code === 'subquery_without_alias') {
-            return this.createSubqueryAliasFix(document, diagnostic)
+        if (code === "subquery_without_alias") {
+            return this.createSubqueryAliasFix(document, diagnostic);
         }
-        if (code === 'avoid_select_in_insert') {
-            return this.createInsertColumnsFix(document, diagnostic)
+        if (code === "avoid_select_in_insert") {
+            return this.createInsertColumnsFix(document, diagnostic);
         }
 
-        return null
+        return null;
     }
 
-    private createMissingQueryCommentFix(
-        document: vscode.TextDocument,
-        diagnostic: vscode.Diagnostic
-    ): vscode.CodeAction {
-        const action = new vscode.CodeAction(
-            t('codeAction.addQueryComment'),
-            vscode.CodeActionKind.QuickFix
-        )
-        action.diagnostics = [diagnostic]
-        action.isPreferred = true
+    private createMissingQueryCommentFix(document: vscode.TextDocument, diagnostic: vscode.Diagnostic): vscode.CodeAction {
+        const action = new vscode.CodeAction(t("codeAction.addQueryComment"), vscode.CodeActionKind.QuickFix);
+        action.diagnostics = [diagnostic];
+        action.isPreferred = true;
 
-        const insertPos = diagnostic.range.start
-        const linePrefix = document.lineAt(insertPos.line).text.match(/^(\s*)/)?.[1] || ''
-        const today = new Date().toISOString().slice(0, 10)
-        const snippet = `${linePrefix}-- ============================================\n${linePrefix}-- 查询说明：\n${linePrefix}-- 涉及表：\n${linePrefix}-- 条件：\n${linePrefix}-- 输出：\n${linePrefix}-- 日期：${today}\n${linePrefix}-- ============================================\n`
+        const insertPos = diagnostic.range.start;
+        const linePrefix = document.lineAt(insertPos.line).text.match(/^(\s*)/)?.[1] || "";
+        const today = new Date().toISOString().slice(0, 10);
+        const snippet = `${linePrefix}-- ============================================\n${linePrefix}-- 查询说明：\n${linePrefix}-- 涉及表：\n${linePrefix}-- 条件：\n${linePrefix}-- 输出：\n${linePrefix}-- 日期：${today}\n${linePrefix}-- ============================================\n`;
 
-        action.edit = new vscode.WorkspaceEdit()
-        action.edit.insert(document.uri, insertPos, snippet)
+        action.edit = new vscode.WorkspaceEdit();
+        action.edit.insert(document.uri, insertPos, snippet);
 
-        return action
+        return action;
     }
 
-    private createMissingColumnCommentFix(
-        document: vscode.TextDocument,
-        diagnostic: vscode.Diagnostic
-    ): vscode.CodeAction {
-        const action = new vscode.CodeAction(
-            t('codeAction.addCommentPlaceholder'),
-            vscode.CodeActionKind.QuickFix
-        )
-        action.diagnostics = [diagnostic]
-        action.isPreferred = true
+    private createMissingColumnCommentFix(document: vscode.TextDocument, diagnostic: vscode.Diagnostic): vscode.CodeAction {
+        const action = new vscode.CodeAction(t("codeAction.addCommentPlaceholder"), vscode.CodeActionKind.QuickFix);
+        action.diagnostics = [diagnostic];
+        action.isPreferred = true;
 
-        const line = document.lineAt(diagnostic.range.start.line).text
-        const trimmed = line.trimEnd()
-        const hasComma = trimmed.endsWith(',')
+        const line = document.lineAt(diagnostic.range.start.line).text;
+        const trimmed = line.trimEnd();
+        const hasComma = trimmed.endsWith(",");
 
         if (hasComma) {
-            const commaPos = line.lastIndexOf(',')
-            const insertPos = new vscode.Position(diagnostic.range.start.line, commaPos)
-            action.edit = new vscode.WorkspaceEdit()
-            action.edit.insert(document.uri, insertPos, " COMMENT ''")
+            const commaPos = line.lastIndexOf(",");
+            const insertPos = new vscode.Position(diagnostic.range.start.line, commaPos);
+            action.edit = new vscode.WorkspaceEdit();
+            action.edit.insert(document.uri, insertPos, " COMMENT ''");
         } else {
-            const insertPos = new vscode.Position(diagnostic.range.start.line, trimmed.length)
-            action.edit = new vscode.WorkspaceEdit()
-            action.edit.insert(document.uri, insertPos, " COMMENT ''")
+            const insertPos = new vscode.Position(diagnostic.range.start.line, trimmed.length);
+            action.edit = new vscode.WorkspaceEdit();
+            action.edit.insert(document.uri, insertPos, " COMMENT ''");
         }
 
-        return action
+        return action;
     }
 
-    private createCommentedOutCodeFixes(
-        document: vscode.TextDocument,
-        diagnostic: vscode.Diagnostic
-    ): vscode.CodeAction[] {
-        const actions: vscode.CodeAction[] = []
+    private createCommentedOutCodeFixes(document: vscode.TextDocument, diagnostic: vscode.Diagnostic): vscode.CodeAction[] {
+        const actions: vscode.CodeAction[] = [];
 
-        const uncommentAction = new vscode.CodeAction(
-            t('codeAction.uncomment'),
-            vscode.CodeActionKind.QuickFix
-        )
-        uncommentAction.diagnostics = [diagnostic]
+        const uncommentAction = new vscode.CodeAction(t("codeAction.uncomment"), vscode.CodeActionKind.QuickFix);
+        uncommentAction.diagnostics = [diagnostic];
         uncommentAction.command = {
-            command: 'hive-formatter.toggleComment',
-            title: t('codeAction.uncomment')
-        }
-        actions.push(uncommentAction)
+            command: "hive-formatter.toggleComment",
+            title: t("codeAction.uncomment"),
+        };
+        actions.push(uncommentAction);
 
-        const deleteAction = new vscode.CodeAction(
-            t('codeAction.deleteCommentedCode'),
-            vscode.CodeActionKind.QuickFix
-        )
-        deleteAction.diagnostics = [diagnostic]
-        deleteAction.edit = new vscode.WorkspaceEdit()
-        deleteAction.edit.delete(document.uri, diagnostic.range)
-        actions.push(deleteAction)
+        const deleteAction = new vscode.CodeAction(t("codeAction.deleteCommentedCode"), vscode.CodeActionKind.QuickFix);
+        deleteAction.diagnostics = [diagnostic];
+        deleteAction.edit = new vscode.WorkspaceEdit();
+        deleteAction.edit.delete(document.uri, diagnostic.range);
+        actions.push(deleteAction);
 
-        return actions
+        return actions;
     }
 
-    private createExpiredTodoFixes(
-        document: vscode.TextDocument,
-        diagnostic: vscode.Diagnostic
-    ): vscode.CodeAction[] {
-        const actions: vscode.CodeAction[] = []
-        const line = document.lineAt(diagnostic.range.start.line).text
+    private createExpiredTodoFixes(document: vscode.TextDocument, diagnostic: vscode.Diagnostic): vscode.CodeAction[] {
+        const actions: vscode.CodeAction[] = [];
+        const line = document.lineAt(diagnostic.range.start.line).text;
 
-        const doneAction = new vscode.CodeAction(
-            t('codeAction.markAsCompleted'),
-            vscode.CodeActionKind.QuickFix
-        )
-        doneAction.diagnostics = [diagnostic]
-        doneAction.isPreferred = true
-        const doneText = line.replace(/--\s*(TODO|FIXME)/i, '-- DONE')
-        doneAction.edit = new vscode.WorkspaceEdit()
-        doneAction.edit.replace(document.uri, diagnostic.range, doneText)
-        actions.push(doneAction)
+        const doneAction = new vscode.CodeAction(t("codeAction.markAsCompleted"), vscode.CodeActionKind.QuickFix);
+        doneAction.diagnostics = [diagnostic];
+        doneAction.isPreferred = true;
+        const doneText = line.replace(/--\s*(TODO|FIXME)/i, "-- DONE");
+        doneAction.edit = new vscode.WorkspaceEdit();
+        doneAction.edit.replace(document.uri, diagnostic.range, doneText);
+        actions.push(doneAction);
 
-        const today = new Date().toISOString().slice(0, 10)
-        const updateDateAction = new vscode.CodeAction(
-            t('codeAction.updateDate'),
-            vscode.CodeActionKind.QuickFix
-        )
-        updateDateAction.diagnostics = [diagnostic]
-        const updatedText = line.replace(/\d{4}[-/]\d{2}[-/]\d{2}/, today)
-        updateDateAction.edit = new vscode.WorkspaceEdit()
-        updateDateAction.edit.replace(document.uri, diagnostic.range, updatedText)
-        actions.push(updateDateAction)
+        const today = new Date().toISOString().slice(0, 10);
+        const updateDateAction = new vscode.CodeAction(t("codeAction.updateDate"), vscode.CodeActionKind.QuickFix);
+        updateDateAction.diagnostics = [diagnostic];
+        const updatedText = line.replace(/\d{4}[-/]\d{2}[-/]\d{2}/, today);
+        updateDateAction.edit = new vscode.WorkspaceEdit();
+        updateDateAction.edit.replace(document.uri, diagnostic.range, updatedText);
+        actions.push(updateDateAction);
 
-        const removeAction = new vscode.CodeAction(
-            t('codeAction.removeMarker'),
-            vscode.CodeActionKind.QuickFix
-        )
-        removeAction.diagnostics = [diagnostic]
-        removeAction.edit = new vscode.WorkspaceEdit()
-        removeAction.edit.delete(document.uri, document.lineAt(diagnostic.range.start.line).rangeIncludingLineBreak)
-        actions.push(removeAction)
+        const removeAction = new vscode.CodeAction(t("codeAction.removeMarker"), vscode.CodeActionKind.QuickFix);
+        removeAction.diagnostics = [diagnostic];
+        removeAction.edit = new vscode.WorkspaceEdit();
+        removeAction.edit.delete(document.uri, document.lineAt(diagnostic.range.start.line).rangeIncludingLineBreak);
+        actions.push(removeAction);
 
-        return actions
+        return actions;
     }
 
-    private createNullComparisonFix(
-        document: vscode.TextDocument,
-        diagnostic: vscode.Diagnostic
-    ): vscode.CodeAction {
-        const action = new vscode.CodeAction(
-            t('codeAction.fixNullComparison'),
-            vscode.CodeActionKind.QuickFix
-        )
-        action.diagnostics = [diagnostic]
-        action.isPreferred = true
+    private createNullComparisonFix(document: vscode.TextDocument, diagnostic: vscode.Diagnostic): vscode.CodeAction {
+        const action = new vscode.CodeAction(t("codeAction.fixNullComparison"), vscode.CodeActionKind.QuickFix);
+        action.diagnostics = [diagnostic];
+        action.isPreferred = true;
 
-        const text = document.getText(diagnostic.range)
-        let newText = text
+        const text = document.getText(diagnostic.range);
+        let newText = text;
 
-        if (text.includes('!= NULL')) {
-            newText = text.replace('!= NULL', 'IS NOT NULL')
-        } else if (text.includes('!= null')) {
-            newText = text.replace('!= null', 'IS NOT NULL')
-        } else if (text.includes('<> NULL')) {
-            newText = text.replace('<> NULL', 'IS NOT NULL')
-        } else if (text.includes('<> null')) {
-            newText = text.replace('<> null', 'IS NOT NULL')
-        } else if (text.includes('= NULL')) {
-            newText = text.replace('= NULL', 'IS NULL')
-        } else if (text.includes('= null')) {
-            newText = text.replace('= null', 'IS NULL')
+        if (text.includes("!= NULL")) {
+            newText = text.replace("!= NULL", "IS NOT NULL");
+        } else if (text.includes("!= null")) {
+            newText = text.replace("!= null", "IS NOT NULL");
+        } else if (text.includes("<> NULL")) {
+            newText = text.replace("<> NULL", "IS NOT NULL");
+        } else if (text.includes("<> null")) {
+            newText = text.replace("<> null", "IS NOT NULL");
+        } else if (text.includes("= NULL")) {
+            newText = text.replace("= NULL", "IS NULL");
+        } else if (text.includes("= null")) {
+            newText = text.replace("= null", "IS NULL");
         }
 
-        action.edit = new vscode.WorkspaceEdit()
-        action.edit.replace(document.uri, diagnostic.range, newText)
+        action.edit = new vscode.WorkspaceEdit();
+        action.edit.replace(document.uri, diagnostic.range, newText);
 
-        return action
+        return action;
     }
 
-    private createHavingFix(
-        document: vscode.TextDocument,
-        diagnostic: vscode.Diagnostic
-    ): vscode.CodeAction {
-        const action = new vscode.CodeAction(
-            t('codeAction.addGroupBy'),
-            vscode.CodeActionKind.QuickFix
-        )
-        action.diagnostics = [diagnostic]
+    private createHavingFix(document: vscode.TextDocument, diagnostic: vscode.Diagnostic): vscode.CodeAction {
+        const action = new vscode.CodeAction(t("codeAction.addGroupBy"), vscode.CodeActionKind.QuickFix);
+        action.diagnostics = [diagnostic];
 
-        const text = document.getText()
-        const lineStart = document.offsetAt(new vscode.Position(diagnostic.range.start.line, 0))
-        const lineEnd = document.offsetAt(new vscode.Position(diagnostic.range.end.line + 1, 0))
-        const lineText = text.substring(lineStart, lineEnd)
-        const havingMatch = /\bHAVING\b/i.exec(lineText)
+        const text = document.getText();
+        const lineStart = document.offsetAt(new vscode.Position(diagnostic.range.start.line, 0));
+        const lineEnd = document.offsetAt(new vscode.Position(diagnostic.range.end.line + 1, 0));
+        const lineText = text.substring(lineStart, lineEnd);
+        const havingMatch = /\bHAVING\b/i.exec(lineText);
 
         if (havingMatch && havingMatch.index !== undefined) {
-            const havingAbsIndex = lineStart + havingMatch.index
-            const beforeHaving = text.substring(0, havingAbsIndex)
-            const fromMatch = beforeHaving.match(/FROM\s+(\w+)/i)
+            const havingAbsIndex = lineStart + havingMatch.index;
+            const beforeHaving = text.substring(0, havingAbsIndex);
+            const fromMatch = beforeHaving.match(/FROM\s+(\w+)/i);
 
             if (fromMatch) {
-                const tableName = fromMatch[1]
-                const insertPos = document.positionAt(havingAbsIndex)
+                const tableName = fromMatch[1];
+                const insertPos = document.positionAt(havingAbsIndex);
 
-                action.edit = new vscode.WorkspaceEdit()
-                action.edit.insert(
-                    document.uri,
-                    insertPos,
-                    `\nGROUP BY ${tableName}.id `
-                )
+                action.edit = new vscode.WorkspaceEdit();
+                action.edit.insert(document.uri, insertPos, `\nGROUP BY ${tableName}.id `);
             }
         }
 
-        return action
+        return action;
     }
 
-    private createReservedWordFix(
-        document: vscode.TextDocument,
-        diagnostic: vscode.Diagnostic
-    ): vscode.CodeAction {
-        const action = new vscode.CodeAction(
-            t('codeAction.wrapWithBacktick'),
-            vscode.CodeActionKind.QuickFix
-        )
-        action.diagnostics = [diagnostic]
-        action.isPreferred = true
+    private createReservedWordFix(document: vscode.TextDocument, diagnostic: vscode.Diagnostic): vscode.CodeAction {
+        const action = new vscode.CodeAction(t("codeAction.wrapWithBacktick"), vscode.CodeActionKind.QuickFix);
+        action.diagnostics = [diagnostic];
+        action.isPreferred = true;
 
-        const text = document.getText(diagnostic.range)
-        const newText = quoteIdentifierForDialect(text, document.languageId)
+        const text = document.getText(diagnostic.range);
+        const newText = quoteIdentifierForDialect(text, document.languageId);
 
-        action.edit = new vscode.WorkspaceEdit()
-        action.edit.replace(document.uri, diagnostic.range, newText)
+        action.edit = new vscode.WorkspaceEdit();
+        action.edit.replace(document.uri, diagnostic.range, newText);
 
-        return action
+        return action;
     }
 
-    private createSubqueryAliasFix(
-        document: vscode.TextDocument,
-        diagnostic: vscode.Diagnostic
-    ): vscode.CodeAction {
-        const action = new vscode.CodeAction(
-            t('codeAction.addSubqueryAlias'),
-            vscode.CodeActionKind.QuickFix
-        )
-        action.diagnostics = [diagnostic]
-        action.isPreferred = true
+    private createSubqueryAliasFix(document: vscode.TextDocument, diagnostic: vscode.Diagnostic): vscode.CodeAction {
+        const action = new vscode.CodeAction(t("codeAction.addSubqueryAlias"), vscode.CodeActionKind.QuickFix);
+        action.diagnostics = [diagnostic];
+        action.isPreferred = true;
 
-        const text = document.getText(diagnostic.range)
-        const newText = `${text} AS subquery`
+        const text = document.getText(diagnostic.range);
+        const newText = `${text} AS subquery`;
 
-        action.edit = new vscode.WorkspaceEdit()
-        action.edit.replace(document.uri, diagnostic.range, newText)
+        action.edit = new vscode.WorkspaceEdit();
+        action.edit.replace(document.uri, diagnostic.range, newText);
 
-        return action
+        return action;
     }
 
-    private createInsertColumnsFix(
-        document: vscode.TextDocument,
-        diagnostic: vscode.Diagnostic
-    ): vscode.CodeAction {
-        const action = new vscode.CodeAction(
-            t('codeAction.addColumnPlaceholder'),
-            vscode.CodeActionKind.QuickFix
-        )
-        action.diagnostics = [diagnostic]
-        action.isPreferred = true
+    private createInsertColumnsFix(document: vscode.TextDocument, diagnostic: vscode.Diagnostic): vscode.CodeAction {
+        const action = new vscode.CodeAction(t("codeAction.addColumnPlaceholder"), vscode.CodeActionKind.QuickFix);
+        action.diagnostics = [diagnostic];
+        action.isPreferred = true;
 
-        const text = document.getText(diagnostic.range)
-        const insertMatch = text.match(/INSERT\s+INTO\s+(\w+)/i)
+        const text = document.getText(diagnostic.range);
+        const insertMatch = text.match(/INSERT\s+INTO\s+(\w+)/i);
 
         if (insertMatch) {
-            const insertPos = diagnostic.range.end
+            const insertPos = diagnostic.range.end;
 
-            action.edit = new vscode.WorkspaceEdit()
-            action.edit.insert(
-                document.uri,
-                insertPos,
-                ' (col1, col2, col3)'
-            )
+            action.edit = new vscode.WorkspaceEdit();
+            action.edit.insert(document.uri, insertPos, " (col1, col2, col3)");
         }
 
-        return action
+        return action;
     }
 }

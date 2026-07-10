@@ -1,186 +1,725 @@
-export type ConfigValueType = 'string' | 'number' | 'boolean' | 'enum'
+export type ConfigValueType = "string" | "number" | "boolean" | "enum";
 
 export interface ConfigItemDefinition {
-    key: string
-    type: ConfigValueType
-    defaultValue: unknown
-    group: string
-    label: string
-    enumValues?: string[]
-    configKey?: string
+    key: string;
+    type: ConfigValueType;
+    defaultValue: unknown;
+    group: string;
+    label: string;
+    enumValues?: string[];
+    configKey?: string;
 }
 
 export interface LintRuleDefinition {
-    ruleId: string
-    configKey: string
-    label: string
-    defaultEnabled: boolean
-    defaultSeverity: string
-    enabledKey: string
-    severityKey: string
-    subOptions?: Record<string, { type: 'number' | 'boolean'; default: unknown; configKey: string }>
+    ruleId: string;
+    configKey: string;
+    label: string;
+    defaultEnabled: boolean;
+    defaultSeverity: string;
+    enabledKey: string;
+    severityKey: string;
+    subOptions?: Record<string, { type: "number" | "boolean"; default: unknown; configKey: string }>;
 }
 
 export const FORMAT_CONFIG_ITEMS: ConfigItemDefinition[] = [
-    { key: 'dialect', type: 'enum', defaultValue: 'hive', group: 'basic', label: 'Dialect', enumValues: ['hive', 'spark', 'flinksql', 'mysql', 'postgresql', 'bigquery', 'sqlite', 'sql'] },
-    { key: 'keywordCase', type: 'enum', defaultValue: 'preserve', group: 'basic', label: 'Keyword Case', enumValues: ['preserve', 'upper', 'lower'] },
-    { key: 'dataTypeCase', type: 'enum', defaultValue: 'preserve', group: 'basic', label: 'Data Type Case', enumValues: ['preserve', 'upper', 'lower'] },
-    { key: 'functionCase', type: 'enum', defaultValue: 'preserve', group: 'basic', label: 'Function Case', enumValues: ['preserve', 'upper', 'lower'] },
-    { key: 'identifierCase', type: 'enum', defaultValue: 'preserve', group: 'basic', label: 'Identifier Case', enumValues: ['preserve', 'upper', 'lower'] },
-    { key: 'indentStyle', type: 'enum', defaultValue: 'standard', group: 'indent', label: 'Indent Style', enumValues: ['standard', 'tabularLeft', 'tabularRight'] },
-    { key: 'logicalOperatorNewline', type: 'enum', defaultValue: 'before', group: 'indent', label: 'Logical Operator Newline', enumValues: ['before', 'after'] },
-    { key: 'expressionWidth', type: 'number', defaultValue: 50, group: 'indent', label: 'Expression Width' },
-    { key: 'linesBetweenQueries', type: 'number', defaultValue: 1, group: 'indent', label: 'Lines Between Queries' },
-    { key: 'commaPosition', type: 'enum', defaultValue: 'after', group: 'comma', label: 'Comma Position', enumValues: ['before', 'after'] },
-    { key: 'alignColumnDefinitions', type: 'boolean', defaultValue: false, group: 'align', label: 'Align Column Definitions' },
-    { key: 'tabulateAlias', type: 'boolean', defaultValue: false, group: 'align', label: 'Tabulate Alias' },
-    { key: 'newlineAfterSelect', type: 'boolean', defaultValue: true, group: 'newline', label: 'Newline After SELECT' },
-    { key: 'newlineAfterFrom', type: 'boolean', defaultValue: true, group: 'newline', label: 'Newline After FROM' },
-    { key: 'newlineBeforeWhere', type: 'boolean', defaultValue: true, group: 'newline', label: 'Newline Before WHERE' },
-    { key: 'newlineAfterWhere', type: 'boolean', defaultValue: true, group: 'newline', label: 'Newline After WHERE' },
-    { key: 'newlineBeforeOrderBy', type: 'boolean', defaultValue: true, group: 'newline', label: 'Newline Before ORDER BY' },
-    { key: 'newlineBeforeGroupBy', type: 'boolean', defaultValue: true, group: 'newline', label: 'Newline Before GROUP BY' },
-    { key: 'newlineBeforeHaving', type: 'boolean', defaultValue: true, group: 'newline', label: 'Newline Before HAVING' },
-    { key: 'newlineBeforeLimit', type: 'boolean', defaultValue: true, group: 'newline', label: 'Newline Before LIMIT' },
-    { key: 'newlineAfterGroupBy', type: 'boolean', defaultValue: true, group: 'newline', label: 'Newline After GROUP BY' },
-    { key: 'newlineAfterHaving', type: 'boolean', defaultValue: true, group: 'newline', label: 'Newline After HAVING' },
-    { key: 'newlineAfterOrderBy', type: 'boolean', defaultValue: true, group: 'newline', label: 'Newline After ORDER BY' },
-    { key: 'newlineAfterLimit', type: 'boolean', defaultValue: false, group: 'newline', label: 'Newline After LIMIT' },
-    { key: 'newlineAfterJoin', type: 'boolean', defaultValue: true, group: 'newline', label: 'Newline After JOIN' },
-    { key: 'newlineBeforeOn', type: 'boolean', defaultValue: true, group: 'newline', label: 'Newline Before ON' },
-    { key: 'newlineBeforeUsing', type: 'boolean', defaultValue: true, group: 'newline', label: 'Newline Before USING' },
-    { key: 'newlineBeforeSetOperation', type: 'boolean', defaultValue: true, group: 'newline', label: 'Newline Before Set Operation' },
-    { key: 'newlineAfterSetOperation', type: 'boolean', defaultValue: true, group: 'newline', label: 'Newline After Set Operation' },
-    { key: 'newlineAfterCase', type: 'boolean', defaultValue: true, group: 'newline', label: 'Newline After CASE' },
-    { key: 'newlineAfterWhen', type: 'boolean', defaultValue: true, group: 'newline', label: 'Newline After WHEN' },
-    { key: 'newlineAfterThen', type: 'boolean', defaultValue: false, group: 'newline', label: 'Newline After THEN' },
-    { key: 'newlineAfterElse', type: 'boolean', defaultValue: false, group: 'newline', label: 'Newline After ELSE' },
-    { key: 'newlineAfterIn', type: 'boolean', defaultValue: false, group: 'newline', label: 'Newline After IN' },
-    { key: 'newlineBeforeJoin', type: 'boolean', defaultValue: true, group: 'newline', label: 'Newline Before JOIN' },
-    { key: 'alignWhereClauses', type: 'boolean', defaultValue: false, group: 'align', label: 'Align WHERE Clauses' },
-    { key: 'alignCaseStatements', type: 'boolean', defaultValue: false, group: 'align', label: 'Align CASE Statements' },
-    { key: 'spaceBeforeComma', type: 'boolean', defaultValue: false, group: 'space', label: 'Space Before Comma' },
-    { key: 'spaceInsideParentheses', type: 'boolean', defaultValue: false, group: 'space', label: 'Space Inside Parentheses' },
-    { key: 'trimTrailingSpaces', type: 'boolean', defaultValue: true, group: 'space', label: 'Trim Trailing Spaces' },
-    { key: 'semicolonAtEnd', type: 'boolean', defaultValue: true, group: 'semicolon', label: 'Semicolon At End' },
-    { key: 'denseOperators', type: 'boolean', defaultValue: false, group: 'space', label: 'Dense Operators' },
-    { key: 'newlineBeforeSemicolon', type: 'boolean', defaultValue: false, group: 'semicolon', label: 'Newline Before Semicolon' },
-    { key: 'indentJoinConditions', type: 'boolean', defaultValue: true, group: 'indent', label: 'Indent Join Conditions' },
-    { key: 'indentWhen', type: 'boolean', defaultValue: true, group: 'indent', label: 'Indent WHEN' },
-    { key: 'indentThen', type: 'boolean', defaultValue: true, group: 'indent', label: 'Indent THEN' },
-    { key: 'indentCteBody', type: 'boolean', defaultValue: true, group: 'indent', label: 'Indent CTE Body' },
-    { key: 'newlineBeforeWith', type: 'boolean', defaultValue: true, group: 'newline', label: 'Newline Before WITH' },
-    { key: 'newlineAfterWith', type: 'boolean', defaultValue: true, group: 'newline', label: 'Newline After WITH' },
-    { key: 'newlineBetweenCtes', type: 'boolean', defaultValue: true, group: 'newline', label: 'Newline Between CTEs' },
-    { key: 'alignOnClauses', type: 'boolean', defaultValue: false, group: 'align', label: 'Align ON Clauses' },
-    { key: 'alignInsertColumns', type: 'boolean', defaultValue: false, group: 'align', label: 'Align INSERT Columns' },
-    { key: 'alignInsertValuesGroups', type: 'boolean', defaultValue: false, group: 'align', label: 'Align INSERT Values Groups' },
-    { key: 'newlineAfterInsertColumns', type: 'boolean', defaultValue: true, group: 'newline', label: 'Newline After INSERT Columns' },
-    { key: 'newlineBetweenValuesGroups', type: 'boolean', defaultValue: true, group: 'newline', label: 'Newline Between Values Groups' },
-    { key: 'maxItemsInlineList', type: 'number', defaultValue: 5, group: 'line', label: 'Max Items Inline List' },
-    { key: 'cteCommaPosition', type: 'enum', defaultValue: 'before', group: 'comma', label: 'CTE Comma Position', enumValues: ['before', 'after'] },
-    { key: 'subqueryParenStyle', type: 'enum', defaultValue: 'inline', group: 'paren', label: 'Subquery Paren Style', enumValues: ['inline', 'newline'] },
-    { key: 'commentPosition', type: 'enum', defaultValue: 'preserve', group: 'comment', label: 'Comment Position', enumValues: ['preserve', 'newline', 'inline'] },
-    { key: 'blankLinesBeforeSetOperation', type: 'number', defaultValue: 1, group: 'line', label: 'Blank Lines Before Set Operation' },
-    { key: 'blankLinesAfterSetOperation', type: 'number', defaultValue: 0, group: 'line', label: 'Blank Lines After Set Operation' },
-    { key: 'newlineBeforeLateralView', type: 'boolean', defaultValue: true, group: 'newline', label: 'Newline Before LATERAL VIEW' },
-    { key: 'newlineBeforeDistributeBy', type: 'boolean', defaultValue: true, group: 'newline', label: 'Newline Before DISTRIBUTE BY' },
-    { key: 'newlineBeforeClusterBy', type: 'boolean', defaultValue: true, group: 'newline', label: 'Newline Before CLUSTER BY' },
-    { key: 'newlineBeforeSortBy', type: 'boolean', defaultValue: true, group: 'newline', label: 'Newline Before SORT BY' },
-    { key: 'singleLineMaxLength', type: 'number', defaultValue: 80, group: 'line', label: 'Single Line Max Length' },
-    { key: 'nullCase', type: 'enum', defaultValue: 'preserve', group: 'basic', label: 'NULL Case', enumValues: ['preserve', 'upper', 'lower'] },
-    { key: 'booleanCase', type: 'enum', defaultValue: 'preserve', group: 'basic', label: 'Boolean Case', enumValues: ['preserve', 'upper', 'lower'] },
-]
+    {
+        key: "dialect",
+        type: "enum",
+        defaultValue: "hive",
+        group: "basic",
+        label: "Dialect",
+        enumValues: ["hive", "spark", "flinksql", "mysql", "postgresql", "bigquery", "sqlite", "sql"],
+    },
+    {
+        key: "keywordCase",
+        type: "enum",
+        defaultValue: "preserve",
+        group: "basic",
+        label: "Keyword Case",
+        enumValues: ["preserve", "upper", "lower"],
+    },
+    {
+        key: "dataTypeCase",
+        type: "enum",
+        defaultValue: "preserve",
+        group: "basic",
+        label: "Data Type Case",
+        enumValues: ["preserve", "upper", "lower"],
+    },
+    {
+        key: "functionCase",
+        type: "enum",
+        defaultValue: "preserve",
+        group: "basic",
+        label: "Function Case",
+        enumValues: ["preserve", "upper", "lower"],
+    },
+    {
+        key: "identifierCase",
+        type: "enum",
+        defaultValue: "preserve",
+        group: "basic",
+        label: "Identifier Case",
+        enumValues: ["preserve", "upper", "lower"],
+    },
+    {
+        key: "indentStyle",
+        type: "enum",
+        defaultValue: "standard",
+        group: "indent",
+        label: "Indent Style",
+        enumValues: ["standard", "tabularLeft", "tabularRight"],
+    },
+    {
+        key: "logicalOperatorNewline",
+        type: "enum",
+        defaultValue: "before",
+        group: "indent",
+        label: "Logical Operator Newline",
+        enumValues: ["before", "after"],
+    },
+    { key: "expressionWidth", type: "number", defaultValue: 50, group: "indent", label: "Expression Width" },
+    { key: "linesBetweenQueries", type: "number", defaultValue: 1, group: "indent", label: "Lines Between Queries" },
+    { key: "commaPosition", type: "enum", defaultValue: "after", group: "comma", label: "Comma Position", enumValues: ["before", "after"] },
+    { key: "alignColumnDefinitions", type: "boolean", defaultValue: false, group: "align", label: "Align Column Definitions" },
+    { key: "tabulateAlias", type: "boolean", defaultValue: false, group: "align", label: "Tabulate Alias" },
+    { key: "newlineAfterSelect", type: "boolean", defaultValue: true, group: "newline", label: "Newline After SELECT" },
+    { key: "newlineAfterFrom", type: "boolean", defaultValue: true, group: "newline", label: "Newline After FROM" },
+    { key: "newlineBeforeWhere", type: "boolean", defaultValue: true, group: "newline", label: "Newline Before WHERE" },
+    { key: "newlineAfterWhere", type: "boolean", defaultValue: true, group: "newline", label: "Newline After WHERE" },
+    { key: "newlineBeforeOrderBy", type: "boolean", defaultValue: true, group: "newline", label: "Newline Before ORDER BY" },
+    { key: "newlineBeforeGroupBy", type: "boolean", defaultValue: true, group: "newline", label: "Newline Before GROUP BY" },
+    { key: "newlineBeforeHaving", type: "boolean", defaultValue: true, group: "newline", label: "Newline Before HAVING" },
+    { key: "newlineBeforeLimit", type: "boolean", defaultValue: true, group: "newline", label: "Newline Before LIMIT" },
+    { key: "newlineAfterGroupBy", type: "boolean", defaultValue: true, group: "newline", label: "Newline After GROUP BY" },
+    { key: "newlineAfterHaving", type: "boolean", defaultValue: true, group: "newline", label: "Newline After HAVING" },
+    { key: "newlineAfterOrderBy", type: "boolean", defaultValue: true, group: "newline", label: "Newline After ORDER BY" },
+    { key: "newlineAfterLimit", type: "boolean", defaultValue: false, group: "newline", label: "Newline After LIMIT" },
+    { key: "newlineAfterJoin", type: "boolean", defaultValue: true, group: "newline", label: "Newline After JOIN" },
+    { key: "newlineBeforeOn", type: "boolean", defaultValue: true, group: "newline", label: "Newline Before ON" },
+    { key: "newlineBeforeUsing", type: "boolean", defaultValue: true, group: "newline", label: "Newline Before USING" },
+    { key: "newlineBeforeSetOperation", type: "boolean", defaultValue: true, group: "newline", label: "Newline Before Set Operation" },
+    { key: "newlineAfterSetOperation", type: "boolean", defaultValue: true, group: "newline", label: "Newline After Set Operation" },
+    { key: "newlineAfterCase", type: "boolean", defaultValue: true, group: "newline", label: "Newline After CASE" },
+    { key: "newlineAfterWhen", type: "boolean", defaultValue: true, group: "newline", label: "Newline After WHEN" },
+    { key: "newlineAfterThen", type: "boolean", defaultValue: false, group: "newline", label: "Newline After THEN" },
+    { key: "newlineAfterElse", type: "boolean", defaultValue: false, group: "newline", label: "Newline After ELSE" },
+    { key: "newlineAfterIn", type: "boolean", defaultValue: false, group: "newline", label: "Newline After IN" },
+    { key: "newlineBeforeJoin", type: "boolean", defaultValue: true, group: "newline", label: "Newline Before JOIN" },
+    { key: "alignWhereClauses", type: "boolean", defaultValue: false, group: "align", label: "Align WHERE Clauses" },
+    { key: "alignCaseStatements", type: "boolean", defaultValue: false, group: "align", label: "Align CASE Statements" },
+    { key: "spaceBeforeComma", type: "boolean", defaultValue: false, group: "space", label: "Space Before Comma" },
+    { key: "spaceInsideParentheses", type: "boolean", defaultValue: false, group: "space", label: "Space Inside Parentheses" },
+    { key: "trimTrailingSpaces", type: "boolean", defaultValue: true, group: "space", label: "Trim Trailing Spaces" },
+    { key: "semicolonAtEnd", type: "boolean", defaultValue: true, group: "semicolon", label: "Semicolon At End" },
+    { key: "denseOperators", type: "boolean", defaultValue: false, group: "space", label: "Dense Operators" },
+    { key: "newlineBeforeSemicolon", type: "boolean", defaultValue: false, group: "semicolon", label: "Newline Before Semicolon" },
+    { key: "indentJoinConditions", type: "boolean", defaultValue: true, group: "indent", label: "Indent Join Conditions" },
+    { key: "indentWhen", type: "boolean", defaultValue: true, group: "indent", label: "Indent WHEN" },
+    { key: "indentThen", type: "boolean", defaultValue: true, group: "indent", label: "Indent THEN" },
+    { key: "indentCteBody", type: "boolean", defaultValue: true, group: "indent", label: "Indent CTE Body" },
+    { key: "newlineBeforeWith", type: "boolean", defaultValue: true, group: "newline", label: "Newline Before WITH" },
+    { key: "newlineAfterWith", type: "boolean", defaultValue: true, group: "newline", label: "Newline After WITH" },
+    { key: "newlineBetweenCtes", type: "boolean", defaultValue: true, group: "newline", label: "Newline Between CTEs" },
+    { key: "alignOnClauses", type: "boolean", defaultValue: false, group: "align", label: "Align ON Clauses" },
+    { key: "alignInsertColumns", type: "boolean", defaultValue: false, group: "align", label: "Align INSERT Columns" },
+    { key: "alignInsertValuesGroups", type: "boolean", defaultValue: false, group: "align", label: "Align INSERT Values Groups" },
+    { key: "newlineAfterInsertColumns", type: "boolean", defaultValue: true, group: "newline", label: "Newline After INSERT Columns" },
+    { key: "newlineBetweenValuesGroups", type: "boolean", defaultValue: true, group: "newline", label: "Newline Between Values Groups" },
+    { key: "maxItemsInlineList", type: "number", defaultValue: 5, group: "line", label: "Max Items Inline List" },
+    {
+        key: "cteCommaPosition",
+        type: "enum",
+        defaultValue: "before",
+        group: "comma",
+        label: "CTE Comma Position",
+        enumValues: ["before", "after"],
+    },
+    {
+        key: "subqueryParenStyle",
+        type: "enum",
+        defaultValue: "inline",
+        group: "paren",
+        label: "Subquery Paren Style",
+        enumValues: ["inline", "newline"],
+    },
+    {
+        key: "commentPosition",
+        type: "enum",
+        defaultValue: "preserve",
+        group: "comment",
+        label: "Comment Position",
+        enumValues: ["preserve", "newline", "inline"],
+    },
+    { key: "blankLinesBeforeSetOperation", type: "number", defaultValue: 1, group: "line", label: "Blank Lines Before Set Operation" },
+    { key: "blankLinesAfterSetOperation", type: "number", defaultValue: 0, group: "line", label: "Blank Lines After Set Operation" },
+    { key: "newlineBeforeLateralView", type: "boolean", defaultValue: true, group: "newline", label: "Newline Before LATERAL VIEW" },
+    { key: "newlineBeforeDistributeBy", type: "boolean", defaultValue: true, group: "newline", label: "Newline Before DISTRIBUTE BY" },
+    { key: "newlineBeforeClusterBy", type: "boolean", defaultValue: true, group: "newline", label: "Newline Before CLUSTER BY" },
+    { key: "newlineBeforeSortBy", type: "boolean", defaultValue: true, group: "newline", label: "Newline Before SORT BY" },
+    { key: "singleLineMaxLength", type: "number", defaultValue: 80, group: "line", label: "Single Line Max Length" },
+    {
+        key: "nullCase",
+        type: "enum",
+        defaultValue: "preserve",
+        group: "basic",
+        label: "NULL Case",
+        enumValues: ["preserve", "upper", "lower"],
+    },
+    {
+        key: "booleanCase",
+        type: "enum",
+        defaultValue: "preserve",
+        group: "basic",
+        label: "Boolean Case",
+        enumValues: ["preserve", "upper", "lower"],
+    },
+];
 
 export const FEATURE_CONFIG_ITEMS: ConfigItemDefinition[] = [
-    { key: 'ignoreTabSettings', type: 'boolean', defaultValue: false, group: 'editor', label: 'Ignore Tab Settings' },
-    { key: 'tabSizeOverride', type: 'number', defaultValue: 2, group: 'editor', label: 'Tab Size Override' },
-    { key: 'insertSpacesOverride', type: 'boolean', defaultValue: true, group: 'editor', label: 'Insert Spaces Override' },
-    { key: 'enableLinter', type: 'boolean', defaultValue: true, group: 'feature', label: 'Enable Linter' },
-    { key: 'showErrorLevel', type: 'boolean', defaultValue: true, group: 'feature', label: 'Show Error Level' },
-    { key: 'showWarningLevel', type: 'boolean', defaultValue: true, group: 'feature', label: 'Show Warning Level' },
-    { key: 'showInfoLevel', type: 'boolean', defaultValue: true, group: 'feature', label: 'Show Info Level' },
-    { key: 'enableCodeFolding', type: 'boolean', defaultValue: true, group: 'feature', label: 'Enable Code Folding' },
-    { key: 'enableOutlineView', type: 'boolean', defaultValue: true, group: 'feature', label: 'Enable Outline View' },
-    { key: 'enableStatusBar', type: 'boolean', defaultValue: true, group: 'feature', label: 'Enable Status Bar' },
-    { key: 'enableParameterHighlight', type: 'boolean', defaultValue: true, group: 'feature', label: 'Enable Parameter Highlight' },
-    { key: 'enableSnippets', type: 'boolean', defaultValue: true, group: 'feature', label: 'Enable Snippets' },
-    { key: 'enableQuickFix', type: 'boolean', defaultValue: true, group: 'feature', label: 'Enable Quick Fix' },
-    { key: 'enableSmartCommentToggle', type: 'boolean', defaultValue: true, group: 'feature', label: 'Enable Smart Comment Toggle' },
-    { key: 'headerAuthor', type: 'string', defaultValue: '', group: 'header', label: 'Header Author' },
-    { key: 'headerModifier', type: 'string', defaultValue: '', group: 'header', label: 'Header Modifier' },
-    { key: 'completionCommentSnippets', type: 'boolean', defaultValue: true, group: 'feature', label: 'Completion Comment Snippets', configKey: 'completion.commentSnippets' },
-]
+    { key: "ignoreTabSettings", type: "boolean", defaultValue: false, group: "editor", label: "Ignore Tab Settings" },
+    { key: "tabSizeOverride", type: "number", defaultValue: 2, group: "editor", label: "Tab Size Override" },
+    { key: "insertSpacesOverride", type: "boolean", defaultValue: true, group: "editor", label: "Insert Spaces Override" },
+    { key: "enableLinter", type: "boolean", defaultValue: true, group: "feature", label: "Enable Linter" },
+    { key: "showErrorLevel", type: "boolean", defaultValue: true, group: "feature", label: "Show Error Level" },
+    { key: "showWarningLevel", type: "boolean", defaultValue: true, group: "feature", label: "Show Warning Level" },
+    { key: "showInfoLevel", type: "boolean", defaultValue: true, group: "feature", label: "Show Info Level" },
+    { key: "enableCodeFolding", type: "boolean", defaultValue: true, group: "feature", label: "Enable Code Folding" },
+    { key: "enableOutlineView", type: "boolean", defaultValue: true, group: "feature", label: "Enable Outline View" },
+    { key: "enableStatusBar", type: "boolean", defaultValue: true, group: "feature", label: "Enable Status Bar" },
+    { key: "enableParameterHighlight", type: "boolean", defaultValue: true, group: "feature", label: "Enable Parameter Highlight" },
+    { key: "enableSnippets", type: "boolean", defaultValue: true, group: "feature", label: "Enable Snippets" },
+    { key: "enableQuickFix", type: "boolean", defaultValue: true, group: "feature", label: "Enable Quick Fix" },
+    { key: "enableSmartCommentToggle", type: "boolean", defaultValue: true, group: "feature", label: "Enable Smart Comment Toggle" },
+    { key: "headerAuthor", type: "string", defaultValue: "", group: "header", label: "Header Author" },
+    { key: "headerModifier", type: "string", defaultValue: "", group: "header", label: "Header Modifier" },
+    {
+        key: "completionCommentSnippets",
+        type: "boolean",
+        defaultValue: true,
+        group: "feature",
+        label: "Completion Comment Snippets",
+        configKey: "completion.commentSnippets",
+    },
+];
 
 export const LINT_RULES: LintRuleDefinition[] = [
-    { ruleId: 'avoidSelectStar', configKey: 'lint.avoid_select_star', label: 'Avoid SELECT *', defaultEnabled: true, defaultSeverity: 'warning', enabledKey: 'lintAvoidSelectStarEnabled', severityKey: 'lintAvoidSelectStarSeverity' },
-    { ruleId: 'explicitJoinType', configKey: 'lint.explicit_join_type', label: 'Explicit Join Type', defaultEnabled: true, defaultSeverity: 'information', enabledKey: 'lintExplicitJoinTypeEnabled', severityKey: 'lintExplicitJoinTypeSeverity' },
-    { ruleId: 'limitWithOrderBy', configKey: 'lint.limit_with_order_by', label: 'LIMIT With ORDER BY', defaultEnabled: true, defaultSeverity: 'warning', enabledKey: 'lintLimitWithOrderByEnabled', severityKey: 'lintLimitWithOrderBySeverity' },
-    { ruleId: 'avoidColumnCountMismatch', configKey: 'lint.avoid_column_count_mismatch', label: 'Avoid Column Count Mismatch', defaultEnabled: true, defaultSeverity: 'error', enabledKey: 'lintAvoidColumnCountMismatchEnabled', severityKey: 'lintAvoidColumnCountMismatchSeverity' },
-    { ruleId: 'missingPrimaryKey', configKey: 'lint.missing_primary_key', label: 'Missing Primary Key', defaultEnabled: true, defaultSeverity: 'warning', enabledKey: 'lintMissingPrimaryKeyEnabled', severityKey: 'lintMissingPrimaryKeySeverity' },
-    { ruleId: 'useCurrentTimestamp', configKey: 'lint.use_current_timestamp', label: 'Use CURRENT_TIMESTAMP', defaultEnabled: true, defaultSeverity: 'information', enabledKey: 'lintUseCurrentTimestampEnabled', severityKey: 'lintUseCurrentTimestampSeverity' },
-    { ruleId: 'avoidSelectInInsert', configKey: 'lint.avoid_select_in_insert', label: 'Avoid SELECT In INSERT', defaultEnabled: true, defaultSeverity: 'warning', enabledKey: 'lintAvoidSelectInInsertEnabled', severityKey: 'lintAvoidSelectInInsertSeverity' },
-    { ruleId: 'duplicateColumnAliases', configKey: 'lint.duplicate_column_aliases', label: 'Duplicate Column Aliases', defaultEnabled: true, defaultSeverity: 'warning', enabledKey: 'lintDuplicateColumnAliasesEnabled', severityKey: 'lintDuplicateColumnAliasesSeverity' },
-    { ruleId: 'uppercaseKeywords', configKey: 'lint.uppercase_keywords', label: 'Uppercase Keywords', defaultEnabled: false, defaultSeverity: 'information', enabledKey: 'lintUppercaseKeywordsEnabled', severityKey: 'lintUppercaseKeywordsSeverity' },
-    { ruleId: 'consistentAliasing', configKey: 'lint.consistent_aliasing', label: 'Consistent Aliasing', defaultEnabled: false, defaultSeverity: 'information', enabledKey: 'lintConsistentAliasingEnabled', severityKey: 'lintConsistentAliasingSeverity' },
-    { ruleId: 'useCoalesceOverIsnull', configKey: 'lint.use_coalesce_over_isnull', label: 'Use COALESCE Over ISNULL', defaultEnabled: false, defaultSeverity: 'information', enabledKey: 'lintUseCoalesceOverIsnullEnabled', severityKey: 'lintUseCoalesceOverIsnullSeverity' },
-    { ruleId: 'explicitColumnAliasing', configKey: 'lint.explicit_column_aliasing', label: 'Explicit Column Aliasing', defaultEnabled: false, defaultSeverity: 'information', enabledKey: 'lintExplicitColumnAliasingEnabled', severityKey: 'lintExplicitColumnAliasingSeverity' },
-    { ruleId: 'avoidCorrelatedSubqueries', configKey: 'lint.avoid_correlated_subqueries', label: 'Avoid Correlated Subqueries', defaultEnabled: false, defaultSeverity: 'warning', enabledKey: 'lintAvoidCorrelatedSubqueriesEnabled', severityKey: 'lintAvoidCorrelatedSubqueriesSeverity' },
-    { ruleId: 'longQueryLine', configKey: 'lint.long_query_line', label: 'Long Query Line', defaultEnabled: false, defaultSeverity: 'information', enabledKey: 'lintLongQueryLineEnabled', severityKey: 'lintLongQueryLineSeverity' },
-    { ruleId: 'missingQueryComment', configKey: 'lint.missing_query_comment', label: 'Missing Query Comment', defaultEnabled: true, defaultSeverity: 'warning', enabledKey: 'lintMissingQueryCommentEnabled', severityKey: 'lintMissingQueryCommentSeverity', subOptions: { thresholdLineCount: { type: 'number', default: 20, configKey: 'lint.missing_query_comment.thresholdLineCount' }, thresholdJoinCount: { type: 'number', default: 3, configKey: 'lint.missing_query_comment.thresholdJoinCount' }, thresholdSubqueryCount: { type: 'number', default: 2, configKey: 'lint.missing_query_comment.thresholdSubqueryCount' } } },
-    { ruleId: 'missingColumnComment', configKey: 'lint.missing_column_comment', label: 'Missing Column Comment', defaultEnabled: true, defaultSeverity: 'warning', enabledKey: 'lintMissingColumnCommentEnabled', severityKey: 'lintMissingColumnCommentSeverity', subOptions: { aggregate: { type: 'boolean', default: true, configKey: 'lint.missing_column_comment.aggregate' }, externalTableExempt: { type: 'boolean', default: false, configKey: 'lint.missing_column_comment.externalTableExempt' } } },
-    { ruleId: 'commentedOutCode', configKey: 'lint.commented_out_code', label: 'Commented Out Code', defaultEnabled: true, defaultSeverity: 'information', enabledKey: 'lintCommentedOutCodeEnabled', severityKey: 'lintCommentedOutCodeSeverity', subOptions: { thresholdLines: { type: 'number', default: 3, configKey: 'lint.commented_out_code.thresholdLines' } } },
-    { ruleId: 'expiredTodo', configKey: 'lint.expired_todo', label: 'Expired TODO', defaultEnabled: true, defaultSeverity: 'information', enabledKey: 'lintExpiredTodoEnabled', severityKey: 'lintExpiredTodoSeverity', subOptions: { gracePeriodDays: { type: 'number', default: 7, configKey: 'lint.expired_todo.gracePeriodDays' } } },
+    {
+        ruleId: "avoidSelectStar",
+        configKey: "lint.avoid_select_star",
+        label: "Avoid SELECT *",
+        defaultEnabled: true,
+        defaultSeverity: "warning",
+        enabledKey: "lintAvoidSelectStarEnabled",
+        severityKey: "lintAvoidSelectStarSeverity",
+    },
+    {
+        ruleId: "explicitJoinType",
+        configKey: "lint.explicit_join_type",
+        label: "Explicit Join Type",
+        defaultEnabled: true,
+        defaultSeverity: "information",
+        enabledKey: "lintExplicitJoinTypeEnabled",
+        severityKey: "lintExplicitJoinTypeSeverity",
+    },
+    {
+        ruleId: "limitWithOrderBy",
+        configKey: "lint.limit_with_order_by",
+        label: "LIMIT With ORDER BY",
+        defaultEnabled: true,
+        defaultSeverity: "warning",
+        enabledKey: "lintLimitWithOrderByEnabled",
+        severityKey: "lintLimitWithOrderBySeverity",
+    },
+    {
+        ruleId: "avoidColumnCountMismatch",
+        configKey: "lint.avoid_column_count_mismatch",
+        label: "Avoid Column Count Mismatch",
+        defaultEnabled: true,
+        defaultSeverity: "error",
+        enabledKey: "lintAvoidColumnCountMismatchEnabled",
+        severityKey: "lintAvoidColumnCountMismatchSeverity",
+    },
+    {
+        ruleId: "missingPrimaryKey",
+        configKey: "lint.missing_primary_key",
+        label: "Missing Primary Key",
+        defaultEnabled: true,
+        defaultSeverity: "warning",
+        enabledKey: "lintMissingPrimaryKeyEnabled",
+        severityKey: "lintMissingPrimaryKeySeverity",
+    },
+    {
+        ruleId: "useCurrentTimestamp",
+        configKey: "lint.use_current_timestamp",
+        label: "Use CURRENT_TIMESTAMP",
+        defaultEnabled: true,
+        defaultSeverity: "information",
+        enabledKey: "lintUseCurrentTimestampEnabled",
+        severityKey: "lintUseCurrentTimestampSeverity",
+    },
+    {
+        ruleId: "avoidSelectInInsert",
+        configKey: "lint.avoid_select_in_insert",
+        label: "Avoid SELECT In INSERT",
+        defaultEnabled: true,
+        defaultSeverity: "warning",
+        enabledKey: "lintAvoidSelectInInsertEnabled",
+        severityKey: "lintAvoidSelectInInsertSeverity",
+    },
+    {
+        ruleId: "duplicateColumnAliases",
+        configKey: "lint.duplicate_column_aliases",
+        label: "Duplicate Column Aliases",
+        defaultEnabled: true,
+        defaultSeverity: "warning",
+        enabledKey: "lintDuplicateColumnAliasesEnabled",
+        severityKey: "lintDuplicateColumnAliasesSeverity",
+    },
+    {
+        ruleId: "uppercaseKeywords",
+        configKey: "lint.uppercase_keywords",
+        label: "Uppercase Keywords",
+        defaultEnabled: false,
+        defaultSeverity: "information",
+        enabledKey: "lintUppercaseKeywordsEnabled",
+        severityKey: "lintUppercaseKeywordsSeverity",
+    },
+    {
+        ruleId: "consistentAliasing",
+        configKey: "lint.consistent_aliasing",
+        label: "Consistent Aliasing",
+        defaultEnabled: false,
+        defaultSeverity: "information",
+        enabledKey: "lintConsistentAliasingEnabled",
+        severityKey: "lintConsistentAliasingSeverity",
+    },
+    {
+        ruleId: "useCoalesceOverIsnull",
+        configKey: "lint.use_coalesce_over_isnull",
+        label: "Use COALESCE Over ISNULL",
+        defaultEnabled: false,
+        defaultSeverity: "information",
+        enabledKey: "lintUseCoalesceOverIsnullEnabled",
+        severityKey: "lintUseCoalesceOverIsnullSeverity",
+    },
+    {
+        ruleId: "explicitColumnAliasing",
+        configKey: "lint.explicit_column_aliasing",
+        label: "Explicit Column Aliasing",
+        defaultEnabled: false,
+        defaultSeverity: "information",
+        enabledKey: "lintExplicitColumnAliasingEnabled",
+        severityKey: "lintExplicitColumnAliasingSeverity",
+    },
+    {
+        ruleId: "avoidCorrelatedSubqueries",
+        configKey: "lint.avoid_correlated_subqueries",
+        label: "Avoid Correlated Subqueries",
+        defaultEnabled: false,
+        defaultSeverity: "warning",
+        enabledKey: "lintAvoidCorrelatedSubqueriesEnabled",
+        severityKey: "lintAvoidCorrelatedSubqueriesSeverity",
+    },
+    {
+        ruleId: "longQueryLine",
+        configKey: "lint.long_query_line",
+        label: "Long Query Line",
+        defaultEnabled: false,
+        defaultSeverity: "information",
+        enabledKey: "lintLongQueryLineEnabled",
+        severityKey: "lintLongQueryLineSeverity",
+    },
+    {
+        ruleId: "missingQueryComment",
+        configKey: "lint.missing_query_comment",
+        label: "Missing Query Comment",
+        defaultEnabled: true,
+        defaultSeverity: "warning",
+        enabledKey: "lintMissingQueryCommentEnabled",
+        severityKey: "lintMissingQueryCommentSeverity",
+        subOptions: {
+            thresholdLineCount: { type: "number", default: 20, configKey: "lint.missing_query_comment.thresholdLineCount" },
+            thresholdJoinCount: { type: "number", default: 3, configKey: "lint.missing_query_comment.thresholdJoinCount" },
+            thresholdSubqueryCount: { type: "number", default: 2, configKey: "lint.missing_query_comment.thresholdSubqueryCount" },
+        },
+    },
+    {
+        ruleId: "missingColumnComment",
+        configKey: "lint.missing_column_comment",
+        label: "Missing Column Comment",
+        defaultEnabled: true,
+        defaultSeverity: "warning",
+        enabledKey: "lintMissingColumnCommentEnabled",
+        severityKey: "lintMissingColumnCommentSeverity",
+        subOptions: {
+            aggregate: { type: "boolean", default: true, configKey: "lint.missing_column_comment.aggregate" },
+            externalTableExempt: { type: "boolean", default: false, configKey: "lint.missing_column_comment.externalTableExempt" },
+        },
+    },
+    {
+        ruleId: "commentedOutCode",
+        configKey: "lint.commented_out_code",
+        label: "Commented Out Code",
+        defaultEnabled: true,
+        defaultSeverity: "information",
+        enabledKey: "lintCommentedOutCodeEnabled",
+        severityKey: "lintCommentedOutCodeSeverity",
+        subOptions: { thresholdLines: { type: "number", default: 3, configKey: "lint.commented_out_code.thresholdLines" } },
+    },
+    {
+        ruleId: "expiredTodo",
+        configKey: "lint.expired_todo",
+        label: "Expired TODO",
+        defaultEnabled: true,
+        defaultSeverity: "information",
+        enabledKey: "lintExpiredTodoEnabled",
+        severityKey: "lintExpiredTodoSeverity",
+        subOptions: { gracePeriodDays: { type: "number", default: 7, configKey: "lint.expired_todo.gracePeriodDays" } },
+    },
 
     // Migrated from AstEnhancedChecker
-    { ruleId: 'havingWithoutGroupBy', configKey: 'lint.having_without_group_by', label: 'HAVING Without GROUP BY', defaultEnabled: true, defaultSeverity: 'warning', enabledKey: 'lintHavingWithoutGroupByEnabled', severityKey: 'lintHavingWithoutGroupBySeverity' },
-    { ruleId: 'limitInvalidValue', configKey: 'lint.limit_invalid_value', label: 'Invalid LIMIT Value', defaultEnabled: true, defaultSeverity: 'error', enabledKey: 'lintLimitInvalidValueEnabled', severityKey: 'lintLimitInvalidValueSeverity' },
-    { ruleId: 'reservedWordIdentifier', configKey: 'lint.reserved_word_identifier', label: 'Reserved Word Identifier', defaultEnabled: true, defaultSeverity: 'warning', enabledKey: 'lintReservedWordIdentifierEnabled', severityKey: 'lintReservedWordIdentifierSeverity' },
-    { ruleId: 'joinMissingOn', configKey: 'lint.join_missing_on', label: 'JOIN Missing ON', defaultEnabled: true, defaultSeverity: 'warning', enabledKey: 'lintJoinMissingOnEnabled', severityKey: 'lintJoinMissingOnSeverity' },
-    { ruleId: 'selectWithoutFrom', configKey: 'lint.select_without_from', label: 'SELECT Without FROM', defaultEnabled: true, defaultSeverity: 'warning', enabledKey: 'lintSelectWithoutFromEnabled', severityKey: 'lintSelectWithoutFromSeverity' },
-    { ruleId: 'misplacedDistinct', configKey: 'lint.misplaced_distinct', label: 'Misplaced DISTINCT', defaultEnabled: true, defaultSeverity: 'error', enabledKey: 'lintMisplacedDistinctEnabled', severityKey: 'lintMisplacedDistinctSeverity' },
-    { ruleId: 'aggregateInWhere', configKey: 'lint.aggregate_in_where', label: 'Aggregate In WHERE', defaultEnabled: true, defaultSeverity: 'error', enabledKey: 'lintAggregateInWhereEnabled', severityKey: 'lintAggregateInWhereSeverity' },
-    { ruleId: 'subqueryWithoutAlias', configKey: 'lint.subquery_without_alias', label: 'Subquery Without Alias', defaultEnabled: true, defaultSeverity: 'warning', enabledKey: 'lintSubqueryWithoutAliasEnabled', severityKey: 'lintSubqueryWithoutAliasSeverity' },
-    { ruleId: 'suspiciousNullComparison', configKey: 'lint.suspicious_null_comparison', label: 'Suspicious NULL Comparison', defaultEnabled: true, defaultSeverity: 'warning', enabledKey: 'lintSuspiciousNullComparisonEnabled', severityKey: 'lintSuspiciousNullComparisonSeverity' },
-    { ruleId: 'incompleteCase', configKey: 'lint.incomplete_case', label: 'Incomplete CASE', defaultEnabled: true, defaultSeverity: 'error', enabledKey: 'lintIncompleteCaseEnabled', severityKey: 'lintIncompleteCaseSeverity' },
-    { ruleId: 'redundantDistinct', configKey: 'lint.redundant_distinct', label: 'Redundant DISTINCT', defaultEnabled: true, defaultSeverity: 'warning', enabledKey: 'lintRedundantDistinctEnabled', severityKey: 'lintRedundantDistinctSeverity' },
-    { ruleId: 'dateFunctionUsage', configKey: 'lint.date_function_usage', label: 'Date Function Usage', defaultEnabled: true, defaultSeverity: 'information', enabledKey: 'lintDateFunctionUsageEnabled', severityKey: 'lintDateFunctionUsageSeverity' },
-    { ruleId: 'wildcardInUpdate', configKey: 'lint.wildcard_in_update', label: 'Wildcard In UPDATE', defaultEnabled: true, defaultSeverity: 'error', enabledKey: 'lintWildcardInUpdateEnabled', severityKey: 'lintWildcardInUpdateSeverity' },
-]
+    {
+        ruleId: "havingWithoutGroupBy",
+        configKey: "lint.having_without_group_by",
+        label: "HAVING Without GROUP BY",
+        defaultEnabled: true,
+        defaultSeverity: "warning",
+        enabledKey: "lintHavingWithoutGroupByEnabled",
+        severityKey: "lintHavingWithoutGroupBySeverity",
+    },
+    {
+        ruleId: "limitInvalidValue",
+        configKey: "lint.limit_invalid_value",
+        label: "Invalid LIMIT Value",
+        defaultEnabled: true,
+        defaultSeverity: "error",
+        enabledKey: "lintLimitInvalidValueEnabled",
+        severityKey: "lintLimitInvalidValueSeverity",
+    },
+    {
+        ruleId: "reservedWordIdentifier",
+        configKey: "lint.reserved_word_identifier",
+        label: "Reserved Word Identifier",
+        defaultEnabled: true,
+        defaultSeverity: "warning",
+        enabledKey: "lintReservedWordIdentifierEnabled",
+        severityKey: "lintReservedWordIdentifierSeverity",
+    },
+    {
+        ruleId: "joinMissingOn",
+        configKey: "lint.join_missing_on",
+        label: "JOIN Missing ON",
+        defaultEnabled: true,
+        defaultSeverity: "warning",
+        enabledKey: "lintJoinMissingOnEnabled",
+        severityKey: "lintJoinMissingOnSeverity",
+    },
+    {
+        ruleId: "selectWithoutFrom",
+        configKey: "lint.select_without_from",
+        label: "SELECT Without FROM",
+        defaultEnabled: true,
+        defaultSeverity: "warning",
+        enabledKey: "lintSelectWithoutFromEnabled",
+        severityKey: "lintSelectWithoutFromSeverity",
+    },
+    {
+        ruleId: "misplacedDistinct",
+        configKey: "lint.misplaced_distinct",
+        label: "Misplaced DISTINCT",
+        defaultEnabled: true,
+        defaultSeverity: "error",
+        enabledKey: "lintMisplacedDistinctEnabled",
+        severityKey: "lintMisplacedDistinctSeverity",
+    },
+    {
+        ruleId: "aggregateInWhere",
+        configKey: "lint.aggregate_in_where",
+        label: "Aggregate In WHERE",
+        defaultEnabled: true,
+        defaultSeverity: "error",
+        enabledKey: "lintAggregateInWhereEnabled",
+        severityKey: "lintAggregateInWhereSeverity",
+    },
+    {
+        ruleId: "subqueryWithoutAlias",
+        configKey: "lint.subquery_without_alias",
+        label: "Subquery Without Alias",
+        defaultEnabled: true,
+        defaultSeverity: "warning",
+        enabledKey: "lintSubqueryWithoutAliasEnabled",
+        severityKey: "lintSubqueryWithoutAliasSeverity",
+    },
+    {
+        ruleId: "suspiciousNullComparison",
+        configKey: "lint.suspicious_null_comparison",
+        label: "Suspicious NULL Comparison",
+        defaultEnabled: true,
+        defaultSeverity: "warning",
+        enabledKey: "lintSuspiciousNullComparisonEnabled",
+        severityKey: "lintSuspiciousNullComparisonSeverity",
+    },
+    {
+        ruleId: "incompleteCase",
+        configKey: "lint.incomplete_case",
+        label: "Incomplete CASE",
+        defaultEnabled: true,
+        defaultSeverity: "error",
+        enabledKey: "lintIncompleteCaseEnabled",
+        severityKey: "lintIncompleteCaseSeverity",
+    },
+    {
+        ruleId: "redundantDistinct",
+        configKey: "lint.redundant_distinct",
+        label: "Redundant DISTINCT",
+        defaultEnabled: true,
+        defaultSeverity: "warning",
+        enabledKey: "lintRedundantDistinctEnabled",
+        severityKey: "lintRedundantDistinctSeverity",
+    },
+    {
+        ruleId: "dateFunctionUsage",
+        configKey: "lint.date_function_usage",
+        label: "Date Function Usage",
+        defaultEnabled: true,
+        defaultSeverity: "information",
+        enabledKey: "lintDateFunctionUsageEnabled",
+        severityKey: "lintDateFunctionUsageSeverity",
+    },
+    {
+        ruleId: "wildcardInUpdate",
+        configKey: "lint.wildcard_in_update",
+        label: "Wildcard In UPDATE",
+        defaultEnabled: true,
+        defaultSeverity: "error",
+        enabledKey: "lintWildcardInUpdateEnabled",
+        severityKey: "lintWildcardInUpdateSeverity",
+    },
+];
 
 export const DATABASE_CONFIG_ITEMS: ConfigItemDefinition[] = [
-    { key: 'queryMaxRows', type: 'number', defaultValue: 1000, group: 'query', label: 'Query Max Rows', configKey: 'query.maxRows' },
-    { key: 'queryTimeout', type: 'number', defaultValue: 30000, group: 'query', label: 'Query Timeout', configKey: 'query.timeout' },
-    { key: 'queryPageSize', type: 'number', defaultValue: 100, group: 'query', label: 'Query Page Size', configKey: 'query.pageSize' },
-    { key: 'queryNullPlaceholder', type: 'string', defaultValue: '(NULL)', group: 'query', label: 'Query Null Placeholder', configKey: 'query.nullPlaceholder' },
-    { key: 'safetyGuardLevel', type: 'enum', defaultValue: 'moderate', group: 'safety', label: 'Safety Guard Level', enumValues: ['strict', 'moderate', 'off'], configKey: 'safetyGuard.level' },
-    { key: 'executionBatchMode', type: 'enum', defaultValue: 'sequential', group: 'execution', label: 'Execution Batch Mode', enumValues: ['sequential', 'transaction'], configKey: 'execution.batchMode' },
-    { key: 'executionOnError', type: 'enum', defaultValue: 'stop', group: 'execution', label: 'Execution On Error', enumValues: ['stop', 'continue'], configKey: 'execution.onError' },
-    { key: 'executionSaveProgress', type: 'boolean', defaultValue: true, group: 'execution', label: 'Execution Save Progress', configKey: 'execution.saveProgress' },
-    { key: 'historyMaxEntries', type: 'number', defaultValue: 500, group: 'history', label: 'History Max Entries', configKey: 'history.maxEntries' },
-    { key: 'exportDefaultFormat', type: 'enum', defaultValue: 'csv', group: 'export', label: 'Export Default Format', enumValues: ['csv', 'json', 'insert', 'ddl'], configKey: 'export.defaultFormat' },
-    { key: 'exportCsvDelimiter', type: 'string', defaultValue: ',', group: 'export', label: 'Export CSV Delimiter', configKey: 'export.csvDelimiter' },
-    { key: 'exportCsvEncoding', type: 'string', defaultValue: 'utf-8', group: 'export', label: 'Export CSV Encoding', configKey: 'export.csvEncoding' },
-    { key: 'exportIncludeHeaders', type: 'boolean', defaultValue: true, group: 'export', label: 'Export Include Headers', configKey: 'export.includeHeaders' },
-    { key: 'resultsEnablePreload', type: 'boolean', defaultValue: true, group: 'results', label: 'Results Enable Preload', configKey: 'results.enablePreload' },
-    { key: 'resultsJsonPrettyPrint', type: 'boolean', defaultValue: true, group: 'results', label: 'Results JSON Pretty Print', configKey: 'results.jsonPrettyPrint' },
-    { key: 'resultsDateFormat', type: 'enum', defaultValue: 'local', group: 'results', label: 'Results Date Format', enumValues: ['local', 'utc', 'relative'], configKey: 'results.dateFormat' },
-    { key: 'resultsLongTextThreshold', type: 'number', defaultValue: 200, group: 'results', label: 'Results Long Text Threshold', configKey: 'results.longTextThreshold' },
-    { key: 'dataEditorEditMode', type: 'enum', defaultValue: 'readonly', group: 'dataEditor', label: 'Data Editor Edit Mode', enumValues: ['readonly', 'editable'], configKey: 'dataEditor.editMode' },
-    { key: 'dataEditorAutoCommit', type: 'boolean', defaultValue: true, group: 'dataEditor', label: 'Data Editor Auto Commit', configKey: 'dataEditor.autoCommit' },
-    { key: 'dataEditorDefaultView', type: 'enum', defaultValue: 'grid', group: 'dataEditor', label: 'Data Editor Default View', enumValues: ['grid', 'form'], configKey: 'dataEditor.defaultView' },
-    { key: 'dataEditorEnableValidation', type: 'boolean', defaultValue: true, group: 'dataEditor', label: 'Data Editor Enable Validation', configKey: 'dataEditor.enableValidation' },
-    { key: 'dataEditorValidateOnEdit', type: 'boolean', defaultValue: true, group: 'dataEditor', label: 'Data Editor Validate On Edit', configKey: 'dataEditor.validateOnEdit' },
-    { key: 'dataEditorValidateForeignKeys', type: 'boolean', defaultValue: false, group: 'dataEditor', label: 'Data Editor Validate Foreign Keys', configKey: 'dataEditor.validateForeignKeys' },
-    { key: 'schemaCacheDatabaseTtl', type: 'number', defaultValue: 600, group: 'schemaCache', label: 'Schema Cache Database TTL', configKey: 'schemaCache.databaseTtl' },
-    { key: 'schemaCacheTableTtl', type: 'number', defaultValue: 300, group: 'schemaCache', label: 'Schema Cache Table TTL', configKey: 'schemaCache.tableTtl' },
-    { key: 'schemaCacheColumnTtl', type: 'number', defaultValue: 120, group: 'schemaCache', label: 'Schema Cache Column TTL', configKey: 'schemaCache.columnTtl' },
-    { key: 'schemaCacheFunctionTtl', type: 'number', defaultValue: 600, group: 'schemaCache', label: 'Schema Cache Function TTL', configKey: 'schemaCache.functionTtl' },
-    { key: 'schemaCacheRefreshOnDDL', type: 'boolean', defaultValue: true, group: 'schemaCache', label: 'Schema Cache Refresh On DDL', configKey: 'schemaCache.refreshOnDDL' },
-    { key: 'schemaCachePrefetchOnConnect', type: 'boolean', defaultValue: true, group: 'schemaCache', label: 'Schema Cache Prefetch On Connect', configKey: 'schemaCache.prefetchOnConnect' },
-]
+    { key: "queryMaxRows", type: "number", defaultValue: 1000, group: "query", label: "Query Max Rows", configKey: "query.maxRows" },
+    { key: "queryTimeout", type: "number", defaultValue: 30000, group: "query", label: "Query Timeout", configKey: "query.timeout" },
+    { key: "queryPageSize", type: "number", defaultValue: 100, group: "query", label: "Query Page Size", configKey: "query.pageSize" },
+    {
+        key: "queryNullPlaceholder",
+        type: "string",
+        defaultValue: "(NULL)",
+        group: "query",
+        label: "Query Null Placeholder",
+        configKey: "query.nullPlaceholder",
+    },
+    {
+        key: "safetyGuardLevel",
+        type: "enum",
+        defaultValue: "moderate",
+        group: "safety",
+        label: "Safety Guard Level",
+        enumValues: ["strict", "moderate", "off"],
+        configKey: "safetyGuard.level",
+    },
+    {
+        key: "executionBatchMode",
+        type: "enum",
+        defaultValue: "sequential",
+        group: "execution",
+        label: "Execution Batch Mode",
+        enumValues: ["sequential", "transaction"],
+        configKey: "execution.batchMode",
+    },
+    {
+        key: "executionOnError",
+        type: "enum",
+        defaultValue: "stop",
+        group: "execution",
+        label: "Execution On Error",
+        enumValues: ["stop", "continue"],
+        configKey: "execution.onError",
+    },
+    {
+        key: "executionSaveProgress",
+        type: "boolean",
+        defaultValue: true,
+        group: "execution",
+        label: "Execution Save Progress",
+        configKey: "execution.saveProgress",
+    },
+    {
+        key: "historyMaxEntries",
+        type: "number",
+        defaultValue: 500,
+        group: "history",
+        label: "History Max Entries",
+        configKey: "history.maxEntries",
+    },
+    {
+        key: "exportDefaultFormat",
+        type: "enum",
+        defaultValue: "csv",
+        group: "export",
+        label: "Export Default Format",
+        enumValues: ["csv", "json", "insert", "ddl"],
+        configKey: "export.defaultFormat",
+    },
+    {
+        key: "exportCsvDelimiter",
+        type: "string",
+        defaultValue: ",",
+        group: "export",
+        label: "Export CSV Delimiter",
+        configKey: "export.csvDelimiter",
+    },
+    {
+        key: "exportCsvEncoding",
+        type: "string",
+        defaultValue: "utf-8",
+        group: "export",
+        label: "Export CSV Encoding",
+        configKey: "export.csvEncoding",
+    },
+    {
+        key: "exportIncludeHeaders",
+        type: "boolean",
+        defaultValue: true,
+        group: "export",
+        label: "Export Include Headers",
+        configKey: "export.includeHeaders",
+    },
+    {
+        key: "resultsEnablePreload",
+        type: "boolean",
+        defaultValue: true,
+        group: "results",
+        label: "Results Enable Preload",
+        configKey: "results.enablePreload",
+    },
+    {
+        key: "resultsJsonPrettyPrint",
+        type: "boolean",
+        defaultValue: true,
+        group: "results",
+        label: "Results JSON Pretty Print",
+        configKey: "results.jsonPrettyPrint",
+    },
+    {
+        key: "resultsDateFormat",
+        type: "enum",
+        defaultValue: "local",
+        group: "results",
+        label: "Results Date Format",
+        enumValues: ["local", "utc", "relative"],
+        configKey: "results.dateFormat",
+    },
+    {
+        key: "resultsLongTextThreshold",
+        type: "number",
+        defaultValue: 200,
+        group: "results",
+        label: "Results Long Text Threshold",
+        configKey: "results.longTextThreshold",
+    },
+    {
+        key: "dataEditorEditMode",
+        type: "enum",
+        defaultValue: "readonly",
+        group: "dataEditor",
+        label: "Data Editor Edit Mode",
+        enumValues: ["readonly", "editable"],
+        configKey: "dataEditor.editMode",
+    },
+    {
+        key: "dataEditorAutoCommit",
+        type: "boolean",
+        defaultValue: true,
+        group: "dataEditor",
+        label: "Data Editor Auto Commit",
+        configKey: "dataEditor.autoCommit",
+    },
+    {
+        key: "dataEditorDefaultView",
+        type: "enum",
+        defaultValue: "grid",
+        group: "dataEditor",
+        label: "Data Editor Default View",
+        enumValues: ["grid", "form"],
+        configKey: "dataEditor.defaultView",
+    },
+    {
+        key: "dataEditorEnableValidation",
+        type: "boolean",
+        defaultValue: true,
+        group: "dataEditor",
+        label: "Data Editor Enable Validation",
+        configKey: "dataEditor.enableValidation",
+    },
+    {
+        key: "dataEditorValidateOnEdit",
+        type: "boolean",
+        defaultValue: true,
+        group: "dataEditor",
+        label: "Data Editor Validate On Edit",
+        configKey: "dataEditor.validateOnEdit",
+    },
+    {
+        key: "dataEditorValidateForeignKeys",
+        type: "boolean",
+        defaultValue: false,
+        group: "dataEditor",
+        label: "Data Editor Validate Foreign Keys",
+        configKey: "dataEditor.validateForeignKeys",
+    },
+    {
+        key: "schemaCacheDatabaseTtl",
+        type: "number",
+        defaultValue: 600,
+        group: "schemaCache",
+        label: "Schema Cache Database TTL",
+        configKey: "schemaCache.databaseTtl",
+    },
+    {
+        key: "schemaCacheTableTtl",
+        type: "number",
+        defaultValue: 300,
+        group: "schemaCache",
+        label: "Schema Cache Table TTL",
+        configKey: "schemaCache.tableTtl",
+    },
+    {
+        key: "schemaCacheColumnTtl",
+        type: "number",
+        defaultValue: 120,
+        group: "schemaCache",
+        label: "Schema Cache Column TTL",
+        configKey: "schemaCache.columnTtl",
+    },
+    {
+        key: "schemaCacheFunctionTtl",
+        type: "number",
+        defaultValue: 600,
+        group: "schemaCache",
+        label: "Schema Cache Function TTL",
+        configKey: "schemaCache.functionTtl",
+    },
+    {
+        key: "schemaCacheRefreshOnDDL",
+        type: "boolean",
+        defaultValue: true,
+        group: "schemaCache",
+        label: "Schema Cache Refresh On DDL",
+        configKey: "schemaCache.refreshOnDDL",
+    },
+    {
+        key: "schemaCachePrefetchOnConnect",
+        type: "boolean",
+        defaultValue: true,
+        group: "schemaCache",
+        label: "Schema Cache Prefetch On Connect",
+        configKey: "schemaCache.prefetchOnConnect",
+    },
+];
 
-export const ALL_CONFIG_ITEMS: ConfigItemDefinition[] = [...FORMAT_CONFIG_ITEMS, ...FEATURE_CONFIG_ITEMS, ...DATABASE_CONFIG_ITEMS]
+export const ALL_CONFIG_ITEMS: ConfigItemDefinition[] = [...FORMAT_CONFIG_ITEMS, ...FEATURE_CONFIG_ITEMS, ...DATABASE_CONFIG_ITEMS];
 
 /**
  * Feature-level config keys that influence linter behavior (the master
@@ -193,68 +732,63 @@ export const ALL_CONFIG_ITEMS: ConfigItemDefinition[] = [...FORMAT_CONFIG_ITEMS,
  * truth lives in the config-definitions module rather than being hard-coded
  * inside ConfigManager.
  */
-export const LINT_CONFIG_KEYS: readonly string[] = Object.freeze([
-    'enableLinter',
-    'showErrorLevel',
-    'showWarningLevel',
-    'showInfoLevel',
-])
+export const LINT_CONFIG_KEYS: readonly string[] = Object.freeze(["enableLinter", "showErrorLevel", "showWarningLevel", "showInfoLevel"]);
 
 export function getDefaultConfig(): Record<string, unknown> {
-    const defaults: Record<string, unknown> = {}
+    const defaults: Record<string, unknown> = {};
 
     for (const item of ALL_CONFIG_ITEMS) {
-        defaults[item.key] = item.defaultValue
+        defaults[item.key] = item.defaultValue;
     }
 
     for (const rule of LINT_RULES) {
-        defaults[rule.enabledKey] = rule.defaultEnabled
-        defaults[rule.severityKey] = rule.defaultSeverity
+        defaults[rule.enabledKey] = rule.defaultEnabled;
+        defaults[rule.severityKey] = rule.defaultSeverity;
         if (rule.subOptions) {
             for (const [key, opt] of Object.entries(rule.subOptions)) {
-                defaults[key] = opt.default
+                defaults[key] = opt.default;
             }
         }
     }
 
-    return defaults
+    return defaults;
 }
 
 export function getConfigKey(item: ConfigItemDefinition): string {
-    return item.configKey ?? item.key
+    return item.configKey ?? item.key;
 }
 
 const FORMATTER_ONLY_DEFAULTS: Record<string, unknown> = {
     tabWidth: 4,
     useTabs: false,
-}
+};
 
-const SKIP_FORMATTER_KEYS = new Set(['dialect'])
+const SKIP_FORMATTER_KEYS = new Set(["dialect"]);
 
 export function getFormatterDefaultOptions(): Record<string, unknown> {
-    const defaults: Record<string, unknown> = { ...FORMATTER_ONLY_DEFAULTS }
+    const defaults: Record<string, unknown> = { ...FORMATTER_ONLY_DEFAULTS };
     for (const item of FORMAT_CONFIG_ITEMS) {
         if (!SKIP_FORMATTER_KEYS.has(item.key)) {
-            defaults[item.key] = item.defaultValue
+            defaults[item.key] = item.defaultValue;
         }
     }
-    return defaults
+    return defaults;
 }
 
 export function getFormatterConfigKeys(): string[] {
-    return FORMAT_CONFIG_ITEMS
-        .filter(item => !SKIP_FORMATTER_KEYS.has(item.key))
-        .map(item => item.key)
+    return FORMAT_CONFIG_ITEMS.filter((item) => !SKIP_FORMATTER_KEYS.has(item.key)).map((item) => item.key);
 }
 
 export function validateConfigConsistency(formatterDefaults: Record<string, unknown>): string[] {
-    const mismatches: string[] = []
+    const mismatches: string[] = [];
     for (const item of FORMAT_CONFIG_ITEMS) {
-        if (SKIP_FORMATTER_KEYS.has(item.key)) continue
-        const formatterValue = formatterDefaults[item.key]
+        if (SKIP_FORMATTER_KEYS.has(item.key)) continue;
+        const formatterValue = formatterDefaults[item.key];
         if (formatterValue !== undefined && formatterValue !== item.defaultValue) {
-            mismatches.push(`Key '${item.key}': configDefinitions has ${JSON.stringify(item.defaultValue)}, formatter has ${JSON.stringify(formatterValue)}`)
+            mismatches.push(
+                `Key '${item.key}': configDefinitions has ${JSON.stringify(item.defaultValue)}, formatter has ${JSON.stringify(formatterValue)}`,
+            );
         }
     }
-    return mismatches
+    return mismatches;
 }

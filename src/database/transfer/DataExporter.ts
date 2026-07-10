@@ -1,9 +1,9 @@
-import * as vscode from 'vscode';
-import * as fs from 'fs';
-import { ColumnMeta, QueryRow } from '../adapters/IDatabaseAdapter';
-import type { DatabaseAdapter } from '../adapters/AdapterFactory';
-import { t } from '../../i18n/index';
-import { formatSqlValue } from './sqlFormatUtils';
+import * as vscode from "vscode";
+import * as fs from "fs";
+import { ColumnMeta, QueryRow } from "../adapters/IDatabaseAdapter";
+import type { DatabaseAdapter } from "../adapters/AdapterFactory";
+import { t } from "../../i18n/index";
+import { formatSqlValue } from "./sqlFormatUtils";
 
 export interface CsvExportOptions {
     delimiter?: string;
@@ -21,14 +21,14 @@ export interface InsertExportOptions {
 
 export class DataExporter {
     async exportToCsv(rows: QueryRow[], columns: ColumnMeta[], options?: CsvExportOptions): Promise<void> {
-        const config = vscode.workspace.getConfiguration('SQL-All-in-One');
-        const delimiter = options?.delimiter ?? config.get<string>('export.csvDelimiter', ',');
-        const encoding = options?.encoding ?? config.get<string>('export.csvEncoding', 'utf-8');
-        const includeHeaders = options?.includeHeaders ?? config.get<boolean>('export.includeHeaders', true);
+        const config = vscode.workspace.getConfiguration("SQL-All-in-One");
+        const delimiter = options?.delimiter ?? config.get<string>("export.csvDelimiter", ",");
+        const encoding = options?.encoding ?? config.get<string>("export.csvEncoding", "utf-8");
+        const includeHeaders = options?.includeHeaders ?? config.get<boolean>("export.includeHeaders", true);
 
         const uri = await vscode.window.showSaveDialog({
-            filters: { 'CSV Files': ['csv'] },
-            defaultUri: vscode.Uri.file('export.csv'),
+            filters: { "CSV Files": ["csv"] },
+            defaultUri: vscode.Uri.file("export.csv"),
         });
 
         if (!uri) {
@@ -39,22 +39,22 @@ export class DataExporter {
 
         try {
             if (includeHeaders) {
-                stream.write(columns.map((col) => this.escapeCsvField(col.name, delimiter)).join(delimiter) + '\n');
+                stream.write(columns.map((col) => this.escapeCsvField(col.name, delimiter)).join(delimiter) + "\n");
             }
 
             for (const row of rows) {
                 const values = columns.map((col) => {
                     const value = row[col.name];
                     if (value === null || value === undefined) {
-                        return '';
+                        return "";
                     }
                     return this.escapeCsvField(String(value), delimiter);
                 });
-                stream.write(values.join(delimiter) + '\n');
+                stream.write(values.join(delimiter) + "\n");
             }
 
             await this.finishStream(stream);
-            vscode.window.setStatusBarMessage(t('database.exportCompleted'), 3000);
+            vscode.window.setStatusBarMessage(t("database.exportCompleted"), 3000);
         } catch (error) {
             stream.destroy();
             throw error;
@@ -62,23 +62,23 @@ export class DataExporter {
     }
 
     async exportToJson(rows: QueryRow[], columns: ColumnMeta[], options?: JsonExportOptions): Promise<void> {
-        const config = vscode.workspace.getConfiguration('SQL-All-in-One');
-        const prettyPrint = options?.prettyPrint ?? config.get<boolean>('export.jsonPrettyPrint', true);
+        const config = vscode.workspace.getConfiguration("SQL-All-in-One");
+        const prettyPrint = options?.prettyPrint ?? config.get<boolean>("export.jsonPrettyPrint", true);
 
         const uri = await vscode.window.showSaveDialog({
-            filters: { 'JSON Files': ['json'] },
-            defaultUri: vscode.Uri.file('export.json'),
+            filters: { "JSON Files": ["json"] },
+            defaultUri: vscode.Uri.file("export.json"),
         });
 
         if (!uri) {
             return;
         }
 
-        const stream = fs.createWriteStream(uri.fsPath, 'utf-8');
+        const stream = fs.createWriteStream(uri.fsPath, "utf-8");
         const indent = prettyPrint ? 2 : 0;
 
         try {
-            stream.write('[\n');
+            stream.write("[\n");
 
             for (let i = 0; i < rows.length; i++) {
                 const obj: Record<string, unknown> = {};
@@ -87,48 +87,56 @@ export class DataExporter {
                     obj[col.name] = this.convertJsonValue(value);
                 }
                 const jsonStr = JSON.stringify(obj, null, indent > 0 ? indent : undefined);
-                const suffix = i < rows.length - 1 ? ',' : '';
-                stream.write((i > 0 ? '\n' : '') + jsonStr + suffix);
+                const suffix = i < rows.length - 1 ? "," : "";
+                stream.write((i > 0 ? "\n" : "") + jsonStr + suffix);
             }
 
-            stream.write('\n]');
+            stream.write("\n]");
 
             await this.finishStream(stream);
-            vscode.window.setStatusBarMessage(t('database.exportCompleted'), 3000);
+            vscode.window.setStatusBarMessage(t("database.exportCompleted"), 3000);
         } catch (error) {
             stream.destroy();
             throw error;
         }
     }
 
-    async exportToInsert(rows: QueryRow[], columns: ColumnMeta[], tableName: string, options?: InsertExportOptions, adapter?: DatabaseAdapter): Promise<void> {
+    async exportToInsert(
+        rows: QueryRow[],
+        columns: ColumnMeta[],
+        tableName: string,
+        options?: InsertExportOptions,
+        adapter?: DatabaseAdapter,
+    ): Promise<void> {
         const batchSize = options?.batchSize ?? 1;
 
         const uri = await vscode.window.showSaveDialog({
-            filters: { 'SQL Files': ['sql'] },
-            defaultUri: vscode.Uri.file('export.sql'),
+            filters: { "SQL Files": ["sql"] },
+            defaultUri: vscode.Uri.file("export.sql"),
         });
 
         if (!uri) {
             return;
         }
 
-        const q = adapter ? adapter.schemaAdapter.quoteIdentifier.bind(adapter.schemaAdapter) : ((id: string): string => '`' + id.replace(/`/g, '``') + '`');
-        const columnNames = columns.map((col) => q(col.name)).join(', ');
-        const stream = fs.createWriteStream(uri.fsPath, 'utf-8');
+        const q = adapter
+            ? adapter.schemaAdapter.quoteIdentifier.bind(adapter.schemaAdapter)
+            : (id: string): string => "`" + id.replace(/`/g, "``") + "`";
+        const columnNames = columns.map((col) => q(col.name)).join(", ");
+        const stream = fs.createWriteStream(uri.fsPath, "utf-8");
 
         try {
             for (let i = 0; i < rows.length; i += batchSize) {
                 const batch = rows.slice(i, i + batchSize);
                 const valueGroups = batch.map((row) => {
                     const values = columns.map((col) => formatSqlValue(row[col.name]));
-                    return `(${values.join(', ')})`;
+                    return `(${values.join(", ")})`;
                 });
-                stream.write(`INSERT INTO ${q(tableName)} (${columnNames}) VALUES ${valueGroups.join(', ')};\n`);
+                stream.write(`INSERT INTO ${q(tableName)} (${columnNames}) VALUES ${valueGroups.join(", ")};\n`);
             }
 
             await this.finishStream(stream);
-            vscode.window.setStatusBarMessage(t('database.exportCompleted'), 3000);
+            vscode.window.setStatusBarMessage(t("database.exportCompleted"), 3000);
         } catch (error) {
             stream.destroy();
             throw error;
@@ -137,7 +145,7 @@ export class DataExporter {
 
     async exportToDdl(adapter: DatabaseAdapter, database: string, table: string): Promise<void> {
         const uri = await vscode.window.showSaveDialog({
-            filters: { 'SQL Files': ['sql'] },
+            filters: { "SQL Files": ["sql"] },
             defaultUri: vscode.Uri.file(`${table}.sql`),
         });
 
@@ -146,12 +154,12 @@ export class DataExporter {
         }
 
         const ddl = await adapter.schemaAdapter.getTableDDL(database, table);
-        await fs.promises.writeFile(uri.fsPath, ddl, 'utf-8');
-        vscode.window.setStatusBarMessage(t('database.exportCompleted'), 3000);
+        await fs.promises.writeFile(uri.fsPath, ddl, "utf-8");
+        vscode.window.setStatusBarMessage(t("database.exportCompleted"), 3000);
     }
 
     async exportToExcel(): Promise<void> {
-        throw new Error(t('database.excelNotAvailable'));
+        throw new Error(t("database.excelNotAvailable"));
     }
 
     /**
@@ -163,13 +171,13 @@ export class DataExporter {
      */
     private finishStream(stream: fs.WriteStream): Promise<void> {
         return new Promise<void>((resolve, reject) => {
-            stream.on('error', reject);
+            stream.on("error", reject);
             stream.end(() => resolve());
         });
     }
 
     private escapeCsvField(value: string, delimiter: string): string {
-        if (value.includes(delimiter) || value.includes('\n') || value.includes('"')) {
+        if (value.includes(delimiter) || value.includes("\n") || value.includes('"')) {
             return '"' + value.replace(/"/g, '""') + '"';
         }
         return value;
@@ -183,12 +191,11 @@ export class DataExporter {
             return value.toISOString();
         }
         if (Buffer.isBuffer(value)) {
-            return value.toString('base64');
+            return value.toString("base64");
         }
         if (ArrayBuffer.isView(value) && !(value instanceof DataView)) {
-            return Buffer.from(value.buffer, value.byteOffset, value.byteLength).toString('base64');
+            return Buffer.from(value.buffer, value.byteOffset, value.byteLength).toString("base64");
         }
         return value;
     }
-
 }

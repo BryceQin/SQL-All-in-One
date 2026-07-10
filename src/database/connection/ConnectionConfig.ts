@@ -11,7 +11,7 @@ export interface SshConfig {
     host?: string;
     port?: number;
     username?: string;
-    authentication?: 'password' | 'privateKey';
+    authentication?: "password" | "privateKey";
     password?: string;
     privateKey?: string;
     passphrase?: string;
@@ -50,7 +50,7 @@ export interface ConnectionGroup {
     color: string;
 }
 
-export type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'error';
+export type ConnectionState = "disconnected" | "connecting" | "connected" | "error";
 
 export interface TestConnectionResult {
     success: boolean;

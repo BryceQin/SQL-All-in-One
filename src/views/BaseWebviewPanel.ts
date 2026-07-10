@@ -1,8 +1,8 @@
-import * as vscode from 'vscode';
-import * as crypto from 'crypto';
-import * as fs from 'fs';
-import * as path from 'path';
-import { handleError, ErrorCategory } from '../core/errorHandler';
+import * as vscode from "vscode";
+import * as crypto from "crypto";
+import * as fs from "fs";
+import * as path from "path";
+import { handleError, ErrorCategory } from "../core/errorHandler";
 
 export interface WebviewPanelConfig {
     viewType: string;
@@ -91,25 +91,18 @@ export abstract class BaseWebviewPanel implements vscode.Disposable {
         options?: {
             viewColumn?: vscode.ViewColumn;
             additionalResourceRoots?: vscode.Uri[];
-        }
+        },
     ): vscode.WebviewPanel {
-        const resourceRoots = [
-            vscode.Uri.joinPath(extensionUri, 'media'),
-        ];
+        const resourceRoots = [vscode.Uri.joinPath(extensionUri, "media")];
         if (options?.additionalResourceRoots) {
             resourceRoots.push(...options.additionalResourceRoots);
         }
 
-        return vscode.window.createWebviewPanel(
-            viewType,
-            title,
-            options?.viewColumn ?? vscode.ViewColumn.Two,
-            {
-                enableScripts: true,
-                localResourceRoots: resourceRoots,
-                retainContextWhenHidden: this.shouldRetainContextWhenHidden(),
-            }
-        );
+        return vscode.window.createWebviewPanel(viewType, title, options?.viewColumn ?? vscode.ViewColumn.Two, {
+            enableScripts: true,
+            localResourceRoots: resourceRoots,
+            retainContextWhenHidden: this.shouldRetainContextWhenHidden(),
+        });
     }
 
     protected async loadHtml(injections?: { placeholder: string; value: string }[]): Promise<string> {
@@ -119,26 +112,18 @@ export abstract class BaseWebviewPanel implements vscode.Disposable {
 
         try {
             const cfg = this.panelConfig;
-            const htmlPath = path.join(this._extensionUri.fsPath, 'media', cfg.htmlFileName);
-            let html = await fs.promises.readFile(htmlPath, 'utf-8');
+            const htmlPath = path.join(this._extensionUri.fsPath, "media", cfg.htmlFileName);
+            let html = await fs.promises.readFile(htmlPath, "utf-8");
 
-            const cssUri = this._panel.webview.asWebviewUri(
-                vscode.Uri.joinPath(this._extensionUri, 'media', cfg.cssFileName)
-            );
-            const sharedCssUri = this._panel.webview.asWebviewUri(
-                vscode.Uri.joinPath(this._extensionUri, 'media', 'shared.css')
-            );
-            const sharedJsUri = this._panel.webview.asWebviewUri(
-                vscode.Uri.joinPath(this._extensionUri, 'media', 'shared.js')
-            );
-            const jsUri = this._panel.webview.asWebviewUri(
-                vscode.Uri.joinPath(this._extensionUri, 'media', cfg.jsFileName)
-            );
+            const cssUri = this._panel.webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, "media", cfg.cssFileName));
+            const sharedCssUri = this._panel.webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, "media", "shared.css"));
+            const sharedJsUri = this._panel.webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, "media", "shared.js"));
+            const jsUri = this._panel.webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, "media", cfg.jsFileName));
 
-            html = html.replace('{{SHARED_CSS_URI}}', sharedCssUri.toString());
-            html = html.replace('{{CSS_URI}}', cssUri.toString());
-            html = html.replace('{{SHARED_JS_URI}}', sharedJsUri.toString());
-            html = html.replace('{{JS_URI}}', jsUri.toString());
+            html = html.replace("{{SHARED_CSS_URI}}", sharedCssUri.toString());
+            html = html.replace("{{CSS_URI}}", cssUri.toString());
+            html = html.replace("{{SHARED_JS_URI}}", sharedJsUri.toString());
+            html = html.replace("{{JS_URI}}", jsUri.toString());
             html = html.replace(/\{\{CSP_SOURCE\}\}/g, this._panel.webview.cspSource);
 
             const nonce = crypto.randomUUID();
@@ -155,7 +140,7 @@ export abstract class BaseWebviewPanel implements vscode.Disposable {
             this._cachedHtml = html;
             return html;
         } catch (error) {
-            handleError(error, 'BaseWebviewPanel.loadHtml', ErrorCategory.CRITICAL);
+            handleError(error, "BaseWebviewPanel.loadHtml", ErrorCategory.CRITICAL);
             return `<html><body><h2>Failed to load panel</h2><p>Please reinstall the extension.</p></body></html>`;
         }
     }
@@ -181,14 +166,12 @@ export abstract class BaseWebviewPanel implements vscode.Disposable {
             this._panel.webview.postMessage(message);
         } catch (e) {
             // Webview may be disposed between the check and the call
-            handleError(e, 'BaseWebviewPanel.postMessage', ErrorCategory.SUB_ITEM)
+            handleError(e, "BaseWebviewPanel.postMessage", ErrorCategory.SUB_ITEM);
         }
     }
 
     protected onDidReceiveMessage(handler: (message: unknown) => void | Promise<void>): void {
-        this._disposables.push(
-            this._panel.webview.onDidReceiveMessage(handler, null, this._disposables)
-        );
+        this._disposables.push(this._panel.webview.onDidReceiveMessage(handler, null, this._disposables));
     }
 
     protected invalidateHtmlCache(): void {
@@ -213,7 +196,7 @@ export abstract class BaseWebviewPanel implements vscode.Disposable {
             } catch (e) {
                 // Isolate failures: a single disposable throwing should not
                 // prevent the remaining disposables from being released.
-                handleError(e, 'BaseWebviewPanel.dispose', ErrorCategory.SUB_ITEM);
+                handleError(e, "BaseWebviewPanel.dispose", ErrorCategory.SUB_ITEM);
             }
         }
         this._cachedHtml = undefined;

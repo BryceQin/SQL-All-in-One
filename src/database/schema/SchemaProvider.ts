@@ -1,30 +1,30 @@
-import * as vscode from 'vscode';
-import { getSchemaCache } from './SchemaCache';
-import { getConnectionManager } from '../connection/ConnectionManager';
-import { getParserEngine } from '../../parser/SqlParserEngine';
-import type { SqlDialect } from '../../parser/dialectMapper';
-import type { ColumnInfo } from '../adapters/IDatabaseAdapter';
-import { isAstNode } from '../../parser/AstVisitor';
-import type { AstNode } from '../../parser/astTypes';
-import type { AST } from 'node-sql-parser';
-import { handleError, ErrorCategory } from '../../core/errorHandler';
-import { getContainer, Tokens } from '../../core/diContainer';
-import { MruTracker } from './MruTracker';
-import { HoverInfoProvider } from './HoverInfoProvider';
+import * as vscode from "vscode";
+import { getSchemaCache } from "./SchemaCache";
+import { getConnectionManager } from "../connection/ConnectionManager";
+import { getParserEngine } from "../../parser/SqlParserEngine";
+import type { SqlDialect } from "../../parser/dialectMapper";
+import type { ColumnInfo } from "../adapters/IDatabaseAdapter";
+import { isAstNode } from "../../parser/AstVisitor";
+import type { AstNode } from "../../parser/astTypes";
+import type { AST } from "node-sql-parser";
+import { handleError, ErrorCategory } from "../../core/errorHandler";
+import { getContainer, Tokens } from "../../core/diContainer";
+import { MruTracker } from "./MruTracker";
+import { HoverInfoProvider } from "./HoverInfoProvider";
 
 export type ClauseType =
-    | 'USE'
-    | 'FROM'
-    | 'JOIN'
-    | 'SELECT'
-    | 'WHERE'
-    | 'ORDER BY'
-    | 'GROUP BY'
-    | 'HAVING'
-    | 'INSERT INTO'
-    | 'UPDATE'
-    | 'CALL'
-    | 'OTHER';
+    | "USE"
+    | "FROM"
+    | "JOIN"
+    | "SELECT"
+    | "WHERE"
+    | "ORDER BY"
+    | "GROUP BY"
+    | "HAVING"
+    | "INSERT INTO"
+    | "UPDATE"
+    | "CALL"
+    | "OTHER";
 
 export interface CompletionContext {
     connectionId: string;
@@ -41,7 +41,7 @@ export interface CompletionContext {
  * that should not produce side effects).
  */
 export interface SchemaMruData {
-    type: 'database' | 'table' | 'column';
+    type: "database" | "table" | "column";
     key: string;
 }
 
@@ -61,7 +61,7 @@ function setMruData(item: vscode.CompletionItem, data: SchemaMruData): void {
  */
 function getMruData(item: vscode.CompletionItem): SchemaMruData | undefined {
     const data = (item as vscode.CompletionItem & { data?: unknown }).data;
-    if (data && typeof data === 'object' && 'type' in data && 'key' in data) {
+    if (data && typeof data === "object" && "type" in data && "key" in data) {
         return data as SchemaMruData;
     }
     return undefined;
@@ -92,28 +92,28 @@ export class SchemaProvider {
         const prefix = context.prefix.toLowerCase();
 
         switch (context.clauseType) {
-            case 'USE':
+            case "USE":
                 await this.addDatabaseItems(items, context.connectionId, prefix);
                 break;
-            case 'FROM':
-            case 'JOIN':
-            case 'INSERT INTO':
-            case 'UPDATE':
+            case "FROM":
+            case "JOIN":
+            case "INSERT INTO":
+            case "UPDATE":
                 await this.addTableItems(items, context);
                 await this.addViewItems(items, context);
                 break;
-            case 'SELECT':
-            case 'WHERE':
-            case 'ORDER BY':
-            case 'GROUP BY':
-            case 'HAVING':
+            case "SELECT":
+            case "WHERE":
+            case "ORDER BY":
+            case "GROUP BY":
+            case "HAVING":
                 await this.addColumnItems(items, context);
                 await this.addFunctionItems(items, context);
                 break;
-            case 'CALL':
+            case "CALL":
                 await this.addProcedureItems(items, context);
                 break;
-            case 'OTHER':
+            case "OTHER":
                 await this.addFunctionItems(items, context);
                 break;
         }
@@ -127,7 +127,7 @@ export class SchemaProvider {
         try {
             return await this.schemaCache.getColumns(activeConn.id, database, table);
         } catch (e) {
-            console.debug('[SQL All in One] SchemaProvider.getTableColumns failed:', e)
+            console.debug("[SQL All in One] SchemaProvider.getTableColumns failed:", e);
             return [];
         }
     }
@@ -160,15 +160,15 @@ export class SchemaProvider {
     }
 
     private collectAliasesFromNode(node: AstNode, aliasMap: Map<string, string>): void {
-        if (node.type === 'select') {
+        if (node.type === "select") {
             const from = node.from;
             if (Array.isArray(from)) {
                 for (const entry of from) {
-                    if (entry == null || typeof entry !== 'object') continue;
+                    if (entry == null || typeof entry !== "object") continue;
                     const fromEntry = entry as Record<string, unknown>;
                     const table = fromEntry.table;
                     const as = fromEntry.as || fromEntry.alias;
-                    if (typeof table === 'string' && typeof as === 'string') {
+                    if (typeof table === "string" && typeof as === "string") {
                         aliasMap.set(as.toLowerCase(), table);
                     }
                 }
@@ -182,37 +182,41 @@ export class SchemaProvider {
             for (const db of databases) {
                 if (prefix && !db.name.toLowerCase().startsWith(prefix)) continue;
                 const item = new vscode.CompletionItem(db.name, vscode.CompletionItemKind.Module);
-                item.detail = 'Database';
+                item.detail = "Database";
                 if (db.charset || db.collation) {
                     const parts: string[] = [];
                     if (db.charset) parts.push(`Charset: ${db.charset}`);
                     if (db.collation) parts.push(`Collation: ${db.collation}`);
-                    item.documentation = new vscode.MarkdownString(parts.join(' | '));
+                    item.documentation = new vscode.MarkdownString(parts.join(" | "));
                 }
                 item.sortText = `0${db.name}`;
-                setMruData(item, { type: 'database', key: db.name.toLowerCase() });
+                setMruData(item, { type: "database", key: db.name.toLowerCase() });
                 items.push(item);
             }
-        } catch (e) { handleError(e, 'SchemaProvider.addDatabaseItems', ErrorCategory.FEATURE); }
+        } catch (e) {
+            handleError(e, "SchemaProvider.addDatabaseItems", ErrorCategory.FEATURE);
+        }
     }
 
     private async addTableItems(items: vscode.CompletionItem[], context: CompletionContext): Promise<void> {
         try {
             const tables = await this.schemaCache.getTables(context.connectionId, context.database);
             for (const tbl of tables) {
-                if (tbl.type && tbl.type.toUpperCase() === 'VIEW') continue;
+                if (tbl.type && tbl.type.toUpperCase() === "VIEW") continue;
                 if (context.prefix && !tbl.name.toLowerCase().startsWith(context.prefix.toLowerCase())) continue;
                 const item = new vscode.CompletionItem(tbl.name, vscode.CompletionItemKind.Class);
-                const rowCountStr = tbl.rowCount !== undefined ? ` · ${tbl.rowCount} rows` : '';
+                const rowCountStr = tbl.rowCount !== undefined ? ` · ${tbl.rowCount} rows` : "";
                 item.detail = `Table${rowCountStr}`;
                 if (tbl.comment) {
                     item.documentation = new vscode.MarkdownString(tbl.comment);
                 }
                 item.sortText = `0${tbl.name}`;
-                setMruData(item, { type: 'table', key: tbl.name.toLowerCase() });
+                setMruData(item, { type: "table", key: tbl.name.toLowerCase() });
                 items.push(item);
             }
-        } catch (e) { handleError(e, 'SchemaProvider.addTableItems', ErrorCategory.FEATURE); }
+        } catch (e) {
+            handleError(e, "SchemaProvider.addTableItems", ErrorCategory.FEATURE);
+        }
     }
 
     private async addViewItems(items: vscode.CompletionItem[], context: CompletionContext): Promise<void> {
@@ -221,20 +225,22 @@ export class SchemaProvider {
             for (const view of views) {
                 if (context.prefix && !view.name.toLowerCase().startsWith(context.prefix.toLowerCase())) continue;
                 const item = new vscode.CompletionItem(view.name, vscode.CompletionItemKind.Struct);
-                item.detail = 'View';
+                item.detail = "View";
                 const docParts: string[] = [];
                 if (view.comment) docParts.push(view.comment);
                 if (view.definition) {
-                    const summary = view.definition.length > 100 ? view.definition.substring(0, 100) + '...' : view.definition;
+                    const summary = view.definition.length > 100 ? view.definition.substring(0, 100) + "..." : view.definition;
                     docParts.push(summary);
                 }
                 if (docParts.length > 0) {
-                    item.documentation = new vscode.MarkdownString(docParts.join('\n\n'));
+                    item.documentation = new vscode.MarkdownString(docParts.join("\n\n"));
                 }
                 item.sortText = `1${view.name}`;
                 items.push(item);
             }
-        } catch (e) { handleError(e, 'SchemaProvider.addViewItems', ErrorCategory.FEATURE); }
+        } catch (e) {
+            handleError(e, "SchemaProvider.addViewItems", ErrorCategory.FEATURE);
+        }
     }
 
     private async addColumnItems(items: vscode.CompletionItem[], context: CompletionContext): Promise<void> {
@@ -242,8 +248,8 @@ export class SchemaProvider {
             const tables = await this.schemaCache.getTables(context.connectionId, context.database);
             const prefix = context.prefix.toLowerCase();
 
-            if (prefix.includes('.')) {
-                const dotIndex = prefix.indexOf('.');
+            if (prefix.includes(".")) {
+                const dotIndex = prefix.indexOf(".");
                 const aliasPart = prefix.substring(0, dotIndex);
                 const colPrefix = prefix.substring(dotIndex + 1);
                 const tableName = this.resolveAlias(aliasPart, context.aliasMap);
@@ -259,8 +265,12 @@ export class SchemaProvider {
                 // 10-table join does not trigger 10 concurrent column-fetch
                 // queries against the database.
                 await this.parallelWithLimit(
-                    Array.from(aliasMap.values()).map((tableName): (() => Promise<void>) => () => this.addColumnsForTable(items, context, tableName, prefix)),
-                    3
+                    Array.from(aliasMap.values()).map(
+                        (tableName): (() => Promise<void>) =>
+                            () =>
+                                this.addColumnsForTable(items, context, tableName, prefix),
+                    ),
+                    3,
                 );
             } else {
                 // No alias map: fall back to scanning a bounded number of
@@ -269,11 +279,17 @@ export class SchemaProvider {
                 // then cap at 10 to bound the number of CompletionItems.
                 const limitedTables = this.rankTablesByMru(tables).slice(0, 10);
                 await this.parallelWithLimit(
-                    limitedTables.map((tbl): (() => Promise<void>) => () => this.addColumnsForTable(items, context, tbl.name, prefix)),
-                    3
+                    limitedTables.map(
+                        (tbl): (() => Promise<void>) =>
+                            () =>
+                                this.addColumnsForTable(items, context, tbl.name, prefix),
+                    ),
+                    3,
                 );
             }
-        } catch (e) { handleError(e, 'SchemaProvider.addColumnItems', ErrorCategory.FEATURE); }
+        } catch (e) {
+            handleError(e, "SchemaProvider.addColumnItems", ErrorCategory.FEATURE);
+        }
     }
 
     /**
@@ -296,9 +312,7 @@ export class SchemaProvider {
 
         const indexed = tables.map((tbl) => ({
             tbl,
-            rank: recencyRank.has(tbl.name.toLowerCase())
-                ? recencyRank.get(tbl.name.toLowerCase())!
-                : Number.MAX_SAFE_INTEGER,
+            rank: recencyRank.has(tbl.name.toLowerCase()) ? recencyRank.get(tbl.name.toLowerCase())! : Number.MAX_SAFE_INTEGER,
         }));
 
         // MRU tables sorted by recency (ascending rank); stable for ties.
@@ -308,9 +322,7 @@ export class SchemaProvider {
             .map((entry) => entry.tbl);
 
         // Non-MRU tables preserve original schema order.
-        const nonMruTables = indexed
-            .filter((entry) => entry.rank === Number.MAX_SAFE_INTEGER)
-            .map((entry) => entry.tbl);
+        const nonMruTables = indexed.filter((entry) => entry.rank === Number.MAX_SAFE_INTEGER).map((entry) => entry.tbl);
 
         return [...mruTables, ...nonMruTables];
     }
@@ -319,29 +331,31 @@ export class SchemaProvider {
         items: vscode.CompletionItem[],
         context: CompletionContext,
         tableName: string,
-        prefix: string
+        prefix: string,
     ): Promise<void> {
         try {
             const columns = await this.schemaCache.getColumns(context.connectionId, context.database, tableName);
             for (const col of columns) {
                 if (prefix && !col.name.toLowerCase().startsWith(prefix)) continue;
                 const item = new vscode.CompletionItem(col.name, vscode.CompletionItemKind.Field);
-                const pkStr = col.isPrimaryKey ? ' · PK' : '';
+                const pkStr = col.isPrimaryKey ? " · PK" : "";
                 item.detail = `${col.type}${pkStr}`;
                 const docParts: string[] = [];
-                if (col.nullable) docParts.push('Nullable');
+                if (col.nullable) docParts.push("Nullable");
                 if (col.defaultValue !== undefined) docParts.push(`Default: ${col.defaultValue}`);
                 if (col.comment) docParts.push(col.comment);
                 if (docParts.length > 0) {
-                    item.documentation = new vscode.MarkdownString(docParts.join(' | '));
+                    item.documentation = new vscode.MarkdownString(docParts.join(" | "));
                 }
-                const pkSort = col.isPrimaryKey ? '0' : '1';
-                const mruSort = this.mruTracker.isInMru(`${tableName}.${col.name}`.toLowerCase()) ? '0' : '1';
+                const pkSort = col.isPrimaryKey ? "0" : "1";
+                const mruSort = this.mruTracker.isInMru(`${tableName}.${col.name}`.toLowerCase()) ? "0" : "1";
                 item.sortText = `${mruSort}${pkSort}${col.name}`;
-                setMruData(item, { type: 'column', key: `${tableName}.${col.name}`.toLowerCase() });
+                setMruData(item, { type: "column", key: `${tableName}.${col.name}`.toLowerCase() });
                 items.push(item);
             }
-        } catch (e) { handleError(e, 'SchemaProvider.addColumnsForTable', ErrorCategory.FEATURE); }
+        } catch (e) {
+            handleError(e, "SchemaProvider.addColumnsForTable", ErrorCategory.FEATURE);
+        }
     }
 
     private async addProcedureItems(items: vscode.CompletionItem[], context: CompletionContext): Promise<void> {
@@ -350,15 +364,17 @@ export class SchemaProvider {
             for (const proc of procedures) {
                 if (context.prefix && !proc.name.toLowerCase().startsWith(context.prefix.toLowerCase())) continue;
                 const item = new vscode.CompletionItem(proc.name, vscode.CompletionItemKind.Method);
-                item.detail = 'PROCEDURE';
+                item.detail = "PROCEDURE";
                 if (proc.definition) {
-                    const summary = proc.definition.length > 100 ? proc.definition.substring(0, 100) + '...' : proc.definition;
+                    const summary = proc.definition.length > 100 ? proc.definition.substring(0, 100) + "..." : proc.definition;
                     item.documentation = new vscode.MarkdownString(summary);
                 }
                 item.sortText = `0${proc.name}`;
                 items.push(item);
             }
-        } catch (e) { handleError(e, 'SchemaProvider.addProcedureItems', ErrorCategory.FEATURE); }
+        } catch (e) {
+            handleError(e, "SchemaProvider.addProcedureItems", ErrorCategory.FEATURE);
+        }
     }
 
     private async addFunctionItems(items: vscode.CompletionItem[], context: CompletionContext): Promise<void> {
@@ -367,23 +383,25 @@ export class SchemaProvider {
             for (const fn of functions) {
                 if (context.prefix && !fn.name.toLowerCase().startsWith(context.prefix.toLowerCase())) continue;
                 const item = new vscode.CompletionItem(fn.name, vscode.CompletionItemKind.Function);
-                const returnStr = fn.returns ? ` → ${fn.returns}` : '';
+                const returnStr = fn.returns ? ` → ${fn.returns}` : "";
                 item.detail = `FUNCTION${returnStr}`;
                 if (fn.definition) {
-                    const summary = fn.definition.length > 100 ? fn.definition.substring(0, 100) + '...' : fn.definition;
+                    const summary = fn.definition.length > 100 ? fn.definition.substring(0, 100) + "..." : fn.definition;
                     item.documentation = new vscode.MarkdownString(summary);
                 }
                 item.sortText = `2${fn.name}`;
                 items.push(item);
             }
-        } catch (e) { handleError(e, 'SchemaProvider.addFunctionItems', ErrorCategory.FEATURE); }
+        } catch (e) {
+            handleError(e, "SchemaProvider.addFunctionItems", ErrorCategory.FEATURE);
+        }
     }
 
     private sortAndTruncate(items: vscode.CompletionItem[], prefix: string): vscode.CompletionItem[] {
         const lowerPrefix = prefix.toLowerCase();
         items.sort((a, b) => {
-            const aLabel = typeof a.label === 'string' ? a.label : a.label.label;
-            const bLabel = typeof b.label === 'string' ? b.label : b.label.label;
+            const aLabel = typeof a.label === "string" ? a.label : a.label.label;
+            const bLabel = typeof b.label === "string" ? b.label : b.label.label;
             const aLower = aLabel.toLowerCase();
             const bLower = bLabel.toLowerCase();
 
@@ -406,9 +424,12 @@ export class SchemaProvider {
         if (items.length > MAX_ITEMS) {
             const remaining = items.length - MAX_ITEMS;
             items.length = MAX_ITEMS;
-            const hintItem = new vscode.CompletionItem(`... ${remaining} more matches, type more to narrow`, vscode.CompletionItemKind.Text);
-            hintItem.sortText = 'zzz';
-            hintItem.detail = '';
+            const hintItem = new vscode.CompletionItem(
+                `... ${remaining} more matches, type more to narrow`,
+                vscode.CompletionItemKind.Text,
+            );
+            hintItem.sortText = "zzz";
+            hintItem.detail = "";
             items.push(hintItem);
         }
         return items;
@@ -447,7 +468,7 @@ export class SchemaProvider {
         const data = getMruData(item);
         if (data && data.key) {
             this.mruTracker.addToMru(data.key);
-            if (data.type === 'table') {
+            if (data.type === "table") {
                 this.mruTracker.addTableToMru(data.key);
             }
         }

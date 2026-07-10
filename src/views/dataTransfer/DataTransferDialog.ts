@@ -1,15 +1,9 @@
-import * as vscode from 'vscode';
-import * as fs from 'fs';
-import { BaseWebviewPanel, type WebviewPanelConfig } from '../BaseWebviewPanel';
-import type {
-    IConnectionService,
-    IDataTransferService,
-    ImportResult,
-    CsvImportOptions,
-    JsonImportOptions,
-} from '../../application/ports';
-import { getLanguage } from '../../i18n';
-import { handleError, ErrorCategory } from '../../core/errorHandler';
+import * as vscode from "vscode";
+import * as fs from "fs";
+import { BaseWebviewPanel, type WebviewPanelConfig } from "../BaseWebviewPanel";
+import type { IConnectionService, IDataTransferService, ImportResult, CsvImportOptions, JsonImportOptions } from "../../application/ports";
+import { getLanguage } from "../../i18n";
+import { handleError, ErrorCategory } from "../../core/errorHandler";
 
 interface DataTransferMessage {
     command: string;
@@ -24,8 +18,8 @@ interface DataTransferMessage {
         tableName: string;
         newTableName?: string;
         mapping?: Record<string, string>;
-        onError: 'skip' | 'abort';
-        dedupStrategy: 'ignore' | 'skip' | 'update';
+        onError: "skip" | "abort";
+        dedupStrategy: "ignore" | "skip" | "update";
         batchSize: number;
         delimiter?: string;
         encoding?: string;
@@ -34,13 +28,13 @@ interface DataTransferMessage {
 }
 
 export class DataTransferDialog extends BaseWebviewPanel {
-    public static readonly viewType = 'sqlAllInOneDataTransfer';
+    public static readonly viewType = "sqlAllInOneDataTransfer";
 
     protected readonly panelConfig: WebviewPanelConfig = {
         viewType: DataTransferDialog.viewType,
-        htmlFileName: 'data-transfer.html',
-        cssFileName: 'data-transfer.css',
-        jsFileName: 'data-transfer.js',
+        htmlFileName: "data-transfer.html",
+        cssFileName: "data-transfer.css",
+        jsFileName: "data-transfer.js",
     };
 
     private readonly _connectionService: IConnectionService;
@@ -52,9 +46,7 @@ export class DataTransferDialog extends BaseWebviewPanel {
         connectionService: IConnectionService,
         dataTransferService: IDataTransferService,
     ): DataTransferDialog {
-        const column = vscode.window.activeTextEditor
-            ? vscode.window.activeTextEditor.viewColumn
-            : undefined;
+        const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
 
         const existing = BaseWebviewPanel.getExistingInstance<DataTransferDialog>(DataTransferDialog.viewType);
         if (existing) {
@@ -62,12 +54,9 @@ export class DataTransferDialog extends BaseWebviewPanel {
             return existing;
         }
 
-        const panel = BaseWebviewPanel.createWebviewPanel(
-            DataTransferDialog.viewType,
-            'Data Transfer',
-            extensionUri,
-            { viewColumn: column ? column + 1 : vscode.ViewColumn.Two }
-        );
+        const panel = BaseWebviewPanel.createWebviewPanel(DataTransferDialog.viewType, "Data Transfer", extensionUri, {
+            viewColumn: column ? column + 1 : vscode.ViewColumn.Two,
+        });
 
         const instance = new DataTransferDialog(panel, extensionUri, connectionService, dataTransferService);
         BaseWebviewPanel.registerInstance(instance);
@@ -88,33 +77,31 @@ export class DataTransferDialog extends BaseWebviewPanel {
 
     private async _initialize(): Promise<void> {
         const configData = { lang: getLanguage() };
-        const configJson = JSON.stringify(configData).replace(/<\/script>/gi, '<\\/script>');
-        const configScript = '<script>window.__DATA_TRANSFER_CONFIG__ = ' + configJson + ';</script>';
-        await this.initializeHtml([
-            { placeholder: '{{CONFIG_INJECT}}', value: configScript },
-        ]);
+        const configJson = JSON.stringify(configData).replace(/<\/script>/gi, "<\\/script>");
+        const configScript = "<script>window.__DATA_TRANSFER_CONFIG__ = " + configJson + ";</script>";
+        await this.initializeHtml([{ placeholder: "{{CONFIG_INJECT}}", value: configScript }]);
         this.onDidReceiveMessage(async (message: unknown) => {
             const msg = message as DataTransferMessage;
             switch (msg.command) {
-                case 'selectFile':
+                case "selectFile":
                     await this._handleSelectFile();
                     break;
-                case 'requestTables':
+                case "requestTables":
                     await this._handleRequestTables();
                     break;
-                case 'requestColumns':
-                    await this._handleRequestColumns(msg.tableName ?? '');
+                case "requestColumns":
+                    await this._handleRequestColumns(msg.tableName ?? "");
                     break;
-                case 'requestPreview':
-                    await this._handleRequestPreview(msg.filePath ?? '', msg.format ?? '', msg.previewRows ?? 10, msg.delimiter);
+                case "requestPreview":
+                    await this._handleRequestPreview(msg.filePath ?? "", msg.format ?? "", msg.previewRows ?? 10, msg.delimiter);
                     break;
-                case 'startImport':
+                case "startImport":
                     if (msg.config) {
                         await this._handleStartImport(msg.config);
                     }
                     break;
-                case 'readFilePreview':
-                    await this._handleReadFilePreview(msg.firstLineFilePath ?? '');
+                case "readFilePreview":
+                    await this._handleReadFilePreview(msg.firstLineFilePath ?? "");
                     break;
             }
         });
@@ -123,8 +110,8 @@ export class DataTransferDialog extends BaseWebviewPanel {
     private async _handleReadFilePreview(filePath: string): Promise<void> {
         if (!filePath) {
             this.postMessage({
-                type: 'filePreview',
-                error: 'No file path provided.',
+                type: "filePreview",
+                error: "No file path provided.",
             });
             return;
         }
@@ -132,22 +119,22 @@ export class DataTransferDialog extends BaseWebviewPanel {
         try {
             if (!fs.existsSync(filePath)) {
                 this.postMessage({
-                    type: 'filePreview',
-                    error: 'File not found: ' + filePath,
+                    type: "filePreview",
+                    error: "File not found: " + filePath,
                 });
                 return;
             }
 
-            const content = await fs.promises.readFile(filePath, 'utf-8');
-            const firstLine = content.split(/\r?\n/)[0] || '';
+            const content = await fs.promises.readFile(filePath, "utf-8");
+            const firstLine = content.split(/\r?\n/)[0] || "";
 
             this.postMessage({
-                type: 'filePreview',
+                type: "filePreview",
                 firstLine,
             });
         } catch (error: unknown) {
             this.postMessage({
-                type: 'filePreview',
+                type: "filePreview",
                 error: error instanceof Error ? error.message : String(error),
             });
         }
@@ -156,9 +143,9 @@ export class DataTransferDialog extends BaseWebviewPanel {
     private async _handleSelectFile(): Promise<void> {
         const uris = await vscode.window.showOpenDialog({
             canSelectMany: false,
-            openLabel: 'Select Data File',
+            openLabel: "Select Data File",
             filters: {
-                'Data Files': ['csv', 'json', 'sql', 'tsv'],
+                "Data Files": ["csv", "json", "sql", "tsv"],
             },
         });
 
@@ -169,11 +156,11 @@ export class DataTransferDialog extends BaseWebviewPanel {
                 detectedFormat = this._dataTransferService.detectFileFormat(filePath);
             } catch (e) {
                 // Format detection failed; default to CSV
-                handleError(e, 'DataTransferDialog.detectFileFormat', ErrorCategory.SUB_ITEM)
-                detectedFormat = 'csv';
+                handleError(e, "DataTransferDialog.detectFileFormat", ErrorCategory.SUB_ITEM);
+                detectedFormat = "csv";
             }
             this.postMessage({
-                type: 'fileSelected',
+                type: "fileSelected",
                 filePath,
                 format: detectedFormat,
             });
@@ -185,9 +172,9 @@ export class DataTransferDialog extends BaseWebviewPanel {
 
         if (!activeConfig) {
             this.postMessage({
-                type: 'tables',
+                type: "tables",
                 tables: [],
-                error: 'No active connection. Please connect to a database first.',
+                error: "No active connection. Please connect to a database first.",
             });
             return;
         }
@@ -195,23 +182,23 @@ export class DataTransferDialog extends BaseWebviewPanel {
         const adapter = this._connectionService.getAdapter(activeConfig.id);
         if (!adapter) {
             this.postMessage({
-                type: 'tables',
+                type: "tables",
                 tables: [],
-                error: 'No database adapter available. Please reconnect.',
+                error: "No database adapter available. Please reconnect.",
             });
             return;
         }
 
         try {
-            const database = activeConfig.database || '';
+            const database = activeConfig.database || "";
             const tables = await adapter.metadataAdapter.listTables(database);
             this.postMessage({
-                type: 'tables',
+                type: "tables",
                 tables: tables.map((t) => t.name),
             });
         } catch (error: unknown) {
             this.postMessage({
-                type: 'tables',
+                type: "tables",
                 tables: [],
                 error: error instanceof Error ? error.message : String(error),
             });
@@ -221,9 +208,9 @@ export class DataTransferDialog extends BaseWebviewPanel {
     private async _handleRequestColumns(tableName: string): Promise<void> {
         if (!tableName) {
             this.postMessage({
-                type: 'columns',
+                type: "columns",
                 columns: [],
-                error: 'No table specified.',
+                error: "No table specified.",
             });
             return;
         }
@@ -232,9 +219,9 @@ export class DataTransferDialog extends BaseWebviewPanel {
 
         if (!activeConfig) {
             this.postMessage({
-                type: 'columns',
+                type: "columns",
                 columns: [],
-                error: 'No active connection.',
+                error: "No active connection.",
             });
             return;
         }
@@ -242,18 +229,18 @@ export class DataTransferDialog extends BaseWebviewPanel {
         const adapter = this._connectionService.getAdapter(activeConfig.id);
         if (!adapter) {
             this.postMessage({
-                type: 'columns',
+                type: "columns",
                 columns: [],
-                error: 'No database adapter available.',
+                error: "No database adapter available.",
             });
             return;
         }
 
         try {
-            const database = activeConfig.database || '';
+            const database = activeConfig.database || "";
             const structure = await adapter.schemaAdapter.describeTable(database, tableName);
             this.postMessage({
-                type: 'columns',
+                type: "columns",
                 columns: structure.columns.map((c) => ({
                     name: c.name,
                     type: c.type,
@@ -263,23 +250,18 @@ export class DataTransferDialog extends BaseWebviewPanel {
             });
         } catch (error: unknown) {
             this.postMessage({
-                type: 'columns',
+                type: "columns",
                 columns: [],
                 error: error instanceof Error ? error.message : String(error),
             });
         }
     }
 
-    private async _handleRequestPreview(
-        filePath: string,
-        format: string,
-        previewRows: number,
-        delimiter?: string,
-    ): Promise<void> {
+    private async _handleRequestPreview(filePath: string, format: string, previewRows: number, delimiter?: string): Promise<void> {
         if (!filePath) {
             this.postMessage({
-                type: 'previewError',
-                error: 'No file selected.',
+                type: "previewError",
+                error: "No file selected.",
             });
             return;
         }
@@ -287,28 +269,33 @@ export class DataTransferDialog extends BaseWebviewPanel {
         try {
             if (!fs.existsSync(filePath)) {
                 this.postMessage({
-                    type: 'previewError',
-                    error: 'File not found: ' + filePath,
+                    type: "previewError",
+                    error: "File not found: " + filePath,
                 });
                 return;
             }
 
             const rowCount = previewRows || 10;
 
-            if (format === 'csv') {
-                const content = await fs.promises.readFile(filePath, 'utf-8');
-                const lines = content.split(/\r?\n/).filter((l) => l.trim() !== '');
+            if (format === "csv") {
+                const content = await fs.promises.readFile(filePath, "utf-8");
+                const lines = content.split(/\r?\n/).filter((l) => l.trim() !== "");
                 if (lines.length === 0) {
                     this.postMessage({
-                        type: 'previewError',
-                        error: 'File is empty.',
+                        type: "previewError",
+                        error: "File is empty.",
                     });
                     return;
                 }
 
-                const actualDelimiter = delimiter === 'auto' || !delimiter
-                    ? this._dataTransferService.detectCsvDelimiter(lines[0])
-                    : delimiter === 'tab' ? '\t' : delimiter === 'semicolon' ? ';' : ',';
+                const actualDelimiter =
+                    delimiter === "auto" || !delimiter
+                        ? this._dataTransferService.detectCsvDelimiter(lines[0])
+                        : delimiter === "tab"
+                          ? "\t"
+                          : delimiter === "semicolon"
+                            ? ";"
+                            : ",";
 
                 const headers = this._dataTransferService.parseCsvLine(lines[0], actualDelimiter);
                 const rows: string[][] = [];
@@ -317,18 +304,18 @@ export class DataTransferDialog extends BaseWebviewPanel {
                 }
 
                 this.postMessage({
-                    type: 'preview',
+                    type: "preview",
                     headers,
                     rows,
-                    format: 'csv',
+                    format: "csv",
                 });
-            } else if (format === 'json') {
-                const content = await fs.promises.readFile(filePath, 'utf-8');
+            } else if (format === "json") {
+                const content = await fs.promises.readFile(filePath, "utf-8");
                 const records = JSON.parse(content) as unknown[];
                 if (!Array.isArray(records) || records.length === 0) {
                     this.postMessage({
-                        type: 'previewError',
-                        error: 'JSON file must contain a non-empty array.',
+                        type: "previewError",
+                        error: "JSON file must contain a non-empty array.",
                     });
                     return;
                 }
@@ -336,35 +323,35 @@ export class DataTransferDialog extends BaseWebviewPanel {
                 const headers = Object.keys(records[0] as Record<string, unknown>);
                 const rows = records.slice(0, rowCount).map((r: unknown) => {
                     const record = r as Record<string, unknown>;
-                    return headers.map((h) => String(record[h] ?? ''));
+                    return headers.map((h) => String(record[h] ?? ""));
                 });
 
                 this.postMessage({
-                    type: 'preview',
+                    type: "preview",
                     headers,
                     rows,
-                    format: 'json',
+                    format: "json",
                 });
-            } else if (format === 'sql') {
-                const content = await fs.promises.readFile(filePath, 'utf-8');
+            } else if (format === "sql") {
+                const content = await fs.promises.readFile(filePath, "utf-8");
                 const statements = content
-                    .split(';')
+                    .split(";")
                     .map((s) => s.trim())
                     .filter((s) => s.length > 0);
 
                 const previewStatements = statements.slice(0, rowCount);
 
                 this.postMessage({
-                    type: 'preview',
-                    headers: ['Statement'],
-                    rows: previewStatements.map((s) => [s.length > 200 ? s.substring(0, 200) + '...' : s]),
-                    format: 'sql',
+                    type: "preview",
+                    headers: ["Statement"],
+                    rows: previewStatements.map((s) => [s.length > 200 ? s.substring(0, 200) + "..." : s]),
+                    format: "sql",
                     totalStatements: statements.length,
                 });
             }
         } catch (error: unknown) {
             this.postMessage({
-                type: 'previewError',
+                type: "previewError",
                 error: error instanceof Error ? error.message : String(error),
             });
         }
@@ -376,8 +363,8 @@ export class DataTransferDialog extends BaseWebviewPanel {
         tableName: string;
         newTableName?: string;
         mapping?: Record<string, string>;
-        onError: 'skip' | 'abort';
-        dedupStrategy: 'ignore' | 'skip' | 'update';
+        onError: "skip" | "abort";
+        dedupStrategy: "ignore" | "skip" | "update";
         batchSize: number;
         delimiter?: string;
         encoding?: string;
@@ -386,13 +373,13 @@ export class DataTransferDialog extends BaseWebviewPanel {
 
         if (!activeConfig) {
             this.postMessage({
-                type: 'importResult',
+                type: "importResult",
                 result: {
                     success: false,
                     totalRows: 0,
                     importedRows: 0,
                     skippedRows: 0,
-                    errors: [{ row: 0, message: 'No active connection.', data: '' }],
+                    errors: [{ row: 0, message: "No active connection.", data: "" }],
                 },
             });
             return;
@@ -401,13 +388,13 @@ export class DataTransferDialog extends BaseWebviewPanel {
         const adapter = this._connectionService.getAdapter(activeConfig.id);
         if (!adapter) {
             this.postMessage({
-                type: 'importResult',
+                type: "importResult",
                 result: {
                     success: false,
                     totalRows: 0,
                     importedRows: 0,
                     skippedRows: 0,
-                    errors: [{ row: 0, message: 'No database adapter available.', data: '' }],
+                    errors: [{ row: 0, message: "No database adapter available.", data: "" }],
                 },
             });
             return;
@@ -418,20 +405,20 @@ export class DataTransferDialog extends BaseWebviewPanel {
         await vscode.window.withProgress(
             {
                 location: vscode.ProgressLocation.Notification,
-                title: 'Importing data...',
+                title: "Importing data...",
                 cancellable: true,
             },
             async (progress, token) => {
                 try {
                     if (token.isCancellationRequested) {
                         this.postMessage({
-                            type: 'importResult',
+                            type: "importResult",
                             result: {
                                 success: false,
                                 totalRows: 0,
                                 importedRows: 0,
                                 skippedRows: 0,
-                                errors: [{ row: 0, message: 'Import cancelled by user.', data: '' }],
+                                errors: [{ row: 0, message: "Import cancelled by user.", data: "" }],
                             },
                         });
                         return;
@@ -439,38 +426,39 @@ export class DataTransferDialog extends BaseWebviewPanel {
 
                     let result: ImportResult;
 
-                    if (config.format === 'csv') {
-                        const csvDelimiter = config.delimiter === 'tab'
-                            ? '\t'
-                            : config.delimiter === 'semicolon'
-                                ? ';'
-                                : config.delimiter === 'auto' || !config.delimiter
+                    if (config.format === "csv") {
+                        const csvDelimiter =
+                            config.delimiter === "tab"
+                                ? "\t"
+                                : config.delimiter === "semicolon"
+                                  ? ";"
+                                  : config.delimiter === "auto" || !config.delimiter
                                     ? undefined
-                                    : ',';
+                                    : ",";
 
                         const options: CsvImportOptions = {
                             delimiter: csvDelimiter,
-                            encoding: config.encoding || 'utf-8',
+                            encoding: config.encoding || "utf-8",
                             hasHeaders: true,
                             batchSize: config.batchSize || 100,
-                            onError: config.onError || 'skip',
-                            dedupStrategy: config.dedupStrategy || 'ignore',
+                            onError: config.onError || "skip",
+                            dedupStrategy: config.dedupStrategy || "ignore",
                             mapping: config.mapping,
                         };
 
                         progress.report({ message: `Importing CSV to ${tableName}...` });
                         result = await this._dataTransferService.importFromCsv(adapter, tableName, config.filePath, options);
-                    } else if (config.format === 'json') {
+                    } else if (config.format === "json") {
                         const options: JsonImportOptions = {
                             batchSize: config.batchSize || 100,
-                            onError: config.onError || 'skip',
-                            dedupStrategy: config.dedupStrategy || 'ignore',
+                            onError: config.onError || "skip",
+                            dedupStrategy: config.dedupStrategy || "ignore",
                         };
 
                         progress.report({ message: `Importing JSON to ${tableName}...` });
                         result = await this._dataTransferService.importFromJson(adapter, tableName, config.filePath, options);
-                    } else if (config.format === 'sql') {
-                        progress.report({ message: 'Executing SQL file...' });
+                    } else if (config.format === "sql") {
+                        progress.report({ message: "Executing SQL file..." });
                         result = await this._dataTransferService.importFromSql(adapter, config.filePath);
                     } else {
                         result = {
@@ -478,27 +466,27 @@ export class DataTransferDialog extends BaseWebviewPanel {
                             totalRows: 0,
                             importedRows: 0,
                             skippedRows: 0,
-                            errors: [{ row: 0, message: `Unsupported format: ${config.format}`, data: '' }],
+                            errors: [{ row: 0, message: `Unsupported format: ${config.format}`, data: "" }],
                         };
                     }
 
                     this.postMessage({
-                        type: 'importResult',
+                        type: "importResult",
                         result,
                     });
                 } catch (error: unknown) {
                     this.postMessage({
-                        type: 'importResult',
+                        type: "importResult",
                         result: {
                             success: false,
                             totalRows: 0,
                             importedRows: 0,
                             skippedRows: 0,
-                            errors: [{ row: 0, message: error instanceof Error ? error.message : String(error), data: '' }],
+                            errors: [{ row: 0, message: error instanceof Error ? error.message : String(error), data: "" }],
                         },
                     });
                 }
-            }
+            },
         );
     }
 }

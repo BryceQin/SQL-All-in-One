@@ -21,28 +21,46 @@
  */
 export function getSystemDatabases(dialect: string): string[] {
     switch (dialect) {
-        case 'mysql':
-            return ['information_schema', 'mysql', 'performance_schema', 'sys'];
-        case 'starrocks':
+        case "mysql":
+            return ["information_schema", "mysql", "performance_schema", "sys"];
+        case "starrocks":
             // StarRocks does not ship the MySQL system schemas
             // (mysql / performance_schema / sys) but exposes its own
             // stats/audit schemas.
-            return ['information_schema', '_statistics_', 'starrocks_audit_db__'];
-        case 'postgresql':
-            return ['postgres', 'template0', 'template1', 'pg_catalog'];
-        case 'sqlserver':
-            return ['master', 'model', 'msdb', 'tempdb', 'resource'];
-        case 'oracle':
-        case 'dameng':
+            return ["information_schema", "_statistics_", "starrocks_audit_db__"];
+        case "postgresql":
+            return ["postgres", "template0", "template1", "pg_catalog"];
+        case "sqlserver":
+            return ["master", "model", "msdb", "tempdb", "resource"];
+        case "oracle":
+        case "dameng":
             return [
-                'sys', 'system', 'outln', 'dbsnmp', 'appqossys', 'dbsfwmp',
-                'remote_scheduler_agent', 'sysbackup', 'sysdg', 'syskm', 'sysrac',
-                'audsys', 'gsmadmin_internal', 'anonymous', 'ctxsys', 'dvsys',
-                'lbacsys', 'mdsys', 'orddata', 'ordsys', 'wmsys', 'xdb'
+                "sys",
+                "system",
+                "outln",
+                "dbsnmp",
+                "appqossys",
+                "dbsfwmp",
+                "remote_scheduler_agent",
+                "sysbackup",
+                "sysdg",
+                "syskm",
+                "sysrac",
+                "audsys",
+                "gsmadmin_internal",
+                "anonymous",
+                "ctxsys",
+                "dvsys",
+                "lbacsys",
+                "mdsys",
+                "orddata",
+                "ordsys",
+                "wmsys",
+                "xdb",
             ];
-        case 'sqlite':
+        case "sqlite":
             return [];
         default:
-            return ['information_schema', 'mysql', 'performance_schema', 'sys', 'pg_catalog'];
+            return ["information_schema", "mysql", "performance_schema", "sys", "pg_catalog"];
     }
 }

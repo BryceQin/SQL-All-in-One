@@ -1,6 +1,6 @@
 // 管理空白符（空格、换行、缩进）的核心类，通过「延迟拼接 + 指令化空白符操作」实现高效的空白符管理
 
-import Indentation from "./Indentation"
+import Indentation from "./Indentation";
 
 /** 是控制空白符行为的核心指令，所有空白符操作均通过该枚举触发 */
 export const WS = Object.freeze({
@@ -18,16 +18,16 @@ export const WS = Object.freeze({
     INDENT: 5,
     // 单个缩进步骤,向 items 中添加 SINGLE_INDENT 标记
     SINGLE_INDENT: 6,
-} as const)
+} as const);
 
-export type WS = (typeof WS)[keyof typeof WS]
+export type WS = (typeof WS)[keyof typeof WS];
 
 export type LayoutItem =
     | (typeof WS)["SPACE"]
     | (typeof WS)["SINGLE_INDENT"]
     | (typeof WS)["NEWLINE"]
     | (typeof WS)["MANDATORY_NEWLINE"]
-    | string
+    | string;
 /**
  * API for constructing SQL string (especially the whitespace part).
  *
@@ -36,15 +36,15 @@ export type LayoutItem =
  * Now it's storing items to array and builds the string only in the end.
 //  */
 export default class Layout {
-    private items: LayoutItem[] = []
+    private items: LayoutItem[] = [];
 
-    public indentation: Indentation
+    public indentation: Indentation;
     constructor(indentation?: Indentation) {
-        this.indentation = indentation ?? new Indentation('    ')
+        this.indentation = indentation ?? new Indentation("    ");
     }
 
     public clear(): void {
-        this.items = []
+        this.items = [];
     }
 
     // Layout 类的核心入口，接收任意数量的「空白符指令」或「SQL 文本」，逐个处理并更新 items 数组
@@ -52,81 +52,79 @@ export default class Layout {
         for (const item of items) {
             switch (item) {
                 case WS.SPACE:
-                    this.items.push(WS.SPACE)
-                    break
+                    this.items.push(WS.SPACE);
+                    break;
                 case WS.NO_SPACE:
-                    this.trimHorizontalWhitespace()
-                    break
+                    this.trimHorizontalWhitespace();
+                    break;
                 case WS.NO_NEWLINE:
-                    this.trimWhitespace()
-                    break
+                    this.trimWhitespace();
+                    break;
                 case WS.NEWLINE:
-                    this.trimHorizontalWhitespace()
-                    this.addNewline(WS.NEWLINE)
-                    break
+                    this.trimHorizontalWhitespace();
+                    this.addNewline(WS.NEWLINE);
+                    break;
                 case WS.MANDATORY_NEWLINE:
-                    this.trimHorizontalWhitespace()
-                    this.addNewline(WS.MANDATORY_NEWLINE)
-                    break
+                    this.trimHorizontalWhitespace();
+                    this.addNewline(WS.MANDATORY_NEWLINE);
+                    break;
                 case WS.INDENT:
-                    this.addIndentation()
-                    break
+                    this.addIndentation();
+                    break;
                 case WS.SINGLE_INDENT:
-                    this.items.push(WS.SINGLE_INDENT)
-                    break
+                    this.items.push(WS.SINGLE_INDENT);
+                    break;
                 default:
-                    this.items.push(item)
+                    this.items.push(item);
             }
         }
     }
 
     // 移除前置水平空白
     private trimHorizontalWhitespace(): void {
-        const items = this.items
-        let i = items.length - 1
+        const items = this.items;
+        let i = items.length - 1;
         while (i >= 0) {
-            const item = items[i]
+            const item = items[i];
             if (item === WS.SPACE || item === WS.SINGLE_INDENT) {
-                i--
+                i--;
             } else {
-                break
+                break;
             }
         }
         if (i < items.length - 1) {
-            items.length = i + 1
+            items.length = i + 1;
         }
     }
 
     // 移除前置可移除空白
     private trimWhitespace(): void {
-        const items = this.items
-        let i = items.length - 1
+        const items = this.items;
+        let i = items.length - 1;
         while (i >= 0) {
-            const item = items[i]
+            const item = items[i];
             if (item === WS.SPACE || item === WS.SINGLE_INDENT || item === WS.NEWLINE) {
-                i--
+                i--;
             } else {
-                break
+                break;
             }
         }
         if (i < items.length - 1) {
-            items.length = i + 1
+            items.length = i + 1;
         }
     }
 
     // 确保换行的唯一性，且强制换行不可被覆盖
-    private addNewline(
-        newline: (typeof WS)["NEWLINE"] | (typeof WS)["MANDATORY_NEWLINE"],
-    ): void {
-        const items = this.items
-        const n = items.length
+    private addNewline(newline: (typeof WS)["NEWLINE"] | (typeof WS)["MANDATORY_NEWLINE"]): void {
+        const items = this.items;
+        const n = items.length;
         if (n > 0) {
-            const lastItem = items[n - 1]
+            const lastItem = items[n - 1];
             if (lastItem === WS.NEWLINE) {
                 // 合并连续普通换行
-                items[n - 1] = newline
+                items[n - 1] = newline;
             } else if (lastItem !== WS.MANDATORY_NEWLINE) {
-                items.push(newline)
+                items.push(newline);
             }
             // 强制换行不可被覆盖：lastItem === WS.MANDATORY_NEWLINE → do nothing
         }
@@ -135,46 +133,46 @@ export default class Layout {
     // 根据 Indentation 的当前层级，添加对应数量的 SINGLE_INDENT
     private addIndentation(): void {
         for (let i = 0; i < this.indentation.getLevel(); i++) {
-            this.items.push(WS.SINGLE_INDENT)
+            this.items.push(WS.SINGLE_INDENT);
         }
     }
 
     // 延迟拼接最终 SQL 字符串，将 LayoutItem 解析为实际字符
     public toString(): string {
-        return this.items.map((item) => this.itemToString(item)).join("")
+        return this.items.map((item) => this.itemToString(item)).join("");
     }
 
     public addNewlineIndent(): void {
-        this.trimHorizontalWhitespace()
-        this.addNewline(WS.NEWLINE)
-        this.addIndentation()
+        this.trimHorizontalWhitespace();
+        this.addNewline(WS.NEWLINE);
+        this.addIndentation();
     }
 
     public addCommaNewlineIndent(): void {
-        this.trimWhitespace()
-        this.items.push(',')
-        this.addNewline(WS.NEWLINE)
-        this.addIndentation()
+        this.trimWhitespace();
+        this.items.push(",");
+        this.addNewline(WS.NEWLINE);
+        this.addIndentation();
     }
 
     /**
      * Returns the internal layout data
      */
     public getLayoutItems(): LayoutItem[] {
-        return this.items
+        return this.items;
     }
 
     private itemToString(item: LayoutItem): string {
         switch (item) {
             case WS.SPACE:
-                return " "
+                return " ";
             case WS.NEWLINE:
             case WS.MANDATORY_NEWLINE:
-                return "\n"
+                return "\n";
             case WS.SINGLE_INDENT:
-                return this.indentation.getSingleIndent()
+                return this.indentation.getSingleIndent();
             default:
-                return item
+                return item;
         }
     }
 }

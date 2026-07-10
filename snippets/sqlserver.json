@@ -1,11 +1,7 @@
 {
     "SQL Server Top": {
         "prefix": "ssttop",
-        "body": [
-            "SELECT TOP ${1:n} ${2:columns}",
-            "FROM ${3:table}",
-            "WHERE ${4:condition};"
-        ],
+        "body": ["SELECT TOP ${1:n} ${2:columns}", "FROM ${3:table}", "WHERE ${4:condition};"],
         "description": "SQL Server SELECT TOP"
     },
     "SQL Server Pivot": {
@@ -38,11 +34,7 @@
     },
     "SQL Server Output": {
         "prefix": "ssoutput",
-        "body": [
-            "INSERT INTO ${1:table} (${2:columns})",
-            "OUTPUT inserted.*",
-            "VALUES (${3:values});"
-        ],
+        "body": ["INSERT INTO ${1:table} (${2:columns})", "OUTPUT inserted.*", "VALUES (${3:values});"],
         "description": "SQL Server INSERT with OUTPUT"
     },
     "SQL Server Offset Fetch": {

@@ -1,56 +1,53 @@
-import * as vscode from 'vscode';
-import { getParserEngine } from '../../parser/SqlParserEngine';
-import { toSqlDialect, isSqlDocument } from '../../core/dialectRegistry';
-import { DetectedStatement, StatementType } from './QueryResult';
-import { handleError, ErrorCategory } from '../../core/errorHandler';
+import * as vscode from "vscode";
+import { getParserEngine } from "../../parser/SqlParserEngine";
+import { toSqlDialect, isSqlDocument } from "../../core/dialectRegistry";
+import { DetectedStatement, StatementType } from "./QueryResult";
+import { handleError, ErrorCategory } from "../../core/errorHandler";
 
 const statementTypeMap: Record<string, StatementType> = {
-    SELECT: 'SELECT',
-    INSERT: 'INSERT',
-    UPDATE: 'UPDATE',
-    DELETE: 'DELETE',
-    CREATE: 'CREATE',
-    ALTER: 'ALTER',
-    DROP: 'DROP',
-    TRUNCATE: 'TRUNCATE',
-    RENAME: 'RENAME',
-    GRANT: 'GRANT',
-    REVOKE: 'REVOKE',
-    SET: 'SET',
-    SHOW: 'SHOW',
-    USE: 'USE',
-    CALL: 'CALL',
-    EXPLAIN: 'EXPLAIN',
-    WITH: 'SELECT',
-    select: 'SELECT',
-    insert: 'INSERT',
-    update: 'UPDATE',
-    delete: 'DELETE',
-    create: 'CREATE',
-    alter: 'ALTER',
-    drop: 'DROP',
-    truncate: 'TRUNCATE',
-    rename: 'RENAME',
-    grant: 'GRANT',
-    revoke: 'REVOKE',
-    set: 'SET',
-    show: 'SHOW',
-    use: 'USE',
-    call: 'CALL',
-    explain: 'EXPLAIN',
+    SELECT: "SELECT",
+    INSERT: "INSERT",
+    UPDATE: "UPDATE",
+    DELETE: "DELETE",
+    CREATE: "CREATE",
+    ALTER: "ALTER",
+    DROP: "DROP",
+    TRUNCATE: "TRUNCATE",
+    RENAME: "RENAME",
+    GRANT: "GRANT",
+    REVOKE: "REVOKE",
+    SET: "SET",
+    SHOW: "SHOW",
+    USE: "USE",
+    CALL: "CALL",
+    EXPLAIN: "EXPLAIN",
+    WITH: "SELECT",
+    select: "SELECT",
+    insert: "INSERT",
+    update: "UPDATE",
+    delete: "DELETE",
+    create: "CREATE",
+    alter: "ALTER",
+    drop: "DROP",
+    truncate: "TRUNCATE",
+    rename: "RENAME",
+    grant: "GRANT",
+    revoke: "REVOKE",
+    set: "SET",
+    show: "SHOW",
+    use: "USE",
+    call: "CALL",
+    explain: "EXPLAIN",
 };
 
 export class SqlStatementDetector {
-    detectCurrentStatement(
-        document: vscode.TextDocument,
-        position: vscode.Position
-    ): DetectedStatement {
+    detectCurrentStatement(document: vscode.TextDocument, position: vscode.Position): DetectedStatement {
         const allStatements = this.detectAllStatements(document);
         if (allStatements.length === 0) {
             return {
-                sql: '',
+                sql: "",
                 range: new vscode.Range(position, position),
-                type: 'OTHER',
+                type: "OTHER",
             };
         }
 
@@ -69,10 +66,7 @@ export class SqlStatementDetector {
         return allStatements[0];
     }
 
-    detectSelectionOrCurrent(
-        document: vscode.TextDocument,
-        selection: vscode.Selection
-    ): DetectedStatement {
+    detectSelectionOrCurrent(document: vscode.TextDocument, selection: vscode.Selection): DetectedStatement {
         if (!selection.isEmpty) {
             const sql = document.getText(selection);
             return {
@@ -101,17 +95,12 @@ export class SqlStatementDetector {
     parseDelimiter(document: vscode.TextDocument): string {
         const text = document.getText();
         const delimiterMatch = text.match(/^\s*DELIMITER\s+(\S+)/im);
-        return delimiterMatch ? delimiterMatch[1] : ';';
+        return delimiterMatch ? delimiterMatch[1] : ";";
     }
 
-    private parseWithAst(
-        document: vscode.TextDocument,
-        text: string
-    ): DetectedStatement[] {
+    private parseWithAst(document: vscode.TextDocument, text: string): DetectedStatement[] {
         try {
-            const dialect = isSqlDocument(document)
-                ? toSqlDialect(document.languageId)
-                : 'sql';
+            const dialect = isSqlDocument(document) ? toSqlDialect(document.languageId) : "sql";
             const parserEngine = getParserEngine();
             const result = parserEngine.tryAstify(text, dialect);
 
@@ -123,7 +112,10 @@ export class SqlStatementDetector {
             const statements: DetectedStatement[] = [];
 
             for (const node of astArray) {
-                const astNode = node as { type?: string; loc?: { start?: { line: number; column: number }; end?: { line: number; column: number } } };
+                const astNode = node as {
+                    type?: string;
+                    loc?: { start?: { line: number; column: number }; end?: { line: number; column: number } };
+                };
                 if (!astNode.loc?.start || !astNode.loc?.end) {
                     continue;
                 }
@@ -133,32 +125,26 @@ export class SqlStatementDetector {
                 const endLine = Math.max(0, astNode.loc.end.line - 1);
                 const endCol = Math.max(0, astNode.loc.end.column);
 
-                const range = new vscode.Range(
-                    new vscode.Position(startLine, startCol),
-                    new vscode.Position(endLine, endCol)
-                );
+                const range = new vscode.Range(new vscode.Position(startLine, startCol), new vscode.Position(endLine, endCol));
 
                 const sql = document.getText(range).trim();
                 if (sql) {
                     statements.push({
                         sql,
                         range,
-                        type: this.mapAstTypeToStatementType(astNode.type || 'OTHER'),
+                        type: this.mapAstTypeToStatementType(astNode.type || "OTHER"),
                     });
                 }
             }
 
             return statements;
         } catch (e) {
-            handleError(e, 'SqlStatementDetector.detectStatements', ErrorCategory.PARSE)
+            handleError(e, "SqlStatementDetector.detectStatements", ErrorCategory.PARSE);
             return [];
         }
     }
 
-    private parseWithSemicolons(
-        document: vscode.TextDocument,
-        text: string
-    ): DetectedStatement[] {
+    private parseWithSemicolons(document: vscode.TextDocument, text: string): DetectedStatement[] {
         const statements: DetectedStatement[] = [];
         let inSingleQuote = false;
         let inDoubleQuote = false;
@@ -174,20 +160,20 @@ export class SqlStatementDetector {
                     } else {
                         inSingleQuote = false;
                     }
-                } else if (ch === '\\') {
+                } else if (ch === "\\") {
                     i++;
                 }
             } else if (inDoubleQuote) {
                 if (ch === '"') {
                     inDoubleQuote = false;
-                } else if (ch === '\\') {
+                } else if (ch === "\\") {
                     i++;
                 }
             } else if (ch === "'") {
                 inSingleQuote = true;
             } else if (ch === '"') {
                 inDoubleQuote = true;
-            } else if (ch === ';') {
+            } else if (ch === ";") {
                 offsets.push(i + 1);
             }
         }
@@ -215,10 +201,10 @@ export class SqlStatementDetector {
 
     private detectStatementType(sql: string): StatementType {
         const keyword = sql.trim().split(/\s+/)[0].toUpperCase();
-        return statementTypeMap[keyword] || 'OTHER';
+        return statementTypeMap[keyword] || "OTHER";
     }
 
     private mapAstTypeToStatementType(astType: string): StatementType {
-        return statementTypeMap[astType] || 'OTHER';
+        return statementTypeMap[astType] || "OTHER";
     }
 }

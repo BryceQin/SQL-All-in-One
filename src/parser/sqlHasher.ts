@@ -1,4 +1,4 @@
-import * as crypto from 'crypto'
+import * as crypto from "crypto";
 
 /**
  * SQL 字符串的 SHA-256 哈希，返回 64 位十六进制字符串。
@@ -10,7 +10,7 @@ import * as crypto from 'crypto'
  * 性能：Node.js crypto 模块基于 OpenSSL，100KB SQL 哈希耗时小于 1ms。
  */
 export function hashSql(sql: string): string {
-    return crypto.createHash('sha256').update(sql, 'utf8').digest('hex')
+    return crypto.createHash("sha256").update(sql, "utf8").digest("hex");
 }
 
 /**
@@ -21,14 +21,14 @@ export function hashSql(sql: string): string {
  * 两路独立 FNV-1a 流将碰撞空间扩展到 64 位，再用 0 填充到 128 位以保持字符串长度稳定。
  */
 export function hashSqlFast(sql: string): string {
-    let h1 = 0x811c9dc5
-    let h2 = 0x1000193
+    let h1 = 0x811c9dc5;
+    let h2 = 0x1000193;
     for (let i = 0; i < sql.length; i++) {
-        const c = sql.charCodeAt(i)
-        h1 = Math.imul(h1 ^ c, 0x01000193)
-        h2 = Math.imul(h2 ^ c, 0x1000193)
+        const c = sql.charCodeAt(i);
+        h1 = Math.imul(h1 ^ c, 0x01000193);
+        h2 = Math.imul(h2 ^ c, 0x1000193);
     }
     // 转为 32 位十六进制（h1 高位 + h2 低位组合，扩展碰撞空间）
-    const combined = (h1 >>> 0).toString(16).padStart(8, '0') + (h2 >>> 0).toString(16).padStart(8, '0')
-    return combined + '0000000000000000'
+    const combined = (h1 >>> 0).toString(16).padStart(8, "0") + (h2 >>> 0).toString(16).padStart(8, "0");
+    return combined + "0000000000000000";
 }

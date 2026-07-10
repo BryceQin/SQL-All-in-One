@@ -1,36 +1,36 @@
 name: CI
 
 on:
-  push:
-    branches: [main, master, dev-bryceqin]
-  pull_request:
-    branches: [main, master, dev-bryceqin]
+    push:
+        branches: [main, master, dev-bryceqin]
+    pull_request:
+        branches: [main, master, dev-bryceqin]
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [20.x]
+    build:
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                node-version: [20.x]
 
-    steps:
-      - uses: actions/checkout@v4
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-      - run: npm ci
-      - run: npx tsc --noEmit
-      - run: npm run lint
-      - run: npm run vscode:prepublish
-      - run: xvfb-run -a npm test
-      - run: npm audit --omit=dev || true
-      - name: Upload coverage
-        uses: codecov/codecov-action@v4
-        if: always()
-        with:
-          files: ./coverage/lcov.info
-          flags: unittests
-          name: codecov-umbrella
-          fail_ci_if_error: false
+        steps:
+            - uses: actions/checkout@v4
+            - name: Use Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ matrix.node-version }}
+                  cache: "npm"
+            - run: npm ci
+            - run: npx tsc --noEmit
+            - run: npm run lint
+            - run: npm run vscode:prepublish
+            - run: xvfb-run -a npm test
+            - run: npm audit --omit=dev || true
+            - name: Upload coverage
+              uses: codecov/codecov-action@v4
+              if: always()
+              with:
+                  files: ./coverage/lcov.info
+                  flags: unittests
+                  name: codecov-umbrella
+                  fail_ci_if_error: false

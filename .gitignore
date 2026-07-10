@@ -3,7 +3,7 @@ lib
 node_modules
 .DS_Store
 coverage
-.eslintcache
+.oxlintcache
 src/parser/grammar.ts
 hive-formatter-*.vsix
 vsc-extension-quickstart.md

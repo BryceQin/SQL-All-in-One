@@ -1,1 +1,1 @@
-export { QueryHistory } from './QueryHistory';
+export { QueryHistory } from "./QueryHistory";

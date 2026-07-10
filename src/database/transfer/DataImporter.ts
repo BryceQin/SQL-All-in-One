@@ -1,9 +1,9 @@
-import * as fs from 'fs';
-import * as readline from 'readline';
-import { QueryParam } from '../adapters/IDatabaseAdapter';
-import type { DatabaseAdapter } from '../adapters/AdapterFactory';
-import { t } from '../../i18n/index';
-import { SqlTextScanner } from '../../utils/sqlTextScanner';
+import * as fs from "fs";
+import * as readline from "readline";
+import { QueryParam } from "../adapters/IDatabaseAdapter";
+import type { DatabaseAdapter } from "../adapters/AdapterFactory";
+import { t } from "../../i18n/index";
+import { SqlTextScanner } from "../../utils/sqlTextScanner";
 
 // ---------------------------------------------------------------------------
 // Interfaces
@@ -28,15 +28,15 @@ export interface CsvImportOptions {
     encoding?: string;
     hasHeaders?: boolean;
     batchSize?: number;
-    onError: 'skip' | 'abort';
-    dedupStrategy: 'ignore' | 'skip' | 'update';
+    onError: "skip" | "abort";
+    dedupStrategy: "ignore" | "skip" | "update";
     mapping?: Record<string, string>;
 }
 
 export interface JsonImportOptions {
     batchSize?: number;
-    onError: 'skip' | 'abort';
-    dedupStrategy: 'ignore' | 'skip' | 'update';
+    onError: "skip" | "abort";
+    dedupStrategy: "ignore" | "skip" | "update";
 }
 
 // ---------------------------------------------------------------------------
@@ -57,14 +57,14 @@ export function parseCsvLine(line: string, delimiter: string): string[] {
         // Start of a new field
         if (i === len) {
             // Trailing delimiter – push empty field
-            fields.push('');
+            fields.push("");
             break;
         }
 
         if (line[i] === '"') {
             // Quoted field
             i++; // skip opening quote
-            let field = '';
+            let field = "";
             while (i < len) {
                 if (line[i] === '"') {
                     if (i + 1 < len && line[i + 1] === '"') {
@@ -88,7 +88,7 @@ export function parseCsvLine(line: string, delimiter: string): string[] {
             }
         } else {
             // Unquoted field – read until delimiter or end
-            let field = '';
+            let field = "";
             while (i < len && line[i] !== delimiter) {
                 field += line[i];
                 i++;
@@ -121,7 +121,7 @@ function toQueryParamValue(value: unknown): string | number | boolean | null | u
     if (value instanceof Date) {
         return value.toISOString();
     }
-    if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'string') {
+    if (typeof value === "number" || typeof value === "boolean" || typeof value === "string") {
         return value;
     }
     return String(value);
@@ -138,16 +138,16 @@ export async function executeBatchInsert(
     tableName: string,
     columns: string[],
     batch: Record<string, unknown>[],
-    onError: 'skip' | 'abort',
+    onError: "skip" | "abort",
     startRow: number,
 ): Promise<{ imported: number; skipped: number; errors: ImportError[] }> {
     const q = adapter.schemaAdapter.quoteIdentifier.bind(adapter.schemaAdapter);
-    const quotedColumns = columns.map((c) => q(c)).join(', ');
-    const placeholdersPerRow = `(${columns.map(() => '?').join(', ')})`;
+    const quotedColumns = columns.map((c) => q(c)).join(", ");
+    const placeholdersPerRow = `(${columns.map(() => "?").join(", ")})`;
 
     // Build batch SQL: INSERT INTO "table" ("col1", "col2") VALUES (?, ?), (?, ?), ...
     const valueGroups = batch.map(() => placeholdersPerRow);
-    const sql = `INSERT INTO ${q(tableName)} (${quotedColumns}) VALUES ${valueGroups.join(', ')};`;
+    const sql = `INSERT INTO ${q(tableName)} (${quotedColumns}) VALUES ${valueGroups.join(", ")};`;
 
     // Flatten all row values into a single params array
     const params: QueryParam[] = [];
@@ -165,7 +165,7 @@ export async function executeBatchInsert(
         await adapter.queryAdapter.execute(sql, params);
         imported = batch.length;
     } catch (batchError: unknown) {
-        if (onError === 'abort') {
+        if (onError === "abort") {
             throw batchError;
         }
         // Fallback: insert rows one by one
@@ -200,8 +200,8 @@ export async function executeBatchInsert(
  * highest count.
  */
 export function detectCsvDelimiter(firstLine: string): string {
-    const candidates = [',', '\t', ';'];
-    let best = ',';
+    const candidates = [",", "\t", ";"];
+    let best = ",";
     let bestCount = 0;
 
     for (const candidate of candidates) {
@@ -223,19 +223,19 @@ export function detectCsvDelimiter(firstLine: string): string {
  * Detects the file format from its extension. Returns `'csv'`, `'json'`, or
  * `'sql'`. Throws if the extension is not recognised.
  */
-export function detectFileFormat(filePath: string): 'csv' | 'json' | 'sql' {
-    const ext = filePath.split('.').pop()?.toLowerCase();
+export function detectFileFormat(filePath: string): "csv" | "json" | "sql" {
+    const ext = filePath.split(".").pop()?.toLowerCase();
     switch (ext) {
-        case 'csv':
-        case 'tsv':
-            return 'csv';
-        case 'json':
-        case 'jsonl':
-            return 'json';
-        case 'sql':
-            return 'sql';
+        case "csv":
+        case "tsv":
+            return "csv";
+        case "json":
+        case "jsonl":
+            return "json";
+        case "sql":
+            return "sql";
         default:
-            throw new Error(t('database.unsupportedFileFormat', ext || ''));
+            throw new Error(t("database.unsupportedFileFormat", ext || ""));
     }
 }
 
@@ -253,10 +253,10 @@ export async function importFromCsv(
     filePath: string,
     options: CsvImportOptions,
 ): Promise<ImportResult> {
-    const delimiter = options.delimiter ?? ',';
+    const delimiter = options.delimiter ?? ",";
     const hasHeaders = options.hasHeaders ?? true;
     const batchSize = options.batchSize ?? 100;
-    const encoding = options.encoding ?? 'utf-8';
+    const encoding = options.encoding ?? "utf-8";
 
     const errors: ImportError[] = [];
     let totalRows = 0;
@@ -284,7 +284,7 @@ export async function importFromCsv(
 
     for await (const line of rl) {
         // Skip empty lines
-        if (line.trim() === '') {
+        if (line.trim() === "") {
             lineIndex++;
             continue;
         }
@@ -312,7 +312,7 @@ export async function importFromCsv(
         const row: Record<string, unknown> = {};
         for (let i = 0; i < headers.length; i++) {
             const value = i < rawFields.length ? rawFields[i] : null;
-            row[headers[i]] = value === '' ? null : value;
+            row[headers[i]] = value === "" ? null : value;
         }
 
         if (batch.length === 0) {
@@ -324,7 +324,7 @@ export async function importFromCsv(
             try {
                 await flushBatch();
             } catch (err: unknown) {
-                if (options.onError === 'abort') {
+                if (options.onError === "abort") {
                     rl.close();
                     stream.destroy();
                     return {
@@ -337,7 +337,7 @@ export async function importFromCsv(
                             {
                                 row: batchStartRow,
                                 message: err instanceof Error ? err.message : String(err),
-                                data: '',
+                                data: "",
                             },
                         ],
                     };
@@ -352,7 +352,7 @@ export async function importFromCsv(
     try {
         await flushBatch();
     } catch (err: unknown) {
-        if (options.onError === 'abort') {
+        if (options.onError === "abort") {
             return {
                 success: false,
                 totalRows,
@@ -363,7 +363,7 @@ export async function importFromCsv(
                     {
                         row: batchStartRow,
                         message: err instanceof Error ? err.message : String(err),
-                        data: '',
+                        data: "",
                     },
                 ],
             };
@@ -415,21 +415,21 @@ async function streamJsonArray(
     filePath: string,
     onElement: (element: unknown, index: number) => Promise<void> | void,
 ): Promise<{ count: number; notArray: boolean }> {
-    const stream = fs.createReadStream(filePath, 'utf-8');
+    const stream = fs.createReadStream(filePath, "utf-8");
     let count = 0;
     let notArray = false;
 
-    let depth = 0;            // bracket depth; 1 == array element layer
+    let depth = 0; // bracket depth; 1 == array element layer
     let arrayStarted = false; // top-level '[' seen
-    let arrayClosed = false;  // top-level ']' seen
-    let inString = false;     // cursor inside a JSON string
-    let escape = false;       // previous char was backslash (inside string)
-    let elementBuf = '';      // accumulating current element text
+    let arrayClosed = false; // top-level ']' seen
+    let inString = false; // cursor inside a JSON string
+    let escape = false; // previous char was backslash (inside string)
+    let elementBuf = ""; // accumulating current element text
     let elementActive = false; // true while accumulating an element
 
     const flushElement = async (text: string): Promise<void> => {
         const trimmed = text.trim();
-        if (trimmed === '') {
+        if (trimmed === "") {
             return;
         }
         const value: unknown = JSON.parse(trimmed);
@@ -443,7 +443,7 @@ async function streamJsonArray(
             for (const c of s) {
                 if (arrayClosed) {
                     // Only trailing whitespace allowed after the top-level array.
-                    if (c === ' ' || c === '\t' || c === '\n' || c === '\r') {
+                    if (c === " " || c === "\t" || c === "\n" || c === "\r") {
                         continue;
                     }
                     throw new SyntaxError(`Unexpected character '${c}' after top-level array`);
@@ -453,7 +453,7 @@ async function streamJsonArray(
                     elementBuf += c;
                     if (escape) {
                         escape = false;
-                    } else if (c === '\\') {
+                    } else if (c === "\\") {
                         escape = true;
                     } else if (c === '"') {
                         inString = false;
@@ -475,10 +475,10 @@ async function streamJsonArray(
 
                 if (!arrayStarted) {
                     // Skip leading whitespace, expect '['.
-                    if (c === ' ' || c === '\t' || c === '\n' || c === '\r') {
+                    if (c === " " || c === "\t" || c === "\n" || c === "\r") {
                         continue;
                     }
-                    if (c === '[') {
+                    if (c === "[") {
                         arrayStarted = true;
                         depth = 1;
                         continue;
@@ -489,7 +489,7 @@ async function streamJsonArray(
                 }
 
                 // arrayStarted, depth >= 1
-                if (c === '[' || c === '{') {
+                if (c === "[" || c === "{") {
                     if (depth === 1) {
                         // Start of a new object/array element.
                         elementBuf = c;
@@ -501,21 +501,21 @@ async function streamJsonArray(
                     continue;
                 }
 
-                if (c === ']' || c === '}') {
+                if (c === "]" || c === "}") {
                     depth--;
                     if (depth === 1) {
                         // End of an object/array element.
                         elementBuf += c;
                         await flushElement(elementBuf);
-                        elementBuf = '';
+                        elementBuf = "";
                         elementActive = false;
                     } else if (depth === 0) {
-                        if (c === ']') {
+                        if (c === "]") {
                             // End of top-level array; flush a trailing scalar
                             // element that was not followed by a comma.
-                            if (elementActive && elementBuf.trim() !== '') {
+                            if (elementActive && elementBuf.trim() !== "") {
                                 await flushElement(elementBuf);
-                                elementBuf = '';
+                                elementBuf = "";
                                 elementActive = false;
                             }
                             arrayClosed = true;
@@ -533,14 +533,14 @@ async function streamJsonArray(
 
                 if (depth === 1) {
                     // Element layer, outside any object/array.
-                    if (c === ' ' || c === '\t' || c === '\n' || c === '\r') {
+                    if (c === " " || c === "\t" || c === "\n" || c === "\r") {
                         continue;
                     }
-                    if (c === ',') {
-                        if (elementActive && elementBuf.trim() !== '') {
+                    if (c === ",") {
+                        if (elementActive && elementBuf.trim() !== "") {
                             await flushElement(elementBuf);
                         }
-                        elementBuf = '';
+                        elementBuf = "";
                         elementActive = false;
                         continue;
                     }
@@ -582,7 +582,13 @@ export async function importFromJson(
             totalRows: 0,
             importedRows: 0,
             skippedRows: 0,
-            errors: [{ row: 0, message: t('database.jsonFileTooLarge', (stat.size / 1024 / 1024).toFixed(1), String(MAX_JSON_FILE_SIZE / 1024 / 1024)), data: '' }],
+            errors: [
+                {
+                    row: 0,
+                    message: t("database.jsonFileTooLarge", (stat.size / 1024 / 1024).toFixed(1), String(MAX_JSON_FILE_SIZE / 1024 / 1024)),
+                    data: "",
+                },
+            ],
         };
     }
 
@@ -599,7 +605,7 @@ export async function importFromJson(
     // Malformed JSON propagates as a thrown error from streamJsonArray,
     // matching the original JSON.parse behaviour for invalid files.
     const pass1 = await streamJsonArray(filePath, (element) => {
-        if (element && typeof element === 'object' && !Array.isArray(element)) {
+        if (element && typeof element === "object" && !Array.isArray(element)) {
             for (const key of Object.keys(element as Record<string, unknown>)) {
                 columnSet.add(key);
             }
@@ -614,7 +620,7 @@ export async function importFromJson(
             totalRows: 0,
             importedRows: 0,
             skippedRows: 0,
-            errors: [{ row: 0, message: t('database.jsonMustBeArray'), data: '' }],
+            errors: [{ row: 0, message: t("database.jsonMustBeArray"), data: "" }],
         };
     }
 
@@ -626,7 +632,7 @@ export async function importFromJson(
             totalRows,
             importedRows: 0,
             skippedRows: 0,
-            errors: [{ row: 0, message: t('database.noColumnsInJson'), data: '' }],
+            errors: [{ row: 0, message: t("database.noColumnsInJson"), data: "" }],
         };
     }
 
@@ -646,7 +652,7 @@ export async function importFromJson(
             skippedRows += result.skipped;
             errors.push(...result.errors);
         } catch (err: unknown) {
-            if (options.onError === 'abort') {
+            if (options.onError === "abort") {
                 throw err;
             }
             skippedRows += batch.length;
@@ -659,10 +665,10 @@ export async function importFromJson(
             if (batch.length === 0) {
                 batchStartRow = index + 1;
             }
-            if (!element || typeof element !== 'object' || Array.isArray(element)) {
+            if (!element || typeof element !== "object" || Array.isArray(element)) {
                 errors.push({
                     row: index + 1,
-                    message: t('database.recordNotObject'),
+                    message: t("database.recordNotObject"),
                     data: String(element),
                 });
                 // Match the original behaviour: insert an empty row to keep
@@ -685,7 +691,7 @@ export async function importFromJson(
         // Flush any trailing partial batch.
         await flushBatch();
     } catch (err: unknown) {
-        if (options.onError === 'abort') {
+        if (options.onError === "abort") {
             return {
                 success: false,
                 totalRows,
@@ -696,7 +702,7 @@ export async function importFromJson(
                     {
                         row: batchStartRow,
                         message: err instanceof Error ? err.message : String(err),
-                        data: '',
+                        data: "",
                     },
                 ],
             };
@@ -723,10 +729,7 @@ export async function importFromJson(
  * Reads a SQL file, splits by semicolons, and executes each non-empty
  * statement sequentially.
  */
-export async function importFromSql(
-    adapter: DatabaseAdapter,
-    filePath: string,
-): Promise<ImportResult> {
+export async function importFromSql(adapter: DatabaseAdapter, filePath: string): Promise<ImportResult> {
     const stat = await fs.promises.stat(filePath);
     if (stat.size > MAX_SQL_FILE_SIZE) {
         return {
@@ -734,7 +737,13 @@ export async function importFromSql(
             totalRows: 0,
             importedRows: 0,
             skippedRows: 0,
-            errors: [{ row: 0, message: t('database.sqlFileTooLarge', (stat.size / 1024 / 1024).toFixed(1), String(MAX_SQL_FILE_SIZE / 1024 / 1024)), data: '' }],
+            errors: [
+                {
+                    row: 0,
+                    message: t("database.sqlFileTooLarge", (stat.size / 1024 / 1024).toFixed(1), String(MAX_SQL_FILE_SIZE / 1024 / 1024)),
+                    data: "",
+                },
+            ],
         };
     }
 
@@ -743,19 +752,19 @@ export async function importFromSql(
     let skippedRows = 0;
     const errors: ImportError[] = [];
 
-    const stream = fs.createReadStream(filePath, 'utf-8');
+    const stream = fs.createReadStream(filePath, "utf-8");
     const rl = readline.createInterface({ input: stream, crlfDelay: Infinity });
 
-    let currentStatement = '';
+    let currentStatement = "";
 
     for await (const line of rl) {
         const trimmed = line.trim();
-        if (trimmed === '') {
+        if (trimmed === "") {
             continue;
         }
 
         if (currentStatement.length > 0) {
-            currentStatement += '\n' + line;
+            currentStatement += "\n" + line;
         } else {
             currentStatement = line;
         }
@@ -770,14 +779,14 @@ export async function importFromSql(
             }
             totalRows++;
             try {
-                await adapter.queryAdapter.execute(segment + ';');
+                await adapter.queryAdapter.execute(segment + ";");
                 importedRows++;
             } catch (err: unknown) {
                 skippedRows++;
                 errors.push({
                     row: totalRows,
                     message: err instanceof Error ? err.message : String(err),
-                    data: segment + ';',
+                    data: segment + ";",
                 });
             }
         }
@@ -787,7 +796,7 @@ export async function importFromSql(
         const sql = currentStatement.trim();
         totalRows++;
         try {
-            await adapter.queryAdapter.execute(sql.endsWith(';') ? sql : sql + ';');
+            await adapter.queryAdapter.execute(sql.endsWith(";") ? sql : sql + ";");
             importedRows++;
         } catch (err: unknown) {
             skippedRows++;

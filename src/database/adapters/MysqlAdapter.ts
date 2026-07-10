@@ -1,5 +1,13 @@
-import type { Pool, PoolConnection, PoolOptions, RowDataPacket, FieldPacket, ResultSetHeader, QueryResult as MysqlQueryResult } from 'mysql2/promise';
-import type { Readable } from 'stream';
+import type {
+    Pool,
+    PoolConnection,
+    PoolOptions,
+    RowDataPacket,
+    FieldPacket,
+    ResultSetHeader,
+    QueryResult as MysqlQueryResult,
+} from "mysql2/promise";
+import type { Readable } from "stream";
 import type {
     DialectMetadata,
     IConnectionLifecycle,
@@ -28,16 +36,16 @@ import type {
     DataTypeCategory,
     ExplainResult,
     ExplainNode,
-} from './IDatabaseAdapter';
-import { t } from '../../i18n/index';
-import { clampBatchSize } from './queryStreamUtils';
-import { BaseDatabaseAdapter } from './BaseDatabaseAdapter';
-import { BaseSharedContext } from './BaseSharedContext';
-import { BaseConnectionAdapter } from './BaseConnectionAdapter';
-import { BaseQueryAdapter } from './BaseQueryAdapter';
-import { BaseMetadataAdapter } from './BaseMetadataAdapter';
-import { BaseSchemaAdapter } from './BaseSchemaAdapter';
-import { getSystemDatabases } from '../../utils/systemDatabases';
+} from "./IDatabaseAdapter";
+import { t } from "../../i18n/index";
+import { clampBatchSize } from "./queryStreamUtils";
+import { BaseDatabaseAdapter } from "./BaseDatabaseAdapter";
+import { BaseSharedContext } from "./BaseSharedContext";
+import { BaseConnectionAdapter } from "./BaseConnectionAdapter";
+import { BaseQueryAdapter } from "./BaseQueryAdapter";
+import { BaseMetadataAdapter } from "./BaseMetadataAdapter";
+import { BaseSchemaAdapter } from "./BaseSchemaAdapter";
+import { getSystemDatabases } from "../../utils/systemDatabases";
 
 /**
  * Structural shape shared by {@link MysqlSharedContext} and
@@ -84,7 +92,9 @@ export class MysqlSharedContext extends BaseSharedContext implements IMysqlProto
  * version-SQL and log-prefix behaviour. Used internally by MysqlAdapter;
  * common lifecycle logic lives in BaseDatabaseAdapter.
  */
-export class MysqlConnectionAdapter<TShared extends IMysqlProtocolSharedContext = IMysqlProtocolSharedContext> extends BaseConnectionAdapter<TShared> {
+export class MysqlConnectionAdapter<
+    TShared extends IMysqlProtocolSharedContext = IMysqlProtocolSharedContext,
+> extends BaseConnectionAdapter<TShared> {
     constructor(protected shared: TShared) {
         super();
     }
@@ -93,12 +103,12 @@ export class MysqlConnectionAdapter<TShared extends IMysqlProtocolSharedContext 
         const poolOptions = this.createPoolOptions(config);
 
         try {
-            const mysql = await import('mysql2/promise');
+            const mysql = await import("mysql2/promise");
             this.shared.pool = mysql.createPool(poolOptions);
 
             const conn = await this.shared.pool.getConnection();
             try {
-                await conn.query<RowDataPacket[]>('SELECT 1');
+                await conn.query<RowDataPacket[]>("SELECT 1");
             } finally {
                 conn.release();
             }
@@ -107,7 +117,12 @@ export class MysqlConnectionAdapter<TShared extends IMysqlProtocolSharedContext 
             const warmupPromises: Promise<void>[] = [];
             for (let i = 0; i < minConnections; i++) {
                 warmupPromises.push(
-                    this.shared.pool!.getConnection().then(conn => conn.release()).catch((e) => { console.debug(`[SQL All in One] ${this.warmupFailureLogPrefix()} connection warmup failed:`, e); })
+                    this.shared
+                        .pool!.getConnection()
+                        .then((conn) => conn.release())
+                        .catch((e) => {
+                            console.debug(`[SQL All in One] ${this.warmupFailureLogPrefix()} connection warmup failed:`, e);
+                        }),
                 );
             }
             await Promise.all(warmupPromises);
@@ -139,10 +154,10 @@ export class MysqlConnectionAdapter<TShared extends IMysqlProtocolSharedContext 
 
     async testConnection(config: ConnectionConfig): Promise<TestConnectionResult> {
         const startTime = Date.now();
-        let tempConn: import('mysql2/promise').Connection | null = null;
+        let tempConn: import("mysql2/promise").Connection | null = null;
 
         try {
-            const mysql = await import('mysql2/promise');
+            const mysql = await import("mysql2/promise");
             const connectOptions = this.createConnectionOptions(config);
 
             tempConn = await mysql.createConnection(connectOptions);
@@ -150,7 +165,7 @@ export class MysqlConnectionAdapter<TShared extends IMysqlProtocolSharedContext 
             const endTime = Date.now();
             return {
                 success: true,
-                serverVersion: (rows[0] as Record<string, unknown>)?.version as string ?? this.defaultServerVersion(),
+                serverVersion: ((rows[0] as Record<string, unknown>)?.version as string) ?? this.defaultServerVersion(),
                 latency: endTime - startTime,
             };
         } catch (error: unknown) {
@@ -181,7 +196,7 @@ export class MysqlConnectionAdapter<TShared extends IMysqlProtocolSharedContext 
             }
         } catch (e) {
             // Health check failure means connection is not available
-            console.debug(`[SQL All in One] ${this.healthCheckFailureLogPrefix()}.checkConnectionHealth failed:`, e)
+            console.debug(`[SQL All in One] ${this.healthCheckFailureLogPrefix()}.checkConnectionHealth failed:`, e);
             return false;
         }
     }
@@ -191,20 +206,20 @@ export class MysqlConnectionAdapter<TShared extends IMysqlProtocolSharedContext 
         const hostPort = `${config.host}:${config.port}`;
 
         // MySQL-specific errors
-        if (msg.includes('ER_ACCESS_DENIED_ERROR') || msg.includes('Access denied')) {
-            return new Error(t('database.accessDenied', config.username, hostPort));
+        if (msg.includes("ER_ACCESS_DENIED_ERROR") || msg.includes("Access denied")) {
+            return new Error(t("database.accessDenied", config.username, hostPort));
         }
-        if (msg.includes('ER_DBACCESS_DENIED_ERROR') || msg.includes('denied to user')) {
-            return new Error(t('database.databaseAccessDenied', config.username, config.database || '(none)'));
+        if (msg.includes("ER_DBACCESS_DENIED_ERROR") || msg.includes("denied to user")) {
+            return new Error(t("database.databaseAccessDenied", config.username, config.database || "(none)"));
         }
-        if (msg.includes('PROTOCOL_CONNECTION_LOST')) {
-            return new Error(t('database.connectionLost', hostPort));
+        if (msg.includes("PROTOCOL_CONNECTION_LOST")) {
+            return new Error(t("database.connectionLost", hostPort));
         }
-        if (msg.includes('ER_CON_COUNT_ERROR') || msg.includes('Too many connections')) {
-            return new Error(t('database.tooManyConnections', hostPort));
+        if (msg.includes("ER_CON_COUNT_ERROR") || msg.includes("Too many connections")) {
+            return new Error(t("database.tooManyConnections", hostPort));
         }
-        if (msg.includes('ER_BAD_DB_ERROR')) {
-            return new Error(t('database.databaseNotExist', config.database || '(none)', hostPort));
+        if (msg.includes("ER_BAD_DB_ERROR")) {
+            return new Error(t("database.databaseNotExist", config.database || "(none)", hostPort));
         }
 
         // SSL/certificate and common network errors are handled by the base
@@ -220,7 +235,7 @@ export class MysqlConnectionAdapter<TShared extends IMysqlProtocolSharedContext 
      * if their canonical version query differs.
      */
     protected getServerVersionSql(): string {
-        return 'SELECT VERSION() AS version';
+        return "SELECT VERSION() AS version";
     }
 
     /**
@@ -229,7 +244,7 @@ export class MysqlConnectionAdapter<TShared extends IMysqlProtocolSharedContext 
      * dialect's product name.
      */
     protected defaultServerVersion(): string {
-        return 'MySQL';
+        return "MySQL";
     }
 
     /**
@@ -237,7 +252,7 @@ export class MysqlConnectionAdapter<TShared extends IMysqlProtocolSharedContext 
      * Override in subclasses to distinguish dialect-specific logs.
      */
     protected warmupFailureLogPrefix(): string {
-        return 'Connection';
+        return "Connection";
     }
 
     /**
@@ -245,7 +260,7 @@ export class MysqlConnectionAdapter<TShared extends IMysqlProtocolSharedContext 
      * message. Override in subclasses to distinguish dialect-specific logs.
      */
     protected rollbackFailureLogPrefix(): string {
-        return 'Connection';
+        return "Connection";
     }
 
     /**
@@ -253,7 +268,7 @@ export class MysqlConnectionAdapter<TShared extends IMysqlProtocolSharedContext 
      * message. Override in subclasses to distinguish dialect-specific logs.
      */
     protected healthCheckFailureLogPrefix(): string {
-        return 'MysqlConnectionAdapter';
+        return "MysqlConnectionAdapter";
     }
 
     private createPoolOptions(config: ConnectionConfig, connectionLimitOverride?: number): PoolOptions {
@@ -327,11 +342,7 @@ export class MysqlConnectionAdapter<TShared extends IMysqlProtocolSharedContext 
  * resolves to a materialized result and cannot be streamed).
  */
 interface MysqlCoreConnection {
-    query(options: {
-        sql: string;
-        values?: unknown;
-        rowsAsArray?: boolean;
-    }): MysqlCoreQuery;
+    query(options: { sql: string; values?: unknown; rowsAsArray?: boolean }): MysqlCoreQuery;
 }
 
 /**
@@ -340,14 +351,14 @@ interface MysqlCoreConnection {
  */
 interface MysqlCoreQuery {
     stream(options?: { highWaterMark?: number; objectMode?: true }): Readable;
-    on(event: 'fields', listener: (fields: FieldPacket[], index: number) => void): this;
-    on(event: 'result', listener: (result: RowDataPacket | ResultSetHeader, index: number) => void): this;
-    on(event: 'error', listener: (err: Error) => void): this;
-    on(event: 'end', listener: () => void): this;
-    removeListener(event: 'fields', listener: (fields: FieldPacket[], index: number) => void): this;
-    removeListener(event: 'result', listener: (result: RowDataPacket | ResultSetHeader, index: number) => void): this;
-    removeListener(event: 'error', listener: (err: Error) => void): this;
-    removeListener(event: 'end', listener: () => void): this;
+    on(event: "fields", listener: (fields: FieldPacket[], index: number) => void): this;
+    on(event: "result", listener: (result: RowDataPacket | ResultSetHeader, index: number) => void): this;
+    on(event: "error", listener: (err: Error) => void): this;
+    on(event: "end", listener: () => void): this;
+    removeListener(event: "fields", listener: (fields: FieldPacket[], index: number) => void): this;
+    removeListener(event: "result", listener: (result: RowDataPacket | ResultSetHeader, index: number) => void): this;
+    removeListener(event: "error", listener: (err: Error) => void): this;
+    removeListener(event: "end", listener: () => void): this;
 }
 
 /**
@@ -358,9 +369,16 @@ interface MysqlCoreQuery {
  * {@link StarrocksQueryAdapter} and only override the dialect-specific
  * transaction/cancel behaviour.
  */
-export class MysqlQueryAdapter<TShared extends IMysqlProtocolSharedContext = IMysqlProtocolSharedContext> extends BaseQueryAdapter<TShared> {
-    protected override async executeWithConnection(sql: string, params: QueryParam[] | undefined, queryId: string, startTime: number): Promise<QueryResult> {
-        const values = params?.map(p => p.value);
+export class MysqlQueryAdapter<
+    TShared extends IMysqlProtocolSharedContext = IMysqlProtocolSharedContext,
+> extends BaseQueryAdapter<TShared> {
+    protected override async executeWithConnection(
+        sql: string,
+        params: QueryParam[] | undefined,
+        queryId: string,
+        startTime: number,
+    ): Promise<QueryResult> {
+        const values = params?.map((p) => p.value);
         const acquireTimeout = this.shared.config?.poolConfig?.acquireTimeout ?? 60000;
 
         return await this.withAcquiredConnection(acquireTimeout, queryId, async (conn) => {
@@ -433,11 +451,11 @@ export class MysqlQueryAdapter<TShared extends IMysqlProtocolSharedContext = IMy
             const rows = result as RowDataPacket[];
             const fieldPackets = fields as FieldPacket[];
 
-            const columns = fieldPackets.map(field => {
+            const columns = fieldPackets.map((field) => {
                 const flags = field.flags as number;
                 return {
                     name: field.name,
-                    type: String(field.type ?? 'UNKNOWN'),
+                    type: String(field.type ?? "UNKNOWN"),
                     nullable: (flags & 0x0001) === 0,
                     isPrimaryKey: (flags & 0x0002) !== 0,
                     isAutoIncrement: (flags & 0x0200) !== 0,
@@ -447,7 +465,7 @@ export class MysqlQueryAdapter<TShared extends IMysqlProtocolSharedContext = IMy
 
             return {
                 queryId,
-                status: 'success',
+                status: "success",
                 columns,
                 rows: rows as QueryRow[],
                 rowCount: rows.length,
@@ -459,7 +477,7 @@ export class MysqlQueryAdapter<TShared extends IMysqlProtocolSharedContext = IMy
         const header = result as ResultSetHeader;
         return {
             queryId,
-            status: 'success',
+            status: "success",
             columns: [],
             rows: [],
             rowCount: 0,
@@ -478,13 +496,13 @@ export class MysqlQueryAdapter<TShared extends IMysqlProtocolSharedContext = IMy
         const mysqlError = error as { code?: string; errno?: number; sqlMessage?: string };
         return {
             queryId,
-            status: 'error',
+            status: "error",
             columns: [],
             rows: [],
             rowCount: 0,
             executionTime,
             error: {
-                code: mysqlError.code ?? String(mysqlError.errno ?? 'EXEC_ERROR'),
+                code: mysqlError.code ?? String(mysqlError.errno ?? "EXEC_ERROR"),
                 message: mysqlError.sqlMessage ?? (error instanceof Error ? error.message : String(error)),
                 sql,
             },
@@ -513,12 +531,12 @@ export class MysqlQueryAdapter<TShared extends IMysqlProtocolSharedContext = IMy
      */
     async *executeStream(sql: string, options?: QueryStreamOptions): AsyncIterable<StreamBatch> {
         if (!this.shared.pool) {
-            throw new Error(t('database.notConnected'));
+            throw new Error(t("database.notConnected"));
         }
 
         const batchSize = clampBatchSize(options?.batchSize);
         const maxRows = options?.maxRows;
-        const values = options?.params?.map(p => p.value);
+        const values = options?.params?.map((p) => p.value);
         const signal = options?.signal;
 
         const acquireTimeout = this.shared.config?.poolConfig?.acquireTimeout ?? 60000;
@@ -526,9 +544,7 @@ export class MysqlQueryAdapter<TShared extends IMysqlProtocolSharedContext = IMy
         // a fresh connection from the pool and release it when streaming ends.
         const useTransactionConn = !!this.shared.transactionConnection;
         const queryConn: Pool | PoolConnection = this.shared.transactionConnection ?? this.shared.pool;
-        const acquiredConn: PoolConnection | null = useTransactionConn
-            ? null
-            : await this.acquireConnectionWithTimeout(acquireTimeout);
+        const acquiredConn: PoolConnection | null = useTransactionConn ? null : await this.acquireConnectionWithTimeout(acquireTimeout);
 
         if (acquiredConn) {
             this.shared.activeConnectionCount++;
@@ -543,7 +559,7 @@ export class MysqlQueryAdapter<TShared extends IMysqlProtocolSharedContext = IMy
         const query = core.query({ sql, values, rowsAsArray: false });
         const stream = query.stream();
 
-        const aborted = new Error('Query stream aborted');
+        const aborted = new Error("Query stream aborted");
         let abortedError: Error | null = null;
         const isAborted = (): Error | null => abortedError;
 
@@ -552,13 +568,17 @@ export class MysqlQueryAdapter<TShared extends IMysqlProtocolSharedContext = IMy
             // Destroying the readable cancels the in-flight query and causes
             // the for-await loop below to throw, which we convert into the
             // normal end-of-stream path.
-            try { stream.destroy(); } catch { /* ignore */ }
+            try {
+                stream.destroy();
+            } catch {
+                /* ignore */
+            }
         };
         if (signal) {
             if (signal.aborted) {
                 onAbort();
             } else {
-                signal.addEventListener('abort', onAbort, { once: true });
+                signal.addEventListener("abort", onAbort, { once: true });
             }
         }
 
@@ -576,13 +596,7 @@ export class MysqlQueryAdapter<TShared extends IMysqlProtocolSharedContext = IMy
             // final partial-batch flush and empty-batch-with-columns emission
             // to the helper generator. `yield*` preserves the original yield
             // timing and backpressure semantics exactly.
-            yield* this.iterateStreamRows(
-                stream as AsyncIterable<QueryRow>,
-                batchSize,
-                maxRows,
-                getColumns,
-                isAborted,
-            );
+            yield* this.iterateStreamRows(stream as AsyncIterable<QueryRow>, batchSize, maxRows, getColumns, isAborted);
 
             // If the caller aborted the stream, surface that as a stream
             // error so the collector converts it into a STREAM_ERROR result.
@@ -593,10 +607,14 @@ export class MysqlQueryAdapter<TShared extends IMysqlProtocolSharedContext = IMy
             }
         } finally {
             if (signal) {
-                signal.removeEventListener('abort', onAbort);
+                signal.removeEventListener("abort", onAbort);
             }
             // Ensure the underlying query is torn down if we broke out early.
-            try { stream.destroy(); } catch { /* ignore */ }
+            try {
+                stream.destroy();
+            } catch {
+                /* ignore */
+            }
 
             if (acquiredConn) {
                 this.shared.activeConnectionCount--;
@@ -625,17 +643,17 @@ export class MysqlQueryAdapter<TShared extends IMysqlProtocolSharedContext = IMy
             // 注意：error 路径同样 resolve（而非 reject），因为 stream 后续
             // 还会消费/迭代，真正的错误会在 for-await 循环中抛出。
             const removeAll = (): void => {
-                query.removeListener('fields', onFields);
-                query.removeListener('end', onEnd);
-                query.removeListener('error', onError);
+                query.removeListener("fields", onFields);
+                query.removeListener("end", onEnd);
+                query.removeListener("error", onError);
             };
             const onFields = (fields: FieldPacket[]): void => {
                 removeAll();
-                columns = fields.map(field => {
+                columns = fields.map((field) => {
                     const flags = field.flags as number;
                     return {
                         name: field.name,
-                        type: String(field.type ?? 'UNKNOWN'),
+                        type: String(field.type ?? "UNKNOWN"),
                         nullable: (flags & 0x0001) === 0,
                         isPrimaryKey: (flags & 0x0002) !== 0,
                         isAutoIncrement: (flags & 0x0200) !== 0,
@@ -654,9 +672,9 @@ export class MysqlQueryAdapter<TShared extends IMysqlProtocolSharedContext = IMy
                 removeAll();
                 resolve();
             };
-            query.on('fields', onFields);
-            query.on('end', onEnd);
-            query.on('error', onError);
+            query.on("fields", onFields);
+            query.on("end", onEnd);
+            query.on("error", onError);
         });
 
         return { fieldsPromise, getColumns: () => columns };
@@ -747,10 +765,10 @@ export class MysqlQueryAdapter<TShared extends IMysqlProtocolSharedContext = IMy
 
     async beginTransaction(): Promise<void> {
         if (this.shared.transactionConnection) {
-            throw new Error(t('database.transactionInProgress'));
+            throw new Error(t("database.transactionInProgress"));
         }
         if (!this.shared.pool) {
-            throw new Error(t('database.notConnected'));
+            throw new Error(t("database.notConnected"));
         }
 
         this.shared.transactionConnection = await this.shared.pool.getConnection();
@@ -761,19 +779,19 @@ export class MysqlQueryAdapter<TShared extends IMysqlProtocolSharedContext = IMy
         // 会静默无操作）。与 StarrocksQueryAdapter 保持一致。
         const txThreadId = (this.shared.transactionConnection as unknown as { threadId?: number }).threadId;
         if (txThreadId !== undefined) {
-            this.shared.activeQueryThreadIds.set('__transaction__', txThreadId);
+            this.shared.activeQueryThreadIds.set("__transaction__", txThreadId);
         }
     }
 
     async commit(): Promise<void> {
         if (!this.shared.transactionConnection) {
-            throw new Error(t('database.noTransactionInProgress'));
+            throw new Error(t("database.noTransactionInProgress"));
         }
 
         try {
             await this.shared.transactionConnection.commit();
         } finally {
-            this.shared.activeQueryThreadIds.delete('__transaction__');
+            this.shared.activeQueryThreadIds.delete("__transaction__");
             this.shared.transactionConnection.release();
             this.shared.transactionConnection = null;
         }
@@ -781,7 +799,7 @@ export class MysqlQueryAdapter<TShared extends IMysqlProtocolSharedContext = IMy
 
     async rollback(): Promise<void> {
         if (!this.shared.transactionConnection) {
-            throw new Error(t('database.noTransactionInProgress'));
+            throw new Error(t("database.noTransactionInProgress"));
         }
 
         try {
@@ -789,9 +807,9 @@ export class MysqlQueryAdapter<TShared extends IMysqlProtocolSharedContext = IMy
             this.shared.transactionConnection.release();
         } catch (rollbackError) {
             this.shared.transactionConnection.destroy();
-            console.error('Rollback failed, connection destroyed:', rollbackError);
+            console.error("Rollback failed, connection destroyed:", rollbackError);
         } finally {
-            this.shared.activeQueryThreadIds.delete('__transaction__');
+            this.shared.activeQueryThreadIds.delete("__transaction__");
             this.shared.transactionConnection = null;
         }
     }
@@ -805,7 +823,7 @@ export class MysqlQueryAdapter<TShared extends IMysqlProtocolSharedContext = IMy
         // `__transaction__` key，以便取消在事务内执行的查询。
         let threadId = this.shared.activeQueryThreadIds.get(_queryId);
         if (threadId === undefined && this.shared.transactionConnection) {
-            threadId = this.shared.activeQueryThreadIds.get('__transaction__');
+            threadId = this.shared.activeQueryThreadIds.get("__transaction__");
         }
         if (threadId === undefined) {
             return;
@@ -819,7 +837,7 @@ export class MysqlQueryAdapter<TShared extends IMysqlProtocolSharedContext = IMy
                 conn.release();
             }
         } catch (e) {
-            console.debug('[SQL All in One] Cancel query error:', e);
+            console.debug("[SQL All in One] Cancel query error:", e);
         }
     }
 
@@ -828,10 +846,11 @@ export class MysqlQueryAdapter<TShared extends IMysqlProtocolSharedContext = IMy
             let timedOut = false;
             const timer = setTimeout(() => {
                 timedOut = true;
-                reject(new Error(t('database.connectionAcquireTimeout', String(timeout))));
+                reject(new Error(t("database.connectionAcquireTimeout", String(timeout))));
             }, timeout);
 
-            this.shared.pool!.getConnection()
+            this.shared
+                .pool!.getConnection()
                 .then((conn) => {
                     clearTimeout(timer);
                     if (timedOut) {
@@ -859,13 +878,11 @@ export class MysqlQueryAdapter<TShared extends IMysqlProtocolSharedContext = IMy
  * {@link StarrocksMetadataAdapter} and only override the dialect-specific
  * database-filter and unsupported-object behaviour.
  */
-export class MysqlMetadataAdapter<TShared extends IMysqlProtocolSharedContext = IMysqlProtocolSharedContext> extends BaseMetadataAdapter<TShared> {
+export class MysqlMetadataAdapter<
+    TShared extends IMysqlProtocolSharedContext = IMysqlProtocolSharedContext,
+> extends BaseMetadataAdapter<TShared> {
     override async listDatabaseRows(): Promise<DatabaseInfo[]> {
-        return this.runListQuery<DatabaseInfo>(
-            'SHOW DATABASES',
-            undefined,
-            (row: QueryRow) => ({ name: row.Database as string }),
-        );
+        return this.runListQuery<DatabaseInfo>("SHOW DATABASES", undefined, (row: QueryRow) => ({ name: row.Database as string }));
     }
 
     async listSchemas(_database?: string): Promise<string[]> {
@@ -960,7 +977,7 @@ export class MysqlMetadataAdapter<TShared extends IMysqlProtocolSharedContext = 
      * this to filter their own system databases.
      */
     protected override isSystemDatabase(name: string): boolean {
-        return getSystemDatabases('mysql').includes(name.toLowerCase());
+        return getSystemDatabases("mysql").includes(name.toLowerCase());
     }
 }
 
@@ -970,13 +987,7 @@ export class MysqlMetadataAdapter<TShared extends IMysqlProtocolSharedContext = 
  * generic EXPLAIN node we skip these so they are not mistaken for child
  * operations. Used by {@link MysqlSchemaAdapter.parseGenericNode}.
  */
-const EXPLAIN_SKIP_KEYS = new Set<string>([
-    'table_name',
-    'rows_examined',
-    'key',
-    'attached_condition',
-    'cost_info',
-]);
+const EXPLAIN_SKIP_KEYS = new Set<string>(["table_name", "rows_examined", "key", "attached_condition", "cost_info"]);
 
 /**
  * MySQL schema adapter.
@@ -990,8 +1001,10 @@ const EXPLAIN_SKIP_KEYS = new Set<string>([
  * `getDialectCapabilities`, list-query / row-count / Map-accumulator helpers)
  * is inherited from {@link BaseSchemaAdapter}.
  */
-export class MysqlSchemaAdapter<TShared extends IMysqlProtocolSharedContext = IMysqlProtocolSharedContext> extends BaseSchemaAdapter<TShared> {
-    protected readonly quoteChar = '`' as const;
+export class MysqlSchemaAdapter<
+    TShared extends IMysqlProtocolSharedContext = IMysqlProtocolSharedContext,
+> extends BaseSchemaAdapter<TShared> {
+    protected readonly quoteChar = "`" as const;
 
     protected override identifierMaxLength(): number {
         // MySQL/StarRocks identifiers are at most 64 characters.
@@ -1019,11 +1032,11 @@ export class MysqlSchemaAdapter<TShared extends IMysqlProtocolSharedContext = IM
         this.validateIdentifier(table);
         const sql = `SHOW CREATE TABLE ${this.quoteIdentifier(database)}.${this.quoteIdentifier(table)}`;
         const result = await this.executeQuery(sql);
-        if (result.status !== 'success' || result.rows.length === 0) {
-            return '';
+        if (result.status !== "success" || result.rows.length === 0) {
+            return "";
         }
 
-        return (result.rows[0]['Create Table'] ?? '') as string;
+        return (result.rows[0]["Create Table"] ?? "") as string;
     }
 
     async getViewDDL(database: string, view: string, _schema?: string): Promise<string> {
@@ -1031,11 +1044,11 @@ export class MysqlSchemaAdapter<TShared extends IMysqlProtocolSharedContext = IM
         this.validateIdentifier(view);
         const sql = `SHOW CREATE VIEW ${this.quoteIdentifier(database)}.${this.quoteIdentifier(view)}`;
         const result = await this.executeQuery(sql);
-        if (result.status !== 'success' || result.rows.length === 0) {
-            return '';
+        if (result.status !== "success" || result.rows.length === 0) {
+            return "";
         }
 
-        return (result.rows[0]['Create View'] ?? '') as string;
+        return (result.rows[0]["Create View"] ?? "") as string;
     }
 
     async getFunctionDDL(database: string, functionName: string, _schema?: string): Promise<string> {
@@ -1043,11 +1056,11 @@ export class MysqlSchemaAdapter<TShared extends IMysqlProtocolSharedContext = IM
         this.validateIdentifier(functionName);
         const sql = `SHOW CREATE FUNCTION ${this.quoteIdentifier(database)}.${this.quoteIdentifier(functionName)}`;
         const result = await this.executeQuery(sql);
-        if (result.status !== 'success' || result.rows.length === 0) {
-            return '';
+        if (result.status !== "success" || result.rows.length === 0) {
+            return "";
         }
 
-        return (result.rows[0]['Create Function'] ?? '') as string;
+        return (result.rows[0]["Create Function"] ?? "") as string;
     }
 
     async getProcedureDDL(database: string, procedureName: string, _schema?: string): Promise<string> {
@@ -1055,11 +1068,11 @@ export class MysqlSchemaAdapter<TShared extends IMysqlProtocolSharedContext = IM
         this.validateIdentifier(procedureName);
         const sql = `SHOW CREATE PROCEDURE ${this.quoteIdentifier(database)}.${this.quoteIdentifier(procedureName)}`;
         const result = await this.executeQuery(sql);
-        if (result.status !== 'success' || result.rows.length === 0) {
-            return '';
+        if (result.status !== "success" || result.rows.length === 0) {
+            return "";
         }
 
-        return (result.rows[0]['Create Procedure'] ?? '') as string;
+        return (result.rows[0]["Create Procedure"] ?? "") as string;
     }
 
     async getTriggerDDL(database: string, triggerName: string, _schema?: string): Promise<string> {
@@ -1067,35 +1080,36 @@ export class MysqlSchemaAdapter<TShared extends IMysqlProtocolSharedContext = IM
         this.validateIdentifier(triggerName);
         const sql = `SHOW CREATE TRIGGER ${this.quoteIdentifier(database)}.${this.quoteIdentifier(triggerName)}`;
         const result = await this.executeQuery(sql);
-        if (result.status !== 'success' || result.rows.length === 0) {
-            return '';
+        if (result.status !== "success" || result.rows.length === 0) {
+            return "";
         }
 
-        return (result.rows[0]['SQL Original Statement'] ?? result.rows[0]['Create Trigger'] ?? '') as string;
+        return (result.rows[0]["SQL Original Statement"] ?? result.rows[0]["Create Trigger"] ?? "") as string;
     }
 
-    async getRoutineParameters(database: string, routineName: string, routineType: 'FUNCTION' | 'PROCEDURE', _schema?: string): Promise<RoutineParameterInfo[]> {
+    async getRoutineParameters(
+        database: string,
+        routineName: string,
+        routineType: "FUNCTION" | "PROCEDURE",
+        _schema?: string,
+    ): Promise<RoutineParameterInfo[]> {
         const sql = `SELECT PARAMETER_NAME, DATA_TYPE, DTD_IDENTIFIER, PARAMETER_MODE FROM INFORMATION_SCHEMA.PARAMETERS WHERE SPECIFIC_SCHEMA = ? AND SPECIFIC_NAME = ? AND ROUTINE_TYPE = ? AND PARAMETER_NAME IS NOT NULL ORDER BY ORDINAL_POSITION`;
-        const result = await this.executeQuery(sql, [
-            { value: database },
-            { value: routineName },
-            { value: routineType }
-        ]);
-        if (result.status !== 'success') {
+        const result = await this.executeQuery(sql, [{ value: database }, { value: routineName }, { value: routineType }]);
+        if (result.status !== "success") {
             return [];
         }
 
         return result.rows.map((row: QueryRow) => ({
             name: row.PARAMETER_NAME as string,
             type: (row.DTD_IDENTIFIER as string) || (row.DATA_TYPE as string),
-            direction: (row.PARAMETER_MODE as 'IN' | 'OUT' | 'INOUT') || 'IN',
+            direction: (row.PARAMETER_MODE as "IN" | "OUT" | "INOUT") || "IN",
         }));
     }
 
     async getExplainPlan(database: string, sql: string): Promise<ExplainResult> {
         const useDb = database ?? this.shared.config?.database;
         if (!this.shared.pool) {
-            return { format: 'json', raw: '{}', nodes: [] };
+            return { format: "json", raw: "{}", nodes: [] };
         }
 
         let conn: PoolConnection | null = null;
@@ -1109,10 +1123,10 @@ export class MysqlSchemaAdapter<TShared extends IMysqlProtocolSharedContext = IM
             const explainSql = `EXPLAIN FORMAT=JSON ${sql}`;
             const [result] = await conn.query<RowDataPacket[]>(explainSql);
             if (!result || result.length === 0) {
-                return { format: 'json', raw: '{}', nodes: [] };
+                return { format: "json", raw: "{}", nodes: [] };
             }
 
-            const raw = (result[0].EXPLAIN ?? '{}') as string;
+            const raw = (result[0].EXPLAIN ?? "{}") as string;
 
             let nodes: ExplainNode[] = [];
             try {
@@ -1120,14 +1134,14 @@ export class MysqlSchemaAdapter<TShared extends IMysqlProtocolSharedContext = IM
                 nodes = this.parseExplainNodes(parsed);
             } catch (_e) {
                 // EXPLAIN JSON may be malformed or non-JSON; fall back to empty nodes
-                console.debug('[SQL All in One] Failed to parse EXPLAIN JSON, falling back to empty nodes:', _e)
+                console.debug("[SQL All in One] Failed to parse EXPLAIN JSON, falling back to empty nodes:", _e);
                 nodes = [];
             }
 
-            return { format: 'json', raw, nodes };
+            return { format: "json", raw, nodes };
         } catch (e) {
-            console.debug('[SQL All in One] EXPLAIN plan error:', e);
-            return { format: 'json', raw: '{}', nodes: [] };
+            console.debug("[SQL All in One] EXPLAIN plan error:", e);
+            return { format: "json", raw: "{}", nodes: [] };
         } finally {
             conn?.release();
         }
@@ -1136,7 +1150,7 @@ export class MysqlSchemaAdapter<TShared extends IMysqlProtocolSharedContext = IM
     async getTableRowCount(database: string, table: string, _schema?: string): Promise<number> {
         const sql = `SELECT TABLE_ROWS FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?`;
         const result = await this.executeQuery(sql, [{ value: database }, { value: table }]);
-        if (result.status !== 'success' || result.rows.length === 0) {
+        if (result.status !== "success" || result.rows.length === 0) {
             return 0;
         }
 
@@ -1147,69 +1161,63 @@ export class MysqlSchemaAdapter<TShared extends IMysqlProtocolSharedContext = IM
     getSupportedDataTypes(): DataTypeCategory[] {
         return [
             {
-                category: 'Integer',
+                category: "Integer",
                 types: [
-                    { name: 'TINYINT', needsLength: true },
-                    { name: 'SMALLINT', needsLength: true },
-                    { name: 'MEDIUMINT', needsLength: true },
-                    { name: 'INT', needsLength: true },
-                    { name: 'INTEGER', needsLength: true },
-                    { name: 'BIGINT', needsLength: true },
+                    { name: "TINYINT", needsLength: true },
+                    { name: "SMALLINT", needsLength: true },
+                    { name: "MEDIUMINT", needsLength: true },
+                    { name: "INT", needsLength: true },
+                    { name: "INTEGER", needsLength: true },
+                    { name: "BIGINT", needsLength: true },
                 ],
             },
             {
-                category: 'Float',
+                category: "Float",
                 types: [
-                    { name: 'FLOAT', needsPrecision: true },
-                    { name: 'DOUBLE', needsPrecision: true },
-                    { name: 'DECIMAL', needsPrecision: true, needsScale: true },
-                    { name: 'NUMERIC', needsPrecision: true, needsScale: true },
+                    { name: "FLOAT", needsPrecision: true },
+                    { name: "DOUBLE", needsPrecision: true },
+                    { name: "DECIMAL", needsPrecision: true, needsScale: true },
+                    { name: "NUMERIC", needsPrecision: true, needsScale: true },
                 ],
             },
             {
-                category: 'String',
+                category: "String",
                 types: [
-                    { name: 'CHAR', needsLength: true },
-                    { name: 'VARCHAR', needsLength: true },
-                    { name: 'TEXT' },
-                    { name: 'TINYTEXT' },
-                    { name: 'MEDIUMTEXT' },
-                    { name: 'LONGTEXT' },
-                    { name: 'ENUM', needsLength: true },
-                    { name: 'SET' },
+                    { name: "CHAR", needsLength: true },
+                    { name: "VARCHAR", needsLength: true },
+                    { name: "TEXT" },
+                    { name: "TINYTEXT" },
+                    { name: "MEDIUMTEXT" },
+                    { name: "LONGTEXT" },
+                    { name: "ENUM", needsLength: true },
+                    { name: "SET" },
                 ],
             },
             {
-                category: 'Date & Time',
+                category: "Date & Time",
+                types: [{ name: "DATE" }, { name: "TIME" }, { name: "DATETIME" }, { name: "TIMESTAMP" }, { name: "YEAR" }],
+            },
+            {
+                category: "Binary",
                 types: [
-                    { name: 'DATE' },
-                    { name: 'TIME' },
-                    { name: 'DATETIME' },
-                    { name: 'TIMESTAMP' },
-                    { name: 'YEAR' },
+                    { name: "BINARY", needsLength: true },
+                    { name: "VARBINARY", needsLength: true },
+                    { name: "BLOB" },
+                    { name: "TINYBLOB" },
+                    { name: "MEDIUMBLOB" },
+                    { name: "LONGBLOB" },
                 ],
             },
             {
-                category: 'Binary',
+                category: "Other",
                 types: [
-                    { name: 'BINARY', needsLength: true },
-                    { name: 'VARBINARY', needsLength: true },
-                    { name: 'BLOB' },
-                    { name: 'TINYBLOB' },
-                    { name: 'MEDIUMBLOB' },
-                    { name: 'LONGBLOB' },
-                ],
-            },
-            {
-                category: 'Other',
-                types: [
-                    { name: 'BIT' },
-                    { name: 'BOOLEAN' },
-                    { name: 'JSON' },
-                    { name: 'GEOMETRY' },
-                    { name: 'POINT' },
-                    { name: 'LINESTRING' },
-                    { name: 'POLYGON' },
+                    { name: "BIT" },
+                    { name: "BOOLEAN" },
+                    { name: "JSON" },
+                    { name: "GEOMETRY" },
+                    { name: "POINT" },
+                    { name: "LINESTRING" },
+                    { name: "POLYGON" },
                 ],
             },
         ];
@@ -1218,7 +1226,7 @@ export class MysqlSchemaAdapter<TShared extends IMysqlProtocolSharedContext = IM
     private async describeTableColumns(database: string, table: string): Promise<ColumnInfo[]> {
         const sql = `SELECT COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT, COLUMN_KEY, EXTRA, COLUMN_COMMENT, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, NUMERIC_PRECISION, NUMERIC_SCALE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? ORDER BY ORDINAL_POSITION`;
         const result = await this.executeQuery(sql, [{ value: database }, { value: table }]);
-        if (result.status !== 'success') {
+        if (result.status !== "success") {
             return [];
         }
 
@@ -1232,15 +1240,19 @@ export class MysqlSchemaAdapter<TShared extends IMysqlProtocolSharedContext = IM
                 name: row.COLUMN_NAME as string,
                 type: row.COLUMN_TYPE as string,
                 length: lengthRaw != null ? Number(lengthRaw) : undefined,
-                nullable: row.IS_NULLABLE === 'YES',
+                nullable: row.IS_NULLABLE === "YES",
                 defaultValue: row.COLUMN_DEFAULT as string | number | boolean | null,
-                isPrimaryKey: columnKey === 'PRI',
-                isAutoIncrement: extra?.includes('auto_increment') ?? false,
-                isUnique: columnKey === 'UNI',
+                isPrimaryKey: columnKey === "PRI",
+                isAutoIncrement: extra?.includes("auto_increment") ?? false,
+                isUnique: columnKey === "UNI",
                 comment: row.COLUMN_COMMENT as string,
-                enumValues: dataType === 'enum'
-                    ? (row.COLUMN_TYPE as string).match(/^enum\((.+)\)$/)?.[1]?.split(',').map(v => v.replace(/^'|'$/g, ''))
-                    : undefined,
+                enumValues:
+                    dataType === "enum"
+                        ? (row.COLUMN_TYPE as string)
+                              .match(/^enum\((.+)\)$/)?.[1]
+                              ?.split(",")
+                              .map((v) => v.replace(/^'|'$/g, ""))
+                        : undefined,
             };
         });
     }
@@ -1250,7 +1262,7 @@ export class MysqlSchemaAdapter<TShared extends IMysqlProtocolSharedContext = IM
         this.validateIdentifier(table);
         const sql = `SHOW INDEX FROM ${this.quoteIdentifier(table)} FROM ${this.quoteIdentifier(database)}`;
         const result = await this.executeQuery(sql);
-        if (result.status !== 'success') {
+        if (result.status !== "success") {
             return [];
         }
 
@@ -1263,7 +1275,7 @@ export class MysqlSchemaAdapter<TShared extends IMysqlProtocolSharedContext = IM
                     type: row.Index_type as string,
                     columns: [],
                     isUnique: Number(row.Non_unique) === 0,
-                    isPrimary: indexName === 'PRIMARY',
+                    isPrimary: indexName === "PRIMARY",
                 });
             }
             indexMap.get(indexName)!.columns.push(row.Column_name as string);
@@ -1275,7 +1287,7 @@ export class MysqlSchemaAdapter<TShared extends IMysqlProtocolSharedContext = IM
     protected async describeTableForeignKeys(database: string, table: string): Promise<ForeignKeyInfo[]> {
         const sql = `SELECT kcu.CONSTRAINT_NAME, kcu.COLUMN_NAME, kcu.REFERENCED_TABLE_NAME, kcu.REFERENCED_COLUMN_NAME, rc.DELETE_RULE, rc.UPDATE_RULE FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu JOIN INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS rc ON kcu.CONSTRAINT_NAME = rc.CONSTRAINT_NAME AND kcu.CONSTRAINT_SCHEMA = rc.CONSTRAINT_SCHEMA WHERE kcu.TABLE_SCHEMA = ? AND kcu.TABLE_NAME = ? AND kcu.REFERENCED_TABLE_NAME IS NOT NULL ORDER BY kcu.CONSTRAINT_NAME, kcu.ORDINAL_POSITION`;
         const result = await this.executeQuery(sql, [{ value: database }, { value: table }]);
-        if (result.status !== 'success') {
+        if (result.status !== "success") {
             return [];
         }
 
@@ -1333,14 +1345,14 @@ export class MysqlSchemaAdapter<TShared extends IMysqlProtocolSharedContext = IM
         const costInfo = block.cost_info as Record<string, unknown> | undefined;
         const node: ExplainNode = {
             id: String(++idCounter.value),
-            operation: block.select_id != null ? `query_block (id=${Number(block.select_id)})` : 'query_block',
+            operation: block.select_id != null ? `query_block (id=${Number(block.select_id)})` : "query_block",
             rows: costInfo?.rows_examined_per_scan != null ? Number(costInfo.rows_examined_per_scan) : undefined,
             cost: costInfo?.query_cost ? parseFloat(costInfo.query_cost as string) : undefined,
             children: [],
         };
 
         for (const [key, value] of Object.entries(block)) {
-            if (key === 'select_id' || key === 'cost_info') {
+            if (key === "select_id" || key === "cost_info") {
                 continue;
             }
 
@@ -1348,7 +1360,7 @@ export class MysqlSchemaAdapter<TShared extends IMysqlProtocolSharedContext = IM
                 for (const item of value) {
                     node.children.push(...this.parseExplainNodes(item as Record<string, unknown>, idCounter));
                 }
-            } else if (typeof value === 'object' && value !== null) {
+            } else if (typeof value === "object" && value !== null) {
                 node.children.push(...this.parseExplainNodes(value as Record<string, unknown>, idCounter));
             }
         }
@@ -1364,7 +1376,7 @@ export class MysqlSchemaAdapter<TShared extends IMysqlProtocolSharedContext = IM
     private parseGenericTopLevel(obj: Record<string, unknown>, idCounter: { value: number }): ExplainNode[] {
         const nodes: ExplainNode[] = [];
         for (const [key, value] of Object.entries(obj)) {
-            if (key === 'cost_info') {
+            if (key === "cost_info") {
                 continue;
             }
             nodes.push(this.parseGenericNode(key, value, idCounter));
@@ -1381,7 +1393,7 @@ export class MysqlSchemaAdapter<TShared extends IMysqlProtocolSharedContext = IM
      */
     private parseGenericNode(key: string, value: unknown, idCounter: { value: number }): ExplainNode {
         const val = value as Record<string, unknown> | null | undefined;
-        const valRecord = val && typeof val === 'object' && !Array.isArray(val) ? val as Record<string, unknown> : undefined;
+        const valRecord = val && typeof val === "object" && !Array.isArray(val) ? (val as Record<string, unknown>) : undefined;
         const node: ExplainNode = {
             id: String(++idCounter.value),
             operation: key,
@@ -1401,12 +1413,12 @@ export class MysqlSchemaAdapter<TShared extends IMysqlProtocolSharedContext = IM
             for (const item of value) {
                 node.children.push(...this.parseExplainNodes(item as Record<string, unknown>, idCounter));
             }
-        } else if (typeof value === 'object' && value !== null) {
+        } else if (typeof value === "object" && value !== null) {
             for (const [subKey, subValue] of Object.entries(value)) {
                 if (EXPLAIN_SKIP_KEYS.has(subKey)) {
                     continue;
                 }
-                if (typeof subValue === 'object' && subValue !== null) {
+                if (typeof subValue === "object" && subValue !== null) {
                     node.children.push(...this.parseExplainNodes(subValue as Record<string, unknown>, idCounter));
                 }
             }
@@ -1435,29 +1447,26 @@ export class MysqlAdapter extends BaseDatabaseAdapter<MysqlSharedContext> {
         return new MysqlQueryAdapter(this.shared);
     }
     protected override createMetadataAdapter(): IMetadataAdapter {
-        return new MysqlMetadataAdapter(
-            this.shared,
-            (sql, params) => this.queryAdapter.execute(sql, params)
-        );
+        return new MysqlMetadataAdapter(this.shared, (sql, params) => this.queryAdapter.execute(sql, params));
     }
     protected override createSchemaAdapter(): ISchemaAdapter {
         return new MysqlSchemaAdapter(
             this.shared,
             (sql, params) => this.queryAdapter.execute(sql, params),
-            (db, schema) => this.metadataAdapter.listTriggers(db, schema)
+            (db, schema) => this.metadataAdapter.listTriggers(db, schema),
         );
     }
 
     static getDialectMetadata(): DialectMetadata {
         return {
-            dialect: 'mysql',
-            displayName: 'MySQL',
+            dialect: "mysql",
+            displayName: "MySQL",
             defaultPort: 3306,
-            defaultUsername: 'root',
-            iconKey: 'mysql',
+            defaultUsername: "root",
+            iconKey: "mysql",
             supportsSshTunnel: true,
             supportsSsl: true,
-            isFileBased: false
+            isFileBased: false,
         };
     }
 }

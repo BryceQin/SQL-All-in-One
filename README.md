@@ -27,13 +27,13 @@
 
 **SQL All in One** 是一款面向 SQL 开发者的全方位 VSCode 扩展，将数据库连接管理、SQL 执行、数据编辑、表设计、执行计划、格式化、智能补全、语法检查、代码导航、DDL 转换等功能集成于一体，覆盖 SQL 开发的完整工作流。
 
-| | |
-|---|---|
-| **发布者** | bryce-qin |
-| **版本** | 2.31.0 |
-| **许可证** | MIT |
-| **VSCode 引擎** | ^1.85.0 |
-| **仓库** | [GitHub](https://github.com/BryceQin/SQL-All-in-One) |
+|                 |                                                      |
+| --------------- | ---------------------------------------------------- |
+| **发布者**      | bryce-qin                                            |
+| **版本**        | 2.32.0                                               |
+| **许可证**      | MIT                                                  |
+| **VSCode 引擎** | ^1.85.0                                              |
+| **仓库**        | [GitHub](https://github.com/BryceQin/SQL-All-in-One) |
 
 ### 主要特性
 
@@ -48,20 +48,20 @@
 
 ### 支持的 SQL 方言（12 种）
 
-| Language ID | 别名 | 扩展名 |
-|------------|------|--------|
-| `sql` | SQL | `.sql` |
-| `hive` | Hive, hive-sql | `.hql` |
-| `mysql` | MySQL | `.mysql` |
-| `spark` | SparkSQL, spark | `.sparksql` |
-| `flinksql` | FlinkSQL, flink-sql | `.flinksql` |
-| `postgresql` | PostgreSQL, postgres | `.psql`, `.pgsql` |
-| `bigquery` | BigQuery | `.bqsql` |
-| `sqlite` | SQLite | `.sqlite`, `.sqlt` |
-| `starrocks` | StarRocks | `.starrocks` |
-| `sqlserver` | SQL Server, mssql | `.sqlserver` |
-| `plsql` | Oracle, PL/SQL | `.plsql`, `.oracle` |
-| `dameng` | 达梦, DM | `.dameng`, `.dm` |
+| Language ID  | 别名                 | 扩展名              |
+| ------------ | -------------------- | ------------------- |
+| `sql`        | SQL                  | `.sql`              |
+| `hive`       | Hive, hive-sql       | `.hql`              |
+| `mysql`      | MySQL                | `.mysql`            |
+| `spark`      | SparkSQL, spark      | `.sparksql`         |
+| `flinksql`   | FlinkSQL, flink-sql  | `.flinksql`         |
+| `postgresql` | PostgreSQL, postgres | `.psql`, `.pgsql`   |
+| `bigquery`   | BigQuery             | `.bqsql`            |
+| `sqlite`     | SQLite               | `.sqlite`, `.sqlt`  |
+| `starrocks`  | StarRocks            | `.starrocks`        |
+| `sqlserver`  | SQL Server, mssql    | `.sqlserver`        |
+| `plsql`      | Oracle, PL/SQL       | `.plsql`, `.oracle` |
+| `dameng`     | 达梦, DM             | `.dameng`, `.dm`    |
 
 ### 使用场景
 
@@ -148,16 +148,16 @@ LIMIT 10;
 
 支持 8 种数据库连接，统一的管理界面：
 
-| 数据库 | 驱动 | 特性 |
-|--------|------|------|
-| MySQL | mysql2 | 连接池、SSL、SSH 隧道、流式查询 |
-| PostgreSQL | pg | 连接池、SSL、SSH 隧道、查询取消 |
-| SQLite | better-sqlite3 | 文件路径、WAL 模式、查询中断 |
-| StarRocks | mysql2 | MySQL 协议、OLAP DDL、物化视图 |
-| SQL Server | mssql | T-SQL、Windows 身份验证、FOR XML/JSON |
-| Oracle | oracledb 6.x | thin/thick 模式、PL/SQL、DBMS_METADATA |
-| 达梦 DM8 | odbc | ODBC 桥接、Oracle 兼容语法 |
-| SSH 隧道 | ssh2 | 适用于所有支持 SSL 的数据库 |
+| 数据库     | 驱动           | 特性                                   |
+| ---------- | -------------- | -------------------------------------- |
+| MySQL      | mysql2         | 连接池、SSL、SSH 隧道、流式查询        |
+| PostgreSQL | pg             | 连接池、SSL、SSH 隧道、查询取消        |
+| SQLite     | better-sqlite3 | 文件路径、WAL 模式、查询中断           |
+| StarRocks  | mysql2         | MySQL 协议、OLAP DDL、物化视图         |
+| SQL Server | mssql          | T-SQL、Windows 身份验证、FOR XML/JSON  |
+| Oracle     | oracledb 6.x   | thin/thick 模式、PL/SQL、DBMS_METADATA |
+| 达梦 DM8   | odbc           | ODBC 桥接、Oracle 兼容语法             |
+| SSH 隧道   | ssh2           | 适用于所有支持 SSL 的数据库            |
 
 **通用特性**：
 
@@ -173,11 +173,11 @@ LIMIT 10;
 
 **执行控制**：
 
-| 命令 | 快捷键 | 说明 |
-|------|--------|------|
-| Execute SQL | `Ctrl+Shift+E` / `Cmd+Shift+E` | 执行编辑器中的全部 SQL |
-| Execute Selected SQL | `Ctrl+Shift+R` / `Cmd+Shift+R` | 仅执行选中部分 |
-| Cancel Running Query | - | 取消正在执行的查询 |
+| 命令                 | 快捷键                         | 说明                   |
+| -------------------- | ------------------------------ | ---------------------- |
+| Execute SQL          | `Ctrl+Shift+E` / `Cmd+Shift+E` | 执行编辑器中的全部 SQL |
+| Execute Selected SQL | `Ctrl+Shift+R` / `Cmd+Shift+R` | 仅执行选中部分         |
+| Cancel Running Query | -                              | 取消正在执行的查询     |
 
 **查询结果面板**（集成 Monaco 编辑器）：
 
@@ -205,13 +205,13 @@ LIMIT 10;
 
 #### 3. 数据导入与导出
 
-| 操作 | 格式 | 说明 |
-|------|------|------|
-| 导出查询结果 | CSV | 可配置分隔符、编码、表头 |
-| 导出查询结果 | JSON | 支持美化输出 |
-| 导出查询结果 | SQL INSERT | 生成 INSERT 语句 |
-| 导出表 DDL | DDL | 完整建表语句 |
-| 从文件导入 | CSV / JSON | 批量导入数据 |
+| 操作         | 格式       | 说明                     |
+| ------------ | ---------- | ------------------------ |
+| 导出查询结果 | CSV        | 可配置分隔符、编码、表头 |
+| 导出查询结果 | JSON       | 支持美化输出             |
+| 导出查询结果 | SQL INSERT | 生成 INSERT 语句         |
+| 导出表 DDL   | DDL        | 完整建表语句             |
+| 从文件导入   | CSV / JSON | 批量导入数据             |
 
 #### 4. 表设计器
 
@@ -231,10 +231,10 @@ LIMIT 10;
 - 树形结构展示执行计划
 - 节点详情：操作类型、估算成本、行数、扫描类型
 - 各方言适配：
-  - MySQL：`EXPLAIN FORMAT=JSON`
-  - PostgreSQL：`EXPLAIN (FORMAT JSON)`
-  - SQL Server：`SET SHOWPLAN_XML ON`
-  - Oracle：`EXPLAIN PLAN FOR` + `DBMS_XPLAN.DISPLAY`
+    - MySQL：`EXPLAIN FORMAT=JSON`
+    - PostgreSQL：`EXPLAIN (FORMAT JSON)`
+    - SQL Server：`SET SHOWPLAN_XML ON`
+    - Oracle：`EXPLAIN PLAN FOR` + `DBMS_XPLAN.DISPLAY`
 
 #### 6. 数据库浏览器（侧边栏）
 
@@ -273,23 +273,23 @@ LIMIT 10;
 
 **大小写控制**
 
-| 选项 | 说明 | 默认值 |
-|------|------|--------|
-| `keywordCase` | 关键字（preserve/upper/lower） | `preserve` |
-| `dataTypeCase` | 数据类型 | `preserve` |
-| `functionCase` | 函数名 | `preserve` |
-| `identifierCase` | 标识符 | `preserve` |
-| `nullCase` | NULL 关键字 | `preserve` |
-| `booleanCase` | TRUE/FALSE | `preserve` |
+| 选项             | 说明                           | 默认值     |
+| ---------------- | ------------------------------ | ---------- |
+| `keywordCase`    | 关键字（preserve/upper/lower） | `preserve` |
+| `dataTypeCase`   | 数据类型                       | `preserve` |
+| `functionCase`   | 函数名                         | `preserve` |
+| `identifierCase` | 标识符                         | `preserve` |
+| `nullCase`       | NULL 关键字                    | `preserve` |
+| `booleanCase`    | TRUE/FALSE                     | `preserve` |
 
 **缩进控制**
 
-| 选项 | 说明 | 默认值 |
-|------|------|--------|
-| `indentStyle` | 风格（standard/tabularLeft/tabularRight） | `standard` |
-| `tabSizeOverride` | 缩进宽度 | `2` |
-| `insertSpacesOverride` | 使用空格缩进 | `true` |
-| `ignoreTabSettings` | 忽略 VSCode 全局缩进设置 | `false` |
+| 选项                   | 说明                                      | 默认值     |
+| ---------------------- | ----------------------------------------- | ---------- |
+| `indentStyle`          | 风格（standard/tabularLeft/tabularRight） | `standard` |
+| `tabSizeOverride`      | 缩进宽度                                  | `2`        |
+| `insertSpacesOverride` | 使用空格缩进                              | `true`     |
+| `ignoreTabSettings`    | 忽略 VSCode 全局缩进设置                  | `false`    |
 
 **换行控制**（25+ 选项）
 
@@ -297,40 +297,40 @@ SELECT、FROM、WHERE、GROUP BY、HAVING、ORDER BY、LIMIT、JOIN、ON、USING
 
 **对齐控制**
 
-| 选项 | 说明 | 默认值 |
-|------|------|--------|
-| `alignColumnDefinitions` | 对齐列定义 | `false` |
-| `alignWhereClauses` | 对齐 WHERE 条件 | `false` |
-| `alignCaseStatements` | 对齐 CASE 语句 | `false` |
-| `alignOnClauses` | 对齐 ON 条件 | `false` |
-| `alignInsertColumns` | 对齐 INSERT 列 | `false` |
+| 选项                      | 说明             | 默认值  |
+| ------------------------- | ---------------- | ------- |
+| `alignColumnDefinitions`  | 对齐列定义       | `false` |
+| `alignWhereClauses`       | 对齐 WHERE 条件  | `false` |
+| `alignCaseStatements`     | 对齐 CASE 语句   | `false` |
+| `alignOnClauses`          | 对齐 ON 条件     | `false` |
+| `alignInsertColumns`      | 对齐 INSERT 列   | `false` |
 | `alignInsertValuesGroups` | 对齐 INSERT 值组 | `false` |
-| `tabulateAlias` | 表格化别名 | `false` |
+| `tabulateAlias`           | 表格化别名       | `false` |
 
 **间距与其他**
 
-| 选项 | 说明 | 默认值 |
-|------|------|--------|
-| `denseOperators` | 去除运算符周围空格 | `false` |
-| `spaceBeforeComma` | 逗号前加空格 | `false` |
-| `spaceInsideParentheses` | 括号内加空格 | `false` |
-| `expressionWidth` | 表达式换行字符阈值 | `50` |
-| `linesBetweenQueries` | 查询间空行数 | `1` |
-| `newlineBeforeSemicolon` | 分号前换行 | `false` |
-| `commaPosition` | 逗号位置（after/before） | `after` |
-| `singleLineMaxLength` | 单行最大长度 | `80` |
-| `trimTrailingSpaces` | 去除行尾空格 | `true` |
-| `semicolonAtEnd` | 末尾加分号 | `true` |
-| `commentPosition` | 注释位置（preserve/newline/inline） | `preserve` |
-| `subqueryParenStyle` | 子查询括号风格（inline/newline） | `inline` |
-| `maxItemsInlineList` | 行内列表最大项数 | `5` |
-| `indentCteBody` | 缩进 CTE 主体 | `true` |
-| `cteCommaPosition` | CTE 逗号位置 | `before` |
-| `newlineBetweenCtes` | CTE 之间换行 | `true` |
-| `indentJoinConditions` | 缩进 JOIN 条件 | `true` |
-| `indentWhen` / `indentThen` | 缩进 WHEN / THEN | `true` |
-| `blankLinesBeforeSetOperation` | 集合运算前空行 | `1` |
-| `blankLinesAfterSetOperation` | 集合运算后空行 | `0` |
+| 选项                           | 说明                                | 默认值     |
+| ------------------------------ | ----------------------------------- | ---------- |
+| `denseOperators`               | 去除运算符周围空格                  | `false`    |
+| `spaceBeforeComma`             | 逗号前加空格                        | `false`    |
+| `spaceInsideParentheses`       | 括号内加空格                        | `false`    |
+| `expressionWidth`              | 表达式换行字符阈值                  | `50`       |
+| `linesBetweenQueries`          | 查询间空行数                        | `1`        |
+| `newlineBeforeSemicolon`       | 分号前换行                          | `false`    |
+| `commaPosition`                | 逗号位置（after/before）            | `after`    |
+| `singleLineMaxLength`          | 单行最大长度                        | `80`       |
+| `trimTrailingSpaces`           | 去除行尾空格                        | `true`     |
+| `semicolonAtEnd`               | 末尾加分号                          | `true`     |
+| `commentPosition`              | 注释位置（preserve/newline/inline） | `preserve` |
+| `subqueryParenStyle`           | 子查询括号风格（inline/newline）    | `inline`   |
+| `maxItemsInlineList`           | 行内列表最大项数                    | `5`        |
+| `indentCteBody`                | 缩进 CTE 主体                       | `true`     |
+| `cteCommaPosition`             | CTE 逗号位置                        | `before`   |
+| `newlineBetweenCtes`           | CTE 之间换行                        | `true`     |
+| `indentJoinConditions`         | 缩进 JOIN 条件                      | `true`     |
+| `indentWhen` / `indentThen`    | 缩进 WHEN / THEN                    | `true`     |
+| `blankLinesBeforeSetOperation` | 集合运算前空行                      | `1`        |
+| `blankLinesAfterSetOperation`  | 集合运算后空行                      | `0`        |
 
 格式化器内置缓存（按方言 + 配置哈希，最多 50 实例），并支持格式化选中部分。
 
@@ -338,15 +338,15 @@ SELECT、FROM、WHERE、GROUP BY、HAVING、ORDER BY、LIMIT、JOIN、ON、USING
 
 7 种补全类型，每种可独立启用/禁用：
 
-| 类型 | 说明 | 示例 |
-|------|------|------|
-| **Schema 补全** | 来自已连接数据库的表名/列名 | 输入表名前缀 → 提示表名及列 |
-| **关键字补全** | 方言特定的关键字和数据类型 | `SEL` → `SELECT` |
-| **函数补全** | 580+ 函数签名，含参数、返回类型、描述 | `SUB` → `SUBSTR(string, start, length)` |
-| **代码片段补全** | 方言特定的代码片段 | `sel` → 插入 SELECT 模板 |
-| **CTE 名称补全** | WITH 子句中定义的 CTE 名称 | `WITH cte AS (...) SELECT` → 提示 `cte` |
-| **标识符补全** | 基于上下文的表名/列名建议 | FROM 子句中提示表名 |
-| **注释模板补全** | header、todo、fixme 等 | `header` → 插入文件头注释 |
+| 类型             | 说明                                  | 示例                                    |
+| ---------------- | ------------------------------------- | --------------------------------------- |
+| **Schema 补全**  | 来自已连接数据库的表名/列名           | 输入表名前缀 → 提示表名及列             |
+| **关键字补全**   | 方言特定的关键字和数据类型            | `SEL` → `SELECT`                        |
+| **函数补全**     | 580+ 函数签名，含参数、返回类型、描述 | `SUB` → `SUBSTR(string, start, length)` |
+| **代码片段补全** | 方言特定的代码片段                    | `sel` → 插入 SELECT 模板                |
+| **CTE 名称补全** | WITH 子句中定义的 CTE 名称            | `WITH cte AS (...) SELECT` → 提示 `cte` |
+| **标识符补全**   | 基于上下文的表名/列名建议             | FROM 子句中提示表名                     |
+| **注释模板补全** | header、todo、fixme 等                | `header` → 插入文件头注释               |
 
 #### 9. 语法检查与诊断
 
@@ -364,42 +364,42 @@ SELECT、FROM、WHERE、GROUP BY、HAVING、ORDER BY、LIMIT、JOIN、ON、USING
 
 每条规则支持 `enabled` + `severity` 配置：
 
-| 规则 ID | 说明 | 默认启用 | 默认级别 |
-|--------|------|---------|---------|
-| `avoid_select_star` | 避免 SELECT * | ✅ | Warning |
-| `explicit_join_type` | 显式指定 JOIN 类型 | ✅ | Info |
-| `limit_with_order_by` | LIMIT 应搭配 ORDER BY | ✅ | Warning |
-| `avoid_column_count_mismatch` | INSERT 列数与值数不匹配 | ✅ | Error |
-| `missing_primary_key` | CREATE TABLE 缺少主键 | ✅ | Warning |
-| `use_current_timestamp` | 使用 CURRENT_TIMESTAMP | ✅ | Info |
-| `avoid_select_in_insert` | INSERT 中避免 SELECT | ✅ | Warning |
-| `duplicate_column_aliases` | 重复列别名 | ✅ | Warning |
-| `missing_query_comment` | 复杂查询缺少注释 | ✅ | Warning |
-| `missing_column_comment` | DDL 列缺少 COMMENT | ✅ | Warning |
-| `commented_out_code` | 注释掉的代码 | ✅ | Info |
-| `expired_todo` | 过期的 TODO/FIXME | ✅ | Info |
-| `having_without_group_by` | HAVING 缺少 GROUP BY | ✅ | Error |
-| `limit_invalid_value` | LIMIT 值无效 | ✅ | Error |
-| `reserved_word_identifier` | 保留字作为标识符 | ✅ | Warning |
-| `join_missing_on` | JOIN 缺少 ON | ✅ | Error |
-| `select_without_from` | SELECT 缺少 FROM | ✅ | Warning |
-| `misplaced_distinct` | DISTINCT 位置错误 | ✅ | Error |
-| `aggregate_in_where` | WHERE 中使用聚合函数 | ✅ | Error |
-| `subquery_without_alias` | 子查询缺少别名 | ✅ | Warning |
-| `suspicious_null_comparison` | 可疑的 NULL 比较 | ✅ | Warning |
-| `incomplete_case` | 不完整的 CASE | ✅ | Error |
-| `redundant_distinct` | 冗余 DISTINCT | ✅ | Warning |
-| `date_function_usage` | 日期函数用法提示 | ✅ | Info |
-| `wildcard_in_update` | UPDATE 中使用通配符 | ✅ | Error |
-| `implicit_cross_join` | 隐式交叉连接 | ✅ | Warning |
-| `deprecated_function` | 已弃用函数 | ✅ | Info |
-| `postgres_boolean_comparison` | PostgreSQL 布尔比较 | ✅ | Hint |
-| `use_coalesce_over_isnull` | 使用 COALESCE 替代 ISNULL | ❌ | Info |
-| `avoid_correlated_subqueries` | 避免相关子查询 | ❌ | Warning |
-| `long_query_line` | 长查询行 | ❌ | Info |
-| `explicit_column_aliasing` | 显式列别名 | ❌ | Info |
-| `uppercase_keywords` | 关键字大写 | ❌ | Info |
-| `consistent_aliasing` | 一致的别名 | ❌ | Info |
+| 规则 ID                       | 说明                      | 默认启用 | 默认级别 |
+| ----------------------------- | ------------------------- | -------- | -------- |
+| `avoid_select_star`           | 避免 SELECT *             | ✅       | Warning  |
+| `explicit_join_type`          | 显式指定 JOIN 类型        | ✅       | Info     |
+| `limit_with_order_by`         | LIMIT 应搭配 ORDER BY     | ✅       | Warning  |
+| `avoid_column_count_mismatch` | INSERT 列数与值数不匹配   | ✅       | Error    |
+| `missing_primary_key`         | CREATE TABLE 缺少主键     | ✅       | Warning  |
+| `use_current_timestamp`       | 使用 CURRENT_TIMESTAMP    | ✅       | Info     |
+| `avoid_select_in_insert`      | INSERT 中避免 SELECT      | ✅       | Warning  |
+| `duplicate_column_aliases`    | 重复列别名                | ✅       | Warning  |
+| `missing_query_comment`       | 复杂查询缺少注释          | ✅       | Warning  |
+| `missing_column_comment`      | DDL 列缺少 COMMENT        | ✅       | Warning  |
+| `commented_out_code`          | 注释掉的代码              | ✅       | Info     |
+| `expired_todo`                | 过期的 TODO/FIXME         | ✅       | Info     |
+| `having_without_group_by`     | HAVING 缺少 GROUP BY      | ✅       | Error    |
+| `limit_invalid_value`         | LIMIT 值无效              | ✅       | Error    |
+| `reserved_word_identifier`    | 保留字作为标识符          | ✅       | Warning  |
+| `join_missing_on`             | JOIN 缺少 ON              | ✅       | Error    |
+| `select_without_from`         | SELECT 缺少 FROM          | ✅       | Warning  |
+| `misplaced_distinct`          | DISTINCT 位置错误         | ✅       | Error    |
+| `aggregate_in_where`          | WHERE 中使用聚合函数      | ✅       | Error    |
+| `subquery_without_alias`      | 子查询缺少别名            | ✅       | Warning  |
+| `suspicious_null_comparison`  | 可疑的 NULL 比较          | ✅       | Warning  |
+| `incomplete_case`             | 不完整的 CASE             | ✅       | Error    |
+| `redundant_distinct`          | 冗余 DISTINCT             | ✅       | Warning  |
+| `date_function_usage`         | 日期函数用法提示          | ✅       | Info     |
+| `wildcard_in_update`          | UPDATE 中使用通配符       | ✅       | Error    |
+| `implicit_cross_join`         | 隐式交叉连接              | ✅       | Warning  |
+| `deprecated_function`         | 已弃用函数                | ✅       | Info     |
+| `postgres_boolean_comparison` | PostgreSQL 布尔比较       | ✅       | Hint     |
+| `use_coalesce_over_isnull`    | 使用 COALESCE 替代 ISNULL | ❌       | Info     |
+| `avoid_correlated_subqueries` | 避免相关子查询            | ❌       | Warning  |
+| `long_query_line`             | 长查询行                  | ❌       | Info     |
+| `explicit_column_aliasing`    | 显式列别名                | ❌       | Info     |
+| `uppercase_keywords`          | 关键字大写                | ❌       | Info     |
+| `consistent_aliasing`         | 一致的别名                | ❌       | Info     |
 
 部分规则支持子选项：
 
@@ -410,23 +410,23 @@ SELECT、FROM、WHERE、GROUP BY、HAVING、ORDER BY、LIMIT、JOIN、ON、USING
 
 #### 11. 快速修复
 
-| 问题 | 修复建议 |
-|------|---------|
-| `= NULL` | 替换为 `IS NULL` |
-| `!= NULL` / `<> NULL` | 替换为 `IS NOT NULL` |
-| 保留字作为别名 | 添加反引号包裹 |
-| 子查询缺少别名 | 自动添加 `AS subquery` |
-| INSERT 缺少列名 | 添加列名占位符 |
-| HAVING 缺少 GROUP BY | 自动添加 GROUP BY |
+| 问题                  | 修复建议               |
+| --------------------- | ---------------------- |
+| `= NULL`              | 替换为 `IS NULL`       |
+| `!= NULL` / `<> NULL` | 替换为 `IS NOT NULL`   |
+| 保留字作为别名        | 添加反引号包裹         |
+| 子查询缺少别名        | 自动添加 `AS subquery` |
+| INSERT 缺少列名       | 添加列名占位符         |
+| HAVING 缺少 GROUP BY  | 自动添加 GROUP BY      |
 
 #### 12. 代码导航
 
-| 功能 | 快捷键 | 说明 |
-|------|--------|------|
-| 跳转到定义 | `F12` | CTE、表别名、列别名 |
-| 查找所有引用 | `Shift+F12` | 符号引用查找 |
-| 重命名符号 | `F2` | 含保留字/冲突校验 |
-| 面包屑导航 | - | 子句级导航（SELECT/FROM/WHERE/GROUP BY/HAVING/ORDER BY） |
+| 功能         | 快捷键      | 说明                                                     |
+| ------------ | ----------- | -------------------------------------------------------- |
+| 跳转到定义   | `F12`       | CTE、表别名、列别名                                      |
+| 查找所有引用 | `Shift+F12` | 符号引用查找                                             |
+| 重命名符号   | `F2`        | 含保留字/冲突校验                                        |
+| 面包屑导航   | -           | 子句级导航（SELECT/FROM/WHERE/GROUP BY/HAVING/ORDER BY） |
 
 共享 AstNavigator 导航引擎。
 
@@ -436,9 +436,9 @@ SELECT、FROM、WHERE、GROUP BY、HAVING、ORDER BY、LIMIT、JOIN、ON、USING
 
 - 支持 CREATE TABLE、SELECT、INSERT、UPDATE、DELETE、CREATE VIEW 全语句类型
 - 可插拔节点转换器架构：
-  - 函数映射（NOW→CURRENT_TIMESTAMP、IFNULL→COALESCE、IF→CASE WHEN）
-  - 类型映射（DATETIME↔TIMESTAMP、VARCHAR↔STRING）
-  - 列属性剥离、表选项过滤、约束移除、Hive 子句移除
+    - 函数映射（NOW→CURRENT_TIMESTAMP、IFNULL→COALESCE、IF→CASE WHEN）
+    - 类型映射（DATETIME↔TIMESTAMP、VARCHAR↔STRING）
+    - 列属性剥离、表选项过滤、约束移除、Hive 子句移除
 - AST 解析失败时交互式回退正则转换
 - 复杂类型（ARRAY/MAP/STRUCT）转换时发出警告
 - 入口：右键菜单 `MySQL to HiveSQL` / `HiveSQL to MySQL`，或命令面板
@@ -447,23 +447,23 @@ SELECT、FROM、WHERE、GROUP BY、HAVING、ORDER BY、LIMIT、JOIN、ON、USING
 
 **智能注释切换**
 
-| 快捷键 | 功能 |
-|--------|------|
-| `Ctrl+/` / `Cmd+/` | 智能切换：单行用行注释，多行用块注释 |
+| 快捷键                         | 功能                                          |
+| ------------------------------ | --------------------------------------------- |
+| `Ctrl+/` / `Cmd+/`             | 智能切换：单行用行注释，多行用块注释          |
 | `Ctrl+Shift+/` / `Cmd+Shift+/` | 高级注释：格式化禁用标记、DDL COMMENT、块注释 |
 
 **注释模板补全**
 
-| 前缀 | 说明 |
-|------|------|
-| `header` | 文件头注释（自动作者、自动表依赖） |
-| `col` | 列 COMMENT |
-| `tbl` | 表 COMMENT |
-| `todo` | TODO 注释 |
-| `fixme` | FIXME 注释 |
-| `hack` | HACK 注释 |
-| `desc` | 查询说明注释 |
-| `section` | 分区标题注释 |
+| 前缀      | 说明                               |
+| --------- | ---------------------------------- |
+| `header`  | 文件头注释（自动作者、自动表依赖） |
+| `col`     | 列 COMMENT                         |
+| `tbl`     | 表 COMMENT                         |
+| `todo`    | TODO 注释                          |
+| `fixme`   | FIXME 注释                         |
+| `hack`    | HACK 注释                          |
+| `desc`    | 查询说明注释                       |
+| `section` | 分区标题注释                       |
 
 **注释 Lint 规则**：`missing_query_comment`、`missing_column_comment`、`commented_out_code`、`expired_todo`
 
@@ -545,13 +545,13 @@ SELECT、FROM、WHERE、GROUP BY、HAVING、ORDER BY、LIMIT、JOIN、ON、USING
 
 **连接配置**：
 
-| 配置项 | 说明 | 默认值 |
-|--------|------|--------|
-| 主机 | StarRocks FE 地址 | `localhost` |
-| 端口 | MySQL 协议端口 | `9030` |
-| 用户名 | 默认管理员账户 | `root` |
-| SSL | 支持 SSL 加密连接 | 关闭 |
-| SSH 隧道 | 支持 SSH 隧道连接 | 关闭 |
+| 配置项   | 说明              | 默认值      |
+| -------- | ----------------- | ----------- |
+| 主机     | StarRocks FE 地址 | `localhost` |
+| 端口     | MySQL 协议端口    | `9030`      |
+| 用户名   | 默认管理员账户    | `root`      |
+| SSL      | 支持 SSL 加密连接 | 关闭        |
+| SSH 隧道 | 支持 SSH 隧道连接 | 关闭        |
 
 **语法支持**：
 
@@ -572,16 +572,16 @@ SELECT、FROM、WHERE、GROUP BY、HAVING、ORDER BY、LIMIT、JOIN、ON、USING
 
 **连接配置**：
 
-| 配置项 | 说明 | 默认值 |
-|--------|------|--------|
-| 主机 | SQL Server 地址 | `localhost` |
-| 端口 | 监听端口 | `1433` |
-| 用户名 | 默认账户 | `sa` |
-| 加密 | 是否加密连接 | 开启 |
-| 信任服务器证书 | 自签名证书时需开启 | 关闭 |
-| 域 | Windows 身份验证域（可选） | - |
-| SSL | 支持 SSL 加密连接 | 关闭 |
-| SSH 隧道 | 支持 SSH 隧道连接 | 关闭 |
+| 配置项         | 说明                       | 默认值      |
+| -------------- | -------------------------- | ----------- |
+| 主机           | SQL Server 地址            | `localhost` |
+| 端口           | 监听端口                   | `1433`      |
+| 用户名         | 默认账户                   | `sa`        |
+| 加密           | 是否加密连接               | 开启        |
+| 信任服务器证书 | 自签名证书时需开启         | 关闭        |
+| 域             | Windows 身份验证域（可选） | -           |
+| SSL            | 支持 SSL 加密连接          | 关闭        |
+| SSH 隧道       | 支持 SSH 隧道连接          | 关闭        |
 
 **语法支持**：
 
@@ -601,16 +601,16 @@ SELECT、FROM、WHERE、GROUP BY、HAVING、ORDER BY、LIMIT、JOIN、ON、USING
 
 **连接配置**：
 
-| 配置项 | 说明 | 默认值 |
-|--------|------|--------|
-| 主机 | Oracle 服务器地址 | `localhost` |
-| 端口 | 监听端口 | `1521` |
-| 用户名 | 默认账户 | `system` |
-| 服务名/SID | 服务名或 SID（可选 connectString 覆盖） | - |
-| 使用 SID | 以 SID 方式连接（默认服务名） | 关闭 |
-| 厚模式 | 启用 thick 模式（需 Instant Client） | 关闭 |
-| SSL | 支持 SSL 加密连接 | 关闭 |
-| SSH 隧道 | 支持 SSH 隧道连接 | 关闭 |
+| 配置项     | 说明                                    | 默认值      |
+| ---------- | --------------------------------------- | ----------- |
+| 主机       | Oracle 服务器地址                       | `localhost` |
+| 端口       | 监听端口                                | `1521`      |
+| 用户名     | 默认账户                                | `system`    |
+| 服务名/SID | 服务名或 SID（可选 connectString 覆盖） | -           |
+| 使用 SID   | 以 SID 方式连接（默认服务名）           | 关闭        |
+| 厚模式     | 启用 thick 模式（需 Instant Client）    | 关闭        |
+| SSL        | 支持 SSL 加密连接                       | 关闭        |
+| SSH 隧道   | 支持 SSH 隧道连接                       | 关闭        |
 
 **语法支持**：
 
@@ -633,21 +633,21 @@ SELECT、FROM、WHERE、GROUP BY、HAVING、ORDER BY、LIMIT、JOIN、ON、USING
 
 - 需要在本机安装达梦 ODBC 驱动（DM8 ODBC Driver）
 - 本插件依赖 `odbc` npm 包（native 模块），需要 C++ 编译环境：
-  - Windows：需安装 Visual Studio Build Tools（C++ 工作负载）
-  - macOS：需安装 Xcode Command Line Tools（`xcode-select --install`）
-  - Linux：需安装 `python3 make g++`（Debian/Ubuntu：`build-essential`，CentOS/RHEL：`gcc-c++`）
+    - Windows：需安装 Visual Studio Build Tools（C++ 工作负载）
+    - macOS：需安装 Xcode Command Line Tools（`xcode-select --install`）
+    - Linux：需安装 `python3 make g++`（Debian/Ubuntu：`build-essential`，CentOS/RHEL：`gcc-c++`）
 - 默认端口 5236，默认用户 SYSDBA
 
 **连接配置**：
 
-| 配置项 | 说明 | 默认值 |
-|--------|------|--------|
-| ODBC 驱动名 | ODBC 驱动注册名 | `DM8 ODBC DRIVER` |
-| 兼容模式 | 影响 SQL 语法解析：Oracle / MySQL / PostgreSQL | `Oracle` |
-| Schema | 可选，指定连接后的默认 Schema | - |
-| 主机 | 达梦数据库服务器地址 | `localhost` |
-| 端口 | 达梦数据库监听端口 | `5236` |
-| 用户名 | 默认管理员账户 | `SYSDBA` |
+| 配置项      | 说明                                           | 默认值            |
+| ----------- | ---------------------------------------------- | ----------------- |
+| ODBC 驱动名 | ODBC 驱动注册名                                | `DM8 ODBC DRIVER` |
+| 兼容模式    | 影响 SQL 语法解析：Oracle / MySQL / PostgreSQL | `Oracle`          |
+| Schema      | 可选，指定连接后的默认 Schema                  | -                 |
+| 主机        | 达梦数据库服务器地址                           | `localhost`       |
+| 端口        | 达梦数据库监听端口                             | `5236`            |
+| 用户名      | 默认管理员账户                                 | `SYSDBA`          |
 
 **语法支持**：
 
@@ -661,17 +661,17 @@ SELECT、FROM、WHERE、GROUP BY、HAVING、ORDER BY、LIMIT、JOIN、ON、USING
 
 ### 快捷键速查
 
-| 命令 | Windows/Linux | Mac |
-|------|--------------|-----|
-| 替换参数 | `Ctrl+Alt+P` | `Cmd+Alt+P` |
-| 切换注释 | `Ctrl+/` | `Cmd+/` |
-| 高级注释 | `Ctrl+Shift+/` | `Cmd+Shift+/` |
-| 执行 SQL | `Ctrl+Shift+E` | `Cmd+Shift+E` |
-| 执行选中 SQL | `Ctrl+Shift+R` | `Cmd+Shift+R` |
-| 格式化文档 | `Shift+Alt+F` | `Shift+Option+F` |
-| 跳转到定义 | `F12` | `F12` |
-| 查找所有引用 | `Shift+F12` | `Shift+F12` |
-| 重命名符号 | `F2` | `F2` |
+| 命令         | Windows/Linux  | Mac              |
+| ------------ | -------------- | ---------------- |
+| 替换参数     | `Ctrl+Alt+P`   | `Cmd+Alt+P`      |
+| 切换注释     | `Ctrl+/`       | `Cmd+/`          |
+| 高级注释     | `Ctrl+Shift+/` | `Cmd+Shift+/`    |
+| 执行 SQL     | `Ctrl+Shift+E` | `Cmd+Shift+E`    |
+| 执行选中 SQL | `Ctrl+Shift+R` | `Cmd+Shift+R`    |
+| 格式化文档   | `Shift+Alt+F`  | `Shift+Option+F` |
+| 跳转到定义   | `F12`          | `F12`            |
+| 查找所有引用 | `Shift+F12`    | `Shift+F12`      |
+| 重命名符号   | `F2`           | `F2`             |
 
 ### 配置参考
 
@@ -679,9 +679,9 @@ SELECT、FROM、WHERE、GROUP BY、HAVING、ORDER BY、LIMIT、JOIN、ON、USING
 
 #### 1. 语言与方言
 
-| 设置项 | 说明 | 默认值 |
-|--------|------|--------|
-| `dialect` | SQL 方言 | `hive` |
+| 设置项            | 说明     | 默认值 |
+| ----------------- | -------- | ------ |
+| `dialect`         | SQL 方言 | `hive` |
 | `displayLanguage` | 界面语言 | `auto` |
 
 #### 2. 格式化（40+ 选项）
@@ -694,120 +694,120 @@ SELECT、FROM、WHERE、GROUP BY、HAVING、ORDER BY、LIMIT、JOIN、ON、USING
 
 #### 4. 功能开关
 
-| 设置项 | 说明 | 默认值 |
-|--------|------|--------|
-| `enableLinter` | 启用 Lint | `true` |
-| `enableCodeFolding` | 启用代码折叠 | `true` |
-| `enableOutlineView` | 启用大纲视图 | `true` |
-| `enableStatusBar` | 启用状态栏 | `true` |
+| 设置项                     | 说明         | 默认值 |
+| -------------------------- | ------------ | ------ |
+| `enableLinter`             | 启用 Lint    | `true` |
+| `enableCodeFolding`        | 启用代码折叠 | `true` |
+| `enableOutlineView`        | 启用大纲视图 | `true` |
+| `enableStatusBar`          | 启用状态栏   | `true` |
 | `enableParameterHighlight` | 启用参数高亮 | `true` |
-| `enableSnippets` | 启用代码片段 | `true` |
-| `enableQuickFix` | 启用快速修复 | `true` |
-| `enableHover` | 启用悬停信息 | `true` |
-| `enableNavigation` | 启用代码导航 | `true` |
-| `enableCompletion` | 启用智能补全 | `true` |
+| `enableSnippets`           | 启用代码片段 | `true` |
+| `enableQuickFix`           | 启用快速修复 | `true` |
+| `enableHover`              | 启用悬停信息 | `true` |
+| `enableNavigation`         | 启用代码导航 | `true` |
+| `enableCompletion`         | 启用智能补全 | `true` |
 | `enableSmartCommentToggle` | 智能注释切换 | `true` |
 
 #### 5. 补全
 
-| 设置项 | 说明 | 默认值 |
-|--------|------|--------|
-| `completion.keywords` | 关键字补全 | `true` |
-| `completion.functions` | 函数补全 | `true` |
-| `completion.snippets` | 代码片段补全 | `false` |
-| `completion.cteNames` | CTE 名称补全 | `true` |
-| `completion.identifiers` | 标识符补全 | `true` |
-| `completion.commentSnippets` | 注释模板补全 | `true` |
-| `completion.schema` | Schema 感知补全 | `true` |
+| 设置项                       | 说明            | 默认值  |
+| ---------------------------- | --------------- | ------- |
+| `completion.keywords`        | 关键字补全      | `true`  |
+| `completion.functions`       | 函数补全        | `true`  |
+| `completion.snippets`        | 代码片段补全    | `false` |
+| `completion.cteNames`        | CTE 名称补全    | `true`  |
+| `completion.identifiers`     | 标识符补全      | `true`  |
+| `completion.commentSnippets` | 注释模板补全    | `true`  |
+| `completion.schema`          | Schema 感知补全 | `true`  |
 
 #### 6. Schema 缓存
 
-| 设置项 | 说明 | 默认值 |
-|--------|------|--------|
-| `schemaCache.databaseTtl` | 数据库缓存 TTL（秒） | `600` |
-| `schemaCache.tableTtl` | 表缓存 TTL（秒） | `300` |
-| `schemaCache.columnTtl` | 列缓存 TTL（秒） | `120` |
-| `schemaCache.functionTtl` | 函数缓存 TTL（秒） | `600` |
-| `schemaCache.refreshOnDDL` | DDL 变更后刷新 | `true` |
-| `schemaCache.prefetchOnConnect` | 连接时预取 | `true` |
+| 设置项                          | 说明                 | 默认值 |
+| ------------------------------- | -------------------- | ------ |
+| `schemaCache.databaseTtl`       | 数据库缓存 TTL（秒） | `600`  |
+| `schemaCache.tableTtl`          | 表缓存 TTL（秒）     | `300`  |
+| `schemaCache.columnTtl`         | 列缓存 TTL（秒）     | `120`  |
+| `schemaCache.functionTtl`       | 函数缓存 TTL（秒）   | `600`  |
+| `schemaCache.refreshOnDDL`      | DDL 变更后刷新       | `true` |
+| `schemaCache.prefetchOnConnect` | 连接时预取           | `true` |
 
 #### 7. 查询执行
 
-| 设置项 | 说明 | 默认值 |
-|--------|------|--------|
-| `query.maxRows` | 最大行数 | `1000` |
-| `query.timeout` | 查询超时（毫秒） | `30000` |
-| `query.pageSize` | 分页大小 | `100` |
-| `query.nullPlaceholder` | NULL 占位符 | `(NULL)` |
+| 设置项                  | 说明             | 默认值   |
+| ----------------------- | ---------------- | -------- |
+| `query.maxRows`         | 最大行数         | `1000`   |
+| `query.timeout`         | 查询超时（毫秒） | `30000`  |
+| `query.pageSize`        | 分页大小         | `100`    |
+| `query.nullPlaceholder` | NULL 占位符      | `(NULL)` |
 
 #### 8. 安全守卫
 
-| 设置项 | 说明 | 默认值 |
-|--------|------|--------|
+| 设置项              | 说明                            | 默认值     |
+| ------------------- | ------------------------------- | ---------- |
 | `safetyGuard.level` | 安全级别（strict/moderate/off） | `moderate` |
 
 #### 9. 执行引擎
 
-| 设置项 | 说明 | 默认值 |
-|--------|------|--------|
-| `execution.batchMode` | 批量模式（sequential/transaction） | `sequential` |
-| `execution.onError` | 错误处理（stop/continue） | `stop` |
-| `execution.saveProgress` | 保存进度 | `true` |
-| `execution.cancelRetries` | 取消重试次数 | `3` |
-| `execution.cancelRetryDelay` | 取消重试延迟（ms） | `500` |
+| 设置项                       | 说明                               | 默认值       |
+| ---------------------------- | ---------------------------------- | ------------ |
+| `execution.batchMode`        | 批量模式（sequential/transaction） | `sequential` |
+| `execution.onError`          | 错误处理（stop/continue）          | `stop`       |
+| `execution.saveProgress`     | 保存进度                           | `true`       |
+| `execution.cancelRetries`    | 取消重试次数                       | `3`          |
+| `execution.cancelRetryDelay` | 取消重试延迟（ms）                 | `500`        |
 
 #### 10. 导出
 
-| 设置项 | 说明 | 默认值 |
-|--------|------|--------|
-| `export.defaultFormat` | 默认导出格式 | `csv` |
-| `export.csvDelimiter` | CSV 分隔符 | `,` |
-| `export.csvEncoding` | CSV 编码 | `utf-8` |
-| `export.includeHeaders` | 包含表头 | `true` |
+| 设置项                  | 说明         | 默认值  |
+| ----------------------- | ------------ | ------- |
+| `export.defaultFormat`  | 默认导出格式 | `csv`   |
+| `export.csvDelimiter`   | CSV 分隔符   | `,`     |
+| `export.csvEncoding`    | CSV 编码     | `utf-8` |
+| `export.includeHeaders` | 包含表头     | `true`  |
 
 #### 11. 数据编辑器
 
-| 设置项 | 说明 | 默认值 |
-|--------|------|--------|
-| `dataEditor.editMode` | 编辑模式（readonly/editable） | `readonly` |
-| `dataEditor.autoCommit` | 自动提交 | `true` |
-| `dataEditor.defaultView` | 默认视图（grid/form） | `grid` |
-| `dataEditor.optimisticLocking` | 乐观锁 | `false` |
-| `dataEditor.maxBlobPreviewSize` | BLOB 预览最大大小（字节） | `5242880` |
-| `dataEditor.blobTextPreviewSize` | BLOB 文本预览大小（字节） | `1048576` |
-| `dataEditor.longTransactionWarning` | 长事务警告阈值（秒） | `300` |
-| `dataEditor.showTransactionStatus` | 显示事务状态 | `true` |
-| `dataEditor.enableValidation` | 启用验证 | `true` |
-| `dataEditor.validateOnEdit` | 编辑时验证 | `true` |
-| `dataEditor.validateForeignKeys` | 外键验证 | `false` |
+| 设置项                              | 说明                          | 默认值     |
+| ----------------------------------- | ----------------------------- | ---------- |
+| `dataEditor.editMode`               | 编辑模式（readonly/editable） | `readonly` |
+| `dataEditor.autoCommit`             | 自动提交                      | `true`     |
+| `dataEditor.defaultView`            | 默认视图（grid/form）         | `grid`     |
+| `dataEditor.optimisticLocking`      | 乐观锁                        | `false`    |
+| `dataEditor.maxBlobPreviewSize`     | BLOB 预览最大大小（字节）     | `5242880`  |
+| `dataEditor.blobTextPreviewSize`    | BLOB 文本预览大小（字节）     | `1048576`  |
+| `dataEditor.longTransactionWarning` | 长事务警告阈值（秒）          | `300`      |
+| `dataEditor.showTransactionStatus`  | 显示事务状态                  | `true`     |
+| `dataEditor.enableValidation`       | 启用验证                      | `true`     |
+| `dataEditor.validateOnEdit`         | 编辑时验证                    | `true`     |
+| `dataEditor.validateForeignKeys`    | 外键验证                      | `false`    |
 
 #### 12. 结果面板
 
-| 设置项 | 说明 | 默认值 |
-|--------|------|--------|
-| `results.enablePreload` | 启用滚动预加载 | `true` |
-| `results.jsonPrettyPrint` | JSON 美化输出 | `true` |
-| `results.dateFormat` | 日期格式（local/utc/relative） | `local` |
-| `results.longTextThreshold` | 长文本截断阈值 | `200` |
+| 设置项                      | 说明                           | 默认值  |
+| --------------------------- | ------------------------------ | ------- |
+| `results.enablePreload`     | 启用滚动预加载                 | `true`  |
+| `results.jsonPrettyPrint`   | JSON 美化输出                  | `true`  |
+| `results.dateFormat`        | 日期格式（local/utc/relative） | `local` |
+| `results.longTextThreshold` | 长文本截断阈值                 | `200`   |
 
 #### 13. 历史记录
 
-| 设置项 | 说明 | 默认值 |
-|--------|------|--------|
-| `history.maxEntries` | 最大历史条目数 | `500` |
+| 设置项               | 说明           | 默认值 |
+| -------------------- | -------------- | ------ |
+| `history.maxEntries` | 最大历史条目数 | `500`  |
 
 #### 14. 注释
 
-| 设置项 | 说明 | 默认值 |
-|--------|------|--------|
+| 设置项                     | 说明         | 默认值 |
+| -------------------------- | ------------ | ------ |
 | `enableSmartCommentToggle` | 智能注释切换 | `true` |
-| `headerAuthor` | 文件头作者 | `""` |
-| `headerModifier` | 文件头修改人 | `""` |
+| `headerAuthor`             | 文件头作者   | `""`   |
+| `headerModifier`           | 文件头修改人 | `""`   |
 
 #### 15. 性能监控
 
-| 设置项 | 说明 | 默认值 |
-|--------|------|--------|
+| 设置项                     | 说明                       | 默认值  |
+| -------------------------- | -------------------------- | ------- |
 | `performance.monitorLevel` | 监控级别（off/light/full） | `light` |
 
 ### 常见问题（FAQ）
@@ -839,6 +839,7 @@ A：v2.26.6/v2.27.1 已修复此问题，根因是 webview 脚本中重复调用
 **Q7：如何切换 SQL 方言？**
 
 A：三种方式：
+
 1. 状态栏点击当前方言名称，快速切换
 2. 设置 → `SQL-All-in-One.dialect` 选择
 3. 连接数据库后会自动切换为对应方言
@@ -881,13 +882,13 @@ MIT License
 
 **SQL All in One** is an all-in-one VSCode extension for SQL developers, integrating database connection management, SQL execution, data editing, table design, execution plans, formatting, smart completion, syntax checking, code navigation, DDL conversion, and more — covering the complete SQL development workflow.
 
-| | |
-|---|---|
-| **Publisher** | bryce-qin |
-| **Version** | 2.30.0 |
-| **License** | MIT |
-| **VSCode Engine** | ^1.85.0 |
-| **Repository** | [GitHub](https://github.com/BryceQin/SQL-All-in-One) |
+|                   |                                                      |
+| ----------------- | ---------------------------------------------------- |
+| **Publisher**     | bryce-qin                                            |
+| **Version**       | 2.32.0                                               |
+| **License**       | MIT                                                  |
+| **VSCode Engine** | ^1.85.0                                              |
+| **Repository**    | [GitHub](https://github.com/BryceQin/SQL-All-in-One) |
 
 ### Key Features
 
@@ -902,20 +903,20 @@ MIT License
 
 ### Supported SQL Dialects (12)
 
-| Language ID | Aliases | Extensions |
-|------------|---------|------------|
-| `sql` | SQL | `.sql` |
-| `hive` | Hive, hive-sql | `.hql` |
-| `mysql` | MySQL | `.mysql` |
-| `spark` | SparkSQL, spark | `.sparksql` |
-| `flinksql` | FlinkSQL, flink-sql | `.flinksql` |
-| `postgresql` | PostgreSQL, postgres | `.psql`, `.pgsql` |
-| `bigquery` | BigQuery | `.bqsql` |
-| `sqlite` | SQLite | `.sqlite`, `.sqlt` |
-| `starrocks` | StarRocks | `.starrocks` |
-| `sqlserver` | SQL Server, mssql | `.sqlserver` |
-| `plsql` | Oracle, PL/SQL | `.plsql`, `.oracle` |
-| `dameng` | Dameng, DM | `.dameng`, `.dm` |
+| Language ID  | Aliases              | Extensions          |
+| ------------ | -------------------- | ------------------- |
+| `sql`        | SQL                  | `.sql`              |
+| `hive`       | Hive, hive-sql       | `.hql`              |
+| `mysql`      | MySQL                | `.mysql`            |
+| `spark`      | SparkSQL, spark      | `.sparksql`         |
+| `flinksql`   | FlinkSQL, flink-sql  | `.flinksql`         |
+| `postgresql` | PostgreSQL, postgres | `.psql`, `.pgsql`   |
+| `bigquery`   | BigQuery             | `.bqsql`            |
+| `sqlite`     | SQLite               | `.sqlite`, `.sqlt`  |
+| `starrocks`  | StarRocks            | `.starrocks`        |
+| `sqlserver`  | SQL Server, mssql    | `.sqlserver`        |
+| `plsql`      | Oracle, PL/SQL       | `.plsql`, `.oracle` |
+| `dameng`     | Dameng, DM           | `.dameng`, `.dm`    |
 
 ### Use Cases
 
@@ -1002,16 +1003,16 @@ LIMIT 10;
 
 Supports 8 database connections with a unified management interface:
 
-| Database | Driver | Features |
-|----------|--------|----------|
-| MySQL | mysql2 | Connection pool, SSL, SSH tunnel, streaming queries |
-| PostgreSQL | pg | Connection pool, SSL, SSH tunnel, query cancellation |
-| SQLite | better-sqlite3 | File path, WAL mode, query interrupt |
-| StarRocks | mysql2 | MySQL protocol, OLAP DDL, materialized views |
-| SQL Server | mssql | T-SQL, Windows authentication, FOR XML/JSON |
-| Oracle | oracledb 6.x | thin/thick mode, PL/SQL, DBMS_METADATA |
-| Dameng DM8 | odbc | ODBC bridge, Oracle-compatible syntax |
-| SSH Tunnel | ssh2 | Available for all SSL-supported databases |
+| Database   | Driver         | Features                                             |
+| ---------- | -------------- | ---------------------------------------------------- |
+| MySQL      | mysql2         | Connection pool, SSL, SSH tunnel, streaming queries  |
+| PostgreSQL | pg             | Connection pool, SSL, SSH tunnel, query cancellation |
+| SQLite     | better-sqlite3 | File path, WAL mode, query interrupt                 |
+| StarRocks  | mysql2         | MySQL protocol, OLAP DDL, materialized views         |
+| SQL Server | mssql          | T-SQL, Windows authentication, FOR XML/JSON          |
+| Oracle     | oracledb 6.x   | thin/thick mode, PL/SQL, DBMS_METADATA               |
+| Dameng DM8 | odbc           | ODBC bridge, Oracle-compatible syntax                |
+| SSH Tunnel | ssh2           | Available for all SSL-supported databases            |
 
 **Common Features**:
 
@@ -1027,11 +1028,11 @@ Supports 8 database connections with a unified management interface:
 
 **Execution Controls**:
 
-| Command | Shortcut | Description |
-|---------|----------|-------------|
-| Execute SQL | `Ctrl+Shift+E` / `Cmd+Shift+E` | Execute all SQL in the editor |
-| Execute Selected SQL | `Ctrl+Shift+R` / `Cmd+Shift+R` | Execute only the selection |
-| Cancel Running Query | - | Cancel the running query |
+| Command              | Shortcut                       | Description                   |
+| -------------------- | ------------------------------ | ----------------------------- |
+| Execute SQL          | `Ctrl+Shift+E` / `Cmd+Shift+E` | Execute all SQL in the editor |
+| Execute Selected SQL | `Ctrl+Shift+R` / `Cmd+Shift+R` | Execute only the selection    |
+| Cancel Running Query | -                              | Cancel the running query      |
 
 **Query Result Panel** (integrated Monaco editor):
 
@@ -1059,13 +1060,13 @@ Supports 8 database connections with a unified management interface:
 
 #### 3. Data Import & Export
 
-| Operation | Format | Description |
-|-----------|--------|-------------|
-| Export query result | CSV | Configurable delimiter, encoding, headers |
-| Export query result | JSON | Supports pretty print |
-| Export query result | SQL INSERT | Generates INSERT statements |
-| Export table DDL | DDL | Complete CREATE TABLE statements |
-| Import from file | CSV / JSON | Bulk data import |
+| Operation           | Format     | Description                               |
+| ------------------- | ---------- | ----------------------------------------- |
+| Export query result | CSV        | Configurable delimiter, encoding, headers |
+| Export query result | JSON       | Supports pretty print                     |
+| Export query result | SQL INSERT | Generates INSERT statements               |
+| Export table DDL    | DDL        | Complete CREATE TABLE statements          |
+| Import from file    | CSV / JSON | Bulk data import                          |
 
 #### 4. Table Designer
 
@@ -1085,10 +1086,10 @@ Supports 8 database connections with a unified management interface:
 - Tree structure for execution plan display
 - Node details: operation type, estimated cost, rows, scan type
 - Dialect-specific adapters:
-  - MySQL: `EXPLAIN FORMAT=JSON`
-  - PostgreSQL: `EXPLAIN (FORMAT JSON)`
-  - SQL Server: `SET SHOWPLAN_XML ON`
-  - Oracle: `EXPLAIN PLAN FOR` + `DBMS_XPLAN.DISPLAY`
+    - MySQL: `EXPLAIN FORMAT=JSON`
+    - PostgreSQL: `EXPLAIN (FORMAT JSON)`
+    - SQL Server: `SET SHOWPLAN_XML ON`
+    - Oracle: `EXPLAIN PLAN FOR` + `DBMS_XPLAN.DISPLAY`
 
 #### 6. Database Explorer (Sidebar)
 
@@ -1127,23 +1128,23 @@ AST-driven formatting engine based on node-sql-parser v5.x with 40+ configurable
 
 **Case Control**
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| `keywordCase` | Keywords (preserve/upper/lower) | `preserve` |
-| `dataTypeCase` | Data types | `preserve` |
-| `functionCase` | Function names | `preserve` |
-| `identifierCase` | Identifiers | `preserve` |
-| `nullCase` | NULL keyword | `preserve` |
-| `booleanCase` | TRUE/FALSE | `preserve` |
+| Option           | Description                     | Default    |
+| ---------------- | ------------------------------- | ---------- |
+| `keywordCase`    | Keywords (preserve/upper/lower) | `preserve` |
+| `dataTypeCase`   | Data types                      | `preserve` |
+| `functionCase`   | Function names                  | `preserve` |
+| `identifierCase` | Identifiers                     | `preserve` |
+| `nullCase`       | NULL keyword                    | `preserve` |
+| `booleanCase`    | TRUE/FALSE                      | `preserve` |
 
 **Indent Control**
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| `indentStyle` | Style (standard/tabularLeft/tabularRight) | `standard` |
-| `tabSizeOverride` | Indent width | `2` |
-| `insertSpacesOverride` | Use spaces for indentation | `true` |
-| `ignoreTabSettings` | Ignore VSCode global indent settings | `false` |
+| Option                 | Description                               | Default    |
+| ---------------------- | ----------------------------------------- | ---------- |
+| `indentStyle`          | Style (standard/tabularLeft/tabularRight) | `standard` |
+| `tabSizeOverride`      | Indent width                              | `2`        |
+| `insertSpacesOverride` | Use spaces for indentation                | `true`     |
+| `ignoreTabSettings`    | Ignore VSCode global indent settings      | `false`    |
 
 **Newline Control** (25+ options)
 
@@ -1151,40 +1152,40 @@ Newline strategies for SELECT, FROM, WHERE, GROUP BY, HAVING, ORDER BY, LIMIT, J
 
 **Alignment Control**
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| `alignColumnDefinitions` | Align column definitions | `false` |
-| `alignWhereClauses` | Align WHERE conditions | `false` |
-| `alignCaseStatements` | Align CASE statements | `false` |
-| `alignOnClauses` | Align ON conditions | `false` |
-| `alignInsertColumns` | Align INSERT columns | `false` |
+| Option                    | Description               | Default |
+| ------------------------- | ------------------------- | ------- |
+| `alignColumnDefinitions`  | Align column definitions  | `false` |
+| `alignWhereClauses`       | Align WHERE conditions    | `false` |
+| `alignCaseStatements`     | Align CASE statements     | `false` |
+| `alignOnClauses`          | Align ON conditions       | `false` |
+| `alignInsertColumns`      | Align INSERT columns      | `false` |
 | `alignInsertValuesGroups` | Align INSERT value groups | `false` |
-| `tabulateAlias` | Tabulate aliases | `false` |
+| `tabulateAlias`           | Tabulate aliases          | `false` |
 
 **Spacing & Other**
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| `denseOperators` | Remove spaces around operators | `false` |
-| `spaceBeforeComma` | Space before comma | `false` |
-| `spaceInsideParentheses` | Space inside parentheses | `false` |
-| `expressionWidth` | Expression wrap character threshold | `50` |
-| `linesBetweenQueries` | Blank lines between queries | `1` |
-| `newlineBeforeSemicolon` | Newline before semicolon | `false` |
-| `commaPosition` | Comma position (after/before) | `after` |
-| `singleLineMaxLength` | Single line max length | `80` |
-| `trimTrailingSpaces` | Trim trailing spaces | `true` |
-| `semicolonAtEnd` | Semicolon at end | `true` |
-| `commentPosition` | Comment position (preserve/newline/inline) | `preserve` |
-| `subqueryParenStyle` | Subquery paren style (inline/newline) | `inline` |
-| `maxItemsInlineList` | Max items in inline list | `5` |
-| `indentCteBody` | Indent CTE body | `true` |
-| `cteCommaPosition` | CTE comma position | `before` |
-| `newlineBetweenCtes` | Newline between CTEs | `true` |
-| `indentJoinConditions` | Indent JOIN conditions | `true` |
-| `indentWhen` / `indentThen` | Indent WHEN / THEN | `true` |
-| `blankLinesBeforeSetOperation` | Blank lines before set operation | `1` |
-| `blankLinesAfterSetOperation` | Blank lines after set operation | `0` |
+| Option                         | Description                                | Default    |
+| ------------------------------ | ------------------------------------------ | ---------- |
+| `denseOperators`               | Remove spaces around operators             | `false`    |
+| `spaceBeforeComma`             | Space before comma                         | `false`    |
+| `spaceInsideParentheses`       | Space inside parentheses                   | `false`    |
+| `expressionWidth`              | Expression wrap character threshold        | `50`       |
+| `linesBetweenQueries`          | Blank lines between queries                | `1`        |
+| `newlineBeforeSemicolon`       | Newline before semicolon                   | `false`    |
+| `commaPosition`                | Comma position (after/before)              | `after`    |
+| `singleLineMaxLength`          | Single line max length                     | `80`       |
+| `trimTrailingSpaces`           | Trim trailing spaces                       | `true`     |
+| `semicolonAtEnd`               | Semicolon at end                           | `true`     |
+| `commentPosition`              | Comment position (preserve/newline/inline) | `preserve` |
+| `subqueryParenStyle`           | Subquery paren style (inline/newline)      | `inline`   |
+| `maxItemsInlineList`           | Max items in inline list                   | `5`        |
+| `indentCteBody`                | Indent CTE body                            | `true`     |
+| `cteCommaPosition`             | CTE comma position                         | `before`   |
+| `newlineBetweenCtes`           | Newline between CTEs                       | `true`     |
+| `indentJoinConditions`         | Indent JOIN conditions                     | `true`     |
+| `indentWhen` / `indentThen`    | Indent WHEN / THEN                         | `true`     |
+| `blankLinesBeforeSetOperation` | Blank lines before set operation           | `1`        |
+| `blankLinesAfterSetOperation`  | Blank lines after set operation            | `0`        |
 
 The formatter has a built-in cache (by dialect + config hash, max 50 instances) and supports formatting the selection.
 
@@ -1192,15 +1193,15 @@ The formatter has a built-in cache (by dialect + config hash, max 50 instances) 
 
 7 completion types, each independently toggleable:
 
-| Type | Description | Example |
-|------|-------------|---------|
-| **Schema Completion** | Table/column names from connected database | Type table prefix → suggest table and columns |
-| **Keyword Completion** | Dialect-specific keywords and data types | `SEL` → `SELECT` |
-| **Function Completion** | 580+ function signatures with params, return type, description | `SUB` → `SUBSTR(string, start, length)` |
-| **Snippet Completion** | Dialect-specific code snippets | `sel` → insert SELECT template |
-| **CTE Name Completion** | CTE names defined in WITH clause | `WITH cte AS (...) SELECT` → suggests `cte` |
-| **Identifier Completion** | Context-aware table/column suggestions | FROM clause suggests table names |
-| **Comment Template Completion** | header, todo, fixme, etc. | `header` → insert file header comment |
+| Type                            | Description                                                    | Example                                       |
+| ------------------------------- | -------------------------------------------------------------- | --------------------------------------------- |
+| **Schema Completion**           | Table/column names from connected database                     | Type table prefix → suggest table and columns |
+| **Keyword Completion**          | Dialect-specific keywords and data types                       | `SEL` → `SELECT`                              |
+| **Function Completion**         | 580+ function signatures with params, return type, description | `SUB` → `SUBSTR(string, start, length)`       |
+| **Snippet Completion**          | Dialect-specific code snippets                                 | `sel` → insert SELECT template                |
+| **CTE Name Completion**         | CTE names defined in WITH clause                               | `WITH cte AS (...) SELECT` → suggests `cte`   |
+| **Identifier Completion**       | Context-aware table/column suggestions                         | FROM clause suggests table names              |
+| **Comment Template Completion** | header, todo, fixme, etc.                                      | `header` → insert file header comment         |
 
 #### 9. Syntax Checking & Diagnostics
 
@@ -1218,42 +1219,42 @@ The formatter has a built-in cache (by dialect + config hash, max 50 instances) 
 
 Each rule supports `enabled` + `severity` configuration:
 
-| Rule ID | Description | Default Enabled | Default Level |
-|---------|-------------|-----------------|---------------|
-| `avoid_select_star` | Avoid SELECT * | ✅ | Warning |
-| `explicit_join_type` | Explicit JOIN type | ✅ | Info |
-| `limit_with_order_by` | LIMIT should pair with ORDER BY | ✅ | Warning |
-| `avoid_column_count_mismatch` | INSERT column/value count mismatch | ✅ | Error |
-| `missing_primary_key` | CREATE TABLE missing primary key | ✅ | Warning |
-| `use_current_timestamp` | Use CURRENT_TIMESTAMP | ✅ | Info |
-| `avoid_select_in_insert` | Avoid SELECT in INSERT | ✅ | Warning |
-| `duplicate_column_aliases` | Duplicate column aliases | ✅ | Warning |
-| `missing_query_comment` | Complex queries missing comments | ✅ | Warning |
-| `missing_column_comment` | DDL columns missing COMMENT | ✅ | Warning |
-| `commented_out_code` | Commented-out code | ✅ | Info |
-| `expired_todo` | Expired TODO/FIXME | ✅ | Info |
-| `having_without_group_by` | HAVING without GROUP BY | ✅ | Error |
-| `limit_invalid_value` | Invalid LIMIT value | ✅ | Error |
-| `reserved_word_identifier` | Reserved word as identifier | ✅ | Warning |
-| `join_missing_on` | JOIN missing ON | ✅ | Error |
-| `select_without_from` | SELECT without FROM | ✅ | Warning |
-| `misplaced_distinct` | Misplaced DISTINCT | ✅ | Error |
-| `aggregate_in_where` | Aggregate in WHERE | ✅ | Error |
-| `subquery_without_alias` | Subquery without alias | ✅ | Warning |
-| `suspicious_null_comparison` | Suspicious NULL comparison | ✅ | Warning |
-| `incomplete_case` | Incomplete CASE | ✅ | Error |
-| `redundant_distinct` | Redundant DISTINCT | ✅ | Warning |
-| `date_function_usage` | Date function usage hints | ✅ | Info |
-| `wildcard_in_update` | Wildcard in UPDATE | ✅ | Error |
-| `implicit_cross_join` | Implicit cross join | ✅ | Warning |
-| `deprecated_function` | Deprecated function | ✅ | Info |
-| `postgres_boolean_comparison` | PostgreSQL boolean comparison | ✅ | Hint |
-| `use_coalesce_over_isnull` | Use COALESCE over ISNULL | ❌ | Info |
-| `avoid_correlated_subqueries` | Avoid correlated subqueries | ❌ | Warning |
-| `long_query_line` | Long query line | ❌ | Info |
-| `explicit_column_aliasing` | Explicit column aliasing | ❌ | Info |
-| `uppercase_keywords` | Uppercase keywords | ❌ | Info |
-| `consistent_aliasing` | Consistent aliasing | ❌ | Info |
+| Rule ID                       | Description                        | Default Enabled | Default Level |
+| ----------------------------- | ---------------------------------- | --------------- | ------------- |
+| `avoid_select_star`           | Avoid SELECT *                     | ✅              | Warning       |
+| `explicit_join_type`          | Explicit JOIN type                 | ✅              | Info          |
+| `limit_with_order_by`         | LIMIT should pair with ORDER BY    | ✅              | Warning       |
+| `avoid_column_count_mismatch` | INSERT column/value count mismatch | ✅              | Error         |
+| `missing_primary_key`         | CREATE TABLE missing primary key   | ✅              | Warning       |
+| `use_current_timestamp`       | Use CURRENT_TIMESTAMP              | ✅              | Info          |
+| `avoid_select_in_insert`      | Avoid SELECT in INSERT             | ✅              | Warning       |
+| `duplicate_column_aliases`    | Duplicate column aliases           | ✅              | Warning       |
+| `missing_query_comment`       | Complex queries missing comments   | ✅              | Warning       |
+| `missing_column_comment`      | DDL columns missing COMMENT        | ✅              | Warning       |
+| `commented_out_code`          | Commented-out code                 | ✅              | Info          |
+| `expired_todo`                | Expired TODO/FIXME                 | ✅              | Info          |
+| `having_without_group_by`     | HAVING without GROUP BY            | ✅              | Error         |
+| `limit_invalid_value`         | Invalid LIMIT value                | ✅              | Error         |
+| `reserved_word_identifier`    | Reserved word as identifier        | ✅              | Warning       |
+| `join_missing_on`             | JOIN missing ON                    | ✅              | Error         |
+| `select_without_from`         | SELECT without FROM                | ✅              | Warning       |
+| `misplaced_distinct`          | Misplaced DISTINCT                 | ✅              | Error         |
+| `aggregate_in_where`          | Aggregate in WHERE                 | ✅              | Error         |
+| `subquery_without_alias`      | Subquery without alias             | ✅              | Warning       |
+| `suspicious_null_comparison`  | Suspicious NULL comparison         | ✅              | Warning       |
+| `incomplete_case`             | Incomplete CASE                    | ✅              | Error         |
+| `redundant_distinct`          | Redundant DISTINCT                 | ✅              | Warning       |
+| `date_function_usage`         | Date function usage hints          | ✅              | Info          |
+| `wildcard_in_update`          | Wildcard in UPDATE                 | ✅              | Error         |
+| `implicit_cross_join`         | Implicit cross join                | ✅              | Warning       |
+| `deprecated_function`         | Deprecated function                | ✅              | Info          |
+| `postgres_boolean_comparison` | PostgreSQL boolean comparison      | ✅              | Hint          |
+| `use_coalesce_over_isnull`    | Use COALESCE over ISNULL           | ❌              | Info          |
+| `avoid_correlated_subqueries` | Avoid correlated subqueries        | ❌              | Warning       |
+| `long_query_line`             | Long query line                    | ❌              | Info          |
+| `explicit_column_aliasing`    | Explicit column aliasing           | ❌              | Info          |
+| `uppercase_keywords`          | Uppercase keywords                 | ❌              | Info          |
+| `consistent_aliasing`         | Consistent aliasing                | ❌              | Info          |
 
 Some rules support sub-options:
 
@@ -1264,23 +1265,23 @@ Some rules support sub-options:
 
 #### 11. Quick Fix
 
-| Problem | Fix Suggestion |
-|---------|----------------|
-| `= NULL` | Replace with `IS NULL` |
-| `!= NULL` / `<> NULL` | Replace with `IS NOT NULL` |
-| Reserved word as alias | Wrap with backticks |
-| Subquery without alias | Auto-add `AS subquery` |
+| Problem                     | Fix Suggestion               |
+| --------------------------- | ---------------------------- |
+| `= NULL`                    | Replace with `IS NULL`       |
+| `!= NULL` / `<> NULL`       | Replace with `IS NOT NULL`   |
+| Reserved word as alias      | Wrap with backticks          |
+| Subquery without alias      | Auto-add `AS subquery`       |
 | INSERT without column names | Add column name placeholders |
-| HAVING without GROUP BY | Auto-add GROUP BY |
+| HAVING without GROUP BY     | Auto-add GROUP BY            |
 
 #### 12. Code Navigation
 
-| Feature | Shortcut | Description |
-|---------|----------|-------------|
-| Go to Definition | `F12` | CTE, table alias, column alias |
-| Find All References | `Shift+F12` | Find symbol references |
-| Rename Symbol | `F2` | With reserved word/conflict checks |
-| Breadcrumb Navigation | - | Clause-level (SELECT/FROM/WHERE/GROUP BY/HAVING/ORDER BY) |
+| Feature               | Shortcut    | Description                                               |
+| --------------------- | ----------- | --------------------------------------------------------- |
+| Go to Definition      | `F12`       | CTE, table alias, column alias                            |
+| Find All References   | `Shift+F12` | Find symbol references                                    |
+| Rename Symbol         | `F2`        | With reserved word/conflict checks                        |
+| Breadcrumb Navigation | -           | Clause-level (SELECT/FROM/WHERE/GROUP BY/HAVING/ORDER BY) |
 
 Shared AstNavigator navigation engine.
 
@@ -1290,9 +1291,9 @@ AST-based MySQL ↔ Hive SQL conversion:
 
 - Supports CREATE TABLE, SELECT, INSERT, UPDATE, DELETE, CREATE VIEW and other statement types
 - Pluggable node transformer architecture:
-  - Function mapping (NOW→CURRENT_TIMESTAMP, IFNULL→COALESCE, IF→CASE WHEN)
-  - Type mapping (DATETIME↔TIMESTAMP, VARCHAR↔STRING)
-  - Column attribute stripping, table option filtering, constraint removal, Hive clause removal
+    - Function mapping (NOW→CURRENT_TIMESTAMP, IFNULL→COALESCE, IF→CASE WHEN)
+    - Type mapping (DATETIME↔TIMESTAMP, VARCHAR↔STRING)
+    - Column attribute stripping, table option filtering, constraint removal, Hive clause removal
 - Interactive regex fallback when AST parsing fails
 - Warnings for complex types (ARRAY/MAP/STRUCT) during conversion
 - Entry: right-click menu `MySQL to HiveSQL` / `HiveSQL to MySQL`, or command palette
@@ -1301,23 +1302,23 @@ AST-based MySQL ↔ Hive SQL conversion:
 
 **Smart Comment Toggle**
 
-| Shortcut | Function |
-|----------|----------|
-| `Ctrl+/` / `Cmd+/` | Smart toggle: single line → line comment, multi-line → block comment |
-| `Ctrl+Shift+/` / `Cmd+Shift+/` | Advanced: format-disable markers, DDL COMMENT, block comment |
+| Shortcut                       | Function                                                             |
+| ------------------------------ | -------------------------------------------------------------------- |
+| `Ctrl+/` / `Cmd+/`             | Smart toggle: single line → line comment, multi-line → block comment |
+| `Ctrl+Shift+/` / `Cmd+Shift+/` | Advanced: format-disable markers, DDL COMMENT, block comment         |
 
 **Comment Template Completion**
 
-| Prefix | Description |
-|--------|-------------|
-| `header` | File header comment (auto author, auto table dependencies) |
-| `col` | Column COMMENT |
-| `tbl` | Table COMMENT |
-| `todo` | TODO comment |
-| `fixme` | FIXME comment |
-| `hack` | HACK comment |
-| `desc` | Query description comment |
-| `section` | Section divider comment |
+| Prefix    | Description                                                |
+| --------- | ---------------------------------------------------------- |
+| `header`  | File header comment (auto author, auto table dependencies) |
+| `col`     | Column COMMENT                                             |
+| `tbl`     | Table COMMENT                                              |
+| `todo`    | TODO comment                                               |
+| `fixme`   | FIXME comment                                              |
+| `hack`    | HACK comment                                               |
+| `desc`    | Query description comment                                  |
+| `section` | Section divider comment                                    |
 
 **Comment Lint Rules**: `missing_query_comment`, `missing_column_comment`, `commented_out_code`, `expired_todo`
 
@@ -1399,13 +1400,13 @@ Open via `Ctrl+Shift+P` → `SQL All in One Config`:
 
 **Connection Configuration**:
 
-| Setting | Description | Default |
-|---------|-------------|---------|
-| Host | StarRocks FE address | `localhost` |
-| Port | MySQL protocol port | `9030` |
-| Username | Default admin account | `root` |
-| SSL | SSL encrypted connection | Off |
-| SSH Tunnel | SSH tunnel connection | Off |
+| Setting    | Description              | Default     |
+| ---------- | ------------------------ | ----------- |
+| Host       | StarRocks FE address     | `localhost` |
+| Port       | MySQL protocol port      | `9030`      |
+| Username   | Default admin account    | `root`      |
+| SSL        | SSL encrypted connection | Off         |
+| SSH Tunnel | SSH tunnel connection    | Off         |
 
 **Syntax Support**:
 
@@ -1426,16 +1427,16 @@ Open via `Ctrl+Shift+P` → `SQL All in One Config`:
 
 **Connection Configuration**:
 
-| Setting | Description | Default |
-|---------|-------------|---------|
-| Host | SQL Server address | `localhost` |
-| Port | Listening port | `1433` |
-| Username | Default account | `sa` |
-| Encryption | Encrypt connection | On |
-| Trust server certificate | Required for self-signed certificates | Off |
-| Domain | Windows authentication domain (optional) | - |
-| SSL | SSL encrypted connection | Off |
-| SSH Tunnel | SSH tunnel connection | Off |
+| Setting                  | Description                              | Default     |
+| ------------------------ | ---------------------------------------- | ----------- |
+| Host                     | SQL Server address                       | `localhost` |
+| Port                     | Listening port                           | `1433`      |
+| Username                 | Default account                          | `sa`        |
+| Encryption               | Encrypt connection                       | On          |
+| Trust server certificate | Required for self-signed certificates    | Off         |
+| Domain                   | Windows authentication domain (optional) | -           |
+| SSL                      | SSL encrypted connection                 | Off         |
+| SSH Tunnel               | SSH tunnel connection                    | Off         |
 
 **Syntax Support**:
 
@@ -1455,16 +1456,16 @@ Open via `Ctrl+Shift+P` → `SQL All in One Config`:
 
 **Connection Configuration**:
 
-| Setting | Description | Default |
-|---------|-------------|---------|
-| Host | Oracle server address | `localhost` |
-| Port | Listening port | `1521` |
-| Username | Default account | `system` |
-| Service Name/SID | Service name or SID (optional connectString override) | - |
-| Use SID | Connect via SID (default service name) | Off |
-| Thick Mode | Enable thick mode (requires Instant Client) | Off |
-| SSL | SSL encrypted connection | Off |
-| SSH Tunnel | SSH tunnel connection | Off |
+| Setting          | Description                                           | Default     |
+| ---------------- | ----------------------------------------------------- | ----------- |
+| Host             | Oracle server address                                 | `localhost` |
+| Port             | Listening port                                        | `1521`      |
+| Username         | Default account                                       | `system`    |
+| Service Name/SID | Service name or SID (optional connectString override) | -           |
+| Use SID          | Connect via SID (default service name)                | Off         |
+| Thick Mode       | Enable thick mode (requires Instant Client)           | Off         |
+| SSL              | SSL encrypted connection                              | Off         |
+| SSH Tunnel       | SSH tunnel connection                                 | Off         |
 
 **Syntax Support**:
 
@@ -1487,21 +1488,21 @@ Open via `Ctrl+Shift+P` → `SQL All in One Config`:
 
 - Install the Dameng ODBC driver (DM8 ODBC Driver) on your machine
 - This extension depends on the `odbc` npm package (native module), which requires a C++ build environment:
-  - Windows: install Visual Studio Build Tools (C++ workload)
-  - macOS: install Xcode Command Line Tools (`xcode-select --install`)
-  - Linux: install `python3 make g++` (Debian/Ubuntu: `build-essential`, CentOS/RHEL: `gcc-c++`)
+    - Windows: install Visual Studio Build Tools (C++ workload)
+    - macOS: install Xcode Command Line Tools (`xcode-select --install`)
+    - Linux: install `python3 make g++` (Debian/Ubuntu: `build-essential`, CentOS/RHEL: `gcc-c++`)
 - Default port 5236, default user `SYSDBA`
 
 **Connection Configuration**:
 
-| Setting | Description | Default |
-|---------|-------------|---------|
-| ODBC driver name | Registered ODBC driver name | `DM8 ODBC DRIVER` |
-| Compatibility mode | Affects SQL parsing: Oracle / MySQL / PostgreSQL | `Oracle` |
-| Schema | Optional, default schema after connecting | - |
-| Host | Dameng database server address | `localhost` |
-| Port | Dameng database listening port | `5236` |
-| Username | Default administrator account | `SYSDBA` |
+| Setting            | Description                                      | Default           |
+| ------------------ | ------------------------------------------------ | ----------------- |
+| ODBC driver name   | Registered ODBC driver name                      | `DM8 ODBC DRIVER` |
+| Compatibility mode | Affects SQL parsing: Oracle / MySQL / PostgreSQL | `Oracle`          |
+| Schema             | Optional, default schema after connecting        | -                 |
+| Host               | Dameng database server address                   | `localhost`       |
+| Port               | Dameng database listening port                   | `5236`            |
+| Username           | Default administrator account                    | `SYSDBA`          |
 
 **Syntax Support**:
 
@@ -1515,17 +1516,17 @@ Open via `Ctrl+Shift+P` → `SQL All in One Config`:
 
 ### Keyboard Shortcuts
 
-| Command | Windows/Linux | Mac |
-|---------|---------------|-----|
-| Replace Parameter | `Ctrl+Alt+P` | `Cmd+Alt+P` |
-| Toggle Comment | `Ctrl+/` | `Cmd+/` |
-| Advanced Comment | `Ctrl+Shift+/` | `Cmd+Shift+/` |
-| Execute SQL | `Ctrl+Shift+E` | `Cmd+Shift+E` |
-| Execute Selected SQL | `Ctrl+Shift+R` | `Cmd+Shift+R` |
-| Format Document | `Shift+Alt+F` | `Shift+Option+F` |
-| Go to Definition | `F12` | `F12` |
-| Find All References | `Shift+F12` | `Shift+F12` |
-| Rename Symbol | `F2` | `F2` |
+| Command              | Windows/Linux  | Mac              |
+| -------------------- | -------------- | ---------------- |
+| Replace Parameter    | `Ctrl+Alt+P`   | `Cmd+Alt+P`      |
+| Toggle Comment       | `Ctrl+/`       | `Cmd+/`          |
+| Advanced Comment     | `Ctrl+Shift+/` | `Cmd+Shift+/`    |
+| Execute SQL          | `Ctrl+Shift+E` | `Cmd+Shift+E`    |
+| Execute Selected SQL | `Ctrl+Shift+R` | `Cmd+Shift+R`    |
+| Format Document      | `Shift+Alt+F`  | `Shift+Option+F` |
+| Go to Definition     | `F12`          | `F12`            |
+| Find All References  | `Shift+F12`    | `Shift+F12`      |
+| Rename Symbol        | `F2`           | `F2`             |
 
 ### Configuration Reference
 
@@ -1533,10 +1534,10 @@ Search "SQL All in One" in VSCode settings to configure 80+ options organized in
 
 #### 1. Language & Dialect
 
-| Setting | Description | Default |
-|---------|-------------|---------|
-| `dialect` | SQL dialect | `hive` |
-| `displayLanguage` | UI language | `auto` |
+| Setting           | Description | Default |
+| ----------------- | ----------- | ------- |
+| `dialect`         | SQL dialect | `hive`  |
+| `displayLanguage` | UI language | `auto`  |
 
 #### 2. Formatting (40+ options)
 
@@ -1548,120 +1549,120 @@ See the [SQL Lint Rules](#10-sql-lint-rules-30) section.
 
 #### 4. Feature Toggles
 
-| Setting | Description | Default |
-|---------|-------------|---------|
-| `enableLinter` | Enable linting | `true` |
-| `enableCodeFolding` | Enable code folding | `true` |
-| `enableOutlineView` | Enable outline view | `true` |
-| `enableStatusBar` | Enable status bar | `true` |
-| `enableParameterHighlight` | Enable parameter highlighting | `true` |
-| `enableSnippets` | Enable code snippets | `true` |
-| `enableQuickFix` | Enable quick fix | `true` |
-| `enableHover` | Enable hover information | `true` |
-| `enableNavigation` | Enable code navigation | `true` |
-| `enableCompletion` | Enable smart completion | `true` |
-| `enableSmartCommentToggle` | Smart comment toggle | `true` |
+| Setting                    | Description                   | Default |
+| -------------------------- | ----------------------------- | ------- |
+| `enableLinter`             | Enable linting                | `true`  |
+| `enableCodeFolding`        | Enable code folding           | `true`  |
+| `enableOutlineView`        | Enable outline view           | `true`  |
+| `enableStatusBar`          | Enable status bar             | `true`  |
+| `enableParameterHighlight` | Enable parameter highlighting | `true`  |
+| `enableSnippets`           | Enable code snippets          | `true`  |
+| `enableQuickFix`           | Enable quick fix              | `true`  |
+| `enableHover`              | Enable hover information      | `true`  |
+| `enableNavigation`         | Enable code navigation        | `true`  |
+| `enableCompletion`         | Enable smart completion       | `true`  |
+| `enableSmartCommentToggle` | Smart comment toggle          | `true`  |
 
 #### 5. Completion
 
-| Setting | Description | Default |
-|---------|-------------|---------|
-| `completion.keywords` | Keyword completion | `true` |
-| `completion.functions` | Function completion | `true` |
-| `completion.snippets` | Snippet completion | `false` |
-| `completion.cteNames` | CTE name completion | `true` |
-| `completion.identifiers` | Identifier completion | `true` |
-| `completion.commentSnippets` | Comment template completion | `true` |
-| `completion.schema` | Schema-aware completion | `true` |
+| Setting                      | Description                 | Default |
+| ---------------------------- | --------------------------- | ------- |
+| `completion.keywords`        | Keyword completion          | `true`  |
+| `completion.functions`       | Function completion         | `true`  |
+| `completion.snippets`        | Snippet completion          | `false` |
+| `completion.cteNames`        | CTE name completion         | `true`  |
+| `completion.identifiers`     | Identifier completion       | `true`  |
+| `completion.commentSnippets` | Comment template completion | `true`  |
+| `completion.schema`          | Schema-aware completion     | `true`  |
 
 #### 6. Schema Cache
 
-| Setting | Description | Default |
-|---------|-------------|---------|
-| `schemaCache.databaseTtl` | Database cache TTL (seconds) | `600` |
-| `schemaCache.tableTtl` | Table cache TTL (seconds) | `300` |
-| `schemaCache.columnTtl` | Column cache TTL (seconds) | `120` |
-| `schemaCache.functionTtl` | Function cache TTL (seconds) | `600` |
-| `schemaCache.refreshOnDDL` | Refresh on DDL changes | `true` |
-| `schemaCache.prefetchOnConnect` | Prefetch on connect | `true` |
+| Setting                         | Description                  | Default |
+| ------------------------------- | ---------------------------- | ------- |
+| `schemaCache.databaseTtl`       | Database cache TTL (seconds) | `600`   |
+| `schemaCache.tableTtl`          | Table cache TTL (seconds)    | `300`   |
+| `schemaCache.columnTtl`         | Column cache TTL (seconds)   | `120`   |
+| `schemaCache.functionTtl`       | Function cache TTL (seconds) | `600`   |
+| `schemaCache.refreshOnDDL`      | Refresh on DDL changes       | `true`  |
+| `schemaCache.prefetchOnConnect` | Prefetch on connect          | `true`  |
 
 #### 7. Query Execution
 
-| Setting | Description | Default |
-|---------|-------------|---------|
-| `query.maxRows` | Max rows | `1000` |
-| `query.timeout` | Query timeout (ms) | `30000` |
-| `query.pageSize` | Page size | `100` |
-| `query.nullPlaceholder` | NULL placeholder | `(NULL)` |
+| Setting                 | Description        | Default  |
+| ----------------------- | ------------------ | -------- |
+| `query.maxRows`         | Max rows           | `1000`   |
+| `query.timeout`         | Query timeout (ms) | `30000`  |
+| `query.pageSize`        | Page size          | `100`    |
+| `query.nullPlaceholder` | NULL placeholder   | `(NULL)` |
 
 #### 8. Safety Guard
 
-| Setting | Description | Default |
-|---------|-------------|---------|
+| Setting             | Description                        | Default    |
+| ------------------- | ---------------------------------- | ---------- |
 | `safetyGuard.level` | Safety level (strict/moderate/off) | `moderate` |
 
 #### 9. Execution Engine
 
-| Setting | Description | Default |
-|---------|-------------|---------|
-| `execution.batchMode` | Batch mode (sequential/transaction) | `sequential` |
-| `execution.onError` | Error handling (stop/continue) | `stop` |
-| `execution.saveProgress` | Save progress | `true` |
-| `execution.cancelRetries` | Cancel retries | `3` |
-| `execution.cancelRetryDelay` | Cancel retry delay (ms) | `500` |
+| Setting                      | Description                         | Default      |
+| ---------------------------- | ----------------------------------- | ------------ |
+| `execution.batchMode`        | Batch mode (sequential/transaction) | `sequential` |
+| `execution.onError`          | Error handling (stop/continue)      | `stop`       |
+| `execution.saveProgress`     | Save progress                       | `true`       |
+| `execution.cancelRetries`    | Cancel retries                      | `3`          |
+| `execution.cancelRetryDelay` | Cancel retry delay (ms)             | `500`        |
 
 #### 10. Export
 
-| Setting | Description | Default |
-|---------|-------------|---------|
-| `export.defaultFormat` | Default export format | `csv` |
-| `export.csvDelimiter` | CSV delimiter | `,` |
-| `export.csvEncoding` | CSV encoding | `utf-8` |
-| `export.includeHeaders` | Include headers | `true` |
+| Setting                 | Description           | Default |
+| ----------------------- | --------------------- | ------- |
+| `export.defaultFormat`  | Default export format | `csv`   |
+| `export.csvDelimiter`   | CSV delimiter         | `,`     |
+| `export.csvEncoding`    | CSV encoding          | `utf-8` |
+| `export.includeHeaders` | Include headers       | `true`  |
 
 #### 11. Data Editor
 
-| Setting | Description | Default |
-|---------|-------------|---------|
-| `dataEditor.editMode` | Edit mode (readonly/editable) | `readonly` |
-| `dataEditor.autoCommit` | Auto commit | `true` |
-| `dataEditor.defaultView` | Default view (grid/form) | `grid` |
-| `dataEditor.optimisticLocking` | Optimistic locking | `false` |
-| `dataEditor.maxBlobPreviewSize` | Max BLOB preview size (bytes) | `5242880` |
-| `dataEditor.blobTextPreviewSize` | BLOB text preview size (bytes) | `1048576` |
-| `dataEditor.longTransactionWarning` | Long transaction warning threshold (seconds) | `300` |
-| `dataEditor.showTransactionStatus` | Show transaction status | `true` |
-| `dataEditor.enableValidation` | Enable validation | `true` |
-| `dataEditor.validateOnEdit` | Validate on edit | `true` |
-| `dataEditor.validateForeignKeys` | Foreign key validation | `false` |
+| Setting                             | Description                                  | Default    |
+| ----------------------------------- | -------------------------------------------- | ---------- |
+| `dataEditor.editMode`               | Edit mode (readonly/editable)                | `readonly` |
+| `dataEditor.autoCommit`             | Auto commit                                  | `true`     |
+| `dataEditor.defaultView`            | Default view (grid/form)                     | `grid`     |
+| `dataEditor.optimisticLocking`      | Optimistic locking                           | `false`    |
+| `dataEditor.maxBlobPreviewSize`     | Max BLOB preview size (bytes)                | `5242880`  |
+| `dataEditor.blobTextPreviewSize`    | BLOB text preview size (bytes)               | `1048576`  |
+| `dataEditor.longTransactionWarning` | Long transaction warning threshold (seconds) | `300`      |
+| `dataEditor.showTransactionStatus`  | Show transaction status                      | `true`     |
+| `dataEditor.enableValidation`       | Enable validation                            | `true`     |
+| `dataEditor.validateOnEdit`         | Validate on edit                             | `true`     |
+| `dataEditor.validateForeignKeys`    | Foreign key validation                       | `false`    |
 
 #### 12. Results Panel
 
-| Setting | Description | Default |
-|---------|-------------|---------|
-| `results.enablePreload` | Enable scroll preloading | `true` |
-| `results.jsonPrettyPrint` | JSON pretty print | `true` |
-| `results.dateFormat` | Date format (local/utc/relative) | `local` |
-| `results.longTextThreshold` | Long text truncation threshold | `200` |
+| Setting                     | Description                      | Default |
+| --------------------------- | -------------------------------- | ------- |
+| `results.enablePreload`     | Enable scroll preloading         | `true`  |
+| `results.jsonPrettyPrint`   | JSON pretty print                | `true`  |
+| `results.dateFormat`        | Date format (local/utc/relative) | `local` |
+| `results.longTextThreshold` | Long text truncation threshold   | `200`   |
 
 #### 13. History
 
-| Setting | Description | Default |
-|---------|-------------|---------|
-| `history.maxEntries` | Max history entries | `500` |
+| Setting              | Description         | Default |
+| -------------------- | ------------------- | ------- |
+| `history.maxEntries` | Max history entries | `500`   |
 
 #### 14. Comment
 
-| Setting | Description | Default |
-|---------|-------------|---------|
-| `enableSmartCommentToggle` | Smart comment toggle | `true` |
-| `headerAuthor` | File header author | `""` |
-| `headerModifier` | File header modifier | `""` |
+| Setting                    | Description          | Default |
+| -------------------------- | -------------------- | ------- |
+| `enableSmartCommentToggle` | Smart comment toggle | `true`  |
+| `headerAuthor`             | File header author   | `""`    |
+| `headerModifier`           | File header modifier | `""`    |
 
 #### 15. Performance Monitoring
 
-| Setting | Description | Default |
-|---------|-------------|---------|
+| Setting                    | Description                       | Default |
+| -------------------------- | --------------------------------- | ------- |
 | `performance.monitorLevel` | Monitoring level (off/light/full) | `light` |
 
 ### FAQ
@@ -1693,6 +1694,7 @@ A: Fixed in v2.26.6/v2.27.1. The root cause was a crash from repeated `acquireVs
 **Q7: How to switch SQL dialect?**
 
 A: Three ways:
+
 1. Click the current dialect name in the status bar for quick switching
 2. Settings → `SQL-All-in-One.dialect` to select
 3. Automatically switches to the corresponding dialect when connecting to a database

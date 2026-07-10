@@ -1,4 +1,4 @@
-import type { Pool, PoolClient, PoolConfig, QueryResult as PgQueryResult } from 'pg';
+import type { Pool, PoolClient, PoolConfig, QueryResult as PgQueryResult } from "pg";
 import type {
     ColumnInfo,
     ColumnMeta,
@@ -28,17 +28,17 @@ import type {
     TestConnectionResult,
     TriggerInfo,
     ViewInfo,
-} from './IDatabaseAdapter';
-import { t } from '../../i18n/index';
-import { generateShortId } from '../../utils/idGenerator';
-import { BaseDatabaseAdapter } from './BaseDatabaseAdapter';
-import { BaseSharedContext } from './BaseSharedContext';
-import { BaseConnectionAdapter } from './BaseConnectionAdapter';
-import { BaseQueryAdapter } from './BaseQueryAdapter';
-import { BaseMetadataAdapter } from './BaseMetadataAdapter';
-import { BaseSchemaAdapter } from './BaseSchemaAdapter';
-import { getSystemDatabases } from '../../utils/systemDatabases';
-import { clampBatchSize } from './queryStreamUtils';
+} from "./IDatabaseAdapter";
+import { t } from "../../i18n/index";
+import { generateShortId } from "../../utils/idGenerator";
+import { BaseDatabaseAdapter } from "./BaseDatabaseAdapter";
+import { BaseSharedContext } from "./BaseSharedContext";
+import { BaseConnectionAdapter } from "./BaseConnectionAdapter";
+import { BaseQueryAdapter } from "./BaseQueryAdapter";
+import { BaseMetadataAdapter } from "./BaseMetadataAdapter";
+import { BaseSchemaAdapter } from "./BaseSchemaAdapter";
+import { getSystemDatabases } from "../../utils/systemDatabases";
+import { clampBatchSize } from "./queryStreamUtils";
 
 /**
  * PostgreSQL shared context.
@@ -63,12 +63,12 @@ class PostgresConnectionAdapter extends BaseConnectionAdapter<PostgresSharedCont
         const poolConfig = this.createPoolConfig(config);
 
         try {
-            const { Pool } = await import('pg');
+            const { Pool } = await import("pg");
             this.shared.pool = new Pool(poolConfig);
 
             const client = await this.shared.pool.connect();
             try {
-                await client.query('SELECT 1');
+                await client.query("SELECT 1");
             } finally {
                 client.release();
             }
@@ -85,9 +85,9 @@ class PostgresConnectionAdapter extends BaseConnectionAdapter<PostgresSharedCont
     async disconnect(): Promise<void> {
         if (this.shared.transactionClient) {
             try {
-                await this.shared.transactionClient.query('ROLLBACK');
+                await this.shared.transactionClient.query("ROLLBACK");
             } catch (e) {
-                console.debug('[SQL All in One] PG rollback error on disconnect:', e);
+                console.debug("[SQL All in One] PG rollback error on disconnect:", e);
             }
             this.shared.transactionClient.release();
             this.shared.transactionClient = null;
@@ -101,18 +101,18 @@ class PostgresConnectionAdapter extends BaseConnectionAdapter<PostgresSharedCont
 
     async testConnection(config: ConnectionConfig): Promise<TestConnectionResult> {
         const startTime = Date.now();
-        let tempPool: import('pg').Pool | null = null;
+        let tempPool: import("pg").Pool | null = null;
 
         try {
-            const { Pool } = await import('pg');
+            const { Pool } = await import("pg");
             tempPool = new Pool(this.createPoolConfig(config));
             const client = await tempPool.connect();
             try {
-                const result = await client.query('SELECT version() AS version');
+                const result = await client.query("SELECT version() AS version");
                 const endTime = Date.now();
                 return {
                     success: true,
-                    serverVersion: (result.rows[0] as Record<string, unknown>)?.version as string ?? 'PostgreSQL',
+                    serverVersion: ((result.rows[0] as Record<string, unknown>)?.version as string) ?? "PostgreSQL",
                     latency: endTime - startTime,
                 };
             } finally {
@@ -139,13 +139,13 @@ class PostgresConnectionAdapter extends BaseConnectionAdapter<PostgresSharedCont
         try {
             const client = await this.shared.pool.connect();
             try {
-                await client.query('SELECT 1');
+                await client.query("SELECT 1");
                 return true;
             } finally {
                 client.release();
             }
         } catch (e) {
-            console.debug('[SQL All in One] PostgresConnectionAdapter.checkConnectionHealth failed:', e);
+            console.debug("[SQL All in One] PostgresConnectionAdapter.checkConnectionHealth failed:", e);
             return false;
         }
     }
@@ -154,11 +154,11 @@ class PostgresConnectionAdapter extends BaseConnectionAdapter<PostgresSharedCont
         const msg = error instanceof Error ? error.message : String(error);
         const hostPort = `${config.host}:${config.port}`;
 
-        if (msg.includes('password authentication failed') || msg.includes('28P01')) {
-            return new Error(t('database.accessDenied', config.username, hostPort));
+        if (msg.includes("password authentication failed") || msg.includes("28P01")) {
+            return new Error(t("database.accessDenied", config.username, hostPort));
         }
-        if (msg.includes('database') && msg.includes('does not exist')) {
-            return new Error(t('database.databaseNotExist', config.database || '(none)', hostPort));
+        if (msg.includes("database") && msg.includes("does not exist")) {
+            return new Error(t("database.databaseNotExist", config.database || "(none)", hostPort));
         }
 
         // SSL/certificate and common network errors are handled by the base
@@ -193,8 +193,13 @@ class PostgresConnectionAdapter extends BaseConnectionAdapter<PostgresSharedCont
 }
 
 class PostgresQueryAdapter extends BaseQueryAdapter<PostgresSharedContext> {
-    protected override async executeWithConnection(sql: string, params: QueryParam[] | undefined, queryId: string, startTime: number): Promise<QueryResult> {
-        const values = params?.map(p => p.value);
+    protected override async executeWithConnection(
+        sql: string,
+        params: QueryParam[] | undefined,
+        queryId: string,
+        startTime: number,
+    ): Promise<QueryResult> {
+        const values = params?.map((p) => p.value);
         let queryConn: PoolClient | typeof this.shared.pool = this.shared.transactionClient ?? this.shared.pool!;
         let acquiredClient: PoolClient | null = null;
 
@@ -209,9 +214,10 @@ class PostgresQueryAdapter extends BaseQueryAdapter<PostgresSharedContext> {
             // did not expose a processID (e.g. older pg builds / pooled
             // connections where the field is missing).
             const clientPid = (acquiredClient as { processID?: number }).processID;
-            const pid = typeof clientPid === 'number' && clientPid > 0
-                ? clientPid
-                : ((await acquiredClient.query('SELECT pg_backend_pid() AS pid')).rows[0] as Record<string, unknown>)?.pid as number;
+            const pid =
+                typeof clientPid === "number" && clientPid > 0
+                    ? clientPid
+                    : (((await acquiredClient.query("SELECT pg_backend_pid() AS pid")).rows[0] as Record<string, unknown>)?.pid as number);
             this.shared.activeQueryPids.set(queryId, pid);
         }
 
@@ -219,9 +225,9 @@ class PostgresQueryAdapter extends BaseQueryAdapter<PostgresSharedContext> {
             const pgResult: PgQueryResult = await queryConn.query(sql, values);
             const executionTime = Date.now() - startTime;
 
-            const columns = pgResult.fields.map(field => ({
+            const columns = pgResult.fields.map((field) => ({
                 name: field.name,
-                type: String(field.dataTypeID ?? 'UNKNOWN'),
+                type: String(field.dataTypeID ?? "UNKNOWN"),
                 nullable: true,
                 isPrimaryKey: false,
                 isAutoIncrement: false,
@@ -230,7 +236,7 @@ class PostgresQueryAdapter extends BaseQueryAdapter<PostgresSharedContext> {
 
             return {
                 queryId,
-                status: 'success',
+                status: "success",
                 columns,
                 rows: pgResult.rows as QueryRow[],
                 rowCount: pgResult.rowCount ?? pgResult.rows.length,
@@ -255,13 +261,13 @@ class PostgresQueryAdapter extends BaseQueryAdapter<PostgresSharedContext> {
         const pgError = error as { code?: string; message?: string };
         return {
             queryId,
-            status: 'error',
+            status: "error",
             columns: [],
             rows: [],
             rowCount: 0,
             executionTime,
             error: {
-                code: pgError.code ?? 'EXEC_ERROR',
+                code: pgError.code ?? "EXEC_ERROR",
                 message: error instanceof Error ? error.message : String(error),
                 sql,
             },
@@ -287,25 +293,23 @@ class PostgresQueryAdapter extends BaseQueryAdapter<PostgresSharedContext> {
      */
     async *executeStream(sql: string, options?: QueryStreamOptions): AsyncIterable<StreamBatch> {
         if (!this.shared.pool) {
-            throw new Error(t('database.notConnected'));
+            throw new Error(t("database.notConnected"));
         }
 
         const batchSize = clampBatchSize(options?.batchSize);
         const maxRows = options?.maxRows;
-        const values = options?.params?.map(p => p.value);
+        const values = options?.params?.map((p) => p.value);
         const signal = options?.signal;
 
         // Reuse the user's transaction client if present; otherwise acquire a
         // fresh client and wrap the cursor in an internal transaction.
         const useTransactionClient = !!this.shared.transactionClient;
-        const client: PoolClient = useTransactionClient
-            ? this.shared.transactionClient!
-            : await this.shared.pool.connect();
+        const client: PoolClient = useTransactionClient ? this.shared.transactionClient! : await this.shared.pool.connect();
         if (!useTransactionClient) {
             this.shared.activeConnectionCount++;
         }
 
-        const cursorName = `sai_stream_${generateShortId('cur').replace(/-/g, '_')}`;
+        const cursorName = `sai_stream_${generateShortId("cur").replace(/-/g, "_")}`;
         let beganInternalTransaction = false;
         let columns: ColumnMeta[] = [];
         let batchIndex = 0;
@@ -314,19 +318,19 @@ class PostgresQueryAdapter extends BaseQueryAdapter<PostgresSharedContext> {
         let abortedError: Error | null = null;
 
         const onAbort = (): void => {
-            abortedError = new Error('Query stream aborted');
+            abortedError = new Error("Query stream aborted");
         };
         if (signal) {
             if (signal.aborted) {
                 onAbort();
             } else {
-                signal.addEventListener('abort', onAbort, { once: true });
+                signal.addEventListener("abort", onAbort, { once: true });
             }
         }
 
         try {
             if (!useTransactionClient) {
-                await client.query('BEGIN');
+                await client.query("BEGIN");
                 beganInternalTransaction = true;
             }
 
@@ -372,7 +376,7 @@ class PostgresQueryAdapter extends BaseQueryAdapter<PostgresSharedContext> {
 
             while (!truncated && !abortedError) {
                 if (signal?.aborted) {
-                    abortedError = new Error('Query stream aborted');
+                    abortedError = new Error("Query stream aborted");
                     break;
                 }
                 const fetch = await client.query(`FETCH FORWARD ${batchSize} FROM ${cursorName}`);
@@ -416,20 +420,24 @@ class PostgresQueryAdapter extends BaseQueryAdapter<PostgresSharedContext> {
             // mask the original stream error.
             try {
                 await client.query(`CLOSE ${cursorName}`);
-            } catch { /* ignore: cursor cleanup is best-effort */ }
+            } catch {
+                /* ignore: cursor cleanup is best-effort */
+            }
 
             if (beganInternalTransaction) {
                 try {
                     if (abortedError) {
-                        await client.query('ROLLBACK');
+                        await client.query("ROLLBACK");
                     } else {
-                        await client.query('COMMIT');
+                        await client.query("COMMIT");
                     }
-                } catch { /* ignore: tx cleanup is best-effort */ }
+                } catch {
+                    /* ignore: tx cleanup is best-effort */
+                }
             }
 
             if (signal) {
-                signal.removeEventListener('abort', onAbort);
+                signal.removeEventListener("abort", onAbort);
             }
 
             if (!useTransactionClient) {
@@ -441,23 +449,23 @@ class PostgresQueryAdapter extends BaseQueryAdapter<PostgresSharedContext> {
 
     async beginTransaction(): Promise<void> {
         if (this.shared.transactionClient) {
-            throw new Error(t('database.transactionInProgress'));
+            throw new Error(t("database.transactionInProgress"));
         }
         if (!this.shared.pool) {
-            throw new Error(t('database.notConnected'));
+            throw new Error(t("database.notConnected"));
         }
 
         this.shared.transactionClient = await this.shared.pool.connect();
-        await this.shared.transactionClient.query('BEGIN');
+        await this.shared.transactionClient.query("BEGIN");
     }
 
     async commit(): Promise<void> {
         if (!this.shared.transactionClient) {
-            throw new Error(t('database.noTransactionInProgress'));
+            throw new Error(t("database.noTransactionInProgress"));
         }
 
         try {
-            await this.shared.transactionClient.query('COMMIT');
+            await this.shared.transactionClient.query("COMMIT");
         } finally {
             this.shared.transactionClient.release();
             this.shared.transactionClient = null;
@@ -466,14 +474,14 @@ class PostgresQueryAdapter extends BaseQueryAdapter<PostgresSharedContext> {
 
     async rollback(): Promise<void> {
         if (!this.shared.transactionClient) {
-            throw new Error(t('database.noTransactionInProgress'));
+            throw new Error(t("database.noTransactionInProgress"));
         }
 
         try {
-            await this.shared.transactionClient.query('ROLLBACK');
+            await this.shared.transactionClient.query("ROLLBACK");
             this.shared.transactionClient.release();
         } catch (rollbackError) {
-            console.error('PG rollback failed:', rollbackError);
+            console.error("PG rollback failed:", rollbackError);
         } finally {
             this.shared.transactionClient = null;
         }
@@ -497,7 +505,7 @@ class PostgresQueryAdapter extends BaseQueryAdapter<PostgresSharedContext> {
                 client.release();
             }
         } catch (e) {
-            console.debug('[SQL All in One] PG cancel query error:', e);
+            console.debug("[SQL All in One] PG cancel query error:", e);
         }
     }
 }
@@ -507,10 +515,10 @@ class PostgresQueryAdapter extends BaseQueryAdapter<PostgresSharedContext> {
  * pg does not expose primary-key / auto-increment flags on result fields, so
  * those default to false (matching the existing {@link PostgresQueryAdapter.execute} behavior).
  */
-function mapPgFields(fields: PgQueryResult['fields']): ColumnMeta[] {
-    return fields.map(field => ({
+function mapPgFields(fields: PgQueryResult["fields"]): ColumnMeta[] {
+    return fields.map((field) => ({
         name: field.name,
-        type: String(field.dataTypeID ?? 'UNKNOWN'),
+        type: String(field.dataTypeID ?? "UNKNOWN"),
         nullable: true,
         isPrimaryKey: false,
         isAutoIncrement: false,
@@ -530,19 +538,19 @@ class PostgresMetadataAdapter extends BaseMetadataAdapter<PostgresSharedContext>
     async listSchemas(_database?: string): Promise<string[]> {
         const sql = `SELECT schema_name FROM information_schema.schemata WHERE schema_name NOT LIKE 'pg_%' AND schema_name NOT IN ('information_schema', 'public') ORDER BY schema_name`;
         const result = await this.executeQuery(sql);
-        if (result.status !== 'success') {
-            return ['public'];
+        if (result.status !== "success") {
+            return ["public"];
         }
 
         const schemas = result.rows.map((row: QueryRow) => row.schema_name as string);
-        if (!schemas.includes('public')) {
-            schemas.unshift('public');
+        if (!schemas.includes("public")) {
+            schemas.unshift("public");
         }
         return schemas;
     }
 
     async listTables(_database?: string, schema?: string, filter?: string): Promise<TableInfo[]> {
-        const targetSchema = schema ?? 'public';
+        const targetSchema = schema ?? "public";
         let sql = `SELECT table_name, table_type FROM information_schema.tables WHERE table_schema = $1 AND table_type = 'BASE TABLE'`;
         const params: QueryParam[] = [{ value: targetSchema }];
 
@@ -560,7 +568,7 @@ class PostgresMetadataAdapter extends BaseMetadataAdapter<PostgresSharedContext>
     }
 
     async listViews(_database?: string, schema?: string): Promise<ViewInfo[]> {
-        const targetSchema = schema ?? 'public';
+        const targetSchema = schema ?? "public";
         const sql = `SELECT table_name FROM information_schema.views WHERE table_schema = $1 ORDER BY table_name`;
         return this.runListQuery<ViewInfo>(sql, [{ value: targetSchema }], (row: QueryRow) => ({
             name: row.table_name as string,
@@ -568,7 +576,7 @@ class PostgresMetadataAdapter extends BaseMetadataAdapter<PostgresSharedContext>
     }
 
     override async listFunctions(_database?: string, schema?: string): Promise<FunctionInfo[]> {
-        const targetSchema = schema ?? 'public';
+        const targetSchema = schema ?? "public";
         const sql = `SELECT routine_name, data_type, routine_definition FROM information_schema.routines WHERE routine_schema = $1 AND routine_type = 'FUNCTION' ORDER BY routine_name`;
         return this.runListQuery<FunctionInfo>(sql, [{ value: targetSchema }], (row: QueryRow) => ({
             name: row.routine_name as string,
@@ -578,7 +586,7 @@ class PostgresMetadataAdapter extends BaseMetadataAdapter<PostgresSharedContext>
     }
 
     override async listProcedures(_database?: string, schema?: string): Promise<ProcedureInfo[]> {
-        const targetSchema = schema ?? 'public';
+        const targetSchema = schema ?? "public";
         const sql = `SELECT routine_name, routine_definition FROM information_schema.routines WHERE routine_schema = $1 AND routine_type = 'PROCEDURE' ORDER BY routine_name`;
         return this.runListQuery<ProcedureInfo>(sql, [{ value: targetSchema }], (row: QueryRow) => ({
             name: row.routine_name as string,
@@ -587,7 +595,7 @@ class PostgresMetadataAdapter extends BaseMetadataAdapter<PostgresSharedContext>
     }
 
     async listTriggers(_database?: string, schema?: string): Promise<TriggerInfo[]> {
-        const targetSchema = schema ?? 'public';
+        const targetSchema = schema ?? "public";
         const sql = `SELECT trigger_name, event_manipulation, action_timing, action_statement FROM information_schema.triggers WHERE trigger_schema = $1 ORDER BY trigger_name`;
         return this.runListQuery<TriggerInfo>(sql, [{ value: targetSchema }], (row: QueryRow) => ({
             name: row.trigger_name as string,
@@ -598,7 +606,7 @@ class PostgresMetadataAdapter extends BaseMetadataAdapter<PostgresSharedContext>
     }
 
     protected override isSystemDatabase(name: string): boolean {
-        return getSystemDatabases('postgresql').includes(name.toLowerCase());
+        return getSystemDatabases("postgresql").includes(name.toLowerCase());
     }
 }
 
@@ -615,7 +623,7 @@ class PostgresSchemaAdapter extends BaseSchemaAdapter<PostgresSharedContext> {
     }
 
     async describeTable(database: string, table: string, schema?: string): Promise<TableStructure> {
-        const targetSchema = schema ?? 'public';
+        const targetSchema = schema ?? "public";
         const [columns, indexes, foreignKeys, triggers] = await Promise.all([
             this.describeTableColumns(database, table, targetSchema),
             this.describeTableIndexes(database, table, targetSchema),
@@ -627,50 +635,60 @@ class PostgresSchemaAdapter extends BaseSchemaAdapter<PostgresSharedContext> {
     }
 
     async getTableDDL(database: string, table: string, schema?: string): Promise<string> {
-        const targetSchema = schema ?? 'public';
+        const targetSchema = schema ?? "public";
         const columns = await this.describeTableColumns(database, table, targetSchema);
         const indexes = await this.describeTableIndexes(database, table, targetSchema);
         const fks = await this.describeTableForeignKeys(database, table, targetSchema);
 
-        const columnDefs = columns.map(c => {
-            let def = `    ${this.quoteIdentifier(c.name)} ${c.type}`;
-            if (!c.nullable) def += ' NOT NULL';
-            if (c.isAutoIncrement) def += ' GENERATED ALWAYS AS IDENTITY';
-            if (c.defaultValue !== null && c.defaultValue !== undefined) def += ` DEFAULT ${c.defaultValue}`;
-            return def;
-        }).join(',\n');
+        const columnDefs = columns
+            .map((c) => {
+                let def = `    ${this.quoteIdentifier(c.name)} ${c.type}`;
+                if (!c.nullable) def += " NOT NULL";
+                if (c.isAutoIncrement) def += " GENERATED ALWAYS AS IDENTITY";
+                if (c.defaultValue !== null && c.defaultValue !== undefined) def += ` DEFAULT ${c.defaultValue}`;
+                return def;
+            })
+            .join(",\n");
 
         const indexDefs = indexes
-            .filter(i => !i.isPrimary)
-            .map(i => `CREATE INDEX ${this.quoteIdentifier(i.name)} ON ${this.quoteIdentifier(targetSchema)}.${this.quoteIdentifier(table)} (${i.columns.map(c => this.quoteIdentifier(c)).join(', ')});`)
-            .join('\n');
+            .filter((i) => !i.isPrimary)
+            .map(
+                (i) =>
+                    `CREATE INDEX ${this.quoteIdentifier(i.name)} ON ${this.quoteIdentifier(targetSchema)}.${this.quoteIdentifier(table)} (${i.columns.map((c) => this.quoteIdentifier(c)).join(", ")});`,
+            )
+            .join("\n");
 
-        const fkDefs = fks.map(fk => `ALTER TABLE ${this.quoteIdentifier(targetSchema)}.${this.quoteIdentifier(table)} ADD CONSTRAINT ${this.quoteIdentifier(fk.name)} FOREIGN KEY (${fk.columns.map(c => this.quoteIdentifier(c)).join(', ')}) REFERENCES ${this.quoteIdentifier(targetSchema)}.${this.quoteIdentifier(fk.referencedTable)} (${fk.referencedColumns.map(c => this.quoteIdentifier(c)).join(', ')});`).join('\n');
+        const fkDefs = fks
+            .map(
+                (fk) =>
+                    `ALTER TABLE ${this.quoteIdentifier(targetSchema)}.${this.quoteIdentifier(table)} ADD CONSTRAINT ${this.quoteIdentifier(fk.name)} FOREIGN KEY (${fk.columns.map((c) => this.quoteIdentifier(c)).join(", ")}) REFERENCES ${this.quoteIdentifier(targetSchema)}.${this.quoteIdentifier(fk.referencedTable)} (${fk.referencedColumns.map((c) => this.quoteIdentifier(c)).join(", ")});`,
+            )
+            .join("\n");
 
         let ddl = `CREATE TABLE ${this.quoteIdentifier(targetSchema)}.${this.quoteIdentifier(table)} (\n${columnDefs}\n);`;
-        if (indexDefs) ddl += '\n' + indexDefs;
-        if (fkDefs) ddl += '\n' + fkDefs;
+        if (indexDefs) ddl += "\n" + indexDefs;
+        if (fkDefs) ddl += "\n" + fkDefs;
         return ddl;
     }
 
     async getViewDDL(_database: string, view: string, schema?: string): Promise<string> {
-        const targetSchema = schema ?? 'public';
+        const targetSchema = schema ?? "public";
         const sql = `SELECT pg_get_viewdef($1::regclass, true) AS definition`;
         const result = await this.executeQuery(sql, [{ value: `${targetSchema}.${view}` }]);
-        if (result.status !== 'success' || result.rows.length === 0) {
-            return '';
+        if (result.status !== "success" || result.rows.length === 0) {
+            return "";
         }
-        return (result.rows[0].definition as string) ?? '';
+        return (result.rows[0].definition as string) ?? "";
     }
 
     async getFunctionDDL(_database: string, functionName: string, schema?: string): Promise<string> {
-        const targetSchema = schema ?? 'public';
+        const targetSchema = schema ?? "public";
         const sql = `SELECT pg_get_functiondef($1::regprocedure) AS definition`;
         const result = await this.executeQuery(sql, [{ value: `${targetSchema}.${functionName}` }]);
-        if (result.status !== 'success' || result.rows.length === 0) {
-            return '';
+        if (result.status !== "success" || result.rows.length === 0) {
+            return "";
         }
-        return (result.rows[0].definition as string) ?? '';
+        return (result.rows[0].definition as string) ?? "";
     }
 
     async getProcedureDDL(database: string, procedureName: string, schema?: string): Promise<string> {
@@ -680,60 +698,65 @@ class PostgresSchemaAdapter extends BaseSchemaAdapter<PostgresSharedContext> {
     async getTriggerDDL(_database: string, triggerName: string, _schema?: string): Promise<string> {
         const sql = `SELECT pg_get_triggerdef(oid) AS definition FROM pg_trigger WHERE tgname = $1 AND NOT tgisinternal`;
         const result = await this.executeQuery(sql, [{ value: triggerName }]);
-        if (result.status !== 'success' || result.rows.length === 0) {
-            return '';
+        if (result.status !== "success" || result.rows.length === 0) {
+            return "";
         }
-        return (result.rows[0].definition as string) ?? '';
+        return (result.rows[0].definition as string) ?? "";
     }
 
-    async getRoutineParameters(_database: string, routineName: string, _routineType: 'FUNCTION' | 'PROCEDURE', schema?: string): Promise<RoutineParameterInfo[]> {
-        const targetSchema = schema ?? 'public';
+    async getRoutineParameters(
+        _database: string,
+        routineName: string,
+        _routineType: "FUNCTION" | "PROCEDURE",
+        schema?: string,
+    ): Promise<RoutineParameterInfo[]> {
+        const targetSchema = schema ?? "public";
         const sql = `SELECT p.parameter_name, p.data_type, p.parameter_mode FROM information_schema.parameters p JOIN information_schema.routines r ON p.specific_schema = r.routine_schema AND p.specific_name = r.routine_name WHERE r.routine_schema = $1 AND r.routine_name = $2 AND p.parameter_name IS NOT NULL ORDER BY p.ordinal_position`;
         const result = await this.executeQuery(sql, [{ value: targetSchema }, { value: routineName }]);
-        if (result.status !== 'success') {
+        if (result.status !== "success") {
             return [];
         }
 
         return result.rows.map((row: QueryRow) => ({
             name: row.parameter_name as string,
             type: row.data_type as string,
-            direction: (row.parameter_mode as 'IN' | 'OUT' | 'INOUT') || 'IN',
+            direction: (row.parameter_mode as "IN" | "OUT" | "INOUT") || "IN",
         }));
     }
 
     async getExplainPlan(_database: string, sql: string): Promise<ExplainResult> {
         if (!this.shared.pool) {
-            return { format: 'json', raw: '{}', nodes: [] };
+            return { format: "json", raw: "{}", nodes: [] };
         }
 
-        let client: import('pg').PoolClient | null = null;
+        let client: import("pg").PoolClient | null = null;
         try {
             client = await this.shared.pool.connect();
             const explainSql = `EXPLAIN (FORMAT JSON, ANALYZE) ${sql}`;
             const result = await client.query(explainSql);
             if (!result.rows || result.rows.length === 0) {
-                return { format: 'json', raw: '{}', nodes: [] };
+                return { format: "json", raw: "{}", nodes: [] };
             }
 
             const raw = JSON.stringify(result.rows[0]);
             const parsed = result.rows[0] as Record<string, unknown>;
-            const planData = (parsed['QUERY PLAN'] ?? parsed) as Record<string, unknown>;
+            const planData = (parsed["QUERY PLAN"] ?? parsed) as Record<string, unknown>;
             const nodes = this.parseExplainNodes(planData);
 
-            return { format: 'json', raw, nodes };
+            return { format: "json", raw, nodes };
         } catch (e) {
-            console.debug('[SQL All in One] PG EXPLAIN error:', e);
-            return { format: 'json', raw: '{}', nodes: [] };
+            console.debug("[SQL All in One] PG EXPLAIN error:", e);
+            return { format: "json", raw: "{}", nodes: [] };
         } finally {
             client?.release();
         }
     }
 
     async getTableRowCount(_database: string, table: string, schema?: string): Promise<number> {
-        const targetSchema = schema ?? 'public';
+        const targetSchema = schema ?? "public";
         const sql = `SELECT reltuples::bigint AS row_count FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = $1 AND c.relname = $2`;
         const result = await this.executeQuery(sql, [{ value: targetSchema }, { value: table }]);
-        if (result.status !== 'success' || result.rows.length === 0) {
+        if (result.status !== "success" || result.rows.length === 0) {
             return 0;
         }
         const rowCount = result.rows[0].row_count;
@@ -750,70 +773,70 @@ class PostgresSchemaAdapter extends BaseSchemaAdapter<PostgresSharedContext> {
             supportsExplainAnalyze: true,
             supportsCancel: true,
             supportsSshTunnel: true,
-            supportedObjectTypes: ['table', 'view', 'function', 'procedure', 'trigger', 'index'],
+            supportedObjectTypes: ["table", "view", "function", "procedure", "trigger", "index"],
         };
     }
 
     getSupportedDataTypes(): DataTypeCategory[] {
         return [
             {
-                category: 'Integer',
+                category: "Integer",
                 types: [
-                    { name: 'smallint' },
-                    { name: 'integer' },
-                    { name: 'int' },
-                    { name: 'bigint' },
-                    { name: 'serial' },
-                    { name: 'bigserial' },
+                    { name: "smallint" },
+                    { name: "integer" },
+                    { name: "int" },
+                    { name: "bigint" },
+                    { name: "serial" },
+                    { name: "bigserial" },
                 ],
             },
             {
-                category: 'Float',
+                category: "Float",
                 types: [
-                    { name: 'decimal', needsPrecision: true, needsScale: true },
-                    { name: 'numeric', needsPrecision: true, needsScale: true },
-                    { name: 'real' },
-                    { name: 'double precision' },
+                    { name: "decimal", needsPrecision: true, needsScale: true },
+                    { name: "numeric", needsPrecision: true, needsScale: true },
+                    { name: "real" },
+                    { name: "double precision" },
                 ],
             },
             {
-                category: 'String',
+                category: "String",
                 types: [
-                    { name: 'character varying', needsLength: true },
-                    { name: 'varchar', needsLength: true },
-                    { name: 'character', needsLength: true },
-                    { name: 'char', needsLength: true },
-                    { name: 'text' },
+                    { name: "character varying", needsLength: true },
+                    { name: "varchar", needsLength: true },
+                    { name: "character", needsLength: true },
+                    { name: "char", needsLength: true },
+                    { name: "text" },
                 ],
             },
             {
-                category: 'Date & Time',
+                category: "Date & Time",
                 types: [
-                    { name: 'timestamp' },
-                    { name: 'timestamp without time zone' },
-                    { name: 'timestamp with time zone' },
-                    { name: 'date' },
-                    { name: 'time' },
-                    { name: 'interval' },
+                    { name: "timestamp" },
+                    { name: "timestamp without time zone" },
+                    { name: "timestamp with time zone" },
+                    { name: "date" },
+                    { name: "time" },
+                    { name: "interval" },
                 ],
             },
             {
-                category: 'Boolean',
-                types: [{ name: 'boolean' }],
+                category: "Boolean",
+                types: [{ name: "boolean" }],
             },
             {
-                category: 'Binary',
-                types: [{ name: 'bytea' }],
+                category: "Binary",
+                types: [{ name: "bytea" }],
             },
             {
-                category: 'Other',
+                category: "Other",
                 types: [
-                    { name: 'uuid' },
-                    { name: 'json' },
-                    { name: 'jsonb' },
-                    { name: 'xml' },
-                    { name: 'money' },
-                    { name: 'bit', needsLength: true },
+                    { name: "uuid" },
+                    { name: "json" },
+                    { name: "jsonb" },
+                    { name: "xml" },
+                    { name: "money" },
+                    { name: "bit", needsLength: true },
                 ],
             },
         ];
@@ -822,19 +845,21 @@ class PostgresSchemaAdapter extends BaseSchemaAdapter<PostgresSharedContext> {
     private async describeTableColumns(_database: string, table: string, schema: string): Promise<ColumnInfo[]> {
         const sql = `SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, column_default, ordinal_position FROM information_schema.columns WHERE table_schema = $1 AND table_name = $2 ORDER BY ordinal_position`;
         const result = await this.executeQuery(sql, [{ value: schema }, { value: table }]);
-        if (result.status !== 'success') {
+        if (result.status !== "success") {
             return [];
         }
 
         return result.rows.map((row: QueryRow) => {
             const columnDefault = row.column_default as string | null;
-            const isAutoIncrement = columnDefault !== null && columnDefault.includes('nextval') || columnDefault !== null && columnDefault.includes('identity');
+            const isAutoIncrement =
+                (columnDefault !== null && columnDefault.includes("nextval")) ||
+                (columnDefault !== null && columnDefault.includes("identity"));
             const lengthRaw = row.character_maximum_length ?? row.numeric_precision ?? undefined;
             return {
                 name: row.column_name as string,
                 type: row.data_type as string,
                 length: lengthRaw != null ? Number(lengthRaw) : undefined,
-                nullable: row.is_nullable === 'YES',
+                nullable: row.is_nullable === "YES",
                 defaultValue: columnDefault as string | number | boolean | null,
                 isPrimaryKey: false,
                 isAutoIncrement,
@@ -846,7 +871,7 @@ class PostgresSchemaAdapter extends BaseSchemaAdapter<PostgresSharedContext> {
     private async describeTableIndexes(_database: string, table: string, schema: string): Promise<IndexInfo[]> {
         const sql = `SELECT i.relname AS index_name, a.attname AS column_name, idx.indisunique AS is_unique, idx.indisprimary AS is_primary FROM pg_index idx JOIN pg_class t ON idx.indrelid = t.oid JOIN pg_class i ON idx.indexrelid = i.oid JOIN pg_namespace n ON n.oid = t.relnamespace JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = ANY(idx.indkey) WHERE n.nspname = $1 AND t.relname = $2 ORDER BY i.relname, a.attnum`;
         const result = await this.executeQuery(sql, [{ value: schema }, { value: table }]);
-        if (result.status !== 'success') {
+        if (result.status !== "success") {
             return [];
         }
 
@@ -856,7 +881,7 @@ class PostgresSchemaAdapter extends BaseSchemaAdapter<PostgresSharedContext> {
             if (!indexMap.has(indexName)) {
                 indexMap.set(indexName, {
                     name: indexName,
-                    type: 'btree',
+                    type: "btree",
                     columns: [],
                     isUnique: row.is_unique as boolean,
                     isPrimary: row.is_primary as boolean,
@@ -871,13 +896,13 @@ class PostgresSchemaAdapter extends BaseSchemaAdapter<PostgresSharedContext> {
     private async describeTableForeignKeys(_database: string, table: string, schema: string): Promise<ForeignKeyInfo[]> {
         const sql = `SELECT con.conname AS constraint_name, a.attname AS column_name, cf.relname AS referenced_table, af.attname AS referenced_column, con.confdeltype AS on_delete, con.confupdtype AS on_update FROM pg_constraint con JOIN pg_class c ON con.conrelid = c.oid JOIN pg_namespace n ON n.oid = c.relnamespace JOIN pg_class cf ON con.confrelid = cf.oid JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum = ANY(con.conkey) JOIN pg_attribute af ON af.attrelid = cf.oid AND af.attnum = ANY(con.confkey) WHERE n.nspname = $1 AND c.relname = $2 AND con.contype = 'f' ORDER BY con.conname, a.attnum`;
         const result = await this.executeQuery(sql, [{ value: schema }, { value: table }]);
-        if (result.status !== 'success') {
+        if (result.status !== "success") {
             return [];
         }
 
         const fkMap = new Map<string, ForeignKeyInfo>();
-        const deleteRuleMap: Record<string, string> = { 'a': 'NO ACTION', 'r': 'RESTRICT', 'c': 'CASCADE', 'n': 'SET NULL', 'd': 'SET DEFAULT' };
-        const updateRuleMap: Record<string, string> = { 'a': 'NO ACTION', 'r': 'RESTRICT', 'c': 'CASCADE', 'n': 'SET NULL', 'd': 'SET DEFAULT' };
+        const deleteRuleMap: Record<string, string> = { a: "NO ACTION", r: "RESTRICT", c: "CASCADE", n: "SET NULL", d: "SET DEFAULT" };
+        const updateRuleMap: Record<string, string> = { a: "NO ACTION", r: "RESTRICT", c: "CASCADE", n: "SET NULL", d: "SET DEFAULT" };
 
         for (const row of result.rows) {
             const fkName = row.constraint_name as string;
@@ -887,8 +912,8 @@ class PostgresSchemaAdapter extends BaseSchemaAdapter<PostgresSharedContext> {
                     columns: [],
                     referencedTable: row.referenced_table as string,
                     referencedColumns: [],
-                    onDelete: deleteRuleMap[row.on_delete as string] ?? 'NO ACTION',
-                    onUpdate: updateRuleMap[row.on_update as string] ?? 'NO ACTION',
+                    onDelete: deleteRuleMap[row.on_delete as string] ?? "NO ACTION",
+                    onUpdate: updateRuleMap[row.on_update as string] ?? "NO ACTION",
                 });
             }
             const fk = fkMap.get(fkName)!;
@@ -913,19 +938,19 @@ class PostgresSchemaAdapter extends BaseSchemaAdapter<PostgresSharedContext> {
     private parseSinglePlanNode(plan: Record<string, unknown>, idCounter: { value: number }): ExplainNode {
         const node: ExplainNode = {
             id: String(++idCounter.value),
-            operation: (plan['Node Type'] as string) ?? 'unknown',
-            table: plan['Relation Name'] as string | undefined,
-            rows: plan['Actual Rows'] != null ? Number(plan['Actual Rows']) : undefined,
-            cost: plan['Total Cost'] != null ? Number(plan['Total Cost']) : undefined,
-            key: plan['Index Name'] as string | undefined,
-            extra: plan['Filter'] as string | undefined,
+            operation: (plan["Node Type"] as string) ?? "unknown",
+            table: plan["Relation Name"] as string | undefined,
+            rows: plan["Actual Rows"] != null ? Number(plan["Actual Rows"]) : undefined,
+            cost: plan["Total Cost"] != null ? Number(plan["Total Cost"]) : undefined,
+            key: plan["Index Name"] as string | undefined,
+            extra: plan["Filter"] as string | undefined,
             children: [],
         };
 
         const subPlans = plan.Plans as unknown[] | undefined;
         if (Array.isArray(subPlans)) {
             for (const subPlan of subPlans) {
-                if (subPlan && typeof subPlan === 'object') {
+                if (subPlan && typeof subPlan === "object") {
                     node.children.push(this.parseSinglePlanNode(subPlan as Record<string, unknown>, idCounter));
                 }
             }
@@ -954,33 +979,30 @@ export class PostgresAdapter extends BaseDatabaseAdapter<PostgresSharedContext> 
         return new PostgresQueryAdapter(this.shared);
     }
     protected override createMetadataAdapter(): IMetadataAdapter {
-        return new PostgresMetadataAdapter(
-            this.shared,
-            (sql, params) => this.queryAdapter.execute(sql, params)
-        );
+        return new PostgresMetadataAdapter(this.shared, (sql, params) => this.queryAdapter.execute(sql, params));
     }
     protected override createSchemaAdapter(): ISchemaAdapter {
         return new PostgresSchemaAdapter(
             this.shared,
             (sql, params) => this.queryAdapter.execute(sql, params),
-            (db, schema) => this.metadataAdapter.listTriggers(db, schema)
+            (db, schema) => this.metadataAdapter.listTriggers(db, schema),
         );
     }
 
     protected override getReapLogPrefix(): string {
-        return 'PG';
+        return "PG";
     }
 
     static getDialectMetadata(): DialectMetadata {
         return {
-            dialect: 'postgresql',
-            displayName: 'PostgreSQL',
+            dialect: "postgresql",
+            displayName: "PostgreSQL",
             defaultPort: 5432,
-            defaultUsername: 'postgres',
-            iconKey: 'postgresql',
+            defaultUsername: "postgres",
+            iconKey: "postgresql",
             supportsSshTunnel: true,
             supportsSsl: true,
-            isFileBased: false
+            isFileBased: false,
         };
     }
 }

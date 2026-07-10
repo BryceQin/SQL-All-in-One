@@ -1,7 +1,7 @@
-import * as vscode from 'vscode';
-import { getSchemaCache } from './SchemaCache';
-import { getConnectionManager } from '../connection/ConnectionManager';
-import { handleError, ErrorCategory } from '../../core/errorHandler';
+import * as vscode from "vscode";
+import { getSchemaCache } from "./SchemaCache";
+import { getConnectionManager } from "../connection/ConnectionManager";
+import { handleError, ErrorCategory } from "../../core/errorHandler";
 
 /**
  * Builds MarkdownString hover documentation for schema objects (tables and
@@ -34,22 +34,22 @@ export class HoverInfoProvider {
             if (structure.charset) metaParts.push(`Charset: ${structure.charset}`);
             if (structure.comment) metaParts.push(`Comment: ${structure.comment}`);
             if (metaParts.length > 0) {
-                md.appendMarkdown(metaParts.join(' | ') + '\n\n');
+                md.appendMarkdown(metaParts.join(" | ") + "\n\n");
             }
 
-            md.appendMarkdown('| Column | Type | Nullable | Key | Default | Comment |\n');
-            md.appendMarkdown('|--------|------|----------|-----|---------|---------|\n');
+            md.appendMarkdown("| Column | Type | Nullable | Key | Default | Comment |\n");
+            md.appendMarkdown("|--------|------|----------|-----|---------|---------|\n");
             for (const col of structure.columns) {
-                const key = col.isPrimaryKey ? '**PK**' : col.isUnique ? 'UQ' : '';
-                const nullable = col.nullable ? '✓' : '✗';
-                const defaultVal = col.defaultValue !== undefined ? String(col.defaultValue) : '';
-                const comment = col.comment || '';
+                const key = col.isPrimaryKey ? "**PK**" : col.isUnique ? "UQ" : "";
+                const nullable = col.nullable ? "✓" : "✗";
+                const defaultVal = col.defaultValue !== undefined ? String(col.defaultValue) : "";
+                const comment = col.comment || "";
                 md.appendMarkdown(`| ${col.name} | ${col.type} | ${nullable} | ${key} | ${defaultVal} | ${comment} |\n`);
             }
 
             return md;
         } catch (e) {
-            handleError(e, 'HoverInfoProvider.getTableHoverInfo', ErrorCategory.FEATURE);
+            handleError(e, "HoverInfoProvider.getTableHoverInfo", ErrorCategory.FEATURE);
             return null;
         }
     }
@@ -60,7 +60,7 @@ export class HoverInfoProvider {
 
         try {
             const columns = await this.schemaCache.getColumns(activeConn.id, database, tableName);
-            const col = columns.find(c => c.name.toLowerCase() === columnName.toLowerCase());
+            const col = columns.find((c) => c.name.toLowerCase() === columnName.toLowerCase());
             if (!col) return null;
 
             const md = new vscode.MarkdownString();
@@ -70,20 +70,20 @@ export class HoverInfoProvider {
 
             const parts: string[] = [];
             parts.push(`**Type**: \`${col.type}\``);
-            parts.push(`**Nullable**: ${col.nullable ? 'Yes' : 'No'}`);
-            if (col.isPrimaryKey) parts.push('**Key**: PK');
-            if (col.isUnique) parts.push('**Key**: UQ');
+            parts.push(`**Nullable**: ${col.nullable ? "Yes" : "No"}`);
+            if (col.isPrimaryKey) parts.push("**Key**: PK");
+            if (col.isUnique) parts.push("**Key**: UQ");
             if (col.defaultValue !== undefined) parts.push(`**Default**: \`${col.defaultValue}\``);
-            if (col.isAutoIncrement) parts.push('**Auto Increment**: Yes');
+            if (col.isAutoIncrement) parts.push("**Auto Increment**: Yes");
             if (col.comment) parts.push(`**Comment**: ${col.comment}`);
             if (col.referencedTable) parts.push(`**References**: \`${col.referencedTable}\``);
 
-            md.appendMarkdown(parts.join(' | ') + '\n\n');
+            md.appendMarkdown(parts.join(" | ") + "\n\n");
             md.appendMarkdown(`*Table: \`${tableName}\`*`);
 
             return md;
         } catch (e) {
-            handleError(e, 'HoverInfoProvider.getColumnHoverInfo', ErrorCategory.FEATURE);
+            handleError(e, "HoverInfoProvider.getColumnHoverInfo", ErrorCategory.FEATURE);
             return null;
         }
     }

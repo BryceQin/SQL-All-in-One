@@ -1,4 +1,4 @@
-import { t } from '../../i18n/index';
+import { t } from "../../i18n/index";
 
 /**
  * Minimal shared-context contract required by {@link BaseConnectionAdapter}'s
@@ -72,17 +72,17 @@ export abstract class BaseConnectionAdapter<TShared extends IReapableSharedConte
         const msg = error instanceof Error ? error.message : String(error);
         const hostPort = `${config.host}:${config.port}`;
 
-        if (msg.includes('ECONNREFUSED')) {
-            return new Error(t('database.connectionRefused', hostPort));
+        if (msg.includes("ECONNREFUSED")) {
+            return new Error(t("database.connectionRefused", hostPort));
         }
-        if (msg.includes('ETIMEDOUT') || msg.includes('connectTimeout')) {
-            return new Error(t('database.connectionTimedOut', hostPort));
+        if (msg.includes("ETIMEDOUT") || msg.includes("connectTimeout")) {
+            return new Error(t("database.connectionTimedOut", hostPort));
         }
-        if (msg.includes('EHOSTUNREACH')) {
-            return new Error(t('database.hostUnreachable', hostPort));
+        if (msg.includes("EHOSTUNREACH")) {
+            return new Error(t("database.hostUnreachable", hostPort));
         }
-        if (msg.includes('ENOTFOUND')) {
-            return new Error(t('database.hostNotFound', config.host));
+        if (msg.includes("ENOTFOUND")) {
+            return new Error(t("database.hostNotFound", config.host));
         }
 
         // Common network-level fallbacks did not match. When the original
@@ -154,11 +154,14 @@ export abstract class BaseConnectionAdapter<TShared extends IReapableSharedConte
      * The default implementation handles SSL/certificate errors shared by
      * every TLS-capable driver so subclasses do not have to repeat it.
      */
-    protected formatDriverSpecificError(_error: unknown, _config: { host: string; port?: number; username: string; database?: string }): Error | undefined {
+    protected formatDriverSpecificError(
+        _error: unknown,
+        _config: { host: string; port?: number; username: string; database?: string },
+    ): Error | undefined {
         const msg = _error instanceof Error ? _error.message : String(_error);
         const hostPort = `${_config.host}:${_config.port}`;
-        if (msg.includes('self signed certificate') || msg.includes('certificate') || msg.includes('SSL')) {
-            return new Error(t('database.sslError', hostPort));
+        if (msg.includes("self signed certificate") || msg.includes("certificate") || msg.includes("SSL")) {
+            return new Error(t("database.sslError", hostPort));
         }
         return undefined;
     }

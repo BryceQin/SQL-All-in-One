@@ -1,25 +1,25 @@
-import type { AST } from 'node-sql-parser'
-import type { SqlDialect } from '../parser/dialectMapper'
-import { FunctionTransformer } from './nodeTransformers/FunctionTransformer'
-import { TypeTransformer } from './nodeTransformers/TypeTransformer'
-import { ColumnAttrTransformer } from './nodeTransformers/ColumnAttrTransformer'
-import { TableOptionTransformer } from './nodeTransformers/TableOptionTransformer'
-import { ClauseTransformer } from './nodeTransformers/ClauseTransformer'
-import { ConstraintTransformer } from './nodeTransformers/ConstraintTransformer'
+import type { AST } from "node-sql-parser";
+import type { SqlDialect } from "../parser/dialectMapper";
+import { FunctionTransformer } from "./nodeTransformers/FunctionTransformer";
+import { TypeTransformer } from "./nodeTransformers/TypeTransformer";
+import { ColumnAttrTransformer } from "./nodeTransformers/ColumnAttrTransformer";
+import { TableOptionTransformer } from "./nodeTransformers/TableOptionTransformer";
+import { ClauseTransformer } from "./nodeTransformers/ClauseTransformer";
+import { ConstraintTransformer } from "./nodeTransformers/ConstraintTransformer";
 
 export interface TransformContext {
-    from: SqlDialect
-    to: SqlDialect
-    warnings: string[]
+    from: SqlDialect;
+    to: SqlDialect;
+    warnings: string[];
 }
 
 export interface AstNodeTransformer {
-    matches(node: Record<string, unknown>, parent: Record<string, unknown> | null, key: string | null): boolean
-    transform(node: Record<string, unknown>, parent: Record<string, unknown> | null, key: string | null, ctx: TransformContext): void
+    matches(node: Record<string, unknown>, parent: Record<string, unknown> | null, key: string | null): boolean;
+    transform(node: Record<string, unknown>, parent: Record<string, unknown> | null, key: string | null, ctx: TransformContext): void;
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
-    return typeof value === 'object' && value !== null && !Array.isArray(value)
+    return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function walkAllObjects(
@@ -29,29 +29,29 @@ function walkAllObjects(
     key: string | null = null,
 ): void {
     if (!isPlainObject(node)) {
-        return
+        return;
     }
 
-    visitor.enter(node, parent, key)
+    visitor.enter(node, parent, key);
 
-    const childKeys = Object.keys(node)
+    const childKeys = Object.keys(node);
     for (const childKey of childKeys) {
-        if (childKey === 'type' || childKey === 'loc') {
-            continue
+        if (childKey === "type" || childKey === "loc") {
+            continue;
         }
-        const childValue = node[childKey]
+        const childValue = node[childKey];
         if (Array.isArray(childValue)) {
             for (const item of childValue) {
-                walkAllObjects(item, visitor, node, childKey)
+                walkAllObjects(item, visitor, node, childKey);
             }
         } else if (isPlainObject(childValue)) {
-            walkAllObjects(childValue, visitor, node, childKey)
+            walkAllObjects(childValue, visitor, node, childKey);
         }
     }
 }
 
 export class AstTransformEngine {
-    private transformers: AstNodeTransformer[]
+    private transformers: AstNodeTransformer[];
 
     constructor() {
         this.transformers = [
@@ -61,11 +61,11 @@ export class AstTransformEngine {
             new TableOptionTransformer(),
             new ConstraintTransformer(),
             new ClauseTransformer(),
-        ]
+        ];
     }
 
     transform(ast: AST[] | AST, from: SqlDialect, to: SqlDialect): { warnings: string[] } {
-        const ctx: TransformContext = { from, to, warnings: [] }
+        const ctx: TransformContext = { from, to, warnings: [] };
 
         if (Array.isArray(ast)) {
             for (const stmt of ast) {
@@ -73,24 +73,24 @@ export class AstTransformEngine {
                     enter: (node, parent, key) => {
                         for (const t of this.transformers) {
                             if (t.matches(node, parent, key)) {
-                                t.transform(node, parent, key, ctx)
+                                t.transform(node, parent, key, ctx);
                             }
                         }
                     },
-                })
+                });
             }
         } else {
             walkAllObjects(ast, {
                 enter: (node, parent, key) => {
                     for (const t of this.transformers) {
                         if (t.matches(node, parent, key)) {
-                            t.transform(node, parent, key, ctx)
+                            t.transform(node, parent, key, ctx);
                         }
                     }
                 },
-            })
+            });
         }
 
-        return { warnings: ctx.warnings }
+        return { warnings: ctx.warnings };
     }
 }

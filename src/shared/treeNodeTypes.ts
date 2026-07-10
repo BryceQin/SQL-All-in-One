@@ -3,22 +3,22 @@
  * to avoid cross-layer runtime dependencies between `database` and `views`.
  */
 export type TreeNodeType =
-    | 'root'
-    | 'group'
-    | 'connection'
-    | 'database'
-    | 'objectGroup'
-    | 'table'
-    | 'view'
-    | 'function'
-    | 'procedure'
-    | 'trigger'
-    | 'column'
-    | 'index'
-    | 'routineParameter'
-    | 'routineReturn'
-    | 'triggerDetail'
-    | 'favorites';
+    | "root"
+    | "group"
+    | "connection"
+    | "database"
+    | "objectGroup"
+    | "table"
+    | "view"
+    | "function"
+    | "procedure"
+    | "trigger"
+    | "column"
+    | "index"
+    | "routineParameter"
+    | "routineReturn"
+    | "triggerDetail"
+    | "favorites";
 
 /**
  * Minimal structural interface that every tree node satisfies.
@@ -37,4 +37,4 @@ export interface ITreeNode {
     readonly parent?: ITreeNode;
 }
 
-export type ConnectionState = 'connected' | 'disconnected' | 'connecting' | 'error';
+export type ConnectionState = "connected" | "disconnected" | "connecting" | "error";

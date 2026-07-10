@@ -1,11 +1,11 @@
-import * as vscode from 'vscode';
-import { ExplainPlanPanel } from './explainPlan/ExplainPlanPanel';
-import { DataTransferDialog } from './dataTransfer/DataTransferDialog';
-import { registerQueryResultCommands } from './queryResult/queryResultCommands';
-import { registerTableDesignerCommands } from './tableDesigner/tableDesignerCommands';
-import { registerTreeProviderCommands } from './databaseExplorer/treeProviderCommands';
-import { getContainer, Tokens } from '../core/diContainer';
-import type { IConnectionService, IDataTransferService, IExplainPlanService } from '../application/ports';
+import * as vscode from "vscode";
+import { ExplainPlanPanel } from "./explainPlan/ExplainPlanPanel";
+import { DataTransferDialog } from "./dataTransfer/DataTransferDialog";
+import { registerQueryResultCommands } from "./queryResult/queryResultCommands";
+import { registerTableDesignerCommands } from "./tableDesigner/tableDesignerCommands";
+import { registerTreeProviderCommands } from "./databaseExplorer/treeProviderCommands";
+import { getContainer, Tokens } from "../core/diContainer";
+import type { IConnectionService, IDataTransferService, IExplainPlanService } from "../application/ports";
 
 /**
  * Register every views-layer command handler that the database layer
@@ -36,7 +36,7 @@ export function registerViewsCommands(context: vscode.ExtensionContext): vscode.
     //    is invoked immediately so the tree is available before any
     //    connection-state events fire.
     disposables.push(...registerTreeProviderCommands(context));
-    vscode.commands.executeCommand('hive-formatter.createTreeProvider');
+    vscode.commands.executeCommand("hive-formatter.createTreeProvider");
 
     // 2. Query-result panel handlers (showQueryLoading, showQueryResult,
     //    showQueryError, setQueryResultPanelSql, sendDatabaseList,
@@ -51,24 +51,21 @@ export function registerViewsCommands(context: vscode.ExtensionContext): vscode.
     //    `hive-formatter.showExplainPlan(sql, isPanel?)` from
     //    SchemaCommands.explainQuery; the views layer owns the panel.
     disposables.push(
-        vscode.commands.registerCommand(
-            'hive-formatter.showExplainPlan',
-            async (sql: string, _isPanel?: boolean) => {
-                const container = getContainer();
-                const panel = ExplainPlanPanel.createOrShow(
-                    context.extensionUri,
-                    context,
-                    container.get<IConnectionService>(Tokens.ConnectionService),
-                    container.get<IExplainPlanService>(Tokens.ExplainPlanService),
-                );
-                await panel.showExplainPlan(sql, false);
-            },
-        ),
+        vscode.commands.registerCommand("hive-formatter.showExplainPlan", async (sql: string, _isPanel?: boolean) => {
+            const container = getContainer();
+            const panel = ExplainPlanPanel.createOrShow(
+                context.extensionUri,
+                context,
+                container.get<IConnectionService>(Tokens.ConnectionService),
+                container.get<IExplainPlanService>(Tokens.ExplainPlanService),
+            );
+            await panel.showExplainPlan(sql, false);
+        }),
     );
 
     // 5. Data-transfer dialog handler. Fired by SchemaCommands.importData.
     disposables.push(
-        vscode.commands.registerCommand('hive-formatter.showDataTransferDialog', () => {
+        vscode.commands.registerCommand("hive-formatter.showDataTransferDialog", () => {
             const container = getContainer();
             DataTransferDialog.createOrShow(
                 context.extensionUri,

@@ -1,4 +1,4 @@
-import * as vscode from 'vscode';
+import * as vscode from "vscode";
 
 export interface MonacoCompletionItem {
     label: string;
@@ -62,22 +62,22 @@ export class MonacoDataAdapter {
 
     static toMonacoCompletionItems(items: vscode.CompletionItem[]): MonacoCompletionItem[] {
         return items.map((item) => {
-            const labelStr = typeof item.label === 'string' ? item.label : item.label.label;
+            const labelStr = typeof item.label === "string" ? item.label : item.label.label;
             const result: MonacoCompletionItem = {
                 label: labelStr,
                 kind: MonacoDataAdapter.mapCompletionItemKind(item.kind ?? vscode.CompletionItemKind.Text),
-                insertText: item.insertText instanceof vscode.SnippetString
-                    ? item.insertText.value
-                    : (item.insertText as string | undefined) ?? labelStr,
-                sortText: item.sortText ?? '',
+                insertText:
+                    item.insertText instanceof vscode.SnippetString
+                        ? item.insertText.value
+                        : ((item.insertText as string | undefined) ?? labelStr),
+                sortText: item.sortText ?? "",
             };
             if (item.insertText instanceof vscode.SnippetString) {
                 result.insertTextRules = 4;
             }
             if (item.documentation) {
-                result.documentation = typeof item.documentation === 'string'
-                    ? item.documentation
-                    : (item.documentation as vscode.MarkdownString).value;
+                result.documentation =
+                    typeof item.documentation === "string" ? item.documentation : (item.documentation as vscode.MarkdownString).value;
             }
             if (item.detail) {
                 result.detail = item.detail;
@@ -103,7 +103,7 @@ export class MonacoDataAdapter {
 
     static toMonacoHoverContents(hover: vscode.Hover): string[] {
         return hover.contents.map((content) => {
-            if (typeof content === 'string') return content;
+            if (typeof content === "string") return content;
             return (content as vscode.MarkdownString).value;
         });
     }

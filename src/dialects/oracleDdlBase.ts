@@ -1,4 +1,4 @@
-import { expandPhrases } from "./expandPhrases"
+import { expandPhrases } from "./expandPhrases";
 
 /**
  * Shared Oracle-compatible DDL clause lists.
@@ -178,7 +178,7 @@ export const ORACLE_DDL_TABULAR_ONELINE_CLAUSES = expandPhrases([
     "GROUPING SETS",
     "ROLLUP",
     "CUBE",
-])
+]);
 
 /**
  * Standard one-line clauses shared by Oracle and Dameng.
@@ -186,7 +186,7 @@ export const ORACLE_DDL_TABULAR_ONELINE_CLAUSES = expandPhrases([
 export const ORACLE_STANDARD_ONELINE_CLAUSES = expandPhrases([
     "CREATE [GLOBAL TEMPORARY] TABLE",
     "CREATE [GLOBAL TEMPORARY] TABLE [IF NOT EXISTS]",
-])
+]);
 
 /**
  * Shared Oracle/Dameng reserved clauses (WITH/FROM/WHERE/...).
@@ -235,16 +235,12 @@ export const ORACLE_RESERVED_CLAUSES = expandPhrases([
     "RETURNING INTO",
     "BULK COLLECT INTO",
     "RETURNING BULK COLLECT INTO",
-])
+]);
 
 /**
  * Shared Oracle/Dameng set operations, joins, keyword phrases.
  */
-export const ORACLE_RESERVED_SET_OPERATIONS = expandPhrases([
-    "UNION [ALL]",
-    "INTERSECT",
-    "MINUS",
-])
+export const ORACLE_RESERVED_SET_OPERATIONS = expandPhrases(["UNION [ALL]", "INTERSECT", "MINUS"]);
 
 export const ORACLE_RESERVED_JOINS = expandPhrases([
     "JOIN",
@@ -252,7 +248,7 @@ export const ORACLE_RESERVED_JOINS = expandPhrases([
     "{INNER | CROSS} JOIN",
     "NATURAL [INNER] JOIN",
     "NATURAL {LEFT | RIGHT | FULL} [OUTER] JOIN",
-])
+]);
 
 export const ORACLE_RESERVED_KEYWORD_PHRASES = expandPhrases([
     "ON {UPDATE | DELETE} [SET NULL]",
@@ -264,7 +260,7 @@ export const ORACLE_RESERVED_KEYWORD_PHRASES = expandPhrases([
     "WITHIN GROUP",
     "PIVOT XML",
     "UNPIVOT XML",
-])
+]);
 
 /**
  * Shared Oracle/Dameng operators.
@@ -277,4 +273,4 @@ export const ORACLE_OPERATORS = [
     "..", // range operator (PL/SQL)
     "%", // attribute / modulo
     "@", // database link separator
-]
+];

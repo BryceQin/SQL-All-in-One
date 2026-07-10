@@ -2,13 +2,13 @@ const SINGLE_QUOTE_REGEX = /'/g;
 
 export function formatSqlValue(value: unknown): string {
     if (value === null || value === undefined) {
-        return 'NULL';
+        return "NULL";
     }
-    if (typeof value === 'number') {
+    if (typeof value === "number") {
         return String(value);
     }
-    if (typeof value === 'boolean') {
-        return value ? '1' : '0';
+    if (typeof value === "boolean") {
+        return value ? "1" : "0";
     }
     if (value instanceof Date) {
         return `'${value.toISOString()}'`;

@@ -1,11 +1,11 @@
-import * as vscode from 'vscode';
-import { getParserEngine } from '../../parser/SqlParserEngine';
-import { SafetyCheckResult, SafetyWarning, SafetyConfirmation, SafetyLevel } from './QueryResult';
-import type { SqlDialect } from '../../parser/dialectMapper';
-import { getConnectionManager } from '../connection/ConnectionManager';
-import { t } from '../../i18n';
-import { getConfigManager } from '../../core/configManager';
-import { handleError, ErrorCategory } from '../../core/errorHandler';
+import * as vscode from "vscode";
+import { getParserEngine } from "../../parser/SqlParserEngine";
+import { SafetyCheckResult, SafetyWarning, SafetyConfirmation, SafetyLevel } from "./QueryResult";
+import type { SqlDialect } from "../../parser/dialectMapper";
+import { getConnectionManager } from "../connection/ConnectionManager";
+import { t } from "../../i18n";
+import { getConfigManager } from "../../core/configManager";
+import { handleError, ErrorCategory } from "../../core/errorHandler";
 
 // 预编译的正则表达式常量，避免每次调用 analyzeWithRegex 时重复创建 RegExp 对象
 const DELETE_PATTERN = /^\s*DELETE\s+/i;
@@ -19,7 +19,7 @@ const WHERE_PATTERN = /\bWHERE\b/i;
 
 export class SafeQueryGuard {
     private getSafetyLevel(): SafetyLevel {
-        return getConfigManager().get<SafetyLevel>('safetyGuard.level', 'moderate');
+        return getConfigManager().get<SafetyLevel>("safetyGuard.level", "moderate");
     }
 
     private inferDialect(): SqlDialect {
@@ -28,14 +28,16 @@ export class SafeQueryGuard {
             if (activeConn?.dialect) {
                 return activeConn.dialect as SqlDialect;
             }
-        } catch (e) { handleError(e, 'SafeQueryGuard.inferDialect', ErrorCategory.PARSE); }
-        return 'sql';
+        } catch (e) {
+            handleError(e, "SafeQueryGuard.inferDialect", ErrorCategory.PARSE);
+        }
+        return "sql";
     }
 
     async analyze(sql: string, overrideLevel?: SafetyLevel, dialect?: SqlDialect): Promise<SafetyCheckResult> {
         const level = overrideLevel ?? this.getSafetyLevel();
 
-        if (level === 'off') {
+        if (level === "off") {
             return { safe: true, warnings: [], confirmations: [] };
         }
 
@@ -54,8 +56,7 @@ export class SafeQueryGuard {
         const isGrant = GRANT_PATTERN.test(sql);
         const isRevoke = REVOKE_PATTERN.test(sql);
 
-        if (!isDelete && !isUpdate && !isDrop && !isTruncate &&
-            !isAlter && !isGrant && !isRevoke) {
+        if (!isDelete && !isUpdate && !isDrop && !isTruncate && !isAlter && !isGrant && !isRevoke) {
             return { safe: true, warnings: [], confirmations: [] };
         }
 
@@ -80,50 +81,50 @@ export class SafeQueryGuard {
 
             for (const node of astArray) {
                 const astNode = node as unknown as Record<string, unknown>;
-                const type = (astNode.type as string || '').toLowerCase();
+                const type = ((astNode.type as string) || "").toLowerCase();
 
-                if (type === 'delete') {
+                if (type === "delete") {
                     if (!astNode.where) {
                         warnings.push({
-                            rule: 'delete_without_where',
-                            message: t('safety.deleteWithoutWhere'),
-                            severity: 'warning',
+                            rule: "delete_without_where",
+                            message: t("safety.deleteWithoutWhere"),
+                            severity: "warning",
                             sql,
                         });
                     }
-                } else if (type === 'update') {
+                } else if (type === "update") {
                     if (!astNode.where) {
                         warnings.push({
-                            rule: 'update_without_where',
-                            message: t('safety.updateWithoutWhere'),
-                            severity: 'warning',
+                            rule: "update_without_where",
+                            message: t("safety.updateWithoutWhere"),
+                            severity: "warning",
                             sql,
                         });
                     }
-                } else if (type === 'drop') {
+                } else if (type === "drop") {
                     confirmations.push({
-                        rule: 'drop_statement',
-                        message: t('safety.dropStatement', this.extractObjectName(astNode)),
+                        rule: "drop_statement",
+                        message: t("safety.dropStatement", this.extractObjectName(astNode)),
                         sql,
                     });
-                } else if (type === 'truncate') {
+                } else if (type === "truncate") {
                     confirmations.push({
-                        rule: 'truncate_statement',
-                        message: t('safety.truncateStatement', this.extractObjectName(astNode)),
+                        rule: "truncate_statement",
+                        message: t("safety.truncateStatement", this.extractObjectName(astNode)),
                         sql,
                     });
-                } else if (type === 'alter') {
+                } else if (type === "alter") {
                     if (this.hasDropColumn(astNode)) {
                         confirmations.push({
-                            rule: 'alter_drop_column',
-                            message: t('safety.alterDropColumn'),
+                            rule: "alter_drop_column",
+                            message: t("safety.alterDropColumn"),
                             sql,
                         });
                     }
                 }
             }
         } catch (e) {
-            handleError(e, 'SafeQueryGuard.parseStatements', ErrorCategory.PARSE);
+            handleError(e, "SafeQueryGuard.parseStatements", ErrorCategory.PARSE);
             return this.analyzeWithRegex(sql, level, warnings, confirmations);
         }
 
@@ -134,62 +135,62 @@ export class SafeQueryGuard {
         sql: string,
         level: SafetyLevel,
         warnings: SafetyWarning[],
-        confirmations: SafetyConfirmation[]
+        confirmations: SafetyConfirmation[],
     ): SafetyCheckResult {
         if (DELETE_PATTERN.test(sql) && !WHERE_PATTERN.test(sql)) {
             warnings.push({
-                rule: 'delete_without_where',
-                message: t('safety.deleteWithoutWhere'),
-                severity: 'warning',
+                rule: "delete_without_where",
+                message: t("safety.deleteWithoutWhere"),
+                severity: "warning",
                 sql,
             });
         }
 
         if (UPDATE_PATTERN.test(sql) && !WHERE_PATTERN.test(sql)) {
             warnings.push({
-                rule: 'update_without_where',
-                message: t('safety.updateWithoutWhere'),
-                severity: 'warning',
+                rule: "update_without_where",
+                message: t("safety.updateWithoutWhere"),
+                severity: "warning",
                 sql,
             });
         }
 
         if (DROP_PATTERN.test(sql)) {
             confirmations.push({
-                rule: 'drop_statement',
-                message: t('safety.dropDetected'),
+                rule: "drop_statement",
+                message: t("safety.dropDetected"),
                 sql,
             });
         }
 
         if (TRUNCATE_PATTERN.test(sql)) {
             confirmations.push({
-                rule: 'truncate_statement',
-                message: t('safety.truncateDetected'),
+                rule: "truncate_statement",
+                message: t("safety.truncateDetected"),
                 sql,
             });
         }
 
         if (GRANT_PATTERN.test(sql)) {
             confirmations.push({
-                rule: 'grant_statement',
-                message: t('safety.grantStatement'),
+                rule: "grant_statement",
+                message: t("safety.grantStatement"),
                 sql,
             });
         }
 
         if (REVOKE_PATTERN.test(sql)) {
             confirmations.push({
-                rule: 'revoke_statement',
-                message: t('safety.revokeStatement'),
+                rule: "revoke_statement",
+                message: t("safety.revokeStatement"),
                 sql,
             });
         }
 
         if (ALTER_PATTERN.test(sql)) {
             confirmations.push({
-                rule: 'alter_statement',
-                message: t('safety.alterStatement'),
+                rule: "alter_statement",
+                message: t("safety.alterStatement"),
                 sql,
             });
         }
@@ -197,14 +198,8 @@ export class SafeQueryGuard {
         return this.buildResult(level, warnings, confirmations);
     }
 
-    private buildResult(
-        level: SafetyLevel,
-        warnings: SafetyWarning[],
-        confirmations: SafetyConfirmation[]
-    ): SafetyCheckResult {
-        const needsConfirmation =
-            confirmations.length > 0 ||
-            (level === 'strict' && warnings.length > 0);
+    private buildResult(level: SafetyLevel, warnings: SafetyWarning[], confirmations: SafetyConfirmation[]): SafetyCheckResult {
+        const needsConfirmation = confirmations.length > 0 || (level === "strict" && warnings.length > 0);
 
         return {
             safe: !needsConfirmation,
@@ -217,26 +212,21 @@ export class SafeQueryGuard {
         const table = astNode.table;
         if (Array.isArray(table) && table.length > 0) {
             const first = table[0] as Record<string, unknown>;
-            if (typeof first.table === 'string') return first.table;
-            if (typeof first === 'string') return first;
+            if (typeof first.table === "string") return first.table;
+            if (typeof first === "string") return first;
         }
-        if (typeof table === 'string') return table;
-        if (table && typeof table === 'object') {
+        if (typeof table === "string") return table;
+        if (table && typeof table === "object") {
             const t = table as Record<string, unknown>;
-            if (typeof t.table === 'string') return t.table;
+            if (typeof t.table === "string") return t.table;
         }
-        return 'unknown object';
+        return "unknown object";
     }
 
     private hasDropColumn(astNode: Record<string, unknown>): boolean {
         const expr = astNode.expr;
         if (Array.isArray(expr)) {
-            return expr.some(
-                (e) =>
-                    typeof e === 'object' &&
-                    e !== null &&
-                    (e as Record<string, unknown>).action === 'drop'
-            );
+            return expr.some((e) => typeof e === "object" && e !== null && (e as Record<string, unknown>).action === "drop");
         }
         return false;
     }
@@ -244,19 +234,19 @@ export class SafeQueryGuard {
     async confirm(result: SafetyCheckResult): Promise<boolean> {
         const level = this.getSafetyLevel();
 
-        if (level === 'off') return true;
+        if (level === "off") return true;
         if (result.safe) return true;
 
         const items: SafetyConfirmation[] = [];
 
-        if (level === 'strict') {
+        if (level === "strict") {
             items.push(
                 ...result.warnings.map((w) => ({
                     rule: w.rule,
                     message: w.message,
                     sql: w.sql,
                 })),
-                ...result.confirmations
+                ...result.confirmations,
             );
         } else {
             items.push(...result.confirmations);
@@ -264,13 +254,13 @@ export class SafeQueryGuard {
 
         if (items.length === 0) return true;
 
-        const message = items.map((c) => c.message).join('\n');
+        const message = items.map((c) => c.message).join("\n");
         const choice = await vscode.window.showWarningMessage(
-            t('safety.dangerousOperation', message),
+            t("safety.dangerousOperation", message),
             { modal: true },
-            t('safety.continue')
+            t("safety.continue"),
         );
 
-        return choice === t('safety.continue');
+        return choice === t("safety.continue");
     }
 }

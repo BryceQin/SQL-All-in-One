@@ -6,15 +6,10 @@
 // pieces here we avoid duplicating hundreds of lines of configuration
 // across the dialect formatter files.
 
-import { expandPhrases } from "./expandPhrases"
-import type {
-    IdentChars,
-    ParamTypes,
-    QuoteType,
-    VariableType,
-} from "../lexer/TokenizerOptions"
-import type { Token } from "../lexer/token"
-import { EOF_TOKEN, isToken, TokenType } from "../lexer/token"
+import { expandPhrases } from "./expandPhrases";
+import type { IdentChars, ParamTypes, QuoteType, VariableType } from "../lexer/TokenizerOptions";
+import type { Token } from "../lexer/token";
+import { EOF_TOKEN, isToken, TokenType } from "../lexer/token";
 
 // Shared post-processing of the token stream.
 //
@@ -23,24 +18,22 @@ import { EOF_TOKEN, isToken, TokenType } from "../lexer/token"
 // VALUES clause based on surrounding tokens.
 export function postProcess(tokens: Token[]): Token[] {
     return tokens.map((token, i) => {
-        const nextToken = tokens[i + 1] || EOF_TOKEN
+        const nextToken = tokens[i + 1] || EOF_TOKEN;
         if (isToken.SET(token) && nextToken.text === "(") {
             // This is SET datatype, not SET statement
-            return { ...token, type: TokenType.RESERVED_FUNCTION_NAME }
+            return { ...token, type: TokenType.RESERVED_FUNCTION_NAME };
         }
-        const prevToken = tokens[i - 1] || EOF_TOKEN
+        const prevToken = tokens[i - 1] || EOF_TOKEN;
         if (isToken.VALUES(token) && prevToken.text === "=") {
             // This is VALUES() function, not VALUES clause
-            return { ...token, type: TokenType.RESERVED_FUNCTION_NAME }
+            return { ...token, type: TokenType.RESERVED_FUNCTION_NAME };
         }
-        return token
-    })
+        return token;
+    });
 }
 
 // SELECT clause shared by MySQL-protocol dialects.
-export const baseReservedSelect = expandPhrases([
-    "SELECT [ALL | DISTINCT | DISTINCTROW]",
-])
+export const baseReservedSelect = expandPhrases(["SELECT [ALL | DISTINCT | DISTINCTROW]"]);
 
 // Reserved clauses shared by MySQL-protocol dialects (WITH, FROM, WHERE,
 // GROUP BY, HAVING, ..., INSERT, REPLACE, VALUES, ON DUPLICATE KEY UPDATE,
@@ -65,12 +58,10 @@ export const baseReservedClauses = expandPhrases([
     "ON DUPLICATE KEY UPDATE",
     // - update:
     "SET",
-])
+]);
 
 // Standard one-line clauses shared by MySQL-protocol dialects.
-export const baseStandardOnelineClauses = expandPhrases([
-    "CREATE [TEMPORARY] TABLE [IF NOT EXISTS]",
-])
+export const baseStandardOnelineClauses = expandPhrases(["CREATE [TEMPORARY] TABLE [IF NOT EXISTS]"]);
 
 // Base one-line tabular clauses shared by MySQL-protocol dialects.
 //
@@ -258,12 +249,10 @@ export const baseTabularOnelineClauses = expandPhrases([
     "REPEAT",
     "RETURN",
     "WHILE",
-])
+]);
 
 // Shared set operations (UNION [ALL | DISTINCT]).
-export const baseReservedSetOperations = expandPhrases([
-    "UNION [ALL | DISTINCT]",
-])
+export const baseReservedSetOperations = expandPhrases(["UNION [ALL | DISTINCT]"]);
 
 // Shared join clauses (JOIN, LEFT/RIGHT [OUTER] JOIN, INNER/CROSS JOIN,
 // NATURAL JOIN variants, plus the non-standard STRAIGHT_JOIN).
@@ -275,7 +264,7 @@ export const baseReservedJoins = expandPhrases([
     "NATURAL {LEFT | RIGHT} [OUTER] JOIN",
     // non-standard joins
     "STRAIGHT_JOIN",
-])
+]);
 
 // Shared multi-word reserved keyword phrases.
 export const baseReservedKeywordPhrases = expandPhrases([
@@ -283,20 +272,20 @@ export const baseReservedKeywordPhrases = expandPhrases([
     "CHARACTER SET",
     "{ROWS | RANGE} BETWEEN",
     "IDENTIFIED BY",
-])
+]);
 
 // Shared data type phrases (currently empty for MySQL-protocol dialects).
-export const baseReservedDataTypePhrases = expandPhrases([])
+export const baseReservedDataTypePhrases = expandPhrases([]);
 
 // Shared string literal types.
 export const baseStringTypes: QuoteType[] = [
     '""-qq-bs',
     { quote: "''-qq-bs", prefixes: ["N"] },
     { quote: "''-raw", prefixes: ["B", "X"], requirePrefix: true },
-]
+];
 
 // Shared identifier types (backtick-quoted identifiers).
-export const baseIdentTypes: QuoteType[] = ["``"]
+export const baseIdentTypes: QuoteType[] = ["``"];
 
 // Shared identifier character rules (allow $ anywhere, including as the
 // first character, and allow identifiers to start with a digit).
@@ -304,7 +293,7 @@ export const baseIdentChars: IdentChars = {
     first: "$",
     rest: "$",
     allowFirstCharNumber: true,
-}
+};
 
 // Shared variable types (@var, @@var, @'var', @"var", @`var`).
 export const baseVariableTypes: VariableType[] = [
@@ -312,13 +301,13 @@ export const baseVariableTypes: VariableType[] = [
     { quote: '""-qq-bs', prefixes: ["@"], requirePrefix: true },
     { quote: "''-qq-bs", prefixes: ["@"], requirePrefix: true },
     { quote: "``", prefixes: ["@"], requirePrefix: true },
-]
+];
 
 // Shared parameter types (positional ? placeholders).
-export const baseParamTypes: ParamTypes = { positional: true }
+export const baseParamTypes: ParamTypes = { positional: true };
 
 // Shared line comment types (--, #).
-export const baseLineCommentTypes: string[] = ["--", "#"]
+export const baseLineCommentTypes: string[] = ["--", "#"];
 
 // Shared operators (MySQL-protocol arithmetic, bitwise, logical, JSON
 // access, assignment, and the non-operator *.* sequence).
@@ -338,4 +327,4 @@ export const baseOperators = [
     "||",
     "!",
     "*.*", // Not actually an operator
-]
+];

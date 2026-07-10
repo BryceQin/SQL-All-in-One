@@ -1,20 +1,20 @@
-import type { AST } from 'node-sql-parser'
-import type { SqlParserEngine } from '../parser/SqlParserEngine'
-import type { SqlDialect } from '../parser/dialectMapper'
-import { AstTransformEngine } from './AstTransformEngine'
-import { RegexFallbackConverter } from './RegexFallbackConverter'
-import { getContainer, Tokens } from '../core/diContainer'
+import type { AST } from "node-sql-parser";
+import type { SqlParserEngine } from "../parser/SqlParserEngine";
+import type { SqlDialect } from "../parser/dialectMapper";
+import { AstTransformEngine } from "./AstTransformEngine";
+import { RegexFallbackConverter } from "./RegexFallbackConverter";
+import { getContainer, Tokens } from "../core/diContainer";
 
 export interface ConvertOptions {
-    allowRegexFallback: boolean
+    allowRegexFallback: boolean;
 }
 
 export interface ConvertResult {
-    success: boolean
-    result: string | null
-    error: Error | null
-    usedFallback: boolean
-    warnings: string[]
+    success: boolean;
+    result: string | null;
+    error: Error | null;
+    usedFallback: boolean;
+    warnings: string[];
     /**
      * The AST produced while converting, when available. Carrying it on the
      * result lets callers that already need the AST (e.g.
@@ -25,68 +25,68 @@ export interface ConvertResult {
      * happened), the regex fallback was used, or astify/sqlify failed before
      * the AST was materialized.
      */
-    ast?: AST[] | AST
+    ast?: AST[] | AST;
 }
 
 function deepCloneAst(ast: AST[] | AST): AST[] | AST {
     // 使用结构化克隆替代 JSON 序列化，避免大 AST 产生巨大临时字符串。
     // structuredClone 在 Node 17+ 可用，且能正确处理普通对象/数组。
     // AST 仅含可序列化结构，无需处理 Date/Map/Set 等特殊类型。
-    if (typeof structuredClone === 'function') {
-        return structuredClone(ast) as AST[] | AST
+    if (typeof structuredClone === "function") {
+        return structuredClone(ast) as AST[] | AST;
     }
     // 降级路径：旧 Node 版本回退到 JSON 方案
-    return JSON.parse(JSON.stringify(ast)) as AST[] | AST
+    return JSON.parse(JSON.stringify(ast)) as AST[] | AST;
 }
 
 export class DialectConverter {
-    private transformEngine = new AstTransformEngine()
-    private fallbackConverter = new RegexFallbackConverter()
-    private parserEngine: SqlParserEngine
+    private transformEngine = new AstTransformEngine();
+    private fallbackConverter = new RegexFallbackConverter();
+    private parserEngine: SqlParserEngine;
 
     constructor(parserEngine: SqlParserEngine) {
-        this.parserEngine = parserEngine
+        this.parserEngine = parserEngine;
     }
 
     convert(sql: string, from: SqlDialect, to: SqlDialect, options?: ConvertOptions): ConvertResult {
         if (from === to) {
-            return { success: true, result: sql, error: null, usedFallback: false, warnings: [] }
+            return { success: true, result: sql, error: null, usedFallback: false, warnings: [] };
         }
 
         try {
-            const ast = this.parserEngine.astify(sql, from)
-            const astCopy = deepCloneAst(ast)
-            const { warnings } = this.transformEngine.transform(astCopy, from, to)
-            const result = this.parserEngine.sqlify(astCopy, to)
-            return { success: true, result, error: null, usedFallback: false, warnings, ast }
+            const ast = this.parserEngine.astify(sql, from);
+            const astCopy = deepCloneAst(ast);
+            const { warnings } = this.transformEngine.transform(astCopy, from, to);
+            const result = this.parserEngine.sqlify(astCopy, to);
+            return { success: true, result, error: null, usedFallback: false, warnings, ast };
         } catch (e) {
-            const error = e instanceof Error ? e : new Error(String(e))
+            const error = e instanceof Error ? e : new Error(String(e));
 
             if (options?.allowRegexFallback) {
                 try {
-                    const fallbackResult = this.fallbackConverter.convert(sql, from, to)
-                    return { success: true, result: fallbackResult, error: null, usedFallback: true, warnings: [] }
+                    const fallbackResult = this.fallbackConverter.convert(sql, from, to);
+                    return { success: true, result: fallbackResult, error: null, usedFallback: true, warnings: [] };
                 } catch (fallbackErr) {
-                    const fallbackError = fallbackErr instanceof Error ? fallbackErr : new Error(String(fallbackErr))
-                    return { success: false, result: null, error: fallbackError, usedFallback: false, warnings: [] }
+                    const fallbackError = fallbackErr instanceof Error ? fallbackErr : new Error(String(fallbackErr));
+                    return { success: false, result: null, error: fallbackError, usedFallback: false, warnings: [] };
                 }
             }
 
-            return { success: false, result: null, error, usedFallback: false, warnings: [] }
+            return { success: false, result: null, error, usedFallback: false, warnings: [] };
         }
     }
 
     tryConvert(sql: string, from: SqlDialect, to: SqlDialect): ConvertResult {
-        return this.convert(sql, from, to, { allowRegexFallback: false })
+        return this.convert(sql, from, to, { allowRegexFallback: false });
     }
 }
 
 export function createDialectConverter(parserEngine: SqlParserEngine): DialectConverter {
-    return new DialectConverter(parserEngine)
+    return new DialectConverter(parserEngine);
 }
 
 export function getDialectConverter(): DialectConverter {
-    return getContainer().get<DialectConverter>(Tokens.DialectConverter)
+    return getContainer().get<DialectConverter>(Tokens.DialectConverter);
 }
 
-export type { AST }
+export type { AST };

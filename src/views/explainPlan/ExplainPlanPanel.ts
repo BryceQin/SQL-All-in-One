@@ -1,16 +1,16 @@
-import * as vscode from 'vscode';
-import { BaseWebviewPanel, type WebviewPanelConfig } from '../BaseWebviewPanel';
-import type { IConnectionService, IExplainPlanService } from '../../application/ports';
-import { getLanguage } from '../../i18n';
+import * as vscode from "vscode";
+import { BaseWebviewPanel, type WebviewPanelConfig } from "../BaseWebviewPanel";
+import type { IConnectionService, IExplainPlanService } from "../../application/ports";
+import { getLanguage } from "../../i18n";
 
 export class ExplainPlanPanel extends BaseWebviewPanel {
-    public static readonly viewType = 'sqlAllInOneExplainPlan';
+    public static readonly viewType = "sqlAllInOneExplainPlan";
 
     protected readonly panelConfig: WebviewPanelConfig = {
         viewType: ExplainPlanPanel.viewType,
-        htmlFileName: 'explain-panel.html',
-        cssFileName: 'explain-panel.css',
-        jsFileName: 'explain-panel.js',
+        htmlFileName: "explain-panel.html",
+        cssFileName: "explain-panel.css",
+        jsFileName: "explain-panel.js",
     };
 
     private readonly _connectionService: IConnectionService;
@@ -22,9 +22,7 @@ export class ExplainPlanPanel extends BaseWebviewPanel {
         connectionService: IConnectionService,
         explainPlanService: IExplainPlanService,
     ): ExplainPlanPanel {
-        const column = vscode.window.activeTextEditor
-            ? vscode.window.activeTextEditor.viewColumn
-            : undefined;
+        const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
 
         const existing = BaseWebviewPanel.getExistingInstance<ExplainPlanPanel>(ExplainPlanPanel.viewType);
         if (existing) {
@@ -32,12 +30,9 @@ export class ExplainPlanPanel extends BaseWebviewPanel {
             return existing;
         }
 
-        const panel = BaseWebviewPanel.createWebviewPanel(
-            ExplainPlanPanel.viewType,
-            'EXPLAIN Plan',
-            extensionUri,
-            { viewColumn: column ? column + 1 : vscode.ViewColumn.Two }
-        );
+        const panel = BaseWebviewPanel.createWebviewPanel(ExplainPlanPanel.viewType, "EXPLAIN Plan", extensionUri, {
+            viewColumn: column ? column + 1 : vscode.ViewColumn.Two,
+        });
 
         const instance = new ExplainPlanPanel(panel, extensionUri, connectionService, explainPlanService);
         BaseWebviewPanel.registerInstance(instance);
@@ -59,16 +54,14 @@ export class ExplainPlanPanel extends BaseWebviewPanel {
     private async _initialize(): Promise<void> {
         // Build config injection (no nonce — base class regex adds it)
         const configData = { lang: getLanguage() };
-        const configJson = JSON.stringify(configData).replace(/<\/script>/gi, '<\\/script>');
-        const configScript = '<script>window.__CONFIG__ = ' + configJson + ';</script>';
+        const configJson = JSON.stringify(configData).replace(/<\/script>/gi, "<\\/script>");
+        const configScript = "<script>window.__CONFIG__ = " + configJson + ";</script>";
 
-        await this.initializeHtml([
-            { placeholder: '{{CONFIG_INJECT}}', value: configScript },
-        ]);
+        await this.initializeHtml([{ placeholder: "{{CONFIG_INJECT}}", value: configScript }]);
         this.onDidReceiveMessage(async (message: unknown) => {
             const msg = message as { command?: string; sql?: string };
             switch (msg.command) {
-                case 'runAnalyze':
+                case "runAnalyze":
                     if (msg.sql) {
                         this.showExplainPlan(msg.sql, true);
                     }
@@ -82,8 +75,8 @@ export class ExplainPlanPanel extends BaseWebviewPanel {
 
         if (!activeConfig) {
             this.postMessage({
-                command: 'explainError',
-                error: 'No active connection. Please connect to a database first.',
+                command: "explainError",
+                error: "No active connection. Please connect to a database first.",
             });
             return;
         }
@@ -91,8 +84,8 @@ export class ExplainPlanPanel extends BaseWebviewPanel {
         const adapter = this._connectionService.getAdapter(activeConfig.id);
         if (!adapter) {
             this.postMessage({
-                command: 'explainError',
-                error: 'No database adapter available. Please reconnect.',
+                command: "explainError",
+                error: "No database adapter available. Please reconnect.",
             });
             return;
         }
@@ -100,39 +93,37 @@ export class ExplainPlanPanel extends BaseWebviewPanel {
         const capabilities = adapter.schemaAdapter.getDialectCapabilities();
         if (!capabilities.supportsExplain) {
             this.postMessage({
-                command: 'explainError',
-                error: 'EXPLAIN is not supported by this database dialect.',
+                command: "explainError",
+                error: "EXPLAIN is not supported by this database dialect.",
             });
             return;
         }
 
         if (useAnalyze && !capabilities.supportsExplainAnalyze) {
             this.postMessage({
-                command: 'explainError',
-                error: 'EXPLAIN ANALYZE is not supported by this database dialect.',
+                command: "explainError",
+                error: "EXPLAIN ANALYZE is not supported by this database dialect.",
             });
             return;
         }
 
-        this._panel.title = useAnalyze ? 'EXPLAIN ANALYZE (Actual)' : 'EXPLAIN (Estimated)';
+        this._panel.title = useAnalyze ? "EXPLAIN ANALYZE (Actual)" : "EXPLAIN (Estimated)";
 
         this.postMessage({
-            command: 'loading',
+            command: "loading",
             sql,
         });
 
         try {
-            const database = activeConfig.database || '';
-            const explainSql = useAnalyze
-                ? `EXPLAIN ANALYZE ${sql}`
-                : `EXPLAIN FORMAT=JSON ${sql}`;
+            const database = activeConfig.database || "";
+            const explainSql = useAnalyze ? `EXPLAIN ANALYZE ${sql}` : `EXPLAIN FORMAT=JSON ${sql}`;
 
             const result = await adapter.schemaAdapter.getExplainPlan(database, explainSql);
             const parsed = this._explainPlanService.parseExplain(result.raw);
             const suggestions = this._explainPlanService.generateSuggestions(parsed);
 
             this.postMessage({
-                command: 'explainResult',
+                command: "explainResult",
                 data: {
                     sql,
                     format: parsed.format,
@@ -144,7 +135,7 @@ export class ExplainPlanPanel extends BaseWebviewPanel {
             });
         } catch (error: unknown) {
             this.postMessage({
-                command: 'explainError',
+                command: "explainError",
                 error: error instanceof Error ? error.message : String(error),
             });
         }

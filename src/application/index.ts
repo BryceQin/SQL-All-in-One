@@ -30,7 +30,7 @@ export type {
     ExplainResult,
     OptimizationSuggestion,
     IExplainPlanService,
-} from './ports';
+} from "./ports";
 
-export { QueryResultController } from './QueryResultController';
-export type { IQueryResultPanel } from './QueryResultController';
+export { QueryResultController } from "./QueryResultController";
+export type { IQueryResultPanel } from "./QueryResultController";

@@ -5,8 +5,7 @@
  * Performs expandSinglePhrase() on array
  */
 // 对字符串数组中的每个元素调用expandSinglePhrase，并用flatMap扁平化结果（避免二维数组）
-export const expandPhrases = (phrases: string[]): string[] =>
-    phrases.flatMap(expandSinglePhrase);
+export const expandPhrases = (phrases: string[]): string[] => phrases.flatMap(expandSinglePhrase);
 
 /**
  * Expands a syntax description like
@@ -23,43 +22,38 @@ export const expandPhrases = (phrases: string[]): string[] =>
  *       "CREATE OR REPLACE TEMPORARY TABLE" ]
  *
  */
-export const expandSinglePhrase = (phrase: string): string[] =>
-    buildCombinations(parsePhrase(phrase)).map(stripExtraWhitespace);
+export const expandSinglePhrase = (phrase: string): string[] => buildCombinations(parsePhrase(phrase)).map(stripExtraWhitespace);
 
 // 空格清理
 // 正则/ +/g：匹配 1 个及以上空格，替换为单个空格
 // .trim()：去除首尾空格
-const stripExtraWhitespace = (text: string): string => text.replace(/ +/g, ' ').trim();
+const stripExtraWhitespace = (text: string): string => text.replace(/ +/g, " ").trim();
 
 // 将输入字符串解析为 AST（由Phrase类型节点组成）
 const parsePhrase = (text: string): Phrase => ({
-    type: 'mandatory_block',
-    items: parseAlteration(text, 0)[0]
+    type: "mandatory_block",
+    items: parseAlteration(text, 0)[0],
 });
 
 type Phrase = string | MandatoryBlock | OptionalBlock | Concatenation;
 // 拼接块：多个子项按顺序拼接（如"CREATE" + "TABLE"）
 interface Concatenation {
-    type: 'concatenation';
+    type: "concatenation";
     items: Phrase[];
 }
 // 必选块：对应{}包裹的内容，必须选其中一个（无空选项）
 interface MandatoryBlock {
-    type: 'mandatory_block';
+    type: "mandatory_block";
     items: Phrase[];
 }
 // 可选块：对应[]包裹的内容，可选（有空选项）
 interface OptionalBlock {
-    type: 'optional_block';
+    type: "optional_block";
     items: Phrase[];
 }
 
 // 处理「多选（|）」逻辑
-const parseAlteration = (
-    text: string,
-    index: number,
-    expectClosing?: ']' | '}'
-): [Phrase[], number] => {
+const parseAlteration = (text: string, index: number, expectClosing?: "]" | "}"): [Phrase[], number] => {
     const alterations: Phrase[] = [];
     while (text[index]) {
         // 解析单个子项（拼接块/必选块/可选块/纯文本）
@@ -67,11 +61,11 @@ const parseAlteration = (
         alterations.push(term);
         index = newIndex;
         // 遇到|：继续解析下一个多选项
-        if (text[index] === '|') {
+        if (text[index] === "|") {
             index++;
         }
         // 遇到闭合括号：检查括号平衡，返回结果
-        else if (text[index] === '}' || text[index] === ']') {
+        else if (text[index] === "}" || text[index] === "]") {
             if (expectClosing !== text[index]) {
                 throw new Error(`未闭合的括号: ${text}`);
             }
@@ -108,19 +102,17 @@ const parseConcatenation = (text: string, index: number): [Phrase, number] => {
         }
     }
     // 单个子项直接返回，多个子项包装为Concatenation
-    return items.length === 1
-        ? [items[0], index]
-        : [{ type: 'concatenation', items }, index];
+    return items.length === 1 ? [items[0], index] : [{ type: "concatenation", items }, index];
 };
 
 // 解析「最小单元」
 const parseTerm = (text: string, index: number): [Phrase, number] => {
     // 必选块 {}
-    if (text[index] === '{') {
+    if (text[index] === "{") {
         return parseMandatoryBlock(text, index + 1);
     }
     // 可选块 []
-    else if (text[index] === '[') {
+    else if (text[index] === "[") {
         return parseOptionalBlock(text, index + 1);
     }
     // 纯文本（字母、数字、下划线、空格）
@@ -130,13 +122,7 @@ const parseTerm = (text: string, index: number): [Phrase, number] => {
         while (index < len) {
             const code = text.charCodeAt(index);
             // A-Z, a-z, 0-9, _, space
-            if (
-                (code >= 65 && code <= 90) ||
-                (code >= 97 && code <= 122) ||
-                (code >= 48 && code <= 57) ||
-                code === 95 ||
-                code === 32
-            ) {
+            if ((code >= 65 && code <= 90) || (code >= 97 && code <= 122) || (code >= 48 && code <= 57) || code === 95 || code === 32) {
                 index++;
             } else {
                 break;
@@ -148,42 +134,34 @@ const parseTerm = (text: string, index: number): [Phrase, number] => {
 
 // 解析块级节点
 // 解析必选块 { ... }，预期闭合符为 }
-const parseMandatoryBlock = (
-    text: string,
-    index: number
-): [MandatoryBlock, number] => {
-    const [items, newIndex] = parseAlteration(text, index, '}');
-    return [{ type: 'mandatory_block', items }, newIndex];
+const parseMandatoryBlock = (text: string, index: number): [MandatoryBlock, number] => {
+    const [items, newIndex] = parseAlteration(text, index, "}");
+    return [{ type: "mandatory_block", items }, newIndex];
 };
 
 // 解析可选块 [ ... ]，预期闭合符为 ]
-const parseOptionalBlock = (
-    text: string,
-    index: number
-): [OptionalBlock, number] => {
-    const [items, newIndex] = parseAlteration(text, index, ']');
-    return [{ type: 'optional_block', items }, newIndex];
+const parseOptionalBlock = (text: string, index: number): [OptionalBlock, number] => {
+    const [items, newIndex] = parseAlteration(text, index, "]");
+    return [{ type: "optional_block", items }, newIndex];
 };
 
 // 递归遍历 AST，生成所有可能的字符串组合
 const buildCombinations = (node: Phrase): string[] => {
     // 纯文本节点：直接返回自身
-    if (typeof node === 'string') {
+    if (typeof node === "string") {
         return [node];
     }
     // 拼接块：子项组合的笛卡尔积（如A的组合 × B的组合）
-    else if (node.type === 'concatenation') {
-        return node.items
-            .map(buildCombinations)
-            .reduce(stringCombinations, ['']);
+    else if (node.type === "concatenation") {
+        return node.items.map(buildCombinations).reduce(stringCombinations, [""]);
     }
     // 必选块：扁平化子项的组合（必须选一个，无空选项）
-    else if (node.type === 'mandatory_block') {
+    else if (node.type === "mandatory_block") {
         return node.items.flatMap(buildCombinations);
     }
     // 可选块：空字符串 + 子项的组合（可选，可跳过）
-    else if (node.type === 'optional_block') {
-        return ['', ...node.items.flatMap(buildCombinations)];
+    else if (node.type === "optional_block") {
+        return ["", ...node.items.flatMap(buildCombinations)];
     }
     // 未知节点：抛错
     else {

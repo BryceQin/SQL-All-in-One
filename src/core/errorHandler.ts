@@ -1,23 +1,23 @@
-import * as vscode from 'vscode';
-import { t } from '../i18n';
-import { getContainer, Tokens } from './diContainer';
-import { LRUCache } from '../utils/lruCache';
+import * as vscode from "vscode";
+import { t } from "../i18n";
+import { getContainer, Tokens } from "./diContainer";
+import { LRUCache } from "../utils/lruCache";
 
 export enum ErrorLevel {
-    DEBUG = 'debug',
-    INFO = 'info',
-    WARNING = 'warning',
-    ERROR = 'error',
-    FATAL = 'fatal',
+    DEBUG = "debug",
+    INFO = "info",
+    WARNING = "warning",
+    ERROR = "error",
+    FATAL = "fatal",
 }
 
 export enum ErrorCategory {
-    CRITICAL = 'critical',
-    FEATURE = 'feature',
-    SUB_ITEM = 'sub_item',
-    PARSE = 'parse',
-    FORMAT = 'format',
-    CONFIG = 'config',
+    CRITICAL = "critical",
+    FEATURE = "feature",
+    SUB_ITEM = "sub_item",
+    PARSE = "parse",
+    FORMAT = "format",
+    CONFIG = "config",
 }
 
 export interface FormatterError {
@@ -48,7 +48,7 @@ export class ErrorHandler {
 
     private getOrCreateOutputChannel(): vscode.OutputChannel {
         if (!this.outputChannel) {
-            this.outputChannel = vscode.window.createOutputChannel('SQL All in One Errors');
+            this.outputChannel = vscode.window.createOutputChannel("SQL All in One Errors");
         }
         return this.outputChannel;
     }
@@ -68,7 +68,7 @@ export class ErrorHandler {
         error: unknown,
         context: string,
         level: ErrorLevel = ErrorLevel.ERROR,
-        category: ErrorCategory = ErrorCategory.FEATURE
+        category: ErrorCategory = ErrorCategory.FEATURE,
     ): FormatterError {
         const formattedError = this.normalizeError(error, context, level, category);
         this.logError(formattedError);
@@ -86,14 +86,9 @@ export class ErrorHandler {
             level?: ErrorLevel;
             category?: ErrorCategory;
             rethrow?: boolean;
-        } = {}
+        } = {},
     ): T | undefined {
-        const {
-            fallback,
-            level = ErrorLevel.ERROR,
-            category = ErrorCategory.FEATURE,
-            rethrow = false,
-        } = options;
+        const { fallback, level = ErrorLevel.ERROR, category = ErrorCategory.FEATURE, rethrow = false } = options;
 
         try {
             return fn();
@@ -116,14 +111,9 @@ export class ErrorHandler {
             level?: ErrorLevel;
             category?: ErrorCategory;
             rethrow?: boolean;
-        } = {}
+        } = {},
     ): Promise<T | undefined> {
-        const {
-            fallback,
-            level = ErrorLevel.ERROR,
-            category = ErrorCategory.FEATURE,
-            rethrow = false,
-        } = options;
+        const { fallback, level = ErrorLevel.ERROR, category = ErrorCategory.FEATURE, rethrow = false } = options;
 
         try {
             return await fn();
@@ -140,7 +130,9 @@ export class ErrorHandler {
 
     addListener(listener: (error: FormatterError) => void): () => void {
         const disposable = this._onError.event(listener);
-        return () => { disposable.dispose(); };
+        return () => {
+            disposable.dispose();
+        };
     }
 
     getHistory(): FormatterError[] {
@@ -165,26 +157,21 @@ export class ErrorHandler {
         this.debugEnabled = enabled;
     }
 
-    private normalizeError(
-        error: unknown,
-        context: string,
-        level: ErrorLevel,
-        category: ErrorCategory
-    ): FormatterError {
-        let message = 'Unknown error';
+    private normalizeError(error: unknown, context: string, level: ErrorLevel, category: ErrorCategory): FormatterError {
+        let message = "Unknown error";
         let stack: string | undefined;
 
         if (error instanceof Error) {
             message = error.message;
             stack = error.stack;
-        } else if (typeof error === 'string') {
+        } else if (typeof error === "string") {
             message = error;
         } else {
             try {
                 message = JSON.stringify(error);
             } catch (e) {
                 // JSON.stringify may fail on circular references; fall back to String()
-                console.debug('[SQL All in One] ErrorHandler.normalizeError JSON.stringify failed:', e)
+                console.debug("[SQL All in One] ErrorHandler.normalizeError JSON.stringify failed:", e);
                 message = String(error);
             }
         }
@@ -248,22 +235,16 @@ export class ErrorHandler {
 
         switch (error.level) {
             case ErrorLevel.FATAL:
-                vscode.window.showErrorMessage(
-                    t('notification.error', `${error.context}: ${error.message}`)
-                );
+                vscode.window.showErrorMessage(t("notification.error", `${error.context}: ${error.message}`));
                 break;
             case ErrorLevel.ERROR:
                 if (error.category === ErrorCategory.CRITICAL) {
-                    vscode.window.showErrorMessage(
-                        t('notification.error', `${error.context}: ${error.message}`)
-                    );
+                    vscode.window.showErrorMessage(t("notification.error", `${error.context}: ${error.message}`));
                 }
                 break;
             case ErrorLevel.WARNING:
                 if (error.category === ErrorCategory.CRITICAL) {
-                    vscode.window.showWarningMessage(
-                        t('notification.warning', `${error.context}: ${error.message}`)
-                    );
+                    vscode.window.showWarningMessage(t("notification.warning", `${error.context}: ${error.message}`));
                 }
                 break;
         }

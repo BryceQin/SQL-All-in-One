@@ -1,300 +1,269 @@
+import * as assert from "assert";
+import { ConnectionConfig } from "../database/connection/ConnectionConfig";
+import { AdapterFactory } from "../database/adapters/AdapterFactory";
+import { MysqlAdapter } from "../database/adapters/MysqlAdapter";
 
-import * as assert from 'assert';
-import { ConnectionConfig } from '../database/connection/ConnectionConfig';
-import { AdapterFactory } from '../database/adapters/AdapterFactory';
-import { MysqlAdapter } from '../database/adapters/MysqlAdapter';
-
-suite('Database Adapter Layer', () => {
-    suite('AdapterFactory', () => {
+suite("Database Adapter Layer", () => {
+    suite("AdapterFactory", () => {
         suiteSetup(() => {
-            AdapterFactory.register('mysql', MysqlAdapter);
+            AdapterFactory.register("mysql", MysqlAdapter);
         });
 
-        test('should register adapter successfully', () => {
-            assert.strictEqual(AdapterFactory.has('mysql'), true);
+        test("should register adapter successfully", () => {
+            assert.strictEqual(AdapterFactory.has("mysql"), true);
         });
 
-        test('should create adapter instance for registered dialect', () => {
+        test("should create adapter instance for registered dialect", () => {
             const config: ConnectionConfig = {
-                id: 'test',
-                name: 'Test Connection',
-                dialect: 'mysql',
-                host: 'localhost',
+                id: "test",
+                name: "Test Connection",
+                dialect: "mysql",
+                host: "localhost",
                 port: 3306,
-                username: 'root'
+                username: "root",
             };
-            const adapter = AdapterFactory.create('mysql', config);
+            const adapter = AdapterFactory.create("mysql", config);
             assert.ok(adapter);
-            assert.strictEqual(typeof adapter.connect, 'function');
+            assert.strictEqual(typeof adapter.connect, "function");
         });
 
-        test('should throw error for unregistered dialect', () => {
+        test("should throw error for unregistered dialect", () => {
             const config: ConnectionConfig = {
-                id: 'test',
-                name: 'Test Connection',
-                dialect: 'unregistered',
-                host: 'localhost',
+                id: "test",
+                name: "Test Connection",
+                dialect: "unregistered",
+                host: "localhost",
                 port: 3306,
-                username: 'root'
+                username: "root",
             };
             assert.throws(() => {
-                AdapterFactory.create('unregistered', config);
+                AdapterFactory.create("unregistered", config);
             });
         });
 
-        test('should return list of registered dialects', () => {
+        test("should return list of registered dialects", () => {
             const dialects = AdapterFactory.getRegisteredDialects();
             assert.ok(Array.isArray(dialects));
-            assert.ok(dialects.includes('mysql'));
+            assert.ok(dialects.includes("mysql"));
         });
 
-        test('getInstantiationStats should count create() calls per dialect', () => {
+        test("getInstantiationStats should count create() calls per dialect", () => {
             AdapterFactory.resetInstantiationStats();
             const config: ConnectionConfig = {
-                id: 'test',
-                name: 'Test Connection',
-                dialect: 'mysql',
-                host: 'localhost',
+                id: "test",
+                name: "Test Connection",
+                dialect: "mysql",
+                host: "localhost",
                 port: 3306,
-                username: 'root'
+                username: "root",
             };
             assert.deepStrictEqual(AdapterFactory.getInstantiationStats(), {});
 
-            AdapterFactory.create('mysql', config);
+            AdapterFactory.create("mysql", config);
             assert.deepStrictEqual(AdapterFactory.getInstantiationStats(), { mysql: 1 });
 
-            AdapterFactory.create('mysql', config);
+            AdapterFactory.create("mysql", config);
             assert.deepStrictEqual(AdapterFactory.getInstantiationStats(), { mysql: 2 });
         });
 
-        test('resetInstantiationStats should clear counters without unregistering adapters', () => {
+        test("resetInstantiationStats should clear counters without unregistering adapters", () => {
             const config: ConnectionConfig = {
-                id: 'test',
-                name: 'Test Connection',
-                dialect: 'mysql',
-                host: 'localhost',
+                id: "test",
+                name: "Test Connection",
+                dialect: "mysql",
+                host: "localhost",
                 port: 3306,
-                username: 'root'
+                username: "root",
             };
-            AdapterFactory.create('mysql', config);
+            AdapterFactory.create("mysql", config);
             assert.ok(AdapterFactory.getInstantiationStats().mysql > 0);
 
             AdapterFactory.resetInstantiationStats();
             assert.deepStrictEqual(AdapterFactory.getInstantiationStats(), {});
 
             // adapter registration is unaffected
-            assert.strictEqual(AdapterFactory.has('mysql'), true);
-            assert.doesNotThrow(() => AdapterFactory.create('mysql', config));
+            assert.strictEqual(AdapterFactory.has("mysql"), true);
+            assert.doesNotThrow(() => AdapterFactory.create("mysql", config));
             assert.strictEqual(AdapterFactory.getInstantiationStats().mysql, 1);
         });
     });
 
-    suite('MysqlAdapter - static methods', () => {
+    suite("MysqlAdapter - static methods", () => {
         let adapter: MysqlAdapter;
         const testConfig: ConnectionConfig = {
-            id: 'test',
-            name: 'Test Connection',
-            dialect: 'mysql',
-            host: 'localhost',
+            id: "test",
+            name: "Test Connection",
+            dialect: "mysql",
+            host: "localhost",
             port: 3306,
-            username: 'root'
+            username: "root",
         };
 
         setup(() => {
             adapter = new MysqlAdapter(testConfig);
         });
 
-        test('should create instance successfully', () => {
+        test("should create instance successfully", () => {
             assert.ok(adapter);
         });
 
-        test('should return connection id from config', () => {
+        test("should return connection id from config", () => {
             const id = adapter.getConnectionId();
-            assert.strictEqual(typeof id, 'string');
-            assert.strictEqual(id, 'test');
+            assert.strictEqual(typeof id, "string");
+            assert.strictEqual(id, "test");
         });
 
-        test('should return connection state as disconnected initially', () => {
+        test("should return connection state as disconnected initially", () => {
             assert.strictEqual(adapter.isConnected(), false);
         });
 
-        test('should return dialect capabilities', () => {
+        test("should return dialect capabilities", () => {
             const capabilities = adapter.schemaAdapter.getDialectCapabilities();
-            assert.strictEqual(typeof capabilities, 'object');
+            assert.strictEqual(typeof capabilities, "object");
             assert.strictEqual(capabilities.supportsMultipleDatabases, true);
             assert.strictEqual(capabilities.supportsSchema, false);
         });
 
-        test('should return supported data types', () => {
+        test("should return supported data types", () => {
             const types = adapter.schemaAdapter.getSupportedDataTypes();
             assert.ok(Array.isArray(types));
             assert.ok(types.length > 0);
-            assert.ok(types.some(t => t.category === 'Integer'));
-            assert.ok(types.some(t => t.category === 'String'));
+            assert.ok(types.some((t) => t.category === "Integer"));
+            assert.ok(types.some((t) => t.category === "String"));
         });
 
-        test('should quote identifiers with backticks', () => {
-            assert.strictEqual(adapter.schemaAdapter.quoteIdentifier('table'), '`table`');
-            assert.strictEqual(adapter.schemaAdapter.quoteIdentifier('my`table'), '`my``table`');
+        test("should quote identifiers with backticks", () => {
+            assert.strictEqual(adapter.schemaAdapter.quoteIdentifier("table"), "`table`");
+            assert.strictEqual(adapter.schemaAdapter.quoteIdentifier("my`table"), "`my``table`");
         });
 
-        test('should reject empty identifier in getTableDDL', async () => {
-            await assert.rejects(
-                () => adapter.schemaAdapter.getTableDDL('', 'testtable'),
-                /Invalid identifier/
-            );
+        test("should reject empty identifier in getTableDDL", async () => {
+            await assert.rejects(() => adapter.schemaAdapter.getTableDDL("", "testtable"), /Invalid identifier/);
         });
 
-        test('should reject empty identifier in getViewDDL', async () => {
-            await assert.rejects(
-                () => adapter.schemaAdapter.getViewDDL('testdb', ''),
-                /Invalid identifier/
-            );
+        test("should reject empty identifier in getViewDDL", async () => {
+            await assert.rejects(() => adapter.schemaAdapter.getViewDDL("testdb", ""), /Invalid identifier/);
         });
 
-        test('should reject empty identifier in getFunctionDDL', async () => {
-            await assert.rejects(
-                () => adapter.schemaAdapter.getFunctionDDL('testdb', ''),
-                /Invalid identifier/
-            );
+        test("should reject empty identifier in getFunctionDDL", async () => {
+            await assert.rejects(() => adapter.schemaAdapter.getFunctionDDL("testdb", ""), /Invalid identifier/);
         });
 
-        test('should reject empty identifier in getProcedureDDL', async () => {
-            await assert.rejects(
-                () => adapter.schemaAdapter.getProcedureDDL('testdb', ''),
-                /Invalid identifier/
-            );
+        test("should reject empty identifier in getProcedureDDL", async () => {
+            await assert.rejects(() => adapter.schemaAdapter.getProcedureDDL("testdb", ""), /Invalid identifier/);
         });
 
-        test('should reject empty identifier in getTriggerDDL', async () => {
-            await assert.rejects(
-                () => adapter.schemaAdapter.getTriggerDDL('testdb', ''),
-                /Invalid identifier/
-            );
+        test("should reject empty identifier in getTriggerDDL", async () => {
+            await assert.rejects(() => adapter.schemaAdapter.getTriggerDDL("testdb", ""), /Invalid identifier/);
         });
 
-        test('should reject identifier exceeding maximum length in getTableDDL', async () => {
-            const longName = 'a'.repeat(65);
-            await assert.rejects(
-                () => adapter.schemaAdapter.getTableDDL('testdb', longName),
-                /Invalid identifier.*maximum length/
-            );
+        test("should reject identifier exceeding maximum length in getTableDDL", async () => {
+            const longName = "a".repeat(65);
+            await assert.rejects(() => adapter.schemaAdapter.getTableDDL("testdb", longName), /Invalid identifier.*maximum length/);
         });
 
-        test('should reject identifier containing null bytes in getTableDDL', async () => {
-            await assert.rejects(
-                () => adapter.schemaAdapter.getTableDDL('test\x00db', 'testtable'),
-                /Invalid identifier.*null bytes/
-            );
+        test("should reject identifier containing null bytes in getTableDDL", async () => {
+            await assert.rejects(() => adapter.schemaAdapter.getTableDDL("test\x00db", "testtable"), /Invalid identifier.*null bytes/);
         });
 
-        test('should accept valid identifiers in getTableDDL without throwing', async () => {
+        test("should accept valid identifiers in getTableDDL without throwing", async () => {
             // This will fail because there's no connection, but it should NOT throw
             // a validateIdentifier error - it should just return empty string
-            const ddl = await adapter.schemaAdapter.getTableDDL('testdb', 'testtable');
-            assert.strictEqual(ddl, '');
+            const ddl = await adapter.schemaAdapter.getTableDDL("testdb", "testtable");
+            assert.strictEqual(ddl, "");
         });
 
-        test('should return NOT_CONNECTED error when executing without connection', async () => {
-            const result = await adapter.queryAdapter.execute('SELECT 1');
-            assert.strictEqual(result.status, 'error');
-            assert.strictEqual(result.error?.code, 'NOT_CONNECTED');
+        test("should return NOT_CONNECTED error when executing without connection", async () => {
+            const result = await adapter.queryAdapter.execute("SELECT 1");
+            assert.strictEqual(result.status, "error");
+            assert.strictEqual(result.error?.code, "NOT_CONNECTED");
         });
 
-        test('should return false for checkConnectionHealth when not connected', async () => {
+        test("should return false for checkConnectionHealth when not connected", async () => {
             const healthy = await adapter.checkConnectionHealth();
             assert.strictEqual(healthy, false);
         });
 
-        test('should throw when beginning transaction without connection', async () => {
-            await assert.rejects(
-                () => adapter.queryAdapter.beginTransaction(),
-                /Not connected to database/
-            );
+        test("should throw when beginning transaction without connection", async () => {
+            await assert.rejects(() => adapter.queryAdapter.beginTransaction(), /Not connected to database/);
         });
 
-        test('should throw when committing without transaction', async () => {
-            await assert.rejects(
-                () => adapter.queryAdapter.commit(),
-                /No transaction in progress/
-            );
+        test("should throw when committing without transaction", async () => {
+            await assert.rejects(() => adapter.queryAdapter.commit(), /No transaction in progress/);
         });
 
-        test('should throw when rolling back without transaction', async () => {
-            await assert.rejects(
-                () => adapter.queryAdapter.rollback(),
-                /No transaction in progress/
-            );
+        test("should throw when rolling back without transaction", async () => {
+            await assert.rejects(() => adapter.queryAdapter.rollback(), /No transaction in progress/);
         });
 
-        test('should return empty listDatabases when not connected', async () => {
+        test("should return empty listDatabases when not connected", async () => {
             const dbs = await adapter.metadataAdapter.listDatabases();
             assert.deepStrictEqual(dbs, []);
         });
 
-        test('should return empty listTables when not connected', async () => {
+        test("should return empty listTables when not connected", async () => {
             const tables = await adapter.metadataAdapter.listTables();
             assert.deepStrictEqual(tables, []);
         });
 
-        test('should return empty listViews when not connected', async () => {
+        test("should return empty listViews when not connected", async () => {
             const views = await adapter.metadataAdapter.listViews();
             assert.deepStrictEqual(views, []);
         });
 
-        test('should return empty listFunctions when not connected', async () => {
+        test("should return empty listFunctions when not connected", async () => {
             const funcs = await adapter.metadataAdapter.listFunctions();
             assert.deepStrictEqual(funcs, []);
         });
 
-        test('should return empty listProcedures when not connected', async () => {
+        test("should return empty listProcedures when not connected", async () => {
             const procs = await adapter.metadataAdapter.listProcedures();
             assert.deepStrictEqual(procs, []);
         });
 
-        test('should return empty listTriggers when not connected', async () => {
+        test("should return empty listTriggers when not connected", async () => {
             const triggers = await adapter.metadataAdapter.listTriggers();
             assert.deepStrictEqual(triggers, []);
         });
 
-        test('should return empty describeTable when not connected', async () => {
-            const structure = await adapter.schemaAdapter.describeTable('testdb', 'testtable');
+        test("should return empty describeTable when not connected", async () => {
+            const structure = await adapter.schemaAdapter.describeTable("testdb", "testtable");
             assert.deepStrictEqual(structure.columns, []);
             assert.deepStrictEqual(structure.indexes, []);
             assert.deepStrictEqual(structure.foreignKeys, []);
             assert.deepStrictEqual(structure.triggers, []);
         });
 
-        test('should return empty getTableDDL when not connected', async () => {
-            const ddl = await adapter.schemaAdapter.getTableDDL('testdb', 'testtable');
-            assert.strictEqual(ddl, '');
+        test("should return empty getTableDDL when not connected", async () => {
+            const ddl = await adapter.schemaAdapter.getTableDDL("testdb", "testtable");
+            assert.strictEqual(ddl, "");
         });
 
-        test('should return empty getViewDDL when not connected', async () => {
-            const ddl = await adapter.schemaAdapter.getViewDDL('testdb', 'testview');
-            assert.strictEqual(ddl, '');
+        test("should return empty getViewDDL when not connected", async () => {
+            const ddl = await adapter.schemaAdapter.getViewDDL("testdb", "testview");
+            assert.strictEqual(ddl, "");
         });
 
-        test('should return empty getExplainPlan when not connected', async () => {
-            const explain = await adapter.schemaAdapter.getExplainPlan('testdb', 'SELECT 1');
+        test("should return empty getExplainPlan when not connected", async () => {
+            const explain = await adapter.schemaAdapter.getExplainPlan("testdb", "SELECT 1");
             assert.deepStrictEqual(explain.nodes, []);
         });
 
-        test('should return zero getTableRowCount when not connected', async () => {
-            const count = await adapter.schemaAdapter.getTableRowCount('testdb', 'testtable');
+        test("should return zero getTableRowCount when not connected", async () => {
+            const count = await adapter.schemaAdapter.getTableRowCount("testdb", "testtable");
             assert.strictEqual(count, 0);
         });
 
-        test('cancelQuery should not throw when not connected', async () => {
-            await assert.doesNotReject(() => adapter.queryAdapter.cancelQuery('test-query-id'));
+        test("cancelQuery should not throw when not connected", async () => {
+            await assert.doesNotReject(() => adapter.queryAdapter.cancelQuery("test-query-id"));
         });
 
-        test('should return empty listSchemas (MySQL does not support schemas)', async () => {
+        test("should return empty listSchemas (MySQL does not support schemas)", async () => {
             const schemas = await adapter.metadataAdapter.listSchemas();
             assert.deepStrictEqual(schemas, []);
         });
 
-        test('should return pool status with zero values when not connected', () => {
+        test("should return pool status with zero values when not connected", () => {
             const status = adapter.getPoolStatus();
             assert.strictEqual(status.totalConnections, 0);
             assert.strictEqual(status.activeConnections, 0);
@@ -304,14 +273,14 @@ suite('Database Adapter Layer', () => {
             assert.strictEqual(status.acquireTimeout, 60000);
         });
 
-        test('should return pool status with custom config values when not connected', () => {
+        test("should return pool status with custom config values when not connected", () => {
             const customConfig: ConnectionConfig = {
-                id: 'test',
-                name: 'Test Connection',
-                dialect: 'mysql',
-                host: 'localhost',
+                id: "test",
+                name: "Test Connection",
+                dialect: "mysql",
+                host: "localhost",
                 port: 3306,
-                username: 'root',
+                username: "root",
                 poolConfig: {
                     maxConnections: 10,
                     acquireTimeout: 30000,
@@ -320,7 +289,7 @@ suite('Database Adapter Layer', () => {
                     reapInterval: 15000,
                     enableKeepAlive: true,
                     keepAliveInterval: 10000,
-                }
+                },
             };
             const customAdapter = new MysqlAdapter(customConfig);
             const status = customAdapter.getPoolStatus();
@@ -329,34 +298,34 @@ suite('Database Adapter Layer', () => {
         });
     });
 
-    suite('Connection Types', () => {
-        test('should create valid ConnectionConfig object', () => {
+    suite("Connection Types", () => {
+        test("should create valid ConnectionConfig object", () => {
             const config: ConnectionConfig = {
-                id: 'test-1',
-                name: 'Test Connection',
-                dialect: 'mysql',
-                group: 'Development',
-                color: '#4CAF50',
-                host: 'localhost',
+                id: "test-1",
+                name: "Test Connection",
+                dialect: "mysql",
+                group: "Development",
+                color: "#4CAF50",
+                host: "localhost",
                 port: 3306,
-                username: 'root',
-                password: 'secret',
-                database: 'test',
-                connectTimeout: 10000
+                username: "root",
+                password: "secret",
+                database: "test",
+                connectTimeout: 10000,
             };
-            assert.strictEqual(config.id, 'test-1');
-            assert.strictEqual(config.name, 'Test Connection');
-            assert.strictEqual(config.dialect, 'mysql');
+            assert.strictEqual(config.id, "test-1");
+            assert.strictEqual(config.name, "Test Connection");
+            assert.strictEqual(config.dialect, "mysql");
         });
 
-        test('should create valid ConnectionConfig with poolConfig', () => {
+        test("should create valid ConnectionConfig with poolConfig", () => {
             const config: ConnectionConfig = {
-                id: 'test-pool',
-                name: 'Pool Test',
-                dialect: 'mysql',
-                host: 'localhost',
+                id: "test-pool",
+                name: "Pool Test",
+                dialect: "mysql",
+                host: "localhost",
                 port: 3306,
-                username: 'root',
+                username: "root",
                 poolConfig: {
                     minConnections: 2,
                     maxConnections: 10,
@@ -365,7 +334,7 @@ suite('Database Adapter Layer', () => {
                     reapInterval: 15000,
                     enableKeepAlive: true,
                     keepAliveInterval: 10000,
-                }
+                },
             };
             assert.strictEqual(config.poolConfig?.minConnections, 2);
             assert.strictEqual(config.poolConfig?.maxConnections, 10);

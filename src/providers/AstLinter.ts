@@ -1,10 +1,10 @@
-import * as vscode from 'vscode'
-import { walkAst, isAstNode } from '../parser/AstVisitor'
-import { resolveAstList } from '../parser/astUtils'
-import type { AstNode } from '../parser/astTypes'
-import type { SqlDialect } from '../parser/dialectMapper'
-import { getRuleRegistry, type RuleRegistry } from '../linter/RuleRegistry'
-import type { RuleContext } from '../linter/rules/LintRule'
+import * as vscode from "vscode";
+import { walkAst, isAstNode } from "../parser/AstVisitor";
+import { resolveAstList } from "../parser/astUtils";
+import type { AstNode } from "../parser/astTypes";
+import type { SqlDialect } from "../parser/dialectMapper";
+import { getRuleRegistry, type RuleRegistry } from "../linter/RuleRegistry";
+import type { RuleContext } from "../linter/rules/LintRule";
 
 /**
  * Minimal cancellation token shape accepted by the async lint path.
@@ -12,14 +12,14 @@ import type { RuleContext } from '../linter/rules/LintRule'
  * either a real VS Code token or a plain object (e.g. in tests).
  */
 export interface LintCancellationToken {
-    readonly isCancellationRequested: boolean
+    readonly isCancellationRequested: boolean;
 }
 
 interface YieldState {
     /** Number of nodes processed since the last yield to the event loop. */
-    sinceLastYield: number
+    sinceLastYield: number;
     /** Total nodes processed; used for diagnostics / debugging. */
-    total: number
+    total: number;
 }
 
 /**
@@ -34,7 +34,7 @@ interface YieldState {
  * simply never reach the threshold and complete synchronously inside one
  * `lintAsync` call).
  */
-const LINT_YIELD_NODE_INTERVAL = 64
+const LINT_YIELD_NODE_INTERVAL = 64;
 
 export class AstLinter {
     private get registry(): RuleRegistry {
@@ -42,20 +42,20 @@ export class AstLinter {
     }
 
     lint(sql: string, dialect: SqlDialect, document?: vscode.TextDocument, preParsedAst?: unknown[]): vscode.Diagnostic[] {
-        const diagnostics: vscode.Diagnostic[] = []
-        const globalContext: RuleContext = { sql, dialect, document, node: {} as AstNode }
-        diagnostics.push(...this.registry.runGlobalRules(globalContext))
-        const astList = resolveAstList(sql, dialect, preParsedAst)
+        const diagnostics: vscode.Diagnostic[] = [];
+        const globalContext: RuleContext = { sql, dialect, document, node: {} as AstNode };
+        diagnostics.push(...this.registry.runGlobalRules(globalContext));
+        const astList = resolveAstList(sql, dialect, preParsedAst);
 
         for (const ast of astList) {
             if (!isAstNode(ast)) {
-                continue
+                continue;
             }
-            const node = ast as AstNode
-            this.processStatement(node, sql, dialect, diagnostics, document)
+            const node = ast as AstNode;
+            this.processStatement(node, sql, dialect, diagnostics, document);
         }
 
-        return diagnostics
+        return diagnostics;
     }
 
     /**
@@ -90,35 +90,41 @@ export class AstLinter {
         preParsedAst?: unknown[],
         token?: LintCancellationToken,
     ): Promise<vscode.Diagnostic[]> {
-        const diagnostics: vscode.Diagnostic[] = []
-        const globalContext: RuleContext = { sql, dialect, document, node: {} as AstNode }
-        diagnostics.push(...this.registry.runGlobalRules(globalContext))
+        const diagnostics: vscode.Diagnostic[] = [];
+        const globalContext: RuleContext = { sql, dialect, document, node: {} as AstNode };
+        diagnostics.push(...this.registry.runGlobalRules(globalContext));
 
         if (token?.isCancellationRequested) {
-            return diagnostics
+            return diagnostics;
         }
 
-        const astList = resolveAstList(sql, dialect, preParsedAst)
-        const yieldState: YieldState = { sinceLastYield: 0, total: 0 }
+        const astList = resolveAstList(sql, dialect, preParsedAst);
+        const yieldState: YieldState = { sinceLastYield: 0, total: 0 };
 
         for (const ast of astList) {
             if (!isAstNode(ast)) {
-                continue
+                continue;
             }
-            const node = ast as AstNode
-            await this.processStatementAsync(node, sql, dialect, diagnostics, document, token, yieldState)
+            const node = ast as AstNode;
+            await this.processStatementAsync(node, sql, dialect, diagnostics, document, token, yieldState);
             if (token?.isCancellationRequested) {
-                return diagnostics
+                return diagnostics;
             }
         }
 
-        return diagnostics
+        return diagnostics;
     }
 
-    private processStatement(node: AstNode, sql: string, dialect: SqlDialect, diagnostics: vscode.Diagnostic[], document?: vscode.TextDocument): void {
-        const context: RuleContext = { sql, dialect, document, node }
-        diagnostics.push(...this.registry.runRules(context))
-        this.walkForSubStatements(node, sql, dialect, diagnostics, document)
+    private processStatement(
+        node: AstNode,
+        sql: string,
+        dialect: SqlDialect,
+        diagnostics: vscode.Diagnostic[],
+        document?: vscode.TextDocument,
+    ): void {
+        const context: RuleContext = { sql, dialect, document, node };
+        diagnostics.push(...this.registry.runRules(context));
+        this.walkForSubStatements(node, sql, dialect, diagnostics, document);
     }
 
     private async processStatementAsync(
@@ -130,27 +136,33 @@ export class AstLinter {
         token: LintCancellationToken | undefined,
         yieldState: YieldState,
     ): Promise<void> {
-        const context: RuleContext = { sql, dialect, document, node }
-        diagnostics.push(...this.registry.runRules(context))
-        yieldState.sinceLastYield++
-        yieldState.total++
-        await this.maybeYield(yieldState)
+        const context: RuleContext = { sql, dialect, document, node };
+        diagnostics.push(...this.registry.runRules(context));
+        yieldState.sinceLastYield++;
+        yieldState.total++;
+        await this.maybeYield(yieldState);
         if (token?.isCancellationRequested) {
-            return
+            return;
         }
-        await this.walkForSubStatementsAsync(node, sql, dialect, diagnostics, document, token, yieldState)
+        await this.walkForSubStatementsAsync(node, sql, dialect, diagnostics, document, token, yieldState);
     }
 
-    private walkForSubStatements(root: AstNode, sql: string, dialect: SqlDialect, diagnostics: vscode.Diagnostic[], document?: vscode.TextDocument): void {
-        const reusableContext: RuleContext = { sql, dialect, document, node: root }
+    private walkForSubStatements(
+        root: AstNode,
+        sql: string,
+        dialect: SqlDialect,
+        diagnostics: vscode.Diagnostic[],
+        document?: vscode.TextDocument,
+    ): void {
+        const reusableContext: RuleContext = { sql, dialect, document, node: root };
         walkAst(root, {
             enter: (child) => {
                 if (child !== root && isAstNode(child)) {
-                    reusableContext.node = child as AstNode
-                    diagnostics.push(...this.registry.runRules(reusableContext))
+                    reusableContext.node = child as AstNode;
+                    diagnostics.push(...this.registry.runRules(reusableContext));
                 }
             },
-        })
+        });
     }
 
     private async walkForSubStatementsAsync(
@@ -162,31 +174,31 @@ export class AstLinter {
         token: LintCancellationToken | undefined,
         yieldState: YieldState,
     ): Promise<void> {
-        const reusableContext: RuleContext = { sql, dialect, document, node: root }
+        const reusableContext: RuleContext = { sql, dialect, document, node: root };
 
         // Collect child nodes in pre-order (the same order in which the sync
         // walker invokes its `enter` callback) and process them in batches
         // with periodic yields. The collection pass is a single cheap walk
         // that only pushes references; the expensive per-node rule checks run
         // in the batched loop below where we can yield.
-        const nodes: AstNode[] = []
+        const nodes: AstNode[] = [];
         walkAst(root, {
             enter: (child) => {
                 if (child !== root && isAstNode(child)) {
-                    nodes.push(child as AstNode)
+                    nodes.push(child as AstNode);
                 }
             },
-        })
+        });
 
         for (const node of nodes) {
             if (token?.isCancellationRequested) {
-                return
+                return;
             }
-            reusableContext.node = node
-            diagnostics.push(...this.registry.runRules(reusableContext))
-            yieldState.sinceLastYield++
-            yieldState.total++
-            await this.maybeYield(yieldState)
+            reusableContext.node = node;
+            diagnostics.push(...this.registry.runRules(reusableContext));
+            yieldState.sinceLastYield++;
+            yieldState.total++;
+            await this.maybeYield(yieldState);
         }
     }
 
@@ -199,9 +211,9 @@ export class AstLinter {
      */
     private async maybeYield(yieldState: YieldState): Promise<void> {
         if (yieldState.sinceLastYield < LINT_YIELD_NODE_INTERVAL) {
-            return
+            return;
         }
-        await new Promise<void>(resolve => setImmediate(resolve))
-        yieldState.sinceLastYield = 0
+        await new Promise<void>((resolve) => setImmediate(resolve));
+        yieldState.sinceLastYield = 0;
     }
 }

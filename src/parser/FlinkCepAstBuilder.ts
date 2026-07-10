@@ -1,9 +1,4 @@
-import type {
-    MatchRecognizeNode,
-    MatchRecognizeMeasure,
-    MatchRecognizePattern,
-    MatchRecognizeDefine,
-} from './astTypesExtended'
+import type { MatchRecognizeNode, MatchRecognizeMeasure, MatchRecognizePattern, MatchRecognizeDefine } from "./astTypesExtended";
 
 /**
  * 解析 Flink MATCH_RECOGNIZE 子句为结构化 AST 节点。
@@ -15,27 +10,27 @@ import type {
  * （其不支持 MATCH_RECOGNIZE 语法）。
  */
 export function parseMatchRecognize(sql: string): MatchRecognizeNode | null {
-    const trimmed = sql.trim()
+    const trimmed = sql.trim();
     // 必须以 MATCH_RECOGNIZE 开头并包含完整括号对
-    const headerMatch = /^MATCH_RECOGNIZE\s*\(/i.exec(trimmed)
-    if (!headerMatch) return null
+    const headerMatch = /^MATCH_RECOGNIZE\s*\(/i.exec(trimmed);
+    if (!headerMatch) return null;
 
-    const openParenIdx = headerMatch.index + headerMatch[0].length - 1
-    const closeIdx = findMatchingParen(trimmed, openParenIdx)
-    if (closeIdx === -1) return null
+    const openParenIdx = headerMatch.index + headerMatch[0].length - 1;
+    const closeIdx = findMatchingParen(trimmed, openParenIdx);
+    if (closeIdx === -1) return null;
 
-    const body = trimmed.substring(openParenIdx + 1, closeIdx)
+    const body = trimmed.substring(openParenIdx + 1, closeIdx);
 
-    const partitionBy = extractPartitionBy(body)
-    const orderBy = extractOrderBy(body)
-    const measures = extractMeasures(body)
-    const outputMode = extractOutputMode(body)
-    const pattern = extractPattern(body)
-    const defines = extractDefines(body)
-    const within = extractWithin(body)
+    const partitionBy = extractPartitionBy(body);
+    const orderBy = extractOrderBy(body);
+    const measures = extractMeasures(body);
+    const outputMode = extractOutputMode(body);
+    const pattern = extractPattern(body);
+    const defines = extractDefines(body);
+    const within = extractWithin(body);
 
     return {
-        type: 'match_recognize',
+        type: "match_recognize",
         partitionBy,
         orderBy,
         measures,
@@ -44,140 +39,153 @@ export function parseMatchRecognize(sql: string): MatchRecognizeNode | null {
         defines,
         within,
         raw: trimmed,
-    }
+    };
 }
 
 function extractPartitionBy(body: string): string[] {
-    const m = /\bPARTITION\s+BY\s+([^;\n]+?)(?=\s+(?:ORDER|MEASURES|ONE|ALL|PATTERN|DEFINE|WITHIN)\b|$)/i.exec(body)
-    if (!m) return []
-    return m[1].split(',').map(s => s.trim()).filter(Boolean)
+    const m = /\bPARTITION\s+BY\s+([^;\n]+?)(?=\s+(?:ORDER|MEASURES|ONE|ALL|PATTERN|DEFINE|WITHIN)\b|$)/i.exec(body);
+    if (!m) return [];
+    return m[1]
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
 }
 
 function extractOrderBy(body: string): string[] {
-    const m = /\bORDER\s+BY\s+([^;\n]+?)(?=\s+(?:MEASURES|ONE|ALL|PATTERN|DEFINE|WITHIN)\b|$)/i.exec(body)
-    if (!m) return []
-    return m[1].split(',').map(s => s.trim().replace(/\s+(ASC|DESC)$/i, '')).filter(Boolean)
+    const m = /\bORDER\s+BY\s+([^;\n]+?)(?=\s+(?:MEASURES|ONE|ALL|PATTERN|DEFINE|WITHIN)\b|$)/i.exec(body);
+    if (!m) return [];
+    return m[1]
+        .split(",")
+        .map((s) => s.trim().replace(/\s+(ASC|DESC)$/i, ""))
+        .filter(Boolean);
 }
 
 function extractMeasures(body: string): MatchRecognizeMeasure[] {
-    const m = /\bMEASURES\b([\s\S]*?)(?=\s+(?:ONE|ALL|PATTERN|DEFINE|WITHIN)\b|$)/i.exec(body)
-    if (!m) return []
-    const measuresText = m[1].trim()
-    if (!measuresText) return []
+    const m = /\bMEASURES\b([\s\S]*?)(?=\s+(?:ONE|ALL|PATTERN|DEFINE|WITHIN)\b|$)/i.exec(body);
+    if (!m) return [];
+    const measuresText = m[1].trim();
+    if (!measuresText) return [];
 
-    const measures: MatchRecognizeMeasure[] = []
+    const measures: MatchRecognizeMeasure[] = [];
     // 按逗号切分，但忽略括号内的逗号
-    const parts = splitByComma(measuresText)
+    const parts = splitByComma(measuresText);
     for (const part of parts) {
-        const asMatch = /^(.+?)\s+AS\s+(\w+)$/i.exec(part.trim())
+        const asMatch = /^(.+?)\s+AS\s+(\w+)$/i.exec(part.trim());
         if (asMatch) {
             measures.push({
                 expr: asMatch[1].trim(),
                 alias: asMatch[2].trim(),
-            })
+            });
         }
     }
-    return measures
+    return measures;
 }
 
 function extractOutputMode(body: string): string {
-    const m = /\b(ONE\s+ROW\s+PER\s+MATCH|ALL\s+ROWS\s+PER\s+MATCH)\b/i.exec(body)
-    return m ? m[1].toUpperCase().replace(/\s+/g, ' ') : ''
+    const m = /\b(ONE\s+ROW\s+PER\s+MATCH|ALL\s+ROWS\s+PER\s+MATCH)\b/i.exec(body);
+    return m ? m[1].toUpperCase().replace(/\s+/g, " ") : "";
 }
 
 function extractPattern(body: string): MatchRecognizePattern | null {
     // 定位 PATTERN 关键字后的 '('，再用 findMatchingParen 找匹配的 ')'
     // 避免 non-greedy 正则在嵌套括号处截断（如 PATTERN ((A B)+ C)）
-    const headerMatch = /\bPATTERN\s*\(/i.exec(body)
-    if (!headerMatch) return null
-    const openParenIdx = headerMatch.index + headerMatch[0].length - 1
-    const closeIdx = findMatchingParen(body, openParenIdx)
-    if (closeIdx === -1) return null
-    const raw = body.substring(openParenIdx + 1, closeIdx).trim()
+    const headerMatch = /\bPATTERN\s*\(/i.exec(body);
+    if (!headerMatch) return null;
+    const openParenIdx = headerMatch.index + headerMatch[0].length - 1;
+    const closeIdx = findMatchingParen(body, openParenIdx);
+    if (closeIdx === -1) return null;
+    const raw = body.substring(openParenIdx + 1, closeIdx).trim();
 
     // 提取模式变量名：大小写敏感的标识符，后跟可选量词（* + ? {n,m}）
     // 过滤掉正则操作符和 SQL 关键字
-    const reservedWords = new Set(['PER', 'MATCH', 'WITHIN', 'DEFINE', 'MEASURES', 'PARTITION', 'ORDER', 'BY'])
+    const reservedWords = new Set(["PER", "MATCH", "WITHIN", "DEFINE", "MEASURES", "PARTITION", "ORDER", "BY"]);
     const variables = Array.from(raw.matchAll(/\b([A-Za-z_][A-Za-z0-9_]*)\b/g))
-        .map(match => match[1])
-        .filter(v => !reservedWords.has(v.toUpperCase()))
+        .map((match) => match[1])
+        .filter((v) => !reservedWords.has(v.toUpperCase()));
     // 去重，保持顺序
-    const seen = new Set<string>()
-    const uniqueVars: string[] = []
+    const seen = new Set<string>();
+    const uniqueVars: string[] = [];
     for (const v of variables) {
         if (!seen.has(v)) {
-            seen.add(v)
-            uniqueVars.push(v)
+            seen.add(v);
+            uniqueVars.push(v);
         }
     }
-    return { raw, variables: uniqueVars }
+    return { raw, variables: uniqueVars };
 }
 
 function extractDefines(body: string): MatchRecognizeDefine[] {
-    const m = /\bDEFINE\b([\s\S]*?)(?=\s+WITHIN\b|$)/i.exec(body)
-    if (!m) return []
-    const definesText = m[1].trim()
-    if (!definesText) return []
+    const m = /\bDEFINE\b([\s\S]*?)(?=\s+WITHIN\b|$)/i.exec(body);
+    if (!m) return [];
+    const definesText = m[1].trim();
+    if (!definesText) return [];
 
-    const defines: MatchRecognizeDefine[] = []
-    const parts = splitByComma(definesText)
+    const defines: MatchRecognizeDefine[] = [];
+    const parts = splitByComma(definesText);
     for (const part of parts) {
-        const asMatch = /^(\w+)\s+AS\s+([\s\S]+)$/i.exec(part.trim())
+        const asMatch = /^(\w+)\s+AS\s+([\s\S]+)$/i.exec(part.trim());
         if (asMatch) {
             defines.push({
                 name: asMatch[1].trim(),
                 condition: asMatch[2].trim(),
-            })
+            });
         }
     }
-    return defines
+    return defines;
 }
 
 function extractWithin(body: string): string | null {
-    const m = /\bWITHIN\s+(INTERVAL\s+[^;\n,]+)/i.exec(body)
-    return m ? m[1].trim() : null
+    const m = /\bWITHIN\s+(INTERVAL\s+[^;\n,]+)/i.exec(body);
+    return m ? m[1].trim() : null;
 }
 
 /** 按逗号切分，忽略括号内的逗号 */
 function splitByComma(text: string): string[] {
-    const parts: string[] = []
-    let depth = 0
-    let start = 0
+    const parts: string[] = [];
+    let depth = 0;
+    let start = 0;
     for (let i = 0; i < text.length; i++) {
-        const ch = text[i]
-        if (ch === '(') depth++
-        else if (ch === ')') depth--
-        else if (ch === ',' && depth === 0) {
-            parts.push(text.substring(start, i))
-            start = i + 1
+        const ch = text[i];
+        if (ch === "(") depth++;
+        else if (ch === ")") depth--;
+        else if (ch === "," && depth === 0) {
+            parts.push(text.substring(start, i));
+            start = i + 1;
         }
     }
-    parts.push(text.substring(start))
-    return parts.filter(p => p.trim().length > 0)
+    parts.push(text.substring(start));
+    return parts.filter((p) => p.trim().length > 0);
 }
 
 /** 从 openParenIdx（指向 '('）开始找匹配的 ')'，考虑字符串字面量 */
 function findMatchingParen(sql: string, openParenIdx: number): number {
-    if (sql[openParenIdx] !== '(') return -1
-    let depth = 0
-    let inSingle = false
-    let i = openParenIdx
+    if (sql[openParenIdx] !== "(") return -1;
+    let depth = 0;
+    let inSingle = false;
+    let i = openParenIdx;
     while (i < sql.length) {
-        const ch = sql[i]
-        const nextCh = i + 1 < sql.length ? sql[i + 1] : undefined
+        const ch = sql[i];
+        const nextCh = i + 1 < sql.length ? sql[i + 1] : undefined;
         if (inSingle) {
-            if (ch === "'" && nextCh === "'") { i += 2; continue }
-            if (ch === "'") inSingle = false
-            i++
-            continue
+            if (ch === "'" && nextCh === "'") {
+                i += 2;
+                continue;
+            }
+            if (ch === "'") inSingle = false;
+            i++;
+            continue;
         }
-        if (ch === "'") { inSingle = true; i++; continue }
-        if (ch === '(') depth++
-        if (ch === ')') {
-            depth--
-            if (depth === 0) return i
+        if (ch === "'") {
+            inSingle = true;
+            i++;
+            continue;
         }
-        i++
+        if (ch === "(") depth++;
+        if (ch === ")") {
+            depth--;
+            if (depth === 0) return i;
+        }
+        i++;
     }
-    return -1
+    return -1;
 }

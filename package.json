@@ -1,106 +1,87 @@
 {
     "name": "hive-formatter",
     "displayName": "SQL All in One",
-    "description": "SQL All in One - \u5f3a\u5927\u7684 SQL \u683c\u5f0f\u5316\u3001\u667a\u80fd\u8865\u5168\u3001\u8bed\u6cd5\u68c0\u67e5\u3001DDL \u8f6c\u6362 VSCode \u63d2\u4ef6\uff0c\u652f\u6301 Hive\u3001MySQL\u3001SparkSQL\u3001FlinkSQL\u3001PostgreSQL\u3001BigQuery\u3001SQLite \u7b49\u591a\u79cd SQL \u65b9\u8a00",
-    "version": "2.31.0",
-    "publisher": "bryce-qin",
+    "version": "2.32.0",
+    "description": "SQL All in One - 强大的 SQL 格式化、智能补全、语法检查、DDL 转换 VSCode 插件，支持 Hive、MySQL、SparkSQL、FlinkSQL、PostgreSQL、BigQuery、SQLite 等多种 SQL 方言",
+    "categories": [
+        "Formatters",
+        "Other",
+        "Programming Languages",
+        "Snippets"
+    ],
+    "keywords": [
+        "all in one",
+        "bigquery",
+        "flinksql",
+        "formatter",
+        "hive",
+        "intellisense",
+        "linter",
+        "mysql",
+        "postgresql",
+        "snippets",
+        "spark",
+        "sparksql",
+        "sql",
+        "sqlite"
+    ],
+    "bugs": {
+        "url": "https://github.com/BryceQin/SQL-All-in-One/issues"
+    },
+    "license": "MIT",
     "contributors": [
         "TalDu"
     ],
-    "license": "MIT",
-    "icon": "sql-all-in-one-icon.png",
-    "engines": {
-        "vscode": "^1.85.0"
-    },
     "repository": {
         "type": "git",
         "url": "https://github.com/BryceQin/SQL-All-in-One"
     },
-    "bugs": {
-        "url": "https://github.com/BryceQin/SQL-All-in-One/issues"
-    },
-    "categories": [
-        "Formatters",
-        "Snippets",
-        "Other",
-        "Programming Languages"
-    ],
-    "keywords": [
-        "sql",
-        "all in one",
-        "formatter",
-        "hive",
-        "mysql",
-        "spark",
-        "sparksql",
-        "flinksql",
-        "postgresql",
-        "bigquery",
-        "sqlite",
-        "snippets",
-        "linter",
-        "intellisense"
-    ],
+    "publisher": "bryce-qin",
     "main": "./out/extension.js",
-    "activationEvents": [
-        "onLanguage:sql",
-        "onLanguage:hive",
-        "onLanguage:mysql",
-        "onLanguage:spark",
-        "onLanguage:flinksql",
-        "onLanguage:postgresql",
-        "onLanguage:bigquery",
-        "onLanguage:sqlite",
-        "onLanguage:starrocks",
-        "onLanguage:sqlserver",
-        "onLanguage:plsql",
-        "onLanguage:dameng",
-        "onCommand:hive-formatter.format-selection",
-        "onCommand:hive-formatter.mysql-to-hive",
-        "onCommand:hive-formatter.hive-to-mysql",
-        "onCommand:hive-formatter.open-config-editor",
-        "onCommand:hive-formatter.replaceParameter",
-        "onCommand:hive-formatter.toggleComment",
-        "onCommand:hive-formatter.toggleAdvancedComment",
-        "onCommand:hive-formatter.addConnection",
-        "onCommand:hive-formatter.editConnection",
-        "onCommand:hive-formatter.removeConnection",
-        "onCommand:hive-formatter.connect",
-        "onCommand:hive-formatter.disconnect",
-        "onCommand:hive-formatter.testConnection",
-        "onCommand:hive-formatter.refreshSchema",
-        "onCommand:hive-formatter.viewTableData",
-        "onCommand:hive-formatter.viewTableDDL",
-        "onCommand:hive-formatter.viewViewDDL",
-        "onCommand:hive-formatter.viewFunctionDDL",
-        "onCommand:hive-formatter.viewProcedureDDL",
-        "onCommand:hive-formatter.viewTriggerDDL",
-        "onCommand:hive-formatter.newQuery",
-        "onCommand:hive-formatter.copyColumnName",
-        "onCommand:hive-formatter.addToFavorites",
-        "onCommand:hive-formatter.removeFromFavorites",
-        "onCommand:hive-formatter.revealInExplorer",
-        "onCommand:hive-formatter.setDefaultDatabase",
-        "onCommand:hive-formatter.executeQuery",
-        "onCommand:hive-formatter.executeSelection",
-        "onCommand:hive-formatter.cancelQuery",
-        "onCommand:hive-formatter.showQueryHistory",
-        "onCommand:hive-formatter.clearQueryHistory",
-        "onCommand:hive-formatter.exportCsv",
-        "onCommand:hive-formatter.exportJson",
-        "onCommand:hive-formatter.exportInsert",
-        "onCommand:hive-formatter.exportDdl",
-        "onCommand:hive-formatter.designTable",
-        "onCommand:hive-formatter.editTable",
-        "onCommand:hive-formatter.explainQuery",
-        "onCommand:hive-formatter.importData",
-        "onCommand:hive-formatter.showErrorLog",
-        "onCommand:hive-formatter.exportConnections",
-        "onCommand:hive-formatter.importConnections"
-    ],
-    "extensionKind": [
-        "workspace"
-    ],
+    "scripts": {
+        "generate-snippets": "npx tsx scripts/generate-snippets.ts",
+        "vscode:prepublish": "npm run generate-snippets && node esbuild.js --minify",
+        "esbuild-base": "npm run generate-snippets && node esbuild.js",
+        "esbuild": "npm run generate-snippets && node esbuild.js",
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./",
+        "pretest": "npm run compile && npm run lint",
+        "lint": "oxlint src",
+        "lint:fix": "oxlint src --fix",
+        "format": "oxfmt . --write",
+        "format:check": "oxfmt . --check",
+        "test": "vscode-test",
+        "test:coverage": "nyc npm test"
+    },
+    "dependencies": {
+        "better-sqlite3": "^11.7.0",
+        "mssql": "^10.0.1",
+        "mysql2": "^3.22.4",
+        "node-sql-parser": "^5.4.0",
+        "odbc": "^2.4.2",
+        "oracledb": "^6.5.0",
+        "pg": "^8.13.0",
+        "ssh2": "^1.17.0"
+    },
+    "devDependencies": {
+        "@types/better-sqlite3": "^7.6.12",
+        "@types/mocha": "^10.0.10",
+        "@types/mssql": "^9.1.5",
+        "@types/node": "22.x",
+        "@types/pg": "^8.11.10",
+        "@types/ssh2": "^1.15.5",
+        "@types/vscode": "^1.85.0",
+        "@vscode/test-cli": "^0.0.12",
+        "@vscode/test-electron": "^2.5.2",
+        "@vscode/vsce": "^3.9.1",
+        "esbuild": "^0.25.12",
+        "eslint": "^9.39.2",
+        "eslint-plugin-tsdoc": "^0.5.0",
+        "jiti": "^2.6.1",
+        "monaco-editor": "^0.45.0",
+        "typescript": "^7.0.0",
+        "typescript-eslint": "^8.52.0"
+    },
     "contributes": {
         "viewsContainers": {
             "activitybar": [
@@ -2024,61 +2005,83 @@
             ]
         }
     },
-    "scripts": {
-        "generate-snippets": "npx tsx scripts/generate-snippets.ts",
-        "vscode:prepublish": "npm run generate-snippets && node esbuild.js --minify",
-        "esbuild-base": "npm run generate-snippets && node esbuild.js",
-        "esbuild": "npm run generate-snippets && node esbuild.js",
-        "compile": "tsc -p ./",
-        "watch": "tsc -watch -p ./",
-        "pretest": "npm run compile && npm run lint",
-        "lint": "eslint src",
-        "test": "vscode-test",
-        "test:coverage": "nyc npm test"
-    },
+    "activationEvents": [
+        "onCommand:hive-formatter.addConnection",
+        "onCommand:hive-formatter.addToFavorites",
+        "onCommand:hive-formatter.cancelQuery",
+        "onCommand:hive-formatter.clearQueryHistory",
+        "onCommand:hive-formatter.connect",
+        "onCommand:hive-formatter.copyColumnName",
+        "onCommand:hive-formatter.designTable",
+        "onCommand:hive-formatter.disconnect",
+        "onCommand:hive-formatter.editConnection",
+        "onCommand:hive-formatter.editTable",
+        "onCommand:hive-formatter.executeQuery",
+        "onCommand:hive-formatter.executeSelection",
+        "onCommand:hive-formatter.explainQuery",
+        "onCommand:hive-formatter.exportConnections",
+        "onCommand:hive-formatter.exportCsv",
+        "onCommand:hive-formatter.exportDdl",
+        "onCommand:hive-formatter.exportInsert",
+        "onCommand:hive-formatter.exportJson",
+        "onCommand:hive-formatter.format-selection",
+        "onCommand:hive-formatter.hive-to-mysql",
+        "onCommand:hive-formatter.importConnections",
+        "onCommand:hive-formatter.importData",
+        "onCommand:hive-formatter.mysql-to-hive",
+        "onCommand:hive-formatter.newQuery",
+        "onCommand:hive-formatter.open-config-editor",
+        "onCommand:hive-formatter.refreshSchema",
+        "onCommand:hive-formatter.removeConnection",
+        "onCommand:hive-formatter.removeFromFavorites",
+        "onCommand:hive-formatter.replaceParameter",
+        "onCommand:hive-formatter.revealInExplorer",
+        "onCommand:hive-formatter.setDefaultDatabase",
+        "onCommand:hive-formatter.showErrorLog",
+        "onCommand:hive-formatter.showQueryHistory",
+        "onCommand:hive-formatter.testConnection",
+        "onCommand:hive-formatter.toggleAdvancedComment",
+        "onCommand:hive-formatter.toggleComment",
+        "onCommand:hive-formatter.viewFunctionDDL",
+        "onCommand:hive-formatter.viewProcedureDDL",
+        "onCommand:hive-formatter.viewTableDDL",
+        "onCommand:hive-formatter.viewTableData",
+        "onCommand:hive-formatter.viewTriggerDDL",
+        "onCommand:hive-formatter.viewViewDDL",
+        "onLanguage:bigquery",
+        "onLanguage:dameng",
+        "onLanguage:flinksql",
+        "onLanguage:hive",
+        "onLanguage:mysql",
+        "onLanguage:plsql",
+        "onLanguage:postgresql",
+        "onLanguage:spark",
+        "onLanguage:sql",
+        "onLanguage:sqlite",
+        "onLanguage:sqlserver",
+        "onLanguage:starrocks"
+    ],
+    "extensionKind": [
+        "workspace"
+    ],
+    "icon": "sql-all-in-one-icon.png",
     "nyc": {
-        "extension": [
-            ".ts"
-        ],
+        "all": true,
         "exclude": [
             "**/*.d.ts",
             "**/*.test.ts",
             "out/**"
         ],
+        "extension": [
+            ".ts"
+        ],
         "reporter": [
             "text",
             "lcov",
             "html"
-        ],
-        "all": true
+        ]
     },
-    "devDependencies": {
-        "@types/better-sqlite3": "^7.6.12",
-        "@types/mocha": "^10.0.10",
-        "@types/mssql": "^9.1.5",
-        "@types/node": "22.x",
-        "@types/pg": "^8.11.10",
-        "@types/ssh2": "^1.15.5",
-        "@types/vscode": "^1.85.0",
-        "@vscode/test-cli": "^0.0.12",
-        "@vscode/test-electron": "^2.5.2",
-        "@vscode/vsce": "^3.9.1",
-        "esbuild": "^0.25.12",
-        "eslint": "^9.39.2",
-        "eslint-plugin-tsdoc": "^0.5.0",
-        "jiti": "^2.6.1",
-        "monaco-editor": "^0.45.0",
-        "typescript": "^5.9.3",
-        "typescript-eslint": "^8.52.0"
-    },
-    "dependencies": {
-        "better-sqlite3": "^11.7.0",
-        "mssql": "^10.0.1",
-        "mysql2": "^3.22.4",
-        "node-sql-parser": "^5.4.0",
-        "odbc": "^2.4.2",
-        "oracledb": "^6.5.0",
-        "pg": "^8.13.0",
-        "ssh2": "^1.17.0"
+    "engines": {
+        "vscode": "^1.85.0"
     }
 }
