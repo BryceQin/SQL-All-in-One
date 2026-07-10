@@ -1,5 +1,34 @@
 # Changelog
 
+## [2.32.1] - 2026-07-10
+
+### VSIX 包体积优化
+
+VSIX 包从 **24.4MB → 8.8MB**（减少 64%），Marketplace 安装包相应大幅缩小。
+
+#### 根本原因
+
+- [.vscodeignore](.vscodeignore) 中的通配否定规则 `!node_modules/**/*.node` 会重新包含所有 `.node` 二进制文件，覆盖了对 `@oxlint`、`@oxfmt`、`oracledb/build` 的排除规则
+- `npm list --production --parseable` 会列出 node_modules 中所有包（包括 extraneous 的 devDependency 传递依赖），导致 vsce 将 devDep 二进制打包进 VSIX
+
+#### 优化内容
+
+- **精确保留运行时 .node 文件**：将通配的 `!node_modules/**/*.node` 替换为 4 个精确的运行时必需文件（`better_sqlite3.node`、`odbc.node`、`sshcrypto.node`、`cpufeatures.node`）
+    - 排除 `@oxlint` 二进制（13.4MB，devDependency 传递依赖）
+    - 排除 `@oxfmt` 二进制（6.8MB，devDependency 传递依赖）
+    - 排除 `oracledb/build` 下 5 个平台二进制（3.1MB，thin mode 默认不使用）
+- **排除 node-sql-parser 的 `lib/` 和 `ast/` 目录**（296KB）：`index.js` 是自包含的 webpack bundle，仅 require `big-integer`，不依赖 lib/ 和 ast/
+- **排除 tedious 的 `benchmarks/` 目录**（554KB）
+- **补充 `node_modules/**/doc/**` 排除规则**：排除 js-md4 的 doc 目录（1MB 字体文件）
+- **Monaco editor 切换为 min 版本**：`media/monaco/` 从 8.0MB 减少到 4.2MB
+
+#### 验证
+
+- 1960 个测试全部通过
+- oxlint 无错误
+- 8 个运行时依赖（mysql2、pg、better-sqlite3、mssql、oracledb、odbc、ssh2、node-sql-parser）完整包含
+- 4 个运行时 .node 二进制文件保留
+
 ## [2.32.0] - 2026-07-10
 
 ### 工具链大迁移

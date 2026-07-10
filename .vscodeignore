@@ -30,6 +30,7 @@ esbuild.js
 #
 # Instead, strip non-runtime junk from inside node_modules to keep the VSIX
 # lean without breaking runtime imports.
+node_modules/**/doc/**
 node_modules/**/docs/**
 node_modules/**/test/**
 node_modules/**/tests/**
@@ -84,8 +85,14 @@ node_modules/**/.nyc_output/**
 node_modules/**/.taprc*
 node_modules/**/tsconfig*.json
 node_modules/**/*.d.ts
-# Keep native binaries (.node) — required by better-sqlite3, odbc, ssh2, etc.
-!node_modules/**/*.node
+# Keep runtime native binaries (.node) — required by better-sqlite3, odbc,
+# ssh2, cpu-features. We list each required file explicitly because a broad
+# `!node_modules/**/*.node` would also re-include dev-only binaries that were
+# excluded above (e.g. @oxlint, @oxfmt, oracledb thick-mode platform binaries).
+!node_modules/better-sqlite3/build/Release/better_sqlite3.node
+!node_modules/odbc/lib/bindings/napi-v8/odbc.node
+!node_modules/ssh2/lib/protocol/crypto/build/Release/sshcrypto.node
+!node_modules/cpu-features/build/Release/cpufeatures.node
 
 # --- v2.29.5 size optimization ---------------------------------------------
 # Strip platform-irrelevant & duplicate-format files from runtime deps that
@@ -139,8 +146,10 @@ node_modules/tar/bench/**
 node_modules/**/node_modules/tar/test/**
 node_modules/**/node_modules/tar/bench/**
 # 8. tedious (mssql driver) ships nested node_modules with its own copy of
-#    `bl` which has a test directory.
+#    `bl` which has a test directory, plus a benchmarks/ directory.
 node_modules/tedious/node_modules/bl/test/**
+node_modules/tedious/benchmarks/**
+node_modules/**/node_modules/tedious/benchmarks/**
 # 9. uuid v10 ships ESM + browser bundles in addition to commonjs.
 **/node_modules/uuid/dist/**/uuid.browser.js
 **/node_modules/uuid/dist/**/uuid.random.browser.js
@@ -175,3 +184,58 @@ scripts/**
 .github/**
 .trae/**
 CONTRIBUTING.md
+
+# --- v2.32.1 size optimization ---------------------------------------------
+# Strip dev-only packages that VSCE would otherwise bundle because they
+# appear in node_modules. These are `devDependencies` in package.json and
+# are never `require()`-d at runtime (esbuild bundles src/ into out/extension.js;
+# the only externalized runtime deps are the 8 listed in esbuild.js `external`).
+#
+# vsce auto-includes any node_modules package referenced by `dependencies`,
+# but it does NOT filter devDependencies — they slip in if present on disk
+# after `npm install`. Exclude them explicitly.
+node_modules/oxlint/**
+node_modules/@oxlint/**
+node_modules/oxfmt/**
+node_modules/@oxfmt/**
+node_modules/eslint/**
+node_modules/typescript/**
+node_modules/@typescript/**
+node_modules/@vscode/vsce/**
+node_modules/@vscode/vsce-sign/**
+node_modules/@vscode/vsce-sign-*/**
+node_modules/@vscode/test-cli/**
+node_modules/@vscode/test-electron/**
+node_modules/esbuild/**
+node_modules/@esbuild/**
+node_modules/mocha/**
+node_modules/@types/**
+node_modules/@mocha/**
+node_modules/jiti/**
+node_modules/typescript-eslint/**
+node_modules/eslint-plugin-tsdoc/**
+node_modules/monaco-editor/**
+node_modules/nyc/**
+node_modules/@js-joda/**
+node_modules/@secretlint/**
+
+# node-sql-parser: index.js is a self-contained webpack bundle (only requires
+# `big-integer`). The umd/, lib/, and ast/ directories are source/duplicate
+# builds not loaded by Node.js `require()`.
+node_modules/node-sql-parser/umd/**
+node_modules/node-sql-parser/lib/**
+node_modules/node-sql-parser/ast/**
+
+# better-sqlite3: keep only the prebuilt .node binary, strip build artifacts.
+# The .node file is the only thing `require('better-sqlite3')` loads at runtime.
+node_modules/better-sqlite3/build/Release/obj/**
+node_modules/better-sqlite3/build/Release/obj.target/**
+node_modules/better-sqlite3/build/Release/.deps/**
+node_modules/better-sqlite3/build/Release/sqlite3.a
+node_modules/better-sqlite3/deps/**
+
+# oracledb 6.x runs in thin mode (pure JS) by default. Thick mode is opt-in
+# and requires a user-installed Oracle Instant Client — the prebuilt .node
+# files in build/Release are only for thick mode and are never loaded in
+# the default thin configuration. Strip all platform binaries.
+node_modules/oracledb/build/**
