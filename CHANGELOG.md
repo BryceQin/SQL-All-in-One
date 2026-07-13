@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.33.0] - 2026-07-13
+
+### Webview 前端国际化基础设施统一
+
+将 6 个 Webview 面板各自重复实现的国际化基础设施（`lang` 变量、`t()` 函数、语言初始化逻辑）统一提取到 `shared.js`，消除约 400 行重复代码。
+
+#### 重构内容
+
+- **新增 shared.js i18n 基础设施**：提供 `window.setLanguage()`、`window.getLanguage()`、`window.translate()`、`window.initLanguageFromConfig()` 四个通用函数
+- **6 个面板统一委托**：query-result.js、table-designer.js、data-transfer.js、explain-panel.js、config-editor.js 的 `t()` 函数简化为一行 `window.translate()` 调用
+- **消除语言归一化重复**：各面板不再需要 `config.lang.startsWith("zh") ? "zh" : "en"` 重复逻辑，统一由 `window.setLanguage()` 处理
+- **新增面板样板代码减少约 80%**：新面板只需定义翻译字典并调用 `window.translate()`
+
+#### 验证
+
+- 1960 个测试全部通过
+- oxlint 无错误
+- TypeScript 编译通过
+
 ## [2.32.1] - 2026-07-10
 
 ### VSIX 包体积优化

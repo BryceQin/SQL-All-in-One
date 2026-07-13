@@ -66,11 +66,8 @@ const i18nData = {
     },
 };
 
-let lang = "zh";
-
 function t(key) {
-    var dict = i18nData[lang] || i18nData["en"];
-    return dict[key] || i18nData["en"][key] || key;
+    return window.translate(key, i18nData);
 }
 
 function applyI18n() {
@@ -85,7 +82,7 @@ function applyI18n() {
 (function initConfig() {
     var config = window.__CONFIG__ || {};
     if (config.lang !== undefined) {
-        lang = config.lang.startsWith("zh") ? "zh" : "en";
+        window.setLanguage(config.lang);
     }
 })();
 

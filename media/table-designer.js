@@ -160,10 +160,8 @@ var i18nData = {
     },
 };
 
-let lang = "zh";
 function t(key) {
-    var dict = i18nData[lang] || i18nData["en"];
-    return dict[key] || i18nData["en"][key] || key;
+    return window.translate(key, i18nData);
 }
 
 function applyI18n() {
@@ -219,7 +217,7 @@ let debouncedGenerateDDL = debounce(function () {
 
 function init() {
     let config = window.__TABLE_DESIGNER_CONFIG__ || {};
-    lang = config.lang && config.lang.startsWith("zh") ? "zh" : "en";
+    if (config.lang) window.setLanguage(config.lang);
     state.mode = config.mode || "create";
     state.database = config.database || "";
     state.tableName = config.tableName || "";

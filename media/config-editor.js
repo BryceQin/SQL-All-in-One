@@ -50,9 +50,11 @@ var i18nData = {
 };
 
 function getI18nDict() {
-    return i18nData.lang === "en" ? i18nData.en : i18nData.zh;
+    return window.getLanguage() === "en" ? i18nData.en : i18nData.zh;
 }
 
+// 初始化语言：从 i18nData.lang 读取并同步到 shared.js 的全局语言状态。
+window.setLanguage(i18nData.lang);
 applyI18nDict(getI18nDict());
 
 function applyI18nDict(dict) {
@@ -67,7 +69,8 @@ function applyI18nDict(dict) {
 }
 
 function changeLanguage(lang) {
-    i18nData.lang = lang;
+    window.setLanguage(lang);
+    i18nData.lang = window.getLanguage();
     applyI18nDict(getI18nDict());
     document.documentElement.lang = lang;
     vscode.postMessage({ command: "changeLanguage", lang: lang });
@@ -1085,7 +1088,10 @@ window.addEventListener("message", (event) => {
         case "initI18n":
             if (message.zh) i18nData.zh = message.zh;
             if (message.en) i18nData.en = message.en;
-            if (message.lang) i18nData.lang = message.lang;
+            if (message.lang) {
+                window.setLanguage(message.lang);
+                i18nData.lang = window.getLanguage();
+            }
             applyI18nDict(getI18nDict());
             var langSelect = document.getElementById("langSelect");
             if (langSelect) langSelect.value = i18nData.lang;

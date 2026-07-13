@@ -159,10 +159,8 @@ const i18n = {
     },
 };
 
-let lang = "zh";
-
 function t(key) {
-    return i18n[lang][key] || i18n.en[key] || key;
+    return window.translate(key, i18n);
 }
 
 function applyI18nToDom() {
@@ -385,7 +383,7 @@ function init() {
     if (config.autoCommit !== undefined) state.autoCommit = config.autoCommit;
     if (config.defaultView !== undefined) state.defaultView = config.defaultView;
     if (config.lang !== undefined) {
-        lang = config.lang.startsWith("zh") ? "zh" : "en";
+        window.setLanguage(config.lang);
     }
     applyI18nToDom();
 
@@ -994,7 +992,7 @@ function handleConfig(data) {
     if (data.monacoBasePath !== undefined) state.monacoBasePath = data.monacoBasePath;
     if (data.dialect !== undefined) state.dialect = data.dialect;
     if (data.lang !== undefined) {
-        lang = data.lang.startsWith("zh") ? "zh" : "en";
+        window.setLanguage(data.lang);
         applyI18nToDom();
     }
 }

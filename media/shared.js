@@ -280,6 +280,64 @@
         });
     }
 
+    // ── i18n 基础设施 ──────────────────────────────────────────────────
+    //
+    // 各面板原本各自实现 lang 变量 + t() 函数 + applyI18n() 包装，逻辑高度
+    // 重复。此处将公共基础设施集中到 window 上：
+    //   - window.setLanguage(lang)：设置当前语言（"zh" / "en"），自动
+    //     归一化以 "zh" 开头的字符串为 "zh"，其余为 "en"。
+    //   - window.getLanguage()：获取当前语言。
+    //   - window.translate(key, dict, fallbackDict?)：从字典中查找翻译，
+    //     支持 fallback 到默认字典，最终回退到原始 key。
+    //   - window.initLanguageFromConfig(configs?)：从注入的配置对象中
+    //     读取语言设置，各面板只需调用一次即可完成初始化。
+
+    var currentLanguage = "zh";
+
+    function setLanguage(lang) {
+        currentLanguage = lang && lang.indexOf("zh") === 0 ? "zh" : "en";
+    }
+
+    function getLanguage() {
+        return currentLanguage;
+    }
+
+    function translate(key, dict, fallbackDict) {
+        if (dict && dict[currentLanguage] && dict[currentLanguage][key]) {
+            return dict[currentLanguage][key];
+        }
+        if (fallbackDict && fallbackDict[key]) {
+            return fallbackDict[key];
+        }
+        if (dict && dict.en && dict.en[key]) {
+            return dict.en[key];
+        }
+        return key;
+    }
+
+    function initLanguageFromConfig(configs) {
+        configs = configs || [
+            window.__CONFIG__,
+            window.__DATA_TRANSFER_CONFIG__,
+            window.__TABLE_DESIGNER_CONFIG__,
+            window.__EXPLAIN_PANEL_CONFIG__,
+        ];
+        for (var i = 0; i < configs.length; i++) {
+            if (configs[i] && configs[i].lang) {
+                setLanguage(configs[i].lang);
+                return;
+            }
+        }
+    }
+
+    // 加载时自动初始化语言（各面板可在加载后覆盖）。
+    initLanguageFromConfig();
+
+    window.setLanguage = setLanguage;
+    window.getLanguage = getLanguage;
+    window.translate = translate;
+    window.initLanguageFromConfig = initLanguageFromConfig;
+
     window.bindDataActions = bindDataActions;
     window.applyI18n = applyI18n;
     window.escapeHtml = escapeHtml;

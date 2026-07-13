@@ -79,10 +79,8 @@ const i18nData = {
     },
 };
 
-let lang = "zh";
 function t(key) {
-    var dict = i18nData[lang] || i18nData["en"];
-    return dict[key] || i18nData["en"][key] || key;
+    return window.translate(key, i18nData);
 }
 
 function applyI18n() {
@@ -97,7 +95,7 @@ function applyI18n() {
 (function initLang() {
     var config = window.__DATA_TRANSFER_CONFIG__ || {};
     if (config.lang) {
-        lang = config.lang.startsWith("zh") ? "zh" : "en";
+        window.setLanguage(config.lang);
     }
 })();
 
