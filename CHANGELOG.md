@@ -1,5 +1,58 @@
 # Changelog
 
+## [2.34.0] - 2026-07-30
+
+### 新功能
+
+#### 物化视图（Materialized View）全生命周期支持
+
+新增 StarRocks 物化视图的可视化管理能力，覆盖查看、创建、编辑、删除、刷新完整工作流。
+
+- **DDL 查看**：数据库浏览器中物化视图节点右键「View Materialized View Definition」，调用 `SHOW CREATE MATERIALIZED VIEW` 拉取并美化输出
+- **可视化设计器**：新增物化视图设计器面板（`materialized-view-designer`），基于 Monaco 编辑器，支持 DDL 编辑、SQL 预览、Diff 对比、保存确认对话框
+    - **创建模式**：模板化 `CREATE MATERIALIZED VIEW` 语句，填空式建模
+    - **编辑模式**：基于 SWAP WITH 临时视图策略实现原子化 DDL 变更（建临时 MV → SWAP → DROP 旧 MV），避免直接 ALTER 的限制
+    - **状态切换**：`ALTER MATERIALIZED VIEW ... ACTIVE/INACTIVE`
+    - **刷新**：`REFRESH MATERIALIZED VIEW`
+- **失效灰显**：通过 `SHOW MATERIALIZED VIEWS` 解析 `is_active/state` 字段，`inactive` 状态的 MV 在树中灰显（`disabledForeground` 主题色）
+- **StarRocks 适配器**：
+    - `StarrocksMetadataAdapter.listViews` override：过滤普通 VIEW 中与 MV 同名的条目，避免重复展示
+    - `StarrocksMetadataAdapter.listMaterializedViews` override：解析 `SHOW MATERIALIZED VIEWS` 返回的 `id/name/isActive` 字段
+    - `StarrocksSchemaAdapter.getMaterializedViewDDL/refreshMaterializedView/dropMaterializedView` 三个新方法
+    - `getDialectCapabilities().supportedObjectTypes` 追加 `'materializedView'`
+- **其它方言占位**：MySQL/Oracle/PostgreSQL/SQL Server/SQLite 的 `getMaterializedViewDDL` 返回空字符串，`listMaterializedViews` 默认空数组（`BaseMetadataAdapter` 默认实现）
+- **缓存层**：`SchemaCache` 新增 `materializedViewCache`（LRU，复用 `tableTtl` 配置），`InvalidateScope` 联合类型追加 `'materializedView'`，`invalidate/clear` 同步处理
+- **DDL 输出美化**：`SchemaCommands.ts` 新增 10 个模块级辅助函数（`formatDdlOutput` 主入口 + 列定义拆分 + PROPERTIES 分行 + AS SELECT/UNION ALL 多行布局 + 子查询缩进），所有 DDL 查看命令（表/视图/MV/函数/存储过程/触发器）统一应用
+- **表选项格式化**：`DDLFormatter.formatTableOptions` 从空格分隔改为强制换行+缩进（`WS.MANDATORY_NEWLINE, WS.INDENT`），CREATE TABLE 选项更易读
+- **i18n**：中英文新增 8 条文案（`explorer.materializedViews`、`explorer.materializedView`、`explorer.cmd.selectDatabases` 等）
+- **测试**：新增 `materializedViewDesigner.test.ts`，覆盖 create/alter 模式、3 种 refreshType、DDL diff 检测、SWAP WITH SQL 生成
+
+#### 数据库选择与对象组过滤
+
+- **数据库选择**：连接节点右键「Select Databases」，多选 QuickPick 勾选要展示的数据库（空选 = 显示全部），连接节点 description 显示已选数量
+- **对象组关键字过滤**：对象组节点右键「Filter...」，输入关键字过滤表/视图/MV/函数等（大小写不敏感），过滤状态在 description 显示
+- **TreeView 多选**：`canSelectMany: false → true`
+
+#### Spark SQL 代码片段扩充
+
+新增 16 个 Spark SQL 代码片段：Parquet/JDBC/Delta 建表、Insert Overwrite/Into、Lateral View Explode/Posexplode、Merge Into (Delta)、Window Function、Cache Table、Pivot、Create Function、Analyze Table、Convert To Delta、Optimize ZOrder (Delta)、Vacuum (Delta)、Show Table Details。
+
+#### 辅助工具
+
+- **`findVscodeLangIdByDialect`**：新增 dialect → VS Code language ID 反查函数，从 `dialectRegistry` 透传导出
+
+### 鸣谢
+
+感谢 [@Jackson-chen97](https://github.com/Jackson-chen97) 贡献上述物化视图、数据库选择与对象组过滤功能（PR #15、PR #16）。
+
+### 合并说明
+
+本次版本合并了 PR #16（4 个提交）与 PR #15（3 个提交，为 #16 的子集）。由于 main 分支在 v2.31.0 之后经历了 v2.32.0 工具链迁移（ESLint→oxlint、TypeScript 7、oxfmt）、v2.32.1 VSIX 体积优化、v2.33.0 Webview i18n 统一三轮重构，PR 与 main 存在 14 个文件冲突。冲突解决策略：保留 main 的代码风格（双引号、分号）与工具链，将 PR 的功能性变更叠加其上。
+
+- TypeScript 编译：0 错误
+- oxlint：0 警告
+- 测试：1970 passing
+
 ## [2.33.1] - 2026-07-30
 
 ### Bug 修复

@@ -30,7 +30,7 @@
 |                 |                                                      |
 | --------------- | ---------------------------------------------------- |
 | **发布者**      | bryce-qin                                            |
-| **版本**        | 2.33.1                                               |
+| **版本**        | 2.34.0                                               |
 | **许可证**      | MIT                                                  |
 | **VSCode 引擎** | ^1.85.0                                              |
 | **仓库**        | [GitHub](https://github.com/BryceQin/SQL-All-in-One) |
@@ -42,7 +42,7 @@
 - **AST 驱动格式化**：40+ 可配置选项，支持不完整 SQL 智能格式化
 - **30 条 Lint 规则**：实时诊断，含快速修复
 - **7 类智能补全**：关键字、580+ 函数、Schema 表/列、CTE、代码片段等
-- **可视化工具链**：表设计器、执行计划、数据编辑器、查询结果面板
+- **可视化工具链**：表设计器、物化视图设计器、执行计划、数据编辑器、查询结果面板
 - **完整代码工具**：跳转定义、查找引用、重命名、折叠、大纲、悬停提示
 - **中英双语**：自动跟随 VSCode 语言设置
 
@@ -885,7 +885,7 @@ MIT License
 |                   |                                                      |
 | ----------------- | ---------------------------------------------------- |
 | **Publisher**     | bryce-qin                                            |
-| **Version**       | 2.33.1                                               |
+| **Version**       | 2.34.0                                               |
 | **License**       | MIT                                                  |
 | **VSCode Engine** | ^1.85.0                                              |
 | **Repository**    | [GitHub](https://github.com/BryceQin/SQL-All-in-One) |
@@ -897,7 +897,7 @@ MIT License
 - **AST-driven formatting**: 40+ configurable options, supports incomplete SQL formatting
 - **30 Lint rules**: Real-time diagnostics with quick fixes
 - **7 completion types**: Keywords, 580+ functions, schema tables/columns, CTEs, snippets, etc.
-- **Visual toolchain**: Table designer, execution plan, data editor, query result panel
+- **Visual toolchain**: Table designer, materialized view designer, execution plan, data editor, query result panel
 - **Complete code tooling**: Go-to-definition, find references, rename, folding, outline, hover
 - **Bilingual**: Auto-follows VSCode language setting (Chinese / English)
 
