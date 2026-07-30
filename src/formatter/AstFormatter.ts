@@ -25,7 +25,30 @@ export class AstFormatter {
         this.dialect = dialect;
         this.indent = new Indentation(indentString(cfg));
         this.factory = new FormatterFactory();
-        this.expressionFormatter = new ExpressionFormatter(cfg, this.indent);
+        // Inject a formatSubqueryFn so scalar subqueries in SELECT list,
+        // WHERE, UPDATE SET, etc. are formatted by SelectFormatter with proper
+        // indentation, instead of emitting "(/* subquery */)" placeholders.
+        //
+        // The outer Indentation is stateful (a stack of indent levels); a
+        // nested format() mutates it and would corrupt the outer formatter's
+        // state. To avoid that we format the subquery with a fresh
+        // Indentation seeded at one block level deeper than the current
+        // outer level, so the subquery's clauses are indented relative to
+        // the surrounding context without disturbing the outer stack.
+        this.expressionFormatter = new ExpressionFormatter(cfg, this.indent, (expr: unknown): string => {
+            // Used by UPDATE/DELETE/etc. whose ExpressionFormatter is the one
+            // held by AstFormatter (not the SelectFormatter's). The shared
+            // Indentation is stateful; use a fresh Indentation seeded one
+            // level deeper than the current outer level so the subquery's
+            // clauses indent correctly without disturbing the outer stack.
+            const outerLevel = this.indent.getLevel();
+            const subIndent = new Indentation(indentString(this.cfg));
+            for (let i = 0; i < outerLevel + 1; i++) {
+                subIndent.increaseBlockLevel();
+            }
+            const subFmt = this.factory.getSelectFormatter(this.cfg, subIndent);
+            return subFmt.format(expr);
+        });
     }
 
     public format(sql: string): string {

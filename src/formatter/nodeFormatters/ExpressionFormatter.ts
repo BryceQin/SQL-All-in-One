@@ -28,6 +28,26 @@ export class ExpressionFormatter {
         if (typeof expr === "string") return expr;
         if (typeof expr === "number") return String(expr);
         if (typeof expr === "boolean") return String(expr).toUpperCase();
+        // node-sql-parser wraps scalar subqueries (in SELECT list, WHERE,
+        // UPDATE SET, etc.) as { tableList, columnList, ast, parentheses }
+        // with no `type` field. Without unwrapping, the fallback below
+        // would emit "[object Object]" for the wrapper. The inner ast is
+        // typically a SELECT/UNION; route it through formatSubquery so it
+        // gets exactly one pair of parentheses and proper indentation.
+        // wrapper.parentheses represents the subquery's own parentheses,
+        // so we do NOT add an extra layer here — outer callers (e.g.
+        // formatWithParentheses) skip the wrapper via the `ast` check.
+        if (!hasProperty(expr, "type") && hasProperty(expr, "ast")) {
+            const wrapper = expr as { ast?: unknown };
+            const inner = wrapper.ast;
+            if (inner && typeof inner === "object" && hasProperty(inner, "type")) {
+                const innerType = (inner as AstNode).type;
+                if (innerType === AstNodeType.SELECT || innerType === AstNodeType.UNION) {
+                    return this.formatSubquery(inner as AstNode);
+                }
+            }
+            return this.format(inner);
+        }
         if (!hasProperty(expr, "type")) return String(expr);
 
         const node = expr as AstNode;
@@ -71,7 +91,9 @@ export class ExpressionFormatter {
                 return this.formatTernaryExpr(node);
             case AstNodeType.SELECT:
             case AstNodeType.UNION:
-                return "(" + this.formatSubquery(node) + ")";
+                // formatSubquery already returns the fully-parenthesised body
+                // ("(...)"); adding another layer here produced "((SELECT ...))".
+                return this.formatSubquery(node);
             case AstNodeType.ORIGIN:
                 return String(node.value);
             case AstNodeType.DEFAULT:
@@ -169,7 +191,9 @@ export class ExpressionFormatter {
 
     private formatWithParentheses(expr: unknown): string {
         const result = this.format(expr);
-        if (expr && typeof expr === "object" && "parentheses" in expr) {
+        // Scalar subquery wrappers ({ ast, parentheses, ... }) already add
+        // their own parentheses inside format(); skip the extra layer here.
+        if (expr && typeof expr === "object" && "parentheses" in expr && !("ast" in expr)) {
             return "(" + result + ")";
         }
         return result;

@@ -1,6 +1,7 @@
 import type { FormatOptions } from "../FormatOptions";
 import Indentation from "../Indentation";
 import Layout, { WS } from "../Layout";
+import { indentString } from "../config";
 import { formatKeyword, formatAlias } from "./CommonFormatter";
 import { ExpressionFormatter } from "./ExpressionFormatter";
 import { CTEFormatter } from "./CTEFormatter";
@@ -23,7 +24,20 @@ export class SelectFormatter {
         this.layout = new Layout(indent);
         this.factory = factory;
         this.exprFmt = new ExpressionFormatter(cfg, indent, (expr: unknown): string => {
-            const subFmt = factory ? factory.getSelectFormatter(this.cfg, this.indent) : new SelectFormatter(this.cfg, this.indent);
+            // Scalar subqueries embedded in SELECT/WHERE/etc. arrive via
+            // ExpressionFormatter. The shared Indentation is stateful and is
+            // currently positioned at the outer clause's level; formatting the
+            // subquery with it would both corrupt the outer state (the inner
+            // format pushes/pops levels) and mis-indent the subquery. Use a
+            // fresh Indentation seeded one level deeper than the current
+            // outer level so the subquery's clauses indent correctly without
+            // disturbing the outer stack.
+            const outerLevel = this.indent.getLevel();
+            const subIndent = new Indentation(indentString(this.cfg));
+            for (let i = 0; i < outerLevel + 1; i++) {
+                subIndent.increaseBlockLevel();
+            }
+            const subFmt = this.factory ? this.factory.getSelectFormatter(this.cfg, subIndent) : new SelectFormatter(this.cfg, subIndent);
             return subFmt.format(expr);
         });
         this.helper = new CommonLayoutHelper(cfg, indent, this.layout);

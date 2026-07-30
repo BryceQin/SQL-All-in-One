@@ -221,6 +221,36 @@ suite("SQL Formatter Core Tests", () => {
             const result = format("SELECT id FROM users WHERE id IN (SELECT user_id FROM orders)");
             assert.ok(result.includes("IN"), "Should contain IN");
         });
+
+        // Regression: node-sql-parser wraps scalar subqueries in SELECT list
+        // / WHERE / UPDATE SET as { tableList, columnList, ast, parentheses }
+        // (no `type` field). Without unwrapping, ExpressionFormatter fell through
+        // to `String(expr)` and emitted "[object Object]" for the wrapper.
+        test("scalar subquery in SELECT list is not rendered as [object Object]", () => {
+            const sql = "SELECT id, (SELECT COUNT(*) FROM orders o WHERE o.user_id = u.id) AS order_count FROM users u";
+            const result = format(sql, { language: "mysql" });
+            assert.ok(!result.includes("[object Object]"), `Should not contain [object Object]: ${result}`);
+            assert.ok(!result.includes("/* subquery */"), `Should not contain placeholder: ${result}`);
+            assert.ok(result.includes("COUNT(*)"), `Should preserve COUNT(*): ${result}`);
+            assert.ok(result.includes("order_count"), `Should preserve alias: ${result}`);
+            assert.ok(result.includes("FROM"), `Should preserve FROM: ${result}`);
+        });
+
+        test("scalar subquery in WHERE is not rendered as [object Object]", () => {
+            const sql = "SELECT id FROM users WHERE id = (SELECT user_id FROM orders WHERE order_id = 1)";
+            const result = format(sql, { language: "mysql" });
+            assert.ok(!result.includes("[object Object]"), `Should not contain [object Object]: ${result}`);
+            assert.ok(result.includes("user_id"), `Should preserve inner column: ${result}`);
+            assert.ok(result.includes("order_id"), `Should preserve inner predicate: ${result}`);
+        });
+
+        test("scalar subquery in UPDATE SET is not rendered as [object Object]", () => {
+            const sql = "UPDATE users SET status = (SELECT status FROM user_status WHERE user_id = 1) WHERE id = 1";
+            const result = format(sql, { language: "mysql" });
+            assert.ok(!result.includes("[object Object]"), `Should not contain [object Object]: ${result}`);
+            assert.ok(!result.includes("/* subquery */"), `Should not contain placeholder: ${result}`);
+            assert.ok(result.includes("user_status"), `Should preserve inner table: ${result}`);
+        });
     });
 
     suite("format() - CASE expression", () => {

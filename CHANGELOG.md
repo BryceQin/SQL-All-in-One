@@ -1,5 +1,35 @@
 # Changelog
 
+## [2.33.1] - 2026-07-30
+
+### Bug 修复
+
+#### 标量子查询格式化为 `[object Object]`
+
+修复 MySQL 标量子查询（`SELECT (SELECT ...) FROM ...`、`WHERE col = (SELECT ...)`、`UPDATE ... SET col = (SELECT ...)`）在格式化时被错误渲染为 `[object Object]` 的严重 bug。
+
+##### 根本原因
+
+`node-sql-parser` 将标量子查询包装为 `{ tableList, columnList, ast, parentheses }` 对象（无 `type` 字段），而 `ExpressionFormatter.format` 在遇到无 `type` 的对象时直接 `return String(expr)`，产出 `"[object Object]"`。真正的子查询 AST 藏在 `.ast` 字段中未被解包。
+
+##### 修复内容
+
+- [ExpressionFormatter](src/formatter/nodeFormatters/ExpressionFormatter.ts)：识别子查询包装对象（有 `ast` 无 `type`），解包并路由到 `formatSubquery`，避免 `[object Object]`
+- [ExpressionFormatter](src/formatter/nodeFormatters/ExpressionFormatter.ts)：`case SELECT/UNION` 不再额外加括号（`formatSubquery` 已含括号），消除 `((SELECT...))` 重复；`formatWithParentheses` 跳过包装对象避免再次加层
+- [AstFormatter](src/formatter/AstFormatter.ts)：为 `expressionFormatter` 注入 `formatSubqueryFn`（之前缺失，导致 UPDATE/DELETE 路径输出 `(/* subquery */)` 占位符），并使用独立 `Indentation` 避免状态污染
+- [SelectFormatter](src/formatter/nodeFormatters/SelectFormatter.ts)：子查询格式化改用独立 `Indentation`（seeded at outerLevel+1），修复 SELECT 列表 / WHERE 中子查询缩进错乱
+- 新增 3 个回归测试覆盖 SELECT 列表、WHERE、UPDATE SET 三种场景
+
+##### 验证
+
+- 293 个测试通过（含 28 个原有 subquery 测试 + 3 个新增回归测试）
+- TypeScript 编译通过
+- oxlint 无错误
+
+#### ConnectionManager 重构
+
+将 `disconnect` 和 `forceDisconnect` 的重复逻辑提取为 `executeDisconnectCore` 复用，减少代码重复。
+
 ## [2.33.0] - 2026-07-13
 
 ### Webview 前端国际化基础设施统一
