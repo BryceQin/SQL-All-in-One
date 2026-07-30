@@ -10,6 +10,7 @@ import {
     ObjectGroupTreeNode,
     TableTreeNode,
     ViewTreeNode,
+    MaterializedViewTreeNode,
     FunctionTreeNode,
     ProcedureTreeNode,
     TriggerTreeNode,
@@ -60,6 +61,13 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
     private nodeCache = new LRUCache<string, ITreeNode[]>({ maxSize: 200, maxAge: 60000 });
     private favorites: FavoriteItem[] = [];
     private readonly FAVORITES_KEY = "hive-formatter.favorites";
+
+    /** Per-connection set of selected database names. Empty = show all. */
+    private selectedDatabases = new Map<string, Set<string>>();
+    /** Per-object-group keyword filter. Key = ObjectGroupTreeNode.id */
+    private objectGroupFilters = new Map<string, string>();
+    /** Cached filtered child count for display purposes */
+    private objectGroupFilteredCounts = new Map<string, number>();
 
     private _disposables: vscode.Disposable[] = [];
 
@@ -157,10 +165,90 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
     refresh(element?: ITreeNode): void {
         if (element) {
             this.nodeCache.delete(element.id);
+            // Also clear any filter-prefixed cache entries for this node
+            const filter =
+                element instanceof ObjectGroupTreeNode ? this.objectGroupFilters.get(element.id) : undefined;
+            if (filter) {
+                this.nodeCache.delete(`${element.id}::filter=${filter}`);
+            }
         } else {
             this.nodeCache.clear();
         }
         this._onDidChangeTreeData.fire(element);
+    }
+
+    /**
+     * Open a multi-select quick pick to choose which databases to show under a connection.
+     * When no databases are selected, all databases are shown.
+     */
+    async selectDatabases(node: ConnectionTreeNode): Promise<void> {
+        try {
+            const databases = await this.schemaCache.getDatabases(node.connectionId);
+            const currentSelected = this.selectedDatabases.get(node.connectionId) || new Set();
+
+            const items: vscode.QuickPickItem[] = databases.map((db) => ({
+                label: db.name,
+                picked: currentSelected.has(db.name),
+            }));
+
+            // Use quick pick with canPickMany
+            const result = await vscode.window.showQuickPick(items, {
+                canPickMany: true,
+                placeHolder: t("explorer.selectDatabases.placeholder", node.connectionName),
+                matchOnDescription: true,
+            });
+
+            if (result !== undefined) {
+                if (result.length === 0 || result.length === databases.length) {
+                    // User selected all or none → reset filter to show all
+                    this.selectedDatabases.delete(node.connectionId);
+                } else {
+                    this.selectedDatabases.set(node.connectionId, new Set(result.map((r) => r.label)));
+                }
+                this.refresh(node);
+            }
+        } catch (error) {
+            handleError(error, "DatabaseTreeProvider.selectDatabases", ErrorCategory.FEATURE);
+        }
+    }
+
+    /**
+     * Prompt the user for a keyword to filter items inside an object group node
+     * (tables, views, materializedViews, functions, procedures, triggers).
+     * Pass an empty string or cancel to clear the filter.
+     */
+    async filterObjectGroup(node: ObjectGroupTreeNode): Promise<void> {
+        const currentFilter = this.objectGroupFilters.get(node.id) || "";
+        const keyword = await vscode.window.showInputBox({
+            prompt: t("explorer.filterObjectGroup.prompt", node.label),
+            placeHolder: t("explorer.filterObjectGroup.placeholder"),
+            value: currentFilter,
+            ignoreFocusOut: true,
+        });
+
+        if (keyword !== undefined) {
+            if (keyword.trim()) {
+                this.objectGroupFilters.set(node.id, keyword.trim());
+            } else {
+                this.objectGroupFilters.delete(node.id);
+                this.objectGroupFilteredCounts.delete(node.id);
+            }
+            this.refresh(node);
+        }
+    }
+
+    /**
+     * Get the current filter keyword for an object group node, or undefined.
+     */
+    getObjectGroupFilter(nodeId: string): string | undefined {
+        return this.objectGroupFilters.get(nodeId);
+    }
+
+    /**
+     * Get the set of selected database names for a connection, or undefined (show all).
+     */
+    getSelectedDatabases(connectionId: string): Set<string> | undefined {
+        return this.selectedDatabases.get(connectionId);
     }
 
     getTreeItem(element: ITreeNode): vscode.TreeItem {
@@ -176,6 +264,26 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
         item.description = node.description;
         item.tooltip = node.tooltip;
         item.command = this.getCommandForNode(element);
+
+        // Override description for connected connection nodes to show selected DB count
+        if (element instanceof ConnectionTreeNode && element.connectionState === "connected") {
+            const selected = this.selectedDatabases.get(element.connectionId);
+            if (selected && selected.size > 0) {
+                item.description = `${t("explorer.connected")} (${selected.size})`;
+            }
+        }
+
+        // Override description for object group nodes with active keyword filter
+        if (element instanceof ObjectGroupTreeNode) {
+            const filterKeyword = this.objectGroupFilters.get(element.id);
+            if (filterKeyword) {
+                const filteredCount = this.objectGroupFilteredCounts.get(element.id);
+                const countDisplay =
+                    filteredCount !== undefined ? `${filteredCount}/${element.count}` : String(element.count);
+                item.description = `(${countDisplay}) ${t("explorer.filtered")}: ${filterKeyword}`;
+            }
+        }
+
         return item;
     }
 
@@ -191,6 +299,13 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
             return undefined;
         }
         if (element instanceof ViewTreeNode) {
+            return {
+                command: "hive-formatter.viewTableData",
+                title: t("explorer.cmd.viewData"),
+                arguments: [element],
+            };
+        }
+        if (element instanceof MaterializedViewTreeNode) {
             return {
                 command: "hive-formatter.viewTableData",
                 title: t("explorer.cmd.viewData"),
@@ -374,7 +489,14 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
 
             const filteredDatabases = showSystemDatabases ? databases : databases.filter((db) => !this.isSystemDatabase(db.name, dialect));
 
-            const children = filteredDatabases.map(
+            // Further filter by user-selected databases if any
+            const selected = this.selectedDatabases.get(parent.connectionId);
+            const finalDatabases =
+                selected && selected.size > 0
+                    ? filteredDatabases.filter((db) => selected.has(db.name))
+                    : filteredDatabases;
+
+            const children = finalDatabases.map(
                 (db) => new DatabaseTreeNode(db.name, parent.connectionId, db.name === defaultDatabase, parent),
             );
 
@@ -417,6 +539,9 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
                 return [];
             }
 
+            const capabilities = adapter.schemaAdapter.getDialectCapabilities();
+            const supportsMaterializedView = capabilities.supportedObjectTypes.includes("materializedView");
+
             const [tables, views, functions, procedures, triggers] = await Promise.all([
                 this.schemaCache.getTables(parent.connectionId, parent.databaseName),
                 this.schemaCache.getViews(parent.connectionId, parent.databaseName),
@@ -430,10 +555,20 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
             const children: ITreeNode[] = [
                 new ObjectGroupTreeNode("tables", parent.connectionId, parent.databaseName, Math.min(tables.length, maxTableSize), parent),
                 new ObjectGroupTreeNode("views", parent.connectionId, parent.databaseName, views.length, parent),
+            ];
+
+            if (supportsMaterializedView) {
+                const mvs = await this.schemaCache.getMaterializedViews(parent.connectionId, parent.databaseName);
+                children.push(
+                    new ObjectGroupTreeNode("materializedViews", parent.connectionId, parent.databaseName, mvs.length, parent),
+                );
+            }
+
+            children.push(
                 new ObjectGroupTreeNode("functions", parent.connectionId, parent.databaseName, functions.length, parent),
                 new ObjectGroupTreeNode("procedures", parent.connectionId, parent.databaseName, procedures.length, parent),
                 new ObjectGroupTreeNode("triggers", parent.connectionId, parent.databaseName, triggers.length, parent),
-            ];
+            );
 
             this.nodeCache.set(cacheKey, children);
             return children;
@@ -444,7 +579,8 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
     }
 
     private async getObjectGroupChildren(parent: ObjectGroupTreeNode): Promise<ITreeNode[]> {
-        const cacheKey = parent.id;
+        const filterKeyword = this.objectGroupFilters.get(parent.id);
+        const cacheKey = filterKeyword ? `${parent.id}::filter=${filterKeyword}` : parent.id;
         const cached = this.nodeCache.get(cacheKey);
         if (cached !== undefined) {
             return cached;
@@ -456,7 +592,7 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
                 return [];
             }
 
-            const children: ITreeNode[] = [];
+            let children: ITreeNode[] = [];
             const maxTableSize = getConfigManager().get<number>("explorer.maxTableListSize", 500);
 
             let tables, views, functions, procedures, triggers, limitedTables;
@@ -476,6 +612,22 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
                     views = await this.schemaCache.getViews(parent.connectionId, parent.databaseName);
                     for (const view of views) {
                         children.push(new ViewTreeNode(view.name, parent.connectionId, parent.databaseName, view.comment, parent));
+                    }
+                    break;
+
+                case "materializedViews":
+                    const mvs = await this.schemaCache.getMaterializedViews(parent.connectionId, parent.databaseName);
+                    for (const mv of mvs) {
+                        children.push(
+                            new MaterializedViewTreeNode(
+                                mv.name,
+                                parent.connectionId,
+                                parent.databaseName,
+                                mv.comment,
+                                parent,
+                                mv.status,
+                            ),
+                        );
                     }
                     break;
 
@@ -508,6 +660,15 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<ITreeNode> 
                         );
                     }
                     break;
+            }
+
+            // Apply keyword filter if set
+            if (filterKeyword) {
+                const lowerKeyword = filterKeyword.toLowerCase();
+                children = children.filter((child) => child.label.toLowerCase().includes(lowerKeyword));
+                this.objectGroupFilteredCounts.set(parent.id, children.length);
+            } else {
+                this.objectGroupFilteredCounts.delete(parent.id);
             }
 
             this.nodeCache.set(cacheKey, children);

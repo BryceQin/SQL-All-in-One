@@ -39,6 +39,21 @@ export function findDialectByLangId(langId: string): DialectEntry | undefined {
     return langIdMap.get(langId);
 }
 
+/**
+ * Maps a SQL dialect (as stored in ConnectionConfig.dialect) to the
+ * corresponding VS Code language ID. Returns `'sql'` when no match is found.
+ * Prefers the first registered vscodeLangId for each dialect (e.g.
+ * 'postgresql' over 'postgres', 'plsql' over 'oracle').
+ */
+export function findVscodeLangIdByDialect(dialect: string): string {
+    for (const entry of dialectEntries) {
+        if (entry.sqlDialect === dialect) {
+            return entry.vscodeLangId;
+        }
+    }
+    return "sql";
+}
+
 let _cachedLanguageIds: readonly string[] | null = null;
 
 export function getSqlLanguageIds(): readonly string[] {

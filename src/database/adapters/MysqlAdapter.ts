@@ -1051,6 +1051,10 @@ export class MysqlSchemaAdapter<
         return (result.rows[0]["Create View"] ?? "") as string;
     }
 
+    async getMaterializedViewDDL(_database: string, _mvName: string, _schema?: string): Promise<string> {
+        return '';
+    }
+
     async getFunctionDDL(database: string, functionName: string, _schema?: string): Promise<string> {
         this.validateIdentifier(database);
         this.validateIdentifier(functionName);

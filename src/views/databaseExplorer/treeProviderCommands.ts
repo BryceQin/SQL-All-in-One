@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { DatabaseTreeProvider } from "./DatabaseTreeProvider";
+import { ConnectionTreeNode, ObjectGroupTreeNode } from "./treeNodes";
 import { getContainer, Tokens } from "../../core/diContainer";
 import type { IConnectionService, ISchemaService } from "../../application/ports";
 
@@ -51,7 +52,7 @@ export function registerTreeProviderCommands(context: vscode.ExtensionContext): 
             treeView = vscode.window.createTreeView("hive-formatter.databaseExplorer", {
                 treeDataProvider: treeProvider,
                 showCollapseAll: true,
-                canSelectMany: false,
+                canSelectMany: true,
             });
             context.subscriptions.push(treeView);
             context.subscriptions.push({ dispose: () => treeProvider?.dispose() });
@@ -86,6 +87,28 @@ export function registerTreeProviderCommands(context: vscode.ExtensionContext): 
             async (connectionId: string, database: string, objectType: "table" | "view", objectName: string) => {
                 if (!treeProvider) return;
                 await treeProvider.removeFavorite(connectionId, database, objectType, objectName);
+            },
+        ),
+    );
+
+    // Command: select which databases to show under a connection node
+    disposables.push(
+        vscode.commands.registerCommand(
+            'hive-formatter.selectDatabases',
+            async (node: ConnectionTreeNode) => {
+                if (!treeProvider) return;
+                await treeProvider.selectDatabases(node);
+            },
+        ),
+    );
+
+    // Command: filter object group children by keyword
+    disposables.push(
+        vscode.commands.registerCommand(
+            'hive-formatter.filterObjectGroup',
+            async (node: ObjectGroupTreeNode) => {
+                if (!treeProvider) return;
+                await treeProvider.filterObjectGroup(node);
             },
         ),
     );

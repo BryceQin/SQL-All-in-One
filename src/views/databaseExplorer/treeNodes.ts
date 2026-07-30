@@ -159,7 +159,7 @@ export class DatabaseTreeNode extends BaseTreeNode {
     }
 }
 
-export type ObjectGroupType = "tables" | "views" | "functions" | "procedures" | "triggers";
+export type ObjectGroupType = "tables" | "views" | "materializedViews" | "functions" | "procedures" | "triggers";
 
 export class ObjectGroupTreeNode extends BaseTreeNode {
     readonly type: TreeNodeType = "objectGroup";
@@ -183,6 +183,10 @@ export class ObjectGroupTreeNode extends BaseTreeNode {
             case "views":
                 iconPath = new vscode.ThemeIcon("eye");
                 label = t("explorer.views");
+                break;
+            case "materializedViews":
+                iconPath = new vscode.ThemeIcon("layers");
+                label = t("explorer.materializedViews");
                 break;
             case "functions":
                 iconPath = new vscode.ThemeIcon("zap");
@@ -269,6 +273,45 @@ export class ViewTreeNode extends BaseTreeNode {
         this.label = viewName;
         this.id = `view-${connectionId}-${databaseName}-${viewName}`;
         this.comment = comment;
+    }
+}
+
+export class MaterializedViewTreeNode extends BaseTreeNode {
+    readonly type: TreeNodeType = 'materializedView';
+    readonly id: string;
+    readonly label: string;
+    readonly contextValue?: string = 'materializedView';
+    readonly mvName: string;
+    readonly connectionId: string;
+    readonly databaseName: string;
+    readonly comment?: string;
+    readonly status?: string;
+    
+    constructor(
+        mvName: string,
+        connectionId: string,
+        databaseName: string,
+        comment?: string,
+        parent?: ITreeNode,
+        status?: string
+    ) {
+        const isInactive = status === 'inactive';
+        super({
+            iconPath: isInactive
+                ? new vscode.ThemeIcon('layers', new vscode.ThemeColor('disabledForeground'))
+                : new vscode.ThemeIcon('layers'),
+            collapsibleState: vscode.TreeItemCollapsibleState.None,
+            parent,
+            tooltip: comment ? `${t('explorer.materializedView', mvName)}\n${comment}` : t('explorer.materializedView', mvName)
+        });
+        
+        this.mvName = mvName;
+        this.connectionId = connectionId;
+        this.databaseName = databaseName;
+        this.label = mvName;
+        this.id = `mv-${connectionId}-${databaseName}-${mvName}`;
+        this.comment = comment;
+        this.status = status;
     }
 }
 

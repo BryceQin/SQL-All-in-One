@@ -10,6 +10,7 @@ export type TreeNodeType =
     | "objectGroup"
     | "table"
     | "view"
+    | "materializedView"
     | "function"
     | "procedure"
     | "trigger"

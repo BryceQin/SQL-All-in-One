@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline' {{CSP_SOURCE}}; script-src 'nonce-{{CSP_NONCE}}' {{CSP_SOURCE}}; img-src data: {{CSP_SOURCE}}; worker-src blob: {{CSP_SOURCE}}; font-src {{CSP_SOURCE}}; connect-src {{CSP_SOURCE}};">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Materialized View Designer</title>
+  <link rel="stylesheet" href="{{SHARED_CSS_URI}}">
+  <link rel="stylesheet" href="{{CSS_URI}}">
+  {{CONFIG_INJECT}}
+  <script src="{{MONACO_LOADER_URI}}"></script>
+</head>
+<body>
+  <div class="designer-panel">
+    <div class="header-bar">
+      <div class="header-title">
+        <span class="header-icon">&#128202;</span>
+        <span id="headerViewName" data-i18n="materializedViewDesigner">Materialized View Designer</span>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-secondary" id="btnDiff" data-action="showDiff" data-i18n="showDiff">Diff</button>
+        <button class="btn btn-primary" id="btnSave" data-action="handleSave" data-i18n="save">Save</button>
+        <button class="btn btn-secondary" id="btnRefresh" data-action="handleRefresh" data-i18n="refresh">Refresh</button>
+        <button class="btn btn-secondary" id="btnExport" data-action="handleExport" data-i18n="exportSql">Export SQL</button>
+        <button class="btn btn-secondary" id="btnClose" data-action="handleClose">&#10005;</button>
+      </div>
+    </div>
+
+    <div class="info-bar">
+      <div class="info-item">
+        <span class="info-label" data-i18n="viewName">View Name</span>
+        <input type="text" class="info-input" id="viewNameInput" data-action="updateViewName">
+      </div>
+      <div class="info-item">
+        <span class="info-label" data-i18n="activeStatus">Active</span>
+        <select class="info-select" id="activeStatusValue" data-action="updateActiveStatus">
+          <option value="ACTIVE">ACTIVE</option>
+          <option value="INACTIVE">INACTIVE</option>
+        </select>
+      </div>
+      <div class="info-item">
+        <span class="info-label" data-i18n="refreshType">Refresh Type</span>
+        <span class="info-value" id="refreshTypeValue">ASYNC</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label" data-i18n="refreshSchedule">Refresh Schedule</span>
+        <span class="info-value" id="refreshScheduleValue">-</span>
+      </div>
+    </div>
+
+    <div class="panel-split" id="panelSplit">
+      <div class="editor-section" id="editorSection">
+        <div class="editor-container">
+          <div id="monacoEditor" class="monaco-editor-container"></div>
+        </div>
+      </div>
+      <div class="splitter" id="splitter">
+        <div class="splitter-handle"></div>
+      </div>
+      <div class="bottom-section" id="bottomSection">
+        <div class="tab-content" id="tabContent">
+          <div class="tab-page active" id="pageSqlPreview">
+            <pre class="sql-preview-content"><code id="sqlPreviewContent"></code></pre>
+          </div>
+          <div class="tab-page" id="pageMessages">
+            <div class="messages-container" id="messagesContainer"></div>
+          </div>
+        </div>
+        <div class="bottom-bar">
+          <div class="tab-bar">
+            <button class="tab-btn active" data-tab="pageSqlPreview" data-action="switchTab" data-i18n="sqlPreview">SQL Preview</button>
+            <button class="tab-btn" data-tab="pageMessages" data-action="switchTab" data-i18n="messages">Messages</button>
+          </div>
+          <div class="status-bar">
+            <button class="btn-icon" data-action="clearMessages" title="Clear Messages">&#10005;</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="diff-overlay" id="diffOverlay" style="display:none;">
+      <div class="diff-container">
+        <div class="diff-header">
+          <div class="diff-header-title">
+            <span data-i18n="diffTitle">DDL Differences</span>
+          </div>
+          <button class="btn btn-secondary btn-close-diff" data-action="closeDiff">&#10005;</button>
+        </div>
+        <div class="diff-body">
+          <div class="diff-panel">
+            <div class="diff-panel-header" data-i18n="originalDDL">Original DDL</div>
+            <div class="diff-panel-content" id="diffLeft"></div>
+          </div>
+          <div class="diff-panel">
+            <div class="diff-panel-header" data-i18n="currentDDL">Current DDL</div>
+            <div class="diff-panel-content" id="diffRight"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dialog-overlay" id="saveDialog" style="display:none;">
+      <div class="dialog">
+        <div class="dialog-header" data-i18n="confirmSave">Confirm Save</div>
+        <div class="dialog-body">
+          <div class="dialog-label" data-i18n="sqlWillBeExecuted">The following SQL will be executed:</div>
+          <pre class="dialog-sql" id="saveSqlPreview"></pre>
+        </div>
+        <div class="dialog-footer">
+          <button class="btn btn-primary" data-action="confirmSave" data-i18n="execute">Execute</button>
+          <button class="btn btn-secondary" data-action="exportSqlOnly" data-i18n="exportSqlOnly">Export SQL Only</button>
+          <button class="btn btn-secondary" data-action="cancelSave" data-i18n="cancel">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="{{SHARED_JS_URI}}"></script>
+  <script src="{{JS_URI}}"></script>
+</body>
+</html>

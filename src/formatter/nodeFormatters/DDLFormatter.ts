@@ -256,7 +256,7 @@ export class DDLFormatter {
 
     private formatTableOptions(options: Record<string, unknown>[]): void {
         for (const opt of options) {
-            this.layout.add(WS.SPACE);
+            this.layout.add(WS.MANDATORY_NEWLINE, WS.INDENT);
             if (typeof opt === "string") {
                 this.layout.add(opt);
             } else if (typeof opt === "object") {

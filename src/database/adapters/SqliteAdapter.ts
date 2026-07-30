@@ -372,6 +372,10 @@ class SqliteSchemaAdapter extends BaseSchemaAdapter<unknown> {
         return (result.rows[0].sql as string) ?? "";
     }
 
+    async getMaterializedViewDDL(_database: string, _mvName: string, _schema?: string): Promise<string> {
+        return '';
+    }
+
     async getFunctionDDL(_database: string, _functionName: string, _schema?: string): Promise<string> {
         return "";
     }
