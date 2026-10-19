@@ -40,9 +40,10 @@
     "main": "./out/extension.js",
     "scripts": {
         "generate-snippets": "npx tsx scripts/generate-snippets.ts",
-        "vscode:prepublish": "npm run generate-snippets && node esbuild.js --minify",
-        "esbuild-base": "npm run generate-snippets && node esbuild.js",
-        "esbuild": "npm run generate-snippets && node esbuild.js",
+        "generate-grammars": "npx tsx scripts/generate-grammars.ts",
+        "vscode:prepublish": "npm run generate-snippets && npm run generate-grammars && node esbuild.js --minify",
+        "esbuild-base": "npm run generate-snippets && npm run generate-grammars && node esbuild.js",
+        "esbuild": "npm run generate-snippets && npm run generate-grammars && node esbuild.js",
         "compile": "tsc -p ./",
         "watch": "tsc -watch -p ./",
         "pretest": "npm run compile && npm run lint",
@@ -79,8 +80,13 @@
         "eslint-plugin-tsdoc": "^0.5.0",
         "jiti": "^2.6.1",
         "monaco-editor": "^0.45.0",
+        "oxfmt": "^0.73.0",
+        "oxlint": "^1.88.0",
+        "tsx": "^4.23.15",
         "typescript": "^7.0.0",
-        "typescript-eslint": "^8.52.0"
+        "typescript-eslint": "^8.52.0",
+        "vscode-oniguruma": "^2.0.1",
+        "vscode-textmate": "^9.3.2"
     },
     "contributes": {
         "viewsContainers": {
@@ -231,6 +237,68 @@
                     ".dm",
                     ".dameng"
                 ]
+            }
+        ],
+        "grammars": [
+            {
+                "language": "sql",
+                "scopeName": "source.sql.sql",
+                "path": "./syntaxes/sql.tmLanguage.json"
+            },
+            {
+                "language": "hive",
+                "scopeName": "source.sql.hive",
+                "path": "./syntaxes/hive.tmLanguage.json"
+            },
+            {
+                "language": "mysql",
+                "scopeName": "source.sql.mysql",
+                "path": "./syntaxes/mysql.tmLanguage.json"
+            },
+            {
+                "language": "spark",
+                "scopeName": "source.sql.spark",
+                "path": "./syntaxes/spark.tmLanguage.json"
+            },
+            {
+                "language": "flinksql",
+                "scopeName": "source.sql.flinksql",
+                "path": "./syntaxes/flinksql.tmLanguage.json"
+            },
+            {
+                "language": "postgresql",
+                "scopeName": "source.sql.postgresql",
+                "path": "./syntaxes/postgresql.tmLanguage.json"
+            },
+            {
+                "language": "bigquery",
+                "scopeName": "source.sql.bigquery",
+                "path": "./syntaxes/bigquery.tmLanguage.json"
+            },
+            {
+                "language": "sqlite",
+                "scopeName": "source.sql.sqlite",
+                "path": "./syntaxes/sqlite.tmLanguage.json"
+            },
+            {
+                "language": "starrocks",
+                "scopeName": "source.sql.starrocks",
+                "path": "./syntaxes/starrocks.tmLanguage.json"
+            },
+            {
+                "language": "sqlserver",
+                "scopeName": "source.sql.sqlserver",
+                "path": "./syntaxes/sqlserver.tmLanguage.json"
+            },
+            {
+                "language": "plsql",
+                "scopeName": "source.sql.plsql",
+                "path": "./syntaxes/plsql.tmLanguage.json"
+            },
+            {
+                "language": "dameng",
+                "scopeName": "source.sql.dameng",
+                "path": "./syntaxes/dameng.tmLanguage.json"
             }
         ],
         "snippets": [
@@ -2098,11 +2166,11 @@
         "onCommand:hive-formatter.exportDdl",
         "onCommand:hive-formatter.exportInsert",
         "onCommand:hive-formatter.exportJson",
+        "onCommand:hive-formatter.filterObjectGroup",
         "onCommand:hive-formatter.format-selection",
         "onCommand:hive-formatter.hive-to-mysql",
         "onCommand:hive-formatter.importConnections",
         "onCommand:hive-formatter.importData",
-        "onCommand:hive-formatter.filterObjectGroup",
         "onCommand:hive-formatter.mysql-to-hive",
         "onCommand:hive-formatter.newQuery",
         "onCommand:hive-formatter.open-config-editor",

@@ -1,0 +1,273 @@
+{
+    "name": "PostgreSQL",
+    "scopeName": "source.sql.postgresql",
+    "patterns": [
+        {
+            "include": "#block-comment"
+        },
+        {
+            "include": "#line-comment"
+        },
+        {
+            "include": "#quoted-identifier"
+        },
+        {
+            "include": "#number"
+        },
+        {
+            "include": "#keyword-phrases"
+        },
+        {
+            "include": "#case-control"
+        },
+        {
+            "include": "#logical-operators"
+        },
+        {
+            "include": "#clauses"
+        },
+        {
+            "include": "#select"
+        },
+        {
+            "include": "#set-operations"
+        },
+        {
+            "include": "#joins"
+        },
+        {
+            "include": "#functions"
+        },
+        {
+            "include": "#data-types"
+        },
+        {
+            "include": "#constants"
+        },
+        {
+            "include": "#keywords"
+        },
+        {
+            "include": "#as-alias"
+        },
+        {
+            "include": "#parameters"
+        },
+        {
+            "include": "#variables"
+        },
+        {
+            "include": "#strings"
+        },
+        {
+            "include": "#operators"
+        },
+        {
+            "include": "#delimiters"
+        }
+    ],
+    "repository": {
+        "block-comment": {
+            "patterns": [
+                {
+                    "name": "comment.block.sql",
+                    "begin": "/\\*",
+                    "end": "\\*/"
+                }
+            ]
+        },
+        "line-comment": {
+            "patterns": [
+                {
+                    "match": "--.*",
+                    "name": "comment.line.double-dash.sql"
+                }
+            ]
+        },
+        "quoted-identifier": {
+            "patterns": [
+                {
+                    "match": "(?:\"[^\"]*\")+",
+                    "name": "string.quoted.double.sql"
+                },
+                {
+                    "match": "(?:`[^`]*`)+",
+                    "name": "string.quoted.other.backtick.sql"
+                }
+            ]
+        },
+        "number": {
+            "patterns": [
+                {
+                    "match": "(?i)(?<![\\w.])(?:0x[0-9a-fA-F]+|0b[01]+|[0-9]*\\.[0-9]+|[0-9]+(?:\\.[0-9]*)?)(?:[eE][-+]?[0-9]+(?:\\.[0-9]+)?)?(?!\\w)",
+                    "name": "constant.numeric.sql"
+                }
+            ]
+        },
+        "keyword-phrases": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:RANGE\\s+BETWEEN|ROWS\\s+BETWEEN)\\b",
+                    "name": "keyword.other.sql"
+                }
+            ]
+        },
+        "case-control": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:BETWEEN|CASE|ELSE|THEN|WHEN|END)\\b",
+                    "name": "keyword.control.sql"
+                }
+            ]
+        },
+        "logical-operators": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:AND|OR)\\b",
+                    "name": "keyword.operator.logical.sql"
+                }
+            ]
+        },
+        "clauses": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:CREATE\\s+TEMPORARY\\s+TABLE\\s+IF\\s+NOT\\s+EXISTS|CREATE\\s+OR\\s+REPLACE\\s+FUNCTION|CREATE\\s+TABLE\\s+IF\\s+NOT\\s+EXISTS|CREATE\\s+INDEX\\s+CONCURRENTLY|CREATE\\s+MATERIALIZED\\s+VIEW|CREATE\\s+TEMPORARY\\s+TABLE|DROP\\s+TABLE\\s+IF\\s+EXISTS|CREATE\\s+EXTENSION|CREATE\\s+FUNCTION|EXPLAIN\\s+ANALYZE|WITH\\s+ORDINALITY|TRUNCATE\\s+TABLE|CREATE\\s+INDEX|CREATE\\s+TABLE|PARTITION\\s+BY|ALTER\\s+TABLE|CREATE\\s+ROLE|CREATE\\s+VIEW|DISTINCT\\s+ON|FETCH\\s+FIRST|ON\\s+CONFLICT|TABLESAMPLE|DROP\\s+TABLE|FETCH\\s+NEXT|FOR\\s+UPDATE|FOR\\s+SHARE|RETURNING|GROUP\\s+BY|ORDER\\s+BY|TRUNCATE|EXPLAIN|LATERAL|CREATE|HAVING|REVOKE|VACUUM|WINDOW|ALTER|GRANT|LIMIT|WHERE|COPY|FROM|SHOW|WITH|SET)\\b",
+                    "name": "keyword.other.sql"
+                }
+            ]
+        },
+        "select": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:SELECT\\s+DISTINCT|SELECT\\s+ALL|SELECT)\\b",
+                    "name": "keyword.other.sql"
+                }
+            ]
+        },
+        "set-operations": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:INTERSECT\\s+DISTINCT|EXCEPT\\s+DISTINCT|UNION\\s+DISTINCT|INTERSECT\\s+ALL|EXCEPT\\s+ALL|INTERSECT|UNION\\s+ALL|EXCEPT|UNION)\\b",
+                    "name": "keyword.other.sql"
+                }
+            ]
+        },
+        "joins": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:NATURAL\\s+INNER\\s+JOIN|NATURAL\\s+RIGHT\\s+JOIN|NATURAL\\s+FULL\\s+JOIN|NATURAL\\s+LEFT\\s+JOIN|RIGHT\\s+OUTER\\s+JOIN|FULL\\s+OUTER\\s+JOIN|LEFT\\s+OUTER\\s+JOIN|NATURAL\\s+JOIN|CROSS\\s+JOIN|INNER\\s+JOIN|RIGHT\\s+JOIN|FULL\\s+JOIN|LEFT\\s+JOIN|JOIN)\\b",
+                    "name": "keyword.other.sql"
+                }
+            ]
+        },
+        "functions": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:JSON_POPULATE_RECORDSET|JSONB_EXTRACT_PATH_TEXT|HAS_DATABASE_PRIVILEGE|HAS_FUNCTION_PRIVILEGE|JSON_EXTRACT_PATH_TEXT|PG_TOTAL_RELATION_SIZE|REGEXP_SPLIT_TO_ARRAY|REGEXP_SPLIT_TO_TABLE|TRANSACTION_TIMESTAMP|HAS_SCHEMA_PRIVILEGE|JSON_POPULATE_RECORD|PG_TERMINATE_BACKEND|GENERATE_SUBSCRIPTS|HAS_TABLE_PRIVILEGE|RANGE_INTERSECT_AGG|STATEMENT_TIMESTAMP|JSONB_ARRAY_LENGTH|JSONB_BUILD_OBJECT|JSONB_EXTRACT_PATH|PG_CLIENT_ENCODING|CURRENT_TIMESTAMP|JSON_ARRAY_LENGTH|JSON_BUILD_OBJECT|JSON_EXTRACT_PATH|JSON_TO_RECORDSET|JSONB_BUILD_ARRAY|JSONB_OBJECT_KEYS|JSONB_STRIP_NULLS|PG_CANCEL_BACKEND|PG_ROTATE_LOGFILE|CHARACTER_LENGTH|CURRENT_DATABASE|JSON_BUILD_ARRAY|JSON_OBJECT_KEYS|JSON_STRIP_NULLS|JSONB_OBJECT_AGG|JUSTIFY_INTERVAL|MAKE_TIMESTAMPTZ|PG_DATABASE_SIZE|ARRAY_POSITIONS|ARRAY_TO_STRING|CLOCK_TIMESTAMP|CURRENT_CATALOG|GENERATE_SERIES|JSON_OBJECT_AGG|JSONB_EACH_TEXT|PG_INDEXES_SIZE|STRING_TO_ARRAY|ARRAY_POSITION|CURRENT_SCHEMA|JSON_EACH_TEXT|JSON_TO_RECORD|LOCALTIMESTAMP|MAKE_TIMESTAMP|PG_COLUMN_SIZE|PG_RELOAD_CONF|REGEXP_REPLACE|ARRAY_PREPEND|ARRAY_REPLACE|JUSTIFY_HOURS|MAKE_INTERVAL|PG_TABLE_SIZE|QUOTE_LITERAL|ARRAY_APPEND|ARRAY_LENGTH|ARRAY_REMOVE|CURRENT_DATE|CURRENT_TIME|CURRENT_USER|JSONB_INSERT|JSONB_PRETTY|JSONB_TYPEOF|JUSTIFY_DAYS|OCTET_LENGTH|PERCENT_RANK|REGEXP_COUNT|REGEXP_INSTR|REGEXP_MATCH|SESSION_USER|WIDTH_BUCKET|ARRAY_LOWER|ARRAY_NDIMS|ARRAY_UPPER|CARDINALITY|CHAR_LENGTH|FIRST_VALUE|JSON_TYPEOF|PARSE_IDENT|QUOTE_IDENT|REGEXP_LIKE|STARTS_WITH|STDDEV_SAMP|ARRAY_DIMS|ARRAY_FILL|DATE_TRUNC|DENSE_RANK|JSONB_EACH|LAST_VALUE|ROW_NUMBER|SPLIT_PART|STDDEV_POP|STRING_AGG|TRIM_SCALE|ARRAY_AGG|ARRAY_CAT|CONCAT_WS|CUME_DIST|DATE_PART|FACTORIAL|JSON_EACH|JSONB_AGG|JSONB_SET|LOCALTIME|MAKE_DATE|MAKE_TIME|MIN_SCALE|NTH_VALUE|RANGE_AGG|SUBSTRING|TIMEOFDAY|TRANSLATE|BOOL_AND|COALESCE|DIAMETER|GREATEST|ISCLOSED|ISFINITE|JSON_AGG|PG_SLEEP|POSITION|TO_ASCII|VAR_SAMP|VARIANCE|BIT_AND|BOOL_OR|CEILING|DEGREES|EXTRACT|INITCAP|NPOINTS|OVERLAY|RADIANS|REPLACE|REVERSE|SETSEED|VAR_POP|BIT_OR|CENTER|CONCAT|FORMAT|HEIGHT|ISOPEN|LENGTH|NULLIF|PCLOSE|RADIUS|RANDOM|REPEAT|STDDEV|STRPOS|SUBSTR|TO_HEX|UNNEST|XMLAGG|ASCII|ATAN2|BTRIM|COUNT|EVERY|FLOOR|INSTR|LEAST|LOG10|LOWER|LTRIM|NTILE|POPEN|POWER|RIGHT|ROUND|RTRIM|SCALE|TRUNC|UPPER|WIDTH|ACOS|AREA|ASIN|ATAN|CASE|CBRT|CEIL|LEAD|LEFT|LPAD|RANK|RPAD|SIGN|SQRT|TRIM|USER|ABS|AGE|AVG|CHR|COS|COT|DIV|EXP|GCD|LAG|LCM|LOG|MAX|MD5|MIN|MOD|NOW|SIN|SUM|TAN|LN|PI)\\b(?=\\s*\\()",
+                    "name": "support.function.sql"
+                }
+            ]
+        },
+        "data-types": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:TXID_SNAPSHOT|PG_SNAPSHOT|SMALLSERIAL|TIMESTAMPTZ|BIGSERIAL|CHARACTER|REGCONFIG|TIMESTAMP|VARBINARY|INTERVAL|MACADDR8|REGCLASS|SMALLINT|TSVECTOR|BOOLEAN|DECIMAL|INTEGER|MACADDR|NUMERIC|POLYGON|SERIAL2|SERIAL4|SERIAL8|TSQUERY|VARCHAR|BIGINT|CIRCLE|DOUBLE|FLOAT4|FLOAT8|PG_LSN|SERIAL|ARRAY|BYTEA|JSONB|MONEY|POINT|BOOL|CHAR|CIDR|DATE|INET|INT2|INT4|INT8|JSON|LINE|LSEG|PATH|REAL|TEXT|TIME|UUID|BIT|BOX|INT|OID|XML)\\b",
+                    "name": "storage.type.sql"
+                }
+            ]
+        },
+        "constants": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:FALSE|NULL|TRUE)\\b",
+                    "name": "constant.language.sql"
+                }
+            ]
+        },
+        "keywords": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:CURRENT_TIMESTAMP|CURRENT_CATALOG|CURRENT_SCHEMA|AUTHORIZATION|CONFIGURATION|XMLATTRIBUTES|XMLNAMESPACES|CONCURRENTLY|CURRENT_DATE|CURRENT_ROLE|CURRENT_TIME|CURRENT_USER|MATERIALIZED|SERIALIZABLE|SESSION_USER|SUBSCRIPTION|XMLSERIALIZE|CONDITIONAL|INSENSITIVE|PUBLICATION|REFERENCING|TABLESAMPLE|UNCOMMITTED|UNENCRYPTED|CONNECTION|CONSTRAINT|CONVERSION|DEALLOCATE|DICTIONARY|ORDINALITY|PRIVILEGES|PROCEDURAL|REFERENCES|REPEATABLE|STANDALONE|STATISTICS|TABLESPACE|WHITESPACE|XMLELEMENT|AGGREGATE|ATTRIBUTE|CHARACTER|COLLATION|DELIMITER|ENCRYPTED|EXCLUDING|EXTENSION|FOLLOWING|FUNCTIONS|GENERATED|IMMUTABLE|INCLUDING|INCREMENT|INITIALLY|INTERSECT|ISOLATION|LEAKPROOF|PARTITION|PRECEDING|PRECISION|PROCEDURE|RECURSIVE|RETURNING|SAVEPOINT|SEQUENCES|STATEMENT|SUBSTRING|SYMMETRIC|TEMPORARY|TIMESTAMP|TRANSFORM|UNBOUNDED|VALIDATOR|XMLCONCAT|XMLEXISTS|XMLFOREST|COMMENTS|DATABASE|DEFAULTS|DISTINCT|DOCUMENT|ENCODING|EXTERNAL|FUNCTION|GREATEST|GROUPING|IDENTITY|IMPLICIT|INHERITS|INTERVAL|LANGUAGE|LOCATION|MAXVALUE|MINVALUE|NATIONAL|OPERATOR|OVERLAPS|PARALLEL|PASSWORD|POSITION|PREPARED|PRESERVE|REASSIGN|RELATIVE|RESTRICT|ROLLBACK|SECURITY|SEQUENCE|SMALLINT|SNAPSHOT|TEMPLATE|TRAILING|TRUNCATE|UNLISTEN|UNLOGGED|VALIDATE|VARIADIC|VOLATILE|XMLPARSE|XMLTABLE|ANALYSE|ANALYZE|BOOLEAN|CASCADE|CLUSTER|COLLATE|COMMENT|CURRENT|DECIMAL|DECLARE|DEFAULT|DEFINER|DISABLE|DISCARD|EXCLUDE|EXECUTE|EXPLAIN|EXTRACT|FOREIGN|FORWARD|GRANTED|HANDLER|INDEXES|INHERIT|INSTEAD|INTEGER|INVOKER|LATERAL|LEADING|MAPPING|NATURAL|NOTHING|NOTNULL|NUMERIC|OPTIONS|OVERLAY|PARTIAL|PASSING|PLACING|PREPARE|PRIMARY|PROGRAM|RECHECK|REFRESH|REINDEX|RELEASE|REPLACE|REPLICA|RESTART|RETURNS|ROUTINE|SCHEMAS|SESSION|SIMILAR|STORAGE|TRIGGER|TRUSTED|UESCAPE|UNKNOWN|VARCHAR|VARYING|VERBOSE|VERSION|WITHOUT|WRAPPER|XMLROOT|BIGINT|BINARY|CALLED|COLUMN|CREATE|CURSOR|DELETE|DOMAIN|DOUBLE|ENABLE|ESCAPE|EXCEPT|EXISTS|FAMILY|FILTER|FREEZE|GLOBAL|GROUPS|HAVING|HEADER|IMPORT|INLINE|INSERT|ISNULL|LISTEN|LOCKED|LOGGED|METHOD|MINUTE|NOTIFY|NOWAIT|NULLIF|OBJECT|OFFSET|OPTION|OTHERS|PARSER|POLICY|RENAME|REVOKE|ROLLUP|SCHEMA|SCROLL|SEARCH|SECOND|SELECT|SERVER|SIMPLE|STABLE|STDOUT|STRICT|SYSTEM|TABLES|UNIQUE|UPDATE|VACUUM|VALUES|WINDOW|WITHIN|ADMIN|ARRAY|CACHE|CHECK|CLASS|CROSS|CYCLE|EVENT|FETCH|FIRST|FLOAT|FORCE|GRANT|GROUP|ILIKE|INDEX|INNER|INOUT|INPUT|LABEL|LARGE|LEAST|LEVEL|LIMIT|LOCAL|MONTH|NAMES|NCHAR|NULLS|ORDER|OUTER|OWNED|OWNER|PLANS|PRIOR|QUOTE|RANGE|RESET|RIGHT|SETOF|SHARE|START|STDIN|STRIP|SYSID|TABLE|TREAT|TYPES|UNION|UNTIL|USING|VALID|VALUE|VIEWS|WHERE|WRITE|XMLPI|BOTH|CAST|COPY|COST|CUBE|DATA|DESC|DROP|EACH|ENUM|FROM|FULL|HOLD|INTO|JOIN|LAST|LEFT|LIKE|LOAD|LOCK|MODE|MOVE|NAME|NEXT|NONE|OIDS|ONLY|OVER|READ|REAL|ROLE|ROWS|RULE|SETS|SHOW|SKIP|SOME|TEMP|TEXT|THEN|TIES|TIME|TRIM|TYPE|USER|VIEW|WHEN|WITH|WORK|YEAR|ZONE|ADD|ASC|BIT|DEC|FOR|INT|KEY|NEW|NOT|OFF|OLD|OUT|REF|ROW|SET|SQL|XML|YES|BY|DO|IF|IN|IS|NO|OF|ON|OR|TO)\\b",
+                    "name": "keyword.other.sql"
+                }
+            ]
+        },
+        "as-alias": {
+            "patterns": [
+                {
+                    "match": "(?i)\\bAS\\b",
+                    "name": "keyword.other.alias.sql"
+                }
+            ]
+        },
+        "parameters": {
+            "patterns": [
+                {
+                    "match": "(?::)[A-Za-z_][A-Za-z0-9_]*",
+                    "name": "variable.parameter.sql"
+                }
+            ]
+        },
+        "variables": {
+            "patterns": [
+                {
+                    "match": "(?::[a-zA-Z_]\\w*)",
+                    "name": "variable.other.sql"
+                }
+            ]
+        },
+        "strings": {
+            "patterns": [
+                {
+                    "name": "string.quoted.other.dollar.sql",
+                    "begin": "(\\$[A-Za-z0-9_]*\\$)",
+                    "end": "\\1"
+                },
+                {
+                    "match": "(?:\"[^\"\\\\]*(?:\\\\.[^\"\\\\]*)*\")+",
+                    "name": "string.quoted.double.sql"
+                },
+                {
+                    "match": "(?:'[^'\\\\]*(?:\\\\.[^'\\\\]*)*')+",
+                    "name": "string.quoted.single.sql"
+                },
+                {
+                    "match": "(?:[Ee]|)(?:'[^'\\\\]*(?:\\\\.[^'\\\\]*)*')",
+                    "name": "string.quoted.single.sql"
+                },
+                {
+                    "match": "(?:[Uu][&&]|)(?:'[^'\\\\]*(?:\\\\.[^'\\\\]*)*')",
+                    "name": "string.quoted.single.sql"
+                }
+            ]
+        },
+        "operators": {
+            "patterns": [
+                {
+                    "match": "(?:->>|!~\\*|@@@|#>>|->|::|!=|!~|\\?&|\\?\\||@@|@>|#>|<@|<=|<>|>=|\\|\\||~\\*|-|\\?|\\*|/|\\+|<|=|>|~)",
+                    "name": "keyword.operator.sql"
+                }
+            ]
+        },
+        "delimiters": {
+            "patterns": [
+                {
+                    "match": ";",
+                    "name": "punctuation.terminator.statement.sql"
+                },
+                {
+                    "match": ",",
+                    "name": "punctuation.separator.comma.sql"
+                },
+                {
+                    "match": "\\(|\\[",
+                    "name": "punctuation.section.parens.begin.sql"
+                },
+                {
+                    "match": "\\)|\\]",
+                    "name": "punctuation.section.parens.end.sql"
+                }
+            ]
+        }
+    }
+}

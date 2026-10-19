@@ -1,5 +1,19 @@
 # Changelog
 
+## [Unreleased]
+
+### 新功能
+
+#### 12 方言 TextMate 语法高亮
+
+为全部已注册语言 ID 生成方言感知的语法高亮，打开文件即生效（渲染进程 tokenize，无需激活插件、不新增 activationEvents）。
+
+- **生成管线**：新增 `src/grammar/`（`grammarBuilder.ts` + `dialectGrammarConfigs.ts`）与 `scripts/generate-grammars.ts`，直接消费各方言 formatter 的 `tokenizerOptions`（关键字分类、引号规则、注释配置），零手工清单、零数据漂移（golden 测试保证与生成器输出一致）
+- **生成物**：`syntaxes/*.tmLanguage.json` × 12 入库，`contributes.grammars` 注册；`generate-grammars` 接入 `vscode:prepublish` / `esbuild` 脚本链
+- **覆盖范围**：关键字（子句/集合/JOIN 短语优先）、数据类型、内建函数（后跟 `(` 才着色，避免列名误报）、TRUE/FALSE/NULL 常量、数字（含十六进制/科学计数）、注释、字符串（PG 美元引号 `$$…$$` / BigQuery 三引号 / Oracle `q'…'` 等方言特有形式均为跨行 begin/end 结构）、变量（`@var` `${var}` `:bind` `&sub`）、参数占位符（`?` `:name` `@param` `:1`）、操作符（含 `<=>` `::` `->` 等方言扩展）、分隔符
+- **覆盖内置 `sql` 语法**：`.sql` 文件由本插件方言语法着色（此前为 VSCode 内置语法；如需回退可删除 `contributes.grammars` 中 `sql` 条目）
+- **测试**：新增 `src/test/grammar.test.ts`——结构/一致性/golden 校验 + 用 VSCode 同款引擎（vscode-textmate + vscode-oniguruma，仅 devDependencies）做 12 方言真实 tokenize 冒烟（规则顺序、词边界、跨行注释/字符串、方言特有引号与占位符）
+
 ## [2.34.0] - 2026-07-30
 
 ### 新功能
