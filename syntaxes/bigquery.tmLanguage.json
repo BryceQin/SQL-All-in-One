@@ -1,0 +1,269 @@
+{
+    "name": "BigQuery",
+    "scopeName": "source.sql.bigquery",
+    "patterns": [
+        {
+            "include": "#block-comment"
+        },
+        {
+            "include": "#line-comment"
+        },
+        {
+            "include": "#quoted-identifier"
+        },
+        {
+            "include": "#number"
+        },
+        {
+            "include": "#keyword-phrases"
+        },
+        {
+            "include": "#case-control"
+        },
+        {
+            "include": "#logical-operators"
+        },
+        {
+            "include": "#clauses"
+        },
+        {
+            "include": "#select"
+        },
+        {
+            "include": "#set-operations"
+        },
+        {
+            "include": "#joins"
+        },
+        {
+            "include": "#functions"
+        },
+        {
+            "include": "#data-types"
+        },
+        {
+            "include": "#constants"
+        },
+        {
+            "include": "#keywords"
+        },
+        {
+            "include": "#as-alias"
+        },
+        {
+            "include": "#parameters"
+        },
+        {
+            "include": "#variables"
+        },
+        {
+            "include": "#strings"
+        },
+        {
+            "include": "#operators"
+        },
+        {
+            "include": "#delimiters"
+        }
+    ],
+    "repository": {
+        "block-comment": {
+            "patterns": [
+                {
+                    "name": "comment.block.sql",
+                    "begin": "/\\*",
+                    "end": "\\*/"
+                }
+            ]
+        },
+        "line-comment": {
+            "patterns": [
+                {
+                    "match": "--.*",
+                    "name": "comment.line.double-dash.sql"
+                },
+                {
+                    "match": "#.*",
+                    "name": "comment.line.number-sign.sql"
+                }
+            ]
+        },
+        "quoted-identifier": {
+            "patterns": [
+                {
+                    "match": "(?:`[^`]*`)+",
+                    "name": "string.quoted.other.backtick.sql"
+                }
+            ]
+        },
+        "number": {
+            "patterns": [
+                {
+                    "match": "(?i)(?<![\\w.])(?:0x[0-9a-fA-F]+|0b[01]+|[0-9]*\\.[0-9]+|[0-9]+(?:\\.[0-9]*)?)(?:[eE][-+]?[0-9]+(?:\\.[0-9]+)?)?(?!\\w)",
+                    "name": "constant.numeric.sql"
+                }
+            ]
+        },
+        "keyword-phrases": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:RANGE\\s+BETWEEN|ROWS\\s+BETWEEN)\\b",
+                    "name": "keyword.other.sql"
+                }
+            ]
+        },
+        "case-control": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:BETWEEN|CASE|ELSE|THEN|WHEN|END)\\b",
+                    "name": "keyword.control.sql"
+                }
+            ]
+        },
+        "logical-operators": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:AND|OR)\\b",
+                    "name": "keyword.operator.logical.sql"
+                }
+            ]
+        },
+        "clauses": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:CREATE\\s+OR\\s+REPLACE\\s+FUNCTION\\s+IF\\s+NOT\\s+EXISTS|CREATE\\s+MATERIALIZED\\s+VIEW\\s+IF\\s+NOT\\s+EXISTS|CREATE\\s+OR\\s+REPLACE\\s+TABLE\\s+IF\\s+NOT\\s+EXISTS|CREATE\\s+EXTERNAL\\s+TABLE\\s+IF\\s+NOT\\s+EXISTS|CREATE\\s+FUNCTION\\s+IF\\s+NOT\\s+EXISTS|CREATE\\s+SCHEMA\\s+IF\\s+NOT\\s+EXISTS|CREATE\\s+OR\\s+REPLACE\\s+FUNCTION|CREATE\\s+TABLE\\s+IF\\s+NOT\\s+EXISTS|CREATE\\s+MATERIALIZED\\s+VIEW|CREATE\\s+OR\\s+REPLACE\\s+TABLE|CREATE\\s+EXTERNAL\\s+TABLE|FOR\\s+SYSTEM_TIME\\s+AS\\s+OF|WHEN\\s+NOT\\s+MATCHED\\s+THEN|DROP\\s+TABLE\\s+IF\\s+EXISTS|WHEN\\s+MATCHED\\s+THEN|WHEN\\s+NOT\\s+MATCHED|CREATE\\s+FUNCTION|TRUNCATE\\s+TABLE|CREATE\\s+SCHEMA|INSERT\\s+VALUES|ALTER\\s+SCHEMA|CREATE\\s+TABLE|PARTITION\\s+BY|WHEN\\s+MATCHED|ALTER\\s+TABLE|EXPORT\\s+DATA|INSERT\\s+INTO|TABLESAMPLE|DROP\\s+TABLE|MERGE\\s+INTO|UPDATE\\s+SET|LOAD\\s+DATA|GROUP\\s+BY|ORDER\\s+BY|TRUNCATE|OPTIONS|QUALIFY|UNPIVOT|CREATE|HAVING|INSERT|VALUES|WINDOW|ALTER|LIMIT|PIVOT|WHERE|DROP|FROM|WITH|SET)\\b",
+                    "name": "keyword.other.sql"
+                }
+            ]
+        },
+        "select": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:SELECT\\s+DISTINCT|SELECT\\s+ALL|SELECT)\\b",
+                    "name": "keyword.other.sql"
+                }
+            ]
+        },
+        "set-operations": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:INTERSECT\\s+DISTINCT|EXCEPT\\s+DISTINCT|UNION\\s+DISTINCT|INTERSECT\\s+ALL|EXCEPT\\s+ALL|INTERSECT|UNION\\s+ALL|EXCEPT|UNION)\\b",
+                    "name": "keyword.other.sql"
+                }
+            ]
+        },
+        "joins": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:RIGHT\\s+OUTER\\s+JOIN|FULL\\s+OUTER\\s+JOIN|LEFT\\s+OUTER\\s+JOIN|CROSS\\s+JOIN|INNER\\s+JOIN|RIGHT\\s+JOIN|FULL\\s+JOIN|LEFT\\s+JOIN|JOIN)\\b",
+                    "name": "keyword.other.sql"
+                }
+            ]
+        },
+        "functions": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:SAFE_CONVERT_BYTES_TO_STRING|JSON_EXTRACT_STRING_ARRAY|GENERATE_TIMESTAMP_ARRAY|ST_GEOGPOINTFROMGEOHASH|NORMALIZE_AND_CASEFOLD|ST_BUFFERWITHTOLERANCE|ST_MAKEPOLYGONORIENTED|APPROX_COUNT_DISTINCT|CODE_POINTS_TO_STRING|CODE_POINTS_TO_BYTES|DATE_FROM_UNIX_DATE|GENERATE_DATE_ARRAY|JSON_EXTRACT_SCALAR|JSON_EXTRACT_ARRAY|REGEXP_EXTRACT_ALL|ST_GEOGFROMGEOJSON|CURRENT_TIMESTAMP|HLL_COUNT_EXTRACT|TIMESTAMP_SECONDS|APPROX_QUANTILES|APPROX_TOP_COUNT|ARRAY_CONCAT_AGG|CHARACTER_LENGTH|CURRENT_DATETIME|FORMAT_TIMESTAMP|JSON_QUERY_ARRAY|JSON_STRIP_NULLS|JSON_VALUE_ARRAY|PARSE_BIGNUMERIC|ST_CLUSTERDBSCAN|ST_INTERIORRINGS|ST_INTERSECTSBOX|ST_NUMGEOMETRIES|TIMESTAMP_MICROS|TIMESTAMP_MILLIS|ARRAY_TO_STRING|CONTAINS_SUBSTR|FORMAT_DATETIME|HLL_COUNT_MERGE|PARSE_TIMESTAMP|PERCENTILE_CONT|PERCENTILE_DISC|REGEXP_CONTAINS|ST_CENTROID_AGG|ST_CLOSESTPOINT|ST_EXTERIORRING|ST_GEOGFROMTEXT|ST_GEOMETRYTYPE|ST_INTERSECTION|ST_ISCOLLECTION|TIMESTAMP_TRUNC|APPROX_TOP_SUM|DATETIME_TRUNC|GENERATE_ARRAY|HLL_COUNT_INIT|PARSE_DATETIME|REGEXP_EXTRACT|REGEXP_REPLACE|ST_GEOGFROMWKB|ST_MAKEPOLYGON|ST_MAXDISTANCE|TIMESTAMP_DIFF|TO_CODE_POINTS|TO_JSON_STRING|ARRAY_REVERSE|DATETIME_DIFF|PARSE_NUMERIC|REGEXP_SUBSTR|SAFE_MULTIPLY|SAFE_SUBTRACT|ST_CONVEXHULL|ST_DIFFERENCE|ST_INTERSECTS|ST_SNAPTOGRID|ST_UNARYUNION|TIMESTAMP_ADD|TIMESTAMP_SUB|ARRAY_CONCAT|ARRAY_LENGTH|CURRENT_DATE|CURRENT_TIME|DATETIME_ADD|DATETIME_SUB|JSON_EXTRACT|OCTET_LENGTH|PERCENT_RANK|RANGE_BUCKET|REGEXP_INSTR|SAFE_ORDINAL|ST_ASGEOJSON|ST_COVEREDBY|ST_DIMENSION|ST_GEOGPOINT|ST_NUMPOINTS|ST_PERIMETER|ST_UNION_AGG|UNIX_SECONDS|ARRAY_SLICE|BEGINS_WITH|BYTE_LENGTH|CHAR_LENGTH|FIRST_VALUE|FORMAT_DATE|FORMAT_TIME|FROM_BASE32|FROM_BASE64|IEEE_DIVIDE|JSON_OBJECT|LAX_FLOAT64|LOGICAL_AND|SAFE_DIVIDE|SAFE_NEGATE|SAFE_OFFSET|ST_ASBINARY|ST_BOUNDARY|ST_CENTROID|ST_CONTAINS|ST_DISJOINT|ST_DISTANCE|ST_ENDPOINT|ST_GEOGFROM|ST_MAKELINE|ST_SIMPLIFY|STARTS_WITH|STDDEV_SAMP|UNIX_MICROS|UNIX_MILLIS|BIGNUMERIC|COVAR_SAMP|DATE_TRUNC|DENSE_RANK|JSON_ARRAY|JSON_QUERY|JSON_VALUE|LAST_VALUE|LAX_STRING|LOGICAL_OR|PARSE_DATE|PARSE_JSON|PARSE_TIME|ROW_NUMBER|ST_DWITHIN|ST_GEOHASH|ST_ISEMPTY|ST_NPOINTS|ST_TOUCHES|STARTPOINT|STDDEV_POP|STRING_AGG|TIME_TRUNC|ANY_VALUE|ARRAY_AGG|COVAR_POP|CUME_DIST|DATE_DIFF|ENDS_WITH|JSON_TYPE|LAX_INT64|NORMALIZE|NTH_VALUE|SAFE_CAST|ST_ASTEXT|ST_BUFFER|ST_COVERS|ST_EQUALS|ST_LENGTH|ST_POINTN|ST_WITHIN|SUBSTRING|TIME_DIFF|TIMESTAMP|TO_BASE32|TO_BASE64|TRANSLATE|UNIX_DATE|CONTAINS|DATE_ADD|DATE_SUB|DATETIME|FROM_HEX|GREATEST|JSON_SET|LAST_DAY|LAX_BOOL|SAFE_ADD|ST_TOKML|ST_UNION|TIME_ADD|TIME_SUB|VAR_SAMP|VARIANCE|BIT_AND|BIT_XOR|CEILING|COLLATE|COUNTIF|DEGREES|EXTRACT|FLOAT64|INITCAP|NUMERIC|ORDINAL|RADIANS|REPLACE|REVERSE|SOUNDEX|ST_AREA|ST_DUMP|TO_JSON|UNICODE|VAR_POP|BIT_OR|CONCAT|FORMAT|IS_INF|IS_NAN|LENGTH|OFFSET|REPEAT|STDDEV|STRING|STRPOS|SUBSTR|TO_HEX|ACOSH|ARRAY|ASCII|ASINH|ATAN2|ATANH|COUNT|FLOOR|INSTR|INT64|LEAST|LOG10|LOWER|LTRIM|NTILE|POWER|RIGHT|ROUND|RTRIM|SPLIT|TRUNC|UPPER|ACOS|ASIN|ATAN|BOOL|CAST|CEIL|COSH|COTH|CSCH|DATE|LEAD|LEFT|LIKE|LPAD|RAND|RANK|RPAD|SECH|SIGN|SINH|SQRT|ST_X|ST_Y|TANH|TIME|TRIM|ABS|AVG|CHR|COS|COT|CSC|EXP|LAG|LOG|MAX|MIN|MOD|POW|SEC|SIN|SUM|TAN|LN|PI)\\b(?=\\s*\\()",
+                    "name": "support.function.sql"
+                }
+            ]
+        },
+        "data-types": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:BIGNUMERIC|GEOGRAPHY|TIMESTAMP|DATETIME|BOOLEAN|FLOAT64|INTEGER|NUMERIC|STRING|STRUCT|ARRAY|BYTES|INT64|BOOL|DATE|JSON|TIME)\\b",
+                    "name": "storage.type.sql"
+                }
+            ]
+        },
+        "constants": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:FALSE|NULL|TRUE)\\b",
+                    "name": "constant.language.sql"
+                }
+            ]
+        },
+        "keywords": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:ASSERT_ROWS_MODIFIED|CURRENT_TIMESTAMP|CURRENT_DATETIME|DETERMINISTIC|CURRENT_DATE|CURRENT_TIME|MATERIALIZED|SYSTEM_TIME|TABLESAMPLE|INTERLEAVE|PRIVILEGES|REFERENCES|FOLLOWING|IMMUTABLE|INTERSECT|OVERWRITE|PARTITION|PRECEDING|RECURSIVE|TEMPORARY|TRANSFORM|UNBOUNDED|CONTAINS|DESCRIBE|DISTINCT|EXTERNAL|FUNCTION|GENERATE|GRANTEES|GROUPING|RESTRICT|TRUNCATE|VOLATILE|BETWEEN|COLLATE|CURRENT|DEFAULT|DESTROY|EXCLUDE|EXPLAIN|EXTRACT|FOREIGN|INCLUDE|LATERAL|NATURAL|OPTIONS|PRIMARY|QUALIFY|REPLACE|RESPECT|RETURNS|UNPIVOT|ASSERT|COLUMN|CREATE|DEFINE|ESCAPE|EXCEPT|EXISTS|EXPORT|FILTER|GROUPS|HAVING|HIDDEN|IGNORE|IMPORT|INSERT|LOOKUP|POLICY|RENAME|RETURN|REVOKE|ROLLUP|SELECT|SIMPLE|STORED|STRUCT|SYSTEM|UNIQUE|UNNEST|UPDATE|VALUES|WINDOW|WITHIN|ARRAY|CROSS|FETCH|FILES|GRANT|GROUP|INNER|INOUT|LIMIT|MERGE|NULLS|ORDER|OUTER|PIVOT|RANGE|RIGHT|TABLE|TREAT|UNION|USING|WHERE|CASE|CAST|CUBE|DESC|DROP|ELSE|ENUM|FROM|FULL|INTO|JOIN|LEFT|LIKE|LOAD|OVER|ROWS|SHOW|SOME|TEMP|THEN|WHEN|WITH|ZONE|ALL|AND|ANY|ASC|END|FOR|KEY|NEW|NOT|ROW|RUN|SET|SQL|AS|AT|BY|IF|IN|IS|OF|ON|OR|TO)\\b",
+                    "name": "keyword.other.sql"
+                }
+            ]
+        },
+        "as-alias": {
+            "patterns": [
+                {
+                    "match": "(?i)\\bAS\\b",
+                    "name": "keyword.other.alias.sql"
+                }
+            ]
+        },
+        "parameters": {
+            "patterns": [
+                {
+                    "match": "(?:@)[A-Za-z_][A-Za-z0-9_]*",
+                    "name": "variable.parameter.sql"
+                }
+            ]
+        },
+        "variables": {
+            "patterns": [
+                {
+                    "match": "(?:@[A-Za-z_][A-Za-z0-9_]*)",
+                    "name": "variable.other.sql"
+                }
+            ]
+        },
+        "strings": {
+            "patterns": [
+                {
+                    "name": "string.quoted.triple.single.sql",
+                    "begin": "'''",
+                    "end": "'''"
+                },
+                {
+                    "match": "(?:\"[^\"\\\\]*(?:\\\\.[^\"\\\\]*)*\")",
+                    "name": "string.quoted.double.sql"
+                },
+                {
+                    "match": "(?:'[^'\\\\]*(?:\\\\.[^'\\\\]*)*')",
+                    "name": "string.quoted.single.sql"
+                },
+                {
+                    "match": "r[bf]?'([^']*)'",
+                    "name": "string.quoted.single.sql"
+                }
+            ]
+        },
+        "operators": {
+            "patterns": [
+                {
+                    "match": "(?:<=>|!=|<<|<=|<>|==|>=|>>|\\|\\||-|!|\\*|/|&|%|\\^|\\+|<|=|>|\\||~)",
+                    "name": "keyword.operator.sql"
+                }
+            ]
+        },
+        "delimiters": {
+            "patterns": [
+                {
+                    "match": ";",
+                    "name": "punctuation.terminator.statement.sql"
+                },
+                {
+                    "match": ",",
+                    "name": "punctuation.separator.comma.sql"
+                },
+                {
+                    "match": "\\(|\\[",
+                    "name": "punctuation.section.parens.begin.sql"
+                },
+                {
+                    "match": "\\)|\\]",
+                    "name": "punctuation.section.parens.end.sql"
+                }
+            ]
+        }
+    }
+}

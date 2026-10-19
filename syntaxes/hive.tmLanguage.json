@@ -1,0 +1,245 @@
+{
+    "name": "HiveQL",
+    "scopeName": "source.sql.hive",
+    "patterns": [
+        {
+            "include": "#block-comment"
+        },
+        {
+            "include": "#line-comment"
+        },
+        {
+            "include": "#quoted-identifier"
+        },
+        {
+            "include": "#number"
+        },
+        {
+            "include": "#keyword-phrases"
+        },
+        {
+            "include": "#case-control"
+        },
+        {
+            "include": "#logical-operators"
+        },
+        {
+            "include": "#clauses"
+        },
+        {
+            "include": "#select"
+        },
+        {
+            "include": "#set-operations"
+        },
+        {
+            "include": "#joins"
+        },
+        {
+            "include": "#functions"
+        },
+        {
+            "include": "#data-types"
+        },
+        {
+            "include": "#constants"
+        },
+        {
+            "include": "#keywords"
+        },
+        {
+            "include": "#as-alias"
+        },
+        {
+            "include": "#variables"
+        },
+        {
+            "include": "#strings"
+        },
+        {
+            "include": "#operators"
+        },
+        {
+            "include": "#delimiters"
+        }
+    ],
+    "repository": {
+        "block-comment": {
+            "patterns": [
+                {
+                    "name": "comment.block.sql",
+                    "begin": "/\\*",
+                    "end": "\\*/"
+                }
+            ]
+        },
+        "line-comment": {
+            "patterns": [
+                {
+                    "match": "--.*",
+                    "name": "comment.line.double-dash.sql"
+                }
+            ]
+        },
+        "quoted-identifier": {
+            "patterns": [
+                {
+                    "match": "(?:`[^`]*`)+",
+                    "name": "string.quoted.other.backtick.sql"
+                }
+            ]
+        },
+        "number": {
+            "patterns": [
+                {
+                    "match": "(?i)(?<![\\w.])(?:0x[0-9a-fA-F]+|0b[01]+|[0-9]*\\.[0-9]+|[0-9]+(?:\\.[0-9]*)?)(?:[eE][-+]?[0-9]+(?:\\.[0-9]+)?)?(?!\\w)",
+                    "name": "constant.numeric.sql"
+                }
+            ]
+        },
+        "keyword-phrases": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:RANGE\\s+BETWEEN|ROWS\\s+BETWEEN)\\b",
+                    "name": "keyword.other.sql"
+                }
+            ]
+        },
+        "case-control": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:BETWEEN|CASE|ELSE|THEN|WHEN|END)\\b",
+                    "name": "keyword.control.sql"
+                }
+            ]
+        },
+        "logical-operators": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:AND|OR)\\b",
+                    "name": "keyword.operator.logical.sql"
+                }
+            ]
+        },
+        "clauses": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:CREATE\\s+TEMPORARY\\s+EXTERNAL\\s+TABLE\\s+IF\\s+NOT\\s+EXISTS|CREATE\\s+MATERIALIZED\\s+VIEW\\s+IF\\s+NOT\\s+EXISTS|CREATE\\s+TEMPORARY\\s+TABLE\\s+IF\\s+NOT\\s+EXISTS|CREATE\\s+EXTERNAL\\s+TABLE\\s+IF\\s+NOT\\s+EXISTS|INSERT\\s+OVERWRITE\\s+LOCAL\\s+DIRECTORY|CREATE\\s+TEMPORARY\\s+EXTERNAL\\s+TABLE|CREATE\\s+TABLE\\s+IF\\s+NOT\\s+EXISTS|INSERT\\s+OVERWRITE\\s+DIRECTORY|CREATE\\s+VIEW\\s+IF\\s+NOT\\s+EXISTS|CREATE\\s+MATERIALIZED\\s+VIEW|CREATE\\s+TEMPORARY\\s+TABLE|LOAD\\s+DATA\\s+LOCAL\\s+INPATH|CREATE\\s+EXTERNAL\\s+TABLE|WHEN\\s+NOT\\s+MATCHED\\s+THEN|DROP\\s+TABLE\\s+IF\\s+EXISTS|OVERWRITE\\s+INTO\\s+TABLE|INSERT\\s+INTO\\s+TABLE|WHEN\\s+MATCHED\\s+THEN|LOAD\\s+DATA\\s+INPATH|WHEN\\s+NOT\\s+MATCHED|TRUNCATE\\s+TABLE|DISTRIBUTE\\s+BY|INSERT\\s+VALUES|CREATE\\s+TABLE|LATERAL\\s+VIEW|PARTITION\\s+BY|WHEN\\s+MATCHED|ALTER\\s+TABLE|CREATE\\s+VIEW|DELETE\\s+FROM|INSERT\\s+INTO|CLUSTER\\s+BY|DROP\\s+TABLE|INTO\\s+TABLE|MERGE\\s+INTO|ROW\\s+FORMAT|UPDATE\\s+SET|RENAME\\s+TO|STORED\\s+AS|STORED\\s+BY|DESCRIBE|GROUP\\s+BY|ORDER\\s+BY|TRUNCATE|SORT\\s+BY|CREATE|HAVING|INSERT|UPDATE|VALUES|WINDOW|ALTER|FETCH|LIMIT|WHERE|DROP|FROM|SHOW|WITH|SET|USE)\\b",
+                    "name": "keyword.other.sql"
+                }
+            ]
+        },
+        "select": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:SELECT\\s+DISTINCT|SELECT\\s+ALL|SELECT)\\b",
+                    "name": "keyword.other.sql"
+                }
+            ]
+        },
+        "set-operations": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:UNION\\s+DISTINCT|UNION\\s+ALL|UNION)\\b",
+                    "name": "keyword.other.sql"
+                }
+            ]
+        },
+        "joins": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:RIGHT\\s+OUTER\\s+JOIN|FULL\\s+OUTER\\s+JOIN|LEFT\\s+OUTER\\s+JOIN|LEFT\\s+SEMI\\s+JOIN|CROSS\\s+JOIN|INNER\\s+JOIN|RIGHT\\s+JOIN|FULL\\s+JOIN|LEFT\\s+JOIN|JOIN)\\b",
+                    "name": "keyword.other.sql"
+                }
+            ]
+        },
+        "functions": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:FROM_UTC_TIMESTAMP|SHIFTRIGHTUNSIGNED|HISTOGRAM_NUMERIC|MASK_SHOW_FIRST_N|PERCENTILE_APPROX|CHARACTER_LENGTH|CURRENT_DATABASE|MASK_SHOW_LAST_N|TO_UTC_TIMESTAMP|GET_JSON_OBJECT|PARSE_URL_TUPLE|ARRAY_CONTAINS|CONTEXT_NGRAMS|LOGGED_IN_USER|MONTHS_BETWEEN|REGEXP_EXTRACT|REGEXP_REPLACE|REGR_INTERCEPT|UNIX_TIMESTAMP|FORMAT_NUMBER|FROM_UNIXTIME|SURROGATE_KEY|COLLECT_LIST|CURRENT_USER|MASK_FIRST_N|OCTET_LENGTH|PERCENT_RANK|WIDTH_BUCKET|AES_DECRYPT|AES_ENCRYPT|ASSERT_TRUE|COLLECT_SET|DATE_FORMAT|FIND_IN_SET|FIRST_VALUE|JAVA_METHOD|LEVENSHTEIN|MASK_LAST_N|STDDEV_SAMP|ADD_MONTHS|COVAR_SAMP|DAYOFMONTH|DENSE_RANK|JSON_TUPLE|LAST_VALUE|MAP_VALUES|PERCENTILE|POSEXPLODE|REGR_COUNT|REGR_SLOPE|ROW_NUMBER|SHIFTRIGHT|SORT_ARRAY|STDDEV_POP|STR_TO_MAP|WEEKOFYEAR|CONCAT_WS|COVAR_POP|CUME_DIST|DAYOFYEAR|FACTORIAL|ISNOTNULL|MASK_HASH|PARSE_URL|REGR_AVGX|REGR_AVGY|SENTENCES|SHIFTLEFT|SUBSTRING|TIMESTAMP|TRANSLATE|COALESCE|DATE_ADD|DATE_SUB|DATEDIFF|GREATEST|LAST_DAY|MAP_KEYS|NEGATIVE|NEXT_DAY|POSITIVE|REGR_SXX|REGR_SXY|REGR_SYY|UNBASE64|VAR_SAMP|VARIANCE|CEILING|DAYNAME|DEGREES|EXPLODE|EXTRACT|IN_FILE|INITCAP|QUARTER|RADIANS|REFLECT|REGR_R2|REVERSE|SOUNDEX|TO_DATE|VAR_POP|VERSION|BASE64|BINARY|BROUND|CONCAT|DECODE|ENCODE|INLINE|ISNULL|LENGTH|LOCATE|MINUTE|NGRAMS|NULLIF|PRINTF|REPEAT|SECOND|SUBSTR|ASCII|COUNT|CRC32|FIELD|FLOOR|INSTR|LCASE|LEAST|LOG10|LOWER|LTRIM|MONTH|NTILE|POWER|QUOTE|ROUND|RTRIM|SPACE|SPLIT|STACK|TRUNC|UCASE|UNHEX|UPPER|ACOS|ASIN|ATAN|CAST|CBRT|CEIL|CONV|CORR|DATE|HASH|HOUR|LEAD|LOG2|LPAD|MASK|PMOD|RAND|RANK|RPAD|SHA1|SHA2|SIGN|SIZE|SQRT|TRIM|YEAR|ABS|AVG|BIN|CHR|COS|DAY|ELT|EXP|HEX|LAG|LOG|MAX|MD5|MIN|NVL|POW|SHA|SIN|SUM|TAN|IF|LN|PI)\\b(?=\\s*\\()",
+                    "name": "support.function.sql"
+                }
+            ]
+        },
+        "data-types": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:PRECISION|TIMESTAMP|INTERVAL|SMALLINT|BOOLEAN|DECIMAL|INTEGER|NUMERIC|TINYINT|VARCHAR|BIGINT|BINARY|DOUBLE|STRING|STRUCT|ARRAY|FLOAT|CHAR|DATE|INT|MAP)\\b",
+                    "name": "storage.type.sql"
+                }
+            ]
+        },
+        "constants": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:FALSE|NULL|TRUE)\\b",
+                    "name": "constant.language.sql"
+                }
+            ]
+        },
+        "keywords": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:CURRENT_TIMESTAMP|SERDEPROPERTIES|AUTHORIZATION|CLUSTERSTATUS|IDXPROPERTIES|SHOW_DATABASE|TBLPROPERTIES|VECTORIZATION|CURRENT_DATE|DBPROPERTIES|HOLD_DDLTIME|MATERIALIZED|OUTPUTDRIVER|OUTPUTFORMAT|RECORDREADER|RECORDWRITER|SEQUENCEFILE|TRANSACTIONS|UTC_TMESTAMP|COMPACTIONS|CONCATENATE|DIRECTORIES|INPUTDRIVER|INPUTFORMAT|PARTIALSCAN|PARTITIONED|REPLICATION|STREAMTABLE|TABLESAMPLE|TRANSACTION|AUTOCOMMIT|COLLECTION|CONSTRAINT|DEPENDENCY|DISTRIBUTE|EXPRESSION|FILEFORMAT|NOVALIDATE|PARTITIONS|PRINCIPALS|PROTECTION|REFERENCES|STATISTICS|TERMINATED|UNIQUEJOIN|VALUE_TYPE|CLUSTERED|DATABASES|DAYOFWEEK|DELIMITED|DIRECTORY|ELEM_TYPE|EXCLUSIVE|FOLLOWING|FORMATTED|FUNCTIONS|INTERSECT|ISOLATION|OVERWRITE|PARTITION|PRECEDING|PROCEDURE|TEMPORARY|TRANSFORM|UNARCHIVE|UNBOUNDED|UNIONTYPE|CONTINUE|DATABASE|DATETIME|DEFERRED|DESCRIBE|DISTINCT|EXCHANGE|EXTENDED|EXTERNAL|FUNCTION|GROUPING|JSONFILE|KEY_TYPE|LOCATION|METADATA|OPERATOR|PRESERVE|READONLY|RESTRICT|ROLLBACK|SNAPSHOT|TEXTFILE|TRUNCATE|UNSIGNED|VALIDATE|ANALYZE|ARCHIVE|BETWEEN|BUCKETS|CASCADE|CLUSTER|COLUMNS|COMMENT|COMPACT|COMPUTE|CURRENT|DEFINED|DISABLE|ESCAPED|EXPLAIN|EXTRACT|FOREIGN|INDEXES|LATERAL|LOGICAL|MAPJOIN|MINUTES|NO_DROP|OFFLINE|PARQUET|PERCENT|PRIMARY|QUARTER|REBUILD|REPLACE|REWRITE|SCHEMAS|SECONDS|SUMMARY|TINYINT|TRIGGER|BEFORE|BUCKET|CHANGE|COLUMN|COMMIT|CREATE|CURSOR|DELETE|DETAIL|ENABLE|EXISTS|EXPORT|FIELDS|FORMAT|HAVING|IGNORE|IMPORT|INPATH|INSERT|MINUTE|MONTHS|NORELY|NOSCAN|OFFSET|OPTION|PRETTY|RCFILE|REDUCE|REGEXP|RELOAD|RENAME|REPAIR|REVOKE|ROLLUP|SCHEMA|SECOND|SELECT|SERVER|SHARED|SKEWED|SORTED|STORED|TABLES|UNLOCK|UPDATE|VALUES|WINDOW|ABORT|ADMIN|AFTER|ALTER|CACHE|CROSS|FETCH|FIRST|FLOOR|GRANT|GROUP|HOURS|INDEX|INNER|ITEMS|LEVEL|LIMIT|LINES|LOCAL|LOCKS|MACRO|MINUS|MONTH|NULLS|ORDER|OUTER|OWNER|PURGE|RANGE|READS|RIGHT|RLIKE|ROLES|SERDE|START|TABLE|TOUCH|UNION|UNSET|USING|VIEWS|WEEKS|WHERE|WHILE|WRITE|YEARS|AVRO|BOTH|CASE|CAST|CONF|CUBE|DATA|DAYS|DESC|DROP|ELSE|FILE|FROM|FULL|HOUR|INTO|JOIN|KEYS|LAST|LEFT|LESS|LIKE|LOAD|LOCK|LONG|MORE|MSCK|NONE|ONLY|OVER|PLUS|READ|RELY|ROLE|ROWS|SEMI|SETS|SHOW|SORT|SYNC|THEN|TIME|UNDO|USER|VIEW|WEEK|WHEN|WITH|WORK|YEAR|ZONE|ADD|ALL|AND|ASC|CSV|DAY|DOW|END|FOR|JAR|KEY|NOT|ORC|OUT|ROW|SET|SSL|TSV|URI|USE|UTC|AS|BY|IF|IN|IS|OF|ON|OR|TO)\\b",
+                    "name": "keyword.other.sql"
+                }
+            ]
+        },
+        "as-alias": {
+            "patterns": [
+                {
+                    "match": "(?i)\\bAS\\b",
+                    "name": "keyword.other.alias.sql"
+                }
+            ]
+        },
+        "variables": {
+            "patterns": [
+                {
+                    "match": "(?:(?:[$$])(?:\\{[^\\}]*\\}))",
+                    "name": "variable.other.sql"
+                }
+            ]
+        },
+        "strings": {
+            "patterns": [
+                {
+                    "match": "(?:\"[^\"\\\\]*(?:\\\\.[^\"\\\\]*)*\")",
+                    "name": "string.quoted.double.sql"
+                },
+                {
+                    "match": "(?:'[^'\\\\]*(?:\\\\.[^'\\\\]*)*')",
+                    "name": "string.quoted.single.sql"
+                }
+            ]
+        },
+        "operators": {
+            "patterns": [
+                {
+                    "match": "(?:<=>|!=|<=|<>|==|>=|\\|\\||-|!|\\*|/|&|%|\\^|\\+|<|=|>|\\||~)",
+                    "name": "keyword.operator.sql"
+                }
+            ]
+        },
+        "delimiters": {
+            "patterns": [
+                {
+                    "match": ";",
+                    "name": "punctuation.terminator.statement.sql"
+                },
+                {
+                    "match": ",",
+                    "name": "punctuation.separator.comma.sql"
+                },
+                {
+                    "match": "\\(|\\[",
+                    "name": "punctuation.section.parens.begin.sql"
+                },
+                {
+                    "match": "\\)|\\]",
+                    "name": "punctuation.section.parens.end.sql"
+                }
+            ]
+        }
+    }
+}

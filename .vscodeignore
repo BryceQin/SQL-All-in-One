@@ -172,6 +172,7 @@ out/converter/**
 out/core/**
 out/database/**
 out/formatter/**
+out/grammar/**
 out/hover/**
 out/i18n/**
 out/linter/**
@@ -218,6 +219,10 @@ node_modules/monaco-editor/**
 node_modules/nyc/**
 node_modules/@js-joda/**
 node_modules/@secretlint/**
+# TextMate tokenize test engine (grammar.test.ts only; never require()d at
+# runtime — esbuild bundles src/ into out/extension.js and does not import it)
+node_modules/vscode-textmate/**
+node_modules/vscode-oniguruma/**
 
 # node-sql-parser: index.js is a self-contained webpack bundle (only requires
 # `big-integer`). The umd/, lib/, and ast/ directories are source/duplicate

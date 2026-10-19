@@ -40,6 +40,7 @@
 - **12 种 SQL 方言**：Hive、MySQL、SparkSQL、FlinkSQL、PostgreSQL、BigQuery、SQLite、StarRocks、SQL Server、Oracle、达梦、标准 SQL
 - **8 种数据库直连**：MySQL、PostgreSQL、SQLite、StarRocks、SQL Server、Oracle、达梦（含 SSH 隧道与 SSL）
 - **AST 驱动格式化**：40+ 可配置选项，支持不完整 SQL 智能格式化
+- **方言语法高亮**：12 种方言独立 TextMate 语法（关键字/类型/函数/注释/字符串/参数占位符），打开文件即生效，无需激活
 - **30 条 Lint 规则**：实时诊断，含快速修复
 - **7 类智能补全**：关键字、580+ 函数、Schema 表/列、CTE、代码片段等
 - **可视化工具链**：表设计器、物化视图设计器、执行计划、数据编辑器、查询结果面板
@@ -62,6 +63,8 @@
 | `sqlserver`  | SQL Server, mssql    | `.sqlserver`        |
 | `plsql`      | Oracle, PL/SQL       | `.plsql`, `.oracle` |
 | `dameng`     | 达梦, DM             | `.dameng`, `.dm`    |
+
+每种方言均提供独立的 TextMate 语法高亮（`syntaxes/*.tmLanguage.json`，由方言 tokenizer 配置自动生成），覆盖关键字、数据类型、内建函数、注释、字符串、变量与参数占位符；方言特有的引号规则（PG 美元引号、BigQuery 三引号、MySQL/StarRocks `#` 注释、Oracle `q'…'`）均与格式化器一致。
 
 ### 使用场景
 
@@ -895,6 +898,7 @@ MIT License
 - **12 SQL dialects**: Hive, MySQL, SparkSQL, FlinkSQL, PostgreSQL, BigQuery, SQLite, StarRocks, SQL Server, Oracle, Dameng, Standard SQL
 - **8 database connections**: MySQL, PostgreSQL, SQLite, StarRocks, SQL Server, Oracle, Dameng (with SSH tunnel and SSL)
 - **AST-driven formatting**: 40+ configurable options, supports incomplete SQL formatting
+- **Dialect syntax highlighting**: dedicated TextMate grammar per dialect (keywords/types/functions/comments/strings/parameter placeholders), active on file open without extension activation
 - **30 Lint rules**: Real-time diagnostics with quick fixes
 - **7 completion types**: Keywords, 580+ functions, schema tables/columns, CTEs, snippets, etc.
 - **Visual toolchain**: Table designer, materialized view designer, execution plan, data editor, query result panel
@@ -917,6 +921,8 @@ MIT License
 | `sqlserver`  | SQL Server, mssql    | `.sqlserver`        |
 | `plsql`      | Oracle, PL/SQL       | `.plsql`, `.oracle` |
 | `dameng`     | Dameng, DM           | `.dameng`, `.dm`    |
+
+Each dialect ships a dedicated TextMate grammar (`syntaxes/*.tmLanguage.json`, auto-generated from the dialect tokenizer configs) covering keywords, data types, built-in functions, comments, strings, variables, and parameter placeholders; dialect-specific quoting (PG dollar-quoting, BigQuery triple quotes, MySQL/StarRocks `#` comments, Oracle `q'…'`) matches the formatter's behavior.
 
 ### Use Cases
 

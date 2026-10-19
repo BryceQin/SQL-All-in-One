@@ -1,0 +1,264 @@
+{
+    "name": "Transact-SQL",
+    "scopeName": "source.sql.sqlserver",
+    "patterns": [
+        {
+            "include": "#block-comment"
+        },
+        {
+            "include": "#line-comment"
+        },
+        {
+            "include": "#quoted-identifier"
+        },
+        {
+            "include": "#number"
+        },
+        {
+            "include": "#keyword-phrases"
+        },
+        {
+            "include": "#case-control"
+        },
+        {
+            "include": "#logical-operators"
+        },
+        {
+            "include": "#clauses"
+        },
+        {
+            "include": "#select"
+        },
+        {
+            "include": "#set-operations"
+        },
+        {
+            "include": "#joins"
+        },
+        {
+            "include": "#functions"
+        },
+        {
+            "include": "#data-types"
+        },
+        {
+            "include": "#constants"
+        },
+        {
+            "include": "#keywords"
+        },
+        {
+            "include": "#as-alias"
+        },
+        {
+            "include": "#parameters"
+        },
+        {
+            "include": "#variables"
+        },
+        {
+            "include": "#strings"
+        },
+        {
+            "include": "#operators"
+        },
+        {
+            "include": "#delimiters"
+        }
+    ],
+    "repository": {
+        "block-comment": {
+            "patterns": [
+                {
+                    "name": "comment.block.sql",
+                    "begin": "/\\*",
+                    "end": "\\*/"
+                }
+            ]
+        },
+        "line-comment": {
+            "patterns": [
+                {
+                    "match": "--.*",
+                    "name": "comment.line.double-dash.sql"
+                }
+            ]
+        },
+        "quoted-identifier": {
+            "patterns": [
+                {
+                    "match": "(?:\\[[^\\]]*\\])(?:\\][^\\]]*\\])*",
+                    "name": "string.quoted.other.brackets.sql"
+                },
+                {
+                    "match": "(?:\"[^\"]*\")+",
+                    "name": "string.quoted.double.sql"
+                }
+            ]
+        },
+        "number": {
+            "patterns": [
+                {
+                    "match": "(?i)(?<![\\w.])(?:0x[0-9a-fA-F]+|0b[01]+|[0-9]*\\.[0-9]+|[0-9]+(?:\\.[0-9]*)?)(?:[eE][-+]?[0-9]+(?:\\.[0-9]+)?)?(?!\\w)",
+                    "name": "constant.numeric.sql"
+                }
+            ]
+        },
+        "keyword-phrases": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:ON\\s+DELETE\\s+SET\\s+NULL|ON\\s+UPDATE\\s+SET\\s+NULL|RANGE\\s+BETWEEN|ROWS\\s+BETWEEN|WITHIN\\s+GROUP|ON\\s+DELETE|ON\\s+UPDATE|WITH\\s+TIES)\\b",
+                    "name": "keyword.other.sql"
+                }
+            ]
+        },
+        "case-control": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:BETWEEN|CASE|ELSE|THEN|WHEN|END)\\b",
+                    "name": "keyword.control.sql"
+                }
+            ]
+        },
+        "logical-operators": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:AND|OR)\\b",
+                    "name": "keyword.operator.logical.sql"
+                }
+            ]
+        },
+        "clauses": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:KILL\\s+QUERY\\s+NOTIFICATION\\s+SUBSCRIPTION|CREATE\\s+SERVER\\s+AUDIT\\s+SPECIFICATION|ALTER\\s+SERVER\\s+AUDIT\\s+SPECIFICATION|DROP\\s+DATABASE\\s+SCOPED\\s+CREDENTIAL|DROP\\s+SERVER\\s+AUDIT\\s+SPECIFICATION|WHEN\\s+NOT\\s+MATCHED\\s+BY\\s+SOURCE\\s+THEN|WHEN\\s+NOT\\s+MATCHED\\s+BY\\s+TARGET\\s+THEN|CREATE\\s+DATABASE\\s+ENCRYPTION\\s+KEY|BEGIN\\s+DISTRIBUTED\\s+TRANSACTION|CREATE\\s+CRYPTOGRAPHIC\\s+PROVIDER|CREATE\\s+EXTERNAL\\s+RESOURCE\\s+POOL|CREATE\\s+REMOTE\\s+SERVICE\\s+BINDING|ALTER\\s+CRYPTOGRAPHIC\\s+PROVIDER|ALTER\\s+EXTERNAL\\s+RESOURCE\\s+POOL|ALTER\\s+REMOTE\\s+SERVICE\\s+BINDING|CREATE\\s+COLUMN\\s+ENCRYPTION\\s+KEY|CREATE\\s+XML\\s+SCHEMA\\s+COLLECTION|DROP\\s+DATABASE\\s+ENCRYPTION\\s+KEY|ALTER\\s+COLUMN\\s+ENCRYPTION\\s+KEY|ALTER\\s+XML\\s+SCHEMA\\s+COLLECTION|CREATE\\s+EXTERNAL\\s+DATA\\s+SOURCE|CREATE\\s+EXTERNAL\\s+FILE\\s+FORMAT|CREATE\\s+SEARCH\\s+PROPERTY\\s+LIST|DROP\\s+CRYPTOGRAPHIC\\s+PROVIDER|DROP\\s+EXTERNAL\\s+RESOURCE\\s+POOL|DROP\\s+REMOTE\\s+SERVICE\\s+BINDING|OFFSET\\s+FETCH\\s+NEXT\\s+ROWS\\s+ONLY|ALTER\\s+EXTERNAL\\s+DATA\\s+SOURCE|ALTER\\s+EXTERNAL\\s+FILE\\s+FORMAT|ALTER\\s+SEARCH\\s+PROPERTY\\s+LIST|ALTER\\s+SERVER\\s+CONFIGURATION|DROP\\s+COLUMN\\s+ENCRYPTION\\s+KEY|DROP\\s+XML\\s+SCHEMA\\s+COLLECTION|WHEN\\s+NOT\\s+MATCHED\\s+BY\\s+SOURCE|WHEN\\s+NOT\\s+MATCHED\\s+BY\\s+TARGET|BACKUP\\s+SERVICE\\s+MASTER\\s+KEY|BEGIN\\s+DIALOG\\s+CONVERSATION|CREATE\\s+AVAILABILITY\\s+GROUP|CREATE\\s+EVENT\\s+NOTIFICATION|CREATE\\s+PARTITION\\s+FUNCTION|DROP\\s+EXTERNAL\\s+DATA\\s+SOURCE|DROP\\s+EXTERNAL\\s+FILE\\s+FORMAT|DROP\\s+SEARCH\\s+PROPERTY\\s+LIST|ALTER\\s+PARTITION\\s+FUNCTION|ALTER\\s+SERVICE\\s+MASTER\\s+KEY|BEGIN\\s+CONVERSATION\\s+TIMER|CREATE\\s+COLUMN\\s+MASTER\\s+KEY|CREATE\\s+FULLTEXT\\s+STOPLIST|SELECT\\s+DISTINCT\\s+TOP\\s+INTO|ALTER\\s+COLUMN\\s+MASTER\\s+KEY|ALTER\\s+FULLTEXT\\s+STOPLIST|ALTER\\s+RESOURCE\\s+GOVERNOR|CREATE\\s+APPLICATION\\s+ROLE|CREATE\\s+EXTERNAL\\s+LIBRARY|CREATE\\s+FULLTEXT\\s+CATALOG|CREATE\\s+PARTITION\\s+SCHEME|DROP\\s+AVAILABILITY\\s+GROUP|DROP\\s+PARTITION\\s+FUNCTION|STRING_AGG\\s+WITHIN\\s+GROUP|ALTER\\s+EXTERNAL\\s+LIBRARY|ALTER\\s+FULLTEXT\\s+CATALOG|ALTER\\s+PARTITION\\s+SCHEME|CREATE\\s+BROKER\\s+PRIORITY|CREATE\\s+SECURITY\\s+POLICY|DROP\\s+COLUMN\\s+MASTER\\s+KEY|DROP\\s+FULLTEXT\\s+STOPLIST|CREATE\\s+ASYMMETRIC\\s+KEY|CREATE\\s+EXTERNAL\\s+TABLE|CREATE\\s+FULLTEXT\\s+INDEX|CREATE\\s+WORKLOAD\\s+GROUP|DROP\\s+APPLICATION\\s+ROLE|DROP\\s+EXTERNAL\\s+LIBRARY|DROP\\s+FULLTEXT\\s+CATALOG|DROP\\s+PARTITION\\s+SCHEME|WHEN\\s+NOT\\s+MATCHED\\s+THEN|ALTER\\s+ASYMMETRIC\\s+KEY|ALTER\\s+FULLTEXT\\s+INDEX|ALTER\\s+WORKLOAD\\s+GROUP|CREATE\\s+EVENT\\s+SESSION|CREATE\\s+OR\\s+ALTER\\s+VIEW|CREATE\\s+RESOURCE\\s+POOL|CREATE\\s+SPATIAL\\s+INDEX|CREATE\\s+SYMMETRIC\\s+KEY|DROP\\s+BROKER\\s+PRIORITY|DROP\\s+SECURITY\\s+POLICY|DROP\\s+TABLE\\s+IF\\s+EXISTS|RESTORE\\s+FILELISTONLY|ROLLBACK\\s+TRANSACTION|SELECT\\s+DISTINCT\\s+INTO|ALTER\\s+AUTHORIZATION|ALTER\\s+EVENT\\s+SESSION|ALTER\\s+RESOURCE\\s+POOL|ALTER\\s+SYMMETRIC\\s+KEY|CREATE\\s+MESSAGE\\s+TYPE|CREATE\\s+SERVER\\s+AUDIT|DROP\\s+ASYMMETRIC\\s+KEY|DROP\\s+EXTERNAL\\s+TABLE|DROP\\s+FULLTEXT\\s+INDEX|DROP\\s+WORKLOAD\\s+GROUP|SELECT\\s+ALL\\s+TOP\\s+INTO|ALTER\\s+MESSAGE\\s+TYPE|ALTER\\s+SERVER\\s+AUDIT|BACKUP\\s+CERTIFICATE|COMMIT\\s+TRANSACTION|CREATE\\s+CERTIFICATE|CREATE\\s+SERVER\\s+ROLE|DROP\\s+EVENT\\s+SESSION|DROP\\s+RESOURCE\\s+POOL|DROP\\s+SYMMETRIC\\s+KEY|RESTORE\\s+HEADERONLY|RESTORE\\s+REWINDONLY|RESTORE\\s+VERIFYONLY|ALTER\\s+CERTIFICATE|ALTER\\s+SERVER\\s+ROLE|BACKUP\\s+MASTER\\s+KEY|BEGIN\\s+TRANSACTION|CREATE\\s+CREDENTIAL|CREATE\\s+MASTER\\s+KEY|CREATE\\s+STATISTICS|DROP\\s+MESSAGE\\s+TYPE|DROP\\s+SERVER\\s+AUDIT|RESTORE\\s+LABELONLY|UPDATE\\s+STATISTICS|WHEN\\s+MATCHED\\s+THEN|ALTER\\s+CREDENTIAL|ALTER\\s+MASTER\\s+KEY|CREATE\\s+AGGREGATE|CREATE\\s+PROCEDURE|CREATE\\s+XML\\s+INDEX|DROP\\s+CERTIFICATE|DROP\\s+SERVER\\s+ROLE|RESTORE\\s+DATABASE|SAVE\\s+TRANSACTION|WHEN\\s+NOT\\s+MATCHED|ALTER\\s+PROCEDURE|BACKUP\\s+DATABASE|CREATE\\s+ASSEMBLY|CREATE\\s+CONTRACT|CREATE\\s+DATABASE|CREATE\\s+ENDPOINT|CREATE\\s+FUNCTION|CREATE\\s+SEQUENCE|DROP\\s+CREDENTIAL|DROP\\s+MASTER\\s+KEY|DROP\\s+STATISTICS|SELECT\\s+ALL\\s+INTO|SELECT\\s+TOP\\s+INTO|ALTER\\s+ASSEMBLY|ALTER\\s+DATABASE|ALTER\\s+ENDPOINT|ALTER\\s+FUNCTION|ALTER\\s+SEQUENCE|CREATE\\s+DEFAULT|CREATE\\s+SERVICE|CREATE\\s+SYNONYM|CREATE\\s+TRIGGER|DROP\\s+AGGREGATE|DROP\\s+PROCEDURE|DROP\\s+SIGNATURE|KILL\\s+STATS\\s+JOB|TRUNCATE\\s+TABLE|ALTER\\s+SERVICE|ALTER\\s+TRIGGER|CREATE\\s+SCHEMA|DROP\\s+ASSEMBLY|DROP\\s+CONTRACT|DROP\\s+DATABASE|DROP\\s+ENDPOINT|DROP\\s+FUNCTION|DROP\\s+SEQUENCE|ALTER\\s+COLUMN|ALTER\\s+SCHEMA|CREATE\\s+INDEX|CREATE\\s+LOGIN|CREATE\\s+QUEUE|CREATE\\s+ROUTE|CREATE\\s+TABLE|DROP\\s+DEFAULT|DROP\\s+SERVICE|DROP\\s+SYNONYM|DROP\\s+TRIGGER|OFFSET\\s+FETCH|PARTITION\\s+BY|WHEN\\s+MATCHED|WITHIN\\s+GROUP|ALTER\\s+INDEX|ALTER\\s+LOGIN|ALTER\\s+ROUTE|ALTER\\s+TABLE|CREATE\\s+ROLE|CREATE\\s+RULE|CREATE\\s+TYPE|CREATE\\s+USER|CREATE\\s+VIEW|DELETE\\s+FROM|DROP\\s+COLUMN|DROP\\s+SCHEMA|FETCH\\s+FIRST|INSERT\\s+INTO|RECONFIGURE|RESTORE\\s+LOG|SELECT\\s+INTO|TRY_CONVERT|WITH\\s+NOLOCK|ADD\\s+COLUMN|ALTER\\s+ROLE|ALTER\\s+USER|ALTER\\s+VIEW|BACKUP\\s+LOG|CHECKPOINT|DROP\\s+INDEX|DROP\\s+LOGIN|DROP\\s+QUEUE|DROP\\s+ROUTE|DROP\\s+TABLE|FETCH\\s+NEXT|MERGE\\s+INTO|DROP\\s+ROLE|DROP\\s+RULE|DROP\\s+TYPE|DROP\\s+USER|DROP\\s+VIEW|RAISERROR|FOR\\s+JSON|GROUP\\s+BY|ORDER\\s+BY|SHUTDOWN|TRY_CAST|EXECUTE|FOR\\s+XML|RESTORE|SETUSER|UNPIVOT|WAITFOR|BACKUP|HAVING|INSERT|OUTPUT|REVERT|REVOKE|UPDATE|VALUES|WINDOW|ALTER|GRANT|MERGE|PIVOT|PRINT|WHERE|DENY|DROP|EXEC|FROM|KILL|WITH|ADD|SET|TOP|USE)\\b",
+                    "name": "keyword.other.sql"
+                }
+            ]
+        },
+        "select": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:SELECT\\s+DISTINCT|SELECT\\s+ALL|SELECT)\\b",
+                    "name": "keyword.other.sql"
+                }
+            ]
+        },
+        "set-operations": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:INTERSECT|UNION\\s+ALL|EXCEPT|UNION)\\b",
+                    "name": "keyword.other.sql"
+                }
+            ]
+        },
+        "joins": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:RIGHT\\s+OUTER\\s+JOIN|FULL\\s+OUTER\\s+JOIN|LEFT\\s+OUTER\\s+JOIN|OUTER\\s+APPLY|CROSS\\s+JOIN|INNER\\s+JOIN|RIGHT\\s+JOIN|FULL\\s+JOIN|LEFT\\s+JOIN|APPLY|JOIN)\\b",
+                    "name": "keyword.other.sql"
+                }
+            ]
+        },
+        "functions": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:GET_FILESTREAM_TRANSACTION_CONTEXT|DATETIMEOFFSETFROMPARTS|DECRYPTBYKEYAUTOASYMKEY|FULLTEXTCATALOGPROPERTY|FULLTEXTSERVICEPROPERTY|SMALLDATETIMEFROMPARTS|DATABASE_PRINCIPAL_ID|MIN_ACTIVE_ROWVERSION|VERIFYSIGNEDBYASYMKEY|DECRYPTBYKEYAUTOCERT|SQL_VARIANT_PROPERTY|CURRENT_TIMEZONE_ID|DECRYPTBYPASSPHRASE|ENCRYPTBYPASSPHRASE|DATABASEPROPERTYEX|DATETIME2FROMPARTS|OBJECT_SCHEMA_NAME|VERIFYSIGNEDBYCERT|@@MAX_CONNECTIONS|COLLATIONPROPERTY|CURRENT_TIMESTAMP|DATETIMEFROMPARTS|FILEGROUPPROPERTY|HAS_PERMS_BY_NAME|INDEXKEY_PROPERTY|OBJECT_DEFINITION|SYSDATETIMEOFFSET|ASSEMBLYPROPERTY|CRYPT_GEN_RANDOM|CURRENT_TIMEZONE|DECRYPTBYASYMKEY|ENCRYPTBYASYMKEY|IS_SRVROLEMEMBER|JSON_PATH_EXISTS|OBJECTPROPERTYEX|ORIGINAL_DB_NAME|TODATETIMEOFFSET|@@MAX_PRECISION|@@PACK_RECEIVED|@@PACKET_ERRORS|ASYMKEYPROPERTY|ERROR_PROCEDURE|IS_OBJECTSIGNED|NEWSEQUENTIALID|PERCENTILE_CONT|PERCENTILE_DISC|SESSIONPROPERTY|@@FETCH_STATUS|@@LOCK_TIMEOUT|@@TOTAL_ERRORS|CERTPRIVATEKEY|COLUMNPROPERTY|ERROR_SEVERITY|FILEGROUP_NAME|OBJECTPROPERTY|ORIGINAL_LOGIN|SCOPE_IDENTITY|SERVERPROPERTY|SYMKEYPROPERTY|SYSUTCDATETIME|@@CONNECTIONS|@@CURSOR_ROWS|@@SERVICENAME|@@TOTAL_WRITE|CURSOR_STATUS|DATEFROMPARTS|DECRYPTBYCERT|ENCRYPTBYCERT|ERROR_MESSAGE|FORMATMESSAGE|HAS_SRVACCESS|IDENT_CURRENT|INDEXPROPERTY|LOGINPROPERTY|SIGNBYASYMKEY|STRING_ESCAPE|TIMEFROMPARTS|@@SERVERNAME|@@TOTAL_READ|APPLOCK_MODE|APPLOCK_TEST|CERTPROPERTY|CHECKSUM_AGG|CURRENT_USER|DATEDIFF_BIG|DECRYPTBYKEY|ENCRYPTBYKEY|ERROR_NUMBER|FILEGROUP_ID|FILEPROPERTY|HAS_DBACCESS|PERCENT_RANK|ROWCOUNT_BIG|SESSION_USER|STRING_SPLIT|SWITCHOFFSET|TYPEPROPERTY|@@DATEFIRST|@@NESTLEVEL|@@PACK_SENT|@@REMSERVER|@@TIMETICKS|CERTENCODED|ERROR_STATE|FIRST_VALUE|GETANSINULL|GROUPING_ID|JSON_MODIFY|JSON_OBJECT|OBJECT_NAME|PERMISSIONS|RIGHT_SHIFT|SCHEMA_NAME|SUSER_SNAME|SYSDATETIME|SYSTEM_USER|TRY_CONVERT|@@CPU_BUSY|@@LANGUAGE|@@TEXTSIZE|\\$PARTITION|ASYMKEY_ID|COL_LENGTH|DATALENGTH|DENSE_RANK|DIFFERENCE|ERROR_LINE|GETUTCDATE|IDENT_INCR|IDENT_SEED|JSON_ARRAY|JSON_QUERY|JSON_VALUE|LAST_VALUE|LEFT_SHIFT|PWDCOMPARE|PWDENCRYPT|ROW_NUMBER|SIGNBYCERT|STATS_DATE|STRING_AGG|SUSER_NAME|XACT_STATE|@@IO_BUSY|@@OPTIONS|@@VERSION|BIT_COUNT|CHARINDEX|CONCAT_WS|COUNT_BIG|CUME_DIST|FILE_IDEX|FILE_NAME|HASHBYTES|HOST_NAME|INDEX_COL|IS_MEMBER|ISNUMERIC|OBJECT_ID|PARSENAME|QUOTENAME|REPLICATE|SCHEMA_ID|SUBSTRING|SUSER_SID|TEXTVALID|TRANSLATE|TRY_PARSE|TYPE_NAME|USER_NAME|@@LANGID|APP_NAME|COALESCE|COL_NAME|DATEDIFF|DATENAME|DATEPART|GREATEST|GROUPING|IDENTITY|KEY_GUID|KEY_NAME|PATINDEX|SUSER_ID|TRY_CAST|CEILING|CERT_ID|CONVERT|DATEADD|DB_NAME|DEGREES|EOMONTH|FILE_ID|GET_BIT|GETDATE|HOST_ID|RADIANS|REPLACE|REVERSE|SET_BIT|SOUNDEX|TEXTPTR|TYPE_ID|UNICODE|USER_ID|@@DBTS|@@IDLE|@@SPID|CHOOSE|CONCAT|FORMAT|ISDATE|ISJSON|ISNULL|KEY_ID|NULLIF|SQUARE|STDEVP|ASCII|COUNT|DB_ID|FLOOR|LEAST|LOG10|LOWER|LTRIM|MONTH|NCHAR|NEWID|NTILE|PARSE|POWER|RIGHT|ROUND|RTRIM|SPACE|STDEV|STUFF|UPPER|ACOS|ASIN|ATAN|ATN2|CAST|CHAR|LEAD|LEFT|RAND|RANK|SIGN|SQRT|TRIM|USER|VARP|YEAR|ABS|AVG|COS|COT|DAY|EXP|IIF|LAG|LEN|LOG|MAX|MIN|SIN|STR|SUM|TAN|VAR|PI)\\b(?=\\s*\\()",
+                    "name": "support.function.sql"
+                }
+            ]
+        },
+        "data-types": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:UNIQUEIDENTIFIER|DATETIMEOFFSET|SMALLDATETIME|HIERARCHYID|SQL_VARIANT|SMALLMONEY|DATETIME2|GEOGRAPHY|TIMESTAMP|VARBINARY|DATETIME|GEOMETRY|NVARCHAR|SMALLINT|DECIMAL|NUMERIC|TINYINT|VARCHAR|BIGINT|BINARY|CURSOR|FLOAT|IMAGE|MONEY|NCHAR|NTEXT|TABLE|CHAR|DATE|JSON|REAL|TEXT|TIME|BIT|INT|XML)\\b",
+                    "name": "storage.type.sql"
+                }
+            ]
+        },
+        "constants": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:NULL)\\b",
+                    "name": "constant.language.sql"
+                }
+            ]
+        },
+        "keywords": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(?:SEMANTICSIMILARITYDETAILSTABLE|SEMANTICSIMILARITYTABLE|SEMANTICKEYPHRASETABLE|STATISTICS_NORECOMPUTE|WITHOUT_ARRAY_WRAPPER|INCLUDE_NULL_VALUES|CURRENT_TIMESTAMP|ALLOW_PAGE_LOCKS|DATA_COMPRESSION|ALLOW_ROW_LOCKS|IDENTITY_INSERT|READUNCOMMITTED|XML_COMPRESSION|IGNORE_DUP_KEY|OPENDATASOURCE|REPEATABLEREAD|SORT_IN_TEMPDB|AUTHORIZATION|CONTAINSTABLE|FREETEXTTABLE|READCOMMITTED|SECURITYAUDIT|CURRENT_DATE|CURRENT_TIME|CURRENT_USER|FASTFIRSTROW|NONCLUSTERED|SERIALIZABLE|SESSION_USER|DISTRIBUTED|IDENTITYCOL|OPTIMIZEFOR|RECONFIGURE|REPLICATION|SYSTEM_USER|TABLESAMPLE|TRANSACTION|TRY_CONVERT|CHECKPOINT|CONSTRAINT|DEALLOCATE|DENSE_RANK|FILLFACTOR|OPENROWSET|REFERENCES|ROW_NUMBER|ROWGUIDCOL|STATISTICS|STRING_AGG|UPDATETEXT|CLUSTERED|FORCESCAN|FORCESEEK|INTERSECT|KEEPFIXED|KEEPUNION|OPENQUERY|PAD_INDEX|PARTITION|PRECISION|PROCEDURE|RAISERROR|RESUMABLE|VARBINARY|WRITETEXT|COALESCE|CONTAINS|CONTINUE|DATABASE|DISTINCT|ELEMENTS|EXPLICIT|EXTERNAL|FREETEXT|FUNCTION|HOLDLOCK|IDENTITY|KEEPPLAN|NATIONAL|NOEXPAND|NVARCHAR|READTEXT|RESTRICT|ROLLBACK|ROWCOUNT|SHUTDOWN|SNAPSHOT|TABLOCKX|TEXTSIZE|TRUNCATE|TRY_CAST|BETWEEN|CASCADE|COLLATE|COMPUTE|CONVERT|CURRENT|DECLARE|DEFAULT|EXECUTE|FOREIGN|NOCHECK|OFFLINE|OFFSETS|OPENXML|PAGLOCK|PERCENT|PRIMARY|RESTORE|ROWLOCK|SETUSER|TABLOCK|TRIGGER|TSEQUAL|UNPIVOT|UPDLOCK|VARCHAR|VARYING|WAITFOR|ABSENT|BACKUP|BASE64|BINARY|BROWSE|COLUMN|COMMIT|CREATE|CURSOR|DELETE|DOUBLE|ERRLVL|ESCAPE|EXCEPT|EXISTS|HAVING|INSERT|LINENO|MAXDOP|NOLOCK|NULLIF|OFFSET|ONLINE|OPTION|OUTPUT|PUBLIC|RETURN|REVERT|REVOKE|SCHEMA|SELECT|UNIQUE|UPDATE|VALUES|XSINIL|ALTER|BEGIN|BREAK|CATCH|CHECK|CLOSE|CROSS|FETCH|FIRST|GRANT|GROUP|IMAGE|INDEX|INNER|MERGE|NCHAR|NTEXT|NTILE|ORDER|OUTER|PIVOT|PRINT|RANGE|RIGHT|TABLE|THROW|UNION|USING|WHERE|WHILE|XLOCK|AUTO|BULK|CASE|CAST|CHAR|DBCC|DENY|DESC|DISK|DROP|DUMP|ELSE|EXEC|EXIT|FILE|FROM|FULL|GOTO|HASH|INTO|JOIN|JSON|KILL|LAST|LEFT|LIKE|LOAD|NEXT|ONLY|OPEN|OVER|PATH|PLAN|PROC|RANK|READ|ROOT|ROWS|RULE|SAVE|SOME|TEXT|THEN|TIES|TRAN|USER|VIEW|WHEN|WITH|WORK|ADD|ALL|AND|ANY|ASC|END|FOR|KEY|NOT|OFF|RAW|ROW|SET|TOP|TRY|USE|XML|AS|BY|IF|IN|IS|OF|ON|OR|TO)\\b",
+                    "name": "keyword.other.sql"
+                }
+            ]
+        },
+        "as-alias": {
+            "patterns": [
+                {
+                    "match": "(?i)\\bAS\\b",
+                    "name": "keyword.other.alias.sql"
+                }
+            ]
+        },
+        "parameters": {
+            "patterns": [
+                {
+                    "match": "\\?",
+                    "name": "variable.parameter.sql"
+                }
+            ]
+        },
+        "variables": {
+            "patterns": [
+                {
+                    "match": "(?:@@?[A-Za-z0-9_.$]+)",
+                    "name": "variable.other.sql"
+                }
+            ]
+        },
+        "strings": {
+            "patterns": [
+                {
+                    "match": "(?:'[^'\\\\]*(?:\\\\.[^'\\\\]*)*')+",
+                    "name": "string.quoted.single.sql"
+                },
+                {
+                    "match": "(?:[Nn]|)(?:'[^'\\\\]*(?:\\\\.[^'\\\\]*)*')",
+                    "name": "string.quoted.single.sql"
+                },
+                {
+                    "match": "(?:[Xx])(?:'[^']*')",
+                    "name": "string.quoted.single.sql"
+                }
+            ]
+        },
+        "operators": {
+            "patterns": [
+                {
+                    "match": "(?:\\*\\.\\*|:=|!=|&&|<<|<=|<>|>=|>>|\\|\\||-|!|\\*|/|&|%|\\^|\\+|<|=|>|\\||~)",
+                    "name": "keyword.operator.sql"
+                }
+            ]
+        },
+        "delimiters": {
+            "patterns": [
+                {
+                    "match": ";",
+                    "name": "punctuation.terminator.statement.sql"
+                },
+                {
+                    "match": ",",
+                    "name": "punctuation.separator.comma.sql"
+                },
+                {
+                    "match": "\\(",
+                    "name": "punctuation.section.parens.begin.sql"
+                },
+                {
+                    "match": "\\)",
+                    "name": "punctuation.section.parens.end.sql"
+                }
+            ]
+        }
+    }
+}
