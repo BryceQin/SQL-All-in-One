@@ -1,5 +1,27 @@
 # Changelog
 
+## [Unreleased]
+
+### 优化
+
+#### VSIX 包体积优化（8.92 MB → 7.54 MB，-15.5%）
+
+文件数 5196 → 4085；node_modules 解包体积 19.77 MB → 13.98 MB（-29.3%）。全部剔除规则基于运行时 require 探针与依赖闭包分析实证（详见 `docs/prd/024-vsix-size-optimization.md`）。
+
+- **剔除死代码**：`out/**` 散装 tsc 产物（真实入口仅 esbuild bundle `out/extension.js`）、根目录 `test-*.js` 冒烟脚本与 lint 配置
+- **剔除安装期专用依赖子树**：prebuild-install / tar / node-fetch 等下载工具链（VSIX 内预编译 `.node` 已存在，用户机器永不执行）
+- **剔除多格式产物**：@azure/@typespec 的 esm/browser/react-native dist 变体（Node require 只走 commonjs）；`@js-joda/core` 仅保留实际加载的 CJS 入口
+- **收敛依赖**：`node-sql-parser` 从 dependencies 移至 devDependencies，由 esbuild 打包进 bundle（懒加载语义保留，367 个解析/转换测试全过）
+
+### 修复
+
+#### 打包版 SQL Server 连接崩溃（v2.26.1 起的回归）
+
+入口文件审计发现 5 个包的运行时主文件被 `.vscodeignore` 误剔除，均位于 mssql→tedious→@azure 运行时链上——**自 v2.26.1 起，安装版插件的 SQL Server 连接必崩**（"Cannot find module"），开发/CI 从源码运行故从未暴露：
+
+- `debug`、`js-md4`、`sprintf-js`、`ecdsa-sig-formatter`：被 `node_modules/**/src/**` 规则误伤主入口（无 exports 兜底），已恢复
+- `@js-joda/core`：v2.32.1 被整体误剔（tedious DATETIME2 解析顶层依赖），已恢复（仅剔除非 CJS 变体）
+
 ## [2.35.0] - 2026-10-19
 
 ### 新功能

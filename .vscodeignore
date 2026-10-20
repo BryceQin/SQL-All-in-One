@@ -23,9 +23,9 @@ docs/**
 esbuild.js
 # Note: do NOT exclude node_modules/** globally. vsce automatically includes
 # only package.json `dependencies` (not devDependencies) and resolves their
-# transitive runtime deps. Excluding node_modules/** would strip the 8
+# transitive runtime deps. Excluding node_modules/** would strip the 7
 # runtime-required packages that esbuild marks as external (mysql2, pg,
-# better-sqlite3, mssql, oracledb, odbc, ssh2, node-sql-parser), causing
+# better-sqlite3, mssql, oracledb, odbc, ssh2), causing
 # "Cannot find package" errors at runtime for end users.
 #
 # Instead, strip non-runtime junk from inside node_modules to keep the VSIX
@@ -165,22 +165,12 @@ node_modules/**/node_modules/@azure/msal-node/**/*.js
 # 13. @azure/msal-node ESM source maps (.cjs.map already covered, but .js.map
 #     is double-protected here).
 node_modules/@azure/msal-node/**/*.js.map
-out/commands/**
-out/completion/**
-out/config/**
-out/converter/**
-out/core/**
-out/database/**
-out/formatter/**
-out/grammar/**
-out/hover/**
-out/i18n/**
-out/linter/**
-out/navigation/**
-out/parser/**
-out/providers/**
-out/utils/**
-out/test/**
+# Dead code: tsc emits loose JS under out/ for the test runner, but the only
+# shipped entry point is the esbuild bundle out/extension.js (package.json
+# "main"). The bundle is self-contained (src/** compiled in; externals live in
+# node_modules) and never requires the loose out/** files.
+out/**
+!out/extension.js
 scripts/**
 .github/**
 .trae/**
@@ -190,7 +180,7 @@ CONTRIBUTING.md
 # Strip dev-only packages that VSCE would otherwise bundle because they
 # appear in node_modules. These are `devDependencies` in package.json and
 # are never `require()`-d at runtime (esbuild bundles src/ into out/extension.js;
-# the only externalized runtime deps are the 8 listed in esbuild.js `external`).
+# the only externalized runtime deps are the 7 listed in esbuild.js `external`).
 #
 # vsce auto-includes any node_modules package referenced by `dependencies`,
 # but it does NOT filter devDependencies — they slip in if present on disk
@@ -217,12 +207,125 @@ node_modules/typescript-eslint/**
 node_modules/eslint-plugin-tsdoc/**
 node_modules/monaco-editor/**
 node_modules/nyc/**
-node_modules/@js-joda/**
 node_modules/@secretlint/**
 # TextMate tokenize test engine (grammar.test.ts only; never require()d at
 # runtime — esbuild bundles src/ into out/extension.js and does not import it)
 node_modules/vscode-textmate/**
 node_modules/vscode-oniguruma/**
+# node-sql-parser moved to devDependencies in v2.36.0: esbuild bundles it into
+# out/extension.js (single minified copy replaces the ~2.4MB unpacked webpack
+# bundle + its big-integer dep that previously shipped as node_modules).
+node_modules/node-sql-parser/**
+node_modules/big-integer/**
+
+# --- v2.36.0 size optimization -----------------------------------------------
+# Every rule below was verified against runtime require probes (see
+# docs/prd/024-vsix-size-optimization.md for the full analysis).
+#
+# 1. Install-time-only dependency subtrees. These exist to download/build
+#    native addons during `npm install` on the DEVELOPER's machine. Inside an
+#    installed VSIX the prebuilt .node files are already present, so the
+#    download toolchain is dead weight:
+node_modules/prebuild-install/**
+node_modules/node-abi/**
+node_modules/pump/**
+node_modules/end-of-stream/**
+node_modules/once/**
+node_modules/wrappy/**
+node_modules/rc/**
+node_modules/deep-extend/**
+node_modules/ini/**
+node_modules/strip-json-comments/**
+node_modules/simple-get/**
+node_modules/decompress-response/**
+node_modules/mimic-response/**
+node_modules/simple-concat/**
+node_modules/github-from-package/**
+node_modules/expand-template/**
+node_modules/napi-build-utils/**
+node_modules/tunnel-agent/**
+node_modules/tar-fs/**
+node_modules/tar-stream/**
+node_modules/tar/**
+node_modules/@isaacs/fs-minipass/**
+node_modules/minipass/**
+node_modules/minizlib/**
+node_modules/yallist/**
+node_modules/node-fetch/**
+node_modules/whatwg-url/**
+node_modules/tr46/**
+node_modules/webidl-conversions/**
+node_modules/chownr/**
+node_modules/mkdirp-classic/**
+# NOTE: keep nopt/semver/detect-libc/consola/abbrev — @mapbox/node-pre-gyp
+# requires them at RUNTIME to locate the prebuilt odbc.node binary.
+#
+# 2. Top-level readable-stream/bl/buffer/string_decoder copies are held by the
+#    install chain above (tar-stream/bl@4). The copies tedious actually uses
+#    are its nested node_modules copies, which these rules deliberately leave
+#    in place (single-segment globs do not match nested copies).
+node_modules/readable-stream/**
+node_modules/bl/**
+node_modules/buffer/**
+node_modules/string_decoder/**
+# 3. nan/buildcheck are build-time-only deps of ssh2/cpu-features (the prebuilt
+#    sshcrypto.node / cpufeatures.node binaries ship without them).
+node_modules/buildcheck/**
+node_modules/nan/**
+# 4. mssql's CLI entry (bin/mssql) requires commander; the library API the
+#    adapter uses never does.
+node_modules/commander/**
+# 5. aws-ssl-profiles is only loaded when a MySQL connection passes the
+#    literal string `ssl: "Amazon RDS"`; the adapter only sets boolean SSL
+#    options, so the branch is unreachable.
+node_modules/aws-ssl-profiles/**
+# NOTE: do NOT strip `open` (+ define-lazy-prop/is-docker/is-wsl) — the
+# nested @azure/identity@3.4.2 under mssql/node_modules is a single-file
+# bundle whose dist/index.js requires 'open' at TOP LEVEL (unlike newer
+# 4.x, which lazily loads it only for browser credential flows). Stripping
+# it crashes every tedious/mssql load.
+# 6. async's loose per-function files (104 files) are never require()d —
+#    odbc only does top-level require('async') which resolves to
+#    dist/async.js (the bundled main).
+node_modules/async/*.js
+node_modules/async/internal/**
+
+# Azure SDK dual-format dists: Node's require() resolves package.json "main"
+# to dist/commonjs/ — the browser/esm/react-native variants are unreachable
+# from CJS (verified via require.resolve for every package below). Nested
+# azure copies under mssql/node_modules use dist/*.js or lib/*.cjs layouts
+# and are already covered by the v2.29.5 rules above.
+node_modules/@azure/*/dist/esm/**
+node_modules/@azure/*/dist/browser/**
+node_modules/@azure/*/dist/react-native/**
+node_modules/@azure-rest/*/dist/esm/**
+node_modules/@azure-rest/*/dist/react-native/**
+node_modules/@typespec/*/dist/esm/**
+node_modules/@typespec/*/dist/browser/**
+node_modules/@typespec/*/dist/react-native/**
+
+# @js-joda/core (tedious DATETIME2/DATETIME parsing): keep ONLY the single
+# CJS entry Node actually loads (require.resolve → dist/js-joda.js); the
+# other dist variants are ESM duplicates + source maps.
+# Do NOT strip this package wholesale — v2.32.1–v2.35.0 shipped it stripped
+# and every SQL Server connection crashed with "Cannot find module
+# '@js-joda/core'" (regression, fixed in v2.36.0).
+node_modules/@js-joda/core/dist/js-joda.esm.js
+node_modules/@js-joda/core/dist/js-joda.cjs.js
+node_modules/@js-joda/core/dist/js-joda.min.js
+node_modules/@js-joda/core/dist/*.map
+node_modules/@js-joda/core/src/**
+node_modules/@js-joda/core/typings/**
+# undici-types: orphan, nothing in the shipped graph depends on it.
+node_modules/undici-types/**
+
+# Root-level lint configs and manual smoke-test scripts — never used at
+# runtime.
+test-common-errors.js
+test-diagnostics.js
+test-syntax-error.js
+.oxfmtrc.jsonc
+.oxlintrc.json
 
 # node-sql-parser: index.js is a self-contained webpack bundle (only requires
 # `big-integer`). The umd/, lib/, and ast/ directories are source/duplicate
@@ -238,6 +341,19 @@ node_modules/better-sqlite3/build/Release/obj.target/**
 node_modules/better-sqlite3/build/Release/.deps/**
 node_modules/better-sqlite3/build/Release/sqlite3.a
 node_modules/better-sqlite3/deps/**
+
+# --- v2.36.0 entry-file audit fixes -------------------------------------------
+# The v2.26.1 `node_modules/**/src/**` rule stripped the MAIN ENTRY of four
+# pure-JS packages whose package.json "main" points into src/ with no exports
+# map fallback. All four sit on the mssql→tedious→@azure runtime require
+# chain, so every SQL Server connection in PACKAGED builds crashed with
+# "Cannot find module" since v2.26.1 (never seen in dev/CI because those run
+# from source). Restored via late re-include rules (later rules win).
+!node_modules/debug/src/**
+!node_modules/js-md4/src/**
+!node_modules/sprintf-js/src/**
+!node_modules/ecdsa-sig-formatter/src/**
+
 
 # oracledb 6.x runs in thin mode (pure JS) by default. Thick mode is opt-in
 # and requires a user-installed Oracle Instant Client — the prebuilt .node
