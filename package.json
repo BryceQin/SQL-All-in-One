@@ -41,9 +41,10 @@
     "scripts": {
         "generate-snippets": "npx tsx scripts/generate-snippets.ts",
         "generate-grammars": "npx tsx scripts/generate-grammars.ts",
-        "vscode:prepublish": "npm run generate-snippets && npm run generate-grammars && node esbuild.js --minify",
-        "esbuild-base": "npm run generate-snippets && npm run generate-grammars && node esbuild.js",
-        "esbuild": "npm run generate-snippets && npm run generate-grammars && node esbuild.js",
+        "generate-language-configs": "npx tsx scripts/generate-language-configs.ts",
+        "vscode:prepublish": "npm run generate-snippets && npm run generate-grammars && npm run generate-language-configs && node esbuild.js --minify",
+        "esbuild-base": "npm run generate-snippets && npm run generate-grammars && npm run generate-language-configs && node esbuild.js",
+        "esbuild": "npm run generate-snippets && npm run generate-grammars && npm run generate-language-configs && node esbuild.js",
         "compile": "tsc -p ./",
         "watch": "tsc -watch -p ./",
         "pretest": "npm run compile && npm run lint",
@@ -123,7 +124,8 @@
                 ],
                 "extensions": [
                     ".sql"
-                ]
+                ],
+                "configuration": "./language-configurations/sql.language-configuration.json"
             },
             {
                 "id": "hive",
@@ -133,7 +135,8 @@
                 ],
                 "extensions": [
                     ".hql"
-                ]
+                ],
+                "configuration": "./language-configurations/hive.language-configuration.json"
             },
             {
                 "id": "mysql",
@@ -142,7 +145,8 @@
                 ],
                 "extensions": [
                     ".mysql"
-                ]
+                ],
+                "configuration": "./language-configurations/mysql.language-configuration.json"
             },
             {
                 "id": "spark",
@@ -152,7 +156,8 @@
                 ],
                 "extensions": [
                     ".sparksql"
-                ]
+                ],
+                "configuration": "./language-configurations/spark.language-configuration.json"
             },
             {
                 "id": "flinksql",
@@ -162,7 +167,8 @@
                 ],
                 "extensions": [
                     ".flinksql"
-                ]
+                ],
+                "configuration": "./language-configurations/flinksql.language-configuration.json"
             },
             {
                 "id": "postgresql",
@@ -173,7 +179,8 @@
                 "extensions": [
                     ".psql",
                     ".pgsql"
-                ]
+                ],
+                "configuration": "./language-configurations/postgresql.language-configuration.json"
             },
             {
                 "id": "bigquery",
@@ -182,7 +189,8 @@
                 ],
                 "extensions": [
                     ".bqsql"
-                ]
+                ],
+                "configuration": "./language-configurations/bigquery.language-configuration.json"
             },
             {
                 "id": "sqlite",
@@ -192,7 +200,8 @@
                 "extensions": [
                     ".sqlite",
                     ".sqlt"
-                ]
+                ],
+                "configuration": "./language-configurations/sqlite.language-configuration.json"
             },
             {
                 "id": "starrocks",
@@ -201,7 +210,8 @@
                 ],
                 "extensions": [
                     ".starrocks"
-                ]
+                ],
+                "configuration": "./language-configurations/starrocks.language-configuration.json"
             },
             {
                 "id": "sqlserver",
@@ -211,7 +221,8 @@
                 ],
                 "extensions": [
                     ".sqlserver"
-                ]
+                ],
+                "configuration": "./language-configurations/sqlserver.language-configuration.json"
             },
             {
                 "id": "plsql",
@@ -224,7 +235,8 @@
                     ".plsql",
                     ".pck",
                     ".pkb"
-                ]
+                ],
+                "configuration": "./language-configurations/plsql.language-configuration.json"
             },
             {
                 "id": "dameng",
@@ -236,7 +248,8 @@
                 "extensions": [
                     ".dm",
                     ".dameng"
-                ]
+                ],
+                "configuration": "./language-configurations/dameng.language-configuration.json"
             }
         ],
         "grammars": [
