@@ -66,6 +66,8 @@
 
 每种方言均提供独立的 TextMate 语法高亮（`syntaxes/*.tmLanguage.json`，由方言 tokenizer 配置自动生成），覆盖关键字、数据类型、内建函数、注释、字符串、变量与参数占位符；方言特有的引号规则（PG 美元引号、BigQuery 三引号、MySQL/StarRocks `#` 注释、Oracle `q'…'`）均与格式化器一致。
 
+同时提供方言感知的语言配置（`language-configurations/*.json`，同样由 tokenizer 配置自动生成）：`Cmd+/` 注释切换（`--` 行注释 / `/* */` 块注释）、括号匹配高亮、引号与括号自动闭合 —— Hive 的 `[]`、MySQL 的反引号等均按方言派生。
+
 ### 使用场景
 
 - **数据工程师**：编写 Hive/Spark/FlinkSQL ETL 脚本，需要规范化格式、检查语法、转换 MySQL DDL 到 Hive
@@ -923,6 +925,8 @@ MIT License
 | `dameng`     | Dameng, DM           | `.dameng`, `.dm`    |
 
 Each dialect ships a dedicated TextMate grammar (`syntaxes/*.tmLanguage.json`, auto-generated from the dialect tokenizer configs) covering keywords, data types, built-in functions, comments, strings, variables, and parameter placeholders; dialect-specific quoting (PG dollar-quoting, BigQuery triple quotes, MySQL/StarRocks `#` comments, Oracle `q'…'`) matches the formatter's behavior.
+
+Dialect-aware language configurations (`language-configurations/*.json`, also auto-generated) are included as well: `Cmd+/` comment toggling (`--` line comments / `/* */` block comments), bracket matching, and quote/bracket auto-closing — Hive's `[]`, MySQL's backticks, and more are derived per dialect.
 
 ### Use Cases
 

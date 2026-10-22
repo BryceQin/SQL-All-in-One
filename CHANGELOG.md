@@ -1,5 +1,18 @@
 # Changelog
 
+## [Unreleased]
+
+### 新功能
+
+#### 语言配置：注释切换 / 括号匹配 / 自动闭合（12 方言）
+
+此前插件注册的 12 个语言 ID 均无语言配置 —— `.hql` / `.mysql` / `.sparksql` 等文件上 `Cmd+/` 无反应、括号匹配与引号自动闭合缺失（`.sql` 可用仅因 VSCode 内置 SQL 扩展自带配置）。本版本补齐，派生数据与格式化器零漂移（详见 `docs/prd/025-语言配置.md`）：
+
+- **生成管线**：新增 `src/grammar/languageConfigBuilder.ts` + `scripts/generate-language-configs.ts`，直接消费各方言 `tokenizerOptions`（行注释符、extraParens、引号种类），`language-configurations/*.json` × 12 入库，golden 测试防漂移（与 2.35.0 语法高亮同构的单一数据源模式）
+- **覆盖**：`Cmd+/` 切换 `--` 行注释、`Shift+Alt+A` 切换 `/* */` 块注释、括号匹配高亮、引号/括号自动闭合与选中环绕
+- **方言感知**：方括号 `[]`（Hive/Spark/PG/BigQuery/SQLite/SQL Server）、反引号 `` ` ``（MySQL 系）、单/双引号按方言实际使用派生；MySQL/BigQuery/StarRocks 的 `#` 注释保持语法着色但不参与 `Cmd+/`（VSCode 单注释符限制）
+- **接线**：`contributes.languages[].configuration` 挂接 12 条；`generate-language-configs` 接入 `vscode:prepublish` / `esbuild` 脚本链
+
 ## [2.36.0] - 2026-10-20
 
 ### 优化
