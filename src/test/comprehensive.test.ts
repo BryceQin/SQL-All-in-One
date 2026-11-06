@@ -92,6 +92,12 @@ suite("SQL Formatter Core Tests", () => {
             assert.ok(result.includes("ALTER"), "Should contain ALTER");
         });
 
+        test("formats ALTER TABLE ADD COLUMN with COMMENT", () => {
+            const result = format("ALTER TABLE users ADD COLUMN email VARCHAR(255) COMMENT 'mail'");
+            assert.ok(result.includes("COMMENT 'mail'"), `Should preserve comment text, got: ${result}`);
+            assert.ok(!result.includes("[object Object]"), `Should not stringify comment AST node, got: ${result}`);
+        });
+
         test("formats USE statement", () => {
             const result = format("USE mydb");
             assert.ok(result.includes("USE"), "Should contain USE");
@@ -293,7 +299,15 @@ suite("SQL Formatter Core Tests", () => {
 
         test("formats CREATE TABLE with COMMENT", () => {
             const result = format("CREATE TABLE users (id INT COMMENT 'user id')");
-            assert.ok(result.includes("COMMENT"), "Should contain COMMENT");
+            assert.ok(result.includes("COMMENT 'user id'"), `Should preserve comment text, got: ${result}`);
+            assert.ok(!result.includes("[object Object]"), `Should not stringify comment AST node, got: ${result}`);
+        });
+
+        test("formats CREATE TABLE with table-level COMMENT", () => {
+            const result = format("CREATE TABLE users (id INT) COMMENT='user table'", { language: "mysql" });
+            assert.ok(result.includes("COMMENT = 'user table'"), `Should preserve table comment, got: ${result}`);
+            assert.ok(!result.includes("[object Object]"), `Should not stringify comment AST node, got: ${result}`);
+            assert.ok(!result.includes("KEYWORD"), `Should not dump raw AST keys, got: ${result}`);
         });
 
         test("formats CREATE TABLE with NOT NULL", () => {

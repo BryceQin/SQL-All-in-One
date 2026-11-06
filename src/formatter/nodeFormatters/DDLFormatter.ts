@@ -199,10 +199,36 @@ export class DDLFormatter {
         }
 
         if (def.comment) {
-            const comment = def.comment as { value: unknown };
             this.layout.add(WS.SPACE, formatKeyword("COMMENT", this.cfg.keywordCase), WS.SPACE);
-            this.layout.add("'" + String(comment.value) + "'");
+            this.layout.add(this.formatCommentValue(def.comment));
         }
+    }
+
+    /**
+     * Formats the value of a DDL COMMENT clause.
+     *
+     * node-sql-parser wraps the comment text in `{ type: "comment", value: {...} }`
+     * where the inner value is itself a literal node such as
+     * `{ type: "single_quote_string", value: "hello" }`. Stringifying that
+     * object directly yields "[object Object]", so unwrap the wrapper and let
+     * ExpressionFormatter render the literal (including its quotes).
+     */
+    private formatCommentValue(comment: unknown): string {
+        if (comment == null) return "";
+        if (typeof comment === "string") return comment;
+        if (typeof comment !== "object") return String(comment);
+
+        const node = comment as Record<string, unknown>;
+        if (node.type === "comment") {
+            return this.formatCommentValue(node.value);
+        }
+        if (typeof node.type === "string") {
+            return this.exprFmt.format(node);
+        }
+        if ("value" in node) {
+            return this.formatCommentValue(node.value);
+        }
+        return String(comment);
     }
 
     private formatDataType(def: Record<string, unknown>): string {
@@ -256,19 +282,78 @@ export class DDLFormatter {
 
     private formatTableOptions(options: Record<string, unknown>[]): void {
         for (const opt of options) {
-            this.layout.add(WS.MANDATORY_NEWLINE, WS.INDENT);
-            if (typeof opt === "string") {
-                this.layout.add(opt);
-            } else if (typeof opt === "object") {
-                const entries = Object.entries(opt);
-                for (const [key, val] of entries) {
-                    this.layout.add(formatKeyword(key.toUpperCase(), this.cfg.keywordCase));
-                    if (val !== undefined && val !== null) {
-                        this.layout.add(WS.SPACE, "=", WS.SPACE, String(val));
-                    }
+            const text = this.formatTableOption(opt);
+            if (!text) continue;
+            this.layout.add(WS.MANDATORY_NEWLINE, WS.INDENT, text);
+        }
+    }
+
+    /**
+     * Formats a single table option.
+     *
+     * node-sql-parser represents most options as `{ keyword, symbol, value }`
+     * (e.g. `COMMENT = 'x'`, `ENGINE = InnoDB`), and BigQuery nests the inner
+     * options in an array under `value`. Iterating the raw object entries would
+     * print the object keys (`keyword`, `symbol`, ...) and stringify the nested
+     * value objects, which produced output like
+     * "KEYWORD = commentSYMBOLVALUE = 'x'".
+     */
+    private formatTableOption(opt: Record<string, unknown> | string): string {
+        if (typeof opt === "string") return opt;
+        if (opt == null || typeof opt !== "object") return String(opt);
+
+        if (opt.keyword != null) {
+            const keyword = formatKeyword(String(opt.keyword).toUpperCase(), this.cfg.keywordCase);
+            const value = opt.value;
+            if (opt.parentheses) {
+                return keyword + "(" + this.formatTableOptionValue(value) + ")";
+            }
+            if (opt.symbol != null) {
+                return keyword + " " + String(opt.symbol) + " " + this.formatTableOptionValue(value);
+            }
+            if (value == null) return keyword;
+            return keyword + " " + this.formatTableOptionValue(value);
+        }
+
+        return Object.entries(opt)
+            .map(([key, val]) => {
+                let text = formatKeyword(key.toUpperCase(), this.cfg.keywordCase);
+                if (val != null) {
+                    text += " = " + this.formatTableOptionValue(val);
                 }
+                return text;
+            })
+            .join(" ");
+    }
+
+    private formatTableOptionValue(value: unknown): string {
+        if (value == null) return "";
+        if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+            return String(value);
+        }
+        if (Array.isArray(value)) {
+            return value
+                .map((item) => (item !== null && typeof item === "object" ? this.formatTableOption(item as Record<string, unknown>) : String(item)))
+                .join(", ");
+        }
+        if (typeof value === "object") {
+            const node = value as Record<string, unknown>;
+            // `DEFAULT CHARSET = utf8mb4` parses to `{ type: "default", value: "utf8mb4" }`;
+            // the value is the charset, not the DEFAULT keyword itself.
+            if (node.type === "default" && "value" in node) {
+                return this.formatTableOptionValue(node.value);
+            }
+            if (node.type === "comment") {
+                return this.formatCommentValue(node);
+            }
+            if (typeof node.type === "string") {
+                return this.exprFmt.format(node);
+            }
+            if ("value" in node) {
+                return this.formatTableOptionValue(node.value);
             }
         }
+        return String(value);
     }
 
     private formatAlter(stmt: AstNode): string {
@@ -306,6 +391,10 @@ export class DDLFormatter {
             }
             if (expr.definition) {
                 this.layout.add(WS.SPACE, this.formatDataType(expr.definition as Record<string, unknown>));
+            }
+            if (expr.comment) {
+                this.layout.add(WS.SPACE, formatKeyword("COMMENT", this.cfg.keywordCase), WS.SPACE);
+                this.layout.add(this.formatCommentValue(expr.comment));
             }
         } else if (expr.resource === "index") {
             if (expr.index) {
