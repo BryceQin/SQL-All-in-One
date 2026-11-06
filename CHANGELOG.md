@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.37.1] - 2026-11-06
+
+### 修复
+
+#### DDL 格式化将 COMMENT 变成 `[object Object]`
+
+- **列级注释**（`col INT COMMENT 'x'`、`ALTER TABLE ... ADD COLUMN ... COMMENT 'x'`）：此前直接把解析器返回的字面量 AST 节点 `String(comment.value)`，输出变成 `COMMENT '[object Object]'`；ALTER 场景还会丢失注释。现逐层解包 `comment` 节点并交由表达式格式化器渲染，保留原始引号与转义
+- **表级注释**（`) COMMENT='x'`）：表选项格式化把 `{ keyword, symbol, value }` 当作普通对象逐键输出，产生 `KEYWORD = commentSYMBOLVALUE = 'x'` 的畸形文本。现按选项结构还原为 `COMMENT = 'x'`、`ENGINE = InnoDB`、`DEFAULT CHARSET = utf8mb4`、`OPTIONS(...)` 等
+- **回归测试**：`src/test/comprehensive.test.ts` 增加列级 / 表级 / ALTER 三处断言，确保注释原文保留且不再出现 `[object Object]` 或原始 AST 键名
+
 ## [2.37.0] - 2026-10-22
 
 ### 新功能
