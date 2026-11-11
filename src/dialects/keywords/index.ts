@@ -27,7 +27,7 @@ import { damengKeywords } from "./damengKeywords";
 const dialectKeywordMap: Record<string, KeywordInfo[]> = {
     hive: hiveKeywords,
     mysql: mysqlKeywords,
-    spark: sparkKeywords,
+    sparksql: sparkKeywords,
     flinksql: flinksqlKeywords,
     sql: [],
     postgresql: postgresqlKeywords,

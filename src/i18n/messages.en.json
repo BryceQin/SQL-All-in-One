@@ -215,7 +215,7 @@
     "outline.procedure": "Procedure",
     "outline.query": "Query",
     "lexer.parseError": "Parse error: unexpected \"{2}\" at line {0}, column {1}.\n{3}",
-    "lexer.defaultDialectHint": "This may be because you are using the default \"sql\" dialect.\nIf possible, please select a more specific dialect (e.g., hive, mysql, spark, etc.).",
+    "lexer.defaultDialectHint": "This may be because you are using the default \"sql\" dialect.\nIf possible, please select a more specific dialect (e.g., hive, mysql, sparksql, etc.).",
     "lexer.currentDialect": "Current SQL dialect: \"{0}\".",
     "validate.deprecated": "{0} configuration option has been deprecated.",
     "validate.expressionWidthPositive": "expressionWidth must be a positive integer. Received value: {0}.",

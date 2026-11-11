@@ -92,7 +92,7 @@ suite("Dialect (dialect.ts)", () => {
         const dialects: [string, DialectOptions][] = [
             ["hive", hive],
             ["mysql", mysql],
-            ["spark", spark],
+            ["sparksql", spark],
             ["sql", sql],
             ["postgresql", postgresql],
             ["bigquery", bigquery],
@@ -113,7 +113,7 @@ suite("Dialect (dialect.ts)", () => {
     test("DialectOptions have name matching declaration", () => {
         assert.strictEqual(hive.name, "hive");
         assert.strictEqual(mysql.name, "mysql");
-        assert.strictEqual(spark.name, "spark");
+        assert.strictEqual(spark.name, "sparksql");
         assert.strictEqual(sql.name, "sql");
         assert.strictEqual(postgresql.name, "postgresql");
         assert.strictEqual(bigquery.name, "bigquery");
@@ -128,7 +128,7 @@ suite("Dialect (dialect.ts)", () => {
         const allOptions: [string, DialectOptions][] = [
             ["hive", hive],
             ["mysql", mysql],
-            ["spark", spark],
+            ["sparksql", spark],
             ["sql", sql],
             ["postgresql", postgresql],
             ["bigquery", bigquery],
@@ -153,7 +153,7 @@ suite("allDialects.ts", () => {
         const expectedDialects = [
             "hive",
             "mysql",
-            "spark",
+            "sparksql",
             "sql",
             "postgresql",
             "bigquery",
@@ -172,7 +172,7 @@ suite("allDialects.ts", () => {
         const dialectNames = [
             "hive",
             "mysql",
-            "spark",
+            "sparksql",
             "sql",
             "postgresql",
             "bigquery",
@@ -726,8 +726,8 @@ suite("keywords/index.ts", () => {
         assert.ok(result.length > 0, "result should be non-empty");
     });
 
-    test("getKeywordsForDialect returns non-empty array for spark", () => {
-        const result = getKeywordsForDialect("spark");
+    test("getKeywordsForDialect returns non-empty array for sparksql", () => {
+        const result = getKeywordsForDialect("sparksql");
         assert.ok(Array.isArray(result), "result should be an array");
         assert.ok(result.length > 0, "result should be non-empty");
     });
@@ -757,7 +757,7 @@ suite("keywords/index.ts", () => {
     });
 
     test("getKeywordsForDialect results include base keywords like SELECT", () => {
-        for (const dialect of ["hive", "mysql", "spark", "sql", "postgresql", "bigquery", "sqlite", "starrocks", "sqlserver"] as const) {
+        for (const dialect of ["hive", "mysql", "sparksql", "sql", "postgresql", "bigquery", "sqlite", "starrocks", "sqlserver"] as const) {
             const result = getKeywordsForDialect(dialect);
             const keywordTexts = result.map((k) => k.keyword.toUpperCase());
             assert.ok(keywordTexts.includes("SELECT"), `getKeywordsForDialect('${dialect}') should include SELECT`);
@@ -833,7 +833,7 @@ suite("Dialect Formatter Options", () => {
 
     testDialectOptions("hive", hive);
     testDialectOptions("mysql", mysql);
-    testDialectOptions("spark", spark);
+    testDialectOptions("sparksql", spark);
     testDialectOptions("sql", sql);
     testDialectOptions("postgresql", postgresql);
     testDialectOptions("bigquery", bigquery);
@@ -853,7 +853,7 @@ suite("Dialect Formatter Options", () => {
         assert.ok(hasDistributeBy, "Hive should have DISTRIBUTE BY clause");
     });
 
-    test("spark formatter has Spark-specific clauses", () => {
+    test("sparksql formatter has SparkSQL-specific clauses", () => {
         const clauses = spark.tokenizerOptions.reservedClauses;
         const hasSortBy = clauses.some((c: unknown) => typeof c === "string" && (c as string).includes("SORT BY"));
         const hasClusterBy = clauses.some((c: unknown) => typeof c === "string" && (c as string).includes("CLUSTER BY"));

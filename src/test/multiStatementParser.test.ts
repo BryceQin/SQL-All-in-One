@@ -74,7 +74,7 @@ suite("Multi-Statement Parser Tests", () => {
 
     test("SparkSQL 方言多语句", () => {
         const sql = "SELECT 1; SELECT 2 FROM t";
-        const results = parseMultiStatement(sql, "spark");
+        const results = parseMultiStatement(sql, "sparksql");
         assert.strictEqual(results.length, 2);
         assert.ok(results[0].success);
     });

@@ -28,7 +28,7 @@ const dialectReservedWordsLoaders: Record<SqlLanguage, string[]> = {
     sql: [...sqlKeywords, ...sqlDataTypes],
     hive: [...hiveKeywords, ...hiveDataTypes],
     mysql: [...mysqlKeywords, ...mysqlDataTypes],
-    spark: [...sparkKeywords, ...sparkDataTypes],
+    sparksql: [...sparkKeywords, ...sparkDataTypes],
     flinksql: [...flinksqlKeywords, ...flinksqlDataTypes],
     postgresql: [...pgKeywords, ...pgDataTypes],
     bigquery: [...bqKeywords, ...bqDataTypes],

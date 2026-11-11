@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.38.0] - 2026-11-11
+
+### 破坏性变更
+
+#### SparkSQL 语言 ID 与内部方言标识统一为 `sparksql`
+
+此前 SparkSQL 的语言 ID 与方言 key 均使用 `spark`，与 `flinksql`、`postgresql` 的命名风格不一致，用户也难以通过语言选择器准确识别。本版本统一为 `sparksql`，`.sparksql` 文件关联保持不变。
+
+- **语言注册**：`contributes.languages[].id`、`contributes.grammars[].language`、`contributes.snippets[].language`、`onLanguage:*` 激活事件，以及全部 `editorLangId =~ /.../` 菜单 / 命令条件同步更新；语言选择器别名改为 `SparkSQL, sparksql`
+- **方言标识**：`SQL-All-in-One.dialect` 枚举值、连接配置 `dialect`、格式化器名称、关键字 / 数据类型 / 函数签名 / 保留字 / 解析错误提示映射、补全片段数据、配置编辑器与连接对话框的方言选项统一为 `sparksql`；`node-sql-parser` 仍使用 `Hive` 解析器
+- **产物重命名**：`syntaxes/sparksql.tmLanguage.json`（作用域 `source.sql.sparksql`）、`snippets/sparksql.json`、`language-configurations/sparksql.language-configuration.json`
+- **迁移**：已保存的 `dialect: "spark"` 连接配置、`SQL-All-in-One.dialect: "spark"` 设置、`files.associations` 中的 `spark`、`[spark]` 语言级设置以及 `editorLangId == spark` 的快捷键条件需改为 `sparksql`
+
 ## [2.37.1] - 2026-11-06
 
 ### 修复

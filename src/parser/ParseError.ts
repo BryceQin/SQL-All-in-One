@@ -62,7 +62,7 @@ const sparkHintRules: DialectHintRule[] = [
 
 const dialectHintMap: Partial<Record<SqlDialect, DialectHintRule[]>> = {
     flinksql: flinksqlHintRules,
-    spark: sparkHintRules,
+    sparksql: sparkHintRules,
 };
 
 function extractPosition(cause: unknown): ErrorPosition | undefined {

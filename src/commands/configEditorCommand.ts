@@ -493,7 +493,7 @@ export class ConfigEditorPanel {
     private async _sendSupportedDialects(): Promise<void> {
         try {
             const supported = AdapterFactory.getAllMetadata();
-            const known = ["mysql", "hive", "spark", "flinksql", "postgresql", "bigquery", "sqlite"];
+            const known = ["mysql", "hive", "sparksql", "flinksql", "postgresql", "bigquery", "sqlite"];
             this._panel.webview.postMessage({
                 command: "supportedDialects",
                 supported,
@@ -504,7 +504,7 @@ export class ConfigEditorPanel {
             this._panel.webview.postMessage({
                 command: "supportedDialects",
                 supported: [],
-                known: ["mysql", "hive", "spark", "flinksql", "postgresql", "bigquery", "sqlite"],
+                known: ["mysql", "hive", "sparksql", "flinksql", "postgresql", "bigquery", "sqlite"],
             });
         }
     }

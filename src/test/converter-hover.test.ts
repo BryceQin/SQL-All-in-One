@@ -902,11 +902,11 @@ suite("Converter and Hover Module Tests", () => {
             assert.ok(result !== null, "Should return Hover for COUNT in mysql");
         });
 
-        test("resolve for known function in spark", () => {
+        test("resolve for known function in sparksql", () => {
             const mockDoc = createMockDocument("");
             const mockPos = createMockPosition(0, 0);
-            const result = resolver.resolve("ABS", "spark", mockDoc, mockPos);
-            assert.ok(result !== null, "Should return Hover for ABS in spark");
+            const result = resolver.resolve("ABS", "sparksql", mockDoc, mockPos);
+            assert.ok(result !== null, "Should return Hover for ABS in sparksql");
         });
 
         test("resolve for known function in sql (standard SQL)", () => {
@@ -978,11 +978,11 @@ suite("Converter and Hover Module Tests", () => {
             assert.ok(result !== null, "Should return Hover for WHERE in mysql");
         });
 
-        test("resolve for known keyword in spark", () => {
+        test("resolve for known keyword in sparksql", () => {
             const mockDoc = createMockDocument("FROM users");
             const mockPos = createMockPosition(0, 1);
-            const result = resolver.resolve("FROM", "spark", mockDoc, mockPos);
-            assert.ok(result !== null, "Should return Hover for FROM in spark");
+            const result = resolver.resolve("FROM", "sparksql", mockDoc, mockPos);
+            assert.ok(result !== null, "Should return Hover for FROM in sparksql");
         });
 
         test("resolve for unknown keyword returns null", () => {

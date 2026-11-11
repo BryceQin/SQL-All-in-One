@@ -215,7 +215,7 @@
     "outline.procedure": "存储过程",
     "outline.query": "查询",
     "lexer.parseError": "解析错误：在第 {0} 行第 {1} 列遇到意外的 \"{2}\"。\n{3}",
-    "lexer.defaultDialectHint": "这可能是因为您正在使用默认的 \"sql\" 方言。\n如果可能，请选择一个更具体的方言（如 hive、mysql、spark 等）。",
+    "lexer.defaultDialectHint": "这可能是因为您正在使用默认的 \"sql\" 方言。\n如果可能，请选择一个更具体的方言（如 hive、mysql、sparksql 等）。",
     "lexer.currentDialect": "使用的 SQL 方言：\"{0}\"。",
     "validate.deprecated": "{0} 配置项已废弃。",
     "validate.expressionWidthPositive": "expressionWidth 必须为正整数。当前传入的值为 {0}。",

@@ -1,6 +1,6 @@
 {
     "name": "Spark SQL",
-    "scopeName": "source.sql.spark",
+    "scopeName": "source.sql.sparksql",
     "patterns": [
         {
             "include": "#block-comment"

@@ -10,7 +10,7 @@ suite("Dialect List Consistency", () => {
         const allDialectsKeys = new Set([
             "hive",
             "mysql",
-            "spark",
+            "sparksql",
             "flinksql",
             "sql",
             "postgresql",

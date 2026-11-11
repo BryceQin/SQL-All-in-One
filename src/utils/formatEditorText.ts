@@ -9,7 +9,7 @@ export function formatEditorText(text: string, config: FormatOptionsWithLanguage
     const { processedSql, slots } = extractComments(text);
 
     let formatted: string;
-    if (config.language === "spark") {
+    if (config.language === "sparksql") {
         formatted = formatSparkSql(processedSql, config);
     } else if (config.language === "hive") {
         formatted = formatHiveSql(processedSql, config);

@@ -7,7 +7,7 @@ function getQuoteCharForDialect(langId: string): string {
     switch (dialect) {
         case "mysql":
         case "hive":
-        case "spark":
+        case "sparksql":
         case "flinksql":
             return "`";
         case "postgresql":

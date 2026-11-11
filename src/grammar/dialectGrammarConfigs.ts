@@ -37,7 +37,7 @@ export const dialectGrammarConfigs: DialectGrammarConfig[] = [
     { langId: "sql", fileName: "sql", name: "SQL", scopeName: "source.sql.sql", options: sql },
     { langId: "hive", fileName: "hive", name: "HiveQL", scopeName: "source.sql.hive", options: hive },
     { langId: "mysql", fileName: "mysql", name: "MySQL", scopeName: "source.sql.mysql", options: mysql },
-    { langId: "spark", fileName: "spark", name: "Spark SQL", scopeName: "source.sql.spark", options: spark },
+    { langId: "sparksql", fileName: "sparksql", name: "Spark SQL", scopeName: "source.sql.sparksql", options: spark },
     { langId: "flinksql", fileName: "flinksql", name: "Flink SQL", scopeName: "source.sql.flinksql", options: flinksql },
     { langId: "postgresql", fileName: "postgresql", name: "PostgreSQL", scopeName: "source.sql.postgresql", options: postgresql },
     { langId: "bigquery", fileName: "bigquery", name: "BigQuery", scopeName: "source.sql.bigquery", options: bigquery },

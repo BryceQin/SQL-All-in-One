@@ -1749,13 +1749,13 @@ document.addEventListener("change", function (e) {
 });
 
 let supportedDialects = [];
-let knownDialects = ["mysql", "hive", "spark", "flinksql", "postgresql", "bigquery", "sqlite"];
+let knownDialects = ["mysql", "hive", "sparksql", "flinksql", "postgresql", "bigquery", "sqlite"];
 let showMoreDialects = false;
 
 const DIALECT_DISPLAY_NAMES = {
     mysql: "MySQL",
     hive: "Hive",
-    spark: "Spark",
+    sparksql: "SparkSQL",
     flinksql: "FlinkSQL",
     postgresql: "PostgreSQL",
     bigquery: "BigQuery",
@@ -1773,7 +1773,7 @@ let connFormState = {
 const DIALECT_DEFAULT_PORTS = {
     mysql: 3306,
     hive: 10000,
-    spark: 10001,
+    sparksql: 10001,
     flinksql: 8083,
     postgresql: 5432,
     bigquery: 443,
@@ -1783,7 +1783,7 @@ const DIALECT_DEFAULT_PORTS = {
 const DIALECT_DEFAULT_USERNAMES = {
     mysql: "root",
     hive: "hive",
-    spark: "spark",
+    sparksql: "spark",
     flinksql: "flink",
     postgresql: "postgres",
     bigquery: "bigquery",

@@ -11,7 +11,7 @@
 // 与 tokenizer 的有意差异：
 // - VSCode 仅支持单一行注释符，取 lineCommentTypes 首个（SQL 标准 --；
 //   MySQL/BigQuery/StarRocks 的 # 仍由语法高亮着色，仅不参与 Cmd+/ 切换）。
-// - {} 不进入 brackets：hive/spark 的 ${var} 是 requirePrefix 变量语法，
+// - {} 不进入 brackets：hive/sparksql 的 ${var} 是 requirePrefix 变量语法，
 //   tokenizer 亦不将其作为括号处理。
 
 import type { QuoteType } from "../lexer/TokenizerOptions";

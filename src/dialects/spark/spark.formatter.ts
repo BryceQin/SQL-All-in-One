@@ -114,7 +114,7 @@ const reservedDataTypePhrases = expandPhrases([]);
 
 // http://spark.apache.org/docs/latest/sql-programming-guide.html
 export const spark: DialectOptions = {
-    name: "spark",
+    name: "sparksql",
     tokenizerOptions: {
         reservedSelect,
         reservedClauses: [...reservedClauses, ...standardOnelineClauses, ...tabularOnelineClauses],

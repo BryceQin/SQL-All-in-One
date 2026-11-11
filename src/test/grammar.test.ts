@@ -228,8 +228,8 @@ suite("Grammar Tokenization", () => {
         assertScope(tokenWithText(line, "# trailing"), "comment.line.number-sign.sql");
     });
 
-    test("spark: ${} 变量", async () => {
-        const [line] = await tokenize("spark", ["SELECT ${conf.val} FROM t"]);
+    test("sparksql: ${} 变量", async () => {
+        const [line] = await tokenize("sparksql", ["SELECT ${conf.val} FROM t"]);
         assertScope(tokenWithText(line, "${conf.val}"), "variable.other.sql");
     });
 

@@ -24,7 +24,7 @@ suite("ParseError Tests", () => {
 
     test("SparkSQL 方言提示存在", () => {
         const cause = new Error('Expected "BY" but "BUCKET" found');
-        const err = new ParseError("spark", "SELECT a FROM t SORT BY a", cause);
+        const err = new ParseError("sparksql", "SELECT a FROM t SORT BY a", cause);
         assert.ok(err.dialectHint !== undefined);
     });
 

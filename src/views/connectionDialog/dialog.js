@@ -3,7 +3,7 @@ const vscode = acquireVsCodeApi();
 const DIALECT_DEFAULT_PORTS = {
     mysql: 3306,
     hive: 10000,
-    spark: 10001,
+    sparksql: 10001,
     flinksql: 8083,
     postgresql: 5432,
     bigquery: 443,
@@ -13,7 +13,7 @@ const DIALECT_DEFAULT_PORTS = {
 const DIALECT_DEFAULT_USERNAMES = {
     mysql: "root",
     hive: "hive",
-    spark: "spark",
+    sparksql: "spark",
     flinksql: "flink",
     postgresql: "postgres",
     bigquery: "bigquery",
@@ -43,8 +43,8 @@ const DIALECT_INFO = {
         implemented: false,
         icon: '<svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#FF9800" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     },
-    spark: {
-        name: "Spark",
+    sparksql: {
+        name: "SparkSQL",
         implemented: false,
         icon: '<svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 2l2.4 7.2H22l-6 4.8 2.4 7.2L12 16.4 5.6 21.2 8 14 2 9.2h7.6z" fill="#F44336"/></svg>',
     },

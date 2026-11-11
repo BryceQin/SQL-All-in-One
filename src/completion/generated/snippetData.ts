@@ -786,7 +786,7 @@ export const snippetData: Record<string, Record<string, SnippetDef>> = {
       "description": "PostgreSQL DISTINCT ON"
     }
   },
-  "spark": {
+  "sparksql": {
     "Spark Create Temporary View": {
       "prefix": "sparktemp",
       "body": [

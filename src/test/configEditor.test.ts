@@ -296,7 +296,7 @@ suite("回归测试 - 现有功能完整性", () => {
 
             const config = vscode.workspace.getConfiguration("SQL-All-in-One");
 
-            const validDialects = ["auto-detect", "hive", "mysql", "spark", "sql", "postgresql", "bigquery", "sqlite"];
+            const validDialects = ["auto-detect", "hive", "mysql", "sparksql", "sql", "postgresql", "bigquery", "sqlite"];
             const dialect = config.get<string>("dialect");
             assert.ok(validDialects.includes(dialect || ""), `方言值 ${dialect} 应在有效范围内`);
 

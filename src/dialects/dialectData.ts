@@ -14,7 +14,7 @@ interface KeywordData {
 const _keywordMap: Record<string, KeywordEntry> = {
     hive: { keywords: allDialects.hiveKeywords, dataTypes: allDialects.hiveDataTypes },
     mysql: { keywords: allDialects.mysqlKeywords, dataTypes: allDialects.mysqlDataTypes },
-    spark: { keywords: allDialects.sparkKeywords, dataTypes: allDialects.sparkDataTypes },
+    sparksql: { keywords: allDialects.sparkKeywords, dataTypes: allDialects.sparkDataTypes },
     flinksql: { keywords: allDialects.flinksqlKeywords, dataTypes: allDialects.flinksqlDataTypes },
     sql: { keywords: allDialects.sqlKeywords, dataTypes: allDialects.sqlDataTypes },
     postgresql: { keywords: allDialects.pgKeywords, dataTypes: allDialects.pgDataTypes },
@@ -29,7 +29,7 @@ const _keywordMap: Record<string, KeywordEntry> = {
 const _functionSigMap: Record<string, FunctionSignature[]> = {
     hive: allDialects.hiveFunctionSignatures,
     mysql: allDialects.mysqlFunctionSignatures,
-    spark: allDialects.sparkFunctionSignatures,
+    sparksql: allDialects.sparkFunctionSignatures,
     flinksql: allDialects.flinksqlFunctionSignatures,
     sql: allDialects.sqlFunctionSignatures,
     postgresql: allDialects.pgFunctionSignatures,

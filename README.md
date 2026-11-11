@@ -54,7 +54,7 @@
 | `sql`        | SQL                  | `.sql`              |
 | `hive`       | Hive, hive-sql       | `.hql`              |
 | `mysql`      | MySQL                | `.mysql`            |
-| `spark`      | SparkSQL, spark      | `.sparksql`         |
+| `sparksql`   | SparkSQL, sparksql   | `.sparksql`         |
 | `flinksql`   | FlinkSQL, flink-sql  | `.flinksql`         |
 | `postgresql` | PostgreSQL, postgres | `.psql`, `.pgsql`   |
 | `bigquery`   | BigQuery             | `.bqsql`            |
@@ -914,7 +914,7 @@ MIT License
 | `sql`        | SQL                  | `.sql`              |
 | `hive`       | Hive, hive-sql       | `.hql`              |
 | `mysql`      | MySQL                | `.mysql`            |
-| `spark`      | SparkSQL, spark      | `.sparksql`         |
+| `sparksql`   | SparkSQL, sparksql   | `.sparksql`         |
 | `flinksql`   | FlinkSQL, flink-sql  | `.flinksql`         |
 | `postgresql` | PostgreSQL, postgres | `.psql`, `.pgsql`   |
 | `bigquery`   | BigQuery             | `.bqsql`            |

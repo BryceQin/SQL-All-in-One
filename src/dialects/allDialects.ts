@@ -41,7 +41,7 @@ import { keywords as _damengKw, dataTypes as _damengDt } from "./dameng/dameng.k
 // already-evaluated plain object literals, so no lazy wrapping is needed.
 export const hive = _hive;
 export const mysql = _mysql;
-export const spark = _spark;
+export const sparksql = _spark;
 export const flinksql = _flinksql;
 export const sql = _sql;
 export const postgresql = _postgresql;

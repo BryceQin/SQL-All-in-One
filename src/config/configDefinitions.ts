@@ -28,7 +28,7 @@ export const FORMAT_CONFIG_ITEMS: ConfigItemDefinition[] = [
         defaultValue: "hive",
         group: "basic",
         label: "Dialect",
-        enumValues: ["hive", "spark", "flinksql", "mysql", "postgresql", "bigquery", "sqlite", "sql"],
+        enumValues: ["hive", "sparksql", "flinksql", "mysql", "postgresql", "bigquery", "sqlite", "sql"],
     },
     {
         key: "keywordCase",

@@ -173,7 +173,7 @@ suite("SQL Formatter Core Tests", () => {
     });
 
     suite("format() - all dialects", () => {
-        const workingDialects: SqlLanguage[] = ["sql", "mysql", "hive", "spark", "sqlite"];
+        const workingDialects: SqlLanguage[] = ["sql", "mysql", "hive", "sparksql", "sqlite"];
 
         for (const dialect of workingDialects) {
             test(`formats basic SELECT with ${dialect} dialect`, () => {
@@ -525,7 +525,7 @@ suite("SQL Formatter Core Tests", () => {
     });
 });
 
-type SqlLanguage = "sql" | "mysql" | "hive" | "spark" | "postgresql" | "bigquery" | "sqlite";
+type SqlLanguage = "sql" | "mysql" | "hive" | "sparksql" | "postgresql" | "bigquery" | "sqlite";
 
 suite("ValidateConfig Tests", () => {
     test("passes for valid config", () => {
@@ -678,7 +678,7 @@ suite("SqlParserEngine Tests", () => {
 
     test("parses all supported dialects", () => {
         const engine = getParserEngine();
-        const dialects: SqlDialect[] = ["mysql", "hive", "spark", "postgresql", "bigquery", "sqlite", "sql"];
+        const dialects: SqlDialect[] = ["mysql", "hive", "sparksql", "postgresql", "bigquery", "sqlite", "sql"];
         for (const dialect of dialects) {
             const ast = engine.astify("SELECT 1", dialect);
             assert.ok(ast, `Should parse SELECT 1 for ${dialect}`);
@@ -752,8 +752,8 @@ suite("DialectMapper Tests", () => {
         assert.strictEqual(toNodeSqlParserDialect("hive"), "Hive");
     });
 
-    test("maps spark to Hive (uses Hive parser)", () => {
-        assert.strictEqual(toNodeSqlParserDialect("spark"), "Hive");
+    test("maps sparksql to Hive (uses Hive parser)", () => {
+        assert.strictEqual(toNodeSqlParserDialect("sparksql"), "Hive");
     });
 
     test("maps postgresql to PostgreSQL", () => {
@@ -782,7 +782,7 @@ suite("DialectMapper Tests", () => {
         const dialects = [...new Set(getDialectEntries().map((e) => e.sqlDialect))];
         assert.ok(dialects.includes("mysql"));
         assert.ok(dialects.includes("hive"));
-        assert.ok(dialects.includes("spark"));
+        assert.ok(dialects.includes("sparksql"));
         assert.ok(dialects.includes("flinksql"));
         assert.ok(dialects.includes("postgresql"));
         assert.ok(dialects.includes("bigquery"));
@@ -792,7 +792,7 @@ suite("DialectMapper Tests", () => {
         assert.ok(dialects.includes("sqlserver"));
         assert.ok(dialects.includes("oracle"));
         assert.ok(dialects.includes("dameng"));
-        // sql, hive, mysql, spark, flinksql, postgresql, bigquery, sqlite,
+        // sql, hive, mysql, sparksql, flinksql, postgresql, bigquery, sqlite,
         // starrocks, sqlserver, oracle, dameng => 12 distinct dialects.
         assert.strictEqual(dialects.length, 12);
     });
@@ -906,7 +906,7 @@ suite("sqlDialects Tests", () => {
         assert.strictEqual(sqlDialects.mysql, "mysql");
         assert.strictEqual(sqlDialects.hive, "hive");
         assert.strictEqual(sqlDialects["hive-sql"], "hive");
-        assert.strictEqual(sqlDialects.spark, "spark");
+        assert.strictEqual(sqlDialects.sparksql, "sparksql");
         assert.strictEqual(sqlDialects.postgresql, "postgresql");
         assert.strictEqual(sqlDialects.postgres, "postgresql");
         assert.strictEqual(sqlDialects.bigquery, "bigquery");
@@ -1206,7 +1206,7 @@ suite("supportedDialects Tests", () => {
         assert.ok(supportedDialects.includes("sql"));
         assert.ok(supportedDialects.includes("mysql"));
         assert.ok(supportedDialects.includes("hive"));
-        assert.ok(supportedDialects.includes("spark"));
+        assert.ok(supportedDialects.includes("sparksql"));
         assert.ok(supportedDialects.includes("flinksql"));
         assert.ok(supportedDialects.includes("postgresql"));
         assert.ok(supportedDialects.includes("bigquery"));
@@ -1215,7 +1215,7 @@ suite("supportedDialects Tests", () => {
         assert.ok(supportedDialects.includes("sqlserver"));
         assert.ok(supportedDialects.includes("oracle"));
         assert.ok(supportedDialects.includes("dameng"));
-        // sql, hive, mysql, spark, flinksql, postgresql, bigquery, sqlite,
+        // sql, hive, mysql, sparksql, flinksql, postgresql, bigquery, sqlite,
         // starrocks, sqlserver, oracle, dameng => 12 distinct languages.
         assert.strictEqual(supportedDialects.length, 12);
     });

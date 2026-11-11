@@ -3,7 +3,7 @@ const dialectEntries = [
     { vscodeLangId: "hive", sqlLanguage: "hive", sqlDialect: "hive", nodeSqlParserDialect: "Hive" },
     { vscodeLangId: "hive-sql", sqlLanguage: "hive", sqlDialect: "hive", nodeSqlParserDialect: "Hive" },
     { vscodeLangId: "mysql", sqlLanguage: "mysql", sqlDialect: "mysql", nodeSqlParserDialect: "MySQL" },
-    { vscodeLangId: "spark", sqlLanguage: "spark", sqlDialect: "spark", nodeSqlParserDialect: "Hive" },
+    { vscodeLangId: "sparksql", sqlLanguage: "sparksql", sqlDialect: "sparksql", nodeSqlParserDialect: "Hive" },
     { vscodeLangId: "flinksql", sqlLanguage: "flinksql", sqlDialect: "flinksql", nodeSqlParserDialect: "FlinkSQL" },
     { vscodeLangId: "flink-sql", sqlLanguage: "flinksql", sqlDialect: "flinksql", nodeSqlParserDialect: "FlinkSQL" },
     { vscodeLangId: "postgresql", sqlLanguage: "postgresql", sqlDialect: "postgresql", nodeSqlParserDialect: "PostgreSQL" },

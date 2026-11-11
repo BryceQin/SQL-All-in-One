@@ -8,7 +8,7 @@ import * as allDialects from "../dialects/allDialects";
 const _functionSigMap: Record<string, FunctionSignature[]> = {
     hive: allDialects.hiveFunctionSignatures,
     mysql: allDialects.mysqlFunctionSignatures,
-    spark: allDialects.sparkFunctionSignatures,
+    sparksql: allDialects.sparkFunctionSignatures,
     flinksql: allDialects.flinksqlFunctionSignatures,
     sql: allDialects.sqlFunctionSignatures,
     postgresql: allDialects.pgFunctionSignatures,

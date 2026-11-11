@@ -33,7 +33,7 @@ export interface LanguageData {
 const dialectToLanguageId: Record<string, string> = {
     hive: "hive",
     mysql: "mysql",
-    spark: "spark",
+    sparksql: "sparksql",
     flinksql: "flinksql",
     sql: "sql",
     postgresql: "postgresql",

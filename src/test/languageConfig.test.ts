@@ -85,14 +85,14 @@ suite("Language Configuration Generation", () => {
 
     test("方言差异：方括号与引号种的派生快照", () => {
         // 方括号：extraParens（Hive/Spark/PG/BigQuery/SQLite）或 identTypes（SQL Server）任一使用 [] 即启用
-        for (const langId of ["hive", "spark", "postgresql", "bigquery", "sqlite", "sqlserver"]) {
+        for (const langId of ["hive", "sparksql", "postgresql", "bigquery", "sqlite", "sqlserver"]) {
             assert.ok(bracketOpens(readConfigFile(langId)).includes("["), `${langId}: 应派生方括号`);
         }
         for (const langId of ["sql", "mysql", "flinksql", "starrocks", "plsql", "dameng"]) {
             assert.ok(!bracketOpens(readConfigFile(langId)).includes("["), `${langId}: 不应派生方括号`);
         }
         // 反引号：identTypes 含 `` 的方言
-        for (const langId of ["sql", "hive", "mysql", "spark", "flinksql", "bigquery", "sqlite", "starrocks"]) {
+        for (const langId of ["sql", "hive", "mysql", "sparksql", "flinksql", "bigquery", "sqlite", "starrocks"]) {
             assert.ok(autoCloseOpens(readConfigFile(langId)).includes("`"), `${langId}: 应派生反引号闭合`);
         }
         for (const langId of ["sqlserver", "plsql", "dameng"]) {
