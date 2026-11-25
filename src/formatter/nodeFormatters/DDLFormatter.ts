@@ -64,6 +64,11 @@ export class DDLFormatter {
         }
 
         const keyword = stmt.keyword ? String(stmt.keyword).toUpperCase() : "TABLE";
+        // CREATE UNIQUE INDEX / CREATE FULLTEXT INDEX: node-sql-parser keeps
+        // the modifier in `index_type`, separate from `keyword`.
+        if (keyword === "INDEX" && stmt.index_type) {
+            this.layout.add(WS.SPACE, formatKeyword(String(stmt.index_type).toUpperCase(), this.cfg.keywordCase));
+        }
         this.layout.add(WS.SPACE, formatKeyword(keyword, this.cfg.keywordCase));
 
         if (stmt.if_not_exists) {
@@ -100,6 +105,11 @@ export class DDLFormatter {
     }
 
     private formatCreateTarget(stmt: AstNode): void {
+        if (stmt.keyword && String(stmt.keyword).toUpperCase() === "INDEX") {
+            this.formatCreateIndexTarget(stmt);
+            return;
+        }
+
         const table = stmt.table;
         if (table) {
             this.layout.add(WS.SPACE);
@@ -133,6 +143,46 @@ export class DDLFormatter {
             const colStrs = (stmt.index_columns as AstNode[]).map((c: AstNode): string => this.exprFmt.format(c));
             this.layout.add("(" + colStrs.join(", ") + ")");
         }
+    }
+
+    /**
+     * CREATE [UNIQUE] INDEX <index> ON <table> [USING <method>] (<columns>)
+     *
+     * node-sql-parser stores the index name and the target table in separate
+     * fields (`index`, `table`); emitting them in AST property order produced
+     * `CREATE INDEX <table> <index> ON (...)`, so the order is explicit here.
+     */
+    private formatCreateIndexTarget(stmt: AstNode): void {
+        if (stmt.index != null) {
+            this.layout.add(WS.SPACE, this.formatIndexName(stmt.index));
+        }
+
+        this.layout.add(WS.SPACE, formatKeyword(String(stmt.on_kw ?? "ON").toUpperCase(), this.cfg.keywordCase), WS.SPACE);
+        const table = stmt.table;
+        if (Array.isArray(table)) {
+            this.layout.add((table as AstNode[]).map((t: AstNode): string => this.formatTableName(t)).join(", "));
+        } else if (table) {
+            this.layout.add(this.formatTableName(table as AstNode));
+        }
+
+        const using = stmt.index_using as { keyword?: string; type?: string } | null;
+        if (using && using.type) {
+            this.layout.add(WS.SPACE, formatKeyword(String(using.keyword ?? "USING").toUpperCase(), this.cfg.keywordCase), WS.SPACE);
+            this.layout.add(String(using.type));
+        }
+
+        if (stmt.index_columns && Array.isArray(stmt.index_columns)) {
+            const colStrs = (stmt.index_columns as AstNode[]).map((c: AstNode): string => this.exprFmt.format(c));
+            this.layout.add(WS.SPACE, "(" + colStrs.join(", ") + ")");
+        }
+    }
+
+    private formatIndexName(index: unknown): string {
+        if (typeof index === "object" && index !== null) {
+            const name = (index as Record<string, unknown>).name;
+            return name != null ? String(name) : String(index);
+        }
+        return String(index);
     }
 
     private formatTableName(table: AstNode): string {
@@ -170,9 +220,17 @@ export class DDLFormatter {
         const colName = this.exprFmt.format(def.column);
         const dataType = this.formatDataType(def.definition as Record<string, unknown>);
         this.layout.add(colName, WS.SPACE, dataType);
+        this.formatColumnAttributes(def);
+    }
 
-        if (def.nullable) {
-            const nullable = def.nullable as { type: string };
+    /**
+     * Renders the column-level clauses shared by CREATE TABLE definitions and
+     * ALTER TABLE ADD/MODIFY/CHANGE expressions. Previously the ALTER path
+     * only emitted COMMENT, silently dropping NOT NULL and DEFAULT values.
+     */
+    private formatColumnAttributes(node: AstNode): void {
+        if (node.nullable) {
+            const nullable = node.nullable as { type: string };
             if (nullable.type === "not null") {
                 this.layout.add(WS.SPACE, formatKeyword("NOT NULL", this.cfg.keywordCase));
             } else {
@@ -180,27 +238,39 @@ export class DDLFormatter {
             }
         }
 
-        if (def.default_val) {
-            const defaultVal = def.default_val as { value: unknown };
-            this.layout.add(WS.SPACE, formatKeyword("DEFAULT", this.cfg.keywordCase), WS.SPACE);
-            this.layout.add(this.exprFmt.format(defaultVal.value));
+        if (node.default_val) {
+            const defaultVal = node.default_val as { type?: string; value?: unknown };
+            if (defaultVal.type === "set default") {
+                this.layout.add(WS.SPACE, formatKeyword("SET DEFAULT", this.cfg.keywordCase), WS.SPACE);
+                this.layout.add(this.exprFmt.format(defaultVal.value));
+            } else if (defaultVal.type === "drop default") {
+                this.layout.add(WS.SPACE, formatKeyword("DROP DEFAULT", this.cfg.keywordCase));
+            } else {
+                this.layout.add(WS.SPACE, formatKeyword("DEFAULT", this.cfg.keywordCase), WS.SPACE);
+                this.layout.add(this.exprFmt.format(defaultVal.value));
+            }
         }
 
-        if (def.auto_increment) {
+        if (node.auto_increment) {
             this.layout.add(WS.SPACE, formatKeyword("AUTO_INCREMENT", this.cfg.keywordCase));
         }
 
-        if (def.unique) {
-            this.layout.add(WS.SPACE, formatKeyword(String(def.unique).toUpperCase(), this.cfg.keywordCase));
+        if (node.unique) {
+            this.layout.add(WS.SPACE, formatKeyword(String(node.unique).toUpperCase(), this.cfg.keywordCase));
         }
 
-        if (def.primary) {
-            this.layout.add(WS.SPACE, formatKeyword(String(def.primary).toUpperCase(), this.cfg.keywordCase));
+        // PostgreSQL stores inline PRIMARY KEY on `primary_key`; MySQL uses
+        // `primary`. Emitting both when present is harmless.
+        if (node.primary) {
+            this.layout.add(WS.SPACE, formatKeyword(String(node.primary).toUpperCase(), this.cfg.keywordCase));
+        }
+        if (node.primary_key) {
+            this.layout.add(WS.SPACE, formatKeyword(String(node.primary_key).toUpperCase(), this.cfg.keywordCase));
         }
 
-        if (def.comment) {
+        if (node.comment) {
             this.layout.add(WS.SPACE, formatKeyword("COMMENT", this.cfg.keywordCase), WS.SPACE);
-            this.layout.add(this.formatCommentValue(def.comment));
+            this.layout.add(this.formatCommentValue(node.comment));
         }
     }
 
@@ -274,9 +344,48 @@ export class DDLFormatter {
         }
         this.layout.add(formatKeyword(String(def.constraint_type).toUpperCase(), this.cfg.keywordCase));
 
+        // ALTER TABLE ... ADD UNIQUE INDEX <name> (...)
+        if (def.index) {
+            this.layout.add(WS.SPACE, this.formatIndexName(def.index));
+        }
+
         if (def.definition) {
             const colStrs = (def.definition as AstNode[]).map((c: AstNode): string => this.exprFmt.format(c));
             this.layout.add(WS.SPACE, "(" + colStrs.join(", ") + ")");
+        }
+
+        this.formatReferenceDefinition(def.reference_definition as AstNode | null | undefined);
+    }
+
+    private formatReferenceDefinition(ref: AstNode | null | undefined): void {
+        if (!ref) return;
+
+        this.layout.add(WS.SPACE, formatKeyword(String(ref.keyword ?? "REFERENCES").toUpperCase(), this.cfg.keywordCase), WS.SPACE);
+        const tables = Array.isArray(ref.table) ? (ref.table as AstNode[]) : ref.table ? [ref.table as AstNode] : [];
+        this.layout.add(tables.map((t: AstNode): string => this.formatTableName(t)).join(", "));
+
+        if (ref.definition && Array.isArray(ref.definition)) {
+            const colStrs = (ref.definition as AstNode[]).map((c: AstNode): string => this.exprFmt.format(c));
+            this.layout.add(WS.SPACE, "(" + colStrs.join(", ") + ")");
+        }
+
+        if (ref.match) {
+            const match = typeof ref.match === "string" ? ref.match : (ref.match as AstNode).value;
+            if (match != null) {
+                this.layout.add(WS.SPACE, formatKeyword("MATCH", this.cfg.keywordCase), WS.SPACE, String(match).toUpperCase());
+            }
+        }
+
+        if (Array.isArray(ref.on_action)) {
+            for (const action of ref.on_action as AstNode[]) {
+                const value = action.value as { value?: unknown } | undefined;
+                this.layout.add(
+                    WS.SPACE,
+                    formatKeyword(String(action.type).toUpperCase(), this.cfg.keywordCase),
+                    WS.SPACE,
+                    String(value?.value ?? value ?? "").toUpperCase(),
+                );
+            }
         }
     }
 
@@ -333,7 +442,9 @@ export class DDLFormatter {
         }
         if (Array.isArray(value)) {
             return value
-                .map((item) => (item !== null && typeof item === "object" ? this.formatTableOption(item as Record<string, unknown>) : String(item)))
+                .map((item) =>
+                    item !== null && typeof item === "object" ? this.formatTableOption(item as Record<string, unknown>) : String(item),
+                )
                 .join(", ");
         }
         if (typeof value === "object") {
@@ -381,24 +492,44 @@ export class DDLFormatter {
             this.layout.add(WS.SPACE, formatKeyword(String(expr.action).toUpperCase(), this.cfg.keywordCase));
         }
 
+        // ADD UNIQUE INDEX / ADD FULLTEXT INDEX: the modifier precedes INDEX.
+        if (expr.resource === "index" && expr.index_type) {
+            this.layout.add(WS.SPACE, formatKeyword(String(expr.index_type).toUpperCase(), this.cfg.keywordCase));
+        }
+
         if (expr.keyword) {
             this.layout.add(WS.SPACE, formatKeyword(String(expr.keyword).toUpperCase(), this.cfg.keywordCase));
         }
 
         if (expr.resource === "column") {
+            // CHANGE COLUMN <old> <new> / RENAME COLUMN <old> TO <new>
+            if (expr.old_column) {
+                this.layout.add(WS.SPACE, this.exprFmt.format(expr.old_column));
+            }
+            if (expr.prefix) {
+                this.layout.add(WS.SPACE, formatKeyword(String(expr.prefix).toUpperCase(), this.cfg.keywordCase));
+            }
             if (expr.column) {
                 this.layout.add(WS.SPACE, this.exprFmt.format(expr.column));
             }
             if (expr.definition) {
                 this.layout.add(WS.SPACE, this.formatDataType(expr.definition as Record<string, unknown>));
             }
-            if (expr.comment) {
-                this.layout.add(WS.SPACE, formatKeyword("COMMENT", this.cfg.keywordCase), WS.SPACE);
-                this.layout.add(this.formatCommentValue(expr.comment));
-            }
+            this.formatColumnAttributes(expr);
         } else if (expr.resource === "index") {
             if (expr.index) {
-                this.layout.add(WS.SPACE, String(expr.index));
+                this.layout.add(WS.SPACE, this.formatIndexName(expr.index));
+            }
+            if (expr.definition && Array.isArray(expr.definition)) {
+                const colStrs = (expr.definition as AstNode[]).map((c: AstNode): string => this.exprFmt.format(c));
+                this.layout.add(WS.SPACE, "(" + colStrs.join(", ") + ")");
+            }
+        } else if (expr.resource === "constraint") {
+            // ALTER TABLE ... ADD {UNIQUE INDEX|UNIQUE KEY|PRIMARY KEY|FOREIGN KEY} ...
+            const constraintDef = expr.create_definitions as AstNode | undefined;
+            if (constraintDef) {
+                this.layout.add(WS.SPACE);
+                this.formatConstraintDefinition(constraintDef);
             }
         }
     }

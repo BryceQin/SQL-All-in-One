@@ -10,8 +10,11 @@ const dialectEntries = [
     { vscodeLangId: "postgres", sqlLanguage: "postgresql", sqlDialect: "postgresql", nodeSqlParserDialect: "PostgreSQL" },
     { vscodeLangId: "bigquery", sqlLanguage: "bigquery", sqlDialect: "bigquery", nodeSqlParserDialect: "BigQuery" },
     { vscodeLangId: "sqlite", sqlLanguage: "sqlite", sqlDialect: "sqlite", nodeSqlParserDialect: "SQLite" },
-    { vscodeLangId: "starrocks", sqlLanguage: "starrocks", sqlDialect: "starrocks", nodeSqlParserDialect: "StarRocks" },
-    { vscodeLangId: "sqlserver", sqlLanguage: "sqlserver", sqlDialect: "sqlserver", nodeSqlParserDialect: "SQLServer" },
+    // node-sql-parser ships no StarRocks/SQLServer parsers. StarRocks speaks the
+    // MySQL protocol and shares its grammar for the statements we format;
+    // SQL Server is parsed with the bundled TransactSQL grammar.
+    { vscodeLangId: "starrocks", sqlLanguage: "starrocks", sqlDialect: "starrocks", nodeSqlParserDialect: "MySQL" },
+    { vscodeLangId: "sqlserver", sqlLanguage: "sqlserver", sqlDialect: "sqlserver", nodeSqlParserDialect: "TransactSQL" },
     { vscodeLangId: "plsql", sqlLanguage: "oracle", sqlDialect: "oracle", nodeSqlParserDialect: "Oracle" },
     { vscodeLangId: "oracle", sqlLanguage: "oracle", sqlDialect: "oracle", nodeSqlParserDialect: "Oracle" },
     { vscodeLangId: "dameng", sqlLanguage: "dameng", sqlDialect: "dameng", nodeSqlParserDialect: "Oracle" },
@@ -33,6 +36,38 @@ export interface DialectEntry {
 
 export function getDialectEntries(): readonly DialectEntry[] {
     return dialectEntries;
+}
+
+/**
+ * Dialect modules actually bundled with node-sql-parser 5.x (build/*.js).
+ * Keep in sync when upgrading the dependency.
+ */
+const PARSER_DIALECTS = new Set([
+    "athena",
+    "bigquery",
+    "db2",
+    "flinksql",
+    "hive",
+    "mariadb",
+    "mysql",
+    "noql",
+    "postgresql",
+    "redshift",
+    "snowflake",
+    "sqlite",
+    "transactsql",
+    "trino",
+]);
+
+/**
+ * Whether the AST pipeline can format this dialect at all. Dialects mapped to
+ * a parser module that does not exist (e.g. Oracle, Dameng) are rejected with
+ * a visible error instead of silently echoing the input.
+ */
+export function isDialectFormattable(dialect: string): boolean {
+    const entry = dialectMap.get(dialect);
+    if (!entry) return false;
+    return PARSER_DIALECTS.has(entry.nodeSqlParserDialect.toLowerCase());
 }
 
 export function findDialectByLangId(langId: string): DialectEntry | undefined {

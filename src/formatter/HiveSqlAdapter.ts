@@ -7,6 +7,7 @@ import {
     restoreLateralView as sharedRestoreLateralView,
 } from "./HiveSparkSharedAdapter";
 import { SqlTextScanner } from "../utils/sqlTextScanner";
+import { extractDdlSuffix } from "./DdlSuffixAdapter";
 
 interface ReplacementSlot {
     id: string;
@@ -72,16 +73,18 @@ const wholeStatementPatterns: RegExp[] = [
 // 任务 1（P1）优化：将 extractCreateTableClauses 内的 clausePatterns
 // 提升为模块级常量，避免每次调用都重新编译 9 条正则。
 // 同样需要在每次使用前重置 lastIndex（见 extractCreateTableClauses 内的循环）。
+// Only the start of each unsupported clause is needed: from the earliest
+// match to the end of the statement becomes one placeholder slot.
 const createTableClausePatterns: RegExp[] = [
-    /\bPARTITIONED\s+BY\s*\([^)]*(?:\([^)]*\))*[^)]*\)/gi,
-    /\bCLUSTERED\s+BY\s*\([^)]*\)\s*(?:SORTED\s+BY\s*\([^)]*\)\s*)?INTO\s+\d+\s+BUCKETS/gi,
-    /\bSKEWED\s+BY\s*\([^)]*\)\s+ON\s+\([^)]*\)(?:\s+STORED\s+AS\s+DIRECTORIES)?/gi,
-    /\bROW\s+FORMAT\s+DELIMITED(?:\s+FIELDS\s+TERMINATED\s+BY\s+'[^']*')?(?:\s+ESCAPED\s+BY\s+'[^']*')?(?:\s+LINES\s+TERMINATED\s+BY\s+'[^']*')?(?:\s+NULL\s+DEFINED\s+AS\s+'[^']*')?/gi,
-    /\bROW\s+FORMAT\s+SERDE\s+'[^']*'(?:\s+WITH\s+SERDEPROPERTIES\s*\(\s*(?:'[^']*'\s*=\s*'[^']*'(?:\s*,\s*'[^']*'\s*=\s*'[^']*')*)?\s*\))?/gi,
-    /\bSTORED\s+AS\s+(?:INPUTFORMAT\s+'[^']*'\s+OUTPUTFORMAT\s+'[^']*'|ORC|PARQUET|TEXTFILE|SEQUENCEFILE|RCFILE|AVRO|\w+)/gi,
-    /\bLOCATION\s+'[^']*'/gi,
-    /\bTBLPROPERTIES\s*\(\s*(?:'[^']*'\s*=\s*'[^']*'(?:\s*,\s*'[^']*'\s*=\s*'[^']*')*)?\s*\)/gi,
-    /\bSTORED\s+BY\s+'[^']*'(?:\s+WITH\s+COMPROPERTIES\s*\(\s*(?:'[^']*'\s*=\s*'[^']*'(?:\s*,\s*'[^']*'\s*=\s*'[^']*')*)?\s*\))?/gi,
+    /\bPARTITIONED\s+BY\b/gi,
+    /\bCLUSTERED\s+BY\b/gi,
+    /\bSKEWED\s+BY\b/gi,
+    /\bROW\s+FORMAT\b/gi,
+    /\bSTORED\s+AS\b/gi,
+    /\bSTORED\s+BY\b/gi,
+    /\bLOCATION\s+/gi,
+    /\bTBLPROPERTIES\s*\(/gi,
+    /\bCOMMENT\s+'/gi,
 ];
 
 // 任务 1（P1）优化：为 restore* 函数中的 new RegExp 添加缓存 Map，
@@ -196,64 +199,13 @@ function restoreWholeStatements(formatted: string, slots: ReplacementSlot[]): st
 
 function extractCreateTableClauses(sql: string, slots: ReplacementSlot[], counter: { value: number }): string {
     const createPattern = /\bCREATE\s+(EXTERNAL\s+)?(TEMPORARY\s+)?TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([\w.`"]+)/gi;
-    let result = sql;
+    const { processedSql, slots: suffixSlots } = extractDdlSuffix(sql, createPattern, createTableClausePatterns, () =>
+        nextId("ddl", counter),
+    );
+    slots.push(...suffixSlots);
 
-    const createMatches: { index: number; fullMatch: string; isExternal: boolean; isTemporary: boolean }[] = [];
-    let cm;
-
-    while ((cm = createPattern.exec(result)) !== null) {
-        createMatches.push({
-            index: cm.index,
-            fullMatch: cm[0],
-            isExternal: !!cm[1],
-            isTemporary: !!cm[2],
-        });
-    }
-
-    for (let ci = createMatches.length - 1; ci >= 0; ci--) {
-        const match = createMatches[ci];
-        const stmtEnd = findStatementEnd(result, match.index);
-        const afterCreateStart = match.index + match.fullMatch.length;
-        const afterCreateText = result.substring(afterCreateStart, stmtEnd);
-
-        let modifiedAfter = afterCreateText;
-        let hasModification = false;
-
-        for (const clausePattern of createTableClausePatterns) {
-            // 正则提升为模块级常量后，gi 标志会在 exec 调用之间保留 lastIndex，
-            // 必须在每次扫描前重置。
-            clausePattern.lastIndex = 0;
-            const clauseMatches: { index: number; text: string }[] = [];
-            let m;
-
-            while ((m = clausePattern.exec(modifiedAfter)) !== null) {
-                clauseMatches.push({ index: m.index, text: m[0] });
-            }
-
-            for (let i = clauseMatches.length - 1; i >= 0; i--) {
-                const clauseMatch = clauseMatches[i];
-                const id = nextId("ddl", counter);
-                slots.push({ id, original: clauseMatch.text });
-                modifiedAfter =
-                    modifiedAfter.substring(0, clauseMatch.index) +
-                    id +
-                    modifiedAfter.substring(clauseMatch.index + clauseMatch.text.length);
-                hasModification = true;
-            }
-        }
-
-        if (match.isExternal || match.isTemporary) {
-            const prefix = match.isExternal ? "EXTERNAL " : match.isTemporary ? "TEMPORARY " : "";
-            const prefixRegex = new RegExp(`\\bCREATE\\s+${prefix}TABLE`, "i");
-            result = result.replace(prefixRegex, "CREATE TABLE");
-        }
-
-        if (hasModification) {
-            result = result.substring(0, afterCreateStart) + modifiedAfter + result.substring(stmtEnd);
-        }
-    }
-
-    return result;
+    // CREATE EXTERNAL/TEMPORARY TABLE is not accepted by the Hive grammar.
+    return processedSql.replace(/\bCREATE\s+EXTERNAL\s+TABLE/gi, "CREATE TABLE").replace(/\bCREATE\s+TEMPORARY\s+TABLE/gi, "CREATE TABLE");
 }
 
 function restoreCreateTableClauses(formatted: string, slots: ReplacementSlot[]): string {
@@ -263,9 +215,18 @@ function restoreCreateTableClauses(formatted: string, slots: ReplacementSlot[]):
         if (!slot.id.includes("__ddl_")) continue;
 
         const escapedId = escapeRegExp(slot.id);
+        // New-style slots occupy a whole `COMMENT '<id>'` table option; replace
+        // the wrapper together with the id so no empty COMMENT is left behind.
+        const commentPattern = new RegExp(`COMMENT\\s+['"\`]${escapedId}['"\`]`, "gi");
+        const restored = result.replace(commentPattern, () => slot.original);
+        if (restored !== result) {
+            result = restored;
+            continue;
+        }
+
         const pattern = getCachedRestoreRegex(slot.id, `\`?${escapedId}\`?`, "gi");
         pattern.lastIndex = 0;
-        result = result.replace(pattern, slot.original);
+        result = result.replace(pattern, () => slot.original);
     }
 
     return result;

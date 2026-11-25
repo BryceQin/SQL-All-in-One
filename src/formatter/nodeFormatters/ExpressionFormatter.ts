@@ -97,10 +97,28 @@ export class ExpressionFormatter {
             case AstNodeType.ORIGIN:
                 return String(node.value);
             case AstNodeType.DEFAULT:
-                return formatKeyword("DEFAULT", this.cfg.keywordCase);
+                return this.formatDefaultNode(node);
             default:
                 return this.formatUnknown(expr);
         }
+    }
+
+    /**
+     * node-sql-parser overloads the `default` node type for two unrelated
+     * things: the DEFAULT keyword itself and a wrapper around identifiers
+     * that the PostgreSQL/BigQuery grammars produce (column names, function
+     * names, table-option values). Only a bare `value: "default"` is the
+     * keyword; any other string value is the wrapped identifier.
+     */
+    private formatDefaultNode(node: AstNode): string {
+        const value = node.value;
+        if (typeof value === "string") {
+            return /^default$/i.test(value) ? formatKeyword("DEFAULT", this.cfg.keywordCase) : value;
+        }
+        if (value !== null && typeof value === "object" && "type" in value) {
+            return formatKeyword("DEFAULT", this.cfg.keywordCase) + " " + this.format(value);
+        }
+        return formatKeyword("DEFAULT", this.cfg.keywordCase);
     }
 
     private formatColumnRef(expr: AstNode): string {
@@ -302,7 +320,12 @@ export class ExpressionFormatter {
         if (name && typeof name === "object") {
             const nameObj = name as Record<string, unknown>;
             if ("name" in nameObj) {
-                return this.extractFunctionName(nameObj.name);
+                const fromName = this.extractFunctionName(nameObj.name);
+                // BigQuery puts the function name in `schema` and leaves
+                // `name` empty (e.g. date(...) -> {name: [], schema: {...}}).
+                if (fromName) return fromName;
+                if ("schema" in nameObj) return this.extractFunctionName(nameObj.schema);
+                return fromName;
             }
             if ("value" in nameObj) return String(nameObj.value);
         }

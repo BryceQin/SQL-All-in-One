@@ -1,8 +1,8 @@
 import type { FormatOptions } from "./FormatOptions";
 import type { SqlDialect, SqlLanguage } from "../core/dialectRegistry";
-import { getDialectEntries } from "../core/dialectRegistry";
+import { getDialectEntries, isDialectFormattable } from "../core/dialectRegistry";
 import { AstFormatter } from "./AstFormatter";
-import { ConfigError, validateConfig } from "./validateConfig";
+import { ConfigError, UnsupportedDialectError, validateConfig } from "./validateConfig";
 import { t } from "../i18n";
 import { getFormatterDefaultOptions } from "../config/configDefinitions";
 import { LRUCache } from "../utils/lruCache";
@@ -172,6 +172,10 @@ function hashOptions(dialect: string, options: FormatOptions): string {
 export const formatDialect = (query: string, { dialect, ...cfg }: FormatOptionsWithDialect): string => {
     if (typeof query !== "string") {
         throw new Error(t("validate.invalidQueryType", typeof query));
+    }
+
+    if (!isDialectFormattable(dialect)) {
+        throw new UnsupportedDialectError(t("validate.unsupportedDialect", dialect));
     }
 
     const options = validateConfig({

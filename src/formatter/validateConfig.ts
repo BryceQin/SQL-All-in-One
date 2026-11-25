@@ -11,6 +11,13 @@ import { handleError, ErrorCategory } from "../core/errorHandler";
 // 自定义错误类
 export class ConfigError extends Error {}
 
+/**
+ * Thrown when a dialect is registered in the extension but has no parser
+ * module in node-sql-parser (currently Oracle and Dameng). Surfaced to the
+ * user instead of returning the input unchanged.
+ */
+export class UnsupportedDialectError extends ConfigError {}
+
 // 接收用户的格式化配置 → 执行全量校验 → 校验通过则返回原配置，校验失败则抛出 ConfigError 错误 / 控制台警告
 export function validateConfig(cfg: FormatOptions): FormatOptions {
     const removedOptions = ["multilineLists", "newlineBeforeOpenParen", "newlineBeforeCloseParen", "aliasAs"];

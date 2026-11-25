@@ -7,10 +7,22 @@ import {
     restoreLateralView as sharedRestoreLateralView,
 } from "./HiveSparkSharedAdapter";
 
-interface UsingSlot {
-    tableName: string;
-    usingClause: string;
-}
+import { DdlSuffixSlot, extractDdlSuffix, restoreDdlSuffix } from "./DdlSuffixAdapter";
+
+// Trailing CREATE TABLE clauses the Hive grammar cannot parse. Spark DDL puts
+// USING before the column list when it is a CTAS, so the extractor searches
+// between the table name and a top-level AS.
+const createTableSuffixClauses: RegExp[] = [
+    /\bUSING\s+[\w.`]+/gi,
+    /\bPARTITIONED\s+BY\b/gi,
+    /\bCLUSTERED\s+BY\b/gi,
+    /\bLOCATION\s+/gi,
+    /\bCOMMENT\s+'/gi,
+    /\bTBLPROPERTIES\s*\(/gi,
+    /\bOPTIONS\s*\(/gi,
+    /\bSTORED\s+AS\b/gi,
+    /\bROW\s+FORMAT\b/gi,
+];
 
 interface LateralViewSlot {
     id: string;
@@ -27,7 +39,7 @@ interface DeltaStmtSlot {
 }
 
 export interface SparkAdapterState extends AdapterState {
-    usingSlots: UsingSlot[];
+    usingSlots: DdlSuffixSlot[];
     lateralViewSlots: LateralViewSlot[];
     mergeSlots: MergeSlot[];
     deltaStmtSlots: DeltaStmtSlot[];
@@ -55,7 +67,7 @@ const deltaStatementPatterns: RegExp[] = [
 
 export function preprocessSparkSql(sql: string): { processedSql: string; state: SparkAdapterState } {
     const counter = { value: 0 };
-    const usingSlots: UsingSlot[] = [];
+    const usingSlots: DdlSuffixSlot[] = [];
     const lateralViewSlots: LateralViewSlot[] = [];
     const mergeSlots: MergeSlot[] = [];
     const deltaStmtSlots: DeltaStmtSlot[] = [];
@@ -66,7 +78,7 @@ export function preprocessSparkSql(sql: string): { processedSql: string; state: 
     result = extractDeltaStatements(result, deltaStmtSlots, counter);
     result = extractMergeInto(result, mergeSlots, counter);
     result = extractLateralView(result, lateralViewSlots, counter);
-    result = extractCreateTableUsing(result, usingSlots);
+    result = extractCreateTableSuffix(result, usingSlots, counter);
     const sortResult = replaceSortDistributeCluster(result);
 
     return {
@@ -85,7 +97,7 @@ export function postprocessSparkSql(formatted: string, state: SparkAdapterState)
     let result = formatted;
 
     result = restoreSortDistributeCluster(result, state.keywordOccurrences);
-    result = restoreCreateTableUsing(result, state.usingSlots);
+    result = restoreDdlSuffix(result, state.usingSlots);
     result = restoreLateralView(result, state.lateralViewSlots);
     result = restoreMergeInto(result, state.mergeSlots);
     result = restoreDeltaStatements(result, state.deltaStmtSlots);
@@ -150,35 +162,16 @@ function restoreLateralView(formatted: string, lateralViewSlots: LateralViewSlot
     return sharedRestoreLateralView(formatted, lateralViewSlots, "");
 }
 
-function extractCreateTableUsing(sql: string, usingSlots: UsingSlot[]): string {
-    const usingPattern = /\b(CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?[\w.`"]+)\s+(USING\s+\w+)/gi;
-    let result = sql;
-    let m;
-
-    while ((m = usingPattern.exec(result)) !== null) {
-        const tableName = m[1];
-        const usingClause = m[2];
-        usingSlots.push({ tableName, usingClause });
-
-        result = result.replace(usingClause, "");
-        usingPattern.lastIndex = 0;
-    }
-
-    result = result.replace(/\b(CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?[\w.`"]+)\s{2,}/gi, "$1 ");
-
-    return result;
-}
-
-function restoreCreateTableUsing(formatted: string, usingSlots: UsingSlot[]): string {
-    let result = formatted;
-
-    for (const slot of usingSlots) {
-        const tablePattern = escapeRegExp(slot.tableName);
-        const regex = new RegExp(`(${tablePattern})`, "i");
-        result = result.replace(regex, `$1 ${slot.usingClause}`);
-    }
-
-    return result;
+function extractCreateTableSuffix(sql: string, slots: DdlSuffixSlot[], counter: { value: number }): string {
+    const createPattern = /\bCREATE\s+(?:OR\s+REPLACE\s+)?TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?[\w.`"]+/gi;
+    const { processedSql, slots: suffixSlots } = extractDdlSuffix(
+        sql,
+        createPattern,
+        createTableSuffixClauses,
+        () => `__spark_ddl_${counter.value++}__`,
+    );
+    slots.push(...suffixSlots);
+    return processedSql;
 }
 
 function extractMergeInto(sql: string, mergeSlots: MergeSlot[], counter: { value: number }): string {

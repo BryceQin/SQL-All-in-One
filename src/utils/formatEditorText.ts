@@ -1,9 +1,11 @@
 import { FormatOptionsWithLanguage, format } from "../formatter/sqlFormatter";
 import { preprocessSparkSql, postprocessSparkSql } from "../formatter/SparkSqlAdapter";
 import { preprocessHiveSql, postprocessHiveSql } from "../formatter/HiveSqlAdapter";
+import { preprocessStarRocksSql, postprocessStarRocksSql } from "../formatter/StarRocksSqlAdapter";
 import { preprocessFlinkSql, postprocessFlinkSql } from "../formatter/FlinkSqlAdapter";
 import { extract as extractComments, restore as restoreComments } from "../formatter/CommentPreserver";
 import { handleError, ErrorCategory } from "../core/errorHandler";
+import { UnsupportedDialectError } from "../formatter/validateConfig";
 
 export function formatEditorText(text: string, config: FormatOptionsWithLanguage): string {
     const { processedSql, slots } = extractComments(text);
@@ -15,6 +17,9 @@ export function formatEditorText(text: string, config: FormatOptionsWithLanguage
         formatted = formatHiveSql(processedSql, config);
     } else if (config.language === "flinksql") {
         formatted = formatFlinkSql(processedSql, config);
+    } else if (config.language === "starrocks") {
+        const adapter = preprocessStarRocksSql(processedSql);
+        formatted = postprocessStarRocksSql(formatWithFallback(adapter.processedSql, config), adapter.state);
     } else {
         formatted = formatWithFallback(processedSql, config);
     }
@@ -52,6 +57,11 @@ function formatWithFallback(sql: string, config: FormatOptionsWithLanguage): str
     try {
         return format(sql, config);
     } catch (e) {
+        // A dialect with no parser cannot be formatted at all; rethrow so the
+        // formatting provider surfaces it instead of silently echoing input.
+        if (e instanceof UnsupportedDialectError) {
+            throw e;
+        }
         // Try partial SQL formatting before falling back to original
         const partialResult = formatPartialSql(sql, config);
         if (partialResult !== null) {

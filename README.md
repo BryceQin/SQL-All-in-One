@@ -66,6 +66,8 @@
 
 每种方言均提供独立的 TextMate 语法高亮（`syntaxes/*.tmLanguage.json`，由方言 tokenizer 配置自动生成），覆盖关键字、数据类型、内建函数、注释、字符串、变量与参数占位符；方言特有的引号规则（PG 美元引号、BigQuery 三引号、MySQL/StarRocks `#` 注释、Oracle `q'…'`）均与格式化器一致。
 
+> **格式化范围**：AST 格式化器基于 node-sql-parser。除 Oracle/达梦外，上表方言均支持格式化（SQL Server 走 T-SQL 语法、StarRocks 走 MySQL 语法）；Oracle/达梦目前没有可用的解析器，执行格式化会明确提示“不支持的 SQL 方言”，而不会静默返回原文。
+
 同时提供方言感知的语言配置（`language-configurations/*.json`，同样由 tokenizer 配置自动生成）：`Cmd+/` 注释切换（`--` 行注释 / `/* */` 块注释）、括号匹配高亮、引号与括号自动闭合 —— Hive 的 `[]`、MySQL 的反引号等均按方言派生。
 
 ### 使用场景
@@ -925,6 +927,8 @@ MIT License
 | `dameng`     | Dameng, DM           | `.dameng`, `.dm`    |
 
 Each dialect ships a dedicated TextMate grammar (`syntaxes/*.tmLanguage.json`, auto-generated from the dialect tokenizer configs) covering keywords, data types, built-in functions, comments, strings, variables, and parameter placeholders; dialect-specific quoting (PG dollar-quoting, BigQuery triple quotes, MySQL/StarRocks `#` comments, Oracle `q'…'`) matches the formatter's behavior.
+
+> **Formatting coverage**: the AST formatter is built on node-sql-parser. Every dialect above formats except Oracle and Dameng (SQL Server uses the T-SQL grammar, StarRocks uses MySQL). Oracle/Dameng have no parser available, so running Format raises an explicit "Unsupported SQL dialect" error instead of silently returning the original text.
 
 Dialect-aware language configurations (`language-configurations/*.json`, also auto-generated) are included as well: `Cmd+/` comment toggling (`--` line comments / `/* */` block comments), bracket matching, and quote/bracket auto-closing — Hive's `[]`, MySQL's backticks, and more are derived per dialect.
 

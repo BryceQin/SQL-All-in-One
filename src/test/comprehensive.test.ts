@@ -1,6 +1,9 @@
 import * as assert from "assert";
 import { format, supportedDialects, type FormatOptionsWithLanguage } from "../formatter/sqlFormatter";
-import { ConfigError, validateConfig } from "../formatter/validateConfig";
+import { ConfigError, UnsupportedDialectError, validateConfig } from "../formatter/validateConfig";
+import { postprocessHiveSql, preprocessHiveSql } from "../formatter/HiveSqlAdapter";
+import { postprocessSparkSql, preprocessSparkSql } from "../formatter/SparkSqlAdapter";
+import { postprocessStarRocksSql, preprocessStarRocksSql } from "../formatter/StarRocksSqlAdapter";
 import type { FormatOptions } from "../formatter/FormatOptions";
 import { getParserEngine } from "../parser/SqlParserEngine";
 import { ParseError } from "../parser/ParseError";
@@ -1485,5 +1488,200 @@ suite("Dameng parsing pipeline", () => {
         if (threw !== null) {
             assert.ok(threw instanceof Error, "Dameng PL/SQL block parsing failure should be a regular Error, got: " + String(threw));
         }
+    });
+});
+
+suite("DDL formatting regression tests", () => {
+    const norm = (sql: string): string => sql.replace(/\s+/g, " ").trim();
+
+    test("PostgreSQL CREATE TABLE keeps real column identifiers", () => {
+        const result = format("create table t (id int primary key, name varchar(50) not null)", {
+            language: "postgresql",
+        });
+        assert.strictEqual(norm(result), "CREATE TABLE t ( id INT PRIMARY KEY, name VARCHAR(50) NOT NULL );");
+    });
+
+    test("BigQuery CREATE TABLE keeps identifiers and function name", () => {
+        const result = format("create table ds.t (a INT64 not null, b STRING) partition by date(_PARTITIONTIME)", { language: "bigquery" });
+        assert.strictEqual(norm(result), "CREATE TABLE ds.t ( a INT64 NOT NULL, b STRING ) PARTITION BY date(_PARTITIONTIME);");
+    });
+
+    test("PostgreSQL ALTER ADD COLUMN keeps the identifier", () => {
+        const result = format("alter table users add column email varchar(255)", { language: "postgresql" });
+        assert.strictEqual(norm(result), "ALTER TABLE users ADD COLUMN email VARCHAR(255);");
+    });
+
+    test("MySQL ALTER ADD COLUMN keeps NOT NULL and DEFAULT", () => {
+        const result = format("alter table t add column c int not null default 0 comment 'x'", {
+            language: "mysql",
+        });
+        assert.strictEqual(norm(result), "ALTER TABLE t ADD COLUMN c INT NOT NULL DEFAULT 0 COMMENT 'x';");
+    });
+
+    test("MySQL ALTER MODIFY COLUMN keeps NOT NULL and DEFAULT", () => {
+        const result = format("alter table t modify column name varchar(200) not null default 'x'", {
+            language: "mysql",
+        });
+        assert.strictEqual(norm(result), "ALTER TABLE t MODIFY COLUMN name VARCHAR(200) NOT NULL DEFAULT 'x';");
+    });
+
+    test("MySQL ALTER CHANGE COLUMN keeps both column names", () => {
+        const result = format("alter table t change column a b int not null", { language: "mysql" });
+        assert.strictEqual(norm(result), "ALTER TABLE t CHANGE COLUMN a b INT NOT NULL;");
+    });
+
+    test("MySQL ALTER RENAME COLUMN keeps the source and TO", () => {
+        const result = format("alter table t rename column a to b", { language: "mysql" });
+        assert.strictEqual(norm(result), "ALTER TABLE t RENAME COLUMN a TO b;");
+    });
+
+    test("PostgreSQL ALTER COLUMN SET/DROP DEFAULT", () => {
+        assert.strictEqual(
+            norm(format("alter table t alter column a set default 5", { language: "postgresql" })),
+            "ALTER TABLE t ALTER COLUMN a SET DEFAULT 5;",
+        );
+        assert.strictEqual(
+            norm(format("alter table t alter column a drop default", { language: "postgresql" })),
+            "ALTER TABLE t ALTER COLUMN a DROP DEFAULT;",
+        );
+    });
+
+    test("MySQL ALTER ADD UNIQUE INDEX keeps the index name and columns", () => {
+        const result = format("alter table t add unique index idx_a (a)", { language: "mysql" });
+        assert.strictEqual(norm(result), "ALTER TABLE t ADD UNIQUE INDEX idx_a (a);");
+    });
+
+    test("MySQL ALTER ADD PRIMARY KEY", () => {
+        const result = format("alter table t add primary key (a)", { language: "mysql" });
+        assert.strictEqual(norm(result), "ALTER TABLE t ADD PRIMARY KEY (a);");
+    });
+
+    test("MySQL CREATE INDEX puts the name before ON <table>", () => {
+        const result = format("create index idx_name on t (name)", { language: "mysql" });
+        assert.strictEqual(norm(result), "CREATE INDEX idx_name ON t (name);");
+    });
+
+    test("MySQL CREATE UNIQUE INDEX keeps UNIQUE", () => {
+        const result = format("create unique index idx_name on t (name)", { language: "mysql" });
+        assert.strictEqual(norm(result), "CREATE UNIQUE INDEX idx_name ON t (name);");
+    });
+
+    test("PostgreSQL CREATE INDEX keeps USING method and indexed column", () => {
+        const result = format("create index idx on t using btree (name)", { language: "postgresql" });
+        assert.strictEqual(norm(result), "CREATE INDEX idx ON t USING btree (name);");
+    });
+
+    test("SQL Server now formats instead of echoing input", () => {
+        const result = format("select a,b from t where a=1", { language: "sqlserver" });
+        assert.strictEqual(norm(result), "SELECT a, b FROM t WHERE a = 1;");
+    });
+
+    test("StarRocks now formats through the MySQL grammar", () => {
+        const result = format("create table t (id int, name varchar(50))", { language: "starrocks" });
+        assert.strictEqual(norm(result), "CREATE TABLE t ( id INT, name VARCHAR(50) );");
+    });
+
+    test("MySQL ALTER ADD FOREIGN KEY keeps REFERENCES and ON actions", () => {
+        const result = format("alter table t add foreign key (a) references p(id) on delete cascade on update restrict", {
+            language: "mysql",
+        });
+        assert.strictEqual(norm(result), "ALTER TABLE t ADD FOREIGN KEY (a) REFERENCES p (id) ON DELETE CASCADE ON UPDATE RESTRICT;");
+    });
+
+    test("MySQL CREATE TABLE named constraint keeps REFERENCES", () => {
+        const result = format("create table t (id int, constraint fk foreign key (id) references p(id))", {
+            language: "mysql",
+        });
+        assert.strictEqual(norm(result), "CREATE TABLE t ( id INT, CONSTRAINT fk FOREIGN KEY (id) REFERENCES p (id) );");
+    });
+
+    test("Hive STORED AS / ROW FORMAT DDL formats the header and keeps the suffix", () => {
+        const hive = (sql: string) => {
+            const adapter = preprocessHiveSql(sql);
+            return postprocessHiveSql(format(adapter.processedSql, { language: "hive" }), adapter.state);
+        };
+
+        assert.strictEqual(
+            norm(hive("create table t (id int, name string) stored as parquet")),
+            norm("CREATE TABLE t ( id INT, name STRING ) stored as parquet;"),
+        );
+        assert.strictEqual(
+            norm(
+                hive(
+                    "create external table t (id int) row format delimited fields terminated by ',' stored as textfile location '/data/t'",
+                ),
+            ),
+            norm("CREATE TABLE t ( id INT ) row format delimited fields terminated by ',' stored as textfile location '/data/t';"),
+        );
+        assert.strictEqual(
+            norm(hive("create table t (id int) partitioned by (dt string) stored as parquet tblproperties ('x'='y')")),
+            norm("CREATE TABLE t ( id INT ) partitioned by (dt string) stored as parquet tblproperties ('x'='y');"),
+        );
+        // A column-level COMMENT inside the list must not be mistaken for the suffix.
+        assert.strictEqual(
+            norm(hive("create table t (id int comment 'id', name string) stored as parquet")),
+            norm("CREATE TABLE t ( id INT COMMENT 'id', name STRING ) stored as parquet;"),
+        );
+    });
+
+    test("Spark USING / PARTITIONED BY / CTAS DDL formats the header", () => {
+        const spark = (sql: string) => {
+            const adapter = preprocessSparkSql(sql);
+            return postprocessSparkSql(format(adapter.processedSql, { language: "sparksql" }), adapter.state);
+        };
+
+        assert.strictEqual(
+            norm(spark("create table t (id int) using parquet partitioned by (id)")),
+            norm("CREATE TABLE t ( id INT ) using parquet partitioned by (id);"),
+        );
+        assert.strictEqual(
+            norm(spark("create table t (id int) using delta partitioned by (dt) location '/x'")),
+            norm("CREATE TABLE t ( id INT ) using delta partitioned by (dt) location '/x';"),
+        );
+        assert.strictEqual(
+            norm(spark("create table t (id int) using parquet as select * from s")),
+            norm("CREATE TABLE t ( id INT ) using parquet AS SELECT * FROM s;"),
+        );
+        assert.strictEqual(
+            norm(spark("create table t (id int) using hive clustered by (id) sorted by (id) into 4 buckets")),
+            norm("CREATE TABLE t ( id INT ) using hive clustered by (id) sorted by (id) into 4 buckets;"),
+        );
+    });
+
+    test("StarRocks DISTRIBUTED BY / PROPERTIES DDL formats the header", () => {
+        const starrocks = (sql: string) => {
+            const adapter = preprocessStarRocksSql(sql);
+            return postprocessStarRocksSql(format(adapter.processedSql, { language: "starrocks" }), adapter.state);
+        };
+
+        assert.strictEqual(
+            norm(starrocks("create table t (id int, name varchar(50)) distributed by hash(id) buckets 3")),
+            norm("CREATE TABLE t ( id INT, name VARCHAR(50) ) distributed by hash(id) buckets 3;"),
+        );
+        assert.strictEqual(
+            norm(
+                starrocks(
+                    "create table t (id int, name varchar(50)) engine=olap duplicate key(id) comment 'x' distributed by hash(id) buckets 3 properties ('replication_num'='1')",
+                ),
+            ),
+            norm(
+                "CREATE TABLE t ( id INT, name VARCHAR(50) ) engine=olap duplicate key(id) comment 'x' distributed by hash(id) buckets 3 properties ('replication_num'='1');",
+            ),
+        );
+        assert.strictEqual(
+            norm(
+                starrocks(
+                    "create table t (id int) primary key(id) partition by range(id) (partition p1 values less than ('10')) distributed by hash(id) buckets 2",
+                ),
+            ),
+            norm(
+                "CREATE TABLE t ( id INT ) primary key(id) partition by range(id) (partition p1 values less than ('10')) distributed by hash(id) buckets 2;",
+            ),
+        );
+    });
+
+    test("Oracle and Dameng raise a visible unsupported-dialect error", () => {
+        assert.throws(() => format("select 1", { language: "oracle" }), UnsupportedDialectError);
+        assert.throws(() => format("select 1", { language: "dameng" }), UnsupportedDialectError);
     });
 });
