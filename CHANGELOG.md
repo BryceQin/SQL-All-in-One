@@ -1,5 +1,51 @@
 # Changelog
 
+## [2.39.0] - 2026-11-25
+
+### 新功能
+
+#### SQL Server 与 StarRocks 接入 AST 格式化
+
+- `sqlserver` 改用 node-sql-parser 自带的 T-SQL 语法（`transactsql`），`starrocks` 改用 MySQL 语法；此前这两种方言的所有语句（包括普通 `SELECT`）都因“不支持的方言”被静默原样返回
+- 新增 `src/formatter/StarRocksSqlAdapter.ts`：StarRocks 特有的 `ENGINE`、`DUPLICATE/PRIMARY KEY`、`DISTRIBUTED BY ... BUCKETS`、`PARTITION BY`、`PROPERTIES` 等尾部子句原样保留，表头与列定义交给 AST 格式化器
+
+### 修复
+
+#### PostgreSQL / BigQuery：列名被格式化为 `DEFAULT`
+
+- 解析器把列名包装成 `{ type: "default", value: "<name>" }`，格式化器此前一律输出 `DEFAULT` 关键字，`CREATE TABLE t (id int, name varchar(50))` 会变成 `DEFAULT INT, DEFAULT VARCHAR(50)`，`ALTER TABLE ... ADD COLUMN email ...` 的列名同样丢失；现区分“真正的 DEFAULT 关键字”与“被包装的标识符”
+- BigQuery 函数名位于 `schema` 字段，`PARTITION BY date(_PARTITIONTIME)` 此前会丢失函数名，现可正确还原
+
+#### `CREATE [UNIQUE] INDEX` 索引名与表名颠倒、`UNIQUE` 丢失
+
+- 此前输出 `CREATE INDEX <表> <索引> ON (<列>)`：索引名与表名顺序错误、`ON` 后丢失目标表、`UNIQUE` 修饰符丢失；PG 的索引列还会变成 `DEFAULT`
+- 现在输出 `CREATE [UNIQUE] INDEX <索引> ON <表> [USING <方法>] (<列>)`
+
+#### `ALTER TABLE` 丢失列属性、旧列名与索引定义
+
+- `ADD/MODIFY COLUMN` 会丢掉 `NOT NULL`、`DEFAULT <值>`、`AUTO_INCREMENT`、`COMMENT`；现统一复用列属性渲染逻辑
+- `CHANGE COLUMN <旧> <新>` 丢失旧列名、`RENAME COLUMN <旧> TO <新>` 丢失 `TO`，现完整保留
+- 新增 `ALTER COLUMN ... SET DEFAULT` / `DROP DEFAULT`、`ADD [UNIQUE] INDEX`、`ADD PRIMARY KEY`、`ADD FOREIGN KEY ... REFERENCES ... [ON DELETE/UPDATE ...]` 输出；`CREATE TABLE` 内的外键同样补上 `REFERENCES` 目标
+
+#### Hive / Spark / StarRocks 的存储与分布子句导致整条 DDL 无法格式化
+
+- 共享新增 `src/formatter/DdlSuffixAdapter.ts`：把从第一个方言专有子句到语句末尾的整段内容替换为一个合法的 `COMMENT '<占位>'` 表选项，格式化表头/列定义后再把原后缀拼回，避免了此前裸占位符导致的解析失败
+- Hive：`STORED AS`、`ROW FORMAT`、`PARTITIONED BY`、`CLUSTERED BY`、`LOCATION`、`TBLPROPERTIES` 等；`CREATE EXTERNAL TABLE` 仍规范为 `CREATE TABLE`，列内的 `COMMENT` 不会被误当尾部子句
+- Spark：`USING`、`PARTITIONED BY`、`CLUSTERED BY`、`LOCATION`、`OPTIONS`、`TBLPROPERTIES`；同时修复了旧实现把 `USING` 插到表名之后（列定义之前）的错误顺序，带列定义的 CTAS 现在连 `AS SELECT` 部分也会被格式化
+- 局限：不带列定义的 CTAS（如 `CREATE TABLE t USING parquet AS SELECT ...`）仍原样返回，因为 node-sql-parser 的 Hive 语法本身无法解析无列定义的 CTAS；存储子句文本按原文保留，不做关键字归一化
+
+### 行为变更
+
+#### Oracle / 达梦：格式化不再静默返回原文
+
+- 这两种方言在 node-sql-parser 中没有可用解析器，此前“格式化”无任何效果且只有日志警告。现在格式化命令会明确提示“不支持的 SQL 方言”，`格式化选区` 与 `格式化文档` 都会给出可见错误；README（中/英）同步说明该例外
+
+### 内部
+
+- 新增共享后缀适配器与 StarRocks 适配器；`ExpressionFormatter` 的 DEFAULT 节点处理与函数名提取、`DDLFormatter` 的索引/约束/列属性渲染同步调整
+- `src/test/comprehensive.test.ts` 新增 21 条精确输出回归用例，覆盖 PG/BigQuery 标识符、CREATE/ALTER INDEX、ALTER 列属性、外键、SQL Server/StarRocks 映射及 Hive/Spark/StarRocks 尾部子句
+- 验证：`npm run compile`、`npm run lint`、`oxfmt --check` 通过；`comprehensive` 211 通过、`languages` 195 通过
+
 ## [2.38.0] - 2026-11-11
 
 ### 破坏性变更
